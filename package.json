@@ -1,0 +1,30 @@
+{
+  "name": "hr-sm",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "server": "nodemon server/index.js",
+    "client": "npm start --prefix frontend",
+    "dev": "concurrently \"npm run server\" \"npm run client\" "
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "A comprehensive Human Resources Management System built with the MERN stack (MongoDB, Express.js, React, Node.js) designed to streamline HR operations, automate administrative tasks, and enhance employee management processes.",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.10"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cookieparser": "^0.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.2"
+  }
+}
