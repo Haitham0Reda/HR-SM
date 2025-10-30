@@ -16,11 +16,12 @@ const departmentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    description: String,
-    parentDepartment: {
+    school: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department'
+        ref: 'School',
+        required: true
     },
+    description: String,
     isActive: {
         type: Boolean,
         default: true
@@ -28,5 +29,8 @@ const departmentSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+// Add index for code (unique)
+departmentSchema.index({ code: 1 }, { unique: true });
 
 export default mongoose.model('Department', departmentSchema);

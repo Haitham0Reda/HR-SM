@@ -1,10 +1,48 @@
 // User Controller
 import User from '../models/user.model.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+// Helper: sanitize user object (remove sensitive fields)
+const sanitizeUser = (user) => {
+    const obj = user.toObject ? user.toObject() : user;
+    delete obj.password;
+    return obj;
+};
+
+// Helper: validate user input based on model
+const validateUserInput = (data, isUpdate = false) => {
+    if (!isUpdate) {
+        if (!data.username || typeof data.username !== 'string') return 'Username is required.';
+        if (!data.email || typeof data.email !== 'string') return 'Email is required.';
+        if (!data.password || typeof data.password !== 'string') return 'Password is required.';
+    }
+    if (data.role && !['employee', 'manager', 'admin', 'hr'].includes(data.role)) return 'Invalid role.';
+    if (data.profile) {
+        if (data.profile.gender && !['male', 'female'].includes(data.profile.gender)) return 'Invalid gender.';
+        if (data.profile.maritalStatus && !['single', 'married', 'divorced', 'widowed'].includes(data.profile.maritalStatus)) return 'Invalid marital status.';
+    }
+    if (data.employment) {
+        if (data.employment.contractType && !['full-time', 'part-time', 'contract', 'probation'].includes(data.employment.contractType)) return 'Invalid contract type.';
+        if (data.employment.employmentStatus && !['active', 'on-leave', 'terminated', 'resigned'].includes(data.employment.employmentStatus)) return 'Invalid employment status.';
+    }
+    return null;
+};
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find();
-        res.json(users);
+        const users = await User.find().populate('department position');
+        res.json(users.map(sanitizeUser));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const getUserById = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).populate('department position');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(sanitizeUser(user));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -12,29 +50,38 @@ export const getAllUsers = async (req, res) => {
 
 export const createUser = async (req, res) => {
     try {
+        const error = validateUserInput(req.body);
+        if (error) return res.status(400).json({ error });
+        // Check for duplicate username/email
+        const existing = await User.findOne({ $or: [{ email: req.body.email }, { username: req.body.username }] });
+        if (existing) return res.status(409).json({ error: 'Username or email already exists' });
         const user = new User(req.body);
         await user.save();
-        res.status(201).json(user);
+        await user.populate('department position');
+        res.status(201).json(sanitizeUser(user));
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 };
 
-export const getUserById = async (req, res) => {
-    try {
-        const user = await User.findById(req.params.id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json(user);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
-
 export const updateUser = async (req, res) => {
     try {
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const error = validateUserInput(req.body, true);
+        if (error) return res.status(400).json({ error });
+        // Prevent updating unique fields to existing values
+        if (req.body.email || req.body.username) {
+            const conflict = await User.findOne({
+                $or: [
+                    req.body.email ? { email: req.body.email } : {},
+                    req.body.username ? { username: req.body.username } : {}
+                ],
+                _id: { $ne: req.params.id }
+            });
+            if (conflict) return res.status(409).json({ error: 'Username or email already exists' });
+        }
+        const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('department position');
         if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json(user);
+        res.json(sanitizeUser(user));
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -45,6 +92,30 @@ export const deleteUser = async (req, res) => {
         const user = await User.findByIdAndDelete(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json({ message: 'User deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Login controller
+export const loginUser = async (req, res) => {
+    const { email, password, role } = req.body;
+    if (!email || !password || !role) {
+        return res.status(400).json({ error: 'Email, password, and role are required.' });
+    }
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
+        // Check role
+        if (user.role !== role) {
+            return res.status(403).json({ error: 'Role mismatch or not authorized.' });
+        }
+        // Compare password (plain or hashed)
+        const isMatch = user.password === password || (await bcrypt.compare(password, user.password));
+        if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
+        // Generate JWT token (optional, for session)
+        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+        res.json({ user: sanitizeUser(user), token });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
