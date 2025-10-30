@@ -36,4 +36,7 @@ const requestSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Add isActive for soft delete
+requestSchema.add({ isActive: { type: Boolean, default: true } });
+
 export default mongoose.model('Request', requestSchema);

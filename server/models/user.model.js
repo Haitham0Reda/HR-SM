@@ -23,7 +23,23 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['employee', 'manager', 'admin', 'hr'],
+        enum: [
+            // Admin roles
+            'employee',
+            'admin',
+            'hr',
+            'manager',
+            'alternative-manager',
+            'head-of-department',
+            'supervisor',
+
+            // Academic roles
+            'lecturer',
+            'teaching-assistant',
+            'professor', ,
+            'lab-instructor',
+            'dean'
+        ],
         default: 'employee'
     },
     profile: {
@@ -47,6 +63,11 @@ const userSchema = new mongoose.Schema({
     department: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Department'
+    },
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        required: true
     },
     position: {
         type: mongoose.Schema.Types.ObjectId,
@@ -87,5 +108,8 @@ userSchema.pre('save', async function (next) {
     this.employeeId = `EMID-${nextId.toString().padStart(4, '0')}`;
     next();
 });
+
+// Add index for employeeId (unique)
+userSchema.index({ employeeId: 1 }, { unique: true });
 
 export default mongoose.model('User', userSchema);

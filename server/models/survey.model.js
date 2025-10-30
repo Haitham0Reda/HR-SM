@@ -39,4 +39,7 @@ const surveySchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Add isActive for soft delete
+surveySchema.add({ isActive: { type: Boolean, default: true } });
+
 export default mongoose.model('Survey', surveySchema);
