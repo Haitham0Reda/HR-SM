@@ -6,13 +6,23 @@ import {
     updateEvent,
     deleteEvent
 } from '../controller/event.controller.js';
+import { protect, hrOrAdmin } from '../middleware/index.js';
 
 const router = express.Router();
 
-router.get('/', getAllEvents);
-router.post('/', createEvent);
-router.get('/:id', getEventById);
-router.put('/:id', updateEvent);
-router.delete('/:id', deleteEvent);
+// Get all events - All authenticated users can view
+router.get('/', protect, getAllEvents);
+
+// Create event - HR or Admin only
+router.post('/', protect, hrOrAdmin, createEvent);
+
+// Get event by ID - All authenticated users
+router.get('/:id', protect, getEventById);
+
+// Update event - HR or Admin only
+router.put('/:id', protect, hrOrAdmin, updateEvent);
+
+// Delete event - HR or Admin only
+router.delete('/:id', protect, hrOrAdmin, deleteEvent);
 
 export default router;

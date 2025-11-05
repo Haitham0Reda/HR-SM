@@ -6,13 +6,23 @@ import {
     updateNotification,
     deleteNotification
 } from '../controller/notification.controller.js';
+import { protect, hrOrAdmin } from '../middleware/index.js';
 
 const router = express.Router();
 
-router.get('/', getAllNotifications);
-router.post('/', createNotification);
-router.get('/:id', getNotificationById);
-router.put('/:id', updateNotification);
-router.delete('/:id', deleteNotification);
+// Get all notifications - Protected (users see their own)
+router.get('/', protect, getAllNotifications);
+
+// Create notification - HR or Admin only
+router.post('/', protect, hrOrAdmin, createNotification);
+
+// Get notification by ID - Protected
+router.get('/:id', protect, getNotificationById);
+
+// Update notification (mark as read) - Protected
+router.put('/:id', protect, updateNotification);
+
+// Delete notification - HR or Admin only
+router.delete('/:id', protect, hrOrAdmin, deleteNotification);
 
 export default router;
