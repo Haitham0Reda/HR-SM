@@ -1,5 +1,6 @@
 // Leave Controller
 import Leave from '../models/leave.model.js';
+import { handleVacationBalanceUpdate, createLeaveNotifications } from '../middleware/index.js';
 
 export const getAllLeaves = async (req, res) => {
     try {
@@ -13,8 +14,13 @@ export const getAllLeaves = async (req, res) => {
 export const createLeave = async (req, res) => {
     try {
         const leave = new Leave(req.body);
-        await leave.save();
-        res.status(201).json(leave);
+        const savedLeave = await leave.save();
+
+        // Handle post-save operations
+        await handleVacationBalanceUpdate(savedLeave);
+        await createLeaveNotifications(savedLeave);
+
+        res.status(201).json(savedLeave);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -32,8 +38,18 @@ export const getLeaveById = async (req, res) => {
 
 export const updateLeave = async (req, res) => {
     try {
+        const oldLeave = await Leave.findById(req.params.id);
+        if (!oldLeave) return res.status(404).json({ error: 'Leave not found' });
+
+        const previousStatus = oldLeave.status;
         const leave = await Leave.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!leave) return res.status(404).json({ error: 'Leave not found' });
+
+        // Handle post-update operations if status changed
+        if (previousStatus !== leave.status) {
+            await handleVacationBalanceUpdate(leave);
+            await createLeaveNotifications(leave);
+        }
+
         res.json(leave);
     } catch (err) {
         res.status(400).json({ error: err.message });

@@ -6,13 +6,29 @@ import {
     updateRequest,
     deleteRequest
 } from '../controller/request.controller.js';
+import { protect, checkActive } from '../middleware/index.js';
+import { calculatePermissionDuration } from '../middleware/index.js';
 
 const router = express.Router();
 
-router.get('/', getAllRequests);
-router.post('/', createRequest);
-router.get('/:id', getRequestById);
-router.put('/:id', updateRequest);
-router.delete('/:id', deleteRequest);
+// Get all requests - protected
+router.get('/', protect, getAllRequests);
+
+// Create request - with validation middleware
+router.post('/',
+    protect,
+    checkActive,
+    calculatePermissionDuration,
+    createRequest
+);
+
+// Get request by ID
+router.get('/:id', protect, getRequestById);
+
+// Update request
+router.put('/:id', protect, updateRequest);
+
+// Delete request
+router.delete('/:id', protect, deleteRequest);
 
 export default router;

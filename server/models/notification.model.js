@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['request', 'announcement', 'payroll', 'attendance', 'custom'],
+        enum: ['request', 'announcement', 'payroll', 'attendance', 'permission', 'leave', 'request-control', 'custom'],
         required: true
     },
     title: {
@@ -35,5 +35,10 @@ const notificationSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+notificationSchema.index({ recipient: 1, isRead: 1 });
+notificationSchema.index({ createdAt: -1 });
+notificationSchema.index({ type: 1 });
+notificationSchema.index({ relatedModel: 1, relatedId: 1 });
 
 export default mongoose.model('Notification', notificationSchema);

@@ -6,14 +6,23 @@ import {
     updateAnnouncement,
     deleteAnnouncement
 } from '../controller/announcement.controller.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
+import { protect, hrOrAdmin } from '../middleware/index.js';
 
 const router = express.Router();
 
-router.get('/', getAllAnnouncements);
-router.post('/', createAnnouncement);
-router.get('/:id', getAnnouncementById);
-router.put('/:id', protect, admin, updateAnnouncement);
-router.delete('/:id', protect, admin, deleteAnnouncement);
+// Get all announcements - All authenticated users can view
+router.get('/', protect, getAllAnnouncements);
+
+// Create announcement - HR or Admin only
+router.post('/', protect, hrOrAdmin, createAnnouncement);
+
+// Get announcement by ID - All authenticated users
+router.get('/:id', protect, getAnnouncementById);
+
+// Update announcement - HR or Admin only
+router.put('/:id', protect, hrOrAdmin, updateAnnouncement);
+
+// Delete announcement - HR or Admin only
+router.delete('/:id', protect, hrOrAdmin, deleteAnnouncement);
 
 export default router;

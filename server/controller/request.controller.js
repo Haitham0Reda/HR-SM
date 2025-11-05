@@ -1,5 +1,6 @@
 // Request Controller
 import Request from '../models/request.model.js';
+import { createPermissionNotification } from '../middleware/index.js';
 
 export const getAllRequests = async (req, res) => {
     try {
@@ -13,8 +14,14 @@ export const getAllRequests = async (req, res) => {
 export const createRequest = async (req, res) => {
     try {
         const request = new Request(req.body);
-        await request.save();
-        res.status(201).json(request);
+        const savedRequest = await request.save();
+
+        // Handle post-save notification if it's a permission request
+        if (savedRequest.type === 'permission') {
+            await createPermissionNotification(savedRequest, null);
+        }
+
+        res.status(201).json(savedRequest);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -32,8 +39,17 @@ export const getRequestById = async (req, res) => {
 
 export const updateRequest = async (req, res) => {
     try {
+        const oldRequest = await Request.findById(req.params.id);
+        if (!oldRequest) return res.status(404).json({ error: 'Request not found' });
+
+        const previousStatus = oldRequest.status;
         const request = await Request.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!request) return res.status(404).json({ error: 'Request not found' });
+
+        // Handle notification if status changed and it's a permission request
+        if (previousStatus !== request.status && request.type === 'permission') {
+            await createPermissionNotification(request, previousStatus);
+        }
+
         res.json(request);
     } catch (err) {
         res.status(400).json({ error: err.message });

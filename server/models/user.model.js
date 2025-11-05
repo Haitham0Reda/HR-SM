@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
         unique: true,
         lowercase: true,
         validate: {
-            validator: function(v) {
+            validator: function (v) {
                 return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
             },
             message: 'Please enter a valid email'
@@ -35,138 +35,147 @@ const userSchema = new mongoose.Schema({
         required: true,
         minlength: 6
     },
+    enum: ['employee', 'manager', 'admin', 'hr'],
+    default: 'employee',
+    index: true
+>>>>>>> 07076efdf0bbd10ff85461b6cac5d104d465b9d1
+},
     role: {
-        type: String,
-<<<<<<< HEAD
-        enum: [
-            // Admin roles
-            'employee',
-            'admin',
-            'hr',
-            'manager',
-            'alternative-manager',
-            'head-of-department',
-            'supervisor',
+    type: String,
+    enum: [
+        // Core roles
+        'employee',
+        'manager',
+        'admin',
+        'hr',
 
-            // Academic roles
-            'lecturer',
-            'teaching-assistant',
-            'professor', ,
-            'lab-instructor',
-            'dean'
-        ],
-        default: 'employee'
+        // Specialized roles
+        'id-card-admin',  // ID Card printing and management
+        'supervisor',
+        'head-of-department',
+        'alternative-manager',
+
+        // Academic roles
+        'lecturer',
+        'teaching-assistant',
+        'professor',
+        'lab-instructor',
+        'dean'
+    ],
+    default: 'employee',
+    index: true
+},
 =======
         enum: ['employee', 'manager', 'admin', 'hr'],
         default: 'employee',
         index: true
 >>>>>>> 07076efdf0bbd10ff85461b6cac5d104d465b9d1
     },
-    profile: {
-        firstName: {
-            type: String,
+profile: {
+    firstName: {
+        type: String,
             required: true,
+                trim: true
+    },
+    medName: {
+        type: String,
             trim: true
-        },
-        medName: {
-            type: String,
-            trim: true
-        },
-        lastName: {
-            type: String,
+    },
+    lastName: {
+        type: String,
             required: true,
+                trim: true
+    },
+    arabicName: {
+        type: String,
             trim: true
-        },
-        arabicName: {
-            type: String,
-            trim: true
-        },
-        phone: {
-            type: String,
+    },
+    phone: {
+        type: String,
             validate: {
-                validator: function(v) {
-                    return !v || /^\+?[\d\s\-\(\)]+$/.test(v);
-                },
-                message: 'Please enter a valid phone number'
-            }
-        },
-        dateOfBirth: {
-            type: Date,
+            validator: function(v) {
+                return !v || /^\+?[\d\s\-\(\)]+$/.test(v);
+            },
+            message: 'Please enter a valid phone number'
+        }
+    },
+    dateOfBirth: {
+        type: Date,
             validate: {
-                validator: function(v) {
-                    return !v || v < new Date();
-                },
-                message: 'Date of birth cannot be in the future'
-            }
-        },
-        gender: {
-            type: String,
+            validator: function(v) {
+                return !v || v < new Date();
+            },
+            message: 'Date of birth cannot be in the future'
+        }
+    },
+    gender: {
+        type: String,
             enum: ['male', 'female']
-        },
-        maritalStatus: {
-            type: String,
+    },
+    maritalStatus: {
+        type: String,
             enum: ['single', 'married', 'divorced', 'widowed']
-        },
-        nationalId: {
-            type: String, // Changed to String to handle leading zeros
-            validate: {
-                validator: function(v) {
-                    return !v || /^\d+$/.test(v);
-                },
-                message: 'National ID must contain only numbers'
-            }
-        },
-        profilePicture: String
     },
-    department: {
-        type: mongoose.Schema.Types.ObjectId,
+    nationalId: {
+        type: String, // Changed to String to handle leading zeros
+            validate: {
+            validator: function(v) {
+                return !v || /^\d+$/.test(v);
+            },
+            message: 'National ID must contain only numbers'
+        }
+    },
+    profilePicture: String
+},
+department: {
+    type: mongoose.Schema.Types.ObjectId,
         ref: 'Department',
-        index: true
-    },
-    school: {
-        type: mongoose.Schema.Types.ObjectId,
+            index: true
+},
+school: {
+    type: mongoose.Schema.Types.ObjectId,
         ref: 'School',
-        required: true
-    },
-    position: {
-        type: mongoose.Schema.Types.ObjectId,
+            required: true
+},
+position: {
+    type: mongoose.Schema.Types.ObjectId,
         ref: 'Position',
-        index: true
-    },
-    employment: {
-        hireDate: {
-            type: Date,
+            index: true
+},
+employment: {
+    hireDate: {
+        type: Date,
             validate: {
-                validator: function(v) {
-                    return !v || v <= new Date();
-                },
-                message: 'Hire date cannot be in the future'
-            }
-        },
-        contractType: {
-            type: String,
+            validator: function(v) {
+                return !v || v <= new Date();
+            },
+            message: 'Hire date cannot be in the future'
+        }
+    },
+    contractType: {
+        type: String,
             enum: ['full-time', 'part-time', 'contract', 'probation']
-        },
-        employmentStatus: {
-            type: String,
+    },
+    employmentStatus: {
+        type: String,
             enum: ['active', 'on-leave', 'terminated', 'resigned'],
             default: 'active'
-        },
-        terminationDate: Date,
-        resignationDate: Date
     },
-    isActive: {
-        type: Boolean,
+    terminationDate: Date,
+        resignationDate: Date
+},
+isActive: {
+    type: Boolean,
         default: true,
         index: true
-    },
-    lastLogin: Date,
+},
+lastLogin: Date,
     resetPasswordToken: String,
-    resetPasswordExpires: Date,
-    passwordUpdatedAt: Date
+        resetPasswordExpires: Date,
+            passwordUpdatedAt: Date
 }, {
     timestamps: true,
-    toJSON: {
+        toJSON: {
         transform: function(doc, ret) {
             delete ret.password;
             delete ret.resetPasswordToken;
@@ -177,14 +186,14 @@ const userSchema = new mongoose.Schema({
 });
 
 // Virtual for full name
-userSchema.virtual('profile.fullName').get(function() {
+userSchema.virtual('profile.fullName').get(function () {
     return [this.profile.firstName, this.profile.medName, this.profile.lastName]
         .filter(Boolean)
         .join(' ');
 });
 
 // Virtual for employment duration in years
-userSchema.virtual('employment.duration').get(function() {
+userSchema.virtual('employment.duration').get(function () {
     if (!this.employment?.hireDate) return 0;
     const today = new Date();
     const hireDate = new Date(this.employment.hireDate);
@@ -194,55 +203,66 @@ userSchema.virtual('employment.duration').get(function() {
 });
 
 // Virtual for age
-userSchema.virtual('profile.age').get(function() {
+userSchema.virtual('profile.age').get(function () {
     if (!this.profile?.dateOfBirth) return null;
     const today = new Date();
     const birthDate = new Date(this.profile.dateOfBirth);
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
     }
     return age;
 });
 
-// Enhanced Auto-increment employeeId
-userSchema.pre('save', async function (next) {
-    if (!this.isNew || this.employeeId) return next();
-    
-    try {
-        const User = this.constructor;
-        const lastUser = await User.findOne({}, { employeeId: 1 })
-            .sort({ createdAt: -1 })
-            .lean();
-        
-        let nextId = 1;
-        if (lastUser?.employeeId) {
-            const match = lastUser.employeeId.match(/EMID-(\d+)/);
-            if (match) {
-                nextId = parseInt(match[1], 10) + 1;
-            }
-        }
-        
-        this.employeeId = `EMID-${nextId.toString().padStart(4, '0')}`;
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
+// Note: Middleware hooks moved to userMiddleware.js
+// Use middleware functions in routes for better separation of concerns
 
-// Update passwordUpdatedAt when password changes
-userSchema.pre('save', function(next) {
-    if (this.isModified('password') && !this.isNew) {
-        this.passwordUpdatedAt = new Date();
-    }
-    next();
-});
+// Instance method to check if user is active
+userSchema.methods.isCurrentlyActive = function () {
+    return this.isActive && this.employment.employmentStatus === 'active';
+};
 
-<<<<<<< HEAD
-// Add index for employeeId (unique)
-userSchema.index({ employeeId: 1 }, { unique: true });
+// Instance method to check role permissions
+userSchema.methods.hasRole = function (roles) {
+    if (Array.isArray(roles)) {
+        return roles.includes(this.role);
+    }
+    return this.role === roles;
+};
+
+// Instance method to check if user is manager or above
+userSchema.methods.isManagerOrAbove = function () {
+    return ['manager', 'admin', 'hr'].includes(this.role);
+};
+// Instance method to check if user is active
+userSchema.methods.isCurrentlyActive = function () {
+    return this.isActive && this.employment.employmentStatus === 'active';
+};
+
+// Instance method to check role permissions
+userSchema.methods.hasRole = function (roles) {
+    if (Array.isArray(roles)) {
+        return roles.includes(this.role);
+    }
+    return this.role === roles;
+};
+
+// Instance method to check if user is manager or above
+userSchema.methods.isManagerOrAbove = function () {
+    return ['manager', 'admin', 'hr'].includes(this.role);
+};
+
+// Instance method to check if user is ID Card Admin
+userSchema.methods.isIDCardAdmin = function () {
+    return this.role === 'id-card-admin';
+};
+
+// Instance method to check if user has ID card permissions
+userSchema.methods.hasIDCardPermissions = function () {
+    return ['id-card-admin', 'admin', 'hr'].includes(this.role);
+};
 =======
 // Instance method to check if user is active
 userSchema.methods.isCurrentlyActive = function() {
@@ -278,9 +298,9 @@ userSchema.methods.softDelete = async function() {
 
 // Static method to find active users
 userSchema.statics.findActive = function() {
-    return this.find({ 
-        isActive: true, 
-        'employment.employmentStatus': 'active' 
+    return this.find({
+        isActive: true,
+        'employment.employmentStatus': 'active'
     });
 };
 
@@ -291,9 +311,9 @@ userSchema.statics.findByRole = function(role) {
 
 // Static method to find users in department
 userSchema.statics.findByDepartment = function(departmentId) {
-    return this.find({ 
-        department: departmentId, 
-        isActive: true 
+    return this.find({
+        department: departmentId,
+        isActive: true
     });
 };
 
@@ -304,9 +324,9 @@ userSchema.statics.getPaginated = function(query = {}, options = {}) {
         limit = 10,
         sort = { createdAt: -1 }
     } = options;
-    
+
     const skip = (page - 1) * limit;
-    
+
     return this.find(query)
         .sort(sort)
         .skip(skip)
@@ -347,11 +367,12 @@ userSchema.statics.getUserStats = async function() {
             }
         }
     ]);
-    
+
     return stats[0] || { totalUsers: 0, totalActive: 0, roles: [] };
 };
 
 // Compound indexes for better query performance
+userSchema.index({ employeeId: 1 }, { unique: true });
 userSchema.index({ department: 1, isActive: 1 });
 userSchema.index({ 'employment.employmentStatus': 1 });
 userSchema.index({ role: 1, isActive: 1 });
@@ -366,6 +387,5 @@ userSchema.index({
     username: 'text',
     email: 'text'
 });
->>>>>>> 07076efdf0bbd10ff85461b6cac5d104d465b9d1
 
 export default mongoose.model('User', userSchema);
