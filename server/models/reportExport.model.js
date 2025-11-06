@@ -79,8 +79,7 @@ const reportExportSchema = new mongoose.Schema({
         // Department filter
         department: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Department',
-            index: true
+            ref: 'Department'
         },
         // Employee filter (for individual reports)
         employee: {
