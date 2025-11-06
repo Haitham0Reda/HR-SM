@@ -36,23 +36,25 @@ if (!typeInfo) {
 // Function to generate test template based on file type
 function generateTestTemplate(filePath, fileType) {
     const baseName = path.basename(filePath, path.extname(filePath));
-    const className = baseName.charAt(0).toUpperCase() + baseName.slice(1).replace(/\./g, '');
+    // Extract the main name part (e.g., user from user.model)
+    const mainName = baseName.split('.')[0];
+    const className = mainName.charAt(0).toUpperCase() + mainName.slice(1);
     
     switch (fileType) {
         case 'model':
-            return generateModelTestTemplate(className, baseName);
+            return generateModelTestTemplate(className, baseName, mainName);
         case 'controller':
-            return generateControllerTestTemplate(className, baseName);
+            return generateControllerTestTemplate(className, baseName, mainName);
         case 'middleware':
-            return generateMiddlewareTestTemplate(className, baseName);
+            return generateMiddlewareTestTemplate(className, baseName, mainName);
         case 'route':
-            return generateRouteTestTemplate(className, baseName);
+            return generateRouteTestTemplate(className, baseName, mainName);
         default:
-            return generateGenericTestTemplate(className, baseName);
+            return generateGenericTestTemplate(className, baseName, mainName);
     }
 }
 
-function generateModelTestTemplate(className, fileName) {
+function generateModelTestTemplate(className, fileName, mainName) {
     return `import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import ${className} from '../../server/models/${fileName}.js';
@@ -77,24 +79,24 @@ describe('${className} Model', () => {
     });
 
     it('should create and save a ${className} successfully', async () => {
-        const ${fileName}Data = {
+        const ${mainName}Data = {
             // Add required fields here
         };
 
-        const ${fileName} = new ${className}(${fileName}Data);
-        const saved${className} = await ${fileName}.save();
+        const ${mainName} = new ${className}(${mainName}Data);
+        const saved${className} = await ${mainName}.save();
         
         expect(saved${className}).toBeDefined();
         expect(saved${className}._id).toBeDefined();
         // Add more assertions based on your model fields
     });
 
-    it('should fail to create ${fileName} without required fields', async () => {
-        const ${fileName} = new ${className}();
+    it('should fail to create ${mainName} without required fields', async () => {
+        const ${mainName} = new ${className}();
         let err;
         
         try {
-            await ${fileName}.save();
+            await ${mainName}.save();
         } catch (error) {
             err = error;
         }
@@ -106,10 +108,10 @@ describe('${className} Model', () => {
 `;
 }
 
-function generateControllerTestTemplate(className, fileName) {
+function generateControllerTestTemplate(className, fileName, mainName) {
     return `import request from 'supertest';
 import express from 'express';
-import ${fileName} from '../../server/controller/${fileName}.js';
+import ${mainName} from '../../server/controller/${fileName}.js';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 
@@ -119,7 +121,7 @@ app.use(express.json());
 
 // Mock routes for testing
 // Add your controller routes here
-// app.get('/api/test', ${fileName}.yourMethod);
+// app.get('/api/test', ${mainName}.yourMethod);
 
 beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
@@ -155,10 +157,10 @@ describe('${className} Controller', () => {
 `;
 }
 
-function generateMiddlewareTestTemplate(className, fileName) {
+function generateMiddlewareTestTemplate(className, fileName, mainName) {
     return `import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
-import ${fileName} from '../../server/middleware/${fileName}.js';
+import ${mainName} from '../../server/middleware/${fileName}.js';
 
 let mongoServer;
 
@@ -193,7 +195,7 @@ describe('${className} Middleware', () => {
         const next = jest.fn();
 
         // Call your middleware function
-        // ${fileName}.yourMiddlewareFunction(req, res, next);
+        // ${mainName}.yourMiddlewareFunction(req, res, next);
         
         // Expect next to be called
         // expect(next).toHaveBeenCalled();
@@ -206,19 +208,19 @@ describe('${className} Middleware', () => {
 `;
 }
 
-function generateRouteTestTemplate(className, fileName) {
+function generateRouteTestTemplate(className, fileName, mainName) {
     return `import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import ${fileName} from '../../server/routes/${fileName}.js';
+import ${mainName} from '../../server/routes/${fileName}.js';
 
 let mongoServer;
 const app = express();
 app.use(express.json());
 
 // Register your routes
-// app.use('/api/your-route', ${fileName});
+// app.use('/api/your-route', ${mainName});
 
 beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
@@ -254,7 +256,7 @@ describe('${className} Routes', () => {
 `;
 }
 
-function generateGenericTestTemplate(className, fileName) {
+function generateGenericTestTemplate(className, fileName, mainName) {
     return `import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 
@@ -316,4 +318,4 @@ const testPath = path.join(testPathDir, testFileName);
 
 // Write test file
 fs.writeFileSync(testPath, testContent);
-console.log(\`Test template created: \${testPath}\`);
+console.log(`Test template created: ${testPath}`);
