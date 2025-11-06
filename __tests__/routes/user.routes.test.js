@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../../server/models/user.model.js';
+import '../../server/models/school.model.js'; // Import School model for population
 import userRoutes from '../../server/routes/user.routes.js';
 
 // Create express app for testing
@@ -53,7 +54,8 @@ describe('User Routes', () => {
     it('should login user with valid credentials', async () => {
       const credentials = {
         email: 'test@example.com',
-        password: 'password123'
+        password: 'password123',
+        role: 'employee'
       };
 
       const res = await request(app)
@@ -70,7 +72,8 @@ describe('User Routes', () => {
     it('should reject login with invalid credentials', async () => {
       const credentials = {
         email: 'test@example.com',
-        password: 'wrongpassword'
+        password: 'wrongpassword',
+        role: 'employee'
       };
 
       await request(app)

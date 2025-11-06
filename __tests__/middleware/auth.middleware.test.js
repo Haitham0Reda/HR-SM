@@ -4,6 +4,9 @@ import jwt from 'jsonwebtoken';
 import User from '../../server/models/user.model.js';
 import { protect, admin } from '../../server/middleware/authMiddleware.js';
 
+// Import Jest globals explicitly for ES modules
+import { jest } from '@jest/globals';
+
 let mongoServer;
 
 beforeAll(async () => {
@@ -74,7 +77,24 @@ describe('Auth Middleware', () => {
     });
 
     it('should allow access when valid token is provided', async () => {
+      // Mock the User.findById method to avoid populate issues
+      const findByIdSpy = jest.spyOn(User, 'findById').mockImplementation((id) => {
+        return {
+          select: () => {
+            return {
+              populate: () => Promise.resolve({
+                _id: testUser._id,
+                username: 'testuser',
+                email: 'test@example.com',
+                role: 'employee'
+              })
+            };
+          }
+        };
+      });
+      
       const token = jwt.sign({ id: testUser._id.toString() }, process.env.JWT_SECRET);
+      
       const req = { 
         headers: { 
           authorization: `Bearer ${token}` 
@@ -88,9 +108,14 @@ describe('Auth Middleware', () => {
 
       await protect(req, res, next);
 
+      expect(findByIdSpy).toHaveBeenCalledWith(testUser._id.toString());
+      expect(res.status).not.toHaveBeenCalledWith(401);
       expect(req.user).toBeDefined();
       expect(req.user._id.toString()).toBe(testUser._id.toString());
       expect(next).toHaveBeenCalled();
+      
+      // Restore the original implementation
+      findByIdSpy.mockRestore();
     });
   });
 
