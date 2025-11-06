@@ -94,7 +94,47 @@
  *     - validateNotificationRecipient, validateBulkNotification
  *     - checkNotificationPermissions
  * 
- * 15. ERROR HANDLING (errorMiddleware.js)
+ * 15. ANNOUNCEMENT (announcementMiddleware.js)
+ *     - validateAnnouncementDates, validateTargetAudience
+ *     - setCreatedBy, createAnnouncementNotifications
+ * 
+ * 16. DEPARTMENT (departmentMiddleware.js)
+ *     - checkDepartmentCodeUnique, validateManager
+ *     - validateSchool
+ * 
+ * 17. DOCUMENT (documentMiddleware.js)
+ *     - validateFileUpload, validateDocumentEmployee
+ *     - setUploadedBy, validateDocumentExpiry
+ *     - checkDocumentAccess
+ * 
+ * 18. DOCUMENT TEMPLATE (documentTemplateMiddleware.js)
+ *     - validateTemplateFileType, checkTemplateNameUnique
+ *     - setTemplateCreatedBy, validateTemplateFile
+ * 
+ * 19. EVENT (eventMiddleware.js)
+ *     - validateEventDates, setEventCreatedBy
+ *     - validateAttendees, createEventNotifications
+ *     - validateEventNotPast
+ * 
+ * 20. POSITION (positionMiddleware.js)
+ *     - checkPositionCodeUnique, validatePositionDepartment
+ *     - validatePositionDeletion
+ * 
+ * 21. REQUEST (requestMiddleware.js)
+ *     - validateRequestType, validateRequestEmployee
+ *     - setRequestEmployee, validateReviewer
+ *     - setReviewMetadata, createRequestNotification
+ * 
+ * 22. SCHOOL (schoolMiddleware.js)
+ *     - validateSchoolCode, validateSchoolNameMatch
+ *     - checkSchoolCodeUnique, validateDean
+ *     - validateSchoolDeletion
+ * 
+ * 23. SURVEY (surveyMiddleware.js)
+ *     - validateSurveyQuestions, setSurveyCreatedBy
+ *     - validateSurveyResponse, checkDuplicateResponse
+ * 
+ * 24. ERROR HANDLING (errorMiddleware.js)
  *     - notFound, errorHandler
  */
 
@@ -139,6 +179,33 @@ export * from './permissionMiddleware.js';
 
 // Report Export
 export * from './reportExportMiddleware.js';
+
+// Announcement
+export * from './announcementMiddleware.js';
+
+// Department
+export * from './departmentMiddleware.js';
+
+// Document
+export * from './documentMiddleware.js';
+
+// Document Template
+export * from './documentTemplateMiddleware.js';
+
+// Event
+export * from './eventMiddleware.js';
+
+// Position
+export * from './positionMiddleware.js';
+
+// Request
+export * from './requestMiddleware.js';
+
+// School
+export * from './schoolMiddleware.js';
+
+// Survey
+export * from './surveyMiddleware.js';
 
 // Error Handling
 export * from './errorMiddleware.js';
