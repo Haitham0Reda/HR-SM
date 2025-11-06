@@ -7,647 +7,234 @@
 
 @baseUrl = http://localhost:5000
 @token = your-jwt-token-here
+@userId = user-id-here
+@employeeId = employee-id-here
 
-### ===========================================
-### ROOT ENDPOINT
-### ===========================================
+### Root Endpoint
+GET {{baseUrl}}
 
-### Test root endpoint
-GET {{baseUrl}}/
+### ============================================
+### USER ROUTES
+### ============================================
 
-### ===========================================
-### USER ROUTES - /api/users
-### ===========================================
-
-### Register new user
-POST {{baseUrl}}/api/users/register
-Content-Type: application/json
-
-{
-  "username": "testuser",
-  "email": "test@example.com",
-  "password": "Test123!@#",
-  "role": "employee"
-}
-
-### Login user
+### Login
 POST {{baseUrl}}/api/users/login
 Content-Type: application/json
 
 {
-  "email": "test@example.com",
-  "password": "Test123!@#"
+  "email": "admin@example.com",
+  "password": "password123",
+  "role": "admin"
 }
 
-### Get all users (Admin/HR)
+### Get All Users
 GET {{baseUrl}}/api/users
 Cookie: token={{token}}
 
-### Get user profile
-GET {{baseUrl}}/api/users/profile
+### Get User By ID
+GET {{baseUrl}}/api/users/{{userId}}
 Cookie: token={{token}}
 
-### Update user profile
-PUT {{baseUrl}}/api/users/profile
+### Create User
+POST {{baseUrl}}/api/users
+Cookie: token={{token}}
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "email": "newuser@example.com",
+  "password": "password123",
+  "school": "school-id-here",
+  "role": "employee"
+}
+
+### Update User
+PUT {{baseUrl}}/api/users/{{userId}}
 Cookie: token={{token}}
 Content-Type: application/json
 
 {
   "profile": {
-    "firstName": "John",
-    "lastName": "Doe"
+    "firstName": "Updated",
+    "lastName": "Name"
   }
 }
 
-### Logout user
-POST {{baseUrl}}/api/users/logout
+### Delete User
+DELETE {{baseUrl}}/api/users/{{userId}}
 Cookie: token={{token}}
 
-### ===========================================
-### ANNOUNCEMENT ROUTES - /api/announcements
-### ===========================================
+### ============================================
+### ATTENDANCE ROUTES
+### ============================================
 
-### Get all announcements
-GET {{baseUrl}}/api/announcements
+### Get All Attendance
+GET {{baseUrl}}/api/attendance
 Cookie: token={{token}}
 
-### Create announcement (HR/Admin)
-POST {{baseUrl}}/api/announcements
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "title": "Test Announcement",
-  "content": "This is a test announcement",
-  "priority": "normal",
-  "targetAudience": {
-    "allEmployees": true
-  }
-}
-
-### Get announcement by ID
-GET {{baseUrl}}/api/announcements/{{announcementId}}
-Cookie: token={{token}}
-
-### Update announcement
-PUT {{baseUrl}}/api/announcements/{{announcementId}}
+### Check In
+POST {{baseUrl}}/api/attendance/check-in
 Cookie: token={{token}}
 Content-Type: application/json
 
 {
-  "title": "Updated Announcement"
+  "employeeId": "{{employeeId}}",
+  "method": "biometric",
+  "location": "office"
 }
 
-### Delete announcement
-DELETE {{baseUrl}}/api/announcements/{{announcementId}}
-Cookie: token={{token}}
-
-### ===========================================
-### ANALYTICS ROUTES - /api/analytics
-### ===========================================
-
-### Get HR dashboard
-GET {{baseUrl}}/api/analytics/hr-dashboard
-Cookie: token={{token}}
-
-### Get attendance analytics
-GET {{baseUrl}}/api/analytics/attendance?startDate=2025-01-01&endDate=2025-01-31
-Cookie: token={{token}}
-
-### Get leave analytics
-GET {{baseUrl}}/api/analytics/leave?year=2025
-Cookie: token={{token}}
-
-### Get employee distribution
-GET {{baseUrl}}/api/analytics/employee-distribution
-Cookie: token={{token}}
-
-### Get payroll analytics
-GET {{baseUrl}}/api/analytics/payroll?year=2025&month=1
-Cookie: token={{token}}
-
-### ===========================================
-### ATTENDANCE ROUTES - /api/attendance
-### ===========================================
-
-### Get all attendance records
-GET {{baseUrl}}/api/attendance?page=1&limit=50
-Cookie: token={{token}}
-
-### Create attendance record
-POST {{baseUrl}}/api/attendance
+### Check Out
+POST {{baseUrl}}/api/attendance/check-out
 Cookie: token={{token}}
 Content-Type: application/json
 
 {
-  "employee": "{{employeeId}}",
-  "date": "2025-01-15",
-  "checkIn": {
-    "time": "2025-01-15T08:00:00Z"
-  },
-  "checkOut": {
-    "time": "2025-01-15T17:00:00Z"
-  }
+  "employeeId": "{{employeeId}}",
+  "method": "biometric",
+  "location": "office"
 }
 
-### Get attendance by ID
-GET {{baseUrl}}/api/attendance/{{attendanceId}}
-Cookie: token={{token}}
+### ============================================
+### LEAVE ROUTES
+### ============================================
 
-### Update attendance
-PUT {{baseUrl}}/api/attendance/{{attendanceId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "status": "present"
-}
-
-### Delete attendance
-DELETE {{baseUrl}}/api/attendance/{{attendanceId}}
-Cookie: token={{token}}
-
-### ===========================================
-### BACKUP ROUTES - /api/backups
-### ===========================================
-
-### Get all backups
-GET {{baseUrl}}/api/backups
-Cookie: token={{token}}
-
-### Create backup configuration
-POST {{baseUrl}}/api/backups
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "name": "Daily Database Backup",
-  "backupType": "database",
-  "schedule": {
-    "enabled": true,
-    "frequency": "daily",
-    "time": "02:00"
-  },
-  "settings": {
-    "encryption": {
-      "enabled": true,
-      "algorithm": "aes-256-cbc"
-    },
-    "compression": {
-      "enabled": true,
-      "level": 6
-    }
-  }
-}
-
-### Get backup by ID
-GET {{baseUrl}}/api/backups/{{backupId}}
-Cookie: token={{token}}
-
-### Execute backup manually
-POST {{baseUrl}}/api/backups/{{backupId}}/execute
-Cookie: token={{token}}
-
-### Get backup history
-GET {{baseUrl}}/api/backups/{{backupId}}/history
-Cookie: token={{token}}
-
-### Delete backup configuration
-DELETE {{baseUrl}}/api/backups/{{backupId}}
-Cookie: token={{token}}
-
-### ===========================================
-### DEPARTMENT ROUTES - /api/departments
-### ===========================================
-
-### Get all departments
-GET {{baseUrl}}/api/departments
-Cookie: token={{token}}
-
-### Create department (Admin/HR)
-POST {{baseUrl}}/api/departments
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "name": "IT Department",
-  "code": "IT",
-  "school": "{{schoolId}}"
-}
-
-### Get department by ID
-GET {{baseUrl}}/api/departments/{{departmentId}}
-Cookie: token={{token}}
-
-### Update department
-PUT {{baseUrl}}/api/departments/{{departmentId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "name": "Information Technology"
-}
-
-### Delete department
-DELETE {{baseUrl}}/api/departments/{{departmentId}}
-Cookie: token={{token}}
-
-### ===========================================
-### DOCUMENT ROUTES - /api/documents
-### ===========================================
-
-### Get all documents
-GET {{baseUrl}}/api/documents
-Cookie: token={{token}}
-
-### Upload document
-POST {{baseUrl}}/api/documents
-Cookie: token={{token}}
-Content-Type: multipart/form-data
-
-### Get document by ID
-GET {{baseUrl}}/api/documents/{{documentId}}
-Cookie: token={{token}}
-
-### Update document
-PUT {{baseUrl}}/api/documents/{{documentId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "documentType": "certificate"
-}
-
-### Delete document
-DELETE {{baseUrl}}/api/documents/{{documentId}}
-Cookie: token={{token}}
-
-### ===========================================
-### DOCUMENT TEMPLATE ROUTES - /api/document-templates
-### ===========================================
-
-### Get all document templates
-GET {{baseUrl}}/api/document-templates
-Cookie: token={{token}}
-
-### Create document template
-POST {{baseUrl}}/api/document-templates
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "name": "Employment Certificate",
-  "templateType": "employment-certificate",
-  "content": "Template content here"
-}
-
-### Get template by ID
-GET {{baseUrl}}/api/document-templates/{{templateId}}
-Cookie: token={{token}}
-
-### Update template
-PUT {{baseUrl}}/api/document-templates/{{templateId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "name": "Updated Template Name"
-}
-
-### Delete template
-DELETE {{baseUrl}}/api/document-templates/{{templateId}}
-Cookie: token={{token}}
-
-### ===========================================
-### EVENT ROUTES - /api/events
-### ===========================================
-
-### Get all events
-GET {{baseUrl}}/api/events
-Cookie: token={{token}}
-
-### Create event
-POST {{baseUrl}}/api/events
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "title": "Team Meeting",
-  "description": "Monthly team meeting",
-  "startDate": "2025-02-01T10:00:00Z",
-  "endDate": "2025-02-01T12:00:00Z",
-  "eventType": "meeting"
-}
-
-### Get event by ID
-GET {{baseUrl}}/api/events/{{eventId}}
-Cookie: token={{token}}
-
-### Update event
-PUT {{baseUrl}}/api/events/{{eventId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "title": "Updated Event Title"
-}
-
-### Delete event
-DELETE {{baseUrl}}/api/events/{{eventId}}
-Cookie: token={{token}}
-
-### ===========================================
-### HOLIDAY ROUTES - /api/holidays
-### ===========================================
-
-### Get all holidays
-GET {{baseUrl}}/api/holidays/{{campusId}}?year=2025
-Cookie: token={{token}}
-
-### Create holiday
-POST {{baseUrl}}/api/holidays/{{campusId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "date": "01-01-2025",
-  "name": "New Year's Day",
-  "isWeekend": false
-}
-
-### Get holiday suggestions
-GET {{baseUrl}}/api/holidays/{{campusId}}/suggestions?year=2025&country=EG
-Cookie: token={{token}}
-
-### Add weekend work day
-POST {{baseUrl}}/api/holidays/{{campusId}}/weekend-work
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "date": "05-01-2025",
-  "reason": "Special event"
-}
-
-### Update holiday
-PUT {{baseUrl}}/api/holidays/{{campusId}}/holiday/{{holidayId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "name": "Updated Holiday Name"
-}
-
-### Delete holiday
-DELETE {{baseUrl}}/api/holidays/{{campusId}}/holiday/{{holidayId}}
-Cookie: token={{token}}
-
-### ===========================================
-### LEAVE ROUTES - /api/leaves
-### ===========================================
-
-### Get all leaves
+### Get All Leaves
 GET {{baseUrl}}/api/leaves
 Cookie: token={{token}}
 
-### Create leave request
+### Create Leave Request
 POST {{baseUrl}}/api/leaves
 Cookie: token={{token}}
 Content-Type: application/json
 
 {
-  "employee": "{{employeeId}}",
   "leaveType": "annual",
-  "startDate": "2025-02-10",
-  "endDate": "2025-02-15",
-  "reason": "Personal matters"
+  "startDate": "2024-12-01",
+  "endDate": "2024-12-05",
+  "reason": "Personal vacation"
 }
 
-### Get leave by ID
-GET {{baseUrl}}/api/leaves/{{leaveId}}
+### Approve Leave
+PUT {{baseUrl}}/api/leaves/leave-id-here/approve
 Cookie: token={{token}}
 
-### Update leave
-PUT {{baseUrl}}/api/leaves/{{leaveId}}
+### Reject Leave
+PUT {{baseUrl}}/api/leaves/leave-id-here/reject
 Cookie: token={{token}}
 Content-Type: application/json
 
 {
-  "status": "approved"
+  "reason": "Insufficient staff coverage"
 }
 
-### Delete leave
-DELETE {{baseUrl}}/api/leaves/{{leaveId}}
+### ============================================
+### PERMISSION ROUTES (RBAC)
+### ============================================
+
+### Get All Permissions
+GET {{baseUrl}}/api/permissions/all
 Cookie: token={{token}}
 
-### ===========================================
-### MIXED VACATION ROUTES - /api/mixed-vacations
-### ===========================================
-
-### Get all mixed vacation policies
-GET {{baseUrl}}/api/mixed-vacations?campusId={{campusId}}
+### Get User Permissions
+GET {{baseUrl}}/api/permissions/user/{{userId}}
 Cookie: token={{token}}
 
-### Create mixed vacation policy
-POST {{baseUrl}}/api/mixed-vacations
+### Add Permissions to User
+POST {{baseUrl}}/api/permissions/user/{{userId}}/add
 Cookie: token={{token}}
 Content-Type: application/json
 
 {
-  "name": "Extended Eid Holiday 2025",
-  "campusId": "{{campusId}}",
-  "startDate": "2025-04-10",
-  "endDate": "2025-04-14",
-  "totalDays": 5,
-  "deductionStrategy": "auto",
-  "applicableTo": {
-    "allEmployees": true
-  }
+  "permissions": ["reports.view", "reports.export"],
+  "reason": "Temporary access for audit"
 }
 
-### Get policy by ID
-GET {{baseUrl}}/api/mixed-vacations/{{policyId}}
-Cookie: token={{token}}
-
-### Test policy on employee
-POST {{baseUrl}}/api/mixed-vacations/{{policyId}}/test/{{employeeId}}
-Cookie: token={{token}}
-
-### Get policy breakdown for employee
-GET {{baseUrl}}/api/mixed-vacations/{{policyId}}/breakdown/{{employeeId}}
-Cookie: token={{token}}
-
-### Apply policy to employee
-POST {{baseUrl}}/api/mixed-vacations/{{policyId}}/apply/{{employeeId}}
-Cookie: token={{token}}
-
-### Apply policy to all
-POST {{baseUrl}}/api/mixed-vacations/{{policyId}}/apply-all
-Cookie: token={{token}}
-
-### Update policy
-PUT {{baseUrl}}/api/mixed-vacations/{{policyId}}
+### Remove Permissions from User
+POST {{baseUrl}}/api/permissions/user/{{userId}}/remove
 Cookie: token={{token}}
 Content-Type: application/json
 
 {
-  "name": "Updated Policy Name"
+  "permissions": ["reports.export"],
+  "reason": "Audit completed"
 }
 
-### Delete policy
-DELETE {{baseUrl}}/api/mixed-vacations/{{policyId}}
+### ============================================
+### DEPARTMENT ROUTES
+### ============================================
+
+### Get All Departments
+GET {{baseUrl}}/api/departments
 Cookie: token={{token}}
 
-### ===========================================
-### NOTIFICATION ROUTES - /api/notifications
-### ===========================================
-
-### Get all notifications
-GET {{baseUrl}}/api/notifications
+### Create Department
+POST {{baseUrl}}/api/departments
 Cookie: token={{token}}
+Content-Type: application/json
 
-### Mark notification as read
-PUT {{baseUrl}}/api/notifications/{{notificationId}}/read
-Cookie: token={{token}}
+{
+  "name": "Engineering",
+  "code": "ENG-001",
+  "school": "school-id-here"
+}
 
-### Delete notification
-DELETE {{baseUrl}}/api/notifications/{{notificationId}}
-Cookie: token={{token}}
+### ============================================
+### PAYROLL ROUTES
+### ============================================
 
-### ===========================================
-### PAYROLL ROUTES - /api/payrolls
-### ===========================================
-
-### Get all payrolls
+### Get All Payrolls
 GET {{baseUrl}}/api/payrolls
 Cookie: token={{token}}
 
-### Create payroll
+### Create Payroll
 POST {{baseUrl}}/api/payrolls
 Cookie: token={{token}}
 Content-Type: application/json
 
 {
   "employee": "{{employeeId}}",
-  "month": 1,
-  "year": 2025,
-  "basicSalary": 5000,
-  "allowances": 500,
-  "deductions": 200
-}
-
-### Get payroll by ID
-GET {{baseUrl}}/api/payrolls/{{payrollId}}
-Cookie: token={{token}}
-
-### Update payroll
-PUT {{baseUrl}}/api/payrolls/{{payrollId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "status": "approved"
-}
-
-### Delete payroll
-DELETE {{baseUrl}}/api/payrolls/{{payrollId}}
-Cookie: token={{token}}
-
-### ===========================================
-### PERMISSION ROUTES - /api/permissions
-### ===========================================
-
-### Get all permissions
-GET {{baseUrl}}/api/permissions
-Cookie: token={{token}}
-
-### Create permission request
-POST {{baseUrl}}/api/permissions
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "employee": "{{employeeId}}",
-  "permissionType": "early-departure",
-  "date": "2025-01-20",
-  "time": {
-    "scheduled": "17:00",
-    "requested": "15:00"
+  "period": {
+    "startDate": "2024-01-01",
+    "endDate": "2024-01-31"
   },
-  "reason": "Personal appointment"
+  "salary": {
+    "base": 5000,
+    "allowances": 500,
+    "deductions": 200
+  }
 }
 
-### Get permission by ID
-GET {{baseUrl}}/api/permissions/{{permissionId}}
+### ============================================
+### ANNOUNCEMENT ROUTES
+### ============================================
+
+### Get All Announcements
+GET {{baseUrl}}/api/announcements
 Cookie: token={{token}}
 
-### Approve permission
-POST {{baseUrl}}/api/permissions/{{permissionId}}/approve
+### Create Announcement
+POST {{baseUrl}}/api/announcements
 Cookie: token={{token}}
 Content-Type: application/json
 
 {
-  "approverNotes": "Approved"
+  "title": "System Maintenance",
+  "content": "The system will be down for maintenance on Sunday.",
+  "priority": "high",
+  "targetAudience": {
+    "type": "all"
+  }
 }
 
-### Reject permission
-POST {{baseUrl}}/api/permissions/{{permissionId}}/reject
-Cookie: token={{token}}
-Content-Type: application/json
+### ============================================
+### REPORT ROUTES
+### ============================================
 
-{
-  "reason": "Insufficient justification"
-}
-
-### Delete permission
-DELETE {{baseUrl}}/api/permissions/{{permissionId}}
-Cookie: token={{token}}
-
-### ===========================================
-### POSITION ROUTES - /api/positions
-### ===========================================
-
-### Get all positions
-GET {{baseUrl}}/api/positions
-Cookie: token={{token}}
-
-### Create position
-POST {{baseUrl}}/api/positions
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "title": "Software Developer",
-  "code": "SD",
-  "department": "{{departmentId}}"
-}
-
-### Get position by ID
-GET {{baseUrl}}/api/positions/{{positionId}}
-Cookie: token={{token}}
-
-### Update position
-PUT {{baseUrl}}/api/positions/{{positionId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "title": "Senior Software Developer"
-}
-
-### Delete position
-DELETE {{baseUrl}}/api/positions/{{positionId}}
-Cookie: token={{token}}
-
-### ===========================================
-### REPORT ROUTES - /api/reports
-### ===========================================
-
-### Get all reports
+### Get All Reports
 GET {{baseUrl}}/api/reports
 Cookie: token={{token}}
 
-### Create report
+### Create Report
 POST {{baseUrl}}/api/reports
 Cookie: token={{token}}
 Content-Type: application/json
@@ -655,320 +242,79 @@ Content-Type: application/json
 {
   "name": "Monthly Attendance Report",
   "reportType": "attendance",
-  "fields": ["employee", "date", "status"],
-  "filters": []
-}
-
-### Get report by ID
-GET {{baseUrl}}/api/reports/{{reportId}}
-Cookie: token={{token}}
-
-### Execute report
-POST {{baseUrl}}/api/reports/{{reportId}}/execute
-Cookie: token={{token}}
-
-### Get report executions
-GET {{baseUrl}}/api/reports/{{reportId}}/executions
-Cookie: token={{token}}
-
-### Export report
-GET {{baseUrl}}/api/reports/{{reportId}}/export?format=csv
-Cookie: token={{token}}
-
-### Update report
-PUT {{baseUrl}}/api/reports/{{reportId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "name": "Updated Report Name"
-}
-
-### Delete report
-DELETE {{baseUrl}}/api/reports/{{reportId}}
-Cookie: token={{token}}
-
-### ===========================================
-### REQUEST ROUTES - /api/requests
-### ===========================================
-
-### Get all requests
-GET {{baseUrl}}/api/requests
-Cookie: token={{token}}
-
-### Create request
-POST {{baseUrl}}/api/requests
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "requestType": "vacation",
-  "details": "Vacation request details"
-}
-
-### Get request by ID
-GET {{baseUrl}}/api/requests/{{requestId}}
-Cookie: token={{token}}
-
-### Delete request
-DELETE {{baseUrl}}/api/requests/{{requestId}}
-Cookie: token={{token}}
-
-### ===========================================
-### RESIGNED EMPLOYEE ROUTES - /api/resigned-employees
-### ===========================================
-
-### Get all resigned employees
-GET {{baseUrl}}/api/resigned-employees
-Cookie: token={{token}}
-
-### Create resigned employee record
-POST {{baseUrl}}/api/resigned-employees
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "employee": "{{employeeId}}",
-  "resignationType": "resignation",
-  "effectiveDate": "2025-02-28",
-  "reason": "Personal reasons"
-}
-
-### Get resigned employee by ID
-GET {{baseUrl}}/api/resigned-employees/{{resignedId}}
-Cookie: token={{token}}
-
-### Generate letter
-GET {{baseUrl}}/api/resigned-employees/{{resignedId}}/letter
-Cookie: token={{token}}
-
-### Update resigned employee
-PUT {{baseUrl}}/api/resigned-employees/{{resignedId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "penalties": {
-    "totalAmount": 1000
+  "dateRange": {
+    "startDate": "2024-01-01",
+    "endDate": "2024-01-31"
   }
 }
 
-### Delete resigned employee
-DELETE {{baseUrl}}/api/resigned-employees/{{resignedId}}
+### Execute Report
+POST {{baseUrl}}/api/reports/report-id-here/execute
 Cookie: token={{token}}
 
-### ===========================================
-### SCHOOL ROUTES - /api/schools
-### ===========================================
+### ============================================
+### SCHOOL ROUTES
+### ============================================
 
-### Get all schools
+### Get All Schools
 GET {{baseUrl}}/api/schools
 Cookie: token={{token}}
 
-### Create school (Admin)
+### Create School
 POST {{baseUrl}}/api/schools
 Cookie: token={{token}}
 Content-Type: application/json
 
 {
   "name": "Main Campus",
-  "code": "MC",
-  "address": "123 Main St"
+  "schoolCode": "MC-001",
+  "arabicName": "الحرم الرئيسي"
 }
 
-### Get school by ID
-GET {{baseUrl}}/api/schools/{{schoolId}}
+### ============================================
+### HOLIDAY ROUTES
+### ============================================
+
+### Get Holidays
+GET {{baseUrl}}/api/holidays
 Cookie: token={{token}}
 
-### Update school
-PUT {{baseUrl}}/api/schools/{{schoolId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "name": "Main Campus - Updated"
-}
-
-### Delete school
-DELETE {{baseUrl}}/api/schools/{{schoolId}}
+### Fetch Suggestions
+GET {{baseUrl}}/api/holidays/suggestions?year=2024&country=EG
 Cookie: token={{token}}
 
-### ===========================================
-### SECURITY SETTINGS ROUTES - /api/security/settings
-### ===========================================
+### ============================================
+### BACKUP ROUTES
+### ============================================
 
-### Get security settings
-GET {{baseUrl}}/api/security/settings/{{campusId}}
+### Get All Backups
+GET {{baseUrl}}/api/backups
 Cookie: token={{token}}
 
-### Update security settings
-PUT {{baseUrl}}/api/security/settings/{{campusId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "twoFactorAuth": {
-    "enabled": true,
-    "required": false
-  },
-  "passwordSecurity": {
-    "minLength": 8,
-    "requireUppercase": true,
-    "requireNumbers": true,
-    "requireSpecialChars": true
-  }
-}
-
-### Get IP whitelist
-GET {{baseUrl}}/api/security/settings/{{campusId}}/ip-whitelist
+### Execute Backup
+POST {{baseUrl}}/api/backups/backup-id-here/execute
 Cookie: token={{token}}
 
-### Add IP to whitelist
-POST {{baseUrl}}/api/security/settings/{{campusId}}/ip-whitelist
-Cookie: token={{token}}
-Content-Type: application/json
+### ============================================
+### SECURITY AUDIT ROUTES
+### ============================================
 
-{
-  "ipAddress": "192.168.1.100",
-  "description": "Office IP"
-}
-
-### Remove IP from whitelist
-DELETE {{baseUrl}}/api/security/settings/{{campusId}}/ip-whitelist/{{ipId}}
+### Get Failed Logins
+GET {{baseUrl}}/api/security/audit/failed-logins?userId={{userId}}
 Cookie: token={{token}}
 
-### ===========================================
-### SECURITY AUDIT ROUTES - /api/security/audit
-### ===========================================
-
-### Get audit logs
-GET {{baseUrl}}/api/security/audit?page=1&limit=50
+### Get User Activity
+GET {{baseUrl}}/api/security/audit/user-activity/{{userId}}
 Cookie: token={{token}}
 
-### Get audit log by ID
-GET {{baseUrl}}/api/security/audit/{{auditId}}
+### ============================================
+### ANALYTICS ROUTES
+### ============================================
+
+### Get Dashboard Stats
+GET {{baseUrl}}/api/analytics/dashboard
 Cookie: token={{token}}
 
-### Get user audit trail
-GET {{baseUrl}}/api/security/audit/user/{{userId}}
+### Get Attendance Analytics
+GET {{baseUrl}}/api/analytics/attendance?startDate=2024-01-01&endDate=2024-01-31
 Cookie: token={{token}}
-
-### Get failed login attempts
-GET {{baseUrl}}/api/security/audit/failed-logins
-Cookie: token={{token}}
-
-### Export audit logs
-GET {{baseUrl}}/api/security/audit/export?format=csv&startDate=2025-01-01&endDate=2025-01-31
-Cookie: token={{token}}
-
-### ===========================================
-### SURVEY ROUTES - /api/surveys
-### ===========================================
-
-### Get all surveys (HR/Admin)
-GET {{baseUrl}}/api/surveys
-Cookie: token={{token}}
-
-### Get employee's assigned surveys
-GET {{baseUrl}}/api/surveys/my-surveys
-Cookie: token={{token}}
-
-### Get survey by ID
-GET {{baseUrl}}/api/surveys/{{surveyId}}
-Cookie: token={{token}}
-
-### Create survey (HR/Admin)
-POST {{baseUrl}}/api/surveys
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "title": "Employee Satisfaction Survey 2025",
-  "description": "Annual satisfaction survey",
-  "surveyType": "satisfaction",
-  "questions": [
-    {
-      "questionText": "How satisfied are you with your work environment?",
-      "questionType": "rating",
-      "ratingScale": { "min": 1, "max": 5 },
-      "required": true
-    },
-    {
-      "questionText": "What do you like most about working here?",
-      "questionType": "textarea",
-      "required": true
-    }
-  ],
-  "settings": {
-    "isMandatory": false,
-    "allowAnonymous": true,
-    "endDate": "2025-12-31"
-  },
-  "assignedTo": {
-    "allEmployees": true
-  }
-}
-
-### Update survey
-PUT {{baseUrl}}/api/surveys/{{surveyId}}
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "title": "Updated Survey Title"
-}
-
-### Delete survey
-DELETE {{baseUrl}}/api/surveys/{{surveyId}}
-Cookie: token={{token}}
-
-### Publish survey
-POST {{baseUrl}}/api/surveys/{{surveyId}}/publish
-Cookie: token={{token}}
-
-### Close survey
-POST {{baseUrl}}/api/surveys/{{surveyId}}/close
-Cookie: token={{token}}
-
-### Send reminders
-POST {{baseUrl}}/api/surveys/{{surveyId}}/send-reminders
-Cookie: token={{token}}
-
-### Submit survey response (Employee)
-POST {{baseUrl}}/api/surveys/{{surveyId}}/respond
-Cookie: token={{token}}
-Content-Type: application/json
-
-{
-  "isAnonymous": false,
-  "answers": [
-    {
-      "questionId": "{{questionId1}}",
-      "answer": 4
-    },
-    {
-      "questionId": "{{questionId2}}",
-      "answer": "Great work environment and supportive team"
-    }
-  ]
-}
-
-### Get survey statistics
-GET {{baseUrl}}/api/surveys/{{surveyId}}/statistics
-Cookie: token={{token}}
-
-### Export survey responses
-GET {{baseUrl}}/api/surveys/{{surveyId}}/export?format=csv
-Cookie: token={{token}}
-
-### Get survey notifications
-GET {{baseUrl}}/api/surveys/notifications/me
-Cookie: token={{token}}
-
-### Mark notification as read
-PUT {{baseUrl}}/api/surveys/notifications/{{notificationId}}/read
-Cookie: token={{token}}
-
-### ===========================================
-### END OF TESTS
-### ===========================================
