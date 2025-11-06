@@ -21,8 +21,7 @@ const attendanceSchema = new mongoose.Schema({
     },
     date: {
         type: Date,
-        required: true,
-        index: true
+        required: true
     },
     // Scheduled work times
     schedule: {
@@ -137,8 +136,7 @@ const attendanceSchema = new mongoose.Schema({
             'forgot-check-in',   // Forgot to check in
             'forgot-check-out'   // Forgot to check out
         ],
-        default: 'absent',
-        index: true
+        default: 'absent'
     },
     // Leave reference (if on vacation/sick leave/mission)
     leave: {
@@ -522,7 +520,6 @@ attendanceSchema.index({ employee: 1, date: 1 }, { unique: true });
 attendanceSchema.index({ employee: 1, status: 1 });
 attendanceSchema.index({ department: 1, date: 1 });
 attendanceSchema.index({ department: 1, status: 1 });
-attendanceSchema.index({ status: 1 });
 attendanceSchema.index({ date: 1 });
 attendanceSchema.index({ adjustedByPermission: 1 });
 attendanceSchema.index({ 'flags.isLate': 1 });

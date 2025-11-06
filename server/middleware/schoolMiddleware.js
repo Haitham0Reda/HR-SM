@@ -10,17 +10,17 @@ import mongoose from 'mongoose';
  */
 export const validateSchoolCode = (req, res, next) => {
     const validCodes = ['BUS', 'ENG', 'CS'];
-    
+
     if (req.body.schoolCode) {
         const code = req.body.schoolCode.toUpperCase();
-        
+
         if (!validCodes.includes(code)) {
             return res.status(400).json({
                 success: false,
                 message: `School code must be one of: ${validCodes.join(', ')}`
             });
         }
-        
+
         req.body.schoolCode = code; // Ensure uppercase
     }
     next();
@@ -44,12 +44,12 @@ export const validateSchoolNameMatch = (req, res, next) => {
 
     if (req.body.schoolCode) {
         const code = req.body.schoolCode.toUpperCase();
-        
+
         // Auto-set name if not provided
         if (!req.body.name) {
             req.body.name = schoolMapping[code];
         }
-        
+
         // Auto-set Arabic name if not provided
         if (!req.body.arabicName) {
             req.body.arabicName = arabicMapping[code];
@@ -134,9 +134,9 @@ export const validateSchoolDeletion = async (req, res, next) => {
     try {
         const School = mongoose.model('School');
         const Department = mongoose.model('Department');
-        
+
         const school = await School.findById(req.params.id);
-        
+
         if (!school) {
             return res.status(404).json({
                 success: false,
@@ -144,9 +144,9 @@ export const validateSchoolDeletion = async (req, res, next) => {
             });
         }
 
-        const departmentCount = await Department.countDocuments({ 
+        const departmentCount = await Department.countDocuments({
             school: req.params.id,
-            isActive: true 
+            isActive: true
         });
 
         if (departmentCount > 0) {

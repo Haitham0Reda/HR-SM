@@ -30,7 +30,4 @@ const departmentSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Add index for code (unique)
-departmentSchema.index({ code: 1 }, { unique: true });
-
 export default mongoose.model('Department', departmentSchema);

@@ -69,8 +69,7 @@ const idCardBatchSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['pending', 'queued', 'processing', 'completed', 'failed', 'cancelled', 'partially-completed'],
-        default: 'pending',
-        index: true
+        default: 'pending'
     },
 
     // Processing information

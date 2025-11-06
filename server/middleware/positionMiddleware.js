@@ -73,9 +73,9 @@ export const validatePositionDeletion = async (req, res, next) => {
     try {
         const Position = mongoose.model('Position');
         const User = mongoose.model('User');
-        
+
         const position = await Position.findById(req.params.id);
-        
+
         if (!position) {
             return res.status(404).json({
                 success: false,
@@ -83,9 +83,9 @@ export const validatePositionDeletion = async (req, res, next) => {
             });
         }
 
-        const usersWithPosition = await User.countDocuments({ 
+        const usersWithPosition = await User.countDocuments({
             position: req.params.id,
-            isActive: true 
+            isActive: true
         });
 
         if (usersWithPosition > 0) {

@@ -12,12 +12,15 @@ const sanitizeUser = (user) => {
 
 // Helper: validate user input based on model
 const validateUserInput = (data, isUpdate = false) => {
+    const validRoles = ['employee', 'admin', 'hr', 'manager', 'id-card-admin', 'supervisor', 'head-of-department', 'dean'];
+
     if (!isUpdate) {
         if (!data.username || typeof data.username !== 'string') return 'Username is required.';
         if (!data.email || typeof data.email !== 'string') return 'Email is required.';
         if (!data.password || typeof data.password !== 'string') return 'Password is required.';
+        if (!data.school) return 'School is required.';
     }
-    if (data.role && !['employee', 'manager', 'admin', 'hr'].includes(data.role)) return 'Invalid role.';
+    if (data.role && !validRoles.includes(data.role)) return 'Invalid role.';
     if (data.profile) {
         if (data.profile.gender && !['male', 'female'].includes(data.profile.gender)) return 'Invalid gender.';
         if (data.profile.maritalStatus && !['single', 'married', 'divorced', 'widowed'].includes(data.profile.maritalStatus)) return 'Invalid marital status.';
@@ -31,7 +34,7 @@ const validateUserInput = (data, isUpdate = false) => {
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find().populate('department position');
+        const users = await User.find().populate('department position school');
         res.json(users.map(sanitizeUser));
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -40,7 +43,7 @@ export const getAllUsers = async (req, res) => {
 
 export const getUserById = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id).populate('department position');
+        const user = await User.findById(req.params.id).populate('department position school');
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(sanitizeUser(user));
     } catch (err) {
@@ -57,7 +60,7 @@ export const createUser = async (req, res) => {
         if (existing) return res.status(409).json({ error: 'Username or email already exists' });
         const user = new User(req.body);
         await user.save();
-        await user.populate('department position');
+        await user.populate('department position school');
         res.status(201).json(sanitizeUser(user));
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -79,7 +82,7 @@ export const updateUser = async (req, res) => {
             });
             if (conflict) return res.status(409).json({ error: 'Username or email already exists' });
         }
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('department position');
+        const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('department position school');
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(sanitizeUser(user));
     } catch (err) {
@@ -104,16 +107,21 @@ export const loginUser = async (req, res) => {
         return res.status(400).json({ error: 'Email, password, and role are required.' });
     }
     try {
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).populate('department position school');
         if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
         // Check role
         if (user.role !== role) {
             return res.status(403).json({ error: 'Role mismatch or not authorized.' });
         }
-        // Compare password (plain or hashed)
-        const isMatch = user.password === password || (await bcrypt.compare(password, user.password));
+        // Compare password using model method
+        const isMatch = await user.matchPassword(password);
         if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
-        // Generate JWT token (optional, for session)
+
+        // Update last login
+        user.lastLogin = new Date();
+        await user.save();
+
+        // Generate JWT token
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
         res.json({ user: sanitizeUser(user), token });
     } catch (err) {

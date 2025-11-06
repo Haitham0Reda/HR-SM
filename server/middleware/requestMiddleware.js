@@ -11,7 +11,7 @@ import mongoose from 'mongoose';
  */
 export const validateRequestType = (req, res, next) => {
     const validTypes = ['permission', 'overtime', 'sick-leave', 'mission', 'day-swap'];
-    
+
     if (req.body.type && !validTypes.includes(req.body.type)) {
         return res.status(400).json({
             success: false,

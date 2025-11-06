@@ -88,7 +88,7 @@
  *     - checkEmailUnique, checkUsernameUnique
  *     - validateHireDate, validateDateOfBirth
  *     - validatePhoneNumber, validateNationalID
- *     - hashPassword
+ *     - validatePassword
  * 
  * 14. NOTIFICATION (notificationMiddleware.js)
  *     - validateNotificationRecipient, validateBulkNotification
@@ -134,7 +134,44 @@
  *     - validateSurveyQuestions, setSurveyCreatedBy
  *     - validateSurveyResponse, checkDuplicateResponse
  * 
- * 24. ERROR HANDLING (errorMiddleware.js)
+ * 24. PERMISSION CHECK (permissionCheckMiddleware.js)
+ *     - checkPermission, canViewReports, canManagePermissions
+ *     - canManageRoles, canViewConfidential, canApproveLeaves
+ *     - canManagePayroll, canPrintIDCards, canManageBatches
+ *     - canViewAudit, canManageSettings, canManageSecurity
+ *     - attachUserPermissions, checkOwnership, resourcePermission
+ * 
+ * 25. RESIGNED EMPLOYEE (resignedEmployeeMiddleware.js)
+ *     - validateResignationDates, validatePenalty
+ *     - checkCanModify, validateEmployee, validateResignationType
+ * 
+ * 26. SECURITY (securityMiddleware.js)
+ *     - checkIPWhitelist, checkDevelopmentMode, checkAccountLocked
+ *     - checkPasswordExpiration, require2FA, validatePasswordStrength
+ *     - checkPasswordHistory, logSecurityEvent, validateSecuritySettings
+ *     - validateIPAddress
+ * 
+ * 27. REPORT (reportMiddleware.js)
+ *     - validateReportFields, validateReportFilters, validateReportSchedule
+ *     - validateVisualization, validateExportSettings, validateReportType
+ *     - checkReportAccess
+ * 
+ * 28. HOLIDAY (holidayMiddleware.js)
+ *     - validateDateFormat, validateCampus, validateHolidayData
+ *     - validateWeekendWorkDay, validateSuggestions, validateYear
+ *     - validateCountryCode
+ * 
+ * 29. BACKUP (backupMiddleware.js)
+ *     - validateBackupType, validateBackupSchedule, validateEncryption
+ *     - validateCompression, validateRetention, validateNotification
+ *     - validateSources, validateStorage
+ * 
+ * 30. MIXED VACATION (mixedVacationMiddleware.js)
+ *     - validateDateRange, validateTotalDays, validateDeductionStrategy
+ *     - validateApplicableScope, validateEmployeeId, validatePolicyStatus
+ *     - checkPolicyExists, checkEmployeeExists
+ * 
+ * 31. ERROR HANDLING (errorMiddleware.js)
  *     - notFound, errorHandler
  */
 
@@ -206,6 +243,24 @@ export * from './schoolMiddleware.js';
 
 // Survey
 export * from './surveyMiddleware.js';
+
+// Permission Check
+export * from './permissionCheckMiddleware.js';
+
+// Resigned Employee
+export * from './resignedEmployeeMiddleware.js';
+
+// Security
+export * from './securityMiddleware.js';
+
+// Holiday
+export * from './holidayMiddleware.js';
+
+// Backup
+export * from './backupMiddleware.js';
+
+// Mixed Vacation
+export * from './mixedVacationMiddleware.js';
 
 // Error Handling
 export * from './errorMiddleware.js';

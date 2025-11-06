@@ -3,7 +3,9 @@ import DocumentTemplate from '../models/documentTemplate.model.js';
 
 export const getAllDocumentTemplates = async (req, res) => {
     try {
-        const templates = await DocumentTemplate.find();
+        const templates = await DocumentTemplate.find({ isActive: true })
+            .populate('createdBy', 'username email')
+            .sort({ createdAt: -1 });
         res.json(templates);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -22,7 +24,8 @@ export const createDocumentTemplate = async (req, res) => {
 
 export const getDocumentTemplateById = async (req, res) => {
     try {
-        const template = await DocumentTemplate.findById(req.params.id);
+        const template = await DocumentTemplate.findById(req.params.id)
+            .populate('createdBy', 'username email');
         if (!template) return res.status(404).json({ error: 'Document Template not found' });
         res.json(template);
     } catch (err) {

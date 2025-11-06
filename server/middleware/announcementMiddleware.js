@@ -71,9 +71,9 @@ export const createAnnouncementNotifications = async (announcement) => {
             const allUsers = await User.find({ isActive: true }).select('_id');
             recipients = allUsers.map(u => u._id);
         } else if (announcement.targetAudience === 'department') {
-            const deptUsers = await User.find({ 
+            const deptUsers = await User.find({
                 department: { $in: announcement.departments },
-                isActive: true 
+                isActive: true
             }).select('_id');
             recipients = deptUsers.map(u => u._id);
         } else if (announcement.targetAudience === 'specific') {

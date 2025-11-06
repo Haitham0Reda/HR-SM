@@ -3,7 +3,8 @@ import Position from '../models/position.model.js';
 
 export const getAllPositions = async (req, res) => {
     try {
-        const positions = await Position.find();
+        const positions = await Position.find()
+            .populate('department', 'name code');
         res.json(positions);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -22,7 +23,9 @@ export const createPosition = async (req, res) => {
 
 export const getPositionById = async (req, res) => {
     try {
-        const position = await Position.findById(req.params.id);
+        const position = await Position.findById(req.params.id)
+            .populate('department', 'name code school')
+            .populate('department.school', 'name schoolCode');
         if (!position) return res.status(404).json({ error: 'Position not found' });
         res.json(position);
     } catch (err) {
@@ -32,7 +35,8 @@ export const getPositionById = async (req, res) => {
 
 export const updatePosition = async (req, res) => {
     try {
-        const position = await Position.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const position = await Position.findByIdAndUpdate(req.params.id, req.body, { new: true })
+            .populate('department', 'name code');
         if (!position) return res.status(404).json({ error: 'Position not found' });
         res.json(position);
     } catch (err) {

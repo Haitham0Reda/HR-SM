@@ -4,7 +4,8 @@ import {
     createUser,
     getUserById,
     updateUser,
-    deleteUser
+    deleteUser,
+    loginUser
 } from '../controller/user.controller.js';
 import {
     protect,
@@ -15,10 +16,13 @@ import {
     validateDateOfBirth,
     validatePhoneNumber,
     validateNationalID,
-    hashPassword
+    validatePassword
 } from '../middleware/index.js';
 
 const router = express.Router();
+
+// Login route - Public (no auth required)
+router.post('/login', loginUser);
 
 // Get all users - Protected, all authenticated users can view
 router.get('/', protect, getAllUsers);
@@ -33,7 +37,7 @@ router.post('/',
     validateDateOfBirth,
     validatePhoneNumber,
     validateNationalID,
-    hashPassword,
+    validatePassword,
     createUser
 );
 

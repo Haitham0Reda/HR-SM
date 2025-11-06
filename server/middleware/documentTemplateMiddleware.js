@@ -9,7 +9,7 @@
  */
 export const validateTemplateFileType = (req, res, next) => {
     const allowedTypes = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'txt'];
-    
+
     if (req.body.fileType && !allowedTypes.includes(req.body.fileType.toLowerCase())) {
         return res.status(400).json({
             success: false,
