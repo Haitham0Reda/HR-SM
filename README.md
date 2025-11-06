@@ -165,32 +165,80 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 
 ## Testing
 
-The application includes comprehensive testing suites:
+This project uses Jest for testing with comprehensive coverage reports.
 
-### Server Testing
-```bash
-# Run basic route tests
-npm run test:routes
+### Running Tests
 
-# Run authenticated route tests
-npm run test:auth
-
-# Run comprehensive tests with detailed reporting
-npm run test:comprehensive
-
-# Run all tests and generate organized reports
-npm run test:all
 ```
-
-### Client Testing
-```bash
-cd client
+# Run all tests
 npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run specific test categories
+npm run test:models
+npm run test:controllers
+npm run test:middleware
+npm run test:routes
 ```
 
-For detailed testing documentation, see:
-- [Server Testing Documentation](server/testing/README.md)
-- [API Test Results](API_TEST_RESULTS_FULL.md)
+### Test Reports
+
+```
+# Generate comprehensive test report
+npm run test:report
+```
+
+### Creating New Tests
+
+To create new test files, you can use the test template generator:
+
+```
+# Generate a test template for a controller
+node scripts/generate-test-template.js controller user.controller.js
+
+# Generate a test template for a model
+node scripts/generate-test-template.js model user.model.js
+
+# Generate a test template for middleware
+node scripts/generate-test-template.js middleware authMiddleware.js
+
+# Generate a test template for routes
+node scripts/generate-test-template.js route user.routes.js
+
+# Generate a test for a specific component (simpler interface)
+node scripts/generate-component-tests.js model user
+node scripts/generate-component-tests.js controller department
+```
+
+### Coverage Goals
+
+Current Coverage Statistics:
+- Statements: 18.91% (399/2109)
+- Branches: 5.92% (87/1468)
+- Functions: 11.74% (29/247)
+- Lines: 19.26% (395/2050)
+
+Goal: 100% coverage across all components
+
+Refer to \`Missing_Test_Files_Report.md\` for a detailed list of files that need tests to achieve 100% coverage.
+
+### Test Structure
+
+Tests are organized in the \`__tests__\` directory following the same structure as the source code:
+
+\`\`\`
+__tests__/
+├── controllers/
+├── middleware/
+├── models/
+└── routes/
+```
+
 
 ## API Documentation
 
