@@ -5,7 +5,8 @@ import {
     getUserById,
     updateUser,
     deleteUser,
-    loginUser
+    loginUser,
+    getUserProfile
 } from '../controller/user.controller.js';
 import {
     protect,
@@ -23,6 +24,9 @@ const router = express.Router();
 
 // Login route - Public (no auth required)
 router.post('/login', loginUser);
+
+// Get current user profile - Protected
+router.get('/profile', protect, getUserProfile);
 
 // Get all users - Protected, all authenticated users can view
 router.get('/', protect, getAllUsers);

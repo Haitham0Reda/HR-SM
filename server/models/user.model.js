@@ -6,7 +6,7 @@ import { getRolePermissions } from './permission.system.js';
 const userSchema = new mongoose.Schema({
     employeeId: {
         type: String,
-        required: true,
+        required: false,
         unique: true
     },
     username: {
@@ -158,6 +158,18 @@ userSchema.methods.getEffectivePermissions = async function () {
 userSchema.methods.hasPermission = async function (permission) {
     const effectivePermissions = await this.getEffectivePermissions();
     return effectivePermissions.includes(permission);
+};
+
+// Method to check if user has any of the specified permissions
+userSchema.methods.hasAnyPermission = async function (permissions) {
+    const effectivePermissions = await this.getEffectivePermissions();
+    return permissions.some(permission => effectivePermissions.includes(permission));
+};
+
+// Method to check if user has all of the specified permissions
+userSchema.methods.hasAllPermissions = async function (permissions) {
+    const effectivePermissions = await this.getEffectivePermissions();
+    return permissions.every(permission => effectivePermissions.includes(permission));
 };
 
 export default mongoose.model('User', userSchema);
