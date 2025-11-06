@@ -205,8 +205,8 @@ async function testUserRoutes() {
     // Get all users
     const response = await makeRequest('GET', '/api/users', null, true, true, null, category);
     
-    // Get user profile (current user) - This is expected to fail in the original implementation
-    await makeRequest('GET', '/api/users/profile', null, true, false, 'Profile route not implemented correctly in original code', category);
+    // Get user profile (current user) - Now implemented
+    await makeRequest('GET', '/api/users/profile', null, true, true, null, category);
     
     // Test individual user routes if we have users
     if (response.data && Array.isArray(response.data) && response.data.length > 0) {
@@ -216,13 +216,9 @@ async function testUserRoutes() {
         }
     }
     
-    // Test registration (public route)
-    await makeRequest('POST', '/api/users/register', {
-        username: 'testuser_' + Date.now(),
-        email: `test${Date.now()}@example.com`,
-        password: 'Test123!@#',
-        role: 'employee'
-    }, false, false, 'Skipping registration to avoid DB pollution', category);
+    // Test registration (public route) - Skipping to avoid database pollution
+    // User creation requires admin privileges and modifies the database
+    await makeRequest('POST', '/api/users', null, false, false, 'Skipping user creation to avoid DB pollution and admin requirement', category);
 }
 
 async function testSchoolRoutes() {
@@ -287,7 +283,8 @@ async function testPermissionRoutes() {
     const category = 'Permission';
     log(`\n${colors.magenta}[${category.toUpperCase()} ROUTES]${colors.reset}`, colors.bold);
     
-    await makeRequest('GET', '/api/permissions', null, true, true, null, category);
+    // Updated to match the actual API route
+    await makeRequest('GET', '/api/permissions/all', null, true, true, null, category);
 }
 
 async function testPayrollRoutes() {
@@ -322,7 +319,8 @@ async function testHolidayRoutes() {
     const category = 'Holiday';
     log(`\n${colors.magenta}[${category.toUpperCase()} ROUTES]${colors.reset}`, colors.bold);
     
-    await makeRequest('GET', '/api/holidays', null, true, true, null, category);
+    // Updated to match the actual API route - using a valid campus ID
+    await makeRequest('GET', '/api/holidays/campus/690cf989cbd3868d88952f83', null, true, true, null, category);
 }
 
 async function testNotificationRoutes() {
@@ -357,7 +355,8 @@ async function testAnalyticsRoutes() {
     const category = 'Analytics';
     log(`\n${colors.magenta}[${category.toUpperCase()} ROUTES]${colors.reset}`, colors.bold);
     
-    await makeRequest('GET', '/api/analytics/hr-dashboard', null, true, true, null, category);
+    // Updated to match the actual API route
+    await makeRequest('GET', '/api/analytics/dashboard', null, true, true, null, category);
 }
 
 async function testMixedVacationRoutes() {

@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="18" failures="11" errors="0" time="3.235">
+  <testsuite name="PermissionAudit Model" errors="0" failures="0" skipped="0" timestamp="2025-11-06T22:30:46" time="1.992" tests="3">
+    <testcase classname="PermissionAudit Model should create a permission audit record with required fields" name="PermissionAudit Model should create a permission audit record with required fields" time="0.094">
+    </testcase>
+    <testcase classname="PermissionAudit Model should fail to create audit record without required fields" name="PermissionAudit Model should fail to create audit record without required fields" time="0.008">
+    </testcase>
+    <testcase classname="PermissionAudit Model should only allow valid actions" name="PermissionAudit Model should only allow valid actions" time="0.011">
+    </testcase>
+  </testsuite>
+  <testsuite name="User Model" errors="0" failures="0" skipped="0" timestamp="2025-11-06T22:30:46" time="2.178" tests="3">
+    <testcase classname="User Model should create a user with required fields" name="User Model should create a user with required fields" time="0.161">
+    </testcase>
+    <testcase classname="User Model should hash the password before saving" name="User Model should hash the password before saving" time="0.152">
+    </testcase>
+    <testcase classname="User Model should fail to create user without required fields" name="User Model should fail to create user without required fields" time="0.006">
+    </testcase>
+  </testsuite>
+  <testsuite name="User Controller" errors="0" failures="3" skipped="0" timestamp="2025-11-06T22:30:46" time="2.446" tests="3">
+    <testcase classname="User Controller loginUser should login user with valid credentials" name="User Controller loginUser should login user with valid credentials" time="0.166">
+      <failure>Error: expected 200 &quot;OK&quot;, got 400 &quot;Bad Request&quot;
+    at Object.expect (D:\work\HR-SM\__tests__\controllers\user.controller.test.js:66:10)
+    at Promise.finally.completed (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1497:10)
+    at _callCircusTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1007:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:947:3)
+    at D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at run (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1918:21)
+    at jestAdapter (D:\work\HR-SM\node_modules\jest-circus\build\runner.js:101:19)
+    at runTestInternal (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:497:12)
+----
+    at Test._assertStatus (D:\work\HR-SM\node_modules\supertest\lib\test.js:309:14)
+    at D:\work\HR-SM\node_modules\supertest\lib\test.js:365:13
+    at Test._assertFunction (D:\work\HR-SM\node_modules\supertest\lib\test.js:342:13)
+    at Test.assert (D:\work\HR-SM\node_modules\supertest\lib\test.js:195:23)
+    at localAssert (D:\work\HR-SM\node_modules\supertest\lib\test.js:138:14)
+    at Server.&lt;anonymous&gt; (D:\work\HR-SM\node_modules\supertest\lib\test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at emitCloseNT (node:net:2376:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="User Controller loginUser should reject login with invalid credentials" name="User Controller loginUser should reject login with invalid credentials" time="0.095">
+      <failure>Error: expected 401 &quot;Unauthorized&quot;, got 400 &quot;Bad Request&quot;
+    at Object.expect (D:\work\HR-SM\__tests__\controllers\user.controller.test.js:83:10)
+    at Promise.finally.completed (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1497:10)
+    at _callCircusTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1007:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:947:3)
+    at D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at run (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1918:21)
+    at jestAdapter (D:\work\HR-SM\node_modules\jest-circus\build\runner.js:101:19)
+    at runTestInternal (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:497:12)
+----
+    at Test._assertStatus (D:\work\HR-SM\node_modules\supertest\lib\test.js:309:14)
+    at D:\work\HR-SM\node_modules\supertest\lib\test.js:365:13
+    at Test._assertFunction (D:\work\HR-SM\node_modules\supertest\lib\test.js:342:13)
+    at Test.assert (D:\work\HR-SM\node_modules\supertest\lib\test.js:195:23)
+    at localAssert (D:\work\HR-SM\node_modules\supertest\lib\test.js:138:14)
+    at Server.&lt;anonymous&gt; (D:\work\HR-SM\node_modules\supertest\lib\test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at emitCloseNT (node:net:2376:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="User Controller getUserProfile should get user profile when authenticated" name="User Controller getUserProfile should get user profile when authenticated" time="0.091">
+      <failure>Error: expected 200 &quot;OK&quot;, got 500 &quot;Internal Server Error&quot;
+    at Object.expect (D:\work\HR-SM\__tests__\controllers\user.controller.test.js:117:10)
+    at Promise.finally.completed (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1497:10)
+    at _callCircusTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1007:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:947:3)
+    at D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at run (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1918:21)
+    at jestAdapter (D:\work\HR-SM\node_modules\jest-circus\build\runner.js:101:19)
+    at runTestInternal (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:497:12)
+----
+    at Test._assertStatus (D:\work\HR-SM\node_modules\supertest\lib\test.js:309:14)
+    at D:\work\HR-SM\node_modules\supertest\lib\test.js:365:13
+    at Test._assertFunction (D:\work\HR-SM\node_modules\supertest\lib\test.js:342:13)
+    at Test.assert (D:\work\HR-SM\node_modules\supertest\lib\test.js:195:23)
+    at localAssert (D:\work\HR-SM\node_modules\supertest\lib\test.js:138:14)
+    at Server.&lt;anonymous&gt; (D:\work\HR-SM\node_modules\supertest\lib\test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at emitCloseNT (node:net:2376:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Auth Middleware" errors="0" failures="5" skipped="0" timestamp="2025-11-06T22:30:46" time="2.483" tests="5">
+    <testcase classname="Auth Middleware protect middleware should deny access when no token is provided" name="Auth Middleware protect middleware should deny access when no token is provided" time="0.159">
+      <failure>ReferenceError: jest is not defined
+    at Object.jest (D:\work\HR-SM\__tests__\middleware\auth.middleware.test.js:45:17)
+    at Promise.finally.completed (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1497:10)
+    at _callCircusTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1007:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:947:3)
+    at D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at run (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1918:21)
+    at jestAdapter (D:\work\HR-SM\node_modules\jest-circus\build\runner.js:101:19)
+    at runTestInternal (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:497:12)</failure>
+    </testcase>
+    <testcase classname="Auth Middleware protect middleware should deny access when invalid token is provided" name="Auth Middleware protect middleware should deny access when invalid token is provided" time="0.08">
+      <failure>ReferenceError: jest is not defined
+    at Object.jest (D:\work\HR-SM\__tests__\middleware\auth.middleware.test.js:64:17)
+    at Promise.finally.completed (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1497:10)
+    at _callCircusTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1007:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:947:3)
+    at D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at run (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1918:21)
+    at jestAdapter (D:\work\HR-SM\node_modules\jest-circus\build\runner.js:101:19)
+    at runTestInternal (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:497:12)</failure>
+    </testcase>
+    <testcase classname="Auth Middleware protect middleware should allow access when valid token is provided" name="Auth Middleware protect middleware should allow access when valid token is provided" time="0.084">
+      <failure>ReferenceError: jest is not defined
+    at Object.jest (D:\work\HR-SM\__tests__\middleware\auth.middleware.test.js:84:17)
+    at Promise.finally.completed (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1497:10)
+    at _callCircusTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1007:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:947:3)
+    at D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at run (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1918:21)
+    at jestAdapter (D:\work\HR-SM\node_modules\jest-circus\build\runner.js:101:19)
+    at runTestInternal (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:497:12)</failure>
+    </testcase>
+    <testcase classname="Auth Middleware admin middleware should deny access when user is not admin" name="Auth Middleware admin middleware should deny access when user is not admin" time="0.068">
+      <failure>ReferenceError: jest is not defined
+    at Object.jest (D:\work\HR-SM\__tests__\middleware\auth.middleware.test.js:101:17)
+    at Promise.finally.completed (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1497:10)
+    at _callCircusTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1007:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:947:3)
+    at D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at run (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1918:21)
+    at jestAdapter (D:\work\HR-SM\node_modules\jest-circus\build\runner.js:101:19)
+    at runTestInternal (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:497:12)</failure>
+    </testcase>
+    <testcase classname="Auth Middleware admin middleware should allow access when user is admin" name="Auth Middleware admin middleware should allow access when user is admin" time="0.145">
+      <failure>ReferenceError: jest is not defined
+    at Object.jest (D:\work\HR-SM\__tests__\middleware\auth.middleware.test.js:128:17)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="User Routes" errors="0" failures="3" skipped="0" timestamp="2025-11-06T22:30:46" time="2.482" tests="4">
+    <testcase classname="User Routes POST /login should login user with valid credentials" name="User Routes POST /login should login user with valid credentials" time="0.079">
+      <failure>Error: expected 200 &quot;OK&quot;, got 400 &quot;Bad Request&quot;
+    at Object.expect (D:\work\HR-SM\__tests__\routes\user.routes.test.js:62:10)
+    at Promise.finally.completed (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1497:10)
+    at _callCircusTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1007:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:947:3)
+    at D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at run (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1918:21)
+    at jestAdapter (D:\work\HR-SM\node_modules\jest-circus\build\runner.js:101:19)
+    at runTestInternal (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:497:12)
+----
+    at Test._assertStatus (D:\work\HR-SM\node_modules\supertest\lib\test.js:309:14)
+    at D:\work\HR-SM\node_modules\supertest\lib\test.js:365:13
+    at Test._assertFunction (D:\work\HR-SM\node_modules\supertest\lib\test.js:342:13)
+    at Test.assert (D:\work\HR-SM\node_modules\supertest\lib\test.js:195:23)
+    at localAssert (D:\work\HR-SM\node_modules\supertest\lib\test.js:138:14)
+    at Server.&lt;anonymous&gt; (D:\work\HR-SM\node_modules\supertest\lib\test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at emitCloseNT (node:net:2376:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="User Routes POST /login should reject login with invalid credentials" name="User Routes POST /login should reject login with invalid credentials" time="0.027">
+      <failure>Error: expected 401 &quot;Unauthorized&quot;, got 400 &quot;Bad Request&quot;
+    at Object.expect (D:\work\HR-SM\__tests__\routes\user.routes.test.js:79:10)
+    at Promise.finally.completed (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1497:10)
+    at _callCircusTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1007:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:947:3)
+    at D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at run (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1918:21)
+    at jestAdapter (D:\work\HR-SM\node_modules\jest-circus\build\runner.js:101:19)
+    at runTestInternal (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:497:12)
+----
+    at Test._assertStatus (D:\work\HR-SM\node_modules\supertest\lib\test.js:309:14)
+    at D:\work\HR-SM\node_modules\supertest\lib\test.js:365:13
+    at Test._assertFunction (D:\work\HR-SM\node_modules\supertest\lib\test.js:342:13)
+    at Test.assert (D:\work\HR-SM\node_modules\supertest\lib\test.js:195:23)
+    at localAssert (D:\work\HR-SM\node_modules\supertest\lib\test.js:138:14)
+    at Server.&lt;anonymous&gt; (D:\work\HR-SM\node_modules\supertest\lib\test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at emitCloseNT (node:net:2376:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="User Routes GET /profile should get user profile when authenticated" name="User Routes GET /profile should get user profile when authenticated" time="0.023">
+      <failure>Error: expected 200 &quot;OK&quot;, got 401 &quot;Unauthorized&quot;
+    at Object.expect (D:\work\HR-SM\__tests__\routes\user.routes.test.js:88:10)
+    at Promise.finally.completed (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1497:10)
+    at _callCircusTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1007:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:947:3)
+    at D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at _runTestsForDescribeBlock (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:857:11)
+    at run (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (D:\work\HR-SM\node_modules\jest-circus\build\jestAdapterInit.js:1918:21)
+    at jestAdapter (D:\work\HR-SM\node_modules\jest-circus\build\runner.js:101:19)
+    at runTestInternal (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:275:16)
+    at runTest (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:343:7)
+    at Object.worker (D:\work\HR-SM\node_modules\jest-runner\build\testWorker.js:497:12)
+----
+    at Test._assertStatus (D:\work\HR-SM\node_modules\supertest\lib\test.js:309:14)
+    at D:\work\HR-SM\node_modules\supertest\lib\test.js:365:13
+    at Test._assertFunction (D:\work\HR-SM\node_modules\supertest\lib\test.js:342:13)
+    at Test.assert (D:\work\HR-SM\node_modules\supertest\lib\test.js:195:23)
+    at localAssert (D:\work\HR-SM\node_modules\supertest\lib\test.js:138:14)
+    at Server.&lt;anonymous&gt; (D:\work\HR-SM\node_modules\supertest\lib\test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at emitCloseNT (node:net:2376:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="User Routes GET /profile should reject profile request when not authenticated" name="User Routes GET /profile should reject profile request when not authenticated" time="0.006">
+    </testcase>
+  </testsuite>
+</testsuites>
