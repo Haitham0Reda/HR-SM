@@ -162,19 +162,21 @@ export const validateNationalID = (req, res, next) => {
 };
 
 /**
- * Hash password middleware
- * Only used if password hashing is moved from model
+ * Validate password middleware
+ * Validates password strength requirements
  */
-export const hashPassword = async (req, res, next) => {
-    // Password hashing is typically handled in the model pre-save hook
-    // This middleware can be used for additional password validation
+export const validatePassword = async (req, res, next) => {
     if (req.body.password) {
+        // Minimum length check
         if (req.body.password.length < 6) {
             return res.status(400).json({
                 success: false,
                 message: 'Password must be at least 6 characters long'
             });
         }
+
+        // Optional: Add more password strength requirements
+        // e.g., must contain uppercase, lowercase, numbers, special characters
     }
     next();
 };

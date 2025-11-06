@@ -23,7 +23,7 @@ export const validateEventDates = (req, res, next) => {
         // Warn if event is too long (more than 30 days)
         const diffTime = Math.abs(end - start);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         if (diffDays > 30) {
             console.warn(`Event duration is ${diffDays} days, which seems unusual`);
         }
@@ -48,9 +48,9 @@ export const validateAttendees = async (req, res, next) => {
     try {
         if (req.body.attendees && req.body.attendees.length > 0) {
             const User = mongoose.model('User');
-            const users = await User.find({ 
+            const users = await User.find({
                 _id: { $in: req.body.attendees },
-                isActive: true 
+                isActive: true
             });
 
             if (users.length !== req.body.attendees.length) {

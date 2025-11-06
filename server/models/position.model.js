@@ -26,7 +26,4 @@ const positionSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Add index for code (unique)
-positionSchema.index({ code: 1 }, { unique: true });
-
 export default mongoose.model('Position', positionSchema);

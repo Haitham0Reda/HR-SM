@@ -6,21 +6,40 @@ import {
     updateAnnouncement,
     deleteAnnouncement
 } from '../controller/announcement.controller.js';
-import { protect, hrOrAdmin } from '../middleware/index.js';
+import {
+    protect,
+    hrOrAdmin,
+    validateAnnouncementDates,
+    validateTargetAudience,
+    setCreatedBy
+} from '../middleware/index.js';
 
 const router = express.Router();
 
 // Get all announcements - All authenticated users can view
 router.get('/', protect, getAllAnnouncements);
 
-// Create announcement - HR or Admin only
-router.post('/', protect, hrOrAdmin, createAnnouncement);
+// Create announcement - HR or Admin only with validation
+router.post('/',
+    protect,
+    hrOrAdmin,
+    validateAnnouncementDates,
+    validateTargetAudience,
+    setCreatedBy,
+    createAnnouncement
+);
 
 // Get announcement by ID - All authenticated users
 router.get('/:id', protect, getAnnouncementById);
 
-// Update announcement - HR or Admin only
-router.put('/:id', protect, hrOrAdmin, updateAnnouncement);
+// Update announcement - HR or Admin only with validation
+router.put('/:id',
+    protect,
+    hrOrAdmin,
+    validateAnnouncementDates,
+    validateTargetAudience,
+    updateAnnouncement
+);
 
 // Delete announcement - HR or Admin only
 router.delete('/:id', protect, hrOrAdmin, deleteAnnouncement);
