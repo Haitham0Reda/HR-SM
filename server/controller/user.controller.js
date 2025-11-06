@@ -128,3 +128,15 @@ export const loginUser = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// Get current user profile
+export const getUserProfile = async (req, res) => {
+    try {
+        // req.user is set by the protect middleware
+        const user = await User.findById(req.user.id).populate('department position school');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(sanitizeUser(user));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

@@ -4,7 +4,8 @@ import {
     createAnnouncement,
     getAnnouncementById,
     updateAnnouncement,
-    deleteAnnouncement
+    deleteAnnouncement,
+    getActiveAnnouncements
 } from '../controller/announcement.controller.js';
 import {
     protect,
@@ -15,6 +16,9 @@ import {
 } from '../middleware/index.js';
 
 const router = express.Router();
+
+// Get active announcements - All authenticated users can view
+router.get('/active', protect, getActiveAnnouncements);
 
 // Get all announcements - All authenticated users can view
 router.get('/', protect, getAllAnnouncements);

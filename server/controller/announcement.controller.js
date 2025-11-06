@@ -14,6 +14,22 @@ export const getAllAnnouncements = async (req, res) => {
     }
 };
 
+export const getActiveAnnouncements = async (req, res) => {
+    try {
+        const now = new Date();
+        const announcements = await Announcement.find({
+            publishDate: { $lte: now },
+            expiryDate: { $gte: now }
+        })
+            .populate('createdBy', 'username email')
+            .populate('departments', 'name code')
+            .sort({ publishDate: -1 });
+        res.json(announcements);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 export const createAnnouncement = async (req, res) => {
     try {
         const announcement = new Announcement(req.body);

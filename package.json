@@ -8,7 +8,11 @@
     "server": "nodemon server/index.js",
     "client": "npm start --prefix frontend",
     "dev": "concurrently \"npm run server\" \"npm run client\" ",
-    "test:routes": "node server/test-routes.js"
+    "test:routes": "node server/testing/test-routes.js",
+    "test:auth": "node server/testing/test-authenticated-routes.js",
+    "test:comprehensive": "node server/testing/test-all-routes.js",
+    "test:all": "node server/testing/run-all-api-tests.js",
+    "seed": "node server/seed.js"
   },
   "keywords": [],
   "author": "",

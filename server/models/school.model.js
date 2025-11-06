@@ -44,7 +44,4 @@ schoolSchema.statics.getActiveSchools = function() {
     return this.find({ isActive: true }).populate('dean');
 };
 
-// Add index for schoolId (unique)
-schoolSchema.index({ schoolId: 1 }, { unique: true });
-
 export default mongoose.model('School', schoolSchema);

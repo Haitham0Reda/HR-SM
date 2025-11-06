@@ -132,8 +132,7 @@ const mixedVacationSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['draft', 'active', 'completed', 'cancelled'],
-        default: 'draft',
-        index: true
+        default: 'draft'
     },
 
     // Auto-apply
