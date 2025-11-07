@@ -1,6 +1,6 @@
 export default {
   testEnvironment: 'node',
-  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.js$',
+  testRegex: '(/server/testing/__tests__/.*|(\\.|/)(test|spec))\\.js$',
   moduleFileExtensions: ['js', 'json', 'node'],
   collectCoverage: true,
   coverageDirectory: 'coverage',
@@ -27,7 +27,6 @@ export default {
   ],
   verbose: true,
   testTimeout: 10000,
-  moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1'
-  }
+  roots: ['<rootDir>/server/testing'],
+  moduleDirectories: ['node_modules', 'server']
 };

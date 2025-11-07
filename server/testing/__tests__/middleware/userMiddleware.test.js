@@ -1,17 +1,7 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import User from '../../server/models/user.model.js';
-
-// Import user middleware functions
-import {
-  checkEmailUnique,
-  checkUsernameUnique,
-  validateHireDate,
-  validateDateOfBirth,
-  validatePhoneNumber,
-  validateNationalID,
-  validatePassword
-} from '../../server/middleware/userMiddleware.js';
+import User from '../../../models/user.model.js';
+import { checkEmailUnique, checkUsernameUnique, validateHireDate, validateDateOfBirth, validatePhoneNumber, validateNationalID, validatePassword } from '../../../middleware/userMiddleware.js';
 
 // Import Jest globals explicitly for ES modules
 import { jest } from '@jest/globals';

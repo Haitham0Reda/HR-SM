@@ -1,16 +1,12 @@
 import request from 'supertest';
-import express from 'express';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import User from '../../../models/user.model.js';
+import { app } from '../../../index.js';
 import jwt from 'jsonwebtoken';
-import User from '../../server/models/user.model.js';
-import '../../server/models/school.model.js'; // Import School model for population
-import userRoutes from '../../server/routes/user.routes.js';
 
-// Create express app for testing
-const app = express();
-app.use(express.json());
-app.use('/api/users', userRoutes);
+// Import Jest globals explicitly for ES modules
+import { jest } from '@jest/globals';
 
 let mongoServer;
 let testUser;

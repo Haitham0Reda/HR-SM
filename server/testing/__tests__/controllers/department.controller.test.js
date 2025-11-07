@@ -1,16 +1,23 @@
 import request from 'supertest';
 import express from 'express';
-import * as department from '../../server/controller/department.controller.js';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import Department from '../../../models/department.model.js';
+import { getAllDepartments, getDepartmentById, createDepartment, updateDepartment, deleteDepartment } from '../../../controller/department.controller.js';
+
+// Import Jest globals explicitly for ES modules
+import { jest } from '@jest/globals';
 
 let mongoServer;
 const app = express();
 app.use(express.json());
 
 // Mock routes for testing
-// Add your controller routes here
-// app.get('/api/test', department.getAllDepartments);
+app.get('/api/departments', getAllDepartments);
+app.get('/api/departments/:id', getDepartmentById);
+app.post('/api/departments', createDepartment);
+app.put('/api/departments/:id', updateDepartment);
+app.delete('/api/departments/:id', deleteDepartment);
 
 beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
@@ -35,8 +42,8 @@ describe('Department Controller', () => {
 
     it('should return 200 for successful request', async () => {
         // Add your test implementation
-        // const res = await request(app).get('/api/test');
-        // expect(res.status).toBe(200);
+        const res = await request(app).get('/api/departments');
+        expect(res.status).toBe(200);
     });
 
     it('should handle errors appropriately', async () => {
