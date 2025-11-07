@@ -1,0 +1,527 @@
+[
+  {
+    "timestamp": "2025-11-07T17:04:00.902Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    },
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:05:30.497Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    },
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:05:58.871Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    },
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:15:34.593Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    },
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:16:09.774Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    },
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:17:33.997Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 11,
+      "failed": 0,
+      "total": 11
+    },
+    "tests": {
+      "passed": 64,
+      "failed": 0,
+      "total": 64
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:18:01.780Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 11,
+      "failed": 0,
+      "total": 11
+    },
+    "tests": {
+      "passed": 64,
+      "failed": 0,
+      "total": 64
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:18:29.447Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 11,
+      "failed": 0,
+      "total": 11
+    },
+    "tests": {
+      "passed": 64,
+      "failed": 0,
+      "total": 64
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:18:47.309Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 11,
+      "failed": 0,
+      "total": 11
+    },
+    "tests": {
+      "passed": 64,
+      "failed": 0,
+      "total": 64
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:18:59.035Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 11,
+      "failed": 0,
+      "total": 11
+    },
+    "tests": {
+      "passed": 64,
+      "failed": 0,
+      "total": 64
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:34:09.379Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    },
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "total": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:34:43.598Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 11,
+      "failed": 0,
+      "total": 11
+    },
+    "tests": {
+      "passed": 64,
+      "failed": 0,
+      "total": 64
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:35:10.936Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 11,
+      "failed": 0,
+      "total": 11
+    },
+    "tests": {
+      "passed": 64,
+      "failed": 0,
+      "total": 64
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:35:32.177Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 11,
+      "failed": 0,
+      "total": 11
+    },
+    "tests": {
+      "passed": 64,
+      "failed": 0,
+      "total": 64
+    }
+  },
+  {
+    "timestamp": "2025-11-07T17:35:43.754Z",
+    "coverage": {
+      "statements": {
+        "percentage": 18.58,
+        "covered": 398,
+        "total": 2142
+      },
+      "branches": {
+        "percentage": 5.42,
+        "covered": 80,
+        "total": 1474
+      },
+      "functions": {
+        "percentage": 11.11,
+        "covered": 28,
+        "total": 252
+      },
+      "lines": {
+        "percentage": 18.94,
+        "covered": 394,
+        "total": 2080
+      }
+    },
+    "testSuites": {
+      "passed": 11,
+      "failed": 0,
+      "total": 11
+    },
+    "tests": {
+      "passed": 64,
+      "failed": 0,
+      "total": 64
+    }
+  }
+]

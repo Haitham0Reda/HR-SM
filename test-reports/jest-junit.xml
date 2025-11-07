@@ -1,153 +1,153 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="64" failures="0" errors="0" time="4.828">
-  <testsuite name="Department Model" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="2.434" tests="3">
-    <testcase classname="Department Model should create and save a Department successfully" name="Department Model should create and save a Department successfully" time="0.08">
+<testsuites name="jest tests" tests="64" failures="0" errors="0" time="4.509">
+  <testsuite name="Test Infrastructure" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="2.144" tests="3">
+    <testcase classname="Test Infrastructure should have a working MongoDB connection" name="Test Infrastructure should have a working MongoDB connection" time="0.006">
     </testcase>
-    <testcase classname="Department Model should fail to create department without required fields" name="Department Model should fail to create department without required fields" time="0.005">
+    <testcase classname="Test Infrastructure should be able to create and save a simple document" name="Test Infrastructure should be able to create and save a simple document" time="0.077">
     </testcase>
-    <testcase classname="Department Model should require unique department code" name="Department Model should require unique department code" time="0.011">
+    <testcase classname="Test Infrastructure should be able to use Jest assertions" name="Test Infrastructure should be able to use Jest assertions" time="0.002">
     </testcase>
   </testsuite>
-  <testsuite name="User Model" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="2.538" tests="2">
-    <testcase classname="User Model should create and save a User successfully" name="User Model should create and save a User successfully" time="0.226">
+  <testsuite name="AuthMiddleware Middleware" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="2.305" tests="3">
+    <testcase classname="AuthMiddleware Middleware should have protect function defined" name="AuthMiddleware Middleware should have protect function defined" time="0.018">
+    </testcase>
+    <testcase classname="AuthMiddleware Middleware should have admin function defined" name="AuthMiddleware Middleware should have admin function defined" time="0.003">
+    </testcase>
+    <testcase classname="AuthMiddleware Middleware should have hrOrAdmin function defined" name="AuthMiddleware Middleware should have hrOrAdmin function defined" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="Department Model" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="2.385" tests="3">
+    <testcase classname="Department Model should create and save a Department successfully" name="Department Model should create and save a Department successfully" time="0.067">
+    </testcase>
+    <testcase classname="Department Model should fail to create department without required fields" name="Department Model should fail to create department without required fields" time="0.004">
+    </testcase>
+    <testcase classname="Department Model should require unique department code" name="Department Model should require unique department code" time="0.013">
+    </testcase>
+  </testsuite>
+  <testsuite name="User Model" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="2.411" tests="2">
+    <testcase classname="User Model should create and save a User successfully" name="User Model should create and save a User successfully" time="0.206">
     </testcase>
     <testcase classname="User Model should fail to create user without required fields" name="User Model should fail to create user without required fields" time="0.006">
     </testcase>
   </testsuite>
-  <testsuite name="AuthMiddleware Middleware" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="2.602" tests="3">
-    <testcase classname="AuthMiddleware Middleware should have protect function defined" name="AuthMiddleware Middleware should have protect function defined" time="0.023">
-    </testcase>
-    <testcase classname="AuthMiddleware Middleware should have admin function defined" name="AuthMiddleware Middleware should have admin function defined" time="0.002">
-    </testcase>
-    <testcase classname="AuthMiddleware Middleware should have hrOrAdmin function defined" name="AuthMiddleware Middleware should have hrOrAdmin function defined" time="0.002">
-    </testcase>
-  </testsuite>
-  <testsuite name="Test Infrastructure" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="2.61" tests="3">
-    <testcase classname="Test Infrastructure should have a working MongoDB connection" name="Test Infrastructure should have a working MongoDB connection" time="0.007">
-    </testcase>
-    <testcase classname="Test Infrastructure should be able to create and save a simple document" name="Test Infrastructure should be able to create and save a simple document" time="0.092">
-    </testcase>
-    <testcase classname="Test Infrastructure should be able to use Jest assertions" name="Test Infrastructure should be able to use Jest assertions" time="0.001">
-    </testcase>
-  </testsuite>
-  <testsuite name="PermissionAudit Model" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="2.7" tests="3">
-    <testcase classname="PermissionAudit Model should create a permission audit record with required fields" name="PermissionAudit Model should create a permission audit record with required fields" time="0.099">
-    </testcase>
-    <testcase classname="PermissionAudit Model should fail to create audit record without required fields" name="PermissionAudit Model should fail to create audit record without required fields" time="0.01">
-    </testcase>
-    <testcase classname="PermissionAudit Model should only allow valid actions" name="PermissionAudit Model should only allow valid actions" time="0.011">
-    </testcase>
-  </testsuite>
-  <testsuite name="School Model" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="2.705" tests="10">
+  <testsuite name="School Model" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="2.416" tests="10">
     <testcase classname="School Model School Creation should create a school with valid data" name="School Model School Creation should create a school with valid data" time="0.078">
     </testcase>
-    <testcase classname="School Model School Creation should fail to create a school with invalid schoolCode" name="School Model School Creation should fail to create a school with invalid schoolCode" time="0.008">
+    <testcase classname="School Model School Creation should fail to create a school with invalid schoolCode" name="School Model School Creation should fail to create a school with invalid schoolCode" time="0.01">
     </testcase>
-    <testcase classname="School Model School Creation should fail to create a school with invalid name" name="School Model School Creation should fail to create a school with invalid name" time="0.006">
+    <testcase classname="School Model School Creation should fail to create a school with invalid name" name="School Model School Creation should fail to create a school with invalid name" time="0.005">
     </testcase>
-    <testcase classname="School Model School Creation should fail to create a school with invalid arabicName" name="School Model School Creation should fail to create a school with invalid arabicName" time="0.004">
+    <testcase classname="School Model School Creation should fail to create a school with invalid arabicName" name="School Model School Creation should fail to create a school with invalid arabicName" time="0.007">
     </testcase>
     <testcase classname="School Model School Creation should fail to create a school without required fields" name="School Model School Creation should fail to create a school without required fields" time="0.004">
     </testcase>
-    <testcase classname="School Model School Static Methods should find school by code using findByCode method" name="School Model School Static Methods should find school by code using findByCode method" time="0.022">
+    <testcase classname="School Model School Static Methods should find school by code using findByCode method" name="School Model School Static Methods should find school by code using findByCode method" time="0.018">
     </testcase>
-    <testcase classname="School Model School Static Methods should return null for non-existent school code" name="School Model School Static Methods should return null for non-existent school code" time="0.012">
+    <testcase classname="School Model School Static Methods should return null for non-existent school code" name="School Model School Static Methods should return null for non-existent school code" time="0.009">
     </testcase>
-    <testcase classname="School Model School Static Methods should find schools with isActive=true using getActiveSchools method" name="School Model School Static Methods should find schools with isActive=true using getActiveSchools method" time="0.015">
+    <testcase classname="School Model School Static Methods should find schools with isActive=true using getActiveSchools method" name="School Model School Static Methods should find schools with isActive=true using getActiveSchools method" time="0.017">
     </testcase>
-    <testcase classname="School Model School Validation should convert schoolCode to uppercase" name="School Model School Validation should convert schoolCode to uppercase" time="0.005">
+    <testcase classname="School Model School Validation should convert schoolCode to uppercase" name="School Model School Validation should convert schoolCode to uppercase" time="0.008">
     </testcase>
-    <testcase classname="School Model School Validation should require unique schoolCode" name="School Model School Validation should require unique schoolCode" time="0.024">
+    <testcase classname="School Model School Validation should require unique schoolCode" name="School Model School Validation should require unique schoolCode" time="0.029">
     </testcase>
   </testsuite>
-  <testsuite name="Department Controller" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="2.753" tests="2">
-    <testcase classname="Department Controller should return 200 for successful request" name="Department Controller should return 200 for successful request" time="0.016">
+  <testsuite name="PermissionAudit Model" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="2.434" tests="3">
+    <testcase classname="PermissionAudit Model should create a permission audit record with required fields" name="PermissionAudit Model should create a permission audit record with required fields" time="0.104">
+    </testcase>
+    <testcase classname="PermissionAudit Model should fail to create audit record without required fields" name="PermissionAudit Model should fail to create audit record without required fields" time="0.01">
+    </testcase>
+    <testcase classname="PermissionAudit Model should only allow valid actions" name="PermissionAudit Model should only allow valid actions" time="0.01">
+    </testcase>
+  </testsuite>
+  <testsuite name="Department Controller" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="2.454" tests="2">
+    <testcase classname="Department Controller should return 200 for successful request" name="Department Controller should return 200 for successful request" time="0.019">
     </testcase>
     <testcase classname="Department Controller should handle errors appropriately" name="Department Controller should handle errors appropriately" time="0.002">
     </testcase>
   </testsuite>
-  <testsuite name="User Controller" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="2.958" tests="3">
-    <testcase classname="User Controller loginUser should login user with valid credentials" name="User Controller loginUser should login user with valid credentials" time="0.167">
+  <testsuite name="User Controller" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="2.532" tests="3">
+    <testcase classname="User Controller loginUser should login user with valid credentials" name="User Controller loginUser should login user with valid credentials" time="0.172">
     </testcase>
-    <testcase classname="User Controller loginUser should reject login with invalid credentials" name="User Controller loginUser should reject login with invalid credentials" time="0.11">
+    <testcase classname="User Controller loginUser should reject login with invalid credentials" name="User Controller loginUser should reject login with invalid credentials" time="0.102">
     </testcase>
-    <testcase classname="User Controller getUserProfile should get user profile when authenticated" name="User Controller getUserProfile should get user profile when authenticated" time="0.096">
-    </testcase>
-  </testsuite>
-  <testsuite name="User Routes" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="3.366" tests="4">
-    <testcase classname="User Routes POST /login should login user with valid credentials" name="User Routes POST /login should login user with valid credentials" time="0.172">
-    </testcase>
-    <testcase classname="User Routes POST /login should reject login with invalid credentials" name="User Routes POST /login should reject login with invalid credentials" time="0.077">
-    </testcase>
-    <testcase classname="User Routes GET /profile should get user profile when authenticated" name="User Routes GET /profile should get user profile when authenticated" time="0.022">
-    </testcase>
-    <testcase classname="User Routes GET /profile should reject profile request when not authenticated" name="User Routes GET /profile should reject profile request when not authenticated" time="0.004">
+    <testcase classname="User Controller getUserProfile should get user profile when authenticated" name="User Controller getUserProfile should get user profile when authenticated" time="0.077">
     </testcase>
   </testsuite>
-  <testsuite name="Permission Check Middleware" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="3.485" tests="10">
-    <testcase classname="Permission Check Middleware checkPermission should call next() when user has the required permission" name="Permission Check Middleware checkPermission should call next() when user has the required permission" time="0.19">
+  <testsuite name="User Routes" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="2.948" tests="4">
+    <testcase classname="User Routes POST /login should login user with valid credentials" name="User Routes POST /login should login user with valid credentials" time="0.176">
     </testcase>
-    <testcase classname="Permission Check Middleware checkPermission should return 403 when user does not have the required permission" name="Permission Check Middleware checkPermission should return 403 when user does not have the required permission" time="0.091">
+    <testcase classname="User Routes POST /login should reject login with invalid credentials" name="User Routes POST /login should reject login with invalid credentials" time="0.073">
     </testcase>
-    <testcase classname="Permission Check Middleware checkPermission should return 401 when no user is authenticated" name="Permission Check Middleware checkPermission should return 401 when no user is authenticated" time="0.089">
+    <testcase classname="User Routes GET /profile should get user profile when authenticated" name="User Routes GET /profile should get user profile when authenticated" time="0.018">
     </testcase>
-    <testcase classname="Permission Check Middleware Specific Permission Checkers should allow access with canViewReports when user has reports.view permission" name="Permission Check Middleware Specific Permission Checkers should allow access with canViewReports when user has reports.view permission" time="0.092">
+    <testcase classname="User Routes GET /profile should reject profile request when not authenticated" name="User Routes GET /profile should reject profile request when not authenticated" time="0.005">
     </testcase>
-    <testcase classname="Permission Check Middleware Specific Permission Checkers should deny access with canManageRoles when user does not have users.manage-roles permission" name="Permission Check Middleware Specific Permission Checkers should deny access with canManageRoles when user does not have users.manage-roles permission" time="0.09">
+  </testsuite>
+  <testsuite name="Permission Check Middleware" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="3.088" tests="10">
+    <testcase classname="Permission Check Middleware checkPermission should call next() when user has the required permission" name="Permission Check Middleware checkPermission should call next() when user has the required permission" time="0.153">
     </testcase>
-    <testcase classname="Permission Check Middleware Specific Permission Checkers should allow access with canManagePermissions when user has users.manage-permissions permission" name="Permission Check Middleware Specific Permission Checkers should allow access with canManagePermissions when user has users.manage-permissions permission" time="0.102">
+    <testcase classname="Permission Check Middleware checkPermission should return 403 when user does not have the required permission" name="Permission Check Middleware checkPermission should return 403 when user does not have the required permission" time="0.121">
     </testcase>
-    <testcase classname="Permission Check Middleware checkOwnership should call next() when user is admin" name="Permission Check Middleware checkOwnership should call next() when user is admin" time="0.077">
+    <testcase classname="Permission Check Middleware checkPermission should return 401 when no user is authenticated" name="Permission Check Middleware checkPermission should return 401 when no user is authenticated" time="0.078">
     </testcase>
-    <testcase classname="Permission Check Middleware checkOwnership should return 403 when user is not admin and resource field is missing" name="Permission Check Middleware checkOwnership should return 403 when user is not admin and resource field is missing" time="0.088">
+    <testcase classname="Permission Check Middleware Specific Permission Checkers should allow access with canViewReports when user has reports.view permission" name="Permission Check Middleware Specific Permission Checkers should allow access with canViewReports when user has reports.view permission" time="0.069">
     </testcase>
-    <testcase classname="Permission Check Middleware resourcePermission should call next() when user has full permission" name="Permission Check Middleware resourcePermission should call next() when user has full permission" time="0.07">
+    <testcase classname="Permission Check Middleware Specific Permission Checkers should deny access with canManageRoles when user does not have users.manage-roles permission" name="Permission Check Middleware Specific Permission Checkers should deny access with canManageRoles when user does not have users.manage-roles permission" time="0.067">
+    </testcase>
+    <testcase classname="Permission Check Middleware Specific Permission Checkers should allow access with canManagePermissions when user has users.manage-permissions permission" name="Permission Check Middleware Specific Permission Checkers should allow access with canManagePermissions when user has users.manage-permissions permission" time="0.076">
+    </testcase>
+    <testcase classname="Permission Check Middleware checkOwnership should call next() when user is admin" name="Permission Check Middleware checkOwnership should call next() when user is admin" time="0.068">
+    </testcase>
+    <testcase classname="Permission Check Middleware checkOwnership should return 403 when user is not admin and resource field is missing" name="Permission Check Middleware checkOwnership should return 403 when user is not admin and resource field is missing" time="0.086">
+    </testcase>
+    <testcase classname="Permission Check Middleware resourcePermission should call next() when user has full permission" name="Permission Check Middleware resourcePermission should call next() when user has full permission" time="0.073">
     </testcase>
     <testcase classname="Permission Check Middleware resourcePermission should return 403 when user does not have required permission" name="Permission Check Middleware resourcePermission should return 403 when user does not have required permission" time="0.067">
     </testcase>
   </testsuite>
-  <testsuite name="User Middleware" errors="0" failures="0" skipped="0" timestamp="2025-11-07T00:15:59" time="4.056" tests="21">
-    <testcase classname="User Middleware checkEmailUnique should call next() when email is unique" name="User Middleware checkEmailUnique should call next() when email is unique" time="0.205">
+  <testsuite name="User Middleware" errors="0" failures="0" skipped="0" timestamp="2025-11-07T17:35:39" time="3.805" tests="21">
+    <testcase classname="User Middleware checkEmailUnique should call next() when email is unique" name="User Middleware checkEmailUnique should call next() when email is unique" time="0.164">
     </testcase>
-    <testcase classname="User Middleware checkEmailUnique should return 400 when email is not unique" name="User Middleware checkEmailUnique should return 400 when email is not unique" time="0.119">
+    <testcase classname="User Middleware checkEmailUnique should return 400 when email is not unique" name="User Middleware checkEmailUnique should return 400 when email is not unique" time="0.11">
     </testcase>
-    <testcase classname="User Middleware checkEmailUnique should call next() when email is not provided" name="User Middleware checkEmailUnique should call next() when email is not provided" time="0.094">
+    <testcase classname="User Middleware checkEmailUnique should call next() when email is not provided" name="User Middleware checkEmailUnique should call next() when email is not provided" time="0.076">
     </testcase>
-    <testcase classname="User Middleware checkUsernameUnique should call next() when username is unique" name="User Middleware checkUsernameUnique should call next() when username is unique" time="0.088">
+    <testcase classname="User Middleware checkUsernameUnique should call next() when username is unique" name="User Middleware checkUsernameUnique should call next() when username is unique" time="0.07">
     </testcase>
-    <testcase classname="User Middleware checkUsernameUnique should return 400 when username is not unique" name="User Middleware checkUsernameUnique should return 400 when username is not unique" time="0.078">
+    <testcase classname="User Middleware checkUsernameUnique should return 400 when username is not unique" name="User Middleware checkUsernameUnique should return 400 when username is not unique" time="0.069">
     </testcase>
-    <testcase classname="User Middleware checkUsernameUnique should call next() when username is not provided" name="User Middleware checkUsernameUnique should call next() when username is not provided" time="0.09">
+    <testcase classname="User Middleware checkUsernameUnique should call next() when username is not provided" name="User Middleware checkUsernameUnique should call next() when username is not provided" time="0.073">
     </testcase>
-    <testcase classname="User Middleware validateHireDate should call next() when hire date is valid" name="User Middleware validateHireDate should call next() when hire date is valid" time="0.083">
+    <testcase classname="User Middleware validateHireDate should call next() when hire date is valid" name="User Middleware validateHireDate should call next() when hire date is valid" time="0.064">
     </testcase>
-    <testcase classname="User Middleware validateHireDate should call next() when hire date is not provided" name="User Middleware validateHireDate should call next() when hire date is not provided" time="0.098">
+    <testcase classname="User Middleware validateHireDate should call next() when hire date is not provided" name="User Middleware validateHireDate should call next() when hire date is not provided" time="0.065">
     </testcase>
-    <testcase classname="User Middleware validateHireDate should return 400 when hire date is too far in the past" name="User Middleware validateHireDate should return 400 when hire date is too far in the past" time="0.082">
+    <testcase classname="User Middleware validateHireDate should return 400 when hire date is too far in the past" name="User Middleware validateHireDate should return 400 when hire date is too far in the past" time="0.073">
     </testcase>
     <testcase classname="User Middleware validateDateOfBirth should call next() when date of birth is valid" name="User Middleware validateDateOfBirth should call next() when date of birth is valid" time="0.069">
     </testcase>
-    <testcase classname="User Middleware validateDateOfBirth should call next() when date of birth is not provided" name="User Middleware validateDateOfBirth should call next() when date of birth is not provided" time="0.07">
+    <testcase classname="User Middleware validateDateOfBirth should call next() when date of birth is not provided" name="User Middleware validateDateOfBirth should call next() when date of birth is not provided" time="0.072">
     </testcase>
-    <testcase classname="User Middleware validateDateOfBirth should return 400 when employee is too young" name="User Middleware validateDateOfBirth should return 400 when employee is too young" time="0.073">
+    <testcase classname="User Middleware validateDateOfBirth should return 400 when employee is too young" name="User Middleware validateDateOfBirth should return 400 when employee is too young" time="0.07">
     </testcase>
     <testcase classname="User Middleware validatePhoneNumber should call next() when phone number is valid" name="User Middleware validatePhoneNumber should call next() when phone number is valid" time="0.067">
     </testcase>
-    <testcase classname="User Middleware validatePhoneNumber should call next() when phone number is not provided" name="User Middleware validatePhoneNumber should call next() when phone number is not provided" time="0.069">
+    <testcase classname="User Middleware validatePhoneNumber should call next() when phone number is not provided" name="User Middleware validatePhoneNumber should call next() when phone number is not provided" time="0.063">
     </testcase>
-    <testcase classname="User Middleware validatePhoneNumber should return 400 when phone number format is invalid" name="User Middleware validatePhoneNumber should return 400 when phone number format is invalid" time="0.064">
+    <testcase classname="User Middleware validatePhoneNumber should return 400 when phone number format is invalid" name="User Middleware validatePhoneNumber should return 400 when phone number format is invalid" time="0.063">
     </testcase>
-    <testcase classname="User Middleware validateNationalID should call next() when national ID is valid" name="User Middleware validateNationalID should call next() when national ID is valid" time="0.066">
+    <testcase classname="User Middleware validateNationalID should call next() when national ID is valid" name="User Middleware validateNationalID should call next() when national ID is valid" time="0.061">
     </testcase>
-    <testcase classname="User Middleware validateNationalID should call next() when national ID is not provided" name="User Middleware validateNationalID should call next() when national ID is not provided" time="0.065">
+    <testcase classname="User Middleware validateNationalID should call next() when national ID is not provided" name="User Middleware validateNationalID should call next() when national ID is not provided" time="0.063">
     </testcase>
     <testcase classname="User Middleware validateNationalID should return 400 when national ID contains non-numeric characters" name="User Middleware validateNationalID should return 400 when national ID contains non-numeric characters" time="0.066">
     </testcase>
-    <testcase classname="User Middleware validatePassword should call next() when password is valid" name="User Middleware validatePassword should call next() when password is valid" time="0.065">
+    <testcase classname="User Middleware validatePassword should call next() when password is valid" name="User Middleware validatePassword should call next() when password is valid" time="0.062">
     </testcase>
-    <testcase classname="User Middleware validatePassword should return 400 when password is too short" name="User Middleware validatePassword should return 400 when password is too short" time="0.063">
+    <testcase classname="User Middleware validatePassword should return 400 when password is too short" name="User Middleware validatePassword should return 400 when password is too short" time="0.061">
     </testcase>
-    <testcase classname="User Middleware validatePassword should call next() when password is not provided" name="User Middleware validatePassword should call next() when password is not provided" time="0.062">
+    <testcase classname="User Middleware validatePassword should call next() when password is not provided" name="User Middleware validatePassword should call next() when password is not provided" time="0.061">
     </testcase>
   </testsuite>
 </testsuites>
