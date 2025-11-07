@@ -111,15 +111,20 @@ userSchema.pre('save', async function (next) {
     // Auto-increment employeeId for new users
     if (this.isNew) {
         const User = this.constructor;
-        const lastUser = await User.findOne({}).sort({ createdAt: -1 });
-        let nextId = 1;
-        if (lastUser && lastUser.employeeId) {
-            const match = lastUser.employeeId.match(/EMID-(\d+)/);
-            if (match) {
-                nextId = parseInt(match[1], 10) + 1;
+        try {
+            const lastUser = await User.findOne({}, {}, { sort: { 'createdAt': -1 } });
+            let nextId = 1;
+            if (lastUser && lastUser.employeeId) {
+                const match = lastUser.employeeId.match(/EMID-(\d+)/);
+                if (match) {
+                    nextId = parseInt(match[1], 10) + 1;
+                }
             }
+            this.employeeId = `EMID-${nextId.toString().padStart(4, '0')}`;
+        } catch (err) {
+            // If there's an error getting the last user, generate a random ID
+            this.employeeId = `EMID-${Math.floor(1000 + Math.random() * 9000)}`;
         }
-        this.employeeId = `EMID-${nextId.toString().padStart(4, '0')}`;
     }
 
     // Hash password if modified

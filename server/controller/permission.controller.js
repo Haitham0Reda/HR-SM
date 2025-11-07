@@ -12,7 +12,7 @@ import { PERMISSIONS, ROLE_PERMISSIONS, PERMISSION_CATEGORIES, getRolePermission
  */
 export const getAllPermissions = async (req, res) => {
     try {
-        res.json({
+        res.status(200).json({
             success: true,
             permissions: PERMISSIONS,
             categories: PERMISSION_CATEGORIES
@@ -33,7 +33,7 @@ export const getRolePermissionsList = async (req, res) => {
             return res.status(404).json({ error: 'Role not found' });
         }
 
-        res.json({
+        res.status(200).json({
             success: true,
             role,
             permissions: getRolePermissions(role)
@@ -57,10 +57,10 @@ export const getUserPermissions = async (req, res) => {
         const effectivePermissions = await user.getEffectivePermissions();
         const rolePermissions = getRolePermissions(user.role);
 
-        res.json({
+        res.status(200).json({
             success: true,
             user: {
-                id: user._id,
+                id: user._id.toString(),
                 username: user.username,
                 email: user.email,
                 role: user.role
@@ -128,7 +128,7 @@ export const addPermissionsToUser = async (req, res) => {
             userAgent: req.get('user-agent')
         });
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Permissions added successfully',
             user: {
@@ -189,7 +189,7 @@ export const removePermissionsFromUser = async (req, res) => {
             userAgent: req.get('user-agent')
         });
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Permissions removed successfully',
             user: {
@@ -242,7 +242,7 @@ export const resetUserPermissions = async (req, res) => {
             userAgent: req.get('user-agent')
         });
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Permissions reset to role defaults',
             user: {
@@ -294,7 +294,7 @@ export const changeUserRole = async (req, res) => {
             userAgent: req.get('user-agent')
         });
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'User role updated successfully',
             user: {
@@ -324,7 +324,7 @@ export const getPermissionAuditLog = async (req, res) => {
 
         const total = await PermissionAudit.countDocuments({ user: userId });
 
-        res.json({
+        res.status(200).json({
             success: true,
             auditLog,
             pagination: {
@@ -350,7 +350,7 @@ export const getRecentPermissionChanges = async (req, res) => {
             { limit: parseInt(limit) }
         );
 
-        res.json({
+        res.status(200).json({
             success: true,
             changes: recentChanges,
             period: `Last ${days} days`

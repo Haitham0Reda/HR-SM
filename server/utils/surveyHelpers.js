@@ -38,10 +38,12 @@ export async function getAssignedUsers(survey, options = {}) {
         filters.push({ role: { $in: survey.assignedTo.roles } });
     }
 
-    if (filters.length > 0) {
-        query.$or = filters;
+    // If no filters are specified, return an empty array
+    if (filters.length === 0) {
+        return [];
     }
 
+    query.$or = filters;
     return await User.find(query).select(selectFields);
 }
 
