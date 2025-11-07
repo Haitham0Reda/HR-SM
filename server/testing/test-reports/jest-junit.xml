@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="64" failures="0" errors="0" time="5.39">
+<testsuites name="jest tests" tests="64" failures="0" errors="0" time="4.982">
   <testsuite name="AuthMiddleware Middleware" errors="0" failures="0" skipped="0" timestamp="2025-11-07T18:20:01" time="2.458" tests="3">
     <testcase classname="AuthMiddleware Middleware should have protect function defined" name="AuthMiddleware Middleware should have protect function defined" time="0.025">
     </testcase>

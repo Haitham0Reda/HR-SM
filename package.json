@@ -18,10 +18,10 @@
     "test:models": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPatterns=server/testing/__tests__/models",
     "test:controllers": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPatterns=server/testing/__tests__/controllers",
     "test:middleware": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPatterns=server/testing/__tests__/middleware",
-    "test:report": "node scripts/auto-test-report.js",
-    "test:report:generate": "node scripts/generate-test-report.js",
-    "test:comprehensive:report": "node run-comprehensive-tests.js",
-    "test:comprehensive:full": "node run-all-tests.js"
+    "test:report": "node server/testing/scripts/auto-test-report.js",
+    "test:template": "node server/testing/scripts/generate-test-template.js",
+    "test:component": "node server/testing/scripts/generate-component-tests.js",
+    "test:report:full": "node server/testing/scripts/run-all-tests-with-report.js"
   },
   "keywords": [],
   "author": "",
