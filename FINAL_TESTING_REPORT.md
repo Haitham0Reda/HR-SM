@@ -4,7 +4,7 @@
 
 This report summarizes the comprehensive testing infrastructure setup and progress for the HR-SM application. We have successfully established a robust testing framework with Jest, MongoDB Memory Server, and Supertest, and have implemented a strategic plan to achieve 100% code coverage.
 
-## Test Results (Updated: 11/7/2025, 7:18:59 PM)
+## Test Results (Updated: 11/7/2025, 8:20:06 PM)
 
 | Metric | Status |
 |--------|--------|
@@ -15,28 +15,28 @@ This report summarizes the comprehensive testing infrastructure setup and progre
 
 | Metric | Percentage | Covered | Total |
 |--------|------------|---------|-------|
-| Statements | 18.58% | 398 | 2142 |
-| Branches | 5.42% | 80 | 1474 |
-| Functions | 11.11% | 28 | 252 |
-| Lines | 18.94% | 394 | 2080 |
+| Statements | 17.64% | 1044 | 5918 |
+| Branches | 2.82% | 85 | 3014 |
+| Functions | 4% | 29 | 724 |
+| Lines | 18.27% | 1040 | 5690 |
 
 ## Progress Toward 100% Coverage
 
 | Metric | Progress | Remaining |
 |--------|----------|-----------|
-| Statements | 18.58% | 81.42% |
-| Branches | 5.42% | 94.58% |
-| Functions | 11.11% | 88.89% |
-| Lines | 18.94% | 81.06% |
+| Statements | 17.64% | 82.36% |
+| Branches | 2.82% | 97.18% |
+| Functions | 4% | 96.00% |
+| Lines | 18.27% | 81.73% |
 
 ## Coverage Trends
 
 | Metric | Previous | Current | Change |
 |--------|----------|---------|--------|
-| statements | 18.58% | 18.58% | ➡️ 0.00% |
-| branches | 5.42% | 5.42% | ➡️ 0.00% |
-| functions | 11.11% | 11.11% | ➡️ 0.00% |
-| lines | 18.94% | 18.94% | ➡️ 0.00% |
+| statements | 18.58% | 17.64% | 📉 -0.94% |
+| branches | 5.42% | 2.82% | 📉 -2.60% |
+| functions | 11.11% | 4% | 📉 -7.11% |
+| lines | 18.94% | 18.27% | 📉 -0.67% |
 
 
 ## Detailed Component Coverage
@@ -68,7 +68,7 @@ The testing infrastructure includes several useful scripts:
 
 ## Report Generation
 
-This report was automatically generated on 11/7/2025, 7:18:59 PM (UTC: 2025-11-07T17:18:59.037Z)
+This report was automatically generated on 11/7/2025, 8:20:06 PM (UTC: 2025-11-07T18:20:06.318Z)
 
 For manual report generation, run:
 `npm run test:report` or `node scripts/auto-test-report.js`

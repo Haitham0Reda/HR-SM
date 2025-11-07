@@ -523,5 +523,40 @@
       "failed": 0,
       "total": 64
     }
+  },
+  {
+    "timestamp": "2025-11-07T18:20:06.317Z",
+    "coverage": {
+      "statements": {
+        "percentage": 17.64,
+        "covered": 1044,
+        "total": 5918
+      },
+      "branches": {
+        "percentage": 2.82,
+        "covered": 85,
+        "total": 3014
+      },
+      "functions": {
+        "percentage": 4,
+        "covered": 29,
+        "total": 724
+      },
+      "lines": {
+        "percentage": 18.27,
+        "covered": 1040,
+        "total": 5690
+      }
+    },
+    "testSuites": {
+      "passed": 11,
+      "failed": 0,
+      "total": 11
+    },
+    "tests": {
+      "passed": 64,
+      "failed": 0,
+      "total": 64
+    }
   }
 ]
