@@ -1,6 +1,11 @@
+import jwt from 'jsonwebtoken';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
-import * as authMiddleware from '../../server/middleware/authMiddleware.js';
+import User from '../../../models/user.model.js';
+import { protect, admin, hrOrAdmin } from '../../../middleware/authMiddleware.js';
+
+// Import Jest globals explicitly for ES modules
+import { jest } from '@jest/globals';
 
 let mongoServer;
 
@@ -26,17 +31,17 @@ describe('AuthMiddleware Middleware', () => {
     });
 
     it('should have protect function defined', () => {
-        expect(authMiddleware.protect).toBeDefined();
-        expect(typeof authMiddleware.protect).toBe('function');
+        expect(protect).toBeDefined();
+        expect(typeof protect).toBe('function');
     });
 
     it('should have admin function defined', () => {
-        expect(authMiddleware.admin).toBeDefined();
-        expect(typeof authMiddleware.admin).toBe('function');
+        expect(admin).toBeDefined();
+        expect(typeof admin).toBe('function');
     });
 
     it('should have hrOrAdmin function defined', () => {
-        expect(authMiddleware.hrOrAdmin).toBeDefined();
-        expect(typeof authMiddleware.hrOrAdmin).toBe('function');
+        expect(hrOrAdmin).toBeDefined();
+        expect(typeof hrOrAdmin).toBe('function');
     });
 });

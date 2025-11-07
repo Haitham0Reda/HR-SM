@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import PermissionAudit from '../../server/models/permissionAudit.model.js';
+import PermissionAudit from '../../../models/permissionAudit.model.js';
 
 let mongoServer;
 

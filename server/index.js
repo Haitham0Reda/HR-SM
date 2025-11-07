@@ -35,9 +35,6 @@ import surveyRoutes from './routes/survey.routes.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
-connectDB();
-
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
@@ -76,28 +73,37 @@ app.get('/', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-const server = app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// Export app for testing
+export { app };
+
+// Only start server and connect to DB if this file is run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+    // Connect to MongoDB
+    connectDB();
     
-    // Start scheduled tasks
-    startAllScheduledTasks();
-});
-
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-    console.log('Shutting down gracefully...');
-    stopAllTasks();
-    server.close(() => {
-        console.log('Server closed');
-        process.exit(0);
+    const server = app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+        
+        // Start scheduled tasks
+        startAllScheduledTasks();
     });
-});
 
-process.on('SIGTERM', () => {
-    console.log('Shutting down gracefully...');
-    stopAllTasks();
-    server.close(() => {
-        console.log('Server closed');
-        process.exit(0);
+    // Handle graceful shutdown
+    process.on('SIGINT', () => {
+        console.log('Shutting down gracefully...');
+        stopAllTasks();
+        server.close(() => {
+            console.log('Server closed');
+            process.exit(0);
+        });
     });
-});
+
+    process.on('SIGTERM', () => {
+        console.log('Shutting down gracefully...');
+        stopAllTasks();
+        server.close(() => {
+            console.log('Server closed');
+            process.exit(0);
+        });
+    });
+}

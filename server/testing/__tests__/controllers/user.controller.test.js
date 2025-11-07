@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import User from '../../server/models/user.model.js';
-import { loginUser, getUserProfile } from '../../server/controller/user.controller.js';
+import User from '../../../models/user.model.js';
+import { loginUser, getUserProfile } from '../../../controller/user.controller.js';
 
 // Import Jest globals explicitly for ES modules
 import { jest } from '@jest/globals';

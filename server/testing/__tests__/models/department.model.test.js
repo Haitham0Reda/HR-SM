@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import Department from '../../server/models/department.model.js';
+import Department from '../../../models/department.model.js';
+import School from '../../../models/school.model.js';
 
 let mongoServer;
 
