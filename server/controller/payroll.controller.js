@@ -32,7 +32,7 @@ export const getPayrollById = async (req, res) => {
 
 export const updatePayroll = async (req, res) => {
     try {
-        const payroll = await Payroll.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const payroll = await Payroll.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         if (!payroll) return res.status(404).json({ error: 'Payroll not found' });
         res.json(payroll);
     } catch (err) {

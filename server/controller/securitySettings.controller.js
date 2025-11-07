@@ -256,13 +256,15 @@ export const removeIPFromWhitelist = async (req, res) => {
 
         const settings = await SecuritySettings.getSettings();
 
-        const ipEntry = settings.ipWhitelist.allowedIPs.id(ipId);
-        if (!ipEntry) {
+        // Find the index of the IP entry to remove
+        const ipIndex = settings.ipWhitelist.allowedIPs.findIndex(entry => entry._id.toString() === ipId);
+        if (ipIndex === -1) {
             return res.status(404).json({ error: 'IP not found in whitelist' });
         }
 
-        const removedIP = ipEntry.ip;
-        ipEntry.remove();
+        const removedIP = settings.ipWhitelist.allowedIPs[ipIndex].ip;
+        // Remove the IP entry from the array
+        settings.ipWhitelist.allowedIPs.splice(ipIndex, 1);
 
         settings.lastModified = new Date();
         settings.lastModifiedBy = req.user._id;

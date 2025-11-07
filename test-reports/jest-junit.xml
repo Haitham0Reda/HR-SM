@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="15" failures="7" errors="0" time="2.667">
+<testsuites name="jest tests" tests="15" failures="7" errors="0" time="2.588">
   <testsuite name="User Controller" errors="0" failures="7" skipped="0" timestamp="2025-11-07T23:19:34" time="2.496" tests="15">
     <testcase classname="User Controller loginUser should login user with valid credentials" name="User Controller loginUser should login user with valid credentials" time="0.148">
     </testcase>

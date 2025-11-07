@@ -6,7 +6,7 @@ export const getAllDepartments = async (req, res) => {
         const departments = await Department.find()
             .populate('manager', 'username email')
             .populate('school', 'name schoolCode');
-        res.json(departments);
+        res.status(200).json(departments);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -28,7 +28,7 @@ export const getDepartmentById = async (req, res) => {
             .populate('manager', 'username email')
             .populate('school', 'name schoolCode');
         if (!department) return res.status(404).json({ error: 'Department not found' });
-        res.json(department);
+        res.status(200).json(department);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -40,7 +40,7 @@ export const updateDepartment = async (req, res) => {
             .populate('manager', 'username email')
             .populate('school', 'name schoolCode');
         if (!department) return res.status(404).json({ error: 'Department not found' });
-        res.json(department);
+        res.status(200).json(department);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -50,7 +50,7 @@ export const deleteDepartment = async (req, res) => {
     try {
         const department = await Department.findByIdAndDelete(req.params.id);
         if (!department) return res.status(404).json({ error: 'Department not found' });
-        res.json({ message: 'Department deleted' });
+        res.status(200).json({ message: 'Department deleted' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

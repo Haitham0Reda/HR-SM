@@ -36,6 +36,7 @@ const securityAuditSchema = new mongoose.Schema({
             'role-changed',
             'permission-added',
             'permission-removed',
+            'permission-audit-cleanup',
 
             // Security Events
             'ip-blocked',

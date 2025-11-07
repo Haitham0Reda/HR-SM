@@ -16,7 +16,7 @@ export const getHolidaySettings = async (req, res) => {
         const settings = await Holiday.getOrCreateForCampus(campusId);
         await settings.populate('campus', 'name arabicName');
 
-        res.json({
+        res.status(200).json({
             success: true,
             settings
         });
@@ -44,7 +44,7 @@ export const updateHolidaySettings = async (req, res) => {
 
         await settings.save();
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Holiday settings updated successfully',
             settings
@@ -75,7 +75,7 @@ export const addOfficialHolidays = async (req, res) => {
 
         await settings.save();
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: `Added ${result.added.length} holidays`,
             added: result.added,
@@ -105,12 +105,13 @@ export const removeOfficialHoliday = async (req, res) => {
 
         await settings.save();
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Holiday removed successfully',
             settings
         });
     } catch (err) {
+        console.error('Error in removeOfficialHoliday:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -147,7 +148,7 @@ export const addWeekendWorkDays = async (req, res) => {
 
         await settings.save();
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: `Added ${added.length} weekend work days`,
             added,
@@ -177,12 +178,13 @@ export const removeWeekendWorkDay = async (req, res) => {
 
         await settings.save();
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Weekend work day removed successfully',
             settings
         });
     } catch (err) {
+        console.error('Error in removeWeekendWorkDay:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -264,7 +266,7 @@ export const getHolidaySuggestions = async (req, res) => {
         // Sort by date
         suggestions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        res.json({
+        res.status(200).json({
             success: true,
             suggestions,
             count: suggestions.length,
@@ -365,7 +367,7 @@ export const addFromSuggestions = async (req, res) => {
 
         await settings.save();
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: `Added ${added.length} holidays from suggestions`,
             added,
@@ -398,7 +400,7 @@ export const checkWorkingDay = async (req, res) => {
         const dayOfWeek = Holiday.getDayOfWeek(checkDate);
         const isWeekend = Holiday.isWeekend(checkDate, settings.weekendDays);
 
-        res.json({
+        res.status(200).json({
             success: true,
             date: checkDate,
             dayOfWeek,
@@ -434,7 +436,7 @@ export const parseDateString = async (req, res) => {
         const dayOfWeek = Holiday.getDayOfWeek(date);
         const isWeekend = Holiday.isWeekend(date, [5, 6]); // Default Friday/Saturday
 
-        res.json({
+        res.status(200).json({
             success: true,
             date,
             dateString,

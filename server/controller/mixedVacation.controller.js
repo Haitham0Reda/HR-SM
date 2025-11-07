@@ -71,6 +71,7 @@ export const getPolicyById = async (req, res) => {
 };
 
 /**
+/**
  * Create mixed vacation policy
  */
 export const createPolicy = async (req, res) => {
@@ -161,7 +162,8 @@ export const deletePolicy = async (req, res) => {
             });
         }
 
-        await policy.remove();
+        // Use deleteOne() instead of remove() for newer Mongoose versions
+        await policy.deleteOne();
 
         res.json({
             success: true,
@@ -266,7 +268,7 @@ export const getPolicyBreakdown = async (req, res) => {
         }
 
         // Get employee balance
-        const balance = await VacationBalance.findOne({ user: employeeId });
+        const balance = await VacationBalance.findOne({ employee: employeeId });
 
         if (!balance) {
             return res.status(404).json({ error: 'Employee balance not found' });

@@ -5,6 +5,8 @@
  */
 import Survey from '../models/survey.model.js';
 import User from '../models/user.model.js';
+import Department from '../models/department.model.js';
+import School from '../models/school.model.js';
 import { sendSurveyAssignmentNotifications } from './surveyNotification.controller.js';
 import { calculateTotalAssigned, convertToCSV } from '../utils/surveyHelpers.js';
 
@@ -32,7 +34,7 @@ export const getAllSurveys = async (req, res) => {
 
         const total = await Survey.countDocuments(query);
 
-        res.json({
+        res.status(200).json({
             success: true,
             surveys,
             pagination: {
@@ -43,6 +45,7 @@ export const getAllSurveys = async (req, res) => {
             }
         });
     } catch (err) {
+        console.error('Error in getAllSurveys:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -76,7 +79,7 @@ export const getEmployeeSurveys = async (req, res) => {
             };
         });
 
-        res.json({
+        res.status(200).json({
             success: true,
             surveys: surveysWithStatus
         });
@@ -130,13 +133,13 @@ export const getSurveyById = async (req, res) => {
             surveyData.totalResponses = survey.responses.length;
             surveyData.myResponse = survey.getUserResponse(req.user._id);
             delete surveyData.responses;
-            return res.json({
+            return res.status(200).json({
                 success: true,
                 survey: surveyData
             });
         }
 
-        res.json({
+        res.status(200).json({
             success: true,
             survey
         });
@@ -168,7 +171,7 @@ export const updateSurvey = async (req, res) => {
 
         await survey.save();
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Survey updated successfully',
             survey
@@ -196,9 +199,9 @@ export const deleteSurvey = async (req, res) => {
             });
         }
 
-        await survey.remove();
+        await survey.deleteOne();
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Survey deleted successfully'
         });
@@ -299,7 +302,7 @@ export const publishSurvey = async (req, res) => {
             }
         }
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Survey published successfully',
             survey
@@ -325,7 +328,7 @@ export const closeSurvey = async (req, res) => {
 
         await survey.save();
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Survey closed successfully',
             survey
@@ -394,7 +397,7 @@ export const getSurveyStatistics = async (req, res) => {
             return stats;
         });
 
-        res.json({
+        res.status(200).json({
             success: true,
             statistics: {
                 survey: {
@@ -455,12 +458,12 @@ export const exportSurveyResponses = async (req, res) => {
         if (format === 'csv') {
             // Convert to CSV
             const csv = convertToCSV(responses);
-            res.header('Content-Type', 'text/csv');
+            res.setHeader('Content-Type', 'text/csv');
             res.attachment(`survey-${survey._id}-${Date.now()}.csv`);
-            return res.send(csv);
+            return res.status(200).send(csv);
         }
 
-        res.json({
+        res.status(200).json({
             success: true,
             survey: {
                 title: survey.title,

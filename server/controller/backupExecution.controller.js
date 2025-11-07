@@ -29,7 +29,7 @@ export const getAllBackupExecutions = async (req, res) => {
 
         const total = await BackupExecution.countDocuments(query);
 
-        res.json({
+        res.status(200).json({
             success: true,
             executions,
             pagination: {
@@ -57,7 +57,7 @@ export const getBackupExecutionById = async (req, res) => {
             return res.status(404).json({ error: 'Backup execution not found' });
         }
 
-        res.json({
+        res.status(200).json({
             success: true,
             execution
         });
@@ -93,7 +93,7 @@ export const getBackupExecutionHistory = async (req, res) => {
 
         const total = await BackupExecution.countDocuments({ backup: backupId, ...(status && { status }) });
 
-        res.json({
+        res.status(200).json({
             success: true,
             executions,
             pagination: {
@@ -146,7 +146,7 @@ export const getBackupExecutionStats = async (req, res) => {
             ]);
         }
 
-        res.json({
+        res.status(200).json({
             success: true,
             stats
         });
@@ -172,7 +172,7 @@ export const getFailedExecutions = async (req, res) => {
 
         const total = await BackupExecution.countDocuments({ status: 'failed' });
 
-        res.json({
+        res.status(200).json({
             success: true,
             executions,
             pagination: {
@@ -197,7 +197,7 @@ export const getRunningExecutions = async (req, res) => {
             .populate('triggeredBy', 'username email')
             .sort({ createdAt: -1 });
 
-        res.json({
+        res.status(200).json({
             success: true,
             executions
         });
@@ -243,7 +243,7 @@ export const cancelBackupExecution = async (req, res) => {
             success: true
         });
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Backup execution cancelled successfully',
             execution
@@ -274,7 +274,7 @@ export const retryFailedExecution = async (req, res) => {
             return res.status(404).json({ error: 'Backup configuration not found' });
         }
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Retry functionality would be implemented here',
             backupId: backup._id
@@ -297,7 +297,7 @@ export const deleteBackupExecution = async (req, res) => {
 
         await execution.remove();
 
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Backup execution record deleted successfully'
         });
@@ -340,7 +340,7 @@ export const exportExecutionLogs = async (req, res) => {
             // Default to JSON
             res.header('Content-Type', 'application/json');
             res.attachment('backup-executions.json');
-            return res.json(executions);
+            return res.status(200).json(executions);
         }
     } catch (err) {
         res.status(500).json({ error: err.message });
