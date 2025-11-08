@@ -14,8 +14,12 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 - [API Documentation](#api-documentation)
 - [Email Notification System](#email-notification-system)
 - [Project Structure](#project-structure)
+- [Environment Variables](#environment-variables)
+- [Database Schema](#database-schema)
+- [Deployment](#deployment)
 - [Contributing](#contributing)
 - [License](#license)
+- [Support](#support)
 
 ## Features
 
@@ -225,20 +229,19 @@ Current Coverage Statistics:
 
 Goal: 100% coverage across all components
 
-Refer to \`Missing_Test_Files_Report.md\` for a detailed list of files that need tests to achieve 100% coverage.
+Refer to `Missing_Test_Files_Report.md` for a detailed list of files that need tests to achieve 100% coverage.
 
 ### Test Structure
 
-Tests are organized in the \`__tests__\` directory following the same structure as the source code:
+Tests are organized in the `__tests__` directory following the same structure as the source code:
 
-\`\`\`
+```
 __tests__/
 ├── controllers/
 ├── middleware/
 ├── models/
 └── routes/
 ```
-
 
 ## API Documentation
 
@@ -331,6 +334,93 @@ HR-SM/
 ├── package.json            # Root package.json
 └── README.md              # This file
 ```
+
+## Environment Variables
+
+The application requires several environment variables to be set. Here's a complete list:
+
+### Server Environment Variables
+| Variable | Description | Required |
+|----------|-------------|----------|
+| PORT | Port for the server to listen on | Yes |
+| MONGO_URI | MongoDB connection string | Yes |
+| JWT_SECRET | Secret key for JWT token signing | Yes |
+| NODE_ENV | Environment (development/production) | Yes |
+| EMAIL_HOST | SMTP host for email service | No |
+| EMAIL_PORT | SMTP port for email service | No |
+| EMAIL_USER | SMTP username for email service | No |
+| EMAIL_PASS | SMTP password for email service | No |
+| EMAIL_FROM | Sender email address | No |
+
+## Database Schema
+
+The application uses MongoDB with the following main collections:
+
+### Users
+- `_id`: ObjectId
+- `name`: String
+- `email`: String (unique)
+- `password`: String (hashed)
+- `role`: String (employee/manager/hr/admin)
+- `department`: ObjectId (ref: Department)
+- `position`: ObjectId (ref: Position)
+- `createdAt`: Date
+- `updatedAt`: Date
+
+### Departments
+- `_id`: ObjectId
+- `name`: String
+- `description`: String
+- `manager`: ObjectId (ref: User)
+- `createdAt`: Date
+- `updatedAt`: Date
+
+### Positions
+- `_id`: ObjectId
+- `title`: String
+- `description`: String
+- `department`: ObjectId (ref: Department)
+- `createdAt`: Date
+- `updatedAt`: Date
+
+Additional schemas include: Attendance, Leave, Permission, Payroll, Document, Event, Holiday, Notification, Report, Backup, and more.
+
+## Deployment
+
+### Docker Deployment (Recommended)
+
+1. Build the Docker images:
+   ```bash
+   docker-compose build
+   ```
+
+2. Start the services:
+   ```bash
+   docker-compose up -d
+   ```
+
+### Manual Deployment
+
+1. Ensure all [prerequisites](#prerequisites) are installed
+2. Configure environment variables
+3. Build the client application:
+   ```bash
+   cd client && npm run build
+   ```
+4. Start the server:
+   ```bash
+   cd ../server && npm start
+   ```
+
+### Cloud Deployment
+
+The application can be deployed to various cloud platforms:
+- Heroku
+- AWS (EC2, ECS, Elastic Beanstalk)
+- Google Cloud Platform
+- Azure
+
+Ensure proper environment configuration and security measures are in place.
 
 ## Contributing
 
