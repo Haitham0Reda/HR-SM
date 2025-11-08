@@ -29,6 +29,10 @@ const schoolSchema = new mongoose.Schema({
     dean: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true
