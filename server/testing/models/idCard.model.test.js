@@ -1,0 +1,275 @@
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import IDCard from '../../models/idCard.model.js';
+import User from '../../models/user.model.js';
+import Department from '../../models/department.model.js';
+import School from '../../models/school.model.js';
+import Position from '../../models/position.model.js';
+
+let mongoServer;
+let user;
+let department;
+let school;
+let position;
+
+beforeAll(async () => {
+  mongoServer = await MongoMemoryServer.create();
+  const mongoUri = mongoServer.getUri();
+  await mongoose.connect(mongoUri);
+  
+  // Create required references
+  school = await School.create({
+    name: 'School of Engineering',
+    schoolCode: 'ENG',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  });
+  
+  department = await Department.create({
+    name: 'Test Department',
+    code: 'TEST',
+    school: school._id
+  });
+  
+  position = await Position.create({
+    title: 'Test Position',
+    code: 'TP001',
+    department: department._id
+  });
+  
+  user = await User.create({
+    username: 'testuser',
+    email: 'test@example.com',
+    password: 'password123',
+    role: 'employee',
+    employeeId: 'EMP001',
+    school: school._id,
+    department: department._id,
+    position: position._id
+  });
+});
+
+afterEach(async () => {
+  await IDCard.deleteMany({});
+});
+
+afterAll(async () => {
+  await mongoose.connection.dropDatabase();
+  await mongoose.connection.close();
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
+});
+
+describe('IDCard Model', () => {
+  it('should create a new ID card with required fields', async () => {
+    const futureDate = new Date();
+    futureDate.setFullYear(futureDate.getFullYear() + 1);
+    
+    const idCard = await IDCard.create({
+      employee: user._id,
+      department: department._id,
+      school: school._id,
+      position: position._id,
+      cardNumber: 'ID001',
+      'expiry.expiryDate': futureDate,
+      'issue.issuedBy': user._id
+    });
+
+    expect(idCard.employee.toString()).toBe(user._id.toString());
+    expect(idCard.cardNumber).toBe('ID001');
+    expect(idCard.cardType).toBe('employee');
+    expect(idCard.status).toBe('active');
+    expect(idCard.isActive).toBe(true);
+  });
+
+  it('should validate cardType enum values', async () => {
+    const validTypes = ['employee', 'contractor', 'visitor', 'temporary'];
+    
+    for (const type of validTypes) {
+      const idCard = new IDCard({
+        employee: user._id,
+        cardNumber: `ID${Math.random()}`,
+        cardType: type,
+        'expiry.expiryDate': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        'issue.issuedBy': user._id
+      });
+      
+      await expect(idCard.validate()).resolves.toBeUndefined();
+    }
+    
+    // Test invalid type
+    const invalidCard = new IDCard({
+      employee: user._id,
+      cardNumber: 'ID002',
+      cardType: 'invalid',
+      'expiry.expiryDate': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      'issue.issuedBy': user._id
+    });
+    
+    await expect(invalidCard.validate()).rejects.toThrow(mongoose.Error.ValidationError);
+  });
+
+  it('should validate status enum values', async () => {
+    const validStatuses = ['active', 'expired', 'suspended', 'lost', 'stolen', 'replaced', 'cancelled'];
+    
+    for (const status of validStatuses) {
+      const idCard = new IDCard({
+        employee: user._id,
+        cardNumber: `ID${Math.random()}`,
+        status: status,
+        'expiry.expiryDate': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        'issue.issuedBy': user._id
+      });
+      
+      await expect(idCard.validate()).resolves.toBeUndefined();
+    }
+    
+    // Test invalid status
+    const invalidCard = new IDCard({
+      employee: user._id,
+      cardNumber: 'ID003',
+      status: 'invalid',
+      'expiry.expiryDate': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      'issue.issuedBy': user._id
+    });
+    
+    await expect(invalidCard.validate()).rejects.toThrow(mongoose.Error.ValidationError);
+  });
+
+  it('should calculate virtual properties correctly', async () => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 15); // 15 days from now
+    
+    const idCard = await IDCard.create({
+      employee: user._id,
+      cardNumber: 'ID004',
+      'expiry.expiryDate': futureDate,
+      'issue.issuedBy': user._id
+    });
+
+    expect(idCard.isExpired).toBe(false);
+    expect(idCard.needsRenewal).toBe(true); // Within 30 days
+    expect(idCard.daysUntilExpiry).toBeGreaterThan(0);
+    expect(idCard.daysUntilExpiry).toBeLessThanOrEqual(15);
+    expect(idCard.printCount).toBe(0);
+  });
+
+  it('should log print activity', async () => {
+    const idCard = await IDCard.create({
+      employee: user._id,
+      cardNumber: 'ID005',
+      'expiry.expiryDate': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      'issue.issuedBy': user._id
+    });
+
+    const updatedCard = await idCard.logPrint(user._id, 'individual', 'Initial print');
+    
+    expect(updatedCard.printHistory).toHaveLength(1);
+    expect(updatedCard.printHistory[0].printedBy.toString()).toBe(user._id.toString());
+    expect(updatedCard.printHistory[0].printType).toBe('individual');
+    expect(updatedCard.printHistory[0].printReason).toBe('Initial print');
+    expect(updatedCard.printHistory[0].printStatus).toBe('success');
+    expect(updatedCard.printCount).toBe(1);
+  });
+
+  it('should mark card as expired', async () => {
+    const idCard = await IDCard.create({
+      employee: user._id,
+      cardNumber: 'ID006',
+      'expiry.expiryDate': new Date(Date.now() - 1), // Already expired
+      'issue.issuedBy': user._id
+    });
+
+    const updatedCard = await idCard.markExpired();
+    
+    expect(updatedCard.status).toBe('expired');
+    expect(updatedCard.isActive).toBe(false);
+  });
+
+  it('should replace a card', async () => {
+    const futureDate = new Date();
+    futureDate.setFullYear(futureDate.getFullYear() + 1);
+    
+    const originalCard = await IDCard.create({
+      employee: user._id,
+      department: department._id,
+      school: school._id,
+      position: position._id,
+      cardNumber: 'ID007',
+      'expiry.expiryDate': futureDate,
+      'issue.issuedBy': user._id
+    });
+
+    const replacementCard = await originalCard.replaceCard(user._id, 'damaged');
+    
+    // Check original card was updated
+    const updatedOriginal = await IDCard.findById(originalCard._id);
+    expect(updatedOriginal.status).toBe('replaced');
+    expect(updatedOriginal.isActive).toBe(false);
+    expect(updatedOriginal.replacement.replacedBy.toString()).toBe(replacementCard._id.toString());
+    expect(updatedOriginal.replacement.replacementReason).toBe('damaged');
+    
+    // Check replacement card was created correctly
+    expect(replacementCard.employee.toString()).toBe(user._id.toString());
+    expect(replacementCard.cardNumber).not.toBe('ID007'); // Should have new card number
+    expect(replacementCard.status).toBe('active');
+    expect(replacementCard.isActive).toBe(true);
+    expect(replacementCard.replacement.originalCard.toString()).toBe(originalCard._id.toString());
+    expect(replacementCard.replacement.replacementReason).toBe('damaged');
+  });
+
+  it('should suspend a card', async () => {
+    const idCard = await IDCard.create({
+      employee: user._id,
+      cardNumber: 'ID008',
+      'expiry.expiryDate': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      'issue.issuedBy': user._id
+    });
+
+    const updatedCard = await idCard.suspendCard(user._id, 'lost');
+    
+    expect(updatedCard.status).toBe('suspended');
+    expect(updatedCard.isActive).toBe(false);
+    expect(updatedCard.suspension.suspendedBy.toString()).toBe(user._id.toString());
+    expect(updatedCard.suspension.suspensionReason).toBe('lost');
+    expect(updatedCard.suspension.suspendedAt).toBeDefined();
+  });
+
+  it('should activate a suspended card', async () => {
+    const idCard = await IDCard.create({
+      employee: user._id,
+      cardNumber: 'ID009',
+      'expiry.expiryDate': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      'issue.issuedBy': user._id
+    });
+
+    // First suspend the card
+    await idCard.suspendCard(user._id, 'lost');
+    
+    // Then activate it
+    const updatedCard = await idCard.activateCard(user._id, 'found');
+    
+    expect(updatedCard.status).toBe('active');
+    expect(updatedCard.isActive).toBe(true);
+    expect(updatedCard.suspension.reactivatedBy.toString()).toBe(user._id.toString());
+    expect(updatedCard.suspension.reactivationReason).toBe('found');
+    expect(updatedCard.suspension.reactivatedAt).toBeDefined();
+  });
+
+  it('should cancel a card', async () => {
+    const idCard = await IDCard.create({
+      employee: user._id,
+      cardNumber: 'ID010',
+      'expiry.expiryDate': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      'issue.issuedBy': user._id
+    });
+
+    const updatedCard = await idCard.cancelCard(user._id, 'employee left');
+    
+    expect(updatedCard.status).toBe('cancelled');
+    expect(updatedCard.isActive).toBe(false);
+    expect(updatedCard.cancellation.cancelledBy.toString()).toBe(user._id.toString());
+    expect(updatedCard.cancellation.cancellationReason).toBe('employee left');
+    expect(updatedCard.cancellation.cancelledAt).toBeDefined();
+  });
+});
