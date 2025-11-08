@@ -169,7 +169,7 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 
 ## Testing
 
-This project uses Jest for testing with comprehensive coverage reports.
+This project uses Jest for testing with comprehensive coverage reports. We've recently installed Jest and Supertest for server-side testing, along with mongodb-memory-server for in-memory database testing.
 
 ### Running Tests
 
@@ -189,6 +189,8 @@ npm run test:controllers
 npm run test:middleware
 npm run test:routes
 ```
+
+**Note**: The server-side tests use Jest with mongodb-memory-server for isolated database testing. Client-side tests use the built-in React testing utilities.
 
 ### Test Reports
 
@@ -233,12 +235,11 @@ Refer to `Missing_Test_Files_Report.md` for a detailed list of files that need t
 
 ### Test Structure
 
-Tests are organized in the `__tests__` directory following the same structure as the source code:
+Tests are organized in the `server/testing` directory following the same structure as the source code:
 
 ```
-__tests__/
+server/testing/
 ├── controllers/
-├── middleware/
 ├── models/
 └── routes/
 ```
@@ -328,6 +329,10 @@ HR-SM/
 │   ├── models/             # Mongoose models
 │   ├── routes/             # Express routes
 │   ├── testing/            # API testing suite
+│   │   ├── controllers/    # Controller tests
+│   │   ├── models/         # Model tests
+│   │   ├── routes/         # Route tests
+│   │   └── setup.js        # Test setup configuration
 │   ├── utils/              # Utility functions
 │   └── ...
 ├── .env                    # Environment variables
