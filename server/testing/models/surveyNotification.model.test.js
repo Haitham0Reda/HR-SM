@@ -26,7 +26,7 @@ beforeAll(async () => {
     employeeId: 'EMP001',
     school: school._id
   });
-  
+
   manager = await User.create({
     username: 'testmanager',
     email: 'manager@example.com',
@@ -35,7 +35,7 @@ beforeAll(async () => {
     employeeId: 'MGR001',
     school: school._id
   });
-  
+
   // Create survey for testing
   survey = await Survey.create({
     title: 'Test Survey',
@@ -82,7 +82,7 @@ describe('SurveyNotification Model', () => {
       'survey-closed',
       'survey-published'
     ];
-    
+
     for (const type of validTypes) {
       const notification = new SurveyNotification({
         survey: survey._id,
@@ -92,10 +92,10 @@ describe('SurveyNotification Model', () => {
           body: 'Test message'
         }
       });
-      
+
       await expect(notification.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid type
     const invalidNotification = new SurveyNotification({
       survey: survey._id,
@@ -105,13 +105,13 @@ describe('SurveyNotification Model', () => {
         body: 'Invalid message'
       }
     });
-    
+
     await expect(invalidNotification.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate message priority enum values', async () => {
     const validPriorities = ['low', 'normal', 'high', 'urgent'];
-    
+
     for (const priority of validPriorities) {
       const notification = new SurveyNotification({
         survey: survey._id,
@@ -122,10 +122,10 @@ describe('SurveyNotification Model', () => {
           priority: priority
         }
       });
-      
+
       await expect(notification.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid priority
     const invalidNotification = new SurveyNotification({
       survey: survey._id,
@@ -136,13 +136,13 @@ describe('SurveyNotification Model', () => {
         priority: 'invalid-priority'
       }
     });
-    
+
     await expect(invalidNotification.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate status enum values', async () => {
     const validStatuses = ['pending', 'sending', 'sent', 'failed', 'cancelled'];
-    
+
     for (const status of validStatuses) {
       const notification = new SurveyNotification({
         survey: survey._id,
@@ -153,10 +153,10 @@ describe('SurveyNotification Model', () => {
         },
         status: status
       });
-      
+
       await expect(notification.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid status
     const invalidNotification = new SurveyNotification({
       survey: survey._id,
@@ -167,7 +167,7 @@ describe('SurveyNotification Model', () => {
       },
       status: 'invalid-status'
     });
-    
+
     await expect(invalidNotification.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
@@ -193,7 +193,7 @@ describe('SurveyNotification Model', () => {
     });
 
     notification.markAsSent();
-    
+
     expect(notification.status).toBe('sent');
     expect(notification.sentAt).toBeDefined();
     expect(notification.stats.sentCount).toBe(1);
@@ -222,22 +222,22 @@ describe('SurveyNotification Model', () => {
 
     // Mark user as read
     notification.markAsRead(user._id);
-    
+
     expect(notification.stats.readCount).toBe(2); // Both recipients now marked as read
-    
+
     const userRecipient = notification.recipients.find(r => r.user.toString() === user._id.toString());
     expect(userRecipient.read).toBe(true);
     expect(userRecipient.readAt).toBeDefined();
-    
+
     const managerRecipient = notification.recipients.find(r => r.user.toString() === manager._id.toString());
     expect(managerRecipient.read).toBe(true); // Already marked as read
   });
 
   it('should create survey assignment notification', async () => {
     const recipientIds = [user._id, manager._id];
-    
+
     const notification = await SurveyNotification.createAssignmentNotification(survey, recipientIds);
-    
+
     expect(notification.survey.toString()).toBe(survey._id.toString());
     expect(notification.notificationType).toBe('survey-assigned');
     expect(notification.message.subject).toBe('New Survey: Test Survey');
@@ -248,9 +248,9 @@ describe('SurveyNotification Model', () => {
 
   it('should create reminder notification', async () => {
     const recipientIds = [user._id];
-    
+
     const notification = await SurveyNotification.createReminderNotification(survey, recipientIds);
-    
+
     expect(notification.survey.toString()).toBe(survey._id.toString());
     expect(notification.notificationType).toBe('survey-reminder');
     expect(notification.message.subject).toBe('Reminder: Test Survey');
@@ -268,9 +268,9 @@ describe('SurveyNotification Model', () => {
       },
       createdBy: manager._id
     });
-    
+
     const notification = await SurveyNotification.createAssignmentNotification(mandatorySurvey, [user._id]);
-    
+
     expect(notification.message.priority).toBe('high');
     expect(notification.message.body).toContain('(Mandatory)');
   });
@@ -278,7 +278,7 @@ describe('SurveyNotification Model', () => {
   it('should handle survey with due date', async () => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 30); // 30 days from now
-    
+
     const datedSurvey = await Survey.create({
       title: 'Dated Survey',
       surveyType: 'satisfaction',
@@ -287,9 +287,9 @@ describe('SurveyNotification Model', () => {
       },
       createdBy: manager._id
     });
-    
+
     const notification = await SurveyNotification.createAssignmentNotification(datedSurvey, [user._id]);
-    
+
     expect(notification.message.body).toContain(new Date(futureDate).toLocaleDateString());
   });
 
@@ -325,7 +325,7 @@ describe('SurveyNotification Model', () => {
     expect(userRecipient.sent).toBe(true);
     expect(userRecipient.read).toBe(true);
     expect(userRecipient.emailSent).toBe(true);
-    
+
     const managerRecipient = notification.recipients.find(r => r.user.toString() === manager._id.toString());
     expect(managerRecipient.sent).toBe(true);
     expect(managerRecipient.read).toBe(false); // Not read yet

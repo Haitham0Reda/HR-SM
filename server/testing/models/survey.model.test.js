@@ -12,7 +12,7 @@ let department;
 beforeEach(async () => {
   // Clear surveys collection
   await Survey.deleteMany({});
-  
+
   // Create required references
   school = await School.create({
     name: 'School of Engineering',

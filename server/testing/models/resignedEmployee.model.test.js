@@ -27,13 +27,13 @@ beforeEach(async () => {
     code: 'TEST',
     school: school._id
   });
-  
+
   position = await Position.create({
     title: 'Test Position',
     code: 'TP001',
     department: department._id
   });
-  
+
   employee = await User.create({
     username: 'testemployee',
     email: 'employee@example.com',
@@ -52,7 +52,7 @@ beforeEach(async () => {
       employmentStatus: 'active'
     }
   });
-  
+
   hrUser = await User.create({
     username: 'hruser',
     email: 'hr@example.com',
@@ -61,7 +61,7 @@ beforeEach(async () => {
     employeeId: 'HR001',
     school: school._id
   });
-  
+
   await ResignedEmployee.deleteMany({});
 });
 
@@ -69,7 +69,7 @@ describe('ResignedEmployee Model', () => {
   it('should create a new resigned employee record with required fields', async () => {
     const resignationDate = new Date('2024-01-15');
     const lastWorkingDay = new Date('2024-01-31');
-    
+
     const resignedEmployee = await ResignedEmployee.create({
       employee: employee._id,
       resignationType: 'resignation-letter',
@@ -88,30 +88,30 @@ describe('ResignedEmployee Model', () => {
 
   it('should validate resignationType enum values', async () => {
     const validTypes = ['resignation-letter', 'termination'];
-    
+
     for (const type of validTypes) {
       const resignedEmployee = new ResignedEmployee({
         employee: employee._id,
         resignationType: type,
         lastWorkingDay: new Date('2024-01-31')
       });
-      
+
       await expect(resignedEmployee.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid type
     const invalidRecord = new ResignedEmployee({
       employee: employee._id,
       resignationType: 'invalid-type',
       lastWorkingDay: new Date('2024-01-31')
     });
-    
+
     await expect(invalidRecord.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate status enum values', async () => {
     const validStatuses = ['pending', 'processed', 'archived'];
-    
+
     for (const status of validStatuses) {
       const resignedEmployee = new ResignedEmployee({
         employee: employee._id,
@@ -119,10 +119,10 @@ describe('ResignedEmployee Model', () => {
         lastWorkingDay: new Date('2024-01-31'),
         status: status
       });
-      
+
       await expect(resignedEmployee.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid status
     const invalidRecord = new ResignedEmployee({
       employee: employee._id,
@@ -130,7 +130,7 @@ describe('ResignedEmployee Model', () => {
       lastWorkingDay: new Date('2024-01-31'),
       status: 'invalid-status'
     });
-    
+
     await expect(invalidRecord.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
@@ -157,9 +157,9 @@ describe('ResignedEmployee Model', () => {
       amount: 500,
       currency: 'EGP'
     };
-    
+
     const updatedRecord = await resignedEmployee.addPenalty(penaltyData, hrUser._id);
-    
+
     expect(updatedRecord.penalties).toHaveLength(1);
     expect(updatedRecord.penalties[0].description).toBe('Late return of company property');
     expect(updatedRecord.penalties[0].amount).toBe(500);
@@ -192,7 +192,7 @@ describe('ResignedEmployee Model', () => {
 
     const penaltyId = resignedEmployee.penalties[0]._id;
     const updatedRecord = await resignedEmployee.removePenalty(penaltyId);
-    
+
     expect(updatedRecord.penalties).toHaveLength(1);
     expect(updatedRecord.penalties[0].description).toBe('Damaged equipment');
     expect(updatedRecord.totalPenalties).toBe(300);
@@ -211,10 +211,10 @@ describe('ResignedEmployee Model', () => {
       description: 'Test penalty',
       amount: 100
     };
-    
+
     // Debug: Log the resignedEmployee to see its state
     console.log('ResignedEmployee state:', resignedEmployee.isLocked);
-    
+
     try {
       await resignedEmployee.addPenalty(penaltyData, hrUser._id);
       // If we reach here, the test should fail because no error was thrown
@@ -222,7 +222,7 @@ describe('ResignedEmployee Model', () => {
     } catch (error) {
       expect(error.message).toBe('Cannot modify penalties after 24 hours');
     }
-      
+
     try {
       await resignedEmployee.removePenalty(new mongoose.Types.ObjectId());
       // If we reach here, the test should fail because no error was thrown
@@ -240,7 +240,7 @@ describe('ResignedEmployee Model', () => {
     });
 
     const updatedRecord = await resignedEmployee.updateResignationType('termination');
-    
+
     expect(updatedRecord.resignationType).toBe('termination');
   });
 
@@ -252,7 +252,7 @@ describe('ResignedEmployee Model', () => {
     });
 
     const updatedRecord = await resignedEmployee.lock();
-    
+
     expect(updatedRecord.isLocked).toBe(true);
     expect(updatedRecord.lockedDate).toBeDefined();
     expect(updatedRecord.canModify).toBe(false);
@@ -274,7 +274,7 @@ describe('ResignedEmployee Model', () => {
     });
 
     const updatedRecord = await resignedEmployee.generateLetter(hrUser._id);
-    
+
     expect(updatedRecord.letterGenerated).toBe(true);
     expect(updatedRecord.letterGeneratedDate).toBeDefined();
     expect(updatedRecord.letterGeneratedBy.toString()).toBe(hrUser._id.toString());
@@ -292,7 +292,7 @@ describe('ResignedEmployee Model', () => {
     });
 
     const updatedRecord = await resignedEmployee.generateLetter(hrUser._id);
-    
+
     expect(updatedRecord.letterGenerated).toBe(true);
     expect(updatedRecord.letterGeneratedDate).toBeDefined();
     expect(updatedRecord.letterGeneratedBy.toString()).toBe(hrUser._id.toString());
@@ -337,13 +337,13 @@ describe('ResignedEmployee Model', () => {
     ]);
 
     const allResigned = await ResignedEmployee.findAllResigned();
-    
+
     expect(allResigned).toHaveLength(2);
     expect(allResigned[0].resignationDate.getTime()).toBeGreaterThanOrEqual(allResigned[1].resignationDate.getTime());
-    
+
     // Check with status filter
     const pendingResigned = await ResignedEmployee.findAllResigned({ status: 'pending' });
-    
+
     expect(pendingResigned).toHaveLength(1);
     expect(pendingResigned[0].status).toBe('pending');
   });
@@ -352,19 +352,19 @@ describe('ResignedEmployee Model', () => {
     // Create a record that's older than 24 hours
     const oldDate = new Date();
     oldDate.setHours(oldDate.getHours() - 25); // 25 hours ago
-    
+
     const resignedEmployee = new ResignedEmployee({
       employee: employee._id,
       resignationType: 'resignation-letter',
       lastWorkingDay: new Date('2024-01-31'),
       createdAt: oldDate
     });
-    
+
     await resignedEmployee.save();
-    
+
     // Reload the record to see if it was auto-locked
     const updatedRecord = await ResignedEmployee.findById(resignedEmployee._id);
-    
+
     expect(updatedRecord.isLocked).toBe(true);
     expect(updatedRecord.lockedDate).toBeDefined();
   });
@@ -372,10 +372,10 @@ describe('ResignedEmployee Model', () => {
   it('should convert numbers to Arabic numerals', () => {
     const arabic123 = ResignedEmployee.toArabicNumerals(123);
     expect(arabic123).toBe('١٢٣');
-    
+
     const arabic0 = ResignedEmployee.toArabicNumerals(0);
     expect(arabic0).toBe('٠');
-    
+
     const arabic1000 = ResignedEmployee.toArabicNumerals(1000);
     expect(arabic1000).toBe('١٠٠٠');
   });
@@ -389,7 +389,7 @@ describe('ResignedEmployee Model', () => {
     });
 
     const updatedRecord = await resignedEmployee.generateLetter(hrUser._id);
-    
+
     expect(updatedRecord.letterGenerated).toBe(true);
     expect(updatedRecord.letterContent).toContain('TO WHOM IT MAY CONCERN');
     expect(updatedRecord.letterContent).not.toContain('Pending Penalties');

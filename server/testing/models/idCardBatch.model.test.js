@@ -22,7 +22,7 @@ beforeAll(async () => {
     code: 'TEST',
     school: school._id
   });
-  
+
   user = await User.create({
     username: 'testuser',
     email: 'test@example.com',
@@ -59,7 +59,7 @@ describe('IDCardBatch Model', () => {
 
   it('should validate batchType enum values', async () => {
     const validTypes = ['new-hire', 'renewal', 'replacement', 'all-employees', 'department', 'custom'];
-    
+
     for (const type of validTypes) {
       const batch = new IDCardBatch({
         batchNumber: `BATCH${Math.floor(Math.random() * 1000)}`,
@@ -67,10 +67,10 @@ describe('IDCardBatch Model', () => {
         batchType: type,
         createdBy: user._id
       });
-      
+
       await expect(batch.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid type
     const invalidBatch = new IDCardBatch({
       batchNumber: 'BATCH002',
@@ -78,13 +78,13 @@ describe('IDCardBatch Model', () => {
       batchType: 'invalid',
       createdBy: user._id
     });
-    
+
     await expect(invalidBatch.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate status enum values', async () => {
     const validStatuses = ['pending', 'queued', 'processing', 'completed', 'failed', 'cancelled', 'partially-completed'];
-    
+
     for (const status of validStatuses) {
       const batch = new IDCardBatch({
         batchNumber: `BATCH${Math.floor(Math.random() * 1000)}`,
@@ -93,10 +93,10 @@ describe('IDCardBatch Model', () => {
         status: status,
         createdBy: user._id
       });
-      
+
       await expect(batch.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid status
     const invalidBatch = new IDCardBatch({
       batchNumber: 'BATCH003',
@@ -105,7 +105,7 @@ describe('IDCardBatch Model', () => {
       status: 'invalid',
       createdBy: user._id
     });
-    
+
     await expect(invalidBatch.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
@@ -135,7 +135,7 @@ describe('IDCardBatch Model', () => {
     });
 
     const startedBatch = await batch.start();
-    
+
     expect(startedBatch.status).toBe('processing');
     expect(startedBatch.processing.startedAt).toBeDefined();
     expect(startedBatch.processing.totalCards).toBe(0);
@@ -150,7 +150,7 @@ describe('IDCardBatch Model', () => {
     });
 
     const updatedBatch = await batch.updateProgress(10, 8, 2);
-    
+
     expect(updatedBatch.processing.processedCards).toBe(10);
     expect(updatedBatch.processing.successfulCards).toBe(8);
     expect(updatedBatch.processing.failedCards).toBe(2);
@@ -179,7 +179,7 @@ describe('IDCardBatch Model', () => {
       'Printer error',
       'PRINTER_ERROR'
     );
-    
+
     expect(updatedBatch.failures).toHaveLength(1);
     expect(updatedBatch.failures[0].employee.toString()).toBe(employee._id.toString());
     expect(updatedBatch.failures[0].errorMessage).toBe('Printer error');
@@ -200,7 +200,7 @@ describe('IDCardBatch Model', () => {
     });
 
     const completedBatch = await batch.complete();
-    
+
     expect(completedBatch.status).toBe('completed');
     expect(completedBatch.processing.completedAt).toBeDefined();
   });

@@ -91,45 +91,45 @@ describe('SecurityAudit Model', () => {
       'maintenance-mode-enabled',
       'maintenance-mode-disabled'
     ];
-    
+
     for (const eventType of validEventTypes) {
       const auditRecord = new SecurityAudit({
         eventType: eventType,
         ipAddress: '192.168.1.100'
       });
-      
+
       await expect(auditRecord.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid event type
     const invalidRecord = new SecurityAudit({
       eventType: 'invalid-event',
       ipAddress: '192.168.1.100'
     });
-    
+
     await expect(invalidRecord.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate severity enum values', async () => {
     const validSeverities = ['info', 'warning', 'critical'];
-    
+
     for (const severity of validSeverities) {
       const auditRecord = new SecurityAudit({
         eventType: 'login-success',
         severity: severity,
         ipAddress: '192.168.1.100'
       });
-      
+
       await expect(auditRecord.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid severity
     const invalidRecord = new SecurityAudit({
       eventType: 'login-success',
       severity: 'invalid-severity',
       ipAddress: '192.168.1.100'
     });
-    
+
     await expect(invalidRecord.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
@@ -145,7 +145,7 @@ describe('SecurityAudit Model', () => {
     };
 
     const loggedEvent = await SecurityAudit.logEvent(eventData);
-    
+
     expect(loggedEvent.eventType).toBe('login-success');
     expect(loggedEvent.user.toString()).toBe(user._id.toString());
     expect(loggedEvent.ipAddress).toBe('192.168.1.100');
@@ -163,14 +163,14 @@ describe('SecurityAudit Model', () => {
 
     // Test successful login
     const successEvent = await SecurityAudit.logAuth('login-success', user, mockReq);
-    
+
     expect(successEvent.eventType).toBe('login-success');
     expect(successEvent.severity).toBe('info');
     expect(successEvent.success).toBe(true);
-    
+
     // Test failed login
     const failedEvent = await SecurityAudit.logAuth('login-failed', user, mockReq);
-    
+
     expect(failedEvent.eventType).toBe('login-failed');
     expect(failedEvent.severity).toBe('warning');
     expect(failedEvent.success).toBe(false);
@@ -197,14 +197,14 @@ describe('SecurityAudit Model', () => {
     ]);
 
     const userActivity = await SecurityAudit.getUserActivity(user._id);
-    
+
     expect(userActivity).toHaveLength(3);
     // Should be sorted by timestamp descending (newest first)
     expect(userActivity[0].timestamp.getTime()).toBeGreaterThanOrEqual(userActivity[1].timestamp.getTime());
-    
+
     // Test with event type filter
     const loginActivity = await SecurityAudit.getUserActivity(user._id, { eventType: 'login-success' });
-    
+
     expect(loginActivity).toHaveLength(1);
     expect(loginActivity[0].eventType).toBe('login-success');
   });
@@ -235,7 +235,7 @@ describe('SecurityAudit Model', () => {
     ]);
 
     const suspiciousActivities = await SecurityAudit.getSuspiciousActivities();
-    
+
     expect(suspiciousActivities).toHaveLength(3);
     // Should include login-failed, unauthorized-access, and critical severity events
     const eventTypes = suspiciousActivities.map(a => a.eventType);
@@ -248,7 +248,7 @@ describe('SecurityAudit Model', () => {
     // Create multiple failed login attempts
     const recentDate = new Date();
     const oldDate = new Date(recentDate.getTime() - 35 * 60 * 1000); // 35 minutes ago
-    
+
     await SecurityAudit.create([
       {
         eventType: 'login-failed',
@@ -273,7 +273,7 @@ describe('SecurityAudit Model', () => {
     ]);
 
     const failedLoginCount = await SecurityAudit.getFailedLogins(user._id, 30);
-    
+
     expect(failedLoginCount).toBe(2); // Only recent failed logins within 30 minutes
   });
 
@@ -303,23 +303,23 @@ describe('SecurityAudit Model', () => {
     ]);
 
     const stats = await SecurityAudit.getSecurityStats(1); // Last 1 day
-    
+
     expect(stats.eventStats).toHaveLength(3); // login-success, login-failed, password-changed
     expect(stats.severityStats).toHaveLength(2); // info, warning
-    
+
     // Check event stats
     const loginSuccessStats = stats.eventStats.find(s => s._id === 'login-success');
     expect(loginSuccessStats.count).toBe(2);
     expect(loginSuccessStats.failures).toBe(0);
-    
+
     const loginFailedStats = stats.eventStats.find(s => s._id === 'login-failed');
     expect(loginFailedStats.count).toBe(1);
     expect(loginFailedStats.failures).toBe(1);
-    
+
     // Check severity stats
     const infoStats = stats.severityStats.find(s => s._id === 'info');
     expect(infoStats.count).toBe(3); // 2 login-success + 1 password-changed
-    
+
     const warningStats = stats.severityStats.find(s => s._id === 'warning');
     expect(warningStats.count).toBe(1); // 1 login-failed
   });

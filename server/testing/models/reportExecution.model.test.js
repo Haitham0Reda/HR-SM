@@ -11,7 +11,7 @@ let school;
 beforeEach(async () => {
   // Clear report executions collection
   await ReportExecution.deleteMany({});
-  
+
   // Create school first
   school = await School.create({
     schoolCode: 'ENG',
@@ -28,7 +28,7 @@ beforeEach(async () => {
     employeeId: 'EMP001',
     school: school._id
   });
-  
+
   // Create report for testing
   report = await Report.create({
     name: 'Test Report',
@@ -54,64 +54,64 @@ describe('ReportExecution Model', () => {
 
   it('should validate executionType enum values', async () => {
     const validTypes = ['manual', 'scheduled', 'api'];
-    
+
     for (const type of validTypes) {
       const execution = new ReportExecution({
         report: report._id,
         executionType: type
       });
-      
+
       await expect(execution.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid type
     const invalidExecution = new ReportExecution({
       report: report._id,
       executionType: 'invalid-type'
     });
-    
+
     await expect(invalidExecution.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate status enum values', async () => {
     const validStatuses = ['pending', 'running', 'completed', 'failed', 'cancelled'];
-    
+
     for (const status of validStatuses) {
       const execution = new ReportExecution({
         report: report._id,
         status: status
       });
-      
+
       await expect(execution.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid status
     const invalidExecution = new ReportExecution({
       report: report._id,
       status: 'invalid-status'
     });
-    
+
     await expect(invalidExecution.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate export format enum values', async () => {
     const validFormats = ['excel', 'pdf', 'csv', 'html', 'json'];
-    
+
     for (const format of validFormats) {
       const execution = new ReportExecution({
         report: report._id,
         exportFormat: format
       });
-      
+
       await expect(execution.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid format
     const invalidExecution = new ReportExecution({
       report: report._id,
       exportFormat: 'invalid-format'
     });
-    
+
     await expect(invalidExecution.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
@@ -121,13 +121,13 @@ describe('ReportExecution Model', () => {
       report: report._id,
       startTime: startTime
     });
-    
+
     // Wait a bit to ensure duration calculation
     await new Promise(resolve => setTimeout(resolve, 10));
-    
+
     const resultData = { test: 'data', count: 10 };
     const updatedExecution = await execution.markCompleted(100, resultData);
-    
+
     expect(updatedExecution.status).toBe('completed');
     expect(updatedExecution.endTime).toBeDefined();
     expect(updatedExecution.duration).toBeGreaterThan(0);
@@ -141,16 +141,16 @@ describe('ReportExecution Model', () => {
       report: report._id,
       startTime: startTime
     });
-    
+
     // Wait a bit to ensure duration calculation
     await new Promise(resolve => setTimeout(resolve, 10));
-    
+
     const error = new Error('Report generation failed');
     error.code = 'REPORT_ERROR';
     error.stack = 'Error stack trace';
-    
+
     const updatedExecution = await execution.markFailed(error);
-    
+
     expect(updatedExecution.status).toBe('failed');
     expect(updatedExecution.endTime).toBeDefined();
     expect(updatedExecution.duration).toBeGreaterThan(0);
@@ -177,13 +177,13 @@ describe('ReportExecution Model', () => {
         resultCount: 75
       }
     ]);
-    
+
     const history = await ReportExecution.getHistory(report._id);
-    
+
     expect(history).toHaveLength(3);
     // Should be sorted by createdAt descending (newest first)
     expect(history[0].createdAt.getTime()).toBeGreaterThanOrEqual(history[1].createdAt.getTime());
-    
+
     // Check that executedBy is populated (or undefined if not set)
     expect(history[0].executedBy).toBeUndefined(); // No executedBy set
   });
@@ -195,9 +195,9 @@ describe('ReportExecution Model', () => {
       executedBy: user._id,
       status: 'completed'
     });
-    
+
     const history = await ReportExecution.getHistory(report._id);
-    
+
     expect(history).toHaveLength(1);
     expect(history[0].executedBy).toBeDefined();
     expect(history[0].executedBy.username).toBe('testuser');
@@ -226,14 +226,14 @@ describe('ReportExecution Model', () => {
         resultCount: 0
       }
     ]);
-    
+
     const stats = await ReportExecution.getStatistics(report._id);
-    
+
     expect(stats).toHaveLength(2); // completed and failed
-    
+
     const completedStats = stats.find(s => s._id === 'completed');
     const failedStats = stats.find(s => s._id === 'failed');
-    
+
     expect(completedStats.count).toBe(2);
     expect(completedStats.avgDuration).toBe(1500); // (1000 + 2000) / 2
     expect(completedStats.totalRecords).toBe(125); // 50 + 75
@@ -244,7 +244,7 @@ describe('ReportExecution Model', () => {
   it('should handle parameters correctly', async () => {
     const startDate = new Date('2024-01-01');
     const endDate = new Date('2024-01-31');
-    
+
     const execution = await ReportExecution.create({
       report: report._id,
       parameters: {

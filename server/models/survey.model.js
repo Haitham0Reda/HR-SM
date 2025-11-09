@@ -305,11 +305,11 @@ surveySchema.methods.addResponse = async function (userId, answers, isAnonymous 
 surveySchema.statics.findActiveSurveysForUser = async function (userId) {
     const User = mongoose.model('User');
     const user = await User.findById(userId);
-    
+
     if (!user) return [];
-    
+
     const now = new Date();
-    
+
     const query = {
         status: 'active',
         $and: [
@@ -327,31 +327,31 @@ surveySchema.statics.findActiveSurveysForUser = async function (userId) {
             }
         ]
     };
-    
+
     const surveys = await this.find(query)
         .populate('createdBy', 'username email')
         .sort({ createdAt: -1 });
-    
+
     // Filter surveys assigned to this user
     return surveys.filter(survey => {
         if (survey.assignedTo.allEmployees) return true;
-        
+
         if (survey.assignedTo.specificEmployees.some(id => id.toString() === userId.toString())) {
             return true;
         }
-        
+
         if (user.school && survey.assignedTo.campuses.some(id => id.toString() === user.school.toString())) {
             return true;
         }
-        
+
         if (user.department && survey.assignedTo.departments.some(id => id.toString() === user.department.toString())) {
             return true;
         }
-        
+
         if (survey.assignedTo.roles.includes(user.role)) {
             return true;
         }
-        
+
         return false;
     });
 };
