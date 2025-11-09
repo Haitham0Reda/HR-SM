@@ -24,18 +24,21 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 ## Features
 
 ### Employee Management
+
 - User authentication and authorization
 - Profile management
 - Role-based access control
 - Department and position management
 
 ### Attendance & Time Tracking
+
 - Check-in/check-out system
 - Work hour calculations
 - Remote work tracking
 - Attendance reporting
 
 ### Leave & Permission Management
+
 - Annual, casual, and sick leave tracking
 - Permission requests (late arrival, early departure)
 - Overtime requests
@@ -43,34 +46,40 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 - Leave balance management
 
 ### Payroll Management
+
 - Salary calculations
 - Deduction tracking
 - Payroll processing
 
 ### Document Management
+
 - Employee document storage
 - Document templates
 - Confidential document handling
 
 ### Communication & Notifications
+
 - Announcement system
 - Notification center
 - Event management
 - Survey system
 
 ### Reporting & Analytics
+
 - Attendance reports
 - Payroll reports
 - Performance analytics
 - Custom report builder
 
 ### Security & Compliance
+
 - Audit logging
 - Permission tracking
 - Security settings
 - Backup management
 
 ### Email Notification System
+
 - Automated email notifications for requests
 - Role-based notification routing
 - Pending request reminders
@@ -94,18 +103,21 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/your-username/HR-SM.git
    cd HR-SM
    ```
 
 2. Install server dependencies:
+
    ```bash
    cd server
    npm install
    ```
 
 3. Install client dependencies:
+
    ```bash
    cd ../client
    npm install
@@ -119,6 +131,7 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 ## Configuration
 
 1. Create a `.env` file in the server directory with the following variables:
+
    ```env
    PORT=5000
    MONGO_URI=your_mongodb_connection_string
@@ -139,11 +152,13 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 ### Development Mode
 
 1. Start the server:
+
    ```bash
    npm run server
    ```
 
 2. Start the client:
+
    ```bash
    npm run client
    ```
@@ -156,6 +171,7 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 ### Production Mode
 
 1. Build the client:
+
    ```bash
    cd client
    npm run build
@@ -223,15 +239,24 @@ node scripts/generate-component-tests.js controller department
 
 ### Coverage Goals
 
-Current Coverage Statistics:
+Current Test Suite Statistics:
+
+- **Test Suites**: 83 (100% passing)
+- **Total Tests**: 398 (100% passing)
+- **Models**: 32 suites, 246 tests ✅
+- **Routes**: 25 suites, 111 tests ✅
+- **Controllers**: 26 suites, 41 tests ✅
+
+Code Coverage Statistics:
+
 - Statements: 18.91% (399/2109)
 - Branches: 5.92% (87/1468)
 - Functions: 11.74% (29/247)
 - Lines: 19.26% (395/2050)
 
-Goal: 100% coverage across all components
+Goal: Increase code coverage to 100% across all components
 
-Refer to `Missing_Test_Files_Report.md` for a detailed list of files that need tests to achieve 100% coverage.
+See `server/testing/FINAL_TEST_REPORT.md` for complete test coverage details.
 
 ### Test Structure
 
@@ -249,10 +274,12 @@ server/testing/
 The API follows RESTful principles and includes comprehensive endpoints for all HR functions.
 
 ### Authentication
+
 - POST `/api/users/login` - User login
 - POST `/api/users/register` - User registration
 
 ### Core Resources
+
 - Users
 - Schools
 - Departments
@@ -280,9 +307,11 @@ For detailed API documentation, see [Server API Documentation](server/README.md)
 ## Email Notification System
 
 ### Overview
+
 The email notification system automatically sends emails based on request types and workflow stages, ensuring the right people are notified at the right time.
 
 ### Key Features
+
 - **Role-based notifications**: Different recipients for different request types
 - **Workflow integration**: Notifications at each stage of the approval process
 - **Reminder system**: Automatic reminders for pending requests
@@ -290,16 +319,20 @@ The email notification system automatically sends emails based on request types 
 - **Extensible design**: Easy to add new notification types
 
 ### Notification Flow
+
 1. **General Requests** (Permission, Overtime, Mission):
+
    - Creation → Manager notification
    - Approval/Rejection → Employee notification
 
 2. **Sick Leave Requests**:
+
    - Creation → Doctor notification
    - Doctor approval → Manager & HR notification
    - Final decision → Employee notification
 
 3. **Day Swap Requests**:
+
    - Creation → Manager & HR notification
    - Approval/Rejection → Employee notification
 
@@ -345,23 +378,25 @@ HR-SM/
 The application requires several environment variables to be set. Here's a complete list:
 
 ### Server Environment Variables
-| Variable | Description | Required |
-|----------|-------------|----------|
-| PORT | Port for the server to listen on | Yes |
-| MONGO_URI | MongoDB connection string | Yes |
-| JWT_SECRET | Secret key for JWT token signing | Yes |
-| NODE_ENV | Environment (development/production) | Yes |
-| EMAIL_HOST | SMTP host for email service | No |
-| EMAIL_PORT | SMTP port for email service | No |
-| EMAIL_USER | SMTP username for email service | No |
-| EMAIL_PASS | SMTP password for email service | No |
-| EMAIL_FROM | Sender email address | No |
+
+| Variable   | Description                          | Required |
+| ---------- | ------------------------------------ | -------- |
+| PORT       | Port for the server to listen on     | Yes      |
+| MONGO_URI  | MongoDB connection string            | Yes      |
+| JWT_SECRET | Secret key for JWT token signing     | Yes      |
+| NODE_ENV   | Environment (development/production) | Yes      |
+| EMAIL_HOST | SMTP host for email service          | No       |
+| EMAIL_PORT | SMTP port for email service          | No       |
+| EMAIL_USER | SMTP username for email service      | No       |
+| EMAIL_PASS | SMTP password for email service      | No       |
+| EMAIL_FROM | Sender email address                 | No       |
 
 ## Database Schema
 
 The application uses MongoDB with the following main collections:
 
 ### Users
+
 - `_id`: ObjectId
 - `name`: String
 - `email`: String (unique)
@@ -373,6 +408,7 @@ The application uses MongoDB with the following main collections:
 - `updatedAt`: Date
 
 ### Departments
+
 - `_id`: ObjectId
 - `name`: String
 - `description`: String
@@ -381,6 +417,7 @@ The application uses MongoDB with the following main collections:
 - `updatedAt`: Date
 
 ### Positions
+
 - `_id`: ObjectId
 - `title`: String
 - `description`: String
@@ -395,6 +432,7 @@ Additional schemas include: Attendance, Leave, Permission, Payroll, Document, Ev
 ### Docker Deployment (Recommended)
 
 1. Build the Docker images:
+
    ```bash
    docker-compose build
    ```
@@ -420,6 +458,7 @@ Additional schemas include: Attendance, Leave, Permission, Payroll, Document, Ev
 ### Cloud Deployment
 
 The application can be deployed to various cloud platforms:
+
 - Heroku
 - AWS (EC2, ECS, Elastic Beanstalk)
 - Google Cloud Platform

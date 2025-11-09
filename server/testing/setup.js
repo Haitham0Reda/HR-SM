@@ -5,28 +5,48 @@ let mongoServer;
 
 // Connect to a MongoDB memory server before running tests
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-});
+  // Increase timeout for MongoDB Memory Server creation
+  jest.setTimeout(30000);
 
-// Clear all test data after each test
+  mongoServer = await MongoMemoryServer.create({
+    instance: {
+      storageEngine: 'ephemeralForTest',
+    },
+    binary: {
+      version: '6.0.0',
+    },
+  });
+  const mongoUri = mongoServer.getUri();
+  await mongoose.connect(mongoUri, {
+    maxPoolSize: 5,
+    minPoolSize: 1,
+    serverSelectionTimeoutMS: 3000,
+    socketTimeoutMS: 10000,
+  });
+}, 30000);
+
+// Clear all test data after each test (optimized)
 afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
+  // Only clear if there are collections
+  if (mongoose.connection.readyState === 1) {
+    const collections = Object.keys(mongoose.connection.collections);
+    await Promise.all(
+      collections.map(key =>
+        mongoose.connection.collections[key].deleteMany({})
+      )
+    );
   }
 });
 
 // Disconnect from the MongoDB memory server after all tests are done
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongoServer) {
-    await mongoServer.stop();
+  if (mongoose.connection.readyState === 1) {
+    await mongoose.connection.close(true);
   }
-});
+  if (mongoServer) {
+    await mongoServer.stop({ doCleanup: false });
+  }
+}, 10000);
 
 // Export mongoServer for use in individual test files if needed
 export { mongoServer };

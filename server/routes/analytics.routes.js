@@ -16,60 +16,23 @@ import {
 
 const router = express.Router();
 
-// Get HR dashboard overview - HR or Admin
-router.get('/dashboard',
-    protect,
-    hrOrAdmin,
-    canViewReports,
-    getHRDashboard
-);
+// Apply common middleware to all routes
+router.use(protect, hrOrAdmin, canViewReports);
 
-// Get attendance analytics - HR or Admin
-router.get('/attendance',
-    protect,
-    hrOrAdmin,
-    canViewReports,
-    getAttendanceAnalytics
-);
+// Route configurations
+const routes = [
+    { path: '/dashboard', method: 'get', handler: getHRDashboard },
+    { path: '/attendance', method: 'get', handler: getAttendanceAnalytics },
+    { path: '/leave', method: 'get', handler: getLeaveAnalytics },
+    { path: '/employees', method: 'get', handler: getEmployeeAnalytics },
+    { path: '/payroll', method: 'get', handler: getPayrollAnalytics },
+    { path: '/kpis', method: 'get', handler: getKPIs },
+    { path: '/trends', method: 'get', handler: getTrendAnalysis }
+];
 
-// Get leave analytics - HR or Admin
-router.get('/leave',
-    protect,
-    hrOrAdmin,
-    canViewReports,
-    getLeaveAnalytics
-);
-
-// Get employee analytics - HR or Admin
-router.get('/employees',
-    protect,
-    hrOrAdmin,
-    canViewReports,
-    getEmployeeAnalytics
-);
-
-// Get payroll analytics - Admin only
-router.get('/payroll',
-    protect,
-    hrOrAdmin,
-    canViewReports,
-    getPayrollAnalytics
-);
-
-// Get KPIs - HR or Admin
-router.get('/kpis',
-    protect,
-    hrOrAdmin,
-    canViewReports,
-    getKPIs
-);
-
-// Get trend analysis - HR or Admin
-router.get('/trends',
-    protect,
-    hrOrAdmin,
-    canViewReports,
-    getTrendAnalysis
-);
+// Register all routes
+routes.forEach(({ path, method, handler }) => {
+    router[method](path, handler);
+});
 
 export default router;

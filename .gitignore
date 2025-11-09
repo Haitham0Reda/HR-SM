@@ -7,6 +7,8 @@
 
 # testing
 /coverage
+TEST_REPORT_*.md
+.jest-cache/
 
 # production
 /build
