@@ -2,18 +2,31 @@ import mongoose from 'mongoose';
 import ReportExecution from '../../models/reportExecution.model.js';
 import Report from '../../models/report.model.js';
 import User from '../../models/user.model.js';
+import School from '../../models/school.model.js';
 
 let report;
 let user;
+let school;
 
-beforeAll(async () => {
+beforeEach(async () => {
+  // Clear report executions collection
+  await ReportExecution.deleteMany({});
+  
+  // Create school first
+  school = await School.create({
+    schoolCode: 'ENG',
+    name: 'School of Engineering',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  });
+
   // Create user for testing
   user = await User.create({
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'hr',
-    employeeId: 'EMP001'
+    employeeId: 'EMP001',
+    school: school._id
   });
   
   // Create report for testing
@@ -22,10 +35,6 @@ beforeAll(async () => {
     reportType: 'attendance',
     createdBy: user._id
   });
-});
-
-beforeEach(async () => {
-  await ReportExecution.deleteMany({});
 });
 
 describe('ReportExecution Model', () => {
@@ -175,8 +184,8 @@ describe('ReportExecution Model', () => {
     // Should be sorted by createdAt descending (newest first)
     expect(history[0].createdAt.getTime()).toBeGreaterThanOrEqual(history[1].createdAt.getTime());
     
-    // Check that executedBy is populated
-    expect(history[0].executedBy).toBeNull(); // No executedBy set
+    // Check that executedBy is populated (or undefined if not set)
+    expect(history[0].executedBy).toBeUndefined(); // No executedBy set
   });
 
   it('should get execution history with populated user', async () => {
@@ -190,6 +199,7 @@ describe('ReportExecution Model', () => {
     const history = await ReportExecution.getHistory(report._id);
     
     expect(history).toHaveLength(1);
+    expect(history[0].executedBy).toBeDefined();
     expect(history[0].executedBy.username).toBe('testuser');
     expect(history[0].executedBy.email).toBe('test@example.com');
   });

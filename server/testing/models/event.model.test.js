@@ -1,30 +1,5 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import Event from '../../models/event.model.js';
-
-let mongoServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-});
-
-afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
-  }
-});
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
-});
 
 describe('Event Model', () => {
   it('should create and save an event successfully', async () => {
@@ -57,7 +32,7 @@ describe('Event Model', () => {
     };
 
     const event = new Event(eventData);
-    
+
     let err;
     try {
       await event.save();
@@ -75,7 +50,7 @@ describe('Event Model', () => {
   it('should handle attendees', async () => {
     const attendee1 = new mongoose.Types.ObjectId();
     const attendee2 = new mongoose.Types.ObjectId();
-    
+
     const eventData = {
       title: 'Team Building Workshop',
       description: 'Team building activities and workshops',

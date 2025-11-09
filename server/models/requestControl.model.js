@@ -74,14 +74,14 @@ const requestControlSchema = new mongoose.Schema({
         reason: String,
         // Specific leave types under vacation
         leaveTypes: {
-            annual: {
+            'annual': {
                 enabled: {
                     type: Boolean,
                     default: true
                 },
                 disabledMessage: String
             },
-            casual: {
+            'casual': {
                 enabled: {
                     type: Boolean,
                     default: true
@@ -114,21 +114,21 @@ const requestControlSchema = new mongoose.Schema({
         reason: String,
         // Specific permission types
         permissionTypes: {
-            lateArrival: {
+            'late-arrival': {
                 enabled: {
                     type: Boolean,
                     default: true
                 },
                 disabledMessage: String
             },
-            earlyDeparture: {
+            'early-departure': {
                 enabled: {
                     type: Boolean,
                     default: true
                 },
                 disabledMessage: String
             },
-            overtime: {
+            'overtime': {
                 enabled: {
                     type: Boolean,
                     default: true
@@ -533,6 +533,20 @@ requestControlSchema.methods.isRequestAllowed = function (requestType, subType =
             allowed: false,
             message: this[field].disabledMessage
         };
+    }
+
+    // If requestType is a subType (mapped to a main type), check that subType automatically
+    const subTypeMap = {
+        'annual': 'annual',
+        'casual': 'casual',
+        'late-arrival': 'late-arrival',
+        'early-departure': 'early-departure',
+        'overtime': 'overtime'
+    };
+
+    // Check if requestType is actually a subType that should be checked automatically
+    if (subTypeMap[requestType] && !subType) {
+        subType = subTypeMap[requestType];
     }
 
     // Check sub-types if applicable

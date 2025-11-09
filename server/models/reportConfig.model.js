@@ -99,6 +99,10 @@ const reportConfigSchema = new mongoose.Schema({
             enum: ['hr-month', 'current-month', 'previous-month', 'custom'],
             default: 'hr-month'
         },
+        // Custom start date for custom range type
+        customStartDate: Date,
+        // Custom end date for custom range type
+        customEndDate: Date,
         // Time zone for report generation
         timezone: {
             type: String,

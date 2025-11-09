@@ -126,14 +126,15 @@ reportExecutionSchema.methods.markFailed = async function (error) {
 };
 
 // Static method to get execution history
-reportExecutionSchema.statics.getHistory = function (reportId, options = {}) {
+reportExecutionSchema.statics.getHistory = async function (reportId, options = {}) {
     const { limit = 50, skip = 0 } = options;
 
-    return this.find({ report: reportId })
+    return await this.find({ report: reportId })
         .populate('executedBy', 'username email profile.firstName profile.lastName')
         .sort({ createdAt: -1 })
         .limit(limit)
-        .skip(skip);
+        .skip(skip)
+        .exec();
 };
 
 // Static method to get statistics
@@ -144,7 +145,7 @@ reportExecutionSchema.statics.getStatistics = async function (reportId, days = 3
     const stats = await this.aggregate([
         {
             $match: {
-                report: mongoose.Types.ObjectId(reportId),
+                report: new mongoose.Types.ObjectId(reportId),
                 createdAt: { $gte: dateThreshold }
             }
         },

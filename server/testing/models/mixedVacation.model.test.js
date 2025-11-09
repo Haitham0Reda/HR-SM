@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import MixedVacation from '../../models/mixedVacation.model.js';
 import User from '../../models/user.model.js';
 import School from '../../models/school.model.js';
@@ -7,29 +6,23 @@ import Department from '../../models/department.model.js';
 import VacationBalance from '../../models/vacationBalance.model.js';
 import Holiday from '../../models/holiday.model.js';
 
-let mongoServer;
 let user;
 let school;
 let department;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-  
-  // Create required references
   school = await School.create({
     name: 'School of Engineering',
     schoolCode: 'ENG',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
-  
+
   department = await Department.create({
     name: 'Test Department',
     code: 'TEST',
     school: school._id
   });
-  
+
   user = await User.create({
     username: 'testuser',
     email: 'test@example.com',
@@ -42,24 +35,15 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
-  await MixedVacation.deleteMany({});
   await VacationBalance.deleteMany({});
   await Holiday.deleteMany({});
-});
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
 });
 
 describe('MixedVacation Model', () => {
   it('should create a new mixed vacation policy with required fields', async () => {
     const startDate = new Date('2024-01-01');
     const endDate = new Date('2024-01-10');
-    
+
     const mixedVacation = await MixedVacation.create({
       name: 'Test Mixed Vacation',
       description: 'Test mixed vacation policy',
@@ -80,7 +64,7 @@ describe('MixedVacation Model', () => {
 
   it('should validate deduction strategy enum values', async () => {
     const validStrategies = ['annual-first', 'casual-first', 'proportional', 'auto'];
-    
+
     for (const strategy of validStrategies) {
       const mixedVacation = new MixedVacation({
         name: 'Test Policy',
@@ -91,10 +75,10 @@ describe('MixedVacation Model', () => {
         deductionStrategy: strategy,
         createdBy: user._id
       });
-      
+
       await expect(mixedVacation.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid strategy
     const invalidPolicy = new MixedVacation({
       name: 'Invalid Policy',
@@ -105,13 +89,13 @@ describe('MixedVacation Model', () => {
       deductionStrategy: 'invalid',
       createdBy: user._id
     });
-    
+
     await expect(invalidPolicy.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate status enum values', async () => {
     const validStatuses = ['draft', 'active', 'completed', 'cancelled'];
-    
+
     for (const status of validStatuses) {
       const mixedVacation = new MixedVacation({
         name: 'Test Policy',
@@ -122,10 +106,10 @@ describe('MixedVacation Model', () => {
         status: status,
         createdBy: user._id
       });
-      
+
       await expect(mixedVacation.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid status
     const invalidPolicy = new MixedVacation({
       name: 'Invalid Policy',
@@ -136,14 +120,14 @@ describe('MixedVacation Model', () => {
       status: 'invalid',
       createdBy: user._id
     });
-    
+
     await expect(invalidPolicy.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should calculate virtual duration days correctly', async () => {
     const startDate = new Date('2024-01-01');
     const endDate = new Date('2024-01-10'); // 10 days including both start and end
-    
+
     const mixedVacation = await MixedVacation.create({
       name: 'Test Policy',
       startDate: startDate,
@@ -169,7 +153,7 @@ describe('MixedVacation Model', () => {
     });
 
     const personalDays = mixedVacation.calculatePersonalDays();
-    
+
     expect(personalDays).toBe(7); // 10 total - 3 holidays = 7 personal days
     expect(mixedVacation.personalDaysRequired).toBe(7);
   });
@@ -198,7 +182,7 @@ describe('MixedVacation Model', () => {
     });
 
     const updatedPolicy = await mixedVacation.detectOfficialHolidays(school._id);
-    
+
     expect(updatedPolicy.officialHolidays).toHaveLength(1);
     expect(updatedPolicy.officialHolidays[0].name).toBe('Test Holiday');
     expect(updatedPolicy.officialHolidayCount).toBe(1);

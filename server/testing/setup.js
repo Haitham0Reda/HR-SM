@@ -27,3 +27,6 @@ afterAll(async () => {
     await mongoServer.stop();
   }
 });
+
+// Export mongoServer for use in individual test files if needed
+export { mongoServer };

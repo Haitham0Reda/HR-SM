@@ -13,20 +13,23 @@ let position;
 beforeAll(async () => {
   // Create required references
   school = await School.create({
-    name: 'Test School',
-    schoolCode: 'TS001'
+    name: 'School of Engineering',
+    schoolCode: 'ENG',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
-  
+
   department = await Department.create({
     name: 'Test Department',
-    code: 'TEST'
+    code: 'TEST',
+    school: school._id
   });
-  
+
   position = await Position.create({
     title: 'Test Position',
+    code: 'TP001',
     department: department._id
   });
-  
+
   user = await User.create({
     username: 'testuser',
     email: 'test@example.com',
@@ -47,7 +50,7 @@ describe('ReportExport Model', () => {
   it('should create a new report export with required fields', async () => {
     const startDate = new Date('2024-01-01');
     const endDate = new Date('2024-01-31');
-    
+
     const reportExport = await ReportExport.create({
       reportType: 'attendance-summary',
       title: 'Attendance Summary Report',
@@ -86,7 +89,7 @@ describe('ReportExport Model', () => {
       'comprehensive-hr',
       'custom'
     ];
-    
+
     for (const type of validTypes) {
       const reportExport = new ReportExport({
         reportType: type,
@@ -98,10 +101,10 @@ describe('ReportExport Model', () => {
         },
         generatedBy: user._id
       });
-      
+
       await expect(reportExport.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid type
     const invalidReport = new ReportExport({
       reportType: 'invalid-type',
@@ -113,13 +116,13 @@ describe('ReportExport Model', () => {
       },
       generatedBy: user._id
     });
-    
+
     await expect(invalidReport.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate exportFormat enum values', async () => {
     const validFormats = ['html', 'excel', 'pdf'];
-    
+
     for (const format of validFormats) {
       const reportExport = new ReportExport({
         reportType: 'attendance-summary',
@@ -131,10 +134,10 @@ describe('ReportExport Model', () => {
         },
         generatedBy: user._id
       });
-      
+
       await expect(reportExport.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid format
     const invalidReport = new ReportExport({
       reportType: 'attendance-summary',
@@ -146,13 +149,13 @@ describe('ReportExport Model', () => {
       },
       generatedBy: user._id
     });
-    
+
     await expect(invalidReport.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate date range types', async () => {
     const validRangeTypes = ['hr-month', 'current-month', 'previous-month', 'custom'];
-    
+
     for (const rangeType of validRangeTypes) {
       const reportExport = new ReportExport({
         reportType: 'attendance-summary',
@@ -166,10 +169,10 @@ describe('ReportExport Model', () => {
         },
         generatedBy: user._id
       });
-      
+
       await expect(reportExport.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid range type
     const invalidReport = new ReportExport({
       reportType: 'attendance-summary',
@@ -183,14 +186,14 @@ describe('ReportExport Model', () => {
       },
       generatedBy: user._id
     });
-    
+
     await expect(invalidReport.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should calculate virtual properties correctly', async () => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 30); // 30 days from now
-    
+
     const reportExport = await ReportExport.create({
       reportType: 'attendance-summary',
       title: 'Test Report',
@@ -210,7 +213,7 @@ describe('ReportExport Model', () => {
   it('should handle expired reports', async () => {
     const pastDate = new Date();
     pastDate.setDate(pastDate.getDate() - 1); // Yesterday
-    
+
     const reportExport = await ReportExport.create({
       reportType: 'attendance-summary',
       title: 'Expired Report',
@@ -310,9 +313,9 @@ describe('ReportExport Model', () => {
 
     const filePath = '/reports/test-report.xlsx';
     const fileSize = 102400; // 100KB
-    
+
     const updatedExport = await reportExport.markCompleted(filePath, fileSize);
-    
+
     expect(updatedExport.status).toBe('completed');
     expect(updatedExport.processing.completedAt).toBeDefined();
     expect(updatedExport.processing.duration).toBeGreaterThan(0);
@@ -336,7 +339,7 @@ describe('ReportExport Model', () => {
 
     const errorMessage = 'Failed to generate report due to data error';
     const updatedExport = await reportExport.markFailed(errorMessage);
-    
+
     expect(updatedExport.status).toBe('failed');
     expect(updatedExport.processing.completedAt).toBeDefined();
     expect(updatedExport.processing.duration).toBeGreaterThan(0);
@@ -356,7 +359,7 @@ describe('ReportExport Model', () => {
     });
 
     const updatedExport = await reportExport.logAccess(user._id, 'download');
-    
+
     expect(updatedExport.accessLog).toHaveLength(1);
     expect(updatedExport.accessLog[0].accessedBy.toString()).toBe(user._id.toString());
     expect(updatedExport.accessLog[0].action).toBe('download');
@@ -375,7 +378,7 @@ describe('ReportExport Model', () => {
     };
 
     const createdReport = await ReportExport.createReport(reportData, user._id);
-    
+
     expect(createdReport.reportType).toBe('attendance-summary');
     expect(createdReport.title).toBe('Created Report');
     expect(createdReport.exportFormat).toBe('excel');
@@ -409,11 +412,11 @@ describe('ReportExport Model', () => {
     ]);
 
     const userExports = await ReportExport.getUserExports(user._id);
-    
+
     expect(userExports).toHaveLength(2);
     expect(userExports[0].generatedBy.toString()).toBe(user._id.toString());
     expect(userExports[1].generatedBy.toString()).toBe(user._id.toString());
-    
+
     // Should be sorted by createdAt descending
     expect(userExports[0].createdAt.getTime()).toBeGreaterThanOrEqual(userExports[1].createdAt.getTime());
   });
@@ -449,7 +452,7 @@ describe('ReportExport Model', () => {
     ]);
 
     const stats = await ReportExport.getExportStats('default');
-    
+
     expect(stats).toHaveLength(1);
     expect(stats[0]._id).toBe('attendance-summary');
     expect(stats[0].totalExports).toBe(2);

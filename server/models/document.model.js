@@ -9,7 +9,8 @@ const documentSchema = new mongoose.Schema({
     arabicTitle: String,
     type: {
         type: String,
-        enum: ['contract', 'national-id', 'certificate', 'offer-letter', 'birth-certificate', 'other']
+        enum: ['contract', 'national-id', 'certificate', 'offer-letter', 'birth-certificate', 'other'],
+        required: true
     },
     employee: {
         type: mongoose.Schema.Types.ObjectId,

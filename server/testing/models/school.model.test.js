@@ -1,30 +1,5 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import School from '../../models/school.model.js';
-
-let mongoServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-});
-
-afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
-  }
-});
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
-});
 
 describe('School Model', () => {
   it('should create and save a school successfully', async () => {
@@ -51,7 +26,7 @@ describe('School Model', () => {
     };
 
     const school = new School(schoolData);
-    
+
     let err;
     try {
       await school.save();
@@ -66,12 +41,12 @@ describe('School Model', () => {
   it('should enforce valid school codes', async () => {
     const schoolData = {
       schoolCode: 'INVALID',
-      name: 'Invalid School',
-      arabicName: 'مدرسة غير صالحة'
+      name: 'School of Business',
+      arabicName: 'المعهد الكندى العالى للإدارة بالسادس من اكتوبر'
     };
 
     const school = new School(schoolData);
-    
+
     let err;
     try {
       await school.save();
@@ -88,21 +63,21 @@ describe('School Model', () => {
     const schoolCode = 'BUS';
     const schoolData1 = {
       schoolCode: schoolCode,
-      name: 'School 1',
-      arabicName: 'مدرسة 1'
+      name: 'School of Business',
+      arabicName: 'المعهد الكندى العالى للإدارة بالسادس من اكتوبر'
     };
 
     const schoolData2 = {
       schoolCode: schoolCode,
-      name: 'School 2',
-      arabicName: 'مدرسة 2'
+      name: 'School of Engineering',
+      arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
     };
 
     const school1 = new School(schoolData1);
     await school1.save();
 
     const school2 = new School(schoolData2);
-    
+
     let err;
     try {
       await school2.save();

@@ -1,30 +1,5 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import Payroll from '../../models/payroll.model.js';
-
-let mongoServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-});
-
-afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
-  }
-});
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
-});
 
 describe('Payroll Model', () => {
   it('should create and save a payroll record successfully', async () => {
@@ -73,7 +48,7 @@ describe('Payroll Model', () => {
     };
 
     const payroll = new Payroll(payrollData);
-    
+
     let err;
     try {
       await payroll.save();
@@ -108,7 +83,7 @@ describe('Payroll Model', () => {
     await payroll1.save();
 
     const payroll2 = new Payroll(payrollData2);
-    
+
     let err;
     try {
       await payroll2.save();

@@ -13,6 +13,7 @@
  * - Department and employee-level filtering
  */
 import mongoose from 'mongoose';
+import ReportConfig from './reportConfig.model.js';  // Add this import
 
 const reportExportSchema = new mongoose.Schema({
     // Report metadata
@@ -574,8 +575,6 @@ reportExportSchema.methods.logAccess = async function (userId, action = 'view') 
  * @returns {Promise<ReportExport>} Created export record
  */
 reportExportSchema.statics.createReport = async function (reportData, userId) {
-    const ReportConfig = mongoose.model('ReportConfig');
-
     // Get report configuration
     const config = await ReportConfig.getConfig(reportData.organization || 'default', reportData.schoolId);
 

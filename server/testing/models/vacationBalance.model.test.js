@@ -1,30 +1,5 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import VacationBalance from '../../models/vacationBalance.model.js';
-
-let mongoServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-});
-
-afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
-  }
-});
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
-});
 
 describe('VacationBalance Model', () => {
   it('should create and save a vacation balance record successfully', async () => {
@@ -86,7 +61,7 @@ describe('VacationBalance Model', () => {
     };
 
     const vacationBalance = new VacationBalance(vacationBalanceData);
-    
+
     let err;
     try {
       await vacationBalance.save();
@@ -152,7 +127,7 @@ describe('VacationBalance Model', () => {
     await vacationBalance1.save();
 
     const vacationBalance2 = new VacationBalance(vacationBalanceData2);
-    
+
     let err;
     try {
       await vacationBalance2.save();
@@ -258,11 +233,11 @@ describe('VacationBalance Model', () => {
 
     // Use annual vacation
     const updatedBalance = await savedVacationBalance.useVacation('annual', 3, 'Test usage');
-    
+
     expect(updatedBalance.annual.used).toBe(8);
     expect(updatedBalance.annual.available).toBe(11);
     expect(updatedBalance.annual.pending).toBe(2);
-    
+
     // Check that history was recorded
     expect(updatedBalance.history).toHaveLength(1);
     expect(updatedBalance.history[0].type).toBe('annual');
@@ -306,11 +281,11 @@ describe('VacationBalance Model', () => {
 
     // Return annual vacation
     const updatedBalance = await savedVacationBalance.returnVacation('annual', 2, 'Test return');
-    
+
     expect(updatedBalance.annual.used).toBe(3);
     expect(updatedBalance.annual.available).toBe(16);
     expect(updatedBalance.annual.pending).toBe(2);
-    
+
     // Check that history was recorded
     expect(updatedBalance.history).toHaveLength(2);
     expect(updatedBalance.history[1].type).toBe('annual');

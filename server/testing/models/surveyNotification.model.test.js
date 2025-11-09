@@ -2,19 +2,29 @@ import mongoose from 'mongoose';
 import SurveyNotification from '../../models/surveyNotification.model.js';
 import Survey from '../../models/survey.model.js';
 import User from '../../models/user.model.js';
+import School from '../../models/school.model.js';
 
 let user;
 let manager;
 let survey;
+let school;
 
 beforeAll(async () => {
+  // Create school first
+  school = await School.create({
+    schoolCode: 'ENG',
+    name: 'School of Engineering',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  });
+
   // Create users for testing
   user = await User.create({
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'employee',
-    employeeId: 'EMP001'
+    employeeId: 'EMP001',
+    school: school._id
   });
   
   manager = await User.create({
@@ -22,7 +32,8 @@ beforeAll(async () => {
     email: 'manager@example.com',
     password: 'password123',
     role: 'manager',
-    employeeId: 'MGR001'
+    employeeId: 'MGR001',
+    school: school._id
   });
   
   // Create survey for testing
@@ -351,7 +362,10 @@ describe('SurveyNotification Model', () => {
       recipients: [
         { user: user._id },
         { user: manager._id }
-      ]
+      ],
+      stats: {
+        totalRecipients: 2
+      }
     });
 
     expect(notification.stats.totalRecipients).toBe(2);
