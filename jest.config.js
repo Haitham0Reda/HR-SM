@@ -9,9 +9,22 @@ export default {
   ],
   testMatch: ['**/server/testing/**/*.test.js'],
   setupFilesAfterEnv: ['<rootDir>/server/testing/setup.js'],
-  verbose: true,
+  verbose: false,
   moduleNameMapper: {
     '^(\.{1,2}/.*)\.js$': '$1',
   },
-  transform: {}
+  transform: {
+    '^.+\\.js$': 'babel-jest'
+  },
+  // Aggressive performance optimizations
+  maxWorkers: '75%', // Use more CPU cores
+  cache: true,
+  cacheDirectory: '<rootDir>/.jest-cache',
+  testTimeout: 10000, // 10 second timeout per test
+  // Disable slow features
+  errorOnDeprecated: false,
+  detectOpenHandles: false,
+  forceExit: true, // Force exit after tests complete
+  // Global teardown to generate report after all tests
+  globalTeardown: '<rootDir>/test-teardown.js'
 };

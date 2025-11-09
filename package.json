@@ -8,13 +8,18 @@
     "server": "nodemon server/index.js",
     "client": "npm start --prefix frontend",
     "dev": "concurrently \"npm run server\" \"npm run client\" ",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:report": "node generate_test_report.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "A comprehensive Human Resources Management System built with the MERN stack (MongoDB, Express.js, React, Node.js) designed to streamline HR operations, automate administrative tasks, and enhance employee management processes.",
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
+    "babel-jest": "^29.7.0",
     "concurrently": "^9.2.1",
     "jest": "^30.2.0",
     "mongodb-memory-server": "^10.3.0",
@@ -24,12 +29,14 @@
   "dependencies": {
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
+    "chalk": "^5.6.2",
     "commander": "^14.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.19.2"
+    "mongoose": "^8.19.2",
+    "yargs": "^17.7.2"
   }
 }
