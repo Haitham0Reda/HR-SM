@@ -400,7 +400,7 @@ vacationBalanceSchema.methods.useVacation = async function (leaveType, duration,
     // Directly use available days (not pending days)
     type.used += duration;                                // Add to used
     type.available -= duration;                           // Remove from available
-    
+
     // Add history tracking
     if (!this.history) {
         this.history = [];
@@ -412,7 +412,7 @@ vacationBalanceSchema.methods.useVacation = async function (leaveType, duration,
         date: new Date(),
         reason: reason
     });
-    
+
     return await this.save();
 };
 
@@ -430,7 +430,7 @@ vacationBalanceSchema.methods.returnVacation = async function (leaveType, durati
 
     type.used = Math.max(0, type.used - duration);        // Remove from used
     type.available += duration;                           // Add to available
-    
+
     // Add history tracking
     if (!this.history) {
         this.history = [];
@@ -442,7 +442,7 @@ vacationBalanceSchema.methods.returnVacation = async function (leaveType, durati
         date: new Date(),
         reason: reason
     });
-    
+
     return await this.save();
 };
 

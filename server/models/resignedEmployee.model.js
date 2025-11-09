@@ -184,7 +184,7 @@ resignedEmployeeSchema.methods.generateLetter = async function (generatedBy) {
     // Fetch the employee directly instead of using populate
     const User = mongoose.model('User');
     const employee = await User.findById(this.employee).select('profile employeeId department position');
-    
+
     const letterContent = this.resignationType === 'resignation-letter'
         ? await this.generateResignationLetter(employee)
         : await this.generateTerminationLetter(employee);
@@ -275,7 +275,7 @@ resignedEmployeeSchema.pre('save', function (next) {
     } else {
         this.totalPenalties = 0;
     }
-    
+
     if (!this.isLocked) {
         const oneDayAgo = new Date();
         oneDayAgo.setHours(oneDayAgo.getHours() - 24);

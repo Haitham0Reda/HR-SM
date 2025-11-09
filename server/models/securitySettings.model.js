@@ -231,7 +231,7 @@ securitySettingsSchema.statics.updateSettings = async function (updates, userId)
             settings[key] = value;
         }
     }
-    
+
     settings.lastModified = new Date();
     settings.lastModifiedBy = userId;
 
