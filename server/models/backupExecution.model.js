@@ -78,7 +78,19 @@ const backupExecutionSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     verifiedAt: Date,
+    
+    // Cancellation
+    cancelledBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    cancellationReason: String,
+    cancelledAt: Date,
 
     // Notification
     notificationSent: {
@@ -140,6 +152,25 @@ backupExecutionSchema.methods.markFailed = async function (error) {
     return await this.save();
 };
 
+// Method to mark as verified
+backupExecutionSchema.methods.markVerified = async function (verifiedBy) {
+    this.verified = true;
+    this.verifiedAt = new Date();
+    this.verifiedBy = verifiedBy;
+
+    return await this.save();
+};
+
+// Method to mark as cancelled
+backupExecutionSchema.methods.markCancelled = async function (cancelledBy, reason) {
+    this.status = 'cancelled';
+    this.cancelledAt = new Date();
+    this.cancelledBy = cancelledBy;
+    this.cancellationReason = reason;
+
+    return await this.save();
+};
+
 // Static method to get execution history
 backupExecutionSchema.statics.getHistory = function (backupId, options = {}) {
     const { limit = 50, skip = 0, status } = options;
@@ -162,7 +193,7 @@ backupExecutionSchema.statics.getStatistics = async function (backupId, days = 3
     const stats = await this.aggregate([
         {
             $match: {
-                backup: mongoose.Types.ObjectId(backupId),
+                backup: new mongoose.Types.ObjectId(backupId),
                 createdAt: { $gte: dateThreshold }
             }
         },

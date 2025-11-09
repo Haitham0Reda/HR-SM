@@ -56,27 +56,29 @@ permissionAuditSchema.statics.logChange = async function (data) {
 };
 
 // Static method to get user's audit trail
-permissionAuditSchema.statics.getUserAuditTrail = function (userId, options = {}) {
+permissionAuditSchema.statics.getUserAuditTrail = async function (userId, options = {}) {
     const { limit = 50, skip = 0 } = options;
 
-    return this.find({ user: userId })
+    return await this.find({ user: userId })
         .populate('modifiedBy', 'username email')
         .sort({ timestamp: -1 })
         .limit(limit)
-        .skip(skip);
+        .skip(skip)
+        .exec();
 };
 
 // Static method to get recent permission changes
-permissionAuditSchema.statics.getRecentChanges = function (days = 30, options = {}) {
+permissionAuditSchema.statics.getRecentChanges = async function (days = 30, options = {}) {
     const { limit = 100 } = options;
     const dateThreshold = new Date();
     dateThreshold.setDate(dateThreshold.getDate() - days);
 
-    return this.find({ timestamp: { $gte: dateThreshold } })
+    return await this.find({ timestamp: { $gte: dateThreshold } })
         .populate('user', 'username email role')
         .populate('modifiedBy', 'username email')
         .sort({ timestamp: -1 })
-        .limit(limit);
+        .limit(limit)
+        .exec();
 };
 
 export default mongoose.model('PermissionAudit', permissionAuditSchema);

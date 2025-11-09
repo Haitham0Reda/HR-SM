@@ -9,18 +9,23 @@ let manager;
 let school;
 let department;
 
-beforeAll(async () => {
+beforeEach(async () => {
+  // Clear surveys collection
+  await Survey.deleteMany({});
+  
   // Create required references
   school = await School.create({
-    name: 'Test School',
-    schoolCode: 'TS001'
+    name: 'School of Engineering',
+    schoolCode: 'ENG',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
-  
+
   department = await Department.create({
     name: 'Test Department',
-    code: 'TEST'
+    code: 'TEST',
+    school: school._id
   });
-  
+
   user = await User.create({
     username: 'testuser',
     email: 'test@example.com',
@@ -30,7 +35,7 @@ beforeAll(async () => {
     school: school._id,
     department: department._id
   });
-  
+
   manager = await User.create({
     username: 'testmanager',
     email: 'manager@example.com',
@@ -40,10 +45,6 @@ beforeAll(async () => {
     school: school._id,
     department: department._id
   });
-});
-
-beforeEach(async () => {
-  await Survey.deleteMany({});
 });
 
 describe('Survey Model', () => {
@@ -72,24 +73,24 @@ describe('Survey Model', () => {
       'exit-interview',
       'custom'
     ];
-    
+
     for (const type of validTypes) {
       const survey = new Survey({
         title: 'Test Survey',
         surveyType: type,
         createdBy: user._id
       });
-      
+
       await expect(survey.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid type
     const invalidSurvey = new Survey({
       title: 'Invalid Survey',
       surveyType: 'invalid-type',
       createdBy: user._id
     });
-    
+
     await expect(invalidSurvey.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
@@ -104,7 +105,7 @@ describe('Survey Model', () => {
       'number',
       'date'
     ];
-    
+
     for (const questionType of validQuestionTypes) {
       const survey = new Survey({
         title: 'Test Survey',
@@ -114,10 +115,10 @@ describe('Survey Model', () => {
           questionType: questionType
         }]
       });
-      
+
       await expect(survey.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid question type
     const invalidSurvey = new Survey({
       title: 'Invalid Survey',
@@ -127,7 +128,7 @@ describe('Survey Model', () => {
         questionType: 'invalid-type'
       }]
     });
-    
+
     await expect(invalidSurvey.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
@@ -142,7 +143,7 @@ describe('Survey Model', () => {
       'head-of-department',
       'dean'
     ];
-    
+
     for (const role of validRoles) {
       const survey = new Survey({
         title: 'Test Survey',
@@ -151,10 +152,10 @@ describe('Survey Model', () => {
           roles: [role]
         }
       });
-      
+
       await expect(survey.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid role
     const invalidSurvey = new Survey({
       title: 'Invalid Survey',
@@ -163,14 +164,14 @@ describe('Survey Model', () => {
         roles: ['invalid-role']
       }
     });
-    
+
     await expect(invalidSurvey.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should calculate virtual properties correctly', async () => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 30); // 30 days from now
-    
+
     const survey = await Survey.create({
       title: 'Active Survey',
       createdBy: user._id,
@@ -187,7 +188,7 @@ describe('Survey Model', () => {
   it('should handle inactive surveys', async () => {
     const pastDate = new Date();
     pastDate.setDate(pastDate.getDate() - 1); // Yesterday
-    
+
     const survey = await Survey.create({
       title: 'Expired Survey',
       createdBy: user._id,
@@ -207,8 +208,7 @@ describe('Survey Model', () => {
       createdBy: user._id,
       responses: [
         {
-          respondent: user._id,
-          answers: []
+          respondent: user._id
         }
       ]
     });
@@ -218,13 +218,14 @@ describe('Survey Model', () => {
   });
 
   it('should get user response', async () => {
+    const questionId = new mongoose.Types.ObjectId();
     const answers = [
       {
-        questionId: new mongoose.Types.ObjectId(),
+        questionId: questionId,
         answer: 'Test answer'
       }
     ];
-    
+
     const survey = await Survey.create({
       title: 'Test Survey',
       createdBy: user._id,
@@ -237,10 +238,12 @@ describe('Survey Model', () => {
     });
 
     const userResponse = survey.getUserResponse(user._id);
-    
+
     expect(userResponse).toBeDefined();
     expect(userResponse.respondent.toString()).toBe(user._id.toString());
-    expect(userResponse.answers).toEqual(answers);
+    expect(userResponse.answers).toHaveLength(1);
+    expect(userResponse.answers[0].questionId.toString()).toBe(questionId.toString());
+    expect(userResponse.answers[0].answer).toBe('Test answer');
   });
 
   it('should calculate completion rate', async () => {
@@ -254,14 +257,14 @@ describe('Survey Model', () => {
     });
 
     const completionRate = survey.calculateCompletionRate();
-    
+
     expect(completionRate).toBe(25);
     expect(survey.stats.completionRate).toBe(25);
   });
 
   it('should add response to survey', async () => {
     const questionId = new mongoose.Types.ObjectId();
-    
+
     const survey = await Survey.create({
       title: 'Test Survey',
       createdBy: user._id,
@@ -284,17 +287,19 @@ describe('Survey Model', () => {
         answer: 'Test answer'
       }
     ];
-    
+
     const metadata = {
       ipAddress: '192.168.1.100',
       userAgent: 'Test Browser'
     };
-    
+
     const updatedSurvey = await survey.addResponse(user._id, answers, false, metadata);
-    
+
     expect(updatedSurvey.responses).toHaveLength(1);
     expect(updatedSurvey.responses[0].respondent.toString()).toBe(user._id.toString());
-    expect(updatedSurvey.responses[0].answers).toEqual(answers);
+    expect(updatedSurvey.responses[0].answers).toHaveLength(1);
+    expect(updatedSurvey.responses[0].answers[0].questionId.toString()).toBe(questionId.toString());
+    expect(updatedSurvey.responses[0].answers[0].answer).toBe('Test answer');
     expect(updatedSurvey.responses[0].completionPercentage).toBe(100);
     expect(updatedSurvey.responses[0].isComplete).toBe(true);
     expect(updatedSurvey.responses[0].submittedAt).toBeDefined();
@@ -306,7 +311,7 @@ describe('Survey Model', () => {
 
   it('should prevent multiple submissions when not allowed', async () => {
     const questionId = new mongoose.Types.ObjectId();
-    
+
     const survey = await Survey.create({
       title: 'Test Survey',
       createdBy: user._id,
@@ -329,10 +334,10 @@ describe('Survey Model', () => {
         answer: 'Test answer'
       }
     ];
-    
+
     // First submission should work
     await survey.addResponse(user._id, answers);
-    
+
     // Second submission should fail
     await expect(survey.addResponse(user._id, answers))
       .rejects.toThrow('You have already submitted a response to this survey');
@@ -340,7 +345,7 @@ describe('Survey Model', () => {
 
   it('should allow multiple submissions when enabled', async () => {
     const questionId = new mongoose.Types.ObjectId();
-    
+
     const survey = await Survey.create({
       title: 'Test Survey',
       createdBy: user._id,
@@ -363,25 +368,25 @@ describe('Survey Model', () => {
         answer: 'Test answer 1'
       }
     ];
-    
+
     const answers2 = [
       {
         questionId: questionId,
         answer: 'Test answer 2'
       }
     ];
-    
+
     // Both submissions should work
     await survey.addResponse(user._id, answers);
     await survey.addResponse(user._id, answers2);
-    
+
     expect(survey.responses).toHaveLength(2);
   });
 
   it('should find active surveys for user', async () => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 30); // 30 days from now
-    
+
     // Create surveys assigned to different targets
     await Survey.create([
       {
@@ -447,10 +452,10 @@ describe('Survey Model', () => {
     ]);
 
     const activeSurveys = await Survey.findActiveSurveysForUser(user._id);
-    
+
     // Should find 4 surveys (all except the manager survey)
     expect(activeSurveys).toHaveLength(4);
-    
+
     const surveyTitles = activeSurveys.map(s => s.title);
     expect(surveyTitles).toContain('All Employees Survey');
     expect(surveyTitles).toContain('Department Survey');
@@ -461,7 +466,7 @@ describe('Survey Model', () => {
 
   it('should handle anonymous responses', async () => {
     const questionId = new mongoose.Types.ObjectId();
-    
+
     const survey = await Survey.create({
       title: 'Anonymous Survey',
       createdBy: user._id,
@@ -481,9 +486,9 @@ describe('Survey Model', () => {
         answer: 'Anonymous answer'
       }
     ];
-    
+
     const updatedSurvey = await survey.addResponse(user._id, answers, true);
-    
+
     expect(updatedSurvey.responses).toHaveLength(1);
     expect(updatedSurvey.responses[0].isAnonymous).toBe(true);
     expect(updatedSurvey.responses[0].respondent).toBeNull();
@@ -492,7 +497,7 @@ describe('Survey Model', () => {
   it('should handle partial responses', async () => {
     const question1Id = new mongoose.Types.ObjectId();
     const question2Id = new mongoose.Types.ObjectId();
-    
+
     const survey = await Survey.create({
       title: 'Partial Response Survey',
       createdBy: user._id,
@@ -519,9 +524,9 @@ describe('Survey Model', () => {
         answer: 'Required answer'
       }
     ];
-    
+
     const updatedSurvey = await survey.addResponse(user._id, answers);
-    
+
     expect(updatedSurvey.responses).toHaveLength(1);
     expect(updatedSurvey.responses[0].completionPercentage).toBe(100); // Only 1 required question answered
     expect(updatedSurvey.responses[0].isComplete).toBe(true);
@@ -529,7 +534,7 @@ describe('Survey Model', () => {
 
   it('should handle surveys with no required questions', async () => {
     const questionId = new mongoose.Types.ObjectId();
-    
+
     const survey = await Survey.create({
       title: 'No Required Questions Survey',
       createdBy: user._id,
@@ -549,9 +554,9 @@ describe('Survey Model', () => {
         answer: 'Optional answer'
       }
     ];
-    
+
     const updatedSurvey = await survey.addResponse(user._id, answers);
-    
+
     expect(updatedSurvey.responses).toHaveLength(1);
     expect(updatedSurvey.responses[0].completionPercentage).toBe(100);
     expect(updatedSurvey.responses[0].isComplete).toBe(true);

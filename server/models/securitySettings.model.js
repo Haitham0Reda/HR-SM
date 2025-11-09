@@ -216,7 +216,22 @@ securitySettingsSchema.statics.getSettings = async function () {
 securitySettingsSchema.statics.updateSettings = async function (updates, userId) {
     let settings = await this.getSettings();
 
-    Object.assign(settings, updates);
+    // Handle dot notation updates properly
+    for (const [key, value] of Object.entries(updates)) {
+        if (key.includes('.')) {
+            // Handle nested properties using dot notation
+            const parts = key.split('.');
+            let current = settings;
+            for (let i = 0; i < parts.length - 1; i++) {
+                current = current[parts[i]];
+            }
+            current[parts[parts.length - 1]] = value;
+        } else {
+            // Handle top-level properties
+            settings[key] = value;
+        }
+    }
+    
     settings.lastModified = new Date();
     settings.lastModifiedBy = userId;
 

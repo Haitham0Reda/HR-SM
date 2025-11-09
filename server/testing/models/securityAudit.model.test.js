@@ -1,17 +1,27 @@
 import mongoose from 'mongoose';
 import SecurityAudit from '../../models/securityAudit.model.js';
 import User from '../../models/user.model.js';
+import School from '../../models/school.model.js';
 
 let user;
+let school;
 
 beforeAll(async () => {
+  // Create school first
+  school = await School.create({
+    schoolCode: 'ENG',
+    name: 'School of Engineering',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  });
+
   // Create user for testing
   user = await User.create({
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'employee',
-    employeeId: 'EMP001'
+    employeeId: 'EMP001',
+    school: school._id
   });
 });
 

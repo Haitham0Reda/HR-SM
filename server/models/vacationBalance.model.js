@@ -138,6 +138,26 @@ const vacationBalanceSchema = new mongoose.Schema({
             min: 0
         }
     },
+    // History of vacation usage and returns
+    history: [{
+        type: {             // Type of leave (annual, casual, sick)
+            type: String,
+            required: true
+        },
+        days: {             // Number of days
+            type: Number,
+            required: true
+        },
+        action: {           // Action performed (used, returned, reserved, etc.)
+            type: String,
+            required: true
+        },
+        date: {             // Date of action
+            type: Date,
+            default: Date.now
+        },
+        reason: String      // Reason for the action
+    }],
     // Timestamp of last balance recalculation
     lastCalculated: {
         type: Date,
@@ -362,6 +382,67 @@ vacationBalanceSchema.methods.confirmUsage = async function (leaveType, duration
 
     type.pending = Math.max(0, type.pending - duration); // Remove from pending
     type.used += duration;                                // Add to used
+    return await this.save();
+};
+
+/**
+ * Use vacation days (directly use available days, not pending days)
+ * 
+ * @param {String} leaveType - Type of leave (annual, casual, sick)
+ * @param {Number} duration - Number of days to use
+ * @param {String} reason - Reason for using vacation
+ * @returns {Promise<VacationBalance>} Updated balance
+ */
+vacationBalanceSchema.methods.useVacation = async function (leaveType, duration, reason) {
+    const type = this[leaveType];
+    if (!type) return this;
+
+    // Directly use available days (not pending days)
+    type.used += duration;                                // Add to used
+    type.available -= duration;                           // Remove from available
+    
+    // Add history tracking
+    if (!this.history) {
+        this.history = [];
+    }
+    this.history.push({
+        type: leaveType,
+        days: duration,
+        action: 'used',
+        date: new Date(),
+        reason: reason
+    });
+    
+    return await this.save();
+};
+
+/**
+ * Return vacation days (opposite of useVacation with history tracking)
+ * 
+ * @param {String} leaveType - Type of leave (annual, casual, sick)
+ * @param {Number} duration - Number of days to return
+ * @param {String} reason - Reason for returning vacation
+ * @returns {Promise<VacationBalance>} Updated balance
+ */
+vacationBalanceSchema.methods.returnVacation = async function (leaveType, duration, reason) {
+    const type = this[leaveType];
+    if (!type) return this;
+
+    type.used = Math.max(0, type.used - duration);        // Remove from used
+    type.available += duration;                           // Add to available
+    
+    // Add history tracking
+    if (!this.history) {
+        this.history = [];
+    }
+    this.history.push({
+        type: leaveType,
+        days: duration,
+        action: 'returned',
+        date: new Date(),
+        reason: reason
+    });
+    
     return await this.save();
 };
 

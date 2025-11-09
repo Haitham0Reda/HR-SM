@@ -1,30 +1,5 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import Permission from '../../models/permission.model.js';
-
-let mongoServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-});
-
-afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
-  }
-});
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
-});
 
 describe('Permission Model', () => {
   it('should create and save a permission request successfully', async () => {
@@ -59,7 +34,7 @@ describe('Permission Model', () => {
     };
 
     const permission = new Permission(permissionData);
-    
+
     let err;
     try {
       await permission.save();
@@ -89,7 +64,7 @@ describe('Permission Model', () => {
     };
 
     const permission = new Permission(permissionData);
-    
+
     let err;
     try {
       await permission.save();

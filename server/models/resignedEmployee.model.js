@@ -181,11 +181,13 @@ resignedEmployeeSchema.methods.lock = function () {
 
 // Method to generate letter
 resignedEmployeeSchema.methods.generateLetter = async function (generatedBy) {
-    const employee = await this.populate('employee', 'profile employeeId department position');
-
+    // Fetch the employee directly instead of using populate
+    const User = mongoose.model('User');
+    const employee = await User.findById(this.employee).select('profile employeeId department position');
+    
     const letterContent = this.resignationType === 'resignation-letter'
-        ? await this.generateResignationLetter(employee.employee)
-        : await this.generateTerminationLetter(employee.employee);
+        ? await this.generateResignationLetter(employee)
+        : await this.generateTerminationLetter(employee);
 
     this.letterContent = letterContent;
     this.letterGenerated = true;
@@ -267,6 +269,13 @@ This letter is issued for official purposes.
 
 // Pre-save hook to auto-lock after 24 hours
 resignedEmployeeSchema.pre('save', function (next) {
+    // Auto-calculate total penalties
+    if (this.penalties && this.penalties.length > 0) {
+        this.totalPenalties = this.penalties.reduce((sum, p) => sum + (p.amount || 0), 0);
+    } else {
+        this.totalPenalties = 0;
+    }
+    
     if (!this.isLocked) {
         const oneDayAgo = new Date();
         oneDayAgo.setHours(oneDayAgo.getHours() - 24);

@@ -1,30 +1,5 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import DocumentTemplate from '../../models/documentTemplate.model.js';
-
-let mongoServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-});
-
-afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
-  }
-});
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
-});
 
 describe('DocumentTemplate Model', () => {
   it('should create and save a document template successfully', async () => {
@@ -55,7 +30,7 @@ describe('DocumentTemplate Model', () => {
     };
 
     const template = new DocumentTemplate(templateData);
-    
+
     let err;
     try {
       await template.save();

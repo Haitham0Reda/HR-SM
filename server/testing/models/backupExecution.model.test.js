@@ -1,47 +1,43 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import BackupExecution from '../../models/backupExecution.model.js';
 import Backup from '../../models/backup.model.js';
 import User from '../../models/user.model.js';
+import School from '../../models/school.model.js';
 
-let mongoServer;
 let backup;
 let user;
+let school;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-  
-  // Create a backup for reference
-  backup = await Backup.create({
-    name: 'Test Backup',
-    description: 'Test backup for execution testing',
-    schedule: '0 2 * * *',
-    retentionDays: 30,
-    enabled: true
+  // Create a school first
+  school = await School.create({
+    schoolCode: 'ENG',
+    name: 'School of Engineering',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
-  
-  // Create a user for reference
+});
+
+beforeEach(async () => {
+  // Create a user for reference (in beforeEach because the global afterEach clears all data)
   user = await User.create({
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'admin',
-    employeeId: 'EMP001'
+    employeeId: 'EMP001',
+    school: school._id
+  });
+
+  // Create a backup for reference
+  backup = await Backup.create({
+    name: 'Test Backup',
+    backupType: 'database',
+    createdBy: user._id
   });
 });
 
-afterEach(async () => {
-  await BackupExecution.deleteMany({});
-});
-
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
+  // Clean up test data
 });
 
 describe('BackupExecution Model', () => {
@@ -62,43 +58,43 @@ describe('BackupExecution Model', () => {
 
   it('should validate executionType enum values', async () => {
     const validTypes = ['manual', 'scheduled', 'api'];
-    
+
     for (const type of validTypes) {
       const backupExecution = new BackupExecution({
         backup: backup._id,
         executionType: type
       });
-      
+
       await expect(backupExecution.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid type
     const invalidExecution = new BackupExecution({
       backup: backup._id,
       executionType: 'invalid'
     });
-    
+
     await expect(invalidExecution.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
   it('should validate status enum values', async () => {
     const validStatuses = ['pending', 'running', 'completed', 'failed', 'cancelled'];
-    
+
     for (const status of validStatuses) {
       const backupExecution = new BackupExecution({
         backup: backup._id,
         status: status
       });
-      
+
       await expect(backupExecution.validate()).resolves.toBeUndefined();
     }
-    
+
     // Test invalid status
     const invalidExecution = new BackupExecution({
       backup: backup._id,
       status: 'invalid'
     });
-    
+
     await expect(invalidExecution.validate()).rejects.toThrow(mongoose.Error.ValidationError);
   });
 
@@ -108,10 +104,10 @@ describe('BackupExecution Model', () => {
       backup: backup._id,
       startTime: startTime
     });
-    
+
     // Wait a bit to ensure duration calculation
     await new Promise(resolve => setTimeout(resolve, 10));
-    
+
     const result = {
       backupFile: 'backup-file.zip',
       backupPath: '/backups/',
@@ -129,9 +125,9 @@ describe('BackupExecution Model', () => {
       },
       checksum: 'abc123'
     };
-    
+
     const updatedExecution = await backupExecution.markCompleted(result);
-    
+
     expect(updatedExecution.status).toBe('completed');
     expect(updatedExecution.endTime).toBeDefined();
     expect(updatedExecution.duration).toBeGreaterThan(0);
@@ -148,16 +144,16 @@ describe('BackupExecution Model', () => {
       backup: backup._id,
       startTime: startTime
     });
-    
+
     // Wait a bit to ensure duration calculation
     await new Promise(resolve => setTimeout(resolve, 10));
-    
+
     const error = new Error('Backup failed');
     error.code = 'BACKUP_ERROR';
     error.stack = 'Error stack trace';
-    
+
     const updatedExecution = await backupExecution.markFailed(error);
-    
+
     expect(updatedExecution.status).toBe('failed');
     expect(updatedExecution.endTime).toBeDefined();
     expect(updatedExecution.duration).toBeGreaterThan(0);
@@ -171,10 +167,11 @@ describe('BackupExecution Model', () => {
       backup: backup._id,
       triggeredBy: user._id
     });
-    
+
     const populatedExecution = await BackupExecution.findById(backupExecution._id)
       .populate('triggeredBy', 'username email');
-    
+
+    expect(populatedExecution.triggeredBy).toBeDefined();
     expect(populatedExecution.triggeredBy.username).toBe('testuser');
     expect(populatedExecution.triggeredBy.email).toBe('test@example.com');
   });
@@ -186,9 +183,9 @@ describe('BackupExecution Model', () => {
       { backup: backup._id, status: 'failed' },
       { backup: backup._id, status: 'completed' }
     ]);
-    
+
     const history = await BackupExecution.getHistory(backup._id);
-    
+
     expect(history).toHaveLength(3);
     // Check that they are sorted by createdAt descending
     expect(history[0].createdAt.getTime()).toBeGreaterThanOrEqual(history[1].createdAt.getTime());
@@ -201,18 +198,18 @@ describe('BackupExecution Model', () => {
       { backup: backup._id, status: 'completed', duration: 2000, backupSize: 2048 },
       { backup: backup._id, status: 'failed', duration: 500, backupSize: 512 }
     ]);
-    
+
     const stats = await BackupExecution.getStatistics(backup._id);
-    
+
     expect(stats).toHaveLength(2); // completed and failed
-    
+
     const completedStats = stats.find(s => s._id === 'completed');
     const failedStats = stats.find(s => s._id === 'failed');
-    
+
     expect(completedStats.count).toBe(2);
     expect(completedStats.avgDuration).toBe(1500); // (1000 + 2000) / 2
     expect(completedStats.totalSize).toBe(3072); // 1024 + 2048
-    
+
     expect(failedStats.count).toBe(1);
     expect(failedStats.avgDuration).toBe(500);
     expect(failedStats.totalSize).toBe(512);
@@ -223,9 +220,9 @@ describe('BackupExecution Model', () => {
       backup: backup._id,
       status: 'completed'
     });
-    
+
     const updatedExecution = await backupExecution.markVerified(user._id);
-    
+
     expect(updatedExecution.verified).toBe(true);
     expect(updatedExecution.verifiedBy.toString()).toBe(user._id.toString());
     expect(updatedExecution.verifiedAt).toBeDefined();
@@ -236,9 +233,9 @@ describe('BackupExecution Model', () => {
       backup: backup._id,
       status: 'pending'
     });
-    
+
     const updatedExecution = await backupExecution.markCancelled(user._id, 'Manual cancellation');
-    
+
     expect(updatedExecution.status).toBe('cancelled');
     expect(updatedExecution.cancelledBy.toString()).toBe(user._id.toString());
     expect(updatedExecution.cancellationReason).toBe('Manual cancellation');

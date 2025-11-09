@@ -1,30 +1,5 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import Request from '../../models/request.model.js';
-
-let mongoServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-});
-
-afterEach(async () => {
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
-  }
-});
-
-afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
-});
 
 describe('Request Model', () => {
   it('should create and save a request successfully', async () => {
@@ -60,7 +35,7 @@ describe('Request Model', () => {
     };
 
     const request = new Request(requestData);
-    
+
     let err;
     try {
       await request.save();
@@ -81,7 +56,7 @@ describe('Request Model', () => {
     };
 
     const request = new Request(requestData);
-    
+
     let err;
     try {
       await request.save();
@@ -95,7 +70,7 @@ describe('Request Model', () => {
 
   it('should handle different request types', async () => {
     const requestTypes = ['permission', 'overtime', 'sick-leave', 'mission', 'day-swap'];
-    
+
     for (const type of requestTypes) {
       const requestData = {
         employee: new mongoose.Types.ObjectId(),

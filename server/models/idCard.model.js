@@ -199,6 +199,10 @@ const idCardSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'IDCard'
         },
+        originalCard: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'IDCard'
+        },
         replacementDate: Date,
         replacementReason: {
             type: String,
@@ -332,6 +336,16 @@ idCardSchema.methods.replaceCard = async function (issuedBy, reason) {
     this.status = 'replaced';
     this.isActive = false;
 
+    // Generate card number
+    const User = mongoose.model('User');
+    const employee = await User.findById(this.employee).select('employeeId');
+    const year = new Date().getFullYear();
+    const cardNumber = `CARD-${employee.employeeId}-${year}-${Date.now()}`;
+
+    // Set expiry date (1 year from now)
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
     // Create new card
     const newCard = new this.constructor({
         employee: this.employee,
@@ -339,12 +353,18 @@ idCardSchema.methods.replaceCard = async function (issuedBy, reason) {
         school: this.school,
         position: this.position,
         cardType: this.cardType,
+        cardNumber: cardNumber,
+        'expiry.expiryDate': expiryDate,
         issue: {
             issuedBy,
             issueReason: 'replacement'
         },
         template: this.template,
-        previousCard: this._id
+        previousCard: this._id,
+        replacement: {
+            originalCard: this._id,
+            replacementReason: reason
+        }
     });
 
     // Link replacement

@@ -3,21 +3,34 @@ import ResignedEmployee from '../../models/resignedEmployee.model.js';
 import User from '../../models/user.model.js';
 import Department from '../../models/department.model.js';
 import Position from '../../models/position.model.js';
+import School from '../../models/school.model.js';  // Add this import
 
 let employee;
 let department;
 let position;
 let hrUser;
+let school;
 
 beforeAll(async () => {
-  // Create required references
+  // Create required references that don't change between tests
+  school = await School.create({
+    name: 'School of Engineering',
+    schoolCode: 'ENG',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  });
+});
+
+beforeEach(async () => {
+  // Create fresh employee and related data for each test
   department = await Department.create({
     name: 'Test Department',
-    code: 'TEST'
+    code: 'TEST',
+    school: school._id
   });
   
   position = await Position.create({
     title: 'Test Position',
+    code: 'TP001',
     department: department._id
   });
   
@@ -27,8 +40,13 @@ beforeAll(async () => {
     password: 'password123',
     role: 'employee',
     employeeId: 'EMP001',
+    school: school._id,
     department: department._id,
     position: position._id,
+    profile: {
+      firstName: 'Test',
+      lastName: 'Employee'
+    },
     employment: {
       hireDate: new Date('2020-01-01'),
       employmentStatus: 'active'
@@ -40,11 +58,10 @@ beforeAll(async () => {
     email: 'hr@example.com',
     password: 'password123',
     role: 'hr',
-    employeeId: 'HR001'
+    employeeId: 'HR001',
+    school: school._id
   });
-});
-
-beforeEach(async () => {
+  
   await ResignedEmployee.deleteMany({});
 });
 
@@ -195,11 +212,24 @@ describe('ResignedEmployee Model', () => {
       amount: 100
     };
     
-    await expect(resignedEmployee.addPenalty(penaltyData, hrUser._id))
-      .rejects.toThrow('Cannot modify penalties after 24 hours');
+    // Debug: Log the resignedEmployee to see its state
+    console.log('ResignedEmployee state:', resignedEmployee.isLocked);
+    
+    try {
+      await resignedEmployee.addPenalty(penaltyData, hrUser._id);
+      // If we reach here, the test should fail because no error was thrown
+      expect(true).toBe(false); // This should never be reached
+    } catch (error) {
+      expect(error.message).toBe('Cannot modify penalties after 24 hours');
+    }
       
-    await expect(resignedEmployee.removePenalty(new mongoose.Types.ObjectId()))
-      .rejects.toThrow('Cannot modify penalties after 24 hours');
+    try {
+      await resignedEmployee.removePenalty(new mongoose.Types.ObjectId());
+      // If we reach here, the test should fail because no error was thrown
+      expect(true).toBe(false); // This should never be reached
+    } catch (error) {
+      expect(error.message).toBe('Cannot modify penalties after 24 hours');
+    }
   });
 
   it('should update resignation type', async () => {
@@ -271,6 +301,26 @@ describe('ResignedEmployee Model', () => {
   });
 
   it('should find all resigned employees', async () => {
+    // Create a second employee for the second record
+    const employee2 = await User.create({
+      username: 'testemployee2',
+      email: 'employee2@example.com',
+      password: 'password123',
+      role: 'employee',
+      employeeId: 'EMP002',
+      school: school._id,
+      department: department._id,
+      position: position._id,
+      profile: {
+        firstName: 'Test2',
+        lastName: 'Employee2'
+      },
+      employment: {
+        hireDate: new Date('2020-01-01'),
+        employmentStatus: 'active'
+      }
+    });
+
     await ResignedEmployee.create([
       {
         employee: employee._id,
@@ -279,7 +329,7 @@ describe('ResignedEmployee Model', () => {
         status: 'pending'
       },
       {
-        employee: employee._id,
+        employee: employee2._id,  // Use different employee
         resignationType: 'termination',
         lastWorkingDay: new Date('2024-01-31'),
         status: 'processed'
