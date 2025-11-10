@@ -7,11 +7,30 @@ import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import Toolbar from '@mui/material/Toolbar';
 
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import PersonIcon from '@mui/icons-material/Person';
-import BarChartIcon from '@mui/icons-material/BarChart';
+import SchoolIcon from '@mui/icons-material/School';
+import BusinessIcon from '@mui/icons-material/Business';
+import WorkIcon from '@mui/icons-material/Work';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import RequestPageIcon from '@mui/icons-material/RequestPage';
+import PaymentIcon from '@mui/icons-material/Payment';
 import DescriptionIcon from '@mui/icons-material/Description';
-import LayersIcon from '@mui/icons-material/Layers';
+import ArticleIcon from '@mui/icons-material/Article';
+import AnnouncementIcon from '@mui/icons-material/Announcement';
+import EventIcon from '@mui/icons-material/Event';
+import PollIcon from '@mui/icons-material/Poll';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import BeachAccessIcon from '@mui/icons-material/BeachAccess';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import SecurityIcon from '@mui/icons-material/Security';
+import BackupIcon from '@mui/icons-material/Backup';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
 import { matchPath, useLocation } from 'react-router';
+import { useAuth } from '../hooks/useAuth';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
 import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
 import DashboardSidebarPageItem from './DashboardSidebarPageItem';
@@ -97,6 +116,9 @@ function DashboardSidebar({
     const hasDrawerTransitions =
         isOverSmViewport && (!disableCollapsibleSidebar || isOverMdViewport);
 
+    const { user } = useAuth();
+    const userRole = user?.role || 'employee';
+
     const getDrawerContent = React.useCallback(
         (viewport) => (
             <React.Fragment>
@@ -126,63 +148,380 @@ function DashboardSidebar({
                             width: mini ? MINI_DRAWER_WIDTH : 'auto',
                         }}
                     >
-                        <DashboardSidebarHeaderItem>Main items</DashboardSidebarHeaderItem>
+                        {/* Common for all roles */}
                         <DashboardSidebarPageItem
-                            id="employees"
-                            title="Employees"
-                            icon={<PersonIcon />}
-                            href="/employees"
-                            selected={!!matchPath('/employees/*', pathname) || pathname === '/'}
+                            id="dashboard"
+                            title="Dashboard"
+                            icon={<DashboardIcon />}
+                            href="/dashboard"
+                            selected={!!matchPath('/dashboard', pathname)}
                         />
-                        <DashboardSidebarDividerItem />
-                        <DashboardSidebarHeaderItem>Example items</DashboardSidebarHeaderItem>
-                        <DashboardSidebarPageItem
-                            id="reports"
-                            title="Reports"
-                            icon={<BarChartIcon />}
-                            href="/reports"
-                            selected={!!matchPath('/reports', pathname)}
-                            defaultExpanded={!!matchPath('/reports', pathname)}
-                            expanded={expandedItemIds.includes('reports')}
-                            nestedNavigation={
-                                <List
-                                    dense
-                                    sx={{
-                                        padding: 0,
-                                        my: 1,
-                                        pl: mini ? 0 : 1,
-                                        minWidth: 240,
-                                    }}
-                                >
-                                    <DashboardSidebarPageItem
-                                        id="sales"
-                                        title="Sales"
-                                        icon={<DescriptionIcon />}
-                                        href="/reports/sales"
-                                        selected={!!matchPath('/reports/sales', pathname)}
-                                    />
-                                    <DashboardSidebarPageItem
-                                        id="traffic"
-                                        title="Traffic"
-                                        icon={<DescriptionIcon />}
-                                        href="/reports/traffic"
-                                        selected={!!matchPath('/reports/traffic', pathname)}
-                                    />
-                                </List>
-                            }
-                        />
-                        <DashboardSidebarPageItem
-                            id="integrations"
-                            title="Integrations"
-                            icon={<LayersIcon />}
-                            href="/integrations"
-                            selected={!!matchPath('/integrations', pathname)}
-                        />
+
+                        {/* Employee View */}
+                        {userRole === 'employee' && (
+                            <>
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>My Work</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="my-attendance"
+                                    title="My Attendance"
+                                    icon={<AccessTimeIcon />}
+                                    href="/attendance"
+                                    selected={!!matchPath('/attendance', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="my-leaves"
+                                    title="My Leaves"
+                                    icon={<EventAvailableIcon />}
+                                    href="/leaves"
+                                    selected={!!matchPath('/leaves', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="my-permissions"
+                                    title="My Permissions"
+                                    icon={<AssignmentIcon />}
+                                    href="/permissions"
+                                    selected={!!matchPath('/permissions', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="my-requests"
+                                    title="My Requests"
+                                    icon={<RequestPageIcon />}
+                                    href="/requests"
+                                    selected={!!matchPath('/requests', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Information</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="documents"
+                                    title="Documents"
+                                    icon={<DescriptionIcon />}
+                                    href="/documents"
+                                    selected={!!matchPath('/documents', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="announcements"
+                                    title="Announcements"
+                                    icon={<AnnouncementIcon />}
+                                    href="/announcements"
+                                    selected={!!matchPath('/announcements', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="events"
+                                    title="Events"
+                                    icon={<EventIcon />}
+                                    href="/events"
+                                    selected={!!matchPath('/events', pathname)}
+                                />
+                            </>
+                        )}
+
+                        {/* HR View */}
+                        {userRole === 'hr' && (
+                            <>
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Organization</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="schools"
+                                    title="Schools"
+                                    icon={<SchoolIcon />}
+                                    href="/schools"
+                                    selected={!!matchPath('/schools', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="departments"
+                                    title="Departments"
+                                    icon={<BusinessIcon />}
+                                    href="/departments"
+                                    selected={!!matchPath('/departments', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="positions"
+                                    title="Positions"
+                                    icon={<WorkIcon />}
+                                    href="/positions"
+                                    selected={!!matchPath('/positions', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>HR Operations</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="attendance"
+                                    title="Attendance"
+                                    icon={<AccessTimeIcon />}
+                                    href="/attendance"
+                                    selected={!!matchPath('/attendance', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="leaves"
+                                    title="Leaves"
+                                    icon={<EventAvailableIcon />}
+                                    href="/leaves"
+                                    selected={!!matchPath('/leaves', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="permissions"
+                                    title="Permissions"
+                                    icon={<AssignmentIcon />}
+                                    href="/permissions"
+                                    selected={!!matchPath('/permissions', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="requests"
+                                    title="Requests"
+                                    icon={<RequestPageIcon />}
+                                    href="/requests"
+                                    selected={!!matchPath('/requests', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="payroll"
+                                    title="Payroll"
+                                    icon={<PaymentIcon />}
+                                    href="/payroll"
+                                    selected={!!matchPath('/payroll', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Documents</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="documents"
+                                    title="Documents"
+                                    icon={<DescriptionIcon />}
+                                    href="/documents"
+                                    selected={!!matchPath('/documents', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="templates"
+                                    title="Templates"
+                                    icon={<ArticleIcon />}
+                                    href="/templates"
+                                    selected={!!matchPath('/templates', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Communication</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="announcements"
+                                    title="Announcements"
+                                    icon={<AnnouncementIcon />}
+                                    href="/announcements"
+                                    selected={!!matchPath('/announcements', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="events"
+                                    title="Events"
+                                    icon={<EventIcon />}
+                                    href="/events"
+                                    selected={!!matchPath('/events', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="surveys"
+                                    title="Surveys"
+                                    icon={<PollIcon />}
+                                    href="/surveys"
+                                    selected={!!matchPath('/surveys', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Advanced</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="holidays"
+                                    title="Holidays"
+                                    icon={<CalendarTodayIcon />}
+                                    href="/holidays"
+                                    selected={!!matchPath('/holidays', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="vacations"
+                                    title="Vacations"
+                                    icon={<BeachAccessIcon />}
+                                    href="/vacations"
+                                    selected={!!matchPath('/vacations', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="reports"
+                                    title="Reports"
+                                    icon={<BarChartIcon />}
+                                    href="/reports"
+                                    selected={!!matchPath('/reports', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="resigned"
+                                    title="Resigned"
+                                    icon={<PersonOffIcon />}
+                                    href="/resigned"
+                                    selected={!!matchPath('/resigned', pathname)}
+                                />
+                            </>
+                        )}
+
+                        {/* Admin View */}
+                        {userRole === 'admin' && (
+                            <>
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>User Management</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="users"
+                                    title="Users"
+                                    icon={<PersonIcon />}
+                                    href="/users"
+                                    selected={!!matchPath('/users', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Organization</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="schools"
+                                    title="Schools"
+                                    icon={<SchoolIcon />}
+                                    href="/schools"
+                                    selected={!!matchPath('/schools', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="departments"
+                                    title="Departments"
+                                    icon={<BusinessIcon />}
+                                    href="/departments"
+                                    selected={!!matchPath('/departments', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="positions"
+                                    title="Positions"
+                                    icon={<WorkIcon />}
+                                    href="/positions"
+                                    selected={!!matchPath('/positions', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>HR Operations</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="attendance"
+                                    title="Attendance"
+                                    icon={<AccessTimeIcon />}
+                                    href="/attendance"
+                                    selected={!!matchPath('/attendance', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="leaves"
+                                    title="Leaves"
+                                    icon={<EventAvailableIcon />}
+                                    href="/leaves"
+                                    selected={!!matchPath('/leaves', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="permissions"
+                                    title="Permissions"
+                                    icon={<AssignmentIcon />}
+                                    href="/permissions"
+                                    selected={!!matchPath('/permissions', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="requests"
+                                    title="Requests"
+                                    icon={<RequestPageIcon />}
+                                    href="/requests"
+                                    selected={!!matchPath('/requests', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="payroll"
+                                    title="Payroll"
+                                    icon={<PaymentIcon />}
+                                    href="/payroll"
+                                    selected={!!matchPath('/payroll', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Documents</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="documents"
+                                    title="Documents"
+                                    icon={<DescriptionIcon />}
+                                    href="/documents"
+                                    selected={!!matchPath('/documents', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="templates"
+                                    title="Templates"
+                                    icon={<ArticleIcon />}
+                                    href="/templates"
+                                    selected={!!matchPath('/templates', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Communication</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="announcements"
+                                    title="Announcements"
+                                    icon={<AnnouncementIcon />}
+                                    href="/announcements"
+                                    selected={!!matchPath('/announcements', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="events"
+                                    title="Events"
+                                    icon={<EventIcon />}
+                                    href="/events"
+                                    selected={!!matchPath('/events', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="surveys"
+                                    title="Surveys"
+                                    icon={<PollIcon />}
+                                    href="/surveys"
+                                    selected={!!matchPath('/surveys', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Advanced</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="holidays"
+                                    title="Holidays"
+                                    icon={<CalendarTodayIcon />}
+                                    href="/holidays"
+                                    selected={!!matchPath('/holidays', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="vacations"
+                                    title="Vacations"
+                                    icon={<BeachAccessIcon />}
+                                    href="/vacations"
+                                    selected={!!matchPath('/vacations', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="reports"
+                                    title="Reports"
+                                    icon={<BarChartIcon />}
+                                    href="/reports"
+                                    selected={!!matchPath('/reports', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="analytics"
+                                    title="Analytics"
+                                    icon={<AssessmentIcon />}
+                                    href="/analytics"
+                                    selected={!!matchPath('/analytics', pathname)}
+                                />
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Administration</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="security"
+                                    title="Security"
+                                    icon={<SecurityIcon />}
+                                    href="/security"
+                                    selected={!!matchPath('/security', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="backups"
+                                    title="Backups"
+                                    icon={<BackupIcon />}
+                                    href="/backups"
+                                    selected={!!matchPath('/backups', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="resigned"
+                                    title="Resigned"
+                                    icon={<PersonOffIcon />}
+                                    href="/resigned"
+                                    selected={!!matchPath('/resigned', pathname)}
+                                />
+                            </>
+                        )}
                     </List>
                 </Box>
             </React.Fragment>
         ),
-        [mini, hasDrawerTransitions, isFullyExpanded, expandedItemIds, pathname],
+        [mini, hasDrawerTransitions, isFullyExpanded, expandedItemIds, pathname, userRole],
     );
 
     const getDrawerSharedSx = React.useCallback(

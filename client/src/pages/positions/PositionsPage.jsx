@@ -1,0 +1,305 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    IconButton,
+    Typography,
+    Chip,
+    MenuItem
+} from '@mui/material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import DataTable from '../../components/common/DataTable';
+import Loading from '../../components/common/Loading';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { useNotification } from '../../context/NotificationContext';
+import positionService from '../../services/position.service';
+import departmentService from '../../services/department.service';
+
+const PositionsPage = () => {
+    const [positions, setPositions] = useState([]);
+    const [departments, setDepartments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [openDialog, setOpenDialog] = useState(false);
+    const [openConfirm, setOpenConfirm] = useState(false);
+    const [selectedPosition, setSelectedPosition] = useState(null);
+    const [formData, setFormData] = useState({
+        title: '',
+        code: '',
+        department: '',
+        level: '',
+        description: '',
+        isActive: true
+    });
+    const { showNotification } = useNotification();
+
+    const levels = ['Entry', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager', 'Director', 'Executive'];
+
+    useEffect(() => {
+        fetchPositions();
+        fetchDepartments();
+    }, []);
+
+    const fetchPositions = async () => {
+        try {
+            setLoading(true);
+            const data = await positionService.getAll();
+            setPositions(data);
+        } catch (error) {
+            showNotification('Failed to fetch positions', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchDepartments = async () => {
+        try {
+            const data = await departmentService.getAll();
+            setDepartments(data);
+        } catch (error) {
+            console.error('Failed to fetch departments:', error);
+        }
+    };
+
+    const handleOpenDialog = (position = null) => {
+        if (position) {
+            setSelectedPosition(position);
+            setFormData({
+                title: position.title,
+                code: position.code,
+                department: position.department?._id || position.department || '',
+                level: position.level || '',
+                description: position.description || '',
+                isActive: position.isActive !== false
+            });
+        } else {
+            setSelectedPosition(null);
+            setFormData({
+                title: '',
+                code: '',
+                department: '',
+                level: '',
+                description: '',
+                isActive: true
+            });
+        }
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setSelectedPosition(null);
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async () => {
+        try {
+            if (selectedPosition) {
+                await positionService.update(selectedPosition._id, formData);
+                showNotification('Position updated successfully', 'success');
+            } else {
+                await positionService.create(formData);
+                showNotification('Position created successfully', 'success');
+            }
+            handleCloseDialog();
+            fetchPositions();
+        } catch (error) {
+            showNotification(error.response?.data?.message || 'Operation failed', 'error');
+        }
+    };
+
+    const handleDelete = async () => {
+        try {
+            await positionService.delete(selectedPosition._id);
+            showNotification('Position deleted successfully', 'success');
+            setOpenConfirm(false);
+            setSelectedPosition(null);
+            fetchPositions();
+        } catch (error) {
+            showNotification(error.response?.data?.message || 'Delete failed', 'error');
+        }
+    };
+
+    const columns = [
+        { field: 'code', headerName: 'Code', width: 120 },
+        { field: 'title', headerName: 'Position Title', width: 200 },
+        {
+            field: 'department',
+            headerName: 'Department',
+            width: 180,
+            renderCell: (params) => params.row.department?.name || 'N/A'
+        },
+        {
+            field: 'level',
+            headerName: 'Level',
+            width: 120,
+            renderCell: (params) => (
+                <Chip label={params.row.level || 'N/A'} size="small" color="primary" variant="outlined" />
+            )
+        },
+        { field: 'description', headerName: 'Description', width: 250 },
+        {
+            field: 'isActive',
+            headerName: 'Status',
+            width: 120,
+            renderCell: (params) => (
+                <Chip
+                    label={params.row.isActive ? 'Active' : 'Inactive'}
+                    color={params.row.isActive ? 'success' : 'default'}
+                    size="small"
+                />
+            )
+        },
+        {
+            field: 'actions',
+            headerName: 'Actions',
+            width: 120,
+            renderCell: (params) => (
+                <Box>
+                    <IconButton
+                        size="small"
+                        onClick={() => handleOpenDialog(params.row)}
+                        color="primary"
+                    >
+                        <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                        size="small"
+                        onClick={() => {
+                            setSelectedPosition(params.row);
+                            setOpenConfirm(true);
+                        }}
+                        color="error"
+                    >
+                        <DeleteIcon fontSize="small" />
+                    </IconButton>
+                </Box>
+            )
+        }
+    ];
+
+    if (loading) return <Loading />;
+
+    return (
+        <Box sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h4">Positions</Typography>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => handleOpenDialog()}
+                >
+                    Add Position
+                </Button>
+            </Box>
+
+            <DataTable
+                rows={positions}
+                columns={columns}
+                getRowId={(row) => row._id}
+            />
+
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    {selectedPosition ? 'Edit Position' : 'Add Position'}
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        <TextField
+                            label="Position Code"
+                            name="code"
+                            value={formData.code}
+                            onChange={handleChange}
+                            required
+                            fullWidth
+                        />
+                        <TextField
+                            label="Position Title"
+                            name="title"
+                            value={formData.title}
+                            onChange={handleChange}
+                            required
+                            fullWidth
+                        />
+                        <TextField
+                            select
+                            label="Department"
+                            name="department"
+                            value={formData.department}
+                            onChange={handleChange}
+                            required
+                            fullWidth
+                        >
+                            {departments.map((dept) => (
+                                <MenuItem key={dept._id} value={dept._id}>
+                                    {dept.name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                        <TextField
+                            select
+                            label="Level"
+                            name="level"
+                            value={formData.level}
+                            onChange={handleChange}
+                            fullWidth
+                        >
+                            {levels.map((level) => (
+                                <MenuItem key={level} value={level}>
+                                    {level}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                        <TextField
+                            label="Description"
+                            name="description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            multiline
+                            rows={3}
+                            fullWidth
+                        />
+                        <TextField
+                            select
+                            label="Status"
+                            name="isActive"
+                            value={formData.isActive}
+                            onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
+                            fullWidth
+                        >
+                            <MenuItem value="true">Active</MenuItem>
+                            <MenuItem value="false">Inactive</MenuItem>
+                        </TextField>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog}>Cancel</Button>
+                    <Button onClick={handleSubmit} variant="contained">
+                        {selectedPosition ? 'Update' : 'Create'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <ConfirmDialog
+                open={openConfirm}
+                title="Delete Position"
+                message={`Are you sure you want to delete "${selectedPosition?.title}"?`}
+                onCancel={() => {
+                    setOpenConfirm(false);
+                    setSelectedPosition(null);
+                }}
+                onConfirm={handleDelete}
+            />
+        </Box>
+    );
+};
+
+export default PositionsPage;

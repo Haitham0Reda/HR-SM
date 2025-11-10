@@ -9,36 +9,27 @@ import Dashboard from './pages/dashboard/Dashboard';
 import DashboardLayout from './components/DashboardLayout';
 import UsersPage from './pages/users/UsersPage';
 import SchoolsPage from './pages/schools/SchoolsPage';
+import DepartmentsPage from './pages/departments/DepartmentsPage';
+import PositionsPage from './pages/positions/PositionsPage';
+import AttendancePage from './pages/attendance/AttendancePage';
+import LeavesPage from './pages/leaves/LeavesPage';
+import PermissionsPage from './pages/permissions/PermissionsPage';
+import RequestsPage from './pages/requests/RequestsPage';
+import PayrollPage from './pages/payroll/PayrollPage';
+import DocumentsPage from './pages/documents/DocumentsPage';
+import TemplatesPage from './pages/templates/TemplatesPage';
+import AnnouncementsPage from './pages/announcements/AnnouncementsPage';
+import EventsPage from './pages/events/EventsPage';
+import SurveysPage from './pages/surveys/SurveysPage';
+import HolidaysPage from './pages/holidays/HolidaysPage';
+import VacationsPage from './pages/vacations/VacationsPage';
+import ReportsPage from './pages/reports/ReportsPage';
+import AnalyticsPage from './pages/analytics/AnalyticsPage';
+import SecurityPage from './pages/security/SecurityPage';
+import BackupsPage from './pages/backups/BackupsPage';
+import ResignedPage from './pages/resigned/ResignedPage';
 import theme from './theme/customizations';
 import './App.css';
-
-// Placeholder components for routes not yet implemented
-const PlaceholderPage = ({ title }) => (
-  <div style={{ padding: '24px' }}>
-    <h2>{title}</h2>
-    <p>This page is under construction.</p>
-  </div>
-);
-
-const DepartmentsPage = () => <PlaceholderPage title="Departments" />;
-const PositionsPage = () => <PlaceholderPage title="Positions" />;
-const AttendancePage = () => <PlaceholderPage title="Attendance" />;
-const LeavesPage = () => <PlaceholderPage title="Leaves" />;
-const PermissionsPage = () => <PlaceholderPage title="Permissions" />;
-const RequestsPage = () => <PlaceholderPage title="Requests" />;
-const PayrollPage = () => <PlaceholderPage title="Payroll" />;
-const DocumentsPage = () => <PlaceholderPage title="Documents" />;
-const TemplatesPage = () => <PlaceholderPage title="Templates" />;
-const AnnouncementsPage = () => <PlaceholderPage title="Announcements" />;
-const EventsPage = () => <PlaceholderPage title="Events" />;
-const SurveysPage = () => <PlaceholderPage title="Surveys" />;
-const HolidaysPage = () => <PlaceholderPage title="Holidays" />;
-const VacationsPage = () => <PlaceholderPage title="Vacations" />;
-const ReportsPage = () => <PlaceholderPage title="Reports" />;
-const AnalyticsPage = () => <PlaceholderPage title="Analytics" />;
-const SecurityPage = () => <PlaceholderPage title="Security" />;
-const BackupsPage = () => <PlaceholderPage title="Backups" />;
-const ResignedPage = () => <PlaceholderPage title="Resigned Employees" />;
 
 function App() {
   return (
