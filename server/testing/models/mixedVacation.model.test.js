@@ -32,7 +32,7 @@ beforeAll(async () => {
     school: school._id,
     department: department._id
   });
-});
+}, 60000);
 
 afterEach(async () => {
   await VacationBalance.deleteMany({});

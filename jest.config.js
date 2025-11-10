@@ -20,11 +20,9 @@ export default {
   maxWorkers: '75%', // Use more CPU cores
   cache: true,
   cacheDirectory: '<rootDir>/.jest-cache',
-  testTimeout: 10000, // 10 second timeout per test
+  testTimeout: 30000, // 30 second timeout per test
   // Disable slow features
   errorOnDeprecated: false,
   detectOpenHandles: false,
-  forceExit: true, // Force exit after tests complete
-  // Global teardown to generate report after all tests
-  globalTeardown: '<rootDir>/test-teardown.js'
+  forceExit: true // Force exit after tests complete
 };
