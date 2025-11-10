@@ -27,7 +27,7 @@ describe('Position Model', () => {
     };
 
     const position = new Position(positionData);
-    
+
     let err;
     try {
       await position.save();
@@ -41,6 +41,9 @@ describe('Position Model', () => {
   });
 
   it('should enforce unique code constraint', async () => {
+    // Ensure indexes are created
+    await Position.init();
+
     const code = 'UNIQUEPOS';
     const positionData1 = {
       title: 'Position 1',
@@ -58,7 +61,7 @@ describe('Position Model', () => {
     await position1.save();
 
     const position2 = new Position(positionData2);
-    
+
     let err;
     try {
       await position2.save();
