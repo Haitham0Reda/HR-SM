@@ -5,9 +5,6 @@ let mongoServer;
 
 // Connect to a MongoDB memory server before running tests
 beforeAll(async () => {
-  // Increase timeout for MongoDB Memory Server creation
-  jest.setTimeout(30000);
-
   mongoServer = await MongoMemoryServer.create({
     instance: {
       storageEngine: 'ephemeralForTest',
@@ -20,10 +17,10 @@ beforeAll(async () => {
   await mongoose.connect(mongoUri, {
     maxPoolSize: 5,
     minPoolSize: 1,
-    serverSelectionTimeoutMS: 3000,
-    socketTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 30000,
   });
-}, 30000);
+}, 60000);
 
 // Clear all test data after each test (optimized)
 afterEach(async () => {
