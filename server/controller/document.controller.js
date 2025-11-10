@@ -3,6 +3,9 @@ import Document from '../models/document.model.js';
 
 export const getAllDocuments = async (req, res) => {
     try {
+        console.log('getAllDocuments called');
+        console.log('User:', req.user?.username, 'Role:', req.user?.role);
+
         // Filter based on user role and access permissions
         let query = {};
 
@@ -15,15 +18,21 @@ export const getAllDocuments = async (req, res) => {
                     { isConfidential: false }
                 ]
             };
+            console.log('Employee query:', JSON.stringify(query));
+        } else {
+            console.log('HR/Admin - showing all documents');
         }
 
         const documents = await Document.find(query)
-            .populate('employee', 'username email')
-            .populate('uploadedBy', 'username email')
+            .populate('employee', 'name username email profile')
+            .populate('uploadedBy', 'name username email profile')
             .populate('department', 'name code')
             .sort({ createdAt: -1 });
+
+        console.log(`Found ${documents.length} documents`);
         res.json(documents);
     } catch (err) {
+        console.error('Error in getAllDocuments:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -41,8 +50,8 @@ export const createDocument = async (req, res) => {
 export const getDocumentById = async (req, res) => {
     try {
         const document = await Document.findById(req.params.id)
-            .populate('employee', 'username email')
-            .populate('uploadedBy', 'username email')
+            .populate('employee', 'name username email profile')
+            .populate('uploadedBy', 'name username email profile')
             .populate('department', 'name code');
         if (!document) return res.status(404).json({ error: 'Document not found' });
         res.json(document);

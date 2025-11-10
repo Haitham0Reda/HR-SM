@@ -7,9 +7,11 @@ import { Outlet } from 'react-router';
 import DashboardHeader from './DashboardHeader';
 import DashboardSidebar from './DashboardSidebar';
 import SitemarkIcon from './SitemarkIcon';
+import { useAuth } from '../context/AuthContext';
 
 export default function DashboardLayout() {
     const theme = useTheme();
+    const { user } = useAuth();
 
     const [isDesktopNavigationExpanded, setIsDesktopNavigationExpanded] =
         React.useState(true);
@@ -62,6 +64,8 @@ export default function DashboardLayout() {
                 title=""
                 menuOpen={isNavigationExpanded}
                 onToggleMenu={handleToggleHeaderMenu}
+                user={user}
+                notificationCount={0}
             />
             <DashboardSidebar
                 expanded={isNavigationExpanded}

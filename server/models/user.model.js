@@ -177,4 +177,16 @@ userSchema.methods.hasAllPermissions = async function (permissions) {
     return permissions.every(permission => effectivePermissions.includes(permission));
 };
 
+// Virtual for full name
+userSchema.virtual('name').get(function () {
+    if (this.profile?.firstName && this.profile?.lastName) {
+        return `${this.profile.firstName} ${this.profile.lastName}`;
+    }
+    return this.username;
+});
+
+// Ensure virtuals are included in JSON
+userSchema.set('toJSON', { virtuals: true });
+userSchema.set('toObject', { virtuals: true });
+
 export default mongoose.model('User', userSchema);

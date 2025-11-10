@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { CssBaseline } from '@mui/material';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import PrivateRoute from './routes/PrivateRoute';
@@ -28,13 +29,15 @@ import AnalyticsPage from './pages/analytics/AnalyticsPage';
 import SecurityPage from './pages/security/SecurityPage';
 import BackupsPage from './pages/backups/BackupsPage';
 import ResignedPage from './pages/resigned/ResignedPage';
+import ProfilePage from './pages/profile/ProfilePage';
+import SettingsPage from './pages/settings/SettingsPage';
 import theme from './theme/customizations';
 import './App.css';
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline />
+      <CssBaseline enableColorScheme />
       <AuthProvider>
         <NotificationProvider>
           <Router>
@@ -55,6 +58,8 @@ function App() {
                 <Route path="dashboard" element={<Dashboard />} />
 
                 {/* User Management */}
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="settings" element={<SettingsPage />} />
                 <Route path="users" element={<UsersPage />} />
 
                 {/* Organization */}

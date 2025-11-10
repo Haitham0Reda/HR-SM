@@ -18,10 +18,12 @@ import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import attendanceService from '../../services/attendance.service';
 import userService from '../../services/user.service';
 
 const AttendancePage = () => {
+    const { user, isHR, isAdmin } = useAuth();
     const [attendances, setAttendances] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -29,7 +31,7 @@ const AttendancePage = () => {
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedAttendance, setSelectedAttendance] = useState(null);
     const [formData, setFormData] = useState({
-        user: '',
+        employee: '',
         date: new Date().toISOString().split('T')[0],
         checkIn: '',
         checkOut: '',
@@ -37,6 +39,9 @@ const AttendancePage = () => {
         notes: ''
     });
     const { showNotification } = useNotification();
+
+    // Check if user can manage attendance (HR/Admin)
+    const canManage = isHR || isAdmin;
 
     const statuses = ['present', 'absent', 'late', 'half-day', 'work-from-home'];
 
@@ -49,7 +54,13 @@ const AttendancePage = () => {
         try {
             setLoading(true);
             const data = await attendanceService.getAll();
-            setAttendances(data);
+
+            // Filter to show only current user's attendance if not HR/Admin
+            const filteredData = canManage
+                ? data
+                : data.filter(att => att.employee?._id === user?._id || att.employee === user?._id);
+
+            setAttendances(filteredData);
         } catch (error) {
             showNotification('Failed to fetch attendance records', 'error');
         } finally {
@@ -70,7 +81,7 @@ const AttendancePage = () => {
         if (attendance) {
             setSelectedAttendance(attendance);
             setFormData({
-                user: attendance.user?._id || attendance.user || '',
+                employee: attendance.employee?._id || attendance.employee || '',
                 date: attendance.date?.split('T')[0] || new Date().toISOString().split('T')[0],
                 checkIn: attendance.checkIn || '',
                 checkOut: attendance.checkOut || '',
@@ -80,7 +91,7 @@ const AttendancePage = () => {
         } else {
             setSelectedAttendance(null);
             setFormData({
-                user: '',
+                employee: '',
                 date: new Date().toISOString().split('T')[0],
                 checkIn: '',
                 checkOut: '',
@@ -141,34 +152,33 @@ const AttendancePage = () => {
     };
 
     const columns = [
-        {
-            field: 'user',
+        // Only show employee column if user can manage (HR/Admin)
+        ...(canManage ? [{
+            field: 'employee',
             headerName: 'Employee',
-            width: 200,
-            renderCell: (params) => params.row.user?.name || 'N/A'
-        },
+            renderCell: (row) => row.employee?.name || 'N/A'
+        }] : []),
         {
             field: 'date',
             headerName: 'Date',
-            width: 120,
-            renderCell: (params) => new Date(params.row.date).toLocaleDateString()
+            renderCell: (row) => new Date(row.date).toLocaleDateString()
         },
-        { field: 'checkIn', headerName: 'Check In', width: 100 },
-        { field: 'checkOut', headerName: 'Check Out', width: 100 },
+        { field: 'checkIn', headerName: 'Check In' },
+        { field: 'checkOut', headerName: 'Check Out' },
         {
             field: 'status',
             headerName: 'Status',
-            width: 150,
-            renderCell: (params) => (
+            renderCell: (row) => (
                 <Chip
-                    label={params.row.status}
-                    color={getStatusColor(params.row.status)}
+                    label={row.status}
+                    color={getStatusColor(row.status)}
                     size="small"
                 />
             )
         },
         { field: 'notes', headerName: 'Notes', width: 200 },
-        {
+        // Only show actions if user can manage (HR/Admin)
+        ...(canManage ? [{
             field: 'actions',
             headerName: 'Actions',
             width: 120,
@@ -193,7 +203,7 @@ const AttendancePage = () => {
                     </IconButton>
                 </Box>
             )
-        }
+        }] : [])
     ];
 
     if (loading) return <Loading />;
@@ -201,14 +211,18 @@ const AttendancePage = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4">Attendance</Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenDialog()}
-                >
-                    Record Attendance
-                </Button>
+                <Typography variant="h4">
+                    {canManage ? 'Attendance Management' : 'My Attendance'}
+                </Typography>
+                {canManage && (
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpenDialog()}
+                    >
+                        Record Attendance
+                    </Button>
+                )}
             </Box>
 
             <DataTable
@@ -226,8 +240,8 @@ const AttendancePage = () => {
                         <TextField
                             select
                             label="Employee"
-                            name="user"
-                            value={formData.user}
+                            name="employee"
+                            value={formData.employee}
                             onChange={handleChange}
                             required
                             fullWidth

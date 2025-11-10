@@ -4,7 +4,7 @@
  */
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-dotenv.config({ path: '../.env' });
+dotenv.config();
 import connectDB from './config/db.js';
 import User from './models/user.model.js';
 import School from './models/school.model.js';
@@ -47,7 +47,7 @@ const seedData = async () => {
     try {
         // Connect to database
         connectDB();
-        
+
         console.log('🌱 Starting database seed...\n');
 
         // Clear existing data
@@ -79,7 +79,7 @@ const seedData = async () => {
         await DocumentTemplate.deleteMany({});
         await VacationBalance.deleteMany({});
         await RequestControl.deleteMany({});
-        
+
         // NEW: Clear missing models
         await IDCard.deleteMany({});
         await IDCardBatch.deleteMany({});
@@ -471,7 +471,7 @@ const seedData = async () => {
                 }
             }
         ];
-        
+
         const users = [];
         for (const userData of usersData) {
             const user = new User(userData);
@@ -759,22 +759,22 @@ const seedData = async () => {
         // Create Attendance Records
         console.log('🕒 Creating attendance records...');
         const attendanceRecords = [];
-        
+
         // Create attendance records for John Doe (users[3])
         for (let i = 0; i < 10; i++) {
             const date = new Date();
             date.setDate(date.getDate() - i);
-            
+
             // Skip weekends
             const dayOfWeek = date.getDay();
             if (dayOfWeek === 5 || dayOfWeek === 6) continue; // Skip Friday and Saturday
-            
+
             const checkInTime = new Date(date);
             checkInTime.setHours(8, 30, 0, 0);
-            
+
             const checkOutTime = new Date(date);
             checkOutTime.setHours(17, 0, 0, 0);
-            
+
             attendanceRecords.push({
                 employee: users[3]._id,
                 department: departments[0]._id,
@@ -809,22 +809,22 @@ const seedData = async () => {
                 status: 'present'
             });
         }
-        
+
         // Create some late attendance records
         for (let i = 10; i < 13; i++) {
             const date = new Date();
             date.setDate(date.getDate() - i);
-            
+
             // Skip weekends
             const dayOfWeek = date.getDay();
             if (dayOfWeek === 5 || dayOfWeek === 6) continue; // Skip Friday and Saturday
-            
+
             const checkInTime = new Date(date);
             checkInTime.setHours(9, 30, 0, 0);
-            
+
             const checkOutTime = new Date(date);
             checkOutTime.setHours(17, 30, 0, 0);
-            
+
             attendanceRecords.push({
                 employee: users[3]._id,
                 department: departments[0]._id,
@@ -859,7 +859,7 @@ const seedData = async () => {
                 status: 'late'
             });
         }
-        
+
         const attendances = await Attendance.create(attendanceRecords);
         console.log(`✅ Created ${attendances.length} attendance records\n`);
 
@@ -1073,10 +1073,91 @@ const seedData = async () => {
         // Create Documents
         console.log('📄 Creating documents...');
         const documents = await Document.create([
+            // John Doe's Documents (users[3])
+            {
+                title: 'Employment Contract',
+                arabicTitle: 'عقد العمل',
+                type: 'contract',
+                employee: users[3]._id,
+                department: departments[0]._id,
+                fileUrl: '/documents/john-doe-contract.pdf',
+                fileName: 'john-doe-employment-contract.pdf',
+                fileSize: 1536000,
+                uploadedBy: users[0]._id,
+                expiryDate: new Date('2027-01-15'),
+                isConfidential: true,
+                description: 'Official employment contract for John Doe'
+            },
+            {
+                title: 'National ID Copy',
+                arabicTitle: 'نسخة البطاقة الشخصية',
+                type: 'national-id',
+                employee: users[3]._id,
+                department: departments[0]._id,
+                fileUrl: '/documents/john-doe-national-id.pdf',
+                fileName: 'john-doe-national-id.pdf',
+                fileSize: 512000,
+                uploadedBy: users[3]._id,
+                isConfidential: true,
+                description: 'Copy of national identification card'
+            },
+            {
+                title: 'Educational Certificates',
+                arabicTitle: 'الشهادات التعليمية',
+                type: 'certificate',
+                employee: users[3]._id,
+                department: departments[0]._id,
+                fileUrl: '/documents/john-doe-certificates.pdf',
+                fileName: 'john-doe-educational-certificates.pdf',
+                fileSize: 2048000,
+                uploadedBy: users[3]._id,
+                isConfidential: false,
+                description: 'Bachelor and Master degree certificates'
+            },
+            {
+                title: 'Medical Insurance Card',
+                arabicTitle: 'بطاقة التأمين الطبي',
+                type: 'other',
+                employee: users[3]._id,
+                department: departments[0]._id,
+                fileUrl: '/documents/john-doe-insurance.pdf',
+                fileName: 'john-doe-medical-insurance.pdf',
+                fileSize: 256000,
+                uploadedBy: users[1]._id,
+                expiryDate: new Date('2025-12-31'),
+                isConfidential: true,
+                description: 'Medical insurance coverage details'
+            },
+            {
+                title: 'Performance Review 2024',
+                arabicTitle: 'تقييم الأداء 2024',
+                type: 'other',
+                employee: users[3]._id,
+                department: departments[0]._id,
+                fileUrl: '/documents/john-doe-performance-2024.pdf',
+                fileName: 'john-doe-performance-review-2024.pdf',
+                fileSize: 768000,
+                uploadedBy: users[1]._id,
+                isConfidential: true,
+                description: 'Annual performance review for 2024'
+            },
+            {
+                title: 'Training Certificate - Advanced Excel',
+                arabicTitle: 'شهادة تدريب - إكسل متقدم',
+                type: 'certificate',
+                employee: users[3]._id,
+                department: departments[0]._id,
+                fileUrl: '/documents/john-doe-excel-training.pdf',
+                fileName: 'john-doe-excel-training-certificate.pdf',
+                fileSize: 384000,
+                uploadedBy: users[3]._id,
+                isConfidential: false,
+                description: 'Completion certificate for Advanced Excel training'
+            },
             {
                 title: 'Employee Handbook',
                 arabicTitle: 'دليل الموظف',
-                type: 'contract',
+                type: 'other',
                 employee: users[3]._id,
                 department: departments[0]._id,
                 fileUrl: '/documents/employee-handbook.pdf',
@@ -1084,18 +1165,49 @@ const seedData = async () => {
                 fileSize: 2048000,
                 uploadedBy: users[0]._id,
                 expiryDate: new Date('2026-01-01'),
-                isConfidential: false
+                isConfidential: false,
+                description: 'Company policies and procedures handbook'
             },
+            {
+                title: 'Salary Slip - January 2025',
+                arabicTitle: 'قسيمة الراتب - يناير 2025',
+                type: 'other',
+                employee: users[3]._id,
+                department: departments[0]._id,
+                fileUrl: '/documents/john-doe-payslip-jan-2025.pdf',
+                fileName: 'john-doe-payslip-january-2025.pdf',
+                fileSize: 128000,
+                uploadedBy: users[1]._id,
+                isConfidential: true,
+                description: 'Monthly salary slip for January 2025'
+            },
+            // Jane Smith's Documents (users[4])
             {
                 title: 'National ID Copy',
                 arabicTitle: 'نسخة البطاقة الشخصية',
                 type: 'national-id',
                 employee: users[4]._id,
-                fileUrl: '/documents/national-id-0005.pdf',
-                fileName: 'national-id-0005.pdf',
+                department: departments[3]._id,
+                fileUrl: '/documents/jane-smith-national-id.pdf',
+                fileName: 'jane-smith-national-id.pdf',
                 fileSize: 1024000,
                 uploadedBy: users[4]._id,
-                isConfidential: true
+                isConfidential: true,
+                description: 'Copy of national identification card'
+            },
+            {
+                title: 'Employment Contract',
+                arabicTitle: 'عقد العمل',
+                type: 'contract',
+                employee: users[4]._id,
+                department: departments[3]._id,
+                fileUrl: '/documents/jane-smith-contract.pdf',
+                fileName: 'jane-smith-employment-contract.pdf',
+                fileSize: 1536000,
+                uploadedBy: users[0]._id,
+                expiryDate: new Date('2027-06-01'),
+                isConfidential: true,
+                description: 'Official employment contract'
             }
         ]);
         console.log(`✅ Created ${documents.length} documents\n`);
@@ -1802,36 +1914,36 @@ const seedData = async () => {
         console.log('════════════════════════════════════════');
         console.log('🎉 Database seeded successfully!');
         console.log('════════════════════════════════════════\n');
-        
+
         console.log('📋 Test Credentials:');
         console.log('───────────────────────────────────────');
         console.log('Admin:');
         console.log('  Email: admin@cic.edu.eg');
         console.log('  Password: admin123');
         console.log('  Role: admin\n');
-        
+
         console.log('HR Manager:');
         console.log('  Email: hr@cic.edu.eg');
         console.log('  Password: hr123');
         console.log('  Role: hr\n');
-        
+
         console.log('Department Manager:');
         console.log('  Email: manager@cic.edu.eg');
         console.log('  Password: manager123');
         console.log('  Role: manager\n');
-        
+
         console.log('Employee:');
         console.log('  Email: john.doe@cic.edu.eg');
         console.log('  Password: employee123');
         console.log('  Role: employee\n');
-        
+
         console.log('Supervisor:');
         console.log('  Email: omar.ibrahim@cic.edu.eg');
         console.log('  Password: employee123');
         console.log('  Role: supervisor\n');
-        
+
         console.log('════════════════════════════════════════\n');
-        
+
         process.exit(0);
     } catch (error) {
         console.error('❌ Error seeding database:', error);

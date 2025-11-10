@@ -17,8 +17,8 @@ import {
 
 const router = express.Router();
 
-// Get all documents - HR or Admin only
-router.get('/', protect, hrOrAdmin, getAllDocuments);
+// Get all documents - All authenticated users (filtered by role in controller)
+router.get('/', protect, getAllDocuments);
 
 // Create document - HR or Admin only with validation
 router.post('/',

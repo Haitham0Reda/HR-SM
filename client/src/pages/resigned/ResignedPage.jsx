@@ -166,34 +166,30 @@ const ResignedPage = () => {
         {
             field: 'department',
             headerName: 'Department',
-            width: 150,
-            renderCell: (params) => params.row.user?.department?.name || 'N/A'
+            renderCell: (row) => row.user?.department?.name || 'N/A'
         },
         {
             field: 'resignationDate',
             headerName: 'Resignation Date',
-            width: 150,
-            renderCell: (params) => new Date(params.row.resignationDate).toLocaleDateString()
+            renderCell: (row) => new Date(row.resignationDate).toLocaleDateString()
         },
         {
             field: 'lastWorkingDay',
             headerName: 'Last Working Day',
-            width: 150,
-            renderCell: (params) => params.row.lastWorkingDay ? new Date(params.row.lastWorkingDay).toLocaleDateString() : 'N/A'
+            renderCell: (row) => row.lastWorkingDay ? new Date(row.lastWorkingDay).toLocaleDateString() : 'N/A'
         },
         {
             field: 'reason',
             headerName: 'Reason',
-            width: 180
+            renderCell: (row) => row.reason || 'N/A'
         },
         {
             field: 'exitInterview',
             headerName: 'Exit Interview',
-            width: 130,
-            renderCell: (params) => (
+            renderCell: (row) => (
                 <Chip
-                    label={params.row.exitInterview ? 'Completed' : 'Pending'}
-                    color={params.row.exitInterview ? 'success' : 'default'}
+                    label={row.exitInterview ? 'Completed' : 'Pending'}
+                    color={row.exitInterview ? 'success' : 'default'}
                     size="small"
                 />
             )

@@ -129,59 +129,34 @@ const PositionsPage = () => {
     };
 
     const columns = [
-        { field: 'code', headerName: 'Code', width: 120 },
-        { field: 'title', headerName: 'Position Title', width: 200 },
+        { field: 'code', headerName: 'Code' },
+        { field: 'title', headerName: 'Position Title' },
         {
             field: 'department',
             headerName: 'Department',
-            width: 180,
-            renderCell: (params) => params.row.department?.name || 'N/A'
+            renderCell: (row) => row.department?.name || 'N/A'
         },
         {
             field: 'level',
             headerName: 'Level',
-            width: 120,
-            renderCell: (params) => (
-                <Chip label={params.row.level || 'N/A'} size="small" color="primary" variant="outlined" />
+            renderCell: (row) => (
+                <Chip label={row.level || 'N/A'} size="small" color="primary" variant="outlined" />
             )
         },
-        { field: 'description', headerName: 'Description', width: 250 },
+        {
+            field: 'description',
+            headerName: 'Description',
+            renderCell: (row) => row.description || 'N/A'
+        },
         {
             field: 'isActive',
             headerName: 'Status',
-            width: 120,
-            renderCell: (params) => (
+            renderCell: (row) => (
                 <Chip
-                    label={params.row.isActive ? 'Active' : 'Inactive'}
-                    color={params.row.isActive ? 'success' : 'default'}
+                    label={row.isActive ? 'Active' : 'Inactive'}
+                    color={row.isActive ? 'success' : 'default'}
                     size="small"
                 />
-            )
-        },
-        {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 120,
-            renderCell: (params) => (
-                <Box>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(params.row)}
-                        color="primary"
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => {
-                            setSelectedPosition(params.row);
-                            setOpenConfirm(true);
-                        }}
-                        color="error"
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Box>
             )
         }
     ];
