@@ -102,17 +102,14 @@ export const deleteUser = async (req, res) => {
 
 // Login controller
 export const loginUser = async (req, res) => {
-    const { email, password, role } = req.body;
-    if (!email || !password || !role) {
-        return res.status(400).json({ error: 'Email, password, and role are required.' });
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required.' });
     }
     try {
         const user = await User.findOne({ email }).populate('department position school');
         if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
-        // Check role
-        if (user.role !== role) {
-            return res.status(403).json({ error: 'Role mismatch or not authorized.' });
-        }
+
         // Compare password using model method
         const isMatch = await user.matchPassword(password);
         if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
@@ -121,7 +118,7 @@ export const loginUser = async (req, res) => {
         user.lastLogin = new Date();
         await user.save();
 
-        // Generate JWT token
+        // Generate JWT token with user's role from database
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
         res.json({ user: sanitizeUser(user), token });
     } catch (err) {

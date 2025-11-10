@@ -7,10 +7,6 @@ import {
     TextField,
     Button,
     Typography,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Alert,
     CircularProgress,
 } from '@mui/material';
@@ -25,7 +21,6 @@ const Login = () => {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        role: 'employee',
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -42,7 +37,7 @@ const Login = () => {
         e.preventDefault();
 
         // Validation
-        if (!formData.email || !formData.password || !formData.role) {
+        if (!formData.email || !formData.password) {
             setError('Please fill in all fields');
             return;
         }
@@ -110,21 +105,6 @@ const Login = () => {
                             margin="normal"
                             required
                         />
-
-                        <FormControl fullWidth margin="normal" required>
-                            <InputLabel>Role</InputLabel>
-                            <Select
-                                name="role"
-                                value={formData.role}
-                                onChange={handleChange}
-                                label="Role"
-                            >
-                                <MenuItem value="employee">Employee</MenuItem>
-                                <MenuItem value="manager">Manager</MenuItem>
-                                <MenuItem value="hr">HR</MenuItem>
-                                <MenuItem value="admin">Admin</MenuItem>
-                            </Select>
-                        </FormControl>
 
                         <Button
                             type="submit"
