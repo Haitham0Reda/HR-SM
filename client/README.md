@@ -1,70 +1,193 @@
-# Getting Started with Create React App
+# HR-SM Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React-based frontend for the Human Resources Management System.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- ✅ User Authentication & Authorization
+- ✅ Role-based Access Control (Admin, HR, Manager, Employee)
+- ✅ Complete Service Layer (24 services)
+- ✅ Material-UI Components
+- ✅ Responsive Design
+- ✅ Toast Notifications
+- ✅ Protected Routes
 
-### `npm start`
+## Tech Stack
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **React** 18.x
+- **React Router** 6.x
+- **Material-UI** 5.x
+- **Axios** for API calls
+- **Context API** for state management
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Getting Started
 
-### `npm test`
+### Prerequisites
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js 14+
+- npm or yarn
 
-### `npm run build`
+### Installation
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+# Install dependencies
+npm install
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# Create environment file
+cp .env.example .env
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# Update API URL in .env
+REACT_APP_API_URL=http://localhost:5000/api
+```
 
-### `npm run eject`
+### Running the App
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+# Development mode
+npm start
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# Build for production
+npm run build
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+# Run tests
+npm test
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Project Structure
 
-## Learn More
+```
+src/
+├── components/          # Reusable UI components
+├── pages/              # Page components
+│   ├── auth/          # Login, Register
+│   └── dashboard/     # Dashboard
+├── services/          # API services (24 services)
+├── context/           # React Context providers
+├── hooks/             # Custom React hooks
+├── routes/            # Route configuration
+└── theme/             # Material-UI theme
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Available Services
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+All services are located in `src/services/`:
 
-### Code Splitting
+1. auth.service.js - Authentication
+2. user.service.js - User management
+3. school.service.js - School management
+4. department.service.js - Department management
+5. position.service.js - Position management
+6. attendance.service.js - Attendance tracking
+7. leave.service.js - Leave management
+8. permission.service.js - Permission requests
+9. request.service.js - General requests
+10. payroll.service.js - Payroll management
+11. document.service.js - Document management
+12. template.service.js - Document templates
+13. announcement.service.js - Announcements
+14. notification.service.js - Notifications
+15. event.service.js - Event management
+16. survey.service.js - Survey system
+17. holiday.service.js - Holiday management
+18. vacation.service.js - Mixed vacation policies
+19. report.service.js - Report generation
+20. analytics.service.js - Analytics & KPIs
+21. security.service.js - Security settings
+22. backup.service.js - Backup management
+23. resigned.service.js - Resigned employees
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Environment Variables
 
-### Analyzing the Bundle Size
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_ENV=development
+REACT_APP_VERSION=1.0.0
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Authentication
 
-### Making a Progressive Web App
+The app uses JWT tokens stored in localStorage. All API requests automatically include the auth token via axios interceptors.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Login
 
-### Advanced Configuration
+```javascript
+import { useAuth } from "./hooks/useAuth";
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+const { login } = useAuth();
+await login({ email, password, role });
+```
 
-### Deployment
+### Protected Routes
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```javascript
+<PrivateRoute requiredRole="admin">
+  <AdminPage />
+</PrivateRoute>
+```
 
-### `npm run build` fails to minify
+## API Integration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+All services follow a consistent pattern:
+
+```javascript
+import { userService } from "./services";
+
+// Get all users
+const users = await userService.getAll();
+
+// Get by ID
+const user = await userService.getById(id);
+
+// Create
+const newUser = await userService.create(data);
+
+// Update
+const updated = await userService.update(id, data);
+
+// Delete
+await userService.delete(id);
+```
+
+## State Management
+
+### Auth Context
+
+```javascript
+const { user, isAuthenticated, isAdmin, isHR, login, logout } = useAuth();
+```
+
+### Notifications
+
+```javascript
+const { showSuccess, showError, showWarning, showInfo } = useNotification();
+```
+
+## Development Status
+
+### Phase 1: Core Infrastructure ✅
+
+- API configuration
+- Authentication
+- Routing
+- Context providers
+- Base services
+
+### Phase 2-7: Feature Implementation 🚧
+
+- User & Organization Management
+- HR Operations
+- Documents & Communication
+- Advanced Features
+- Security & Administration
+- Testing & Polish
+
+## Contributing
+
+1. Create feature branch
+2. Make changes
+3. Test thoroughly
+4. Submit pull request
+
+## License
+
+MIT License
