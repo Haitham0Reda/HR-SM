@@ -112,6 +112,24 @@ function DashboardSidebarPageItem({
                     disabled={disabled}
                     sx={{
                         height: mini ? 50 : 'auto',
+                        borderRadius: 2,
+                        mb: 0.5,
+                        transition: 'all 0.2s',
+                        '&.Mui-selected': {
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText',
+                            fontWeight: 600,
+                            '&:hover': {
+                                bgcolor: 'primary.dark',
+                            },
+                            '& .MuiListItemIcon-root': {
+                                color: 'primary.contrastText',
+                            },
+                        },
+                        '&:hover': {
+                            bgcolor: 'action.hover',
+                            transform: 'translateX(4px)',
+                        },
                     }}
                     {...(nestedNavigation && !mini
                         ? {

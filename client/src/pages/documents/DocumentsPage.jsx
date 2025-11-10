@@ -12,45 +12,86 @@ import {
     Chip,
     MenuItem
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Download, Visibility } from '@mui/icons-material';
+import {
+    Add as AddIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon,
+    Download as DownloadIcon,
+    Visibility as VisibilityIcon,
+    Lock as LockIcon,
+    LockOpen as LockOpenIcon
+} from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import DocumentViewer from '../../components/common/DocumentViewer';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import documentService from '../../services/document.service';
 import userService from '../../services/user.service';
 
 const DocumentsPage = () => {
+    const { user, isHR, isAdmin } = useAuth();
     const [documents, setDocuments] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
+    const [openViewer, setOpenViewer] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
+        arabicTitle: '',
         type: 'contract',
-        description: '',
-        user: '',
+        employee: '',
         fileUrl: '',
-        isPublic: false
+        fileName: '',
+        fileSize: 0,
+        expiryDate: '',
+        isConfidential: false
     });
     const { showNotification } = useNotification();
 
-    const documentTypes = ['contract', 'certificate', 'policy', 'form', 'report', 'other'];
+    // Valid document types from backend model
+    const documentTypes = [
+        { value: 'contract', label: 'Contract' },
+        { value: 'national-id', label: 'National ID' },
+        { value: 'certificate', label: 'Certificate' },
+        { value: 'offer-letter', label: 'Offer Letter' },
+        { value: 'birth-certificate', label: 'Birth Certificate' },
+        { value: 'other', label: 'Other' }
+    ];
+
+    const canManage = isHR || isAdmin;
 
     useEffect(() => {
         fetchDocuments();
-        fetchUsers();
-    }, []);
+        if (canManage) {
+            fetchUsers();
+        }
+    }, [canManage]);
 
     const fetchDocuments = async () => {
         try {
             setLoading(true);
+            console.log('Current user:', user);
+            console.log('User role:', user?.role);
+            console.log('Is HR/Admin:', canManage);
+            console.log('Fetching documents from API...');
             const data = await documentService.getAll();
-            setDocuments(data);
+            console.log('API Response:', data);
+            console.log('Is Array?', Array.isArray(data));
+            console.log('Document count:', data?.length);
+            if (data && data.length > 0) {
+                console.log('First document:', data[0]);
+            }
+            setDocuments(Array.isArray(data) ? data : []);
         } catch (error) {
-            showNotification('Failed to fetch documents', 'error');
+            console.error('Error fetching documents:', error);
+            console.error('Error type:', typeof error);
+            console.error('Error message:', error?.message || error);
+            showNotification(typeof error === 'string' ? error : 'Failed to fetch documents', 'error');
+            setDocuments([]);
         } finally {
             setLoading(false);
         }
@@ -70,21 +111,27 @@ const DocumentsPage = () => {
             setSelectedDocument(document);
             setFormData({
                 title: document.title || '',
+                arabicTitle: document.arabicTitle || '',
                 type: document.type || 'contract',
-                description: document.description || '',
-                user: document.user?._id || document.user || '',
+                employee: document.employee?._id || document.employee || '',
                 fileUrl: document.fileUrl || '',
-                isPublic: document.isPublic || false
+                fileName: document.fileName || '',
+                fileSize: document.fileSize || 0,
+                expiryDate: document.expiryDate ? new Date(document.expiryDate).toISOString().split('T')[0] : '',
+                isConfidential: document.isConfidential || false
             });
         } else {
             setSelectedDocument(null);
             setFormData({
                 title: '',
+                arabicTitle: '',
                 type: 'contract',
-                description: '',
-                user: '',
+                employee: canManage ? '' : user?._id || '',
                 fileUrl: '',
-                isPublic: false
+                fileName: '',
+                fileSize: 0,
+                expiryDate: '',
+                isConfidential: false
             });
         }
         setOpenDialog(true);
@@ -102,6 +149,7 @@ const DocumentsPage = () => {
 
     const handleSubmit = async () => {
         try {
+            console.log('Submitting document:', formData);
             if (selectedDocument) {
                 await documentService.update(selectedDocument._id, formData);
                 showNotification('Document updated successfully', 'success');
@@ -112,7 +160,8 @@ const DocumentsPage = () => {
             handleCloseDialog();
             fetchDocuments();
         } catch (error) {
-            showNotification(error.response?.data?.message || 'Operation failed', 'error');
+            console.error('Submit error:', error);
+            showNotification(typeof error === 'string' ? error : 'Operation failed', 'error');
         }
     };
 
@@ -124,76 +173,126 @@ const DocumentsPage = () => {
             setSelectedDocument(null);
             fetchDocuments();
         } catch (error) {
-            showNotification(error.response?.data?.message || 'Delete failed', 'error');
+            showNotification(typeof error === 'string' ? error : 'Delete failed', 'error');
         }
     };
 
+    const formatFileSize = (bytes) => {
+        if (!bytes) return 'N/A';
+        const mb = bytes / (1024 * 1024);
+        return mb < 1 ? `${(bytes / 1024).toFixed(2)} KB` : `${mb.toFixed(2)} MB`;
+    };
+
+    const handleViewDocument = (doc) => {
+        setSelectedDocument(doc);
+        setOpenViewer(true);
+    };
+
+    const handleDownload = (doc) => {
+        const link = document.createElement('a');
+        link.href = doc.fileUrl;
+        link.download = doc.fileName || doc.title;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showNotification('Download started', 'success');
+    };
+
     const columns = [
-        { field: 'title', headerName: 'Title', width: 250 },
+        {
+            field: 'title',
+            headerName: 'Document Title',
+            renderCell: (row) => (
+                <Box>
+                    <Typography variant="body2" fontWeight="600">
+                        {row.title}
+                    </Typography>
+                    {row.arabicTitle && (
+                        <Typography variant="caption" color="text.secondary">
+                            {row.arabicTitle}
+                        </Typography>
+                    )}
+                </Box>
+            )
+        },
         {
             field: 'type',
             headerName: 'Type',
-            width: 120,
-            renderCell: (params) => (
-                <Chip label={params.row.type} size="small" variant="outlined" />
+            renderCell: (row) => (
+                <Chip
+                    label={row.type ? row.type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'N/A'}
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                />
             )
         },
-        { field: 'description', headerName: 'Description', width: 250 },
         {
-            field: 'user',
-            headerName: 'Owner',
-            width: 180,
-            renderCell: (params) => params.row.user?.name || 'Public'
+            field: 'fileSize',
+            headerName: 'Size',
+            renderCell: (row) => formatFileSize(row.fileSize)
         },
         {
-            field: 'isPublic',
-            headerName: 'Visibility',
-            width: 120,
-            renderCell: (params) => (
+            field: 'isConfidential',
+            headerName: 'Access',
+            renderCell: (row) => (
                 <Chip
-                    label={params.row.isPublic ? 'Public' : 'Private'}
-                    color={params.row.isPublic ? 'success' : 'default'}
+                    icon={row.isConfidential ? <LockIcon /> : <LockOpenIcon />}
+                    label={row.isConfidential ? 'Confidential' : 'Public'}
+                    color={row.isConfidential ? 'error' : 'success'}
                     size="small"
                 />
             )
         },
         {
             field: 'createdAt',
-            headerName: 'Created',
-            width: 120,
-            renderCell: (params) => new Date(params.row.createdAt).toLocaleDateString()
+            headerName: 'Uploaded',
+            renderCell: (row) => new Date(row.createdAt).toLocaleDateString()
         },
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 150,
-            renderCell: (params) => (
-                <Box>
+            renderCell: (row) => (
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
                     <IconButton
                         size="small"
-                        onClick={() => window.open(params.row.fileUrl, '_blank')}
+                        onClick={() => handleViewDocument(row)}
                         color="primary"
                         title="View"
                     >
-                        <Visibility fontSize="small" />
+                        <VisibilityIcon fontSize="small" />
                     </IconButton>
                     <IconButton
                         size="small"
-                        onClick={() => handleOpenDialog(params.row)}
-                        color="primary"
+                        onClick={() => handleDownload(row)}
+                        color="success"
+                        title="Download"
                     >
-                        <EditIcon fontSize="small" />
+                        <DownloadIcon fontSize="small" />
                     </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => {
-                            setSelectedDocument(params.row);
-                            setOpenConfirm(true);
-                        }}
-                        color="error"
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    {canManage && (
+                        <>
+                            <IconButton
+                                size="small"
+                                onClick={() => handleOpenDialog(row)}
+                                color="primary"
+                                title="Edit"
+                            >
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                                size="small"
+                                onClick={() => {
+                                    setSelectedDocument(row);
+                                    setOpenConfirm(true);
+                                }}
+                                color="error"
+                                title="Delete"
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </>
+                    )}
                 </Box>
             )
         }
@@ -202,36 +301,195 @@ const DocumentsPage = () => {
     if (loading) return <Loading />;
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4">Documents</Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenDialog()}
-                >
-                    Upload Document
-                </Button>
+        <Box sx={{
+            p: { xs: 2, sm: 2.5, md: 3 },
+            height: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+        }}>
+            {/* Header Section */}
+            <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
+                alignItems: { xs: 'flex-start', sm: 'center' },
+                gap: { xs: 2, sm: 0 },
+                mb: { xs: 2, sm: 2.5, md: 3 },
+                p: { xs: 2, sm: 2.5, md: 3 },
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: { xs: 2, md: 3 },
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                color: 'white'
+            }}>
+                <Box>
+                    <Typography
+                        variant="h4"
+                        fontWeight="700"
+                        sx={{
+                            mb: 0.5,
+                            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
+                        }}
+                    >
+                        📄 My Documents
+                    </Typography>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            opacity: 0.9,
+                            fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                        }}
+                    >
+                        View and manage your personal documents
+                    </Typography>
+                </Box>
+                {canManage && (
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpenDialog()}
+                        fullWidth={{ xs: true, sm: false }}
+                        sx={{
+                            bgcolor: 'white',
+                            color: 'primary.main',
+                            fontWeight: 600,
+                            px: { xs: 2, sm: 2.5, md: 3 },
+                            py: { xs: 1, sm: 1.2 },
+                            borderRadius: 2,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            fontSize: { xs: '0.875rem', sm: '0.9375rem' },
+                            '&:hover': {
+                                bgcolor: 'rgba(255,255,255,0.9)',
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
+                            },
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        Upload Document
+                    </Button>
+                )}
             </Box>
 
-            <DataTable
-                rows={documents}
-                columns={columns}
-                getRowId={(row) => row._id}
-            />
+            {/* Documents Count Badge */}
+            <Box sx={{ mb: { xs: 1.5, sm: 2 } }}>
+                <Chip
+                    label={`${documents.length} Document${documents.length !== 1 ? 's' : ''}`}
+                    color="primary"
+                    size="small"
+                    sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                        px: { xs: 0.5, sm: 1 }
+                    }}
+                />
+            </Box>
 
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle>
-                    {selectedDocument ? 'Edit Document' : 'Upload Document'}
+            {/* Table Container */}
+            <Box sx={{
+                flex: 1,
+                minHeight: 0,
+                maxHeight: {
+                    xs: 'calc(100vh - 250px)',
+                    sm: 'calc(100vh - 280px)',
+                    md: 'calc(100vh - 300px)'
+                },
+                bgcolor: 'white',
+                borderRadius: { xs: 2, md: 3 },
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
+                {documents.length === 0 ? (
+                    <Box sx={{
+                        textAlign: 'center',
+                        py: 12,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 2
+                    }}>
+                        <Box sx={{
+                            width: 80,
+                            height: 80,
+                            borderRadius: '50%',
+                            bgcolor: 'grey.100',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mb: 2
+                        }}>
+                            <Typography variant="h2">📄</Typography>
+                        </Box>
+                        <Typography variant="h6" color="text.secondary" fontWeight="600">
+                            No documents found
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Your documents will appear here once uploaded
+                        </Typography>
+                    </Box>
+                ) : (
+                    <DataTable
+                        data={documents}
+                        columns={columns}
+                    />
+                )}
+            </Box>
+
+            <Dialog
+                open={openDialog}
+                onClose={handleCloseDialog}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 3,
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: '1.3rem',
+                    py: 2.5
+                }}>
+                    {selectedDocument ? '✏️ Edit Document' : '📤 Upload Document'}
                 </DialogTitle>
-                <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                <DialogContent sx={{ pt: 3 }}>
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2.5,
+                        '& .MuiTextField-root': {
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                                },
+                                '&.Mui-focused': {
+                                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.15)'
+                                }
+                            }
+                        }
+                    }}>
                         <TextField
                             label="Title"
                             name="title"
                             value={formData.title}
                             onChange={handleChange}
                             required
+                            fullWidth
+                        />
+                        <TextField
+                            label="Arabic Title (Optional)"
+                            name="arabicTitle"
+                            value={formData.arabicTitle}
+                            onChange={handleChange}
                             fullWidth
                         />
                         <TextField
@@ -244,35 +502,28 @@ const DocumentsPage = () => {
                             fullWidth
                         >
                             {documentTypes.map((type) => (
-                                <MenuItem key={type} value={type}>
-                                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                                <MenuItem key={type.value} value={type.value}>
+                                    {type.label}
                                 </MenuItem>
                             ))}
                         </TextField>
-                        <TextField
-                            label="Description"
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            multiline
-                            rows={3}
-                            fullWidth
-                        />
-                        <TextField
-                            select
-                            label="Assign to User (Optional)"
-                            name="user"
-                            value={formData.user}
-                            onChange={handleChange}
-                            fullWidth
-                        >
-                            <MenuItem value="">None (Public)</MenuItem>
-                            {users.map((user) => (
-                                <MenuItem key={user._id} value={user._id}>
-                                    {user.name} - {user.email}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                        {canManage && (
+                            <TextField
+                                select
+                                label="Assign to Employee"
+                                name="employee"
+                                value={formData.employee}
+                                onChange={handleChange}
+                                fullWidth
+                            >
+                                <MenuItem value="">None</MenuItem>
+                                {users.map((user) => (
+                                    <MenuItem key={user._id} value={user._id}>
+                                        {user.name} - {user.email}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        )}
                         <TextField
                             label="File URL"
                             name="fileUrl"
@@ -284,22 +535,85 @@ const DocumentsPage = () => {
                             helperText="Enter the URL of the uploaded document"
                         />
                         <TextField
+                            label="File Name"
+                            name="fileName"
+                            value={formData.fileName}
+                            onChange={handleChange}
+                            placeholder="document.pdf"
+                            fullWidth
+                        />
+                        <TextField
+                            label="File Size (bytes)"
+                            name="fileSize"
+                            type="number"
+                            value={formData.fileSize}
+                            onChange={handleChange}
+                            fullWidth
+                            helperText="File size in bytes"
+                        />
+                        <TextField
+                            label="Expiry Date (Optional)"
+                            name="expiryDate"
+                            type="date"
+                            value={formData.expiryDate}
+                            onChange={handleChange}
+                            fullWidth
+                            InputLabelProps={{ shrink: true }}
+                        />
+                        <TextField
                             select
-                            label="Visibility"
-                            name="isPublic"
-                            value={formData.isPublic}
-                            onChange={(e) => setFormData(prev => ({ ...prev, isPublic: e.target.value === 'true' }))}
+                            label="Confidentiality"
+                            name="isConfidential"
+                            value={formData.isConfidential}
+                            onChange={(e) => setFormData(prev => ({ ...prev, isConfidential: e.target.value === 'true' }))}
                             fullWidth
                         >
-                            <MenuItem value="true">Public (All users can view)</MenuItem>
-                            <MenuItem value="false">Private (Assigned user only)</MenuItem>
+                            <MenuItem value="false">Public (All users can view)</MenuItem>
+                            <MenuItem value="true">Confidential (Restricted access)</MenuItem>
                         </TextField>
                     </Box>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog}>Cancel</Button>
-                    <Button onClick={handleSubmit} variant="contained">
-                        {selectedDocument ? 'Update' : 'Upload'}
+                <DialogActions sx={{
+                    px: 3,
+                    py: 2.5,
+                    gap: 1.5,
+                    borderTop: '2px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'grey.50'
+                }}>
+                    <Button
+                        onClick={handleCloseDialog}
+                        variant="outlined"
+                        sx={{
+                            minWidth: 120,
+                            borderRadius: 2,
+                            borderWidth: 2,
+                            fontWeight: 600,
+                            '&:hover': {
+                                borderWidth: 2
+                            }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleSubmit}
+                        variant="contained"
+                        sx={{
+                            minWidth: 120,
+                            borderRadius: 2,
+                            fontWeight: 700,
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+                            '&:hover': {
+                                background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+                                boxShadow: '0 6px 16px rgba(102, 126, 234, 0.5)',
+                                transform: 'translateY(-1px)'
+                            },
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        {selectedDocument ? '✓ Update' : '✓ Upload'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -313,6 +627,12 @@ const DocumentsPage = () => {
                     setOpenConfirm(false);
                     setSelectedDocument(null);
                 }}
+            />
+
+            <DocumentViewer
+                open={openViewer}
+                onClose={() => setOpenViewer(false)}
+                document={selectedDocument}
             />
         </Box>
     );

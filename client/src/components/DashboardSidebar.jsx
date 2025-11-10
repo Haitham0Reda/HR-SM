@@ -121,20 +121,38 @@ function DashboardSidebar({
 
     const getDrawerContent = React.useCallback(
         (viewport) => (
-            <React.Fragment>
-                <Toolbar />
+            <Box
+                sx={{
+                    height: '100vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                }}
+            >
+                <Toolbar sx={{ flexShrink: 0 }} />
                 <Box
                     component="nav"
                     aria-label={`${viewport.charAt(0).toUpperCase()}${viewport.slice(1)}`}
                     sx={{
-                        height: '100%',
+                        flex: 1,
                         display: 'flex',
                         flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        overflow: 'auto',
-                        scrollbarGutter: mini ? 'stable' : 'auto',
+                        overflowY: 'auto',
                         overflowX: 'hidden',
                         pt: !mini ? 0 : 2,
+                        '&::-webkit-scrollbar': {
+                            width: '6px',
+                        },
+                        '&::-webkit-scrollbar-track': {
+                            backgroundColor: 'transparent',
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: 'divider',
+                            borderRadius: '8px',
+                            '&:hover': {
+                                backgroundColor: 'text.secondary',
+                            },
+                        },
                         ...(hasDrawerTransitions
                             ? getDrawerSxTransitionMixin(isFullyExpanded, 'padding')
                             : {}),
@@ -519,7 +537,7 @@ function DashboardSidebar({
                         )}
                     </List>
                 </Box>
-            </React.Fragment>
+            </Box>
         ),
         [mini, hasDrawerTransitions, isFullyExpanded, expandedItemIds, pathname, userRole],
     );
@@ -532,13 +550,16 @@ function DashboardSidebar({
                 displayPrint: 'none',
                 width: drawerWidth,
                 flexShrink: 0,
+                height: '100vh',
                 ...getDrawerWidthTransitionMixin(expanded),
                 ...(isTemporary ? { position: 'absolute' } : {}),
                 [`& .MuiDrawer-paper`]: {
-                    position: 'absolute',
+                    position: isTemporary ? 'absolute' : 'fixed',
                     width: drawerWidth,
+                    height: '100vh',
                     boxSizing: 'border-box',
                     backgroundImage: 'none',
+                    overflow: 'hidden',
                     ...getDrawerWidthTransitionMixin(expanded),
                 },
             };

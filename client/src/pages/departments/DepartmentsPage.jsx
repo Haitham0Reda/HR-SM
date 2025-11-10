@@ -124,51 +124,27 @@ const DepartmentsPage = () => {
     };
 
     const columns = [
-        { field: 'code', headerName: 'Code', width: 120 },
-        { field: 'name', headerName: 'Department Name', width: 200 },
+        { field: 'code', headerName: 'Code' },
+        { field: 'name', headerName: 'Department Name' },
         {
             field: 'school',
             headerName: 'School',
-            width: 200,
-            renderCell: (params) => params.row.school?.name || 'N/A'
+            renderCell: (row) => row.school?.name || 'N/A'
         },
-        { field: 'description', headerName: 'Description', width: 250 },
+        {
+            field: 'description',
+            headerName: 'Description',
+            renderCell: (row) => row.description || 'N/A'
+        },
         {
             field: 'isActive',
             headerName: 'Status',
-            width: 120,
-            renderCell: (params) => (
+            renderCell: (row) => (
                 <Chip
-                    label={params.row.isActive ? 'Active' : 'Inactive'}
-                    color={params.row.isActive ? 'success' : 'default'}
+                    label={row.isActive ? 'Active' : 'Inactive'}
+                    color={row.isActive ? 'success' : 'default'}
                     size="small"
                 />
-            )
-        },
-        {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 120,
-            renderCell: (params) => (
-                <Box>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(params.row)}
-                        color="primary"
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => {
-                            setSelectedDepartment(params.row);
-                            setOpenConfirm(true);
-                        }}
-                        color="error"
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Box>
             )
         }
     ];

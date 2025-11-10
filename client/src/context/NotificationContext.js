@@ -57,8 +57,28 @@ export const NotificationProvider = ({ children }) => {
                 autoHideDuration={6000}
                 onClose={handleClose}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                sx={{
+                    mt: 8,
+                }}
             >
-                <Alert onClose={handleClose} severity={notification.severity} sx={{ width: '100%' }}>
+                <Alert
+                    onClose={handleClose}
+                    severity={notification.severity}
+                    variant="filled"
+                    sx={{
+                        width: '100%',
+                        minWidth: 300,
+                        borderRadius: 2,
+                        boxShadow: 4,
+                        fontWeight: 500,
+                        '& .MuiAlert-icon': {
+                            fontSize: 24,
+                        },
+                        '& .MuiAlert-message': {
+                            fontSize: '0.9375rem',
+                        },
+                    }}
+                >
                     {notification.message}
                 </Alert>
             </Snackbar>

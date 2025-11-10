@@ -155,35 +155,87 @@ const UsersPage = () => {
     if (loading) return <Loading />;
 
     return (
-        <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h4" fontWeight="bold">
-                    Users
-                </Typography>
+        <Box
+            sx={{
+                p: { xs: 2, sm: 3, md: 4 },
+                maxWidth: 1600,
+                mx: 'auto',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    mb: 3,
+                    flexWrap: 'wrap',
+                    gap: 2,
+                }}
+            >
+                <Box>
+                    <Typography
+                        variant="h4"
+                        component="h1"
+                        sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}
+                    >
+                        Users Management
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Manage system users, roles, and permissions
+                    </Typography>
+                </Box>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpenDialog()}
+                    size="large"
+                    sx={{ px: 3 }}
                 >
                     Add User
                 </Button>
             </Box>
 
-            <DataTable
-                columns={columns}
-                data={users}
-                onEdit={handleOpenDialog}
-                onDelete={(user) => {
-                    setSelectedUser(user);
-                    setDeleteDialogOpen(true);
-                }}
-                emptyMessage="No users found. Click 'Add User' to create one."
-            />
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <DataTable
+                    columns={columns}
+                    data={users}
+                    onEdit={handleOpenDialog}
+                    onDelete={(user) => {
+                        setSelectedUser(user);
+                        setDeleteDialogOpen(true);
+                    }}
+                    emptyMessage="No users found. Click 'Add User' to create one."
+                />
+            </Box>
 
             {/* Create/Edit Dialog */}
-            <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-                <DialogTitle>{selectedUser ? 'Edit User' : 'Create User'}</DialogTitle>
-                <DialogContent>
+            <Dialog
+                open={dialogOpen}
+                onClose={handleCloseDialog}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 3,
+                        boxShadow: 4,
+                    },
+                }}
+            >
+                <DialogTitle
+                    sx={{
+                        fontWeight: 700,
+                        fontSize: '1.5rem',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        pb: 2,
+                    }}
+                >
+                    {selectedUser ? 'Edit User' : 'Create User'}
+                </DialogTitle>
+                <DialogContent sx={{ pt: 3 }}>
                     <Grid container spacing={2} sx={{ mt: 1 }}>
                         <Grid item xs={12} sm={6}>
                             <TextField

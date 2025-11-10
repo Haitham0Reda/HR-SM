@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
+import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
@@ -21,7 +22,8 @@ import leaveRoutes from './routes/leave.routes.js';
 import mixedVacationRoutes from './routes/mixedVacation.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import payrollRoutes from './routes/payroll.routes.js';
-import permissionRoutes from './routes/permission.routes.js';
+import systemPermissionRoutes from './routes/permission.routes.js';
+import permissionRequestRoutes from './routes/permissionRequest.routes.js';
 import permissionAuditRoutes from './routes/permissionAudit.routes.js';
 import positionRoutes from './routes/position.routes.js';
 import reportRoutes from './routes/report.routes.js';
@@ -36,6 +38,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -55,7 +61,8 @@ app.use('/api/leaves', leaveRoutes);
 app.use('/api/mixed-vacations', mixedVacationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/payrolls', payrollRoutes);
-app.use('/api/permissions', permissionRoutes);
+app.use('/api/permissions', permissionRequestRoutes);
+app.use('/api/system-permissions', systemPermissionRoutes);
 app.use('/api/permission-audits', permissionAuditRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/reports', reportRoutes);
@@ -77,13 +84,16 @@ app.use(errorHandler);
 export { app };
 
 // Only start server and connect to DB if this file is run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Check if this module is being run directly (not imported for testing)
+const isMainModule = process.argv[1] && process.argv[1].endsWith('index.js');
+
+if (isMainModule) {
     // Connect to MongoDB
     connectDB();
-    
+
     const server = app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
-        
+
         // Start scheduled tasks
         startAllScheduledTasks();
     });

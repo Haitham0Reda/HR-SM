@@ -20,19 +20,24 @@ function DashboardSidebarHeaderItem({ children }) {
     return (
         <ListSubheader
             sx={{
-                fontSize: 12,
-                fontWeight: '600',
+                fontSize: 11,
+                fontWeight: '700',
                 height: mini ? 0 : 36,
                 ...(hasDrawerTransitions
                     ? getDrawerSxTransitionMixin(fullyExpanded, 'height')
                     : {}),
-                px: 1.5,
+                px: 2,
                 py: 0,
                 minWidth: DRAWER_WIDTH,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
                 zIndex: 2,
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                color: 'text.secondary',
+                bgcolor: 'transparent',
+                lineHeight: '36px',
             }}
         >
             {children}
