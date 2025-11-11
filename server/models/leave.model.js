@@ -18,8 +18,13 @@ const leaveSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: function (v) {
-        // Start date should not be before hire date
-        return !v || v >= new Date();
+        // Start date should not be before today (ignore time)
+        if (!v) return true;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDate = new Date(v);
+        startDate.setHours(0, 0, 0, 0);
+        return startDate >= today;
       },
       message: 'Start date cannot be in the past'
     }
@@ -40,8 +45,24 @@ const leaveSchema = new mongoose.Schema({
   },
   reason: {
     type: String,
-    required: true,
-    minlength: 10,
+    required: function () {
+      return this.leaveType === 'sick';
+    },
+    validate: {
+      validator: function (v) {
+        // If sick leave, reason is required and must be at least 10 characters
+        if (this.leaveType === 'sick') {
+          return v && v.length >= 10;
+        }
+        // For other leave types, if reason is provided, it must be at least 10 characters
+        if (v && v.length > 0 && v.length < 10) {
+          return false;
+        }
+        // If not provided or empty for non-sick leave, it's valid
+        return true;
+      },
+      message: 'Reason must be at least 10 characters long when provided'
+    },
     maxlength: 500
   },
   status: {

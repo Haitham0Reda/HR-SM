@@ -23,3 +23,7 @@ TEST_REPORT_*.md
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# uploads
+server/uploads/medical-documents/*
+!server/uploads/.gitkeep

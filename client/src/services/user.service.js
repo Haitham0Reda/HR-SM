@@ -30,6 +30,11 @@ const userService = {
     getProfile: async () => {
         return await api.get('/users/profile');
     },
+
+    // Update current user profile
+    updateProfile: async (data) => {
+        return await api.put('/users/profile', data);
+    },
 };
 
 export default userService;

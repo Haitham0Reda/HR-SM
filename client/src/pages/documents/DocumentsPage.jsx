@@ -303,69 +303,35 @@ const DocumentsPage = () => {
 
     return (
         <Box sx={{
-            p: { xs: 2, sm: 2.5, md: 3 },
-            height: '100vh',
+            p: 3,
+            minHeight: '100vh',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+            gap: 3
         }}>
             {/* Header Section */}
             <Box sx={{
                 display: 'flex',
-                flexDirection: { xs: 'column', sm: 'row' },
                 justifyContent: 'space-between',
-                alignItems: { xs: 'flex-start', sm: 'center' },
-                gap: { xs: 2, sm: 0 },
-                mb: { xs: 2, sm: 2.5, md: 3 },
-                p: { xs: 2, sm: 2.5, md: 3 },
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: { xs: 2, md: 3 },
-                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                color: 'white'
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 2
             }}>
-                <Box>
-                    <Typography
-                        variant="h4"
-                        fontWeight="700"
-                        sx={{
-                            mb: 0.5,
-                            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
-                        }}
-                    >
-                        📄 My Documents
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            opacity: 0.9,
-                            fontSize: { xs: '0.8rem', sm: '0.875rem' }
-                        }}
-                    >
-                        View and manage your personal documents
-                    </Typography>
-                </Box>
+                <Typography variant="h4" fontWeight="600">
+                    My Documents
+                </Typography>
                 {canManage && (
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => handleOpenDialog()}
-                        fullWidth={{ xs: true, sm: false }}
                         sx={{
-                            bgcolor: 'white',
-                            color: 'primary.main',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                             fontWeight: 600,
-                            px: { xs: 2, sm: 2.5, md: 3 },
-                            py: { xs: 1, sm: 1.2 },
-                            borderRadius: 2,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            fontSize: { xs: '0.875rem', sm: '0.9375rem' },
                             '&:hover': {
-                                bgcolor: 'rgba(255,255,255,0.9)',
-                                transform: 'translateY(-2px)',
-                                boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
-                            },
-                            transition: 'all 0.3s ease'
+                                background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+                                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+                            }
                         }}
                     >
                         Upload Document
@@ -373,35 +339,14 @@ const DocumentsPage = () => {
                 )}
             </Box>
 
-            {/* Documents Count Badge */}
-            <Box sx={{ mb: { xs: 1.5, sm: 2 } }}>
-                <Chip
-                    label={`${documents.length} Document${documents.length !== 1 ? 's' : ''}`}
-                    color="primary"
-                    size="small"
-                    sx={{
-                        fontWeight: 600,
-                        fontSize: { xs: '0.8rem', sm: '0.9rem' },
-                        px: { xs: 0.5, sm: 1 }
-                    }}
-                />
-            </Box>
-
             {/* Table Container */}
             <Box sx={{
-                flex: 1,
-                minHeight: 0,
-                maxHeight: {
-                    xs: 'calc(100vh - 250px)',
-                    sm: 'calc(100vh - 280px)',
-                    md: 'calc(100vh - 300px)'
-                },
-                bgcolor: 'white',
-                borderRadius: { xs: 2, md: 3 },
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                bgcolor: 'background.paper',
+                borderRadius: 2,
+                boxShadow: 2,
                 overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column'
+                border: '1px solid',
+                borderColor: 'divider'
             }}>
                 {documents.length === 0 ? (
                     <Box sx={{

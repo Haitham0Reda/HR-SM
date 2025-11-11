@@ -173,6 +173,9 @@ function DashboardSidebar({
                             icon={<DashboardIcon />}
                             href="/dashboard"
                             selected={!!matchPath('/dashboard', pathname)}
+                            sx={{
+                                marginTop: 3,
+                            }}
                         />
 
                         {/* Employee View */}
@@ -207,6 +210,13 @@ function DashboardSidebar({
                                     icon={<RequestPageIcon />}
                                     href="/requests"
                                     selected={!!matchPath('/requests', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="vacation-request"
+                                    title="Vacation Request"
+                                    icon={<BeachAccessIcon />}
+                                    href="/vacation-request"
+                                    selected={!!matchPath('/vacation-request', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Information</DashboardSidebarHeaderItem>

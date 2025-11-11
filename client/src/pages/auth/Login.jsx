@@ -334,24 +334,26 @@ const Login = () => {
                                             InputProps={{
                                                 startAdornment: (
                                                     <InputAdornment position="start">
-                                                        <PersonIcon sx={{ color: '#6c757d', fontSize: 22 }} />
+                                                        <PersonIcon sx={{ color: '#007bff', fontSize: 22 }} />
                                                     </InputAdornment>
                                                 ),
                                             }}
                                             sx={{
                                                 '& .MuiOutlinedInput-root': {
-                                                    backgroundColor: 'transparent',
+                                                    backgroundColor: '#ffffff',
                                                     transition: 'all 0.2s ease',
                                                     '& fieldset': {
                                                         borderColor: '#dee2e6',
                                                         borderWidth: '1.5px',
                                                     },
                                                     '&:hover': {
+                                                        backgroundColor: '#ffffff',
                                                         '& fieldset': {
                                                             borderColor: '#007bff',
                                                         },
                                                     },
                                                     '&.Mui-focused': {
+                                                        backgroundColor: '#ffffff',
                                                         '& fieldset': {
                                                             borderColor: '#007bff',
                                                             borderWidth: '2px',
@@ -362,10 +364,15 @@ const Login = () => {
                                                     color: '#212529',
                                                     fontSize: '0.95rem',
                                                     py: 1.75,
+                                                    pl: 1.5,
+                                                    pr: 2,
                                                     '&::placeholder': {
                                                         color: '#6c757d',
                                                         opacity: 0.6,
                                                     },
+                                                },
+                                                '& .MuiInputAdornment-root': {
+                                                    ml: 1,
                                                 },
                                             }}
                                         />
@@ -414,7 +421,7 @@ const Login = () => {
                                             InputProps={{
                                                 startAdornment: (
                                                     <InputAdornment position="start">
-                                                        <LockIcon sx={{ color: '#6c757d', fontSize: 22 }} />
+                                                        <LockIcon sx={{ color: '#007bff', fontSize: 22, border: '0.5px solid #007bff', borderRadius: 1, p: 0.3 }} />
                                                     </InputAdornment>
                                                 ),
                                                 endAdornment: (
@@ -424,9 +431,9 @@ const Login = () => {
                                                             edge="end"
                                                             size="small"
                                                             sx={{
-                                                                color: '#6c757d',
+                                                                color: '#007bff',
                                                                 '&:hover': {
-                                                                    color: '#007bff',
+                                                                    color: '#0056b3',
                                                                     backgroundColor: 'rgba(0, 123, 255, 0.08)',
                                                                 },
                                                             }}
@@ -438,18 +445,20 @@ const Login = () => {
                                             }}
                                             sx={{
                                                 '& .MuiOutlinedInput-root': {
-                                                    backgroundColor: 'transparent',
+                                                    backgroundColor: '#ffffff',
                                                     transition: 'all 0.2s ease',
                                                     '& fieldset': {
                                                         borderColor: '#dee2e6',
                                                         borderWidth: '1.5px',
                                                     },
                                                     '&:hover': {
+                                                        backgroundColor: '#ffffff',
                                                         '& fieldset': {
                                                             borderColor: '#007bff',
                                                         },
                                                     },
                                                     '&.Mui-focused': {
+                                                        backgroundColor: '#ffffff',
                                                         '& fieldset': {
                                                             borderColor: '#007bff',
                                                             borderWidth: '2px',
@@ -460,10 +469,15 @@ const Login = () => {
                                                     color: '#212529',
                                                     fontSize: '0.95rem',
                                                     py: 1.75,
+                                                    pl: 1.5,
+                                                    pr: 2,
                                                     '&::placeholder': {
                                                         color: '#6c757d',
                                                         opacity: 0.6,
                                                     },
+                                                },
+                                                '& .MuiInputAdornment-root': {
+                                                    ml: 1,
                                                 },
                                             }}
                                         />

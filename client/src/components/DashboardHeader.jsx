@@ -12,6 +12,8 @@ import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Divider from '@mui/material/Divider';
@@ -23,6 +25,10 @@ import Stack from '@mui/material/Stack';
 import { Link, useNavigate } from 'react-router-dom';
 import ThemeSwitcher from './ThemeSwitcher';
 import { useAuth } from '../context/AuthContext';
+import leaveService from '../services/leave.service';
+import announcementService from '../services/announcement.service';
+import eventService from '../services/event.service';
+import surveyService from '../services/survey.service';
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
     borderWidth: 0,
@@ -43,14 +49,132 @@ const LogoContainer = styled('div')({
     },
 });
 
-function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user, notificationCount = 0 }) {
+function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     const theme = useTheme();
     const navigate = useNavigate();
     const { logout } = useAuth();
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
+    const [notifications, setNotifications] = React.useState([]);
+    const [currentTime, setCurrentTime] = React.useState(new Date());
     const profileMenuOpen = Boolean(anchorEl);
     const notificationMenuOpen = Boolean(notificationAnchorEl);
+
+    // Update time every second
+    React.useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    // Fetch notifications
+    React.useEffect(() => {
+        if (user && user._id) {
+            fetchNotifications();
+            // Refresh notifications every 30 seconds
+            const interval = setInterval(fetchNotifications, 30000);
+            return () => clearInterval(interval);
+        }
+    }, [user]);
+
+    const fetchNotifications = async () => {
+        try {
+            const allNotifications = [];
+
+            // Get viewed notifications from localStorage
+            const viewedNotifications = JSON.parse(localStorage.getItem('viewedNotifications') || '[]');
+
+            // Fetch leave requests (pending, approved, rejected)
+            const leaveData = await leaveService.getAll({ user: user._id });
+            const requests = Array.isArray(leaveData) ? leaveData : (leaveData.data || []);
+            const leaveRequests = requests
+                .filter(r => {
+                    // Only show pending, approved, or rejected
+                    if (!['pending', 'approved', 'rejected'].includes(r.status)) return false;
+                    // Don't show if already viewed
+                    return !viewedNotifications.includes(r._id);
+                })
+                .map(r => ({
+                    ...r,
+                    notifType: 'leave',
+                    title: `${(r.leaveType || r.type || '').charAt(0).toUpperCase() + (r.leaveType || r.type || '').slice(1)} Leave Request`,
+                    icon: r.status === 'approved' ? '✅' : r.status === 'rejected' ? '❌' : '📝',
+                }));
+            allNotifications.push(...leaveRequests);
+
+            // Fetch recent announcements
+            try {
+                const announcementData = await announcementService.getAll();
+                const announcements = Array.isArray(announcementData) ? announcementData : (announcementData.data || []);
+                const recentAnnouncements = announcements
+                    .slice(0, 3)
+                    .map(a => ({
+                        ...a,
+                        notifType: 'announcement',
+                        title: a.title || 'New Announcement',
+                        icon: '📢',
+                    }));
+                allNotifications.push(...recentAnnouncements);
+            } catch (err) {
+                // Silently skip if access denied or service unavailable
+                if (err.status !== 403) {
+                    console.log('Could not fetch announcements:', err.message);
+                }
+            }
+
+            // Fetch upcoming events
+            try {
+                const eventData = await eventService.getAll();
+                const events = Array.isArray(eventData) ? eventData : (eventData.data || []);
+                const upcomingEvents = events
+                    .filter(e => new Date(e.date) >= new Date())
+                    .slice(0, 3)
+                    .map(e => ({
+                        ...e,
+                        notifType: 'event',
+                        title: e.title || 'Upcoming Event',
+                        icon: '📅',
+                    }));
+                allNotifications.push(...upcomingEvents);
+            } catch (err) {
+                // Silently skip if access denied or service unavailable
+                if (err.status !== 403) {
+                    console.log('Could not fetch events:', err.message);
+                }
+            }
+
+            // Fetch active surveys (only for HR/Admin)
+            try {
+                const surveyData = await surveyService.getAll();
+                const surveys = Array.isArray(surveyData) ? surveyData : (surveyData.data || []);
+                const activeSurveys = surveys
+                    .filter(s => s.status === 'active')
+                    .slice(0, 2)
+                    .map(s => ({
+                        ...s,
+                        notifType: 'survey',
+                        title: s.title || 'New Survey',
+                        icon: '📊',
+                    }));
+                allNotifications.push(...activeSurveys);
+            } catch (err) {
+                // Surveys might require HR/Admin role or service might not exist
+                console.log('Could not fetch surveys for notifications:', err.status === 403 ? 'Access denied' : err.message);
+            }
+
+            // Sort by date and limit to 10
+            const sortedNotifications = allNotifications
+                .sort((a, b) => new Date(b.updatedAt || b.createdAt || b.date) - new Date(a.updatedAt || a.createdAt || a.date))
+                .slice(0, 10);
+
+            setNotifications(sortedNotifications);
+        } catch (error) {
+            console.error('Failed to fetch notifications:', error);
+        }
+    };
+
+    const notificationCount = notifications.length;
 
     const handleMenuOpen = React.useCallback(() => {
         onToggleMenu(!menuOpen);
@@ -143,6 +267,55 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user, notificati
                         spacing={1}
                         sx={{ marginLeft: 'auto' }}
                     >
+                        {/* Live Clock */}
+                        <Box
+                            sx={{
+                                display: { xs: 'none', sm: 'flex' },
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                mr: 1,
+                                px: 2,
+                                py: 0.5,
+                                borderRadius: 2,
+                                bgcolor: 'action.hover',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                            }}
+                        >
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 700,
+                                    fontSize: '0.95rem',
+                                    color: 'text.primary',
+                                    fontFamily: 'monospace',
+                                    letterSpacing: 0.5,
+                                }}
+                            >
+                                {currentTime.toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: true,
+                                })}
+                            </Typography>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    fontSize: '0.7rem',
+                                    color: 'text.secondary',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                {currentTime.toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                })}
+                            </Typography>
+                        </Box>
+
                         <ThemeSwitcher />
 
                         <Tooltip title="Notifications">
@@ -205,6 +378,40 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user, notificati
                                 </Avatar>
                             </IconButton>
                         </Tooltip>
+
+                        <Box
+                            sx={{
+                                display: { xs: 'none', md: 'flex' },
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                ml: 1,
+                            }}
+                        >
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 600,
+                                    fontSize: '0.875rem',
+                                    color: 'text.primary',
+                                }}
+                            >
+                                {user?.profile?.firstName || user?.name?.split(' ')[0] || user?.username || 'User'}
+                            </Typography>
+                            <Chip
+                                label={user?.role?.toUpperCase() || 'EMPLOYEE'}
+                                size="small"
+                                sx={{
+                                    height: 18,
+                                    fontSize: '0.65rem',
+                                    fontWeight: 700,
+                                    bgcolor: 'primary.main',
+                                    color: 'white',
+                                    '& .MuiChip-label': {
+                                        px: 1,
+                                    },
+                                }}
+                            />
+                        </Box>
                     </Stack>
                 </Stack>
             </Toolbar>
@@ -282,7 +489,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user, notificati
                         sx: {
                             overflow: 'visible',
                             mt: 1.5,
-                            minWidth: 320,
+                            minWidth: 360,
                             maxWidth: 400,
                             maxHeight: 500,
                             borderRadius: 2,
@@ -298,12 +505,99 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user, notificati
                     <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
                         Notifications
                     </Typography>
-                </Box>
-                {notificationCount > 0 ? (
-                    <Box sx={{ p: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                            You have {notificationCount} new notification{notificationCount > 1 ? 's' : ''}
+                    {notificationCount > 0 && (
+                        <Typography variant="caption" color="text.secondary">
+                            {notificationCount} new update{notificationCount > 1 ? 's' : ''}
                         </Typography>
+                    )}
+                </Box>
+                {notifications.length > 0 ? (
+                    <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                        {notifications.map((notification) => {
+                            const notifType = notification.notifType;
+                            const statusColor = notification.status === 'pending' ? 'warning.main' : 'info.main';
+
+                            const handleClick = () => {
+                                // Mark as viewed
+                                const viewedNotifications = JSON.parse(localStorage.getItem('viewedNotifications') || '[]');
+                                if (!viewedNotifications.includes(notification._id)) {
+                                    viewedNotifications.push(notification._id);
+                                    localStorage.setItem('viewedNotifications', JSON.stringify(viewedNotifications));
+                                }
+
+                                handleNotificationClose();
+
+                                // Navigate to appropriate page
+                                if (notifType === 'leave') {
+                                    navigate(`/requests/${notification._id}`);
+                                } else if (notifType === 'announcement') {
+                                    navigate('/announcements');
+                                } else if (notifType === 'event') {
+                                    navigate('/events');
+                                } else if (notifType === 'survey') {
+                                    navigate('/surveys');
+                                }
+
+                                // Refresh notifications after marking as viewed
+                                setTimeout(fetchNotifications, 500);
+                            };
+
+                            return (
+                                <MenuItem
+                                    key={notification._id}
+                                    onClick={handleClick}
+                                    sx={{
+                                        py: 1.5,
+                                        px: 2.5,
+                                        borderBottom: '1px solid',
+                                        borderColor: 'divider',
+                                        '&:last-child': {
+                                            borderBottom: 'none',
+                                        },
+                                        '&:hover': {
+                                            backgroundColor: 'action.hover',
+                                        },
+                                    }}
+                                >
+                                    <Box sx={{ width: '100%' }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                                                {notification.icon} {notification.title}
+                                            </Typography>
+                                            {notifType === 'leave' && (
+                                                <Chip
+                                                    label={notification.status?.toUpperCase()}
+                                                    size="small"
+                                                    sx={{
+                                                        height: 20,
+                                                        fontSize: '0.7rem',
+                                                        fontWeight: 'bold',
+                                                        backgroundColor: notification.status === 'approved' ? 'success.main' :
+                                                            notification.status === 'rejected' ? 'error.main' :
+                                                                'warning.main',
+                                                        color: 'white',
+                                                    }}
+                                                />
+                                            )}
+                                        </Box>
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', mb: 0.5 }}>
+                                            {notifType === 'leave' && `${notification.duration || 0} day(s) • ${new Date(notification.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`}
+                                            {notifType === 'event' && `${new Date(notification.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+                                            {notifType === 'announcement' && (notification.description || '').substring(0, 50)}
+                                            {notifType === 'survey' && 'Please complete this survey'}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                            {new Date(notification.updatedAt || notification.createdAt || notification.date).toLocaleString('en-GB', {
+                                                day: '2-digit',
+                                                month: 'short',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </Typography>
+                                    </Box>
+                                </MenuItem>
+                            );
+                        })}
                     </Box>
                 ) : (
                     <Box
@@ -318,8 +612,22 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user, notificati
                     >
                         <NotificationsIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
                         <Typography variant="body2" color="text.secondary">
-                            No new notifications
+                            No notifications
                         </Typography>
+                    </Box>
+                )}
+                {notifications.length > 0 && (
+                    <Box sx={{ p: 1.5, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+                        <Button
+                            size="small"
+                            onClick={() => {
+                                handleNotificationClose();
+                                navigate('/requests');
+                            }}
+                            sx={{ fontSize: '0.8rem' }}
+                        >
+                            View All Requests
+                        </Button>
                     </Box>
                 )}
             </Menu>
@@ -333,11 +641,11 @@ DashboardHeader.propTypes = {
     onToggleMenu: PropTypes.func.isRequired,
     title: PropTypes.string,
     user: PropTypes.shape({
+        _id: PropTypes.string,
         name: PropTypes.string,
         email: PropTypes.string,
         profilePicture: PropTypes.string,
     }),
-    notificationCount: PropTypes.number,
 };
 
 export default DashboardHeader;

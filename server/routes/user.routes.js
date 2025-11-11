@@ -6,7 +6,8 @@ import {
     updateUser,
     deleteUser,
     loginUser,
-    getUserProfile
+    getUserProfile,
+    updateUserProfile
 } from '../controller/user.controller.js';
 import {
     protect,
@@ -25,8 +26,12 @@ const router = express.Router();
 // Login route - Public (no auth required)
 router.post('/login', loginUser);
 
+// IMPORTANT: Profile routes must come BEFORE /:id routes to avoid matching "profile" as an ID
 // Get current user profile - Protected
 router.get('/profile', protect, getUserProfile);
+
+// Update current user profile - Protected (users can update their own profile)
+router.put('/profile', protect, updateUserProfile);
 
 // Get all users - Protected, all authenticated users can view
 router.get('/', protect, getAllUsers);
