@@ -12,6 +12,21 @@ import {
     IconButton,
 } from '@mui/material';
 import {
+    LineChart,
+    Line,
+    BarChart,
+    Bar,
+    PieChart,
+    Pie,
+    Cell,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+} from 'recharts';
+import {
     EmojiEvents as TrophyIcon,
     Login as CheckInIcon,
     Logout as CheckOutIcon,
@@ -55,6 +70,33 @@ const Dashboard = () => {
             year: 'numeric'
         });
     };
+
+    // Chart data
+    const attendanceData = [
+        { month: 'Jan', present: 85, absent: 15 },
+        { month: 'Feb', present: 88, absent: 12 },
+        { month: 'Mar', present: 92, absent: 8 },
+        { month: 'Apr', present: 87, absent: 13 },
+        { month: 'May', present: 90, absent: 10 },
+        { month: 'Jun', present: 93, absent: 7 },
+    ];
+
+    const departmentData = [
+        { name: 'IT', value: 45, color: '#2563eb' },
+        { name: 'HR', value: 25, color: '#10b981' },
+        { name: 'Finance', value: 20, color: '#f59e0b' },
+        { name: 'Marketing', value: 30, color: '#7c3aed' },
+        { name: 'Operations', value: 35, color: '#ef4444' },
+    ];
+
+    const leaveData = [
+        { month: 'Jan', approved: 12, pending: 3, rejected: 1 },
+        { month: 'Feb', approved: 15, pending: 2, rejected: 2 },
+        { month: 'Mar', approved: 10, pending: 5, rejected: 1 },
+        { month: 'Apr', approved: 18, pending: 4, rejected: 0 },
+        { month: 'May', approved: 14, pending: 3, rejected: 2 },
+        { month: 'Jun', approved: 16, pending: 2, rejected: 1 },
+    ];
 
     return (
         <Box
@@ -646,6 +688,118 @@ const Dashboard = () => {
                                         }}
                                     />
                                 </Box>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* Analytics & Charts Section */}
+                <Grid item xs={12}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, mt: 2 }}>
+                        Analytics & Insights
+                    </Typography>
+                </Grid>
+
+                {/* Attendance Trend Chart */}
+                <Grid item xs={12} lg={8}>
+                    <Card sx={{ bgcolor: 'background.paper', borderRadius: 3, height: '100%', boxShadow: 2 }}>
+                        <CardContent sx={{ p: 3 }}>
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                Attendance Trend (Last 6 Months)
+                            </Typography>
+                            <Box sx={{ width: '100%', height: 300, mt: 2 }}>
+                                <ResponsiveContainer>
+                                    <LineChart data={attendanceData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis dataKey="month" stroke="#64748b" />
+                                        <YAxis stroke="#64748b" />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                border: '1px solid #e2e8f0',
+                                                borderRadius: '8px',
+                                            }}
+                                        />
+                                        <Legend />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="present"
+                                            stroke="#10b981"
+                                            strokeWidth={3}
+                                            name="Present"
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="absent"
+                                            stroke="#ef4444"
+                                            strokeWidth={3}
+                                            name="Absent"
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* Department Distribution */}
+                <Grid item xs={12} lg={4}>
+                    <Card sx={{ bgcolor: 'background.paper', borderRadius: 3, height: '100%', boxShadow: 2 }}>
+                        <CardContent sx={{ p: 3 }}>
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                Department Distribution
+                            </Typography>
+                            <Box sx={{ width: '100%', height: 300, mt: 2 }}>
+                                <ResponsiveContainer>
+                                    <PieChart>
+                                        <Pie
+                                            data={departmentData}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                        >
+                                            {departmentData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* Leave Requests Chart */}
+                <Grid item xs={12}>
+                    <Card sx={{ bgcolor: 'background.paper', borderRadius: 3, boxShadow: 2 }}>
+                        <CardContent sx={{ p: 3 }}>
+                            <Typography variant="h6" fontWeight="600" gutterBottom>
+                                Leave Requests Overview
+                            </Typography>
+                            <Box sx={{ width: '100%', height: 300, mt: 2 }}>
+                                <ResponsiveContainer>
+                                    <BarChart data={leaveData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis dataKey="month" stroke="#64748b" />
+                                        <YAxis stroke="#64748b" />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                border: '1px solid #e2e8f0',
+                                                borderRadius: '8px',
+                                            }}
+                                        />
+                                        <Legend />
+                                        <Bar dataKey="approved" fill="#10b981" name="Approved" />
+                                        <Bar dataKey="pending" fill="#f59e0b" name="Pending" />
+                                        <Bar dataKey="rejected" fill="#ef4444" name="Rejected" />
+                                    </BarChart>
+                                </ResponsiveContainer>
                             </Box>
                         </CardContent>
                     </Card>
