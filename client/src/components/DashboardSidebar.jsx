@@ -539,7 +539,8 @@ function DashboardSidebar({
                 </Box>
             </Box>
         ),
-        [mini, hasDrawerTransitions, isFullyExpanded, expandedItemIds, pathname, userRole],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [mini, hasDrawerTransitions, isFullyExpanded, pathname, userRole],
     );
 
     const getDrawerSharedSx = React.useCallback(

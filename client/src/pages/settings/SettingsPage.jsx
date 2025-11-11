@@ -14,7 +14,6 @@ import { Save, Lock } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 
 export default function SettingsPage() {
-    const { user } = useAuth();
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',

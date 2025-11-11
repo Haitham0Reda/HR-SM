@@ -38,6 +38,7 @@ const HolidaysPage = () => {
 
     useEffect(() => {
         fetchHolidays();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchHolidays = async () => {

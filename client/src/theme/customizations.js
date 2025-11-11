@@ -9,99 +9,99 @@ const theme = createTheme({
         light: {
             palette: {
                 primary: {
-                    main: '#2563eb',
-                    light: '#60a5fa',
-                    dark: '#1e40af',
+                    main: '#007bff', // Vibrant Blue - Main actions, navigation, branding
+                    light: '#4da3ff',
+                    dark: '#0056b3',
                     contrastText: '#ffffff',
                 },
                 secondary: {
-                    main: '#7c3aed',
-                    light: '#a78bfa',
-                    dark: '#5b21b6',
+                    main: '#6c757d', // Muted Gray - Subtle elements, secondary buttons
+                    light: '#9ca3a8',
+                    dark: '#495057',
                     contrastText: '#ffffff',
                 },
                 success: {
-                    main: '#10b981',
-                    light: '#34d399',
-                    dark: '#059669',
+                    main: '#28a745', // Medium Green - Success indicators, approvals
+                    light: '#5cb85c',
+                    dark: '#1e7e34',
                     contrastText: '#ffffff',
                 },
                 error: {
-                    main: '#ef4444',
-                    light: '#f87171',
-                    dark: '#dc2626',
+                    main: '#dc3545', // Deep Red - Alerts, errors, deletions
+                    light: '#e4606d',
+                    dark: '#bd2130',
                     contrastText: '#ffffff',
                 },
                 warning: {
-                    main: '#f59e0b',
-                    light: '#fbbf24',
-                    dark: '#d97706',
-                    contrastText: '#ffffff',
+                    main: '#ffc107', // Amber - Warnings, pending states
+                    light: '#ffcd39',
+                    dark: '#d39e00',
+                    contrastText: '#212529',
                 },
                 info: {
-                    main: '#3b82f6',
-                    light: '#60a5fa',
-                    dark: '#2563eb',
+                    main: '#17a2b8', // Teal - Informational messages
+                    light: '#45b5c6',
+                    dark: '#117a8b',
                     contrastText: '#ffffff',
                 },
                 background: {
-                    default: '#f8fafc',
+                    default: '#f8f9fa', // Very Light Gray - Main content area
                     paper: '#ffffff',
                 },
                 text: {
-                    primary: '#0f172a',
-                    secondary: '#64748b',
+                    primary: '#212529', // Dark Charcoal - Main body text
+                    secondary: '#6c757d', // Muted Gray - Secondary text
                 },
-                divider: '#e2e8f0',
+                divider: '#dee2e6',
             },
         },
         dark: {
             palette: {
                 primary: {
-                    main: '#60a5fa',
-                    light: '#93c5fd',
-                    dark: '#3b82f6',
-                    contrastText: '#0f172a',
+                    main: '#4da3ff', // Lighter blue for dark mode
+                    light: '#80bdff',
+                    dark: '#007bff',
+                    contrastText: '#ffffff',
                 },
                 secondary: {
-                    main: '#a78bfa',
-                    light: '#c4b5fd',
-                    dark: '#8b5cf6',
-                    contrastText: '#0f172a',
+                    main: '#9ca3a8', // Lighter gray for dark mode
+                    light: '#c1c6ca',
+                    dark: '#6c757d',
+                    contrastText: '#ffffff',
                 },
                 success: {
-                    main: '#34d399',
-                    light: '#6ee7b7',
-                    dark: '#10b981',
-                    contrastText: '#0f172a',
+                    main: '#5cb85c', // Lighter green for dark mode
+                    light: '#7ec87e',
+                    dark: '#28a745',
+                    contrastText: '#ffffff',
                 },
                 error: {
-                    main: '#f87171',
-                    light: '#fca5a5',
-                    dark: '#ef4444',
-                    contrastText: '#0f172a',
+                    main: '#e4606d', // Lighter red for dark mode
+                    light: '#ea8089',
+                    dark: '#dc3545',
+                    contrastText: '#ffffff',
                 },
                 warning: {
-                    main: '#fbbf24',
-                    light: '#fcd34d',
-                    dark: '#f59e0b',
-                    contrastText: '#0f172a',
+                    main: '#ffcd39', // Lighter amber for dark mode
+                    light: '#ffd966',
+                    dark: '#ffc107',
+                    contrastText: '#212529',
                 },
                 info: {
-                    main: '#60a5fa',
-                    light: '#93c5fd',
-                    dark: '#3b82f6',
-                    contrastText: '#0f172a',
+                    main: '#45b5c6', // Lighter teal for dark mode
+                    light: '#6dc5d3',
+                    dark: '#17a2b8',
+                    contrastText: '#ffffff',
                 },
                 background: {
-                    default: '#0f172a',
-                    paper: '#1e293b',
+                    default: '#1a1d23', // Dark background
+                    paper: '#25282e', // Slightly lighter for cards
                 },
                 text: {
-                    primary: '#f1f5f9',
-                    secondary: '#94a3b8',
+                    primary: '#f8f9fa', // Light text
+                    secondary: '#adb5bd', // Muted light text
                 },
-                divider: '#334155',
+                divider: '#495057',
             },
         },
     },

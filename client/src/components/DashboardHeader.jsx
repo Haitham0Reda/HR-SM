@@ -20,8 +20,9 @@ import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Stack from '@mui/material/Stack';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router-dom';
 import ThemeSwitcher from './ThemeSwitcher';
+import { useAuth } from '../context/AuthContext';
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
     borderWidth: 0,
@@ -44,6 +45,8 @@ const LogoContainer = styled('div')({
 
 function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user, notificationCount = 0 }) {
     const theme = useTheme();
+    const navigate = useNavigate();
+    const { logout } = useAuth();
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
     const profileMenuOpen = Boolean(anchorEl);
@@ -71,8 +74,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user, notificati
 
     const handleLogout = () => {
         handleProfileClose();
-        // Add logout logic here
-        console.log('Logout clicked');
+        logout();
+        navigate('/login');
     };
 
     const getMenuIcon = React.useCallback(

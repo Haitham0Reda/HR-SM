@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     Box,
     Card,
@@ -17,13 +17,9 @@ import {
     AttachMoney,
     Assignment
 } from '@mui/icons-material';
-import { useNotification } from '../../context/NotificationContext';
-import analyticsService from '../../services/analytics.service';
 
 const AnalyticsPage = () => {
     const [period, setPeriod] = useState('month');
-    const [loading, setLoading] = useState(false);
-    const { showNotification } = useNotification();
 
     // Mock data - in real app, this would come from the API
     const stats = {

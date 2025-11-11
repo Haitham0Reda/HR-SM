@@ -42,7 +42,7 @@ const ReportsPage = () => {
     const handleGenerateReport = async (format = 'view') => {
         try {
             setLoading(true);
-            const response = await reportService.generate(filters);
+            await reportService.generate(filters);
 
             if (format === 'pdf') {
                 showNotification('PDF report generated successfully', 'success');
