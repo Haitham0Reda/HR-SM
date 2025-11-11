@@ -14,16 +14,20 @@ import {
     reserveVacationBalance,
     initializeWorkflow
 } from '../middleware/index.js';
+import { mapLeaveFields } from '../middleware/mapLeaveFields.js';
+import upload from '../config/multer.config.js';
 
 const router = express.Router();
 
 // Get all leaves - protected route
 router.get('/', protect, getAllLeaves);
 
-// Create leave - with validation middleware chain
+// Create leave - with validation middleware chain and file upload
 router.post('/',
     protect,
     checkActive,
+    upload.single('document'),
+    mapLeaveFields,
     calculateDuration,
     setMedicalDocRequirement,
     populateDepartmentPosition,

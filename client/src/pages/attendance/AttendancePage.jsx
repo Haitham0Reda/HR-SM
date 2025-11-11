@@ -11,19 +11,39 @@ import {
     Typography,
     Chip,
     MenuItem,
-    Grid
+    Grid,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Card,
+    CardContent,
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import {
+    Add as AddIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon,
+    Print as PrintIcon,
+    FilterList as FilterIcon,
+    Assessment as ReportIcon,
+    Person as PersonIcon,
+    TrendingUp as TrendingUpIcon,
+} from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import attendanceService from '../../services/attendance.service';
 import userService from '../../services/user.service';
 
 const AttendancePage = () => {
     const { user, isHR, isAdmin } = useAuth();
+    const navigate = useNavigate();
     const [attendances, setAttendances] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -38,6 +58,12 @@ const AttendancePage = () => {
         status: 'present',
         notes: ''
     });
+    const [startDate, setStartDate] = useState(() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 7);
+        return date.toISOString().split('T')[0];
+    });
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const { showNotification } = useNotification();
 
     // Check if user can manage attendance (HR/Admin)
@@ -81,11 +107,30 @@ const AttendancePage = () => {
     const handleOpenDialog = (attendance = null) => {
         if (attendance) {
             setSelectedAttendance(attendance);
+
+            // Extract time from checkIn/checkOut objects if they exist
+            let checkInTime = '';
+            let checkOutTime = '';
+
+            if (attendance.checkIn?.time) {
+                const checkInDate = new Date(attendance.checkIn.time);
+                checkInTime = checkInDate.toTimeString().slice(0, 5); // HH:MM format
+            } else if (typeof attendance.checkIn === 'string') {
+                checkInTime = attendance.checkIn;
+            }
+
+            if (attendance.checkOut?.time) {
+                const checkOutDate = new Date(attendance.checkOut.time);
+                checkOutTime = checkOutDate.toTimeString().slice(0, 5); // HH:MM format
+            } else if (typeof attendance.checkOut === 'string') {
+                checkOutTime = attendance.checkOut;
+            }
+
             setFormData({
                 employee: attendance.employee?._id || attendance.employee || '',
                 date: attendance.date?.split('T')[0] || new Date().toISOString().split('T')[0],
-                checkIn: attendance.checkIn || '',
-                checkOut: attendance.checkOut || '',
+                checkIn: checkInTime,
+                checkOut: checkOutTime,
                 status: attendance.status || 'present',
                 notes: attendance.notes || ''
             });
@@ -115,11 +160,38 @@ const AttendancePage = () => {
 
     const handleSubmit = async () => {
         try {
+            // Prepare data with proper structure for the backend
+            const submitData = {
+                employee: formData.employee,
+                date: formData.date,
+                status: formData.status,
+                notes: formData.notes
+            };
+
+            // Add checkIn/checkOut as nested objects if provided
+            if (formData.checkIn) {
+                const checkInDateTime = new Date(`${formData.date}T${formData.checkIn}`);
+                submitData.checkIn = {
+                    time: checkInDateTime,
+                    method: 'manual',
+                    location: 'office'
+                };
+            }
+
+            if (formData.checkOut) {
+                const checkOutDateTime = new Date(`${formData.date}T${formData.checkOut}`);
+                submitData.checkOut = {
+                    time: checkOutDateTime,
+                    method: 'manual',
+                    location: 'office'
+                };
+            }
+
             if (selectedAttendance) {
-                await attendanceService.update(selectedAttendance._id, formData);
+                await attendanceService.update(selectedAttendance._id, submitData);
                 showNotification('Attendance updated successfully', 'success');
             } else {
-                await attendanceService.create(formData);
+                await attendanceService.create(submitData);
                 showNotification('Attendance recorded successfully', 'success');
             }
             handleCloseDialog();
@@ -157,18 +229,47 @@ const AttendancePage = () => {
         ...(canManage ? [{
             field: 'employee',
             headerName: 'Employee',
-            renderCell: (row) => row.employee?.name || 'N/A'
+            width: 200,
+            renderCell: (row) => row.employee?.name || row.employee?.username || 'N/A'
         }] : []),
         {
             field: 'date',
             headerName: 'Date',
+            width: 150,
             renderCell: (row) => new Date(row.date).toLocaleDateString()
         },
-        { field: 'checkIn', headerName: 'Check In' },
-        { field: 'checkOut', headerName: 'Check Out' },
+        {
+            field: 'checkIn',
+            headerName: 'Check In',
+            width: 150,
+            renderCell: (row) => {
+                if (row.checkIn?.time) {
+                    return new Date(row.checkIn.time).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+                return row.checkIn || 'N/A';
+            }
+        },
+        {
+            field: 'checkOut',
+            headerName: 'Check Out',
+            width: 150,
+            renderCell: (row) => {
+                if (row.checkOut?.time) {
+                    return new Date(row.checkOut.time).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+                return row.checkOut || 'N/A';
+            }
+        },
         {
             field: 'status',
             headerName: 'Status',
+            width: 150,
             renderCell: (row) => (
                 <Chip
                     label={row.status}
@@ -207,23 +308,645 @@ const AttendancePage = () => {
         }] : [])
     ];
 
+    const handleFilter = () => {
+        fetchAttendances();
+    };
+
+    const handlePrint = () => {
+        // Create a new window for printing
+        const printWindow = window.open('', '', 'height=600,width=800');
+
+        // Build the table HTML manually
+        let tableHTML = '<table><thead><tr>';
+        tableHTML += '<th>DATE</th><th>DAY</th><th>FIRST CHECK</th><th>LAST CHECK</th>';
+        tableHTML += '<th>WORKING HOURS</th><th>OVERTIME</th><th>STATUS</th><th>ACTIONS</th>';
+        tableHTML += '</tr></thead><tbody>';
+
+        // Add data rows
+        filteredAttendances.forEach((attendance) => {
+            tableHTML += '<tr>';
+            tableHTML += `<td>${formatDate(attendance.date)}</td>`;
+            tableHTML += `<td>${getDayName(attendance.date)}</td>`;
+
+            // First Check
+            const checkInTime = formatTime(attendance.checkIn);
+            const checkInClass = attendance.checkIn?.isLate ? 'time-late' : 'time-ontime';
+            tableHTML += `<td><span class="${checkInClass}">${checkInTime}</span>${attendance.checkIn?.isLate ? '<br><small>Late</small>' : ''}</td>`;
+
+            // Last Check
+            const checkOutTime = formatTime(attendance.checkOut);
+            const checkOutClass = attendance.checkOut?.isEarly ? 'time-late' : 'time-ontime';
+            tableHTML += `<td><span class="${checkOutClass}">${checkOutTime}</span>${attendance.checkOut?.isEarly ? '<br><small>Early</small>' : ''}</td>`;
+
+            // Working Hours
+            tableHTML += `<td>${calculateWorkingHours(attendance.checkIn, attendance.checkOut)}</td>`;
+
+            // Overtime
+            const overtime = attendance.hours?.overtime > 0 ? `${attendance.hours.overtime} hours` : 'N/A';
+            tableHTML += `<td>${overtime}</td>`;
+
+            // Status
+            const statusLabel = getStatusLabel(attendance.status);
+            const statusColor = getStatusColor(attendance.status);
+            let statusClass = 'status-info';
+            if (statusColor === 'success') statusClass = 'status-success';
+            else if (statusColor === 'warning') statusClass = 'status-warning';
+            else if (statusColor === 'error') statusClass = 'status-error';
+            tableHTML += `<td><span class="status-chip ${statusClass}">${statusLabel}</span></td>`;
+
+            // Actions
+            const action = attendance.checkIn?.isLate ? '⚠ LATE ARRIVAL' : '';
+            tableHTML += `<td>${action}</td>`;
+
+            tableHTML += '</tr>';
+        });
+
+        tableHTML += '</tbody></table>';
+
+        // Write the HTML content
+        printWindow.document.write('<html><head><title>Attendance Report</title>');
+        printWindow.document.write('<style>');
+        printWindow.document.write(`
+            body { 
+                font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif; 
+                margin: 20px; 
+                color: #333;
+            }
+            h1 { 
+                color: #667eea;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                margin-bottom: 10px;
+                font-size: 28px;
+            }
+            .info { 
+                margin-bottom: 20px; 
+                font-size: 14px; 
+                line-height: 1.8;
+                padding: 15px;
+                background-color: #f5f7fa;
+                border-left: 4px solid #667eea;
+                border-radius: 4px;
+            }
+            table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 20px; 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            th { 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white; 
+                padding: 14px 10px; 
+                text-align: left; 
+                font-weight: 600;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            td { 
+                padding: 12px 10px; 
+                border-bottom: 1px solid #e0e0e0;
+                font-size: 13px;
+            }
+            tr:nth-child(even) { 
+                background-color: #fafbfc;
+            }
+            tr:hover { 
+                background-color: #f0f4f8;
+            }
+            .status-chip { 
+                padding: 5px 14px; 
+                border-radius: 20px; 
+                font-size: 11px; 
+                font-weight: 600; 
+                display: inline-block;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+            }
+            .status-success { 
+                background-color: #10b981; 
+                color: white; 
+            }
+            .status-warning { 
+                background-color: #f59e0b; 
+                color: white; 
+            }
+            .status-error { 
+                background-color: #ef4444; 
+                color: white; 
+            }
+            .status-info { 
+                background-color: #3b82f6; 
+                color: white; 
+            }
+            .time-late { 
+                color: #f59e0b; 
+                font-weight: 600; 
+            }
+            .time-ontime { 
+                color: #10b981; 
+                font-weight: 600; 
+            }
+            small { 
+                color: #6b7280; 
+                font-size: 10px; 
+                font-style: italic;
+            }
+            @media print { 
+                body { margin: 10mm; }
+                table { page-break-inside: auto; }
+                tr { page-break-inside: avoid; page-break-after: auto; }
+                thead { display: table-header-group; }
+            }
+        `);
+        printWindow.document.write('</style></head><body>');
+        printWindow.document.write('<h1>Attendance Report</h1>');
+        printWindow.document.write(`
+            <div class="info">
+                <strong>Employee:</strong> ${user?.name || user?.username}<br>
+                <strong>Employee ID:</strong> ${user?.employeeId || 'N/A'}<br>
+                <strong>Department:</strong> ${user?.department?.name || 'N/A'}<br>
+                <strong>Report Period:</strong> ${formatDate(startDate)} - ${formatDate(endDate)}<br>
+                <strong>Total Records:</strong> ${filteredAttendances.length}
+            </div>
+        `);
+        printWindow.document.write(tableHTML);
+        printWindow.document.write('</body></html>');
+
+        printWindow.document.close();
+        printWindow.focus();
+
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 250);
+    };
+
+    // Calculate statistics
+    const filteredAttendances = attendances.filter(att => {
+        const attDate = new Date(att.date);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        return attDate >= start && attDate <= end;
+    });
+
+
+
+    const stats = {
+        totalDays: filteredAttendances.length,
+        present: filteredAttendances.filter(a => ['present', 'on-time', 'late'].includes(a.status)).length,
+        absent: filteredAttendances.filter(a => a.status === 'absent').length,
+        late: filteredAttendances.filter(a => a.status === 'late').length,
+        weekends: filteredAttendances.filter(a => a.status === 'weekend').length,
+    };
+
+    const getStatusLabel = (status) => {
+        const labels = {
+            'on-time': 'ON TIME',
+            'present': 'ON TIME',
+            'late': 'LATE ARRIVAL',
+            'absent': 'ABSENT',
+            'weekend': 'WEEKEND',
+            'vacation': 'VACATION',
+            'sick-leave': 'SICK LEAVE',
+            'work-from-home': 'WORK FROM HOME',
+            'half-day': 'HALF DAY',
+        };
+        return labels[status] || status.toUpperCase();
+    };
+
+    const formatTime = (timeObj) => {
+        if (!timeObj?.time) return 'N/A';
+        const date = new Date(timeObj.time);
+        return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    };
+
+    const calculateWorkingHours = (checkIn, checkOut) => {
+        if (!checkIn?.time || !checkOut?.time) return 'N/A';
+
+        const start = new Date(checkIn.time);
+        const end = new Date(checkOut.time);
+        const diff = end - start;
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        return `${hours} hours ${minutes} mins`;
+    };
+
+    const getDayName = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { weekday: 'long' });
+    };
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
     if (loading) return <Loading />;
 
+    // If user is not HR/Admin, show the report view
+    if (!canManage) {
+        return (
+            <Box sx={{ p: 3, minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {/* Header */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                        My Attendance
+                    </Typography>
+                </Box>
+
+                {/* Report Header Card */}
+                <Paper sx={{
+                    p: 3,
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
+                    border: 'none'
+                }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <ReportIcon sx={{ fontSize: 32 }} />
+                            <Typography variant="h6" fontWeight="600">
+                                My Attendance Report
+                            </Typography>
+                        </Box>
+                        <Button
+                            variant="contained"
+                            startIcon={<PrintIcon />}
+                            onClick={handlePrint}
+                            sx={{
+                                bgcolor: 'rgba(255,255,255,0.25)',
+                                color: 'white',
+                                fontWeight: 600,
+                                '&:hover': {
+                                    bgcolor: 'rgba(255,255,255,0.35)',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                                }
+                            }}
+                        >
+                            Print Report
+                        </Button>
+                    </Box>
+                </Paper>
+
+                {/* Date Filter */}
+                <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2, border: '1px solid', borderColor: 'divider' }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                        <Box sx={{ flex: '1 1 calc(33.33% - 16px)', minWidth: '200px' }}>
+                            <TextField
+                                label="Start Date"
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                fullWidth
+                                InputLabelProps={{ shrink: true }}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        '&:hover fieldset': {
+                                            borderColor: '#667eea',
+                                        },
+                                        '&.Mui-focused fieldset': {
+                                            borderColor: '#667eea',
+                                        },
+                                    },
+                                }}
+                            />
+                        </Box>
+                        <Box sx={{ flex: '1 1 calc(33.33% - 16px)', minWidth: '200px' }}>
+                            <TextField
+                                label="End Date"
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                fullWidth
+                                InputLabelProps={{ shrink: true }}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        '&:hover fieldset': {
+                                            borderColor: '#667eea',
+                                        },
+                                        '&.Mui-focused fieldset': {
+                                            borderColor: '#667eea',
+                                        },
+                                    },
+                                }}
+                            />
+                        </Box>
+                        <Box sx={{ flex: '1 1 calc(33.33% - 16px)', minWidth: '200px' }}>
+                            <Button
+                                variant="contained"
+                                startIcon={<FilterIcon />}
+                                onClick={handleFilter}
+                                fullWidth
+                                sx={{
+                                    height: 56,
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    fontWeight: 600,
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+                                        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+                                    }
+                                }}
+                            >
+                                Filter
+                            </Button>
+                        </Box>
+                    </Box>
+                </Paper>
+
+                {/* Summary Cards */}
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                    {/* Employee Information */}
+                    <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
+                        <Card sx={{
+                            height: '100%',
+                            borderRadius: 3,
+                            boxShadow: 3,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.15)'
+                            }
+                        }}>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                    <PersonIcon sx={{ color: '#667eea', fontSize: 28 }} />
+                                    <Typography variant="h6" fontWeight="600" sx={{ color: '#667eea' }}>
+                                        Employee Information
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="body2" color="text.secondary">Employee ID:</Typography>
+                                        <Typography variant="body2" fontWeight="600">{user?.employeeId || 'N/A'}</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="body2" color="text.secondary">Name:</Typography>
+                                        <Typography variant="body2" fontWeight="600">{user?.name || user?.username}</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="body2" color="text.secondary">Position:</Typography>
+                                        <Typography variant="body2" fontWeight="600">
+                                            {user?.position?.title || 'N/A'}
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="body2" color="text.secondary">Status:</Typography>
+                                        <Chip
+                                            label="Active"
+                                            color="success"
+                                            size="small"
+                                            sx={{ fontWeight: 600 }}
+                                        />
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="body2" color="text.secondary">Department:</Typography>
+                                        <Typography variant="body2" fontWeight="600">
+                                            {user?.department?.name || 'N/A'}
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography variant="body2" color="text.secondary">Report Period:</Typography>
+                                        <Typography variant="body2" fontWeight="600">
+                                            {formatDate(startDate)} - {formatDate(endDate)}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Box>
+
+                    {/* Attendance Summary */}
+                    <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
+                        <Card sx={{
+                            height: '100%',
+                            borderRadius: 3,
+                            boxShadow: 3,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.15)'
+                            }
+                        }}>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                    <TrendingUpIcon sx={{ color: '#667eea', fontSize: 28 }} />
+                                    <Typography variant="h6" fontWeight="600" sx={{ color: '#667eea' }}>
+                                        Attendance Summary
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                            (Excluding weekends and holidays) ● Includes 0 part-time off days
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2">(Days present + Working days)</Typography>
+                                            <Chip
+                                                label={`${stats.present} / ${stats.totalDays}`}
+                                                color="info"
+                                                sx={{ fontWeight: 700 }}
+                                            />
+                                        </Box>
+                                    </Box>
+
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                            (Working days = Days present)
+                                        </Typography>
+                                    </Box>
+
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Typography variant="body2">(Remaining / Total)</Typography>
+                                        <Chip
+                                            label="7 / 7"
+                                            color="success"
+                                            sx={{ fontWeight: 700 }}
+                                        />
+                                    </Box>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Box>
+                </Box>
+
+                {/* Attendance Table */}
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#667eea' }}>
+                    📋 Attendance Records ({filteredAttendances.length})
+                </Typography>
+                <Box sx={{ width: '100%', overflowX: 'auto', mb: 3, minHeight: 400 }}>
+                    <TableContainer component={Paper} sx={{
+                        borderRadius: 3,
+                        boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
+                        minWidth: 800,
+                        bgcolor: 'background.paper',
+                        border: '1px solid',
+                        borderColor: 'divider'
+                    }}>
+                        <Table sx={{ minWidth: 800, tableLayout: 'fixed' }} id="attendance-table-print">
+                            <TableHead>
+                                <TableRow sx={{
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    height: 56
+                                }}>
+                                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>DATE</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>DAY</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>FIRST CHECK</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>LAST CHECK</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>WORKING HOURS</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>OVERTIME</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>STATUS</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>ACTIONS</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {filteredAttendances.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
+                                            <Typography variant="h6" color="text.secondary" gutterBottom>
+                                                No Attendance Records Found
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                There are no attendance records for the selected date range.
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                                                Try expanding the date range or check if you have any attendance records.
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredAttendances.map((attendance) => (
+                                        <TableRow
+                                            key={attendance._id}
+                                            sx={{
+                                                '&:hover': { bgcolor: 'action.hover' }
+                                            }}
+                                        >
+                                            <TableCell>
+                                                {formatDate(attendance.date)}
+                                            </TableCell>
+                                            <TableCell>
+                                                {getDayName(attendance.date)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box>
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            color: attendance.checkIn?.isLate ? 'warning.main' : 'success.main',
+                                                            fontWeight: 600
+                                                        }}
+                                                    >
+                                                        {formatTime(attendance.checkIn)}
+                                                    </Typography>
+                                                    {attendance.checkIn?.isLate && (
+                                                        <Typography variant="caption" color="warning.main">
+                                                            Late
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box>
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            color: attendance.checkOut?.isEarly ? 'warning.main' : 'success.main',
+                                                            fontWeight: 600
+                                                        }}
+                                                    >
+                                                        {formatTime(attendance.checkOut)}
+                                                    </Typography>
+                                                    {attendance.checkOut?.isEarly && (
+                                                        <Typography variant="caption" color="warning.main">
+                                                            Early
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                {calculateWorkingHours(attendance.checkIn, attendance.checkOut)}
+                                            </TableCell>
+                                            <TableCell>
+                                                {attendance.hours?.overtime > 0
+                                                    ? `${attendance.hours.overtime} hours`
+                                                    : 'N/A'}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={getStatusLabel(attendance.status)}
+                                                    color={getStatusColor(attendance.status)}
+                                                    size="small"
+                                                    sx={{ fontWeight: 600 }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                {attendance.checkIn?.isLate && (
+                                                    <Chip
+                                                        label="⚠ LATE ARRIVAL"
+                                                        size="small"
+                                                        color="warning"
+                                                        sx={{ fontSize: '0.7rem', fontWeight: 600 }}
+                                                    />
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Box>
+
+                {/* Footer */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                    <Button
+                        variant="contained"
+                        startIcon={<PrintIcon />}
+                        onClick={handlePrint}
+                    >
+                        Print Report
+                    </Button>
+                    <Typography variant="body2" color="text.secondary">
+                        ⓘ No Missing Check Detected
+                    </Typography>
+                </Box>
+            </Box>
+        );
+    }
+
+    // HR/Admin view - show management interface
     return (
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4">
-                    {canManage ? 'Attendance Management' : 'My Attendance'}
+                    Attendance Management
                 </Typography>
-                {canManage && (
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpenDialog()}
-                    >
-                        Record Attendance
-                    </Button>
-                )}
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => handleOpenDialog()}
+                >
+                    Record Attendance
+                </Button>
             </Box>
 
             <DataTable

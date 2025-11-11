@@ -3,7 +3,11 @@ import Attendance from '../models/attendance.model.js';
 
 export const getAllAttendance = async (req, res) => {
     try {
-        const attendance = await Attendance.find();
+        const attendance = await Attendance.find()
+            .populate('employee', 'username email employeeId profile.firstName profile.lastName')
+            .populate('department', 'name code')
+            .populate('position', 'title')
+            .sort({ date: -1 });
         res.json(attendance);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -14,6 +18,9 @@ export const createAttendance = async (req, res) => {
     try {
         const attendance = new Attendance(req.body);
         await attendance.save();
+        await attendance.populate('employee', 'username email employeeId profile.firstName profile.lastName');
+        await attendance.populate('department', 'name code');
+        await attendance.populate('position', 'title');
         res.status(201).json(attendance);
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -22,7 +29,10 @@ export const createAttendance = async (req, res) => {
 
 export const getAttendanceById = async (req, res) => {
     try {
-        const attendance = await Attendance.findById(req.params.id);
+        const attendance = await Attendance.findById(req.params.id)
+            .populate('employee', 'username email employeeId profile.firstName profile.lastName')
+            .populate('department', 'name code')
+            .populate('position', 'title');
         if (!attendance) return res.status(404).json({ error: 'Attendance not found' });
         res.json(attendance);
     } catch (err) {
@@ -32,7 +42,10 @@ export const getAttendanceById = async (req, res) => {
 
 export const updateAttendance = async (req, res) => {
     try {
-        const attendance = await Attendance.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const attendance = await Attendance.findByIdAndUpdate(req.params.id, req.body, { new: true })
+            .populate('employee', 'username email employeeId profile.firstName profile.lastName')
+            .populate('department', 'name code')
+            .populate('position', 'title');
         if (!attendance) return res.status(404).json({ error: 'Attendance not found' });
         res.json(attendance);
     } catch (err) {

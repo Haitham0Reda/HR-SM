@@ -69,6 +69,9 @@ export const createUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
     try {
+        // For profile updates (no params.id), use the logged-in user's ID
+        const userId = req.params.id || req.user._id;
+
         const error = validateUserInput(req.body, true);
         if (error) return res.status(400).json({ error });
         // Prevent updating unique fields to existing values
@@ -78,11 +81,11 @@ export const updateUser = async (req, res) => {
                     req.body.email ? { email: req.body.email } : {},
                     req.body.username ? { username: req.body.username } : {}
                 ],
-                _id: { $ne: req.params.id }
+                _id: { $ne: userId }
             });
             if (conflict) return res.status(409).json({ error: 'Username or email already exists' });
         }
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('department position school');
+        const user = await User.findByIdAndUpdate(userId, req.body, { new: true }).populate('department position school');
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(sanitizeUser(user));
     } catch (err) {
@@ -130,10 +133,33 @@ export const loginUser = async (req, res) => {
 export const getUserProfile = async (req, res) => {
     try {
         // req.user is set by the protect middleware
-        const user = await User.findById(req.user.id).populate('department position school');
+        const user = await User.findById(req.user._id).populate('department position school');
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(sanitizeUser(user));
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+};
+
+export const updateUserProfile = async (req, res) => {
+    try {
+        console.log('updateUserProfile called - User:', req.user?._id);
+        console.log('Request body:', req.body);
+
+        const userId = req.user._id;
+
+        const allowedUpdates = {
+            profile: req.body.profile,
+            profilePicture: req.body.profilePicture,
+        };
+
+        const user = await User.findByIdAndUpdate(userId, allowedUpdates, { new: true })
+            .populate('department position school');
+
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(sanitizeUser(user));
+    } catch (err) {
+        console.error('Error in updateUserProfile:', err);
+        res.status(400).json({ error: err.message });
     }
 };

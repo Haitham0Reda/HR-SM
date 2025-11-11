@@ -28,6 +28,7 @@ function DashboardSidebarPageItem({
     selected = false,
     disabled = false,
     nestedNavigation,
+    sx,
 }) {
     const sidebarContext = React.useContext(DashboardSidebarContext);
     if (!sidebarContext) {
@@ -105,6 +106,7 @@ function DashboardSidebarPageItem({
                     py: 0,
                     px: 1,
                     overflowX: 'hidden',
+                    ...sx,
                 }}
             >
                 <ListItemButton
@@ -269,6 +271,7 @@ DashboardSidebarPageItem.propTypes = {
     nestedNavigation: PropTypes.node,
     selected: PropTypes.bool,
     title: PropTypes.string.isRequired,
+    sx: PropTypes.object,
 };
 
 export default DashboardSidebarPageItem;

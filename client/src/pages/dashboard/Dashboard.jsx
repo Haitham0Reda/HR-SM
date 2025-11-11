@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box,
-    Grid,
     Card,
     CardContent,
     Typography,
@@ -11,21 +10,7 @@ import {
     Paper,
     IconButton,
 } from '@mui/material';
-import {
-    LineChart,
-    Line,
-    BarChart,
-    Bar,
-    PieChart,
-    Pie,
-    Cell,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-} from 'recharts';
+
 import {
     EmojiEvents as TrophyIcon,
     Login as CheckInIcon,
@@ -71,32 +56,7 @@ const Dashboard = () => {
         });
     };
 
-    // Chart data
-    const attendanceData = [
-        { month: 'Jan', present: 85, absent: 15 },
-        { month: 'Feb', present: 88, absent: 12 },
-        { month: 'Mar', present: 92, absent: 8 },
-        { month: 'Apr', present: 87, absent: 13 },
-        { month: 'May', present: 90, absent: 10 },
-        { month: 'Jun', present: 93, absent: 7 },
-    ];
 
-    const departmentData = [
-        { name: 'IT', value: 45, color: '#2563eb' },
-        { name: 'HR', value: 25, color: '#10b981' },
-        { name: 'Finance', value: 20, color: '#f59e0b' },
-        { name: 'Marketing', value: 30, color: '#7c3aed' },
-        { name: 'Operations', value: 35, color: '#ef4444' },
-    ];
-
-    const leaveData = [
-        { month: 'Jan', approved: 12, pending: 3, rejected: 1 },
-        { month: 'Feb', approved: 15, pending: 2, rejected: 2 },
-        { month: 'Mar', approved: 10, pending: 5, rejected: 1 },
-        { month: 'Apr', approved: 18, pending: 4, rejected: 0 },
-        { month: 'May', approved: 14, pending: 3, rejected: 2 },
-        { month: 'Jun', approved: 16, pending: 2, rejected: 1 },
-    ];
 
     return (
         <Box
@@ -118,77 +78,69 @@ const Dashboard = () => {
                     border: 'none',
                 }}
             >
-                <Grid container spacing={2} alignItems="center">
-                    <Grid item>
-                        <Avatar sx={{
-                            width: 56,
-                            height: 56,
-                            bgcolor: 'rgba(255,255,255,0.3)',
-                            border: '2px solid white'
-                        }}>
-                            <ProfileIcon sx={{ fontSize: 32 }} />
-                        </Avatar>
-                    </Grid>
-                    <Grid item xs>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
+                    <Avatar sx={{
+                        width: 56,
+                        height: 56,
+                        bgcolor: 'rgba(255,255,255,0.3)',
+                        border: '2px solid white'
+                    }}>
+                        <ProfileIcon sx={{ fontSize: 32 }} />
+                    </Avatar>
+                    <Box sx={{ flex: '1 1 200px' }}>
                         <Typography variant="h5" fontWeight="700" sx={{ mb: 0.5 }}>
                             Employee Dashboard
                         </Typography>
                         <Typography variant="body2" sx={{ opacity: 0.95 }}>
                             Welcome back, {user?.name || user?.username}
                         </Typography>
-                    </Grid>
-                    <Grid item>
-                        <Box sx={{
-                            textAlign: 'center',
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            p: 1.5,
-                            borderRadius: 2,
-                            minWidth: 100
-                        }}>
-                            <CalendarIcon sx={{ fontSize: 20, mb: 0.5 }} />
-                            <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
-                                CAMPUS
-                            </Typography>
-                            <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
-                                Smart Campus
-                            </Typography>
-                        </Box>
-                    </Grid>
-                    <Grid item>
-                        <Box sx={{
-                            textAlign: 'center',
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            p: 1.5,
-                            borderRadius: 2,
-                            minWidth: 100
-                        }}>
-                            <CalendarIcon sx={{ fontSize: 20, mb: 0.5 }} />
-                            <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
-                                DATE
-                            </Typography>
-                            <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
-                                {currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </Typography>
-                        </Box>
-                    </Grid>
-                    <Grid item>
-                        <Box sx={{
-                            textAlign: 'center',
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            p: 1.5,
-                            borderRadius: 2,
-                            minWidth: 100
-                        }}>
-                            <WorkingHoursIcon sx={{ fontSize: 20, mb: 0.5 }} />
-                            <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
-                                TIME
-                            </Typography>
-                            <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
-                                {formatTime(currentTime)}
-                            </Typography>
-                        </Box>
-                    </Grid>
-                </Grid>
+                    </Box>
+                    <Box sx={{
+                        textAlign: 'center',
+                        bgcolor: 'rgba(255,255,255,0.15)',
+                        p: 1.5,
+                        borderRadius: 2,
+                        minWidth: 100
+                    }}>
+                        <CalendarIcon sx={{ fontSize: 20, mb: 0.5 }} />
+                        <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
+                            CAMPUS
+                        </Typography>
+                        <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
+                            Smart Campus
+                        </Typography>
+                    </Box>
+                    <Box sx={{
+                        textAlign: 'center',
+                        bgcolor: 'rgba(255,255,255,0.15)',
+                        p: 1.5,
+                        borderRadius: 2,
+                        minWidth: 100
+                    }}>
+                        <CalendarIcon sx={{ fontSize: 20, mb: 0.5 }} />
+                        <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
+                            DATE
+                        </Typography>
+                        <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
+                            {currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </Typography>
+                    </Box>
+                    <Box sx={{
+                        textAlign: 'center',
+                        bgcolor: 'rgba(255,255,255,0.15)',
+                        p: 1.5,
+                        borderRadius: 2,
+                        minWidth: 100
+                    }}>
+                        <WorkingHoursIcon sx={{ fontSize: 20, mb: 0.5 }} />
+                        <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
+                            TIME
+                        </Typography>
+                        <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
+                            {formatTime(currentTime)}
+                        </Typography>
+                    </Box>
+                </Box>
                 <Box sx={{ mt: 2 }}>
                     <Button
                         variant="contained"
@@ -267,121 +219,121 @@ const Dashboard = () => {
                         <EditIcon />
                     </IconButton>
                 </Box>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Box
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between' }}>
+                    <Box
+                        sx={{
+                            flex: '1 1 calc(25% - 16px)',
+                            minWidth: '200px',
+                            bgcolor: 'info.main',
+                            color: 'info.contrastText',
+                            p: 3,
+                            borderRadius: 2,
+                            textAlign: 'center',
+                            boxShadow: 2,
+                            transition: 'transform 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: 4,
+                            },
+                        }}
+                    >
+                        <CheckInIcon sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="caption" display="block" sx={{ mb: 0.5, fontWeight: 600 }}>
+                            Check In
+                        </Typography>
+                        <Typography variant="h5" fontWeight="700">
+                            8:46 AM
+                        </Typography>
+                    </Box>
+                    <Box
+                        sx={{
+                            flex: '1 1 calc(25% - 16px)',
+                            minWidth: '200px',
+                            bgcolor: 'warning.main',
+                            color: 'warning.contrastText',
+                            p: 3,
+                            borderRadius: 2,
+                            textAlign: 'center',
+                            boxShadow: 2,
+                            transition: 'transform 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: 4,
+                            },
+                        }}
+                    >
+                        <CheckOutIcon sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="caption" display="block" sx={{ mb: 0.5, fontWeight: 600 }}>
+                            Check Out
+                        </Typography>
+                        <Typography variant="h5" fontWeight="700">
+                            3:59 PM
+                        </Typography>
+                    </Box>
+                    <Box
+                        sx={{
+                            flex: '1 1 calc(25% - 16px)',
+                            minWidth: '200px',
+                            bgcolor: 'success.main',
+                            color: 'success.contrastText',
+                            p: 3,
+                            borderRadius: 2,
+                            textAlign: 'center',
+                            boxShadow: 2,
+                            transition: 'transform 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: 4,
+                            },
+                        }}
+                    >
+                        <WorkingHoursIcon sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="caption" display="block" sx={{ mb: 0.5, fontWeight: 600 }}>
+                            Working Hours
+                        </Typography>
+                        <Typography variant="h5" fontWeight="700">
+                            6h 52m 47s
+                        </Typography>
+                    </Box>
+                    <Box
+                        sx={{
+                            flex: '1 1 calc(25% - 16px)',
+                            minWidth: '200px',
+                            bgcolor: 'success.main',
+                            color: 'success.contrastText',
+                            p: 3,
+                            borderRadius: 2,
+                            textAlign: 'center',
+                            boxShadow: 2,
+                            transition: 'transform 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: 4,
+                            },
+                        }}
+                    >
+                        <StatusIcon sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="caption" display="block" sx={{ mb: 0.5, fontWeight: 600 }}>
+                            Status
+                        </Typography>
+                        <Chip
+                            label="PRESENT"
                             sx={{
-                                bgcolor: 'info.main',
-                                color: 'info.contrastText',
-                                p: 3,
-                                borderRadius: 2,
-                                textAlign: 'center',
-                                boxShadow: 2,
-                                transition: 'transform 0.2s',
-                                '&:hover': {
-                                    transform: 'translateY(-4px)',
-                                    boxShadow: 4,
-                                },
+                                bgcolor: 'rgba(255,255,255,0.25)',
+                                color: 'inherit',
+                                fontWeight: 700,
+                                fontSize: '0.75rem',
+                                border: '2px solid rgba(255,255,255,0.5)',
                             }}
-                        >
-                            <CheckInIcon sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="caption" display="block" sx={{ mb: 0.5, fontWeight: 600 }}>
-                                Check In
-                            </Typography>
-                            <Typography variant="h5" fontWeight="700">
-                                8:46 AM
-                            </Typography>
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Box
-                            sx={{
-                                bgcolor: 'warning.main',
-                                color: 'warning.contrastText',
-                                p: 3,
-                                borderRadius: 2,
-                                textAlign: 'center',
-                                boxShadow: 2,
-                                transition: 'transform 0.2s',
-                                '&:hover': {
-                                    transform: 'translateY(-4px)',
-                                    boxShadow: 4,
-                                },
-                            }}
-                        >
-                            <CheckOutIcon sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="caption" display="block" sx={{ mb: 0.5, fontWeight: 600 }}>
-                                Check Out
-                            </Typography>
-                            <Typography variant="h5" fontWeight="700">
-                                3:59 PM
-                            </Typography>
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Box
-                            sx={{
-                                bgcolor: 'success.main',
-                                color: 'success.contrastText',
-                                p: 3,
-                                borderRadius: 2,
-                                textAlign: 'center',
-                                boxShadow: 2,
-                                transition: 'transform 0.2s',
-                                '&:hover': {
-                                    transform: 'translateY(-4px)',
-                                    boxShadow: 4,
-                                },
-                            }}
-                        >
-                            <WorkingHoursIcon sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="caption" display="block" sx={{ mb: 0.5, fontWeight: 600 }}>
-                                Working Hours
-                            </Typography>
-                            <Typography variant="h5" fontWeight="700">
-                                6h 52m 47s
-                            </Typography>
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Box
-                            sx={{
-                                bgcolor: 'success.main',
-                                color: 'success.contrastText',
-                                p: 3,
-                                borderRadius: 2,
-                                textAlign: 'center',
-                                boxShadow: 2,
-                                transition: 'transform 0.2s',
-                                '&:hover': {
-                                    transform: 'translateY(-4px)',
-                                    boxShadow: 4,
-                                },
-                            }}
-                        >
-                            <StatusIcon sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="caption" display="block" sx={{ mb: 0.5, fontWeight: 600 }}>
-                                Status
-                            </Typography>
-                            <Chip
-                                label="PRESENT"
-                                sx={{
-                                    bgcolor: 'rgba(255,255,255,0.25)',
-                                    color: 'inherit',
-                                    fontWeight: 700,
-                                    fontSize: '0.75rem',
-                                    border: '2px solid rgba(255,255,255,0.5)',
-                                }}
-                            />
-                        </Box>
-                    </Grid>
-                </Grid>
+                        />
+                    </Box>
+                </Box>
             </Paper>
 
             {/* Action Cards Grid */}
-            <Grid container spacing={3}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
                 {/* My Attendance */}
-                <Grid item xs={12} md={6}>
+                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
                     <Card sx={{
                         bgcolor: '#34495e',
                         color: 'white',
@@ -414,10 +366,10 @@ const Dashboard = () => {
                             </Button>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Box>
 
                 {/* Vacation Requests */}
-                <Grid item xs={12} md={6}>
+                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
                     <Card sx={{
                         bgcolor: '#34495e',
                         color: 'white',
@@ -450,10 +402,10 @@ const Dashboard = () => {
                             </Button>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Box>
 
                 {/* Permission Requests */}
-                <Grid item xs={12} md={6}>
+                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
                     <Card sx={{
                         bgcolor: '#34495e',
                         color: 'white',
@@ -508,10 +460,10 @@ const Dashboard = () => {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Box>
 
                 {/* Forgot Check Requests */}
-                <Grid item xs={12} md={6}>
+                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
                     <Card sx={{
                         bgcolor: '#34495e',
                         color: 'white',
@@ -577,10 +529,10 @@ const Dashboard = () => {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Box>
 
                 {/* Sick Leave & Mission */}
-                <Grid item xs={12} md={6}>
+                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
                     <Card sx={{
                         bgcolor: '#34495e',
                         color: 'white',
@@ -634,10 +586,10 @@ const Dashboard = () => {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Box>
 
                 {/* Your Profile */}
-                <Grid item xs={12} md={6}>
+                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
                     <Card sx={{
                         bgcolor: '#34495e',
                         color: 'white',
@@ -691,120 +643,10 @@ const Dashboard = () => {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Box>
 
-                {/* Analytics & Charts Section */}
-                <Grid item xs={12}>
-                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, mt: 2 }}>
-                        Analytics & Insights
-                    </Typography>
-                </Grid>
 
-                {/* Attendance Trend Chart */}
-                <Grid item xs={12} lg={8}>
-                    <Card sx={{ bgcolor: 'background.paper', borderRadius: 3, height: '100%', boxShadow: 2 }}>
-                        <CardContent sx={{ p: 3 }}>
-                            <Typography variant="h6" fontWeight="600" gutterBottom>
-                                Attendance Trend (Last 6 Months)
-                            </Typography>
-                            <Box sx={{ width: '100%', height: 300, mt: 2 }}>
-                                <ResponsiveContainer>
-                                    <LineChart data={attendanceData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                        <XAxis dataKey="month" stroke="#64748b" />
-                                        <YAxis stroke="#64748b" />
-                                        <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                border: '1px solid #e2e8f0',
-                                                borderRadius: '8px',
-                                            }}
-                                        />
-                                        <Legend />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="present"
-                                            stroke="#10b981"
-                                            strokeWidth={3}
-                                            name="Present"
-                                        />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="absent"
-                                            stroke="#ef4444"
-                                            strokeWidth={3}
-                                            name="Absent"
-                                        />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                {/* Department Distribution */}
-                <Grid item xs={12} lg={4}>
-                    <Card sx={{ bgcolor: 'background.paper', borderRadius: 3, height: '100%', boxShadow: 2 }}>
-                        <CardContent sx={{ p: 3 }}>
-                            <Typography variant="h6" fontWeight="600" gutterBottom>
-                                Department Distribution
-                            </Typography>
-                            <Box sx={{ width: '100%', height: 300, mt: 2 }}>
-                                <ResponsiveContainer>
-                                    <PieChart>
-                                        <Pie
-                                            data={departmentData}
-                                            cx="50%"
-                                            cy="50%"
-                                            labelLine={false}
-                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                            outerRadius={80}
-                                            fill="#8884d8"
-                                            dataKey="value"
-                                        >
-                                            {departmentData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                {/* Leave Requests Chart */}
-                <Grid item xs={12}>
-                    <Card sx={{ bgcolor: 'background.paper', borderRadius: 3, boxShadow: 2 }}>
-                        <CardContent sx={{ p: 3 }}>
-                            <Typography variant="h6" fontWeight="600" gutterBottom>
-                                Leave Requests Overview
-                            </Typography>
-                            <Box sx={{ width: '100%', height: 300, mt: 2 }}>
-                                <ResponsiveContainer>
-                                    <BarChart data={leaveData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                        <XAxis dataKey="month" stroke="#64748b" />
-                                        <YAxis stroke="#64748b" />
-                                        <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                border: '1px solid #e2e8f0',
-                                                borderRadius: '8px',
-                                            }}
-                                        />
-                                        <Legend />
-                                        <Bar dataKey="approved" fill="#10b981" name="Approved" />
-                                        <Bar dataKey="pending" fill="#f59e0b" name="Pending" />
-                                        <Bar dataKey="rejected" fill="#ef4444" name="Rejected" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
+            </Box>
         </Box>
     );
 };

@@ -10,9 +10,12 @@ import {
     Grid,
     Stack,
     Divider,
+    Alert,
+    CircularProgress,
 } from '@mui/material';
 import { PhotoCamera, Save } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
+import userService from '../../services/user.service';
 
 export default function ProfilePage() {
     const { user, updateUser } = useAuth();
@@ -20,11 +23,13 @@ export default function ProfilePage() {
         name: user?.name || '',
         email: user?.email || '',
         phone: user?.phone || '',
-        department: user?.department || '',
-        position: user?.position || '',
+        department: user?.department?.name || '',
+        position: user?.position?.title || '',
     });
     const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
     const [previewUrl, setPreviewUrl] = useState(user?.profilePicture || '');
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState({ type: '', text: '' });
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -49,18 +54,42 @@ export default function ProfilePage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
+        setMessage({ type: '', text: '' });
+
         try {
-            // Update user data including profile picture
-            const updatedUser = {
-                ...user,
-                ...formData,
+            // Prepare data for update - only send fields that can be updated
+            const updateData = {
+                profile: {
+                    ...user?.profile,
+                    phone: formData.phone,
+                },
                 profilePicture: profilePicture,
             };
+
+            console.log('Update data being sent:', updateData);
+
+            // Call API to update user profile in database
+            const response = await userService.updateProfile(updateData);
+
+            // Update local user state and localStorage
+            const updatedUser = {
+                ...user,
+                ...updateData,
+            };
             updateUser(updatedUser);
-            alert('Profile updated successfully!');
+
+            setMessage({ type: 'success', text: 'Profile updated successfully!' });
         } catch (error) {
             console.error('Error updating profile:', error);
-            alert('Failed to update profile');
+            console.error('Error response:', error.response);
+            console.error('Error data:', error.response?.data);
+            setMessage({
+                type: 'error',
+                text: error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update profile. Please try again.'
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -174,6 +203,11 @@ export default function ProfilePage() {
                             </Typography>
                             <Divider sx={{ mb: 4 }} />
                             <form onSubmit={handleSubmit}>
+                                {message.text && (
+                                    <Alert severity={message.type} sx={{ mb: 3 }}>
+                                        {message.text}
+                                    </Alert>
+                                )}
                                 <Grid container spacing={3}>
                                     <Grid item xs={12} sm={6}>
                                         <TextField
@@ -226,12 +260,15 @@ export default function ProfilePage() {
                                             label="Department"
                                             name="department"
                                             value={formData.department}
-                                            onChange={handleInputChange}
+                                            InputProps={{
+                                                readOnly: true,
+                                            }}
                                             sx={{
                                                 '& .MuiOutlinedInput-root': {
-                                                    backgroundColor: 'background.default',
+                                                    backgroundColor: 'action.hover',
                                                 },
                                             }}
+                                            helperText="Managed by HR"
                                         />
                                     </Grid>
                                     <Grid item xs={12}>
@@ -240,12 +277,15 @@ export default function ProfilePage() {
                                             label="Position / Job Title"
                                             name="position"
                                             value={formData.position}
-                                            onChange={handleInputChange}
+                                            InputProps={{
+                                                readOnly: true,
+                                            }}
                                             sx={{
                                                 '& .MuiOutlinedInput-root': {
-                                                    backgroundColor: 'background.default',
+                                                    backgroundColor: 'action.hover',
                                                 },
                                             }}
+                                            helperText="Managed by HR"
                                         />
                                     </Grid>
                                     <Grid item xs={12}>
@@ -253,11 +293,12 @@ export default function ProfilePage() {
                                             <Button
                                                 type="submit"
                                                 variant="contained"
-                                                startIcon={<Save />}
+                                                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Save />}
                                                 size="large"
+                                                disabled={loading}
                                                 sx={{ px: 4 }}
                                             >
-                                                Save Changes
+                                                {loading ? 'Saving...' : 'Save Changes'}
                                             </Button>
                                             <Button
                                                 variant="outlined"
@@ -267,8 +308,8 @@ export default function ProfilePage() {
                                                         name: user?.name || '',
                                                         email: user?.email || '',
                                                         phone: user?.phone || '',
-                                                        department: user?.department || '',
-                                                        position: user?.position || '',
+                                                        department: user?.department?.name || '',
+                                                        position: user?.position?.title || '',
                                                     })
                                                 }
                                             >

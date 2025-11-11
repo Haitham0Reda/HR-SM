@@ -18,6 +18,8 @@ import AttendancePage from './pages/attendance/AttendancePage';
 import LeavesPage from './pages/leaves/LeavesPage';
 import PermissionsPage from './pages/permissions/PermissionsPage';
 import RequestsPage from './pages/requests/RequestsPage';
+import RequestDetailsPage from './pages/requests/RequestDetailsPage';
+import VacationRequestPage from './pages/vacation/VacationRequestPage';
 import PayrollPage from './pages/payroll/PayrollPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import TemplatesPage from './pages/templates/TemplatesPage';
@@ -76,6 +78,8 @@ function App() {
                 <Route path="leaves" element={<LeavesPage />} />
                 <Route path="permissions" element={<PermissionsPage />} />
                 <Route path="requests" element={<RequestsPage />} />
+                <Route path="requests/:id" element={<RequestDetailsPage />} />
+                <Route path="vacation-request" element={<VacationRequestPage />} />
                 <Route path="payroll" element={<PayrollPage />} />
 
                 {/* Documents */}
