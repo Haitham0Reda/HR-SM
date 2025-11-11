@@ -54,7 +54,7 @@ export const NotificationProvider = ({ children }) => {
             {children}
             <Snackbar
                 open={notification.open}
-                autoHideDuration={6000}
+                autoHideDuration={3000}
                 onClose={handleClose}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                 sx={{

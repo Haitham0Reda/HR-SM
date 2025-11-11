@@ -12,8 +12,11 @@ import {
     Divider,
     Alert,
     CircularProgress,
+    Dialog,
+    DialogContent,
+    IconButton,
 } from '@mui/material';
-import { PhotoCamera, Save } from '@mui/icons-material';
+import { PhotoCamera, Save, Close } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import userService from '../../services/user.service';
 
@@ -30,6 +33,7 @@ export default function ProfilePage() {
     const [previewUrl, setPreviewUrl] = useState(user?.profilePicture || '');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [openPreview, setOpenPreview] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -63,8 +67,8 @@ export default function ProfilePage() {
                 profile: {
                     ...user?.profile,
                     phone: formData.phone,
+                    profilePicture: profilePicture,
                 },
-                profilePicture: profilePicture,
             };
 
             console.log('Update data being sent:', updateData);
@@ -110,8 +114,10 @@ export default function ProfilePage() {
                         <CardContent>
                             <Stack spacing={3} alignItems="center">
                                 <Box
+                                    onClick={() => previewUrl && setOpenPreview(true)}
                                     sx={{
                                         position: 'relative',
+                                        cursor: previewUrl ? 'pointer' : 'default',
                                         '&:hover .upload-overlay': {
                                             opacity: 1,
                                         },
@@ -133,26 +139,30 @@ export default function ProfilePage() {
                                             ? formData.name.charAt(0).toUpperCase()
                                             : ''}
                                     </Avatar>
-                                    <Box
-                                        className="upload-overlay"
-                                        sx={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            borderRadius: '50%',
-                                            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            opacity: 0,
-                                            transition: 'opacity 0.3s',
-                                            cursor: 'pointer',
-                                        }}
-                                    >
-                                        <PhotoCamera sx={{ color: 'white', fontSize: 40 }} />
-                                    </Box>
+                                    {previewUrl && (
+                                        <Box
+                                            className="upload-overlay"
+                                            sx={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                borderRadius: '50%',
+                                                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                opacity: 0,
+                                                transition: 'opacity 0.3s',
+                                                cursor: 'pointer',
+                                            }}
+                                        >
+                                            <Typography variant="body2" sx={{ color: 'white', fontWeight: 600 }}>
+                                                View Photo
+                                            </Typography>
+                                        </Box>
+                                    )}
                                 </Box>
                                 <Box sx={{ textAlign: 'center', width: '100%' }}>
                                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
@@ -323,6 +333,59 @@ export default function ProfilePage() {
                     </Card>
                 </Grid>
             </Grid>
+
+            {/* Profile Picture Preview Dialog */}
+            <Dialog
+                open={openPreview}
+                onClose={() => setOpenPreview(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        bgcolor: 'transparent',
+                        boxShadow: 'none',
+                        overflow: 'visible',
+                    },
+                }}
+            >
+                <DialogContent
+                    sx={{
+                        position: 'relative',
+                        p: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'transparent',
+                    }}
+                >
+                    <IconButton
+                        onClick={() => setOpenPreview(false)}
+                        sx={{
+                            position: 'absolute',
+                            top: -50,
+                            right: -10,
+                            color: 'white',
+                            bgcolor: 'rgba(0, 0, 0, 0.5)',
+                            '&:hover': {
+                                bgcolor: 'rgba(0, 0, 0, 0.7)',
+                            },
+                        }}
+                    >
+                        <Close />
+                    </IconButton>
+                    <Box
+                        component="img"
+                        src={previewUrl}
+                        alt={formData.name}
+                        sx={{
+                            maxWidth: '100%',
+                            maxHeight: '80vh',
+                            borderRadius: 2,
+                            boxShadow: 24,
+                        }}
+                    />
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 }

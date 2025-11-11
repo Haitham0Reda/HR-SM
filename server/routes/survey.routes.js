@@ -28,11 +28,17 @@ import {
 
 const router = express.Router();
 
-// Get all surveys - HR or Admin
+// Get all surveys - HR or Admin (for management)
 router.get('/',
     protect,
     hrOrAdmin,
     getAllSurveys
+);
+
+// Get active surveys - All authenticated users (for participation)
+router.get('/active',
+    protect,
+    getEmployeeSurveys
 );
 
 // Get employee's assigned surveys - Protected

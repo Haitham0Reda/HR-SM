@@ -2,6 +2,7 @@ import api from './api';
 
 const surveyService = {
     getAll: async (params) => await api.get('/surveys', { params }),
+    getMySurveys: async () => await api.get('/surveys/my-surveys'),
     getById: async (id) => await api.get(`/surveys/${id}`),
     create: async (data) => await api.post('/surveys', data),
     update: async (id, data) => await api.put(`/surveys/${id}`, data),

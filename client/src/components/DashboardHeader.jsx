@@ -29,6 +29,7 @@ import leaveService from '../services/leave.service';
 import announcementService from '../services/announcement.service';
 import eventService from '../services/event.service';
 import surveyService from '../services/survey.service';
+import permissionService from '../services/permission.service';
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
     borderWidth: 0,
@@ -85,13 +86,13 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             // Get viewed notifications from localStorage
             const viewedNotifications = JSON.parse(localStorage.getItem('viewedNotifications') || '[]');
 
-            // Fetch leave requests (pending, approved, rejected)
+            // Fetch leave requests (pending and rejected only)
             const leaveData = await leaveService.getAll({ user: user._id });
             const requests = Array.isArray(leaveData) ? leaveData : (leaveData.data || []);
             const leaveRequests = requests
                 .filter(r => {
-                    // Only show pending, approved, or rejected
-                    if (!['pending', 'approved', 'rejected'].includes(r.status)) return false;
+                    // Only show pending or rejected (not approved)
+                    if (!['pending', 'rejected'].includes(r.status)) return false;
                     // Don't show if already viewed
                     return !viewedNotifications.includes(r._id);
                 })
@@ -99,11 +100,33 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                     ...r,
                     notifType: 'leave',
                     title: `${(r.leaveType || r.type || '').charAt(0).toUpperCase() + (r.leaveType || r.type || '').slice(1)} Leave Request`,
-                    icon: r.status === 'approved' ? '✅' : r.status === 'rejected' ? '❌' : '📝',
+                    icon: r.status === 'rejected' ? '❌' : '📝',
                 }));
             allNotifications.push(...leaveRequests);
 
-            // Fetch recent announcements
+            // Fetch permission requests (pending and rejected only)
+            try {
+                const permissionData = await permissionService.getAll();
+                const permissions = Array.isArray(permissionData) ? permissionData : (permissionData.data || []);
+                const permissionRequests = permissions
+                    .filter(p => {
+                        // Only show pending or rejected (not approved)
+                        if (!['pending', 'rejected'].includes(p.status)) return false;
+                        // Don't show if already viewed
+                        return !viewedNotifications.includes(p._id);
+                    })
+                    .map(p => ({
+                        ...p,
+                        notifType: 'permission',
+                        title: `${(p.permissionType || '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Permission`,
+                        icon: p.status === 'rejected' ? '❌' : '⏰',
+                    }));
+                allNotifications.push(...permissionRequests);
+            } catch (err) {
+                // Silently skip if service unavailable
+            }
+
+            // Fetch recent announcements (available to all users)
             try {
                 const announcementData = await announcementService.getAll();
                 const announcements = Array.isArray(announcementData) ? announcementData : (announcementData.data || []);
@@ -117,13 +140,10 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                     }));
                 allNotifications.push(...recentAnnouncements);
             } catch (err) {
-                // Silently skip if access denied or service unavailable
-                if (err.status !== 403) {
-                    console.log('Could not fetch announcements:', err.message);
-                }
+                // Silently skip if service unavailable
             }
 
-            // Fetch upcoming events
+            // Fetch upcoming events (available to all users)
             try {
                 const eventData = await eventService.getAll();
                 const events = Array.isArray(eventData) ? eventData : (eventData.data || []);
@@ -138,18 +158,14 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                     }));
                 allNotifications.push(...upcomingEvents);
             } catch (err) {
-                // Silently skip if access denied or service unavailable
-                if (err.status !== 403) {
-                    console.log('Could not fetch events:', err.message);
-                }
+                // Silently skip if service unavailable
             }
 
-            // Fetch active surveys (only for HR/Admin)
+            // Fetch active surveys (available to all users to participate)
             try {
-                const surveyData = await surveyService.getAll();
+                const surveyData = await surveyService.getMySurveys();
                 const surveys = Array.isArray(surveyData) ? surveyData : (surveyData.data || []);
                 const activeSurveys = surveys
-                    .filter(s => s.status === 'active')
                     .slice(0, 2)
                     .map(s => ({
                         ...s,
@@ -159,8 +175,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                     }));
                 allNotifications.push(...activeSurveys);
             } catch (err) {
-                // Surveys might require HR/Admin role or service might not exist
-                console.log('Could not fetch surveys for notifications:', err.status === 403 ? 'Access denied' : err.message);
+                // Silently skip if service unavailable
             }
 
             // Sort by date and limit to 10
@@ -491,7 +506,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                             mt: 1.5,
                             minWidth: 360,
                             maxWidth: 400,
-                            maxHeight: 500,
+                            maxHeight: 'calc(100vh - 100px)',
                             borderRadius: 2,
                             border: '1px solid',
                             borderColor: 'divider',
@@ -512,7 +527,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                     )}
                 </Box>
                 {notifications.length > 0 ? (
-                    <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                    <Box sx={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
                         {notifications.map((notification) => {
                             const notifType = notification.notifType;
                             const statusColor = notification.status === 'pending' ? 'warning.main' : 'info.main';
@@ -530,6 +545,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 // Navigate to appropriate page
                                 if (notifType === 'leave') {
                                     navigate(`/requests/${notification._id}`);
+                                } else if (notifType === 'permission') {
+                                    navigate('/permissions');
                                 } else if (notifType === 'announcement') {
                                     navigate('/announcements');
                                 } else if (notifType === 'event') {
@@ -564,7 +581,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                             <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
                                                 {notification.icon} {notification.title}
                                             </Typography>
-                                            {notifType === 'leave' && (
+                                            {(notifType === 'leave' || notifType === 'permission') && (
                                                 <Chip
                                                     label={notification.status?.toUpperCase()}
                                                     size="small"
@@ -582,6 +599,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                         </Box>
                                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', mb: 0.5 }}>
                                             {notifType === 'leave' && `${notification.duration || 0} day(s) • ${new Date(notification.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`}
+                                            {notifType === 'permission' && `${new Date(notification.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • ${notification.time?.scheduled || ''} - ${notification.time?.requested || ''}`}
                                             {notifType === 'event' && `${new Date(notification.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`}
                                             {notifType === 'announcement' && (notification.description || '').substring(0, 50)}
                                             {notifType === 'survey' && 'Please complete this survey'}

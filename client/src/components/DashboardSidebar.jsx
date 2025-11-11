@@ -205,6 +205,13 @@ function DashboardSidebar({
                                     selected={!!matchPath('/permissions', pathname)}
                                 />
                                 <DashboardSidebarPageItem
+                                    id="overtime"
+                                    title="Overtime"
+                                    icon={<AccessTimeIcon />}
+                                    href="/overtime"
+                                    selected={!!matchPath('/overtime', pathname)}
+                                />
+                                <DashboardSidebarPageItem
                                     id="my-requests"
                                     title="My Requests"
                                     icon={<RequestPageIcon />}

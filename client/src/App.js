@@ -17,6 +17,9 @@ import PositionsPage from './pages/positions/PositionsPage';
 import AttendancePage from './pages/attendance/AttendancePage';
 import LeavesPage from './pages/leaves/LeavesPage';
 import PermissionsPage from './pages/permissions/PermissionsPage';
+import CreatePermissionPage from './pages/permissions/CreatePermissionPage';
+import OvertimePage from './pages/overtime/OvertimePage';
+import CreateOvertimePage from './pages/overtime/CreateOvertimePage';
 import RequestsPage from './pages/requests/RequestsPage';
 import RequestDetailsPage from './pages/requests/RequestDetailsPage';
 import VacationRequestPage from './pages/vacation/VacationRequestPage';
@@ -77,6 +80,9 @@ function App() {
                 <Route path="attendance" element={<AttendancePage />} />
                 <Route path="leaves" element={<LeavesPage />} />
                 <Route path="permissions" element={<PermissionsPage />} />
+                <Route path="permissions/create" element={<CreatePermissionPage />} />
+                <Route path="overtime" element={<OvertimePage />} />
+                <Route path="overtime/create" element={<CreateOvertimePage />} />
                 <Route path="requests" element={<RequestsPage />} />
                 <Route path="requests/:id" element={<RequestDetailsPage />} />
                 <Route path="vacation-request" element={<VacationRequestPage />} />

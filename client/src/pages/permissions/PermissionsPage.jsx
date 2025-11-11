@@ -29,11 +29,13 @@ import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import permissionService from '../../services/permission.service';
 import userService from '../../services/user.service';
 
 const PermissionsPage = () => {
     const { user, isHR, isAdmin } = useAuth();
+    const navigate = useNavigate();
     const [permissions, setPermissions] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -56,8 +58,7 @@ const PermissionsPage = () => {
 
     const permissionTypes = [
         { value: 'late-arrival', label: 'Late Arrival', icon: <Schedule />, color: '#FFA500' },
-        { value: 'early-departure', label: 'Early Departure', icon: <ExitToApp />, color: '#FF6B6B' },
-        { value: 'overtime', label: 'Overtime', icon: <AccessTime />, color: '#667eea' }
+        { value: 'early-departure', label: 'Early Departure', icon: <ExitToApp />, color: '#FF6B6B' }
     ];
     const statuses = ['pending', 'approved', 'rejected', 'cancelled'];
 
@@ -72,7 +73,16 @@ const PermissionsPage = () => {
             setLoading(true);
             const data = await permissionService.getAll();
             console.log('Fetched permissions:', data);
-            setPermissions(Array.isArray(data) ? data : []);
+
+            // Filter out overtime requests - only show late-arrival and early-departure
+            const filteredData = Array.isArray(data)
+                ? data.filter(permission =>
+                    permission.permissionType !== 'overtime' &&
+                    permission.type !== 'overtime'
+                )
+                : [];
+
+            setPermissions(filteredData);
         } catch (error) {
             console.error('Error fetching permissions:', error);
             showNotification(typeof error === 'string' ? error : 'Failed to fetch permission requests', 'error');
@@ -103,19 +113,11 @@ const PermissionsPage = () => {
                 reason: permission.reason || '',
                 status: permission.status || 'pending'
             });
+            setOpenDialog(true);
         } else {
-            setSelectedPermission(null);
-            setFormData({
-                user: user?._id || '', // Automatically set to logged-in user
-                type: 'late-arrival',
-                date: new Date().toISOString().split('T')[0],
-                startTime: '',
-                endTime: '',
-                reason: '',
-                status: 'pending'
-            });
+            // Navigate to create page instead of opening dialog
+            navigate('/permissions/create');
         }
-        setOpenDialog(true);
     };
 
     const handleCloseDialog = () => {
@@ -223,17 +225,17 @@ const PermissionsPage = () => {
             field: 'endTime',
             headerName: 'End Time',
             width: 100,
-            renderCell: (params) => params.row.time?.requested || params.row.endTime || 'N/A'
+            renderCell: (row) => row.time?.requested || row.endTime || 'N/A'
         },
         { field: 'reason', headerName: 'Reason', width: 200 },
         {
             field: 'status',
             headerName: 'Status',
             width: 120,
-            renderCell: (params) => (
+            renderCell: (row) => (
                 <Chip
-                    label={params.row.status}
-                    color={getStatusColor(params.row.status)}
+                    label={row.status}
+                    color={getStatusColor(row.status)}
                     size="small"
                 />
             )
@@ -242,13 +244,13 @@ const PermissionsPage = () => {
             field: 'actions',
             headerName: 'Actions',
             width: 200,
-            renderCell: (params) => (
+            renderCell: (row) => (
                 <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                    {params.row.status === 'pending' && (
+                    {row.status === 'pending' && canManage && (
                         <>
                             <IconButton
                                 size="small"
-                                onClick={() => handleApprove(params.row._id)}
+                                onClick={() => handleApprove(row._id)}
                                 color="success"
                                 title="Approve"
                                 sx={{
@@ -262,7 +264,7 @@ const PermissionsPage = () => {
                             </IconButton>
                             <IconButton
                                 size="small"
-                                onClick={() => handleReject(params.row._id)}
+                                onClick={() => handleReject(row._id)}
                                 color="error"
                                 title="Reject"
                                 sx={{
@@ -278,7 +280,7 @@ const PermissionsPage = () => {
                     )}
                     <IconButton
                         size="small"
-                        onClick={() => handleOpenDialog(params.row)}
+                        onClick={() => handleOpenDialog(row)}
                         color="primary"
                         title="Edit"
                     >
@@ -287,7 +289,7 @@ const PermissionsPage = () => {
                     <IconButton
                         size="small"
                         onClick={() => {
-                            setSelectedPermission(params.row);
+                            setSelectedPermission(row);
                             setOpenConfirm(true);
                         }}
                         color="error"
@@ -348,408 +350,285 @@ const PermissionsPage = () => {
 
             <Box sx={{ flex: 1, minHeight: 0 }}>
                 <DataTable
-                    rows={permissions}
+                    data={permissions}
                     columns={columns}
-                    getRowId={(row) => row._id}
+                    emptyMessage="No permission requests found. Click 'New Permission Request' to create one."
                 />
             </Box>
 
             <Dialog
                 open={openDialog}
                 onClose={handleCloseDialog}
-                maxWidth="md"
-                fullWidth
-                TransitionProps={{
-                    timeout: 400
-                }}
+                fullScreen
                 PaperProps={{
                     sx: {
-                        borderRadius: 3,
-                        maxHeight: '90vh',
-                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-                        overflow: 'hidden',
-                        animation: 'slideUp 0.4s ease-out',
-                        '@keyframes slideUp': {
-                            '0%': {
-                                opacity: 0,
-                                transform: 'translateY(30px) scale(0.95)'
-                            },
-                            '100%': {
-                                opacity: 1,
-                                transform: 'translateY(0) scale(1)'
-                            }
-                        }
+                        bgcolor: '#2c3e50',
+                        color: 'white',
                     }
                 }}
             >
-                <DialogTitle sx={{
-                    pb: 2.5,
-                    pt: 3,
-                    px: 3,
-                    fontSize: '1.5rem',
-                    fontWeight: 700,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    borderBottom: 'none',
-                    position: 'relative',
-                    '&::after': {
-                        content: '""',
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: '3px',
-                        background: 'linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.3) 100%)',
-                        animation: 'shimmer 2s infinite',
-                        '@keyframes shimmer': {
-                            '0%': { transform: 'translateX(-100%)' },
-                            '100%': { transform: 'translateX(100%)' }
-                        }
-                    }
-                }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        {selectedPermission ? (
-                            <>
-                                <EditIcon sx={{ fontSize: '1.8rem' }} />
-                                <span>Edit Permission Request</span>
-                            </>
-                        ) : (
-                            <>
-                                <AddIcon sx={{ fontSize: '1.8rem' }} />
-                                <span>New Permission Request</span>
-                            </>
-                        )}
-                    </Box>
-                </DialogTitle>
-                <DialogContent sx={{ pt: 4, pb: 3, px: 3 }}>
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 3,
-                        '& .MuiTextField-root': {
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 2,
-                                transition: 'all 0.3s ease',
+                <Box sx={{ p: 4, minHeight: '100vh' }}>
+                    {/* Header */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: 'white' }}>
+                            {selectedPermission ? 'Edit Permission Request' : 'Create Permission Request'}
+                        </Typography>
+                        <Button
+                            variant="outlined"
+                            onClick={handleCloseDialog}
+                            startIcon={<Cancel />}
+                            sx={{
+                                color: 'white',
+                                borderColor: 'rgba(255,255,255,0.3)',
+                                textTransform: 'none',
                                 '&:hover': {
-                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
-                                },
-                                '&.Mui-focused': {
-                                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.15)'
+                                    borderColor: 'white',
+                                    bgcolor: 'rgba(255,255,255,0.1)'
                                 }
-                            },
-                            '& .MuiInputLabel-root': {
-                                fontWeight: 500
-                            }
-                        }
-                    }}>
-                        {/* Only show employee selector for HR/Admin when editing */}
-                        {canManage && selectedPermission && (
-                            <TextField
-                                select
-                                label="Employee"
-                                name="user"
-                                value={formData.user}
-                                onChange={handleChange}
-                                required
-                                fullWidth
-                            >
-                                {users.map((user) => (
-                                    <MenuItem key={user._id} value={user._id}>
-                                        {user.name} - {user.email}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        )}
-                        <Box sx={{ mt: canManage && selectedPermission ? 0 : 2 }}>
-                            <Typography variant="caption" sx={{
-                                display: 'block',
-                                mb: 1.5,
-                                color: 'text.secondary',
-                                fontWeight: 600,
-                                textTransform: 'uppercase',
-                                letterSpacing: 0.5,
-                                fontSize: '0.7rem'
-
-                            }}>
-                                📋 Request Details
-                            </Typography>
-                            <TextField
-                                select
-                                label="Permission Type"
-                                name="type"
-                                value={formData.type}
-                                onChange={handleChange}
-                                required
-                                fullWidth
-                                helperText="Select the type of permission you need"
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        bgcolor: 'background.paper',
-                                        fontWeight: 500
-                                    }
-                                }}
-                            >
-                                {permissionTypes.map((type) => (
-                                    <MenuItem
-                                        key={type.value}
-                                        value={type.value}
-                                        sx={{
-                                            display: 'flex',
-                                            gap: 1.5,
-                                            py: 1.5,
-                                            '&:hover': {
-                                                bgcolor: `${type.color}15`
-                                            }
-                                        }}
-                                    >
-                                        <Box sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 1.5,
-                                            color: type.color
-                                        }}>
-                                            {type.icon}
-                                            <span style={{ color: 'inherit' }}>{type.label}</span>
-                                        </Box>
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Box>
-                        <Box>
-                            <Typography variant="caption" sx={{
-                                display: 'block',
-                                mb: 1.5,
-                                color: 'text.secondary',
-                                fontWeight: 600,
-                                textTransform: 'uppercase',
-                                letterSpacing: 0.5,
-                                fontSize: '0.7rem'
-                            }}>
-                                📅 Schedule
-                            </Typography>
-                            <TextField
-                                type="date"
-                                label="Date"
-                                name="date"
-                                value={formData.date}
-                                onChange={handleChange}
-                                required
-                                fullWidth
-                                InputLabelProps={{ shrink: true }}
-                                InputProps={{
-                                    startAdornment: (
-                                        <CalendarToday sx={{ mr: 1, color: 'primary.main', fontSize: '1.2rem' }} />
-                                    )
-                                }}
-                                helperText="Select the date for this permission"
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        bgcolor: 'background.paper',
-                                        fontWeight: 500
-                                    }
-                                }}
-                            />
-                        </Box>
-                        <Box sx={{
-                            p: 3,
-                            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
-                            borderRadius: 2.5,
-                            border: '2px solid',
-                            borderColor: 'primary.light',
-                            position: 'relative',
-                            overflow: 'hidden',
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                height: '4px',
-                                background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)'
-                            }
-                        }}>
-                            <Typography variant="subtitle2" sx={{
-                                mb: 2,
-                                fontWeight: 700,
-                                color: 'primary.main',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                                fontSize: '0.95rem'
-                            }}>
-                                <AccessTime sx={{ fontSize: '1.3rem' }} />
-                                Time Period
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        type="time"
-                                        label="Start Time"
-                                        name="startTime"
-                                        value={formData.startTime}
-                                        onChange={handleChange}
-                                        fullWidth
-                                        InputLabelProps={{ shrink: true }}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                bgcolor: 'white'
-                                            }
-                                        }}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        type="time"
-                                        label="End Time"
-                                        name="endTime"
-                                        value={formData.endTime}
-                                        onChange={handleChange}
-                                        fullWidth
-                                        InputLabelProps={{ shrink: true }}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                bgcolor: 'white'
-                                            }
-                                        }}
-                                    />
-                                </Grid>
-                            </Grid>
-                        </Box>
-                        <Box>
-                            <Typography variant="caption" sx={{
-                                display: 'block',
-                                mb: 1.5,
-                                color: 'text.secondary',
-                                fontWeight: 600,
-                                textTransform: 'uppercase',
-                                letterSpacing: 0.5,
-                                fontSize: '0.7rem'
-                            }}>
-                                💬 Justification
-                            </Typography>
-                            <TextField
-                                label="Reason"
-                                name="reason"
-                                value={formData.reason}
-                                onChange={handleChange}
-                                multiline
-                                rows={4}
-                                required
-                                fullWidth
-                                placeholder="Please provide a detailed reason for your permission request..."
-                                helperText={`${formData.reason.length} characters - Explain why you need this permission`}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        alignItems: 'flex-start',
-                                        bgcolor: 'background.paper',
-                                        '& textarea': {
-                                            lineHeight: 1.6,
-                                            fontSize: '0.95rem'
-                                        }
-                                    },
-                                    '& .MuiFormHelperText-root': {
-                                        color: formData.reason.length < 10 ? 'error.main' : 'text.secondary'
-                                    }
-                                }}
-                            />
-                        </Box>
-                        {/* Only show status selector for HR/Admin */}
-                        {canManage && (
-                            <Box sx={{
-                                p: 2.5,
-                                bgcolor: 'warning.lighter',
-                                borderRadius: 2,
-                                border: '1px solid',
-                                borderColor: 'warning.light'
-                            }}>
-                                <Typography variant="caption" sx={{
-                                    display: 'block',
-                                    mb: 1.5,
-                                    color: 'warning.dark',
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: 0.5,
-                                    fontSize: '0.7rem'
-                                }}>
-                                    ⚙️ Admin Controls
-                                </Typography>
-                                <TextField
-                                    select
-                                    label="Status"
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            bgcolor: 'white'
-                                        }
-                                    }}
-                                >
-                                    {statuses.map((status) => (
-                                        <MenuItem key={status} value={status}>
-                                            <Chip
-                                                label={status.charAt(0).toUpperCase() + status.slice(1)}
-                                                color={getStatusColor(status)}
-                                                size="small"
-                                            />
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            </Box>
-                        )}
+                            }}
+                        >
+                            Back to Dashboard
+                        </Button>
                     </Box>
-                </DialogContent>
-                <DialogActions sx={{
-                    px: 3,
-                    py: 3,
-                    gap: 2,
-                    borderTop: '2px solid',
-                    borderColor: 'divider',
-                    bgcolor: 'grey.50',
-                    justifyContent: 'flex-end'
-                }}>
-                    <Button
-                        onClick={handleCloseDialog}
-                        variant="outlined"
-                        sx={{
-                            minWidth: 140,
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            borderRadius: 2,
-                            py: 1.2,
-                            borderWidth: 2,
-                            '&:hover': {
-                                borderWidth: 2,
-                                bgcolor: 'action.hover'
-                            }
-                        }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSubmit}
-                        variant="contained"
-                        sx={{
-                            minWidth: 140,
-                            textTransform: 'none',
-                            fontWeight: 700,
-                            borderRadius: 2,
-                            py: 1.2,
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
-                            '&:hover': {
-                                background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                                boxShadow: '0 6px 16px rgba(102, 126, 234, 0.5)',
-                                transform: 'translateY(-1px)'
-                            },
-                            transition: 'all 0.3s ease'
-                        }}
-                    >
-                        {selectedPermission ? '✓ Update Request' : '✓ Submit Request'}
-                    </Button>
-                </DialogActions>
-            </Dialog >
+
+                    {/* Main Content */}
+                    <Grid container spacing={3}>
+                        {/* Form Section */}
+                        <Grid item xs={12} md={8}>
+                            <Box sx={{ bgcolor: '#34495e', borderRadius: 2, p: 3 }}>
+                                <Typography variant="h6" sx={{ color: '#5dade2', mb: 3, fontWeight: 600 }}>
+                                    Permission Request Form
+                                </Typography>
+                                <Box sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 3,
+                                    '& .MuiTextField-root': {
+                                        '& .MuiInputLabel-root': {
+                                            color: 'rgba(255,255,255,0.7)',
+                                            '&.Mui-focused': {
+                                                color: '#5dade2',
+                                            }
+                                        },
+                                        '& .MuiOutlinedInput-root': {
+                                            color: 'white',
+                                            bgcolor: '#2c3e50',
+                                            '& fieldset': {
+                                                borderColor: 'rgba(255,255,255,0.2)',
+                                            },
+                                            '&:hover fieldset': {
+                                                borderColor: 'rgba(255,255,255,0.3)',
+                                            },
+                                            '&.Mui-focused fieldset': {
+                                                borderColor: '#5dade2',
+                                            },
+                                        },
+                                        '& .MuiInputBase-input': {
+                                            color: 'white',
+                                        },
+                                        '& .MuiFormHelperText-root': {
+                                            color: 'rgba(255,255,255,0.5)',
+                                        },
+                                        '& .MuiSelect-icon': {
+                                            color: 'rgba(255,255,255,0.7)',
+                                        }
+                                    }
+                                }}>
+                                    {/* Only show employee selector for HR/Admin when editing */}
+                                    {canManage && selectedPermission && (
+                                        <TextField
+                                            select
+                                            label="Employee"
+                                            name="user"
+                                            value={formData.user}
+                                            onChange={handleChange}
+                                            required
+                                            fullWidth
+                                        >
+                                            {users.map((user) => (
+                                                <MenuItem key={user._id} value={user._id}>
+                                                    {user.name} - {user.email}
+                                                </MenuItem>
+                                            ))}
+                                        </TextField>
+                                    )}
+                                    <TextField
+                                        type="date"
+                                        label="Date *"
+                                        name="date"
+                                        value={formData.date}
+                                        onChange={handleChange}
+                                        required
+                                        fullWidth
+                                        InputLabelProps={{ shrink: true }}
+                                        helperText="Select the date for which you need permission."
+                                    />
+
+                                    <TextField
+                                        select
+                                        label="Permission Type *"
+                                        name="type"
+                                        value={formData.type}
+                                        onChange={handleChange}
+                                        required
+                                        fullWidth>
+                                        <MenuItem value="">-- Select Type --</MenuItem>
+                                        {permissionTypes.map((type) => (
+                                            <MenuItem key={type.value} value={type.value}>
+                                                {type.label}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} sm={6}>
+                                            <TextField
+                                                type="time"
+                                                label="Expected Time *"
+                                                name="startTime"
+                                                value={formData.startTime}
+                                                onChange={handleChange}
+                                                fullWidth
+                                                InputLabelProps={{ shrink: true }}
+                                                helperText="This field is automatically set based on working hours."
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} sm={6}>
+                                            <TextField
+                                                type="time"
+                                                label="Actual Time *"
+                                                name="endTime"
+                                                value={formData.endTime}
+                                                onChange={handleChange}
+                                                fullWidth
+                                                InputLabelProps={{ shrink: true }}
+                                                placeholder="--:-- --"
+                                            />
+                                        </Grid>
+                                    </Grid>
+
+                                    <TextField
+                                        label="Reason *"
+                                        name="reason"
+                                        value={formData.reason}
+                                        onChange={handleChange}
+                                        multiline
+                                        rows={4}
+                                        required
+                                        fullWidth
+                                        placeholder="Please provide a detailed reason for your request."
+                                        helperText="Please provide a detailed reason for your request."
+                                    />
+                                    {/* Only show status selector for HR/Admin */}
+                                    {canManage && (
+                                        <TextField
+                                            select
+                                            label="Status"
+                                            name="status"
+                                            value={formData.status}
+                                            onChange={handleChange}
+                                            fullWidth>
+                                            {statuses.map((status) => (
+                                                <MenuItem key={status} value={status}>
+                                                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                                                </MenuItem>
+                                            ))}
+                                        </TextField>
+                                    )}
+
+                                    {/* Action Buttons */}
+                                    <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                                        <Button
+                                            onClick={handleSubmit}
+                                            variant="contained"
+                                            size="large"
+                                            startIcon={<CheckCircle />}
+                                            sx={{
+                                                bgcolor: '#3498db',
+                                                textTransform: 'none',
+                                                fontWeight: 600,
+                                                px: 4,
+                                                '&:hover': {
+                                                    bgcolor: '#2980b9'
+                                                }
+                                            }}
+                                        >
+                                            Submit Request
+                                        </Button>
+                                        <Button
+                                            onClick={handleCloseDialog}
+                                            variant="outlined"
+                                            size="large"
+                                            sx={{
+                                                color: 'white',
+                                                borderColor: 'rgba(255,255,255,0.3)',
+                                                textTransform: 'none',
+                                                fontWeight: 600,
+                                                '&:hover': {
+                                                    borderColor: 'white',
+                                                    bgcolor: 'rgba(255,255,255,0.1)'
+                                                }
+                                            }}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </Box>
+                                </Box>
+                            </Box>
+                        </Grid>
+
+                        {/* Information Sidebar */}
+                        <Grid item xs={12} md={4}>
+                            <Box sx={{ bgcolor: '#34495e', borderRadius: 2, p: 3 }}>
+                                <Typography variant="h6" sx={{ color: '#5dade2', mb: 3, fontWeight: 600 }}>
+                                    Information
+                                </Typography>
+
+                                <Box sx={{ mb: 3 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                                        Working Hours
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                        09:00 - 15:30
+                                    </Typography>
+                                </Box>
+
+                                <Box sx={{ mb: 3 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                                        Late Arrival
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                                        Use this option if you arrived after 09:00. The expected time should be 09:00 and the actual time should be when you actually arrived.
+                                    </Typography>
+                                </Box>
+
+                                <Box sx={{ mb: 3 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                                        Early Departure
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                                        Use this option if you left before 15:30. The expected time should be 15:30 and the actual time should be when you actually left.
+                                    </Typography>
+                                </Box>
+
+                                <Box sx={{ mb: 3 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                                        Permission Limits
+                                    </Typography>
+                                    <Box component="ul" sx={{ pl: 2, m: 0, color: 'rgba(255,255,255,0.7)' }}>
+                                        <li><strong>Daily Limit:</strong> 2 hours</li>
+                                        <li><strong>Monthly Limit:</strong> 4 hours</li>
+                                    </Box>
+                                </Box>
+
+                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block', mt: 2 }}>
+                                    HR Month: Day 20 to Day 19
+                                </Typography>
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </Box>
+            </Dialog>
 
             <ConfirmDialog
                 open={openConfirm}
