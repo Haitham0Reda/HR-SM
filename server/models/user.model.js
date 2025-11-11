@@ -101,7 +101,10 @@ const userSchema = new mongoose.Schema({
     permissionModifiedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }
+    },
+    // Password reset fields
+    resetPasswordToken: String,
+    resetPasswordExpire: Date
 }, {
     timestamps: true
 });

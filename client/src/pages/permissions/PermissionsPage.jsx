@@ -19,11 +19,8 @@ import {
     Delete as DeleteIcon,
     CheckCircle,
     Cancel,
-    ExitToApp,
     Schedule,
-    Home,
-    Computer,
-    MoreHoriz,
+    ExitToApp,
     CalendarToday,
     AccessTime
 } from '@mui/icons-material';
@@ -67,6 +64,7 @@ const PermissionsPage = () => {
     useEffect(() => {
         fetchPermissions();
         fetchUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchPermissions = async () => {

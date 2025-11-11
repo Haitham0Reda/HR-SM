@@ -7,6 +7,7 @@ import connectDB from './config/db.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import { startAllScheduledTasks, stopAllTasks } from './utils/scheduler.js';
 
+import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import announcementRoutes from './routes/announcement.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
@@ -46,6 +47,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/analytics', analyticsRoutes);

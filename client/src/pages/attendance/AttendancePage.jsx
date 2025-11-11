@@ -13,7 +13,7 @@ import {
     MenuItem,
     Grid
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle, Cancel } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -45,6 +45,7 @@ const AttendancePage = () => {
 
     const statuses = ['present', 'absent', 'late', 'half-day', 'work-from-home'];
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchAttendances();
         fetchUsers();

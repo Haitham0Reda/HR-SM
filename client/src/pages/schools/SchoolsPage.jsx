@@ -35,6 +35,7 @@ const SchoolsPage = () => {
 
     useEffect(() => {
         fetchSchools();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchSchools = async () => {
