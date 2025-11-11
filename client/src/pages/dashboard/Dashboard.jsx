@@ -1,3 +1,25 @@
+/**
+ * Dashboard Component
+ * 
+ * Main employee dashboard displaying:
+ * - Welcome header with current date/time
+ * - Employee of the Month section
+ * - Today's attendance summary (check-in, check-out, working hours, status)
+ * - Quick action cards for:
+ *   - My Attendance
+ *   - Vacation Requests
+ *   - Permission Requests
+ *   - Forgot Check Requests
+ *   - Sick Leave & Mission
+ *   - User Profile
+ * 
+ * Features:
+ * - Real-time clock updates every second
+ * - Refresh button to reload the page
+ * - Navigation to different sections of the app
+ * - Responsive layout that adapts to different screen sizes
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
     Box,
@@ -30,15 +52,24 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+    // Get current user from auth context
     const { user } = useAuth();
     const navigate = useNavigate();
+
+    // State for real-time clock
     const [currentTime, setCurrentTime] = useState(new Date());
 
+    // Update clock every second
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
+    /**
+     * Format time in 12-hour format with AM/PM
+     * @param {Date} date - Date object to format
+     * @returns {string} Formatted time string (e.g., "02:30 PM")
+     */
     const formatTime = (date) => {
         return date.toLocaleTimeString('en-US', {
             hour: '2-digit',
@@ -47,6 +78,11 @@ const Dashboard = () => {
         });
     };
 
+    /**
+     * Format date in long format
+     * @param {Date} date - Date object to format
+     * @returns {string} Formatted date string (e.g., "Monday, November 12, 2025")
+     */
     const formatDate = (date) => {
         return date.toLocaleDateString('en-US', {
             weekday: 'long',
@@ -66,26 +102,39 @@ const Dashboard = () => {
                 minHeight: '100vh',
             }}
         >
-            {/* Header Section */}
+            {/* 
+                Header Section
+                Displays welcome message, campus info, current date and time
+                Includes refresh button to reload the page
+            */}
             <Paper
                 sx={{
                     p: 3,
                     mb: 3,
-                    background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
-                    color: 'white',
+                    background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                    color: 'primary.contrastText',
                     borderRadius: 3,
                     boxShadow: 4,
-                    border: 'none',
                 }}
             >
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2 }}>
-                    <Avatar sx={{
-                        width: 56,
-                        height: 56,
-                        bgcolor: 'rgba(255,255,255,0.3)',
-                        border: '2px solid white'
-                    }}>
-                        <ProfileIcon sx={{ fontSize: 32 }} />
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 3 }}>
+                    <Avatar
+                        src={user?.profile?.profilePicture || user?.profilePicture}
+                        alt={user?.name || user?.username}
+                        sx={{
+                            width: 72,
+                            height: 72,
+                            bgcolor: 'rgba(255,255,255,0.3)',
+                            border: '3px solid',
+                            borderColor: 'common.white',
+                            fontSize: '1.75rem',
+                            fontWeight: 700,
+                            boxShadow: 4,
+                        }}
+                    >
+                        {!user?.profile?.profilePicture && !user?.profilePicture && (user?.name || user?.username)
+                            ? (user?.name || user?.username).charAt(0).toUpperCase()
+                            : !user?.profile?.profilePicture && !user?.profilePicture && <ProfileIcon sx={{ fontSize: 36 }} />}
                     </Avatar>
                     <Box sx={{ flex: '1 1 200px' }}>
                         <Typography variant="h5" fontWeight="700" sx={{ mb: 0.5 }}>
@@ -96,7 +145,9 @@ const Dashboard = () => {
                         </Typography>
                     </Box>
                     <Box sx={{
-                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
                         bgcolor: 'rgba(255,255,255,0.15)',
                         p: 1.5,
                         borderRadius: 2,
@@ -111,7 +162,9 @@ const Dashboard = () => {
                         </Typography>
                     </Box>
                     <Box sx={{
-                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
                         bgcolor: 'rgba(255,255,255,0.15)',
                         p: 1.5,
                         borderRadius: 2,
@@ -126,7 +179,9 @@ const Dashboard = () => {
                         </Typography>
                     </Box>
                     <Box sx={{
-                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
                         bgcolor: 'rgba(255,255,255,0.15)',
                         p: 1.5,
                         borderRadius: 2,
@@ -141,14 +196,15 @@ const Dashboard = () => {
                         </Typography>
                     </Box>
                 </Box>
-                <Box sx={{ mt: 2 }}>
+                <Box sx={{ display: 'flex', mt: 2 }}>
                     <Button
                         variant="contained"
                         size="small"
                         startIcon={<StatusIcon />}
+                        onClick={() => window.location.reload()}
                         sx={{
                             bgcolor: 'rgba(255,255,255,0.25)',
-                            color: 'white',
+                            color: 'inherit',
                             textTransform: 'none',
                             fontWeight: 600,
                             '&:hover': { bgcolor: 'rgba(255,255,255,0.35)' }
@@ -159,17 +215,22 @@ const Dashboard = () => {
                 </Box>
             </Paper>
 
-            {/* Employee of the Month */}
+            {/* 
+                Employee of the Month Section
+                Displays the selected employee of the month
+                Currently shows placeholder message when no employee is selected
+            */}
             <Paper
                 sx={{
                     p: 4,
                     mb: 3,
-                    background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)',
-                    color: 'white',
+                    background: (theme) => `linear-gradient(135deg, ${theme.palette.secondary.light} 0%, ${theme.palette.secondary.main} 100%)`,
+                    color: 'secondary.contrastText',
                     borderRadius: 3,
-                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                     boxShadow: 4,
-                    border: 'none',
                 }}
             >
                 <TrophyIcon sx={{ fontSize: 72, mb: 2, opacity: 0.95 }} />
@@ -183,7 +244,7 @@ const Dashboard = () => {
                     No employee has been selected yet
                 </Typography>
                 <Box sx={{
-                    display: 'inline-flex',
+                    display: 'flex',
                     alignItems: 'center',
                     gap: 1,
                     bgcolor: 'rgba(255,255,255,0.2)',
@@ -198,7 +259,15 @@ const Dashboard = () => {
                 </Box>
             </Paper>
 
-            {/* Today's Attendance */}
+            {/* 
+                Today's Attendance Section
+                Shows current day's attendance information:
+                - Check-in time
+                - Check-out time
+                - Total working hours
+                - Attendance status (Present/Absent/Late)
+                Note: Currently displays static data - should be connected to attendance API
+            */}
             <Paper
                 sx={{
                     p: 3,
@@ -215,20 +284,20 @@ const Dashboard = () => {
                         <CalendarIcon />
                         Today's Attendance - {formatDate(currentTime)}
                     </Typography>
-                    <IconButton size="small">
-                        <EditIcon />
-                    </IconButton>
                 </Box>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                     <Box
                         sx={{
-                            flex: '1 1 calc(25% - 16px)',
+                            flex: '1 1 calc(25% - 12px)',
                             minWidth: '200px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             bgcolor: 'info.main',
                             color: 'info.contrastText',
                             p: 3,
                             borderRadius: 2,
-                            textAlign: 'center',
                             boxShadow: 2,
                             transition: 'transform 0.2s',
                             '&:hover': {
@@ -247,13 +316,16 @@ const Dashboard = () => {
                     </Box>
                     <Box
                         sx={{
-                            flex: '1 1 calc(25% - 16px)',
+                            flex: '1 1 calc(25% - 12px)',
                             minWidth: '200px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             bgcolor: 'warning.main',
                             color: 'warning.contrastText',
                             p: 3,
                             borderRadius: 2,
-                            textAlign: 'center',
                             boxShadow: 2,
                             transition: 'transform 0.2s',
                             '&:hover': {
@@ -272,13 +344,16 @@ const Dashboard = () => {
                     </Box>
                     <Box
                         sx={{
-                            flex: '1 1 calc(25% - 16px)',
+                            flex: '1 1 calc(25% - 12px)',
                             minWidth: '200px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             bgcolor: 'success.main',
                             color: 'success.contrastText',
                             p: 3,
                             borderRadius: 2,
-                            textAlign: 'center',
                             boxShadow: 2,
                             transition: 'transform 0.2s',
                             '&:hover': {
@@ -297,13 +372,16 @@ const Dashboard = () => {
                     </Box>
                     <Box
                         sx={{
-                            flex: '1 1 calc(25% - 16px)',
+                            flex: '1 1 calc(25% - 12px)',
                             minWidth: '200px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             bgcolor: 'success.main',
                             color: 'success.contrastText',
                             p: 3,
                             borderRadius: 2,
-                            textAlign: 'center',
                             boxShadow: 2,
                             transition: 'transform 0.2s',
                             '&:hover': {
@@ -330,23 +408,32 @@ const Dashboard = () => {
                 </Box>
             </Paper>
 
-            {/* Action Cards Grid */}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-                {/* My Attendance */}
-                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
+            {/* 
+                Action Cards Grid
+                Quick access cards for main employee functions
+                Each card navigates to its respective section
+            */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                {/* 
+                    My Attendance Card
+                    Navigate to attendance page to view full attendance history
+                */}
+                <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
                     <Card sx={{
-                        bgcolor: '#34495e',
-                        color: 'white',
+                        bgcolor: 'grey.800',
+                        color: 'common.white',
                         borderRadius: 3,
-                        height: '100%',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        boxShadow: 4
                     }}>
-                        <CardContent sx={{ p: 3 }}>
+                        <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                             <Typography variant="h6" fontWeight="600" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <CalendarIcon />
                                 My Attendance
                             </Typography>
-                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6 }}>
+                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6, flexGrow: 1 }}>
                                 View your attendance records, check in/check out times, and attendance statistics
                             </Typography>
                             <Button
@@ -355,11 +442,12 @@ const Dashboard = () => {
                                 onClick={() => navigate('/attendance')}
                                 startIcon={<CalendarIcon />}
                                 sx={{
-                                    bgcolor: '#4a90e2',
+                                    bgcolor: 'info.main',
+                                    color: 'info.contrastText',
                                     textTransform: 'none',
                                     fontWeight: 600,
                                     py: 1.2,
-                                    '&:hover': { bgcolor: '#357abd' }
+                                    '&:hover': { bgcolor: 'info.dark' }
                                 }}
                             >
                                 View Attendance
@@ -368,21 +456,26 @@ const Dashboard = () => {
                     </Card>
                 </Box>
 
-                {/* Vacation Requests */}
-                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
+                {/* 
+                    Vacation Requests Card
+                    Submit and manage vacation/leave requests
+                */}
+                <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
                     <Card sx={{
-                        bgcolor: '#34495e',
-                        color: 'white',
+                        bgcolor: 'grey.800',
+                        color: 'common.white',
                         borderRadius: 3,
-                        height: '100%',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        boxShadow: 4
                     }}>
-                        <CardContent sx={{ p: 3 }}>
+                        <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                             <Typography variant="h6" fontWeight="600" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <VacationIcon />
                                 Vacation Requests
                             </Typography>
-                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6 }}>
+                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6, flexGrow: 1 }}>
                                 Submit and track your vacation requests, view your vacation balance, and check request status
                             </Typography>
                             <Button
@@ -391,11 +484,12 @@ const Dashboard = () => {
                                 onClick={() => navigate('/leaves')}
                                 startIcon={<VacationIcon />}
                                 sx={{
-                                    bgcolor: '#28a745',
+                                    bgcolor: 'success.main',
+                                    color: 'success.contrastText',
                                     textTransform: 'none',
                                     fontWeight: 600,
                                     py: 1.2,
-                                    '&:hover': { bgcolor: '#218838' }
+                                    '&:hover': { bgcolor: 'success.dark' }
                                 }}
                             >
                                 Manage Vacations
@@ -404,21 +498,26 @@ const Dashboard = () => {
                     </Card>
                 </Box>
 
-                {/* Permission Requests */}
-                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
+                {/* 
+                    Permission Requests Card
+                    Request permission for late arrival or early departure
+                */}
+                <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
                     <Card sx={{
-                        bgcolor: '#34495e',
-                        color: 'white',
+                        bgcolor: 'grey.800',
+                        color: 'common.white',
                         borderRadius: 3,
-                        height: '100%',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        boxShadow: 4
                     }}>
-                        <CardContent sx={{ p: 3 }}>
+                        <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                             <Typography variant="h6" fontWeight="600" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <PermissionIcon />
                                 Permission Requests
                             </Typography>
-                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6 }}>
+                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6, flexGrow: 1 }}>
                                 Submit permission requests for late arrival or early departure, and track their status
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -427,12 +526,12 @@ const Dashboard = () => {
                                     fullWidth
                                     onClick={() => navigate('/permissions')}
                                     sx={{
-                                        bgcolor: '#ffc107',
-                                        color: '#000',
+                                        bgcolor: 'warning.main',
+                                        color: 'warning.contrastText',
                                         textTransform: 'none',
                                         fontWeight: 600,
                                         py: 1.2,
-                                        '&:hover': { bgcolor: '#e0a800' }
+                                        '&:hover': { bgcolor: 'warning.dark' }
                                     }}
                                 >
                                     View Requests
@@ -442,16 +541,16 @@ const Dashboard = () => {
                                     fullWidth
                                     onClick={() => navigate('/permissions')}
                                     sx={{
-                                        borderColor: '#ffc107',
+                                        borderColor: 'warning.main',
                                         borderWidth: 2,
-                                        color: '#ffc107',
+                                        color: 'warning.main',
                                         textTransform: 'none',
                                         fontWeight: 600,
                                         py: 1.2,
                                         '&:hover': {
-                                            borderColor: '#e0a800',
+                                            borderColor: 'warning.dark',
                                             borderWidth: 2,
-                                            bgcolor: 'rgba(255, 193, 7, 0.1)'
+                                            bgcolor: 'action.hover'
                                         }
                                     }}
                                 >
@@ -462,16 +561,22 @@ const Dashboard = () => {
                     </Card>
                 </Box>
 
-                {/* Forgot Check Requests */}
-                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
+                {/* 
+                    Forgot Check Requests Card
+                    Submit requests when forgetting to check in/out
+                    Shows pending request count badge
+                */}
+                <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
                     <Card sx={{
-                        bgcolor: '#34495e',
-                        color: 'white',
+                        bgcolor: 'grey.800',
+                        color: 'common.white',
                         borderRadius: 3,
-                        height: '100%',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        boxShadow: 4
                     }}>
-                        <CardContent sx={{ p: 3 }}>
+                        <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                                 <Typography variant="h6" fontWeight="600" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <ForgotIcon />
@@ -481,14 +586,14 @@ const Dashboard = () => {
                                     label="1 Pending"
                                     size="small"
                                     sx={{
-                                        bgcolor: '#ffc107',
-                                        color: '#000',
+                                        bgcolor: 'warning.main',
+                                        color: 'warning.contrastText',
                                         fontWeight: 700,
                                         fontSize: '0.7rem'
                                     }}
                                 />
                             </Box>
-                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6 }}>
+                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6, flexGrow: 1 }}>
                                 Submit requests when you forget to check in or check out, and track their approval status
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -497,11 +602,12 @@ const Dashboard = () => {
                                     fullWidth
                                     onClick={() => navigate('/requests')}
                                     sx={{
-                                        bgcolor: '#dc3545',
+                                        bgcolor: 'error.main',
+                                        color: 'error.contrastText',
                                         textTransform: 'none',
                                         fontWeight: 600,
                                         py: 1.2,
-                                        '&:hover': { bgcolor: '#c82333' }
+                                        '&:hover': { bgcolor: 'error.dark' }
                                     }}
                                 >
                                     View Requests
@@ -511,16 +617,16 @@ const Dashboard = () => {
                                     fullWidth
                                     onClick={() => navigate('/requests')}
                                     sx={{
-                                        borderColor: '#dc3545',
+                                        borderColor: 'error.main',
                                         borderWidth: 2,
-                                        color: '#dc3545',
+                                        color: 'error.main',
                                         textTransform: 'none',
                                         fontWeight: 600,
                                         py: 1.2,
                                         '&:hover': {
-                                            borderColor: '#c82333',
+                                            borderColor: 'error.dark',
                                             borderWidth: 2,
-                                            bgcolor: 'rgba(220, 53, 69, 0.1)'
+                                            bgcolor: 'action.hover'
                                         }
                                     }}
                                 >
@@ -531,21 +637,26 @@ const Dashboard = () => {
                     </Card>
                 </Box>
 
-                {/* Sick Leave & Mission */}
-                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
+                {/* 
+                    Sick Leave & Mission Card
+                    Submit sick leave or mission/business trip requests
+                */}
+                <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
                     <Card sx={{
-                        bgcolor: '#34495e',
-                        color: 'white',
+                        bgcolor: 'grey.800',
+                        color: 'common.white',
                         borderRadius: 3,
-                        height: '100%',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        boxShadow: 4
                     }}>
-                        <CardContent sx={{ p: 3 }}>
+                        <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                             <Typography variant="h6" fontWeight="600" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <SickIcon />
                                 Sick Leave & Mission
                             </Typography>
-                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6 }}>
+                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6, flexGrow: 1 }}>
                                 Submit sick leave or mission requests and track their approval status
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -554,11 +665,12 @@ const Dashboard = () => {
                                     fullWidth
                                     onClick={() => navigate('/leaves')}
                                     sx={{
-                                        bgcolor: '#dc3545',
+                                        bgcolor: 'error.main',
+                                        color: 'error.contrastText',
                                         textTransform: 'none',
                                         fontWeight: 600,
                                         py: 1.2,
-                                        '&:hover': { bgcolor: '#c82333' }
+                                        '&:hover': { bgcolor: 'error.dark' }
                                     }}
                                 >
                                     View Requests
@@ -568,16 +680,16 @@ const Dashboard = () => {
                                     fullWidth
                                     onClick={() => navigate('/leaves')}
                                     sx={{
-                                        borderColor: '#dc3545',
+                                        borderColor: 'error.main',
                                         borderWidth: 2,
-                                        color: '#dc3545',
+                                        color: 'error.main',
                                         textTransform: 'none',
                                         fontWeight: 600,
                                         py: 1.2,
                                         '&:hover': {
-                                            borderColor: '#c82333',
+                                            borderColor: 'error.dark',
                                             borderWidth: 2,
-                                            bgcolor: 'rgba(220, 53, 69, 0.1)'
+                                            bgcolor: 'action.hover'
                                         }
                                     }}
                                 >
@@ -588,21 +700,30 @@ const Dashboard = () => {
                     </Card>
                 </Box>
 
-                {/* Your Profile */}
-                <Box sx={{ flex: '1 1 calc(50% - 24px)', minWidth: '300px' }}>
+                {/* 
+                    Your Profile Card
+                    Displays user information summary:
+                    - Name
+                    - Status (Active/Inactive)
+                    - Email
+                    - Account Type/Role
+                */}
+                <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
                     <Card sx={{
-                        bgcolor: '#34495e',
-                        color: 'white',
+                        bgcolor: 'grey.800',
+                        color: 'common.white',
                         borderRadius: 3,
-                        height: '100%',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        boxShadow: 4
                     }}>
-                        <CardContent sx={{ p: 3 }}>
+                        <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                             <Typography variant="h6" fontWeight="600" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
                                 <ProfileIcon />
                                 Your Profile
                             </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flexGrow: 1 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Typography variant="body2" sx={{ opacity: 0.85 }}>Name:</Typography>
                                     <Typography variant="body2" fontWeight="600">{user?.name || 'N/A'}</Typography>
@@ -613,8 +734,8 @@ const Dashboard = () => {
                                         label="Active"
                                         size="small"
                                         sx={{
-                                            bgcolor: '#17a2b8',
-                                            color: 'white',
+                                            bgcolor: 'info.main',
+                                            color: 'info.contrastText',
                                             fontWeight: 600,
                                             fontSize: '0.7rem'
                                         }}
@@ -632,8 +753,8 @@ const Dashboard = () => {
                                         label={user?.role || 'Employee'}
                                         size="small"
                                         sx={{
-                                            bgcolor: '#6c757d',
-                                            color: 'white',
+                                            bgcolor: 'grey.600',
+                                            color: 'common.white',
                                             textTransform: 'uppercase',
                                             fontWeight: 600,
                                             fontSize: '0.7rem'

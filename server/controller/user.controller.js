@@ -148,15 +148,27 @@ export const updateUserProfile = async (req, res) => {
 
         const userId = req.user._id;
 
-        const allowedUpdates = {
-            profile: req.body.profile,
-            profilePicture: req.body.profilePicture,
-        };
+        // Build the update object - profilePicture should be inside profile
+        const allowedUpdates = {};
 
-        const user = await User.findByIdAndUpdate(userId, allowedUpdates, { new: true })
+        if (req.body.profile) {
+            allowedUpdates.profile = req.body.profile;
+        }
+
+        // If profilePicture is sent separately, add it to profile
+        if (req.body.profilePicture) {
+            if (!allowedUpdates.profile) {
+                allowedUpdates.profile = {};
+            }
+            allowedUpdates.profile.profilePicture = req.body.profilePicture;
+        }
+
+        const user = await User.findByIdAndUpdate(userId, allowedUpdates, { new: true, runValidators: true })
             .populate('department position school');
 
         if (!user) return res.status(404).json({ error: 'User not found' });
+
+        console.log('Profile updated successfully:', user.profile?.profilePicture);
         res.json(sanitizeUser(user));
     } catch (err) {
         console.error('Error in updateUserProfile:', err);

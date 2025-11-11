@@ -54,8 +54,7 @@ const permissionSchema = new mongoose.Schema({
   // Reason for the permission request
   reason: {
     type: String,
-    required: true,
-    minlength: 10,
+    required: false,
     maxlength: 500
   },
   // Request status
