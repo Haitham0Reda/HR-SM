@@ -33,13 +33,6 @@ const VacationRequestPage = () => {
 
     useEffect(() => {
         fetchMyRequests();
-
-        // Auto-refresh every 30 seconds to check for status updates
-        const interval = setInterval(() => {
-            fetchMyRequests();
-        }, 30000);
-
-        return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -272,16 +265,16 @@ const VacationRequestPage = () => {
                                 </Alert>
                             </Box>
                             <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '300px' }}>
-                                <Alert severity="warning">
+                                <Alert severity="success">
                                     <Typography variant="body2">
-                                        <strong>Sick Vacation:</strong> For medical reasons (requires medical document upload)
+                                        <strong>Casual Vacation:</strong> Short-term leave for personal matters
                                     </Typography>
                                 </Alert>
                             </Box>
                             <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '300px' }}>
-                                <Alert severity="success">
+                                <Alert severity="warning">
                                     <Typography variant="body2">
-                                        <strong>Personal Vacation:</strong> For personal matters and emergencies
+                                        <strong>Sick Vacation:</strong> For medical reasons (requires medical document upload)
                                     </Typography>
                                 </Alert>
                             </Box>
@@ -317,8 +310,8 @@ const VacationRequestPage = () => {
                                         SelectProps={{ native: true }}
                                     >
                                         <option value="annual">Annual Vacation</option>
+                                        <option value="casual">Casual Vacation</option>
                                         <option value="sick">Sick Vacation</option>
-                                        <option value="personal">Personal Vacation</option>
                                         <option value="unpaid">Unpaid Vacation</option>
                                     </TextField>
                                 </Box>

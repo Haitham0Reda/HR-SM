@@ -75,8 +75,8 @@ const CreateOvertimePage = () => {
     return (
         <Box sx={{
             minHeight: '100vh',
-            bgcolor: 'grey.900',
-            color: 'common.white',
+            bgcolor: 'background.default',
+            color: 'text.primary',
             p: 4,
             display: 'flex',
             flexDirection: 'column'
@@ -88,7 +88,7 @@ const CreateOvertimePage = () => {
                 alignItems: 'center',
                 mb: 4
             }}>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: 'common.white' }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
                     Create Overtime Request
                 </Typography>
                 <Button
@@ -96,13 +96,7 @@ const CreateOvertimePage = () => {
                     onClick={() => navigate('/overtime')}
                     startIcon={<Cancel />}
                     sx={{
-                        color: 'common.white',
-                        borderColor: 'divider',
                         textTransform: 'none',
-                        '&:hover': {
-                            borderColor: 'common.white',
-                            bgcolor: 'action.hover'
-                        }
                     }}
                 >
                     Back to Dashboard
@@ -119,13 +113,16 @@ const CreateOvertimePage = () => {
                 {/* Form Section */}
                 <Box sx={{
                     flex: { xs: '1 1 100%', md: '2 1 0' },
-                    bgcolor: 'grey.800',
+                    bgcolor: 'background.paper',
                     borderRadius: 2,
                     p: 3,
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'column',
+                    boxShadow: 2,
+                    border: '1px solid',
+                    borderColor: 'divider'
                 }}>
-                    <Typography variant="h6" sx={{ color: 'info.light', mb: 3, fontWeight: 600 }}>
+                    <Typography variant="h6" sx={{ color: 'primary.main', mb: 3, fontWeight: 600 }}>
                         Overtime Request Form
                     </Typography>
 
@@ -133,34 +130,7 @@ const CreateOvertimePage = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 3,
-                        flex: 1,
-                        '& .MuiTextField-root': {
-                            '& .MuiInputLabel-root': {
-                                color: 'text.secondary',
-                                '&.Mui-focused': {
-                                    color: 'info.light',
-                                }
-                            },
-                            '& .MuiOutlinedInput-root': {
-                                color: 'common.white',
-                                bgcolor: 'grey.900',
-                                '& fieldset': {
-                                    borderColor: 'divider',
-                                },
-                                '&:hover fieldset': {
-                                    borderColor: 'text.secondary',
-                                },
-                                '&.Mui-focused fieldset': {
-                                    borderColor: 'info.light',
-                                },
-                            },
-                            '& .MuiInputBase-input': {
-                                color: 'common.white',
-                            },
-                            '& .MuiFormHelperText-root': {
-                                color: 'text.secondary',
-                            }
-                        }
+                        flex: 1
                     }}>
                         <TextField
                             type="date"
@@ -171,8 +141,7 @@ const CreateOvertimePage = () => {
                             required
                             fullWidth
                             InputLabelProps={{
-                                shrink: true,
-                                sx: { color: 'common.white' }
+                                shrink: true
                             }}
                             helperText="Select the date for which you worked overtime."
                         />
@@ -186,8 +155,7 @@ const CreateOvertimePage = () => {
                                 onChange={handleChange}
                                 fullWidth
                                 InputLabelProps={{
-                                    shrink: true,
-                                    sx: { color: 'common.white' }
+                                    shrink: true
                                 }}
                                 helperText="This field is automatically set based on working hours."
                             />
@@ -199,8 +167,7 @@ const CreateOvertimePage = () => {
                                 onChange={handleChange}
                                 fullWidth
                                 InputLabelProps={{
-                                    shrink: true,
-                                    sx: { color: 'common.white' }
+                                    shrink: true
                                 }}
                                 helperText="Enter the time you actually left the office."
                             />
@@ -216,9 +183,6 @@ const CreateOvertimePage = () => {
                             required
                             fullWidth
                             placeholder="Please provide a detailed reason for your overtime work."
-                            InputLabelProps={{
-                                sx: { color: 'common.white' }
-                            }}
                             helperText="Please provide a detailed reason for your overtime work."
                         />
 
@@ -232,12 +196,7 @@ const CreateOvertimePage = () => {
                                 sx={{
                                     textTransform: 'none',
                                     fontWeight: 600,
-                                    px: 4,
-                                    bgcolor: 'primary.main',
-                                    color: 'primary.contrastText',
-                                    '&:hover': {
-                                        bgcolor: 'primary.dark'
-                                    }
+                                    px: 4
                                 }}
                             >
                                 Submit Request
@@ -248,13 +207,7 @@ const CreateOvertimePage = () => {
                                 size="large"
                                 sx={{
                                     textTransform: 'none',
-                                    fontWeight: 600,
-                                    borderColor: 'divider',
-                                    color: 'common.white',
-                                    '&:hover': {
-                                        borderColor: 'text.primary',
-                                        bgcolor: 'action.hover'
-                                    }
+                                    fontWeight: 600
                                 }}
                             >
                                 Cancel
@@ -266,18 +219,21 @@ const CreateOvertimePage = () => {
                 {/* Information Sidebar */}
                 <Box sx={{
                     flex: { xs: '1 1 100%', md: '1 1 0' },
-                    bgcolor: 'grey.800',
+                    bgcolor: 'background.paper',
                     borderRadius: 2,
                     p: 3,
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'column',
+                    boxShadow: 2,
+                    border: '1px solid',
+                    borderColor: 'divider'
                 }}>
-                    <Typography variant="h6" sx={{ color: 'info.light', mb: 3, fontWeight: 600 }}>
+                    <Typography variant="h6" sx={{ color: 'primary.main', mb: 3, fontWeight: 600 }}>
                         Information
                     </Typography>
 
                     <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'common.white' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
                             Working Hours
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -286,7 +242,7 @@ const CreateOvertimePage = () => {
                     </Box>
 
                     <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'common.white' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
                             Overtime Requirements
                         </Typography>
                         <Box component="ul" sx={{ pl: 2, m: 0, color: 'text.secondary' }}>
@@ -297,7 +253,7 @@ const CreateOvertimePage = () => {
                     </Box>
 
                     <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'common.white' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
                             How to Calculate Overtime
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
@@ -305,7 +261,7 @@ const CreateOvertimePage = () => {
                         </Typography>
                     </Box>
 
-                    <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 'auto' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 'auto' }}>
                         Please submit overtime requests within 7 days of the work performed.
                     </Typography>
                 </Box>

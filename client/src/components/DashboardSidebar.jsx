@@ -212,13 +212,6 @@ function DashboardSidebar({
                                     selected={!!matchPath('/overtime', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="my-requests"
-                                    title="My Requests"
-                                    icon={<RequestPageIcon />}
-                                    href="/requests"
-                                    selected={!!matchPath('/requests', pathname)}
-                                />
-                                <DashboardSidebarPageItem
                                     id="vacation-request"
                                     title="Vacation Request"
                                     icon={<BeachAccessIcon />}
@@ -227,6 +220,13 @@ function DashboardSidebar({
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Information</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="my-requests"
+                                    title="My Requests"
+                                    icon={<RequestPageIcon />}
+                                    href="/requests"
+                                    selected={!!matchPath('/requests', pathname)}
+                                />
                                 <DashboardSidebarPageItem
                                     id="documents"
                                     title="Documents"

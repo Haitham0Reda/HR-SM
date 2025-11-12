@@ -70,7 +70,7 @@ const DocumentsPage = () => {
             fetchUsers();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [canManage]);
+    }, []);
 
     const fetchDocuments = async () => {
         try {
