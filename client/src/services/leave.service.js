@@ -32,6 +32,26 @@ const leaveService = {
         const data = await api.get(`/leaves/balance/${userId}`);
         return data;
     },
+    approve: async (id, notes = '') => {
+        const result = await api.post(`/leaves/${id}/approve`, { notes });
+        return result;
+    },
+    reject: async (id, reason) => {
+        const result = await api.post(`/leaves/${id}/reject`, { reason });
+        return result;
+    },
+    approveSickLeaveByDoctor: async (id, notes = '') => {
+        const result = await api.post(`/leaves/${id}/approve-doctor`, { notes });
+        return result;
+    },
+    rejectSickLeaveByDoctor: async (id, reason) => {
+        const result = await api.post(`/leaves/${id}/reject-doctor`, { reason });
+        return result;
+    },
+    getPendingDoctorReview: async () => {
+        const data = await api.get('/leaves/pending-doctor-review');
+        return data;
+    },
 };
 
 export default leaveService;
