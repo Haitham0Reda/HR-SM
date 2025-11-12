@@ -16,6 +16,7 @@ import DepartmentsPage from './pages/departments/DepartmentsPage';
 import PositionsPage from './pages/positions/PositionsPage';
 import AttendancePage from './pages/attendance/AttendancePage';
 import LeavesPage from './pages/leaves/LeavesPage';
+import CreateLeavePage from './pages/leaves/CreateLeavePage';
 import PermissionsPage from './pages/permissions/PermissionsPage';
 import CreatePermissionPage from './pages/permissions/CreatePermissionPage';
 import OvertimePage from './pages/overtime/OvertimePage';
@@ -79,6 +80,7 @@ function App() {
                 {/* HR Operations */}
                 <Route path="attendance" element={<AttendancePage />} />
                 <Route path="leaves" element={<LeavesPage />} />
+                <Route path="leaves/create" element={<CreateLeavePage />} />
                 <Route path="permissions" element={<PermissionsPage />} />
                 <Route path="permissions/create" element={<CreatePermissionPage />} />
                 <Route path="overtime" element={<OvertimePage />} />

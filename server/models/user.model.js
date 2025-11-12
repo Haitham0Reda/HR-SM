@@ -33,7 +33,8 @@ const userSchema = new mongoose.Schema({
             'id-card-admin',
             'supervisor',
             'head-of-department',
-            'dean'
+            'dean',
+            'doctor'
         ],
         default: 'employee'
     },

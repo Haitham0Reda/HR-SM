@@ -184,18 +184,11 @@ function DashboardSidebar({
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>My Work</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
-                                    id="my-attendance"
-                                    title="My Attendance"
-                                    icon={<AccessTimeIcon />}
-                                    href="/attendance"
-                                    selected={!!matchPath('/attendance', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="my-leaves"
-                                    title="My Leaves"
-                                    icon={<EventAvailableIcon />}
-                                    href="/leaves"
-                                    selected={!!matchPath('/leaves', pathname)}
+                                    id="vacation-request"
+                                    title="Vacation Request"
+                                    icon={<BeachAccessIcon />}
+                                    href="/vacation-request"
+                                    selected={!!matchPath('/vacation-request', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="my-permissions"
@@ -212,14 +205,21 @@ function DashboardSidebar({
                                     selected={!!matchPath('/overtime', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="vacation-request"
-                                    title="Vacation Request"
-                                    icon={<BeachAccessIcon />}
-                                    href="/vacation-request"
-                                    selected={!!matchPath('/vacation-request', pathname)}
+                                    id="my-leaves"
+                                    title="My Leaves"
+                                    icon={<EventAvailableIcon />}
+                                    href="/leaves"
+                                    selected={!!matchPath('/leaves', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Information</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="my-attendance"
+                                    title="My Attendance"
+                                    icon={<AccessTimeIcon />}
+                                    href="/attendance"
+                                    selected={!!matchPath('/attendance', pathname)}
+                                />
                                 <DashboardSidebarPageItem
                                     id="my-requests"
                                     title="My Requests"

@@ -127,3 +127,161 @@ export const deleteLeave = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// Approve leave by supervisor
+export const approveLeave = async (req, res) => {
+    try {
+        const leave = await Leave.findById(req.params.id);
+        if (!leave) return res.status(404).json({ error: 'Leave not found' });
+
+        // IMPORTANT: Sick leave can ONLY be approved by doctors
+        if (leave.leaveType === 'sick') {
+            return res.status(403).json({
+                error: 'Sick leave requests can only be approved by doctors. Please use the doctor approval endpoint.'
+            });
+        }
+
+        const { notes } = req.body;
+        const userId = req.user._id;
+
+        // Check if user has permission to approve (HR, admin, manager, supervisor)
+        const canApprove = ['hr', 'admin', 'manager', 'supervisor', 'head-of-department', 'dean'].includes(req.user.role);
+        if (!canApprove) {
+            return res.status(403).json({ error: 'You do not have permission to approve leaves' });
+        }
+
+        // Use supervisor approval method
+        await leave.approveBySupervisor(userId, notes);
+
+        // Send notification
+        await sendLeaveStatusUpdateNotification(leave, 'pending');
+
+        res.json(leave);
+    } catch (err) {
+        console.error('Approve leave error:', err);
+        res.status(400).json({ error: err.message });
+    }
+};
+
+// Reject leave by supervisor
+export const rejectLeave = async (req, res) => {
+    try {
+        const leave = await Leave.findById(req.params.id);
+        if (!leave) return res.status(404).json({ error: 'Leave not found' });
+
+        // IMPORTANT: Sick leave can ONLY be rejected by doctors
+        if (leave.leaveType === 'sick') {
+            return res.status(403).json({
+                error: 'Sick leave requests can only be rejected by doctors. Please use the doctor rejection endpoint.'
+            });
+        }
+
+        const { reason } = req.body;
+        const userId = req.user._id;
+
+        // Check if user has permission to reject (HR, admin, manager, supervisor)
+        const canReject = ['hr', 'admin', 'manager', 'supervisor', 'head-of-department', 'dean'].includes(req.user.role);
+        if (!canReject) {
+            return res.status(403).json({ error: 'You do not have permission to reject leaves' });
+        }
+
+        if (!reason) {
+            return res.status(400).json({ error: 'Rejection reason is required' });
+        }
+
+        // Use supervisor rejection method
+        await leave.rejectBySupervisor(userId, reason);
+
+        // Send notification
+        await sendLeaveStatusUpdateNotification(leave, 'pending');
+
+        res.json(leave);
+    } catch (err) {
+        console.error('Reject leave error:', err);
+        res.status(400).json({ error: err.message });
+    }
+};
+
+// Approve sick leave by doctor
+export const approveSickLeaveByDoctor = async (req, res) => {
+    try {
+        const leave = await Leave.findById(req.params.id);
+        if (!leave) return res.status(404).json({ error: 'Leave not found' });
+
+        // Check if user is a doctor
+        if (req.user.role !== 'doctor') {
+            return res.status(403).json({ error: 'Only doctors can approve sick leave' });
+        }
+
+        // Check if it's a sick leave
+        if (leave.leaveType !== 'sick') {
+            return res.status(400).json({ error: 'This endpoint is only for sick leave approval' });
+        }
+
+        const { notes } = req.body;
+        const doctorId = req.user._id;
+
+        // Use doctor approval method
+        await leave.approveByDoctor(doctorId, notes);
+
+        // Send notification
+        await sendLeaveStatusUpdateNotification(leave, 'pending');
+
+        res.json(leave);
+    } catch (err) {
+        console.error('Doctor approve sick leave error:', err);
+        res.status(400).json({ error: err.message });
+    }
+};
+
+// Reject sick leave by doctor
+export const rejectSickLeaveByDoctor = async (req, res) => {
+    try {
+        const leave = await Leave.findById(req.params.id);
+        if (!leave) return res.status(404).json({ error: 'Leave not found' });
+
+        // Check if user is a doctor
+        if (req.user.role !== 'doctor') {
+            return res.status(403).json({ error: 'Only doctors can reject sick leave' });
+        }
+
+        // Check if it's a sick leave
+        if (leave.leaveType !== 'sick') {
+            return res.status(400).json({ error: 'This endpoint is only for sick leave rejection' });
+        }
+
+        const { reason } = req.body;
+        const doctorId = req.user._id;
+
+        if (!reason) {
+            return res.status(400).json({ error: 'Rejection reason is required' });
+        }
+
+        // Use doctor rejection method
+        await leave.rejectByDoctor(doctorId, reason);
+
+        // Send notification
+        await sendLeaveStatusUpdateNotification(leave, 'pending');
+
+        res.json(leave);
+    } catch (err) {
+        console.error('Doctor reject sick leave error:', err);
+        res.status(400).json({ error: err.message });
+    }
+};
+
+// Get leaves pending doctor review (for doctors)
+export const getPendingDoctorReview = async (req, res) => {
+    try {
+        // Check if user is a doctor
+        if (req.user.role !== 'doctor') {
+            return res.status(403).json({ error: 'Only doctors can access this endpoint' });
+        }
+
+        const leaves = await Leave.getPendingDoctorReview();
+        res.json(leaves);
+    } catch (err) {
+        console.error('Get pending doctor review error:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
