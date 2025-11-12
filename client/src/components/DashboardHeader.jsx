@@ -373,7 +373,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 }}
                             >
                                 <Avatar
-                                    src={user?.profilePicture}
+                                    src={user?.profile?.profilePicture}
                                     alt={user?.name || 'User'}
                                     sx={{
                                         width: 36,
@@ -387,7 +387,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                         },
                                     }}
                                 >
-                                    {!user?.profilePicture && user?.name
+                                    {!user?.profile?.profilePicture && user?.name
                                         ? user.name.charAt(0).toUpperCase()
                                         : <PersonIcon />}
                                 </Avatar>
