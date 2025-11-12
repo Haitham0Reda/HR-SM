@@ -43,7 +43,16 @@ const OvertimePage = () => {
             const data = await permissionService.getAll();
 
             // Filter only overtime requests
-            const overtimeData = data.filter(permission => permission.permissionType === 'overtime');
+            let overtimeData = data.filter(permission => permission.permissionType === 'overtime');
+
+            // Filter to show only current user's overtime if not HR/Admin
+            if (!canManage) {
+                overtimeData = overtimeData.filter(permission => {
+                    const permissionUserId = permission.employee?._id || permission.employee;
+                    const currentUserId = user?._id;
+                    return permissionUserId === currentUserId || String(permissionUserId) === String(currentUserId);
+                });
+            }
 
             // Transform data to match table structure
             const transformedData = overtimeData.map(item => ({

@@ -246,10 +246,24 @@ const LeavesPage = () => {
             headerName: 'Days',
             width: 80,
             renderCell: (row) => {
+                // Use duration from backend if available
+                if (row.duration) return row.duration;
+
                 const start = new Date(row.startDate);
                 const end = new Date(row.endDate);
-                const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                return days;
+                let workingDays = 0;
+                const current = new Date(start);
+
+                while (current <= end) {
+                    const dayOfWeek = current.getDay();
+                    // Exclude Friday (5) and Saturday (6)
+                    if (dayOfWeek !== 5 && dayOfWeek !== 6) {
+                        workingDays++;
+                    }
+                    current.setDate(current.getDate() + 1);
+                }
+
+                return workingDays;
             }
         },
         { field: 'reason', headerName: 'Reason', width: 200 },
