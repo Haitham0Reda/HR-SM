@@ -12,13 +12,41 @@ export const AuthProvider = ({ children }) => {
         const currentUser = authService.getCurrentUser();
         if (currentUser) {
             setUser(currentUser);
+
+            // Fetch fresh profile data to ensure we have latest info including profile picture
+            authService.getProfile()
+                .then(profileData => {
+                    if (profileData) {
+                        setUser(profileData);
+                        localStorage.setItem('user', JSON.stringify(profileData));
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to fetch profile on mount:', error);
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+        } else {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     const login = async (credentials) => {
         const response = await authService.login(credentials);
         setUser(response.user);
+
+        // Fetch fresh user profile to ensure we have all data including profile picture
+        try {
+            const profileData = await authService.getProfile();
+            if (profileData) {
+                setUser(profileData);
+                localStorage.setItem('user', JSON.stringify(profileData));
+            }
+        } catch (error) {
+            console.error('Failed to fetch profile after login:', error);
+        }
+
         return response;
     };
 
