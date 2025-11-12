@@ -86,7 +86,19 @@ const DocumentsPage = () => {
             if (data && data.length > 0) {
                 console.log('First document:', data[0]);
             }
-            setDocuments(Array.isArray(data) ? data : []);
+
+            // Filter to show only current user's documents if not HR/Admin
+            let filteredData = Array.isArray(data) ? data : [];
+            if (!canManage) {
+                filteredData = filteredData.filter(doc => {
+                    const docUserId = doc.employee?._id || doc.employee;
+                    const currentUserId = user?._id;
+                    // Show documents assigned to user or public documents (no employee assigned)
+                    return !docUserId || docUserId === currentUserId || String(docUserId) === String(currentUserId);
+                });
+            }
+
+            setDocuments(filteredData);
         } catch (error) {
             console.error('Error fetching documents:', error);
             console.error('Error type:', typeof error);

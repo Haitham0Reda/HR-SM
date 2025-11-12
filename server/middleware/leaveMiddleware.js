@@ -36,13 +36,28 @@ export const populateDepartmentPosition = async (req, res, next) => {
 
 /**
  * Calculate leave duration from start and end dates
+ * Excludes Fridays (5) and Saturdays (6) as they are official holidays
  */
 export const calculateDuration = (req, res, next) => {
     if (req.body.startDate && req.body.endDate) {
         const start = new Date(req.body.startDate);
         const end = new Date(req.body.endDate);
-        const diffTime = Math.abs(end - start);
-        req.body.duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+        let workingDays = 0;
+        const current = new Date(start);
+
+        // Loop through each day and count only working days (Sunday-Thursday)
+        while (current <= end) {
+            const dayOfWeek = current.getDay();
+            // 0 = Sunday, 1 = Monday, ..., 4 = Thursday (working days)
+            // 5 = Friday, 6 = Saturday (official holidays - excluded)
+            if (dayOfWeek !== 5 && dayOfWeek !== 6) {
+                workingDays++;
+            }
+            current.setDate(current.getDate() + 1);
+        }
+
+        req.body.duration = workingDays;
     }
     next();
 };

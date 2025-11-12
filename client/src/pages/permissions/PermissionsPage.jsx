@@ -75,12 +75,21 @@ const PermissionsPage = () => {
             console.log('Fetched permissions:', data);
 
             // Filter out overtime requests - only show late-arrival and early-departure
-            const filteredData = Array.isArray(data)
+            let filteredData = Array.isArray(data)
                 ? data.filter(permission =>
                     permission.permissionType !== 'overtime' &&
                     permission.type !== 'overtime'
                 )
                 : [];
+
+            // Filter to show only current user's permissions if not HR/Admin
+            if (!canManage) {
+                filteredData = filteredData.filter(permission => {
+                    const permissionUserId = permission.employee?._id || permission.employee;
+                    const currentUserId = user?._id;
+                    return permissionUserId === currentUserId || String(permissionUserId) === String(currentUserId);
+                });
+            }
 
             setPermissions(filteredData);
         } catch (error) {

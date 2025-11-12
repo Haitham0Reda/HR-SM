@@ -155,8 +155,22 @@ const VacationRequestPage = () => {
     const calculateDays = () => {
         const start = new Date(formData.startDate);
         const end = new Date(formData.endDate);
-        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-        return days > 0 ? days : 0;
+
+        let workingDays = 0;
+        const current = new Date(start);
+
+        // Loop through each day and count only working days (Sunday-Thursday)
+        while (current <= end) {
+            const dayOfWeek = current.getDay();
+            // 0 = Sunday, 1 = Monday, ..., 4 = Thursday (working days)
+            // 5 = Friday, 6 = Saturday (official holidays - excluded)
+            if (dayOfWeek !== 5 && dayOfWeek !== 6) {
+                workingDays++;
+            }
+            current.setDate(current.getDate() + 1);
+        }
+
+        return workingDays > 0 ? workingDays : 0;
     };
 
     const getStatusColor = (status) => {
@@ -195,7 +209,26 @@ const VacationRequestPage = () => {
         {
             field: 'duration',
             headerName: 'Days',
-            renderCell: (row) => row.duration || Math.ceil((new Date(row.endDate) - new Date(row.startDate)) / (1000 * 60 * 60 * 24)) + 1
+            renderCell: (row) => {
+                // Use duration from backend if available, otherwise calculate working days
+                if (row.duration) return row.duration;
+
+                const start = new Date(row.startDate);
+                const end = new Date(row.endDate);
+                let workingDays = 0;
+                const current = new Date(start);
+
+                while (current <= end) {
+                    const dayOfWeek = current.getDay();
+                    // Exclude Friday (5) and Saturday (6)
+                    if (dayOfWeek !== 5 && dayOfWeek !== 6) {
+                        workingDays++;
+                    }
+                    current.setDate(current.getDate() + 1);
+                }
+
+                return workingDays;
+            }
         },
         {
             field: 'reason',
