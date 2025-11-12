@@ -309,9 +309,26 @@ const RequestDetailsPage = () => {
                                                 )}
                                             </>
                                         ) : (
-                                            <Typography variant="body2">
-                                                Current Step: {request.workflow?.currentStep?.replace('-', ' ').toUpperCase() || 'PENDING REVIEW'}
-                                            </Typography>
+                                            <>
+                                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                                    <strong>Status:</strong> PENDING
+                                                </Typography>
+                                                <Typography variant="body2">
+                                                    {(request.leaveType === 'sick' || request.type === 'sick')
+                                                        ? 'Waiting Doctor Review'
+                                                        : request.workflow?.currentStep === 'supervisor-review'
+                                                            ? 'Awaiting Supervisor Review'
+                                                            : 'Pending Review'}
+                                                </Typography>
+                                                {(request.leaveType === 'sick' || request.type === 'sick') && (
+                                                    <Chip
+                                                        label="Waiting Doctor"
+                                                        color="warning"
+                                                        size="small"
+                                                        sx={{ mt: 1 }}
+                                                    />
+                                                )}
+                                            </>
                                         )}
                                     </Box>
                                 </Box>

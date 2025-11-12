@@ -216,9 +216,33 @@ const VacationRequestPage = () => {
         },
         {
             field: 'workflow',
-            headerName: 'Workflow',
+            headerName: 'Approval Status',
             renderCell: (row) => {
+                const isSickLeave = row.leaveType === 'sick' || row.type === 'sick';
                 const step = row.workflow?.currentStep;
+
+                // For sick leave, show specific workflow status
+                if (isSickLeave && row.status === 'pending') {
+                    if (step === 'doctor-review') {
+                        return (
+                            <Chip
+                                label="Awaiting Doctor"
+                                color="warning"
+                                size="small"
+                                variant="outlined"
+                            />
+                        );
+                    }
+                    return (
+                        <Chip
+                            label="Pending Review"
+                            color="info"
+                            size="small"
+                            variant="outlined"
+                        />
+                    );
+                }
+
                 const stepLabels = {
                     'supervisor-review': 'Supervisor Review',
                     'doctor-review': 'Doctor Review',
@@ -275,6 +299,9 @@ const VacationRequestPage = () => {
                                 <Alert severity="warning">
                                     <Typography variant="body2">
                                         <strong>Sick Vacation:</strong> For medical reasons (requires medical document upload)
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}>
+                                        Note: Sick Vacation requests must be approved by a doctor
                                     </Typography>
                                 </Alert>
                             </Box>
