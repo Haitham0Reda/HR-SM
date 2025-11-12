@@ -178,8 +178,8 @@ function DashboardSidebar({
                             }}
                         />
 
-                        {/* Employee View */}
-                        {userRole === 'employee' && (
+                        {/* Employee View - for employee, supervisor, manager, head-of-department, dean, doctor, id-card-admin */}
+                        {['employee', 'supervisor', 'manager', 'head-of-department', 'dean', 'doctor', 'id-card-admin'].includes(userRole) && (
                             <>
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>My Work</DashboardSidebarHeaderItem>
