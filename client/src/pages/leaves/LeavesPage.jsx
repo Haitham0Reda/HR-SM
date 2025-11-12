@@ -266,24 +266,6 @@ const LeavesPage = () => {
             )
         },
         {
-            field: 'workflow',
-            headerName: 'Approval Status',
-            width: 150,
-            renderCell: (row) => {
-                const isSickLeave = row.leaveType === 'sick' || row.type === 'sick';
-                if (!isSickLeave || row.status !== 'pending') return null;
-
-                return (
-                    <Chip
-                        label="Awaiting Doctor"
-                        color="info"
-                        size="small"
-                        variant="outlined"
-                    />
-                );
-            }
-        },
-        {
             field: 'actions',
             headerName: 'Actions',
             width: 180,

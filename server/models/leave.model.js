@@ -15,19 +15,7 @@ const leaveSchema = new mongoose.Schema({
   },
   startDate: {
     type: Date,
-    required: true,
-    validate: {
-      validator: function (v) {
-        // Start date should not be before today (ignore time)
-        if (!v) return true;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const startDate = new Date(v);
-        startDate.setHours(0, 0, 0, 0);
-        return startDate >= today;
-      },
-      message: 'Start date cannot be in the past'
-    }
+    required: true
   },
   endDate: {
     type: Date,
@@ -38,6 +26,14 @@ const leaveSchema = new mongoose.Schema({
       },
       message: 'End date must be after start date'
     }
+  },
+  startTime: {
+    type: String,
+    required: false
+  },
+  endTime: {
+    type: String,
+    required: false
   },
   duration: {
     type: Number, // in days

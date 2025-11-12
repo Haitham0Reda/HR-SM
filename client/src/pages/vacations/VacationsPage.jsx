@@ -11,7 +11,8 @@ import {
     Typography,
     Chip,
     MenuItem,
-    Grid
+    Grid,
+    Alert
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
@@ -231,6 +232,15 @@ const VacationsPage = () => {
                 >
                     Add Vacation Record
                 </Button>
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+                <Alert severity="warning">
+                    <Typography variant="body2">
+                        <strong>Important:</strong> Sick vacation requests must be approved by a doctor.
+                        HR can view sick vacation requests but cannot approve or reject them.
+                    </Typography>
+                </Alert>
             </Box>
 
             <DataTable
