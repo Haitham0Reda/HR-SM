@@ -76,7 +76,7 @@ const RequestDetailsPage = () => {
                     <Link
                         component="button"
                         variant="body1"
-                        onClick={() => navigate('/requests')}
+                        onClick={() => navigate('/app')}
                         sx={{ textDecoration: 'none', color: 'primary.main', cursor: 'pointer' }}
                     >
                         My Requests
@@ -96,7 +96,7 @@ const RequestDetailsPage = () => {
                         <Button
                             variant="outlined"
                             startIcon={<ArrowBackIcon />}
-                            onClick={() => navigate('/requests')}
+                            onClick={() => navigate('/app/requests')}
                         >
                             Back to List
                         </Button>

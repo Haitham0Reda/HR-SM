@@ -64,12 +64,16 @@ const CreateOvertimePage = () => {
             console.log('Overtime request created:', response);
 
             showNotification('Overtime request created successfully', 'success');
-            navigate('/overtime');
+            navigate('/app/overtime');
         } catch (error) {
             console.error('Error creating overtime:', error);
             const errorMessage = error?.message || error?.response?.data?.message || 'Failed to create overtime request';
             showNotification(errorMessage, 'error');
         }
+    };
+
+    const handleCancel = () => {
+        navigate('/app/overtime');
     };
 
     return (
@@ -93,7 +97,7 @@ const CreateOvertimePage = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/overtime')}
+                    onClick={() => navigate('/app/overtime')}
                     startIcon={<Cancel />}
                     sx={{
                         textTransform: 'none',
@@ -202,7 +206,7 @@ const CreateOvertimePage = () => {
                                 Submit Request
                             </Button>
                             <Button
-                                onClick={() => navigate('/overtime')}
+                                onClick={() => navigate('/app/overtime')}
                                 variant="outlined"
                                 size="large"
                                 sx={{

@@ -355,7 +355,7 @@ const LeavesPage = () => {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate('/leaves/create')}
+                    onClick={() => navigate('/app/leaves/create')}
                 >
                     New Leave Request
                 </Button>

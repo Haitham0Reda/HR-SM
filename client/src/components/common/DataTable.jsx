@@ -26,7 +26,18 @@ const DataTable = ({
     onView,
     emptyMessage = 'No data available',
 }) => {
-    if (!data || data.length === 0) {
+    console.log('DataTable received data:', data);
+    console.log('DataTable data length:', data ? data.length : 'undefined');
+    console.log('DataTable columns:', columns);
+    
+    // Log the first row if data exists
+    if (data && data.length > 0) {
+        console.log('First row data:', data[0]);
+    }
+    
+    // Check if data is valid
+    if (!data) {
+        console.log('DataTable: data is null or undefined');
         return (
             <Paper
                 sx={{
@@ -44,7 +55,50 @@ const DataTable = ({
             </Paper>
         );
     }
-
+    
+    // Check if data is an array
+    if (!Array.isArray(data)) {
+        console.log('DataTable: data is not an array, type:', typeof data);
+        return (
+            <Paper
+                sx={{
+                    p: 6,
+                    textAlign: 'center',
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    boxShadow: 1,
+                }}
+            >
+                <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    {emptyMessage}
+                </Typography>
+            </Paper>
+        );
+    }
+    
+    // Check if data array is empty
+    if (data.length === 0) {
+        console.log('DataTable showing empty state');
+        return (
+            <Paper
+                sx={{
+                    p: 6,
+                    textAlign: 'center',
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    boxShadow: 1,
+                }}
+            >
+                <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    {emptyMessage}
+                </Typography>
+            </Paper>
+        );
+    }
+    
+    console.log('DataTable rendering table with', data.length, 'rows');
     return (
         <TableContainer
             component={Paper}

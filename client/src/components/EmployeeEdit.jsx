@@ -79,7 +79,7 @@ function EmployeeEditForm({ initialValues, onSubmit }) {
                 autoHideDuration: 3000,
             });
 
-            navigate('/employees');
+            navigate('/app/users');
         } catch (editError) {
             notifications.show(`Failed to edit employee. Reason: ${editError.message}`, {
                 severity: 'error',
@@ -89,6 +89,10 @@ function EmployeeEditForm({ initialValues, onSubmit }) {
         }
     }, [formValues, navigate, notifications, onSubmit, setFormErrors]);
 
+    const handleCancel = () => {
+        navigate('/app/users');
+    };
+
     return (
         <EmployeeForm
             formState={formState}
@@ -96,7 +100,7 @@ function EmployeeEditForm({ initialValues, onSubmit }) {
             onSubmit={handleFormSubmit}
             onReset={handleFormReset}
             submitButtonLabel="Save"
-            backButtonPath={`/employees/${employeeId}`}
+            backButtonPath={`/app/users/${employeeId}`}
         />
     );
 }
@@ -180,8 +184,8 @@ export default function EmployeeEdit() {
         <PageContainer
             title={`Edit Employee ${employeeId}`}
             breadcrumbs={[
-                { title: 'Employees', path: '/employees' },
-                { title: `Employee ${employeeId}`, path: `/employees/${employeeId}` },
+                { title: 'Employees', path: '/app/users' },
+                { title: `Employee ${employeeId}`, path: `/app/users/${employeeId}` },
                 { title: 'Edit' },
             ]}
         >

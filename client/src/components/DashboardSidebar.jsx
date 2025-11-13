@@ -171,8 +171,8 @@ function DashboardSidebar({
                             id="dashboard"
                             title="Dashboard"
                             icon={<DashboardIcon />}
-                            href="/dashboard"
-                            selected={!!matchPath('/dashboard', pathname)}
+                            href="/app/dashboard"
+                            selected={!!matchPath('/app/dashboard', pathname)}
                             sx={{
                                 marginTop: 3,
                             }}
@@ -187,29 +187,29 @@ function DashboardSidebar({
                                     id="vacation-request"
                                     title="Vacation Request"
                                     icon={<BeachAccessIcon />}
-                                    href="/vacation-request"
-                                    selected={!!matchPath('/vacation-request', pathname)}
+                                    href="/app/vacation-request"
+                                    selected={!!matchPath('/app/vacation-request', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="my-permissions"
                                     title="My Permissions"
                                     icon={<AssignmentIcon />}
-                                    href="/permissions"
-                                    selected={!!matchPath('/permissions', pathname)}
+                                    href="/app/permissions"
+                                    selected={!!matchPath('/app/permissions', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="overtime"
                                     title="Overtime"
                                     icon={<AccessTimeIcon />}
-                                    href="/overtime"
-                                    selected={!!matchPath('/overtime', pathname)}
+                                    href="/app/overtime"
+                                    selected={!!matchPath('/app/overtime', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="my-leaves"
                                     title="My Leaves"
                                     icon={<EventAvailableIcon />}
-                                    href="/leaves"
-                                    selected={!!matchPath('/leaves', pathname)}
+                                    href="/app/leaves"
+                                    selected={!!matchPath('/app/leaves', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Information</DashboardSidebarHeaderItem>
@@ -217,36 +217,36 @@ function DashboardSidebar({
                                     id="my-attendance"
                                     title="My Attendance"
                                     icon={<AccessTimeIcon />}
-                                    href="/attendance"
-                                    selected={!!matchPath('/attendance', pathname)}
+                                    href="/app/attendance"
+                                    selected={!!matchPath('/app/attendance', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="my-requests"
                                     title="My Requests"
                                     icon={<RequestPageIcon />}
-                                    href="/requests"
-                                    selected={!!matchPath('/requests', pathname)}
+                                    href="/app/requests"
+                                    selected={!!matchPath('/app/requests', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="documents"
                                     title="Documents"
                                     icon={<DescriptionIcon />}
-                                    href="/documents"
-                                    selected={!!matchPath('/documents', pathname)}
+                                    href="/app/documents"
+                                    selected={!!matchPath('/app/documents', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="announcements"
                                     title="Announcements"
                                     icon={<AnnouncementIcon />}
-                                    href="/announcements"
-                                    selected={!!matchPath('/announcements', pathname)}
+                                    href="/app/announcements"
+                                    selected={!!matchPath('/app/announcements', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="events"
                                     title="Events"
                                     icon={<EventIcon />}
-                                    href="/events"
-                                    selected={!!matchPath('/events', pathname)}
+                                    href="/app/events"
+                                    selected={!!matchPath('/app/events', pathname)}
                                 />
                             </>
                         )}
@@ -260,22 +260,22 @@ function DashboardSidebar({
                                     id="schools"
                                     title="Schools"
                                     icon={<SchoolIcon />}
-                                    href="/schools"
-                                    selected={!!matchPath('/schools', pathname)}
+                                    href="/app/schools"
+                                    selected={!!matchPath('/app/schools', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="departments"
                                     title="Departments"
                                     icon={<BusinessIcon />}
-                                    href="/departments"
-                                    selected={!!matchPath('/departments', pathname)}
+                                    href="/app/departments"
+                                    selected={!!matchPath('/app/departments', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="positions"
                                     title="Positions"
                                     icon={<WorkIcon />}
-                                    href="/positions"
-                                    selected={!!matchPath('/positions', pathname)}
+                                    href="/app/positions"
+                                    selected={!!matchPath('/app/positions', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>HR Operations</DashboardSidebarHeaderItem>
@@ -283,36 +283,36 @@ function DashboardSidebar({
                                     id="attendance"
                                     title="Attendance"
                                     icon={<AccessTimeIcon />}
-                                    href="/attendance"
-                                    selected={!!matchPath('/attendance', pathname)}
+                                    href="/app/attendance"
+                                    selected={!!matchPath('/app/attendance', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="leaves"
                                     title="Leaves"
                                     icon={<EventAvailableIcon />}
-                                    href="/leaves"
-                                    selected={!!matchPath('/leaves', pathname)}
+                                    href="/app/leaves"
+                                    selected={!!matchPath('/app/leaves', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="permissions"
                                     title="Permissions"
                                     icon={<AssignmentIcon />}
-                                    href="/permissions"
-                                    selected={!!matchPath('/permissions', pathname)}
+                                    href="/app/permissions"
+                                    selected={!!matchPath('/app/permissions', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="requests"
                                     title="Requests"
                                     icon={<RequestPageIcon />}
-                                    href="/requests"
-                                    selected={!!matchPath('/requests', pathname)}
+                                    href="/app/requests"
+                                    selected={!!matchPath('/app/requests', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="payroll"
                                     title="Payroll"
                                     icon={<PaymentIcon />}
-                                    href="/payroll"
-                                    selected={!!matchPath('/payroll', pathname)}
+                                    href="/app/payroll"
+                                    selected={!!matchPath('/app/payroll', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Documents</DashboardSidebarHeaderItem>
@@ -320,15 +320,15 @@ function DashboardSidebar({
                                     id="documents"
                                     title="Documents"
                                     icon={<DescriptionIcon />}
-                                    href="/documents"
-                                    selected={!!matchPath('/documents', pathname)}
+                                    href="/app/documents"
+                                    selected={!!matchPath('/app/documents', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="templates"
                                     title="Templates"
                                     icon={<ArticleIcon />}
-                                    href="/templates"
-                                    selected={!!matchPath('/templates', pathname)}
+                                    href="/app/templates"
+                                    selected={!!matchPath('/app/templates', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Communication</DashboardSidebarHeaderItem>
@@ -336,22 +336,22 @@ function DashboardSidebar({
                                     id="announcements"
                                     title="Announcements"
                                     icon={<AnnouncementIcon />}
-                                    href="/announcements"
-                                    selected={!!matchPath('/announcements', pathname)}
+                                    href="/app/announcements"
+                                    selected={!!matchPath('/app/announcements', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="events"
                                     title="Events"
                                     icon={<EventIcon />}
-                                    href="/events"
-                                    selected={!!matchPath('/events', pathname)}
+                                    href="/app/events"
+                                    selected={!!matchPath('/app/events', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="surveys"
                                     title="Surveys"
                                     icon={<PollIcon />}
-                                    href="/surveys"
-                                    selected={!!matchPath('/surveys', pathname)}
+                                    href="/app/surveys"
+                                    selected={!!matchPath('/app/surveys', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Advanced</DashboardSidebarHeaderItem>
@@ -359,29 +359,29 @@ function DashboardSidebar({
                                     id="holidays"
                                     title="Holidays"
                                     icon={<CalendarTodayIcon />}
-                                    href="/holidays"
-                                    selected={!!matchPath('/holidays', pathname)}
+                                    href="/app/holidays"
+                                    selected={!!matchPath('/app/holidays', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="vacations"
                                     title="Vacations"
                                     icon={<BeachAccessIcon />}
-                                    href="/vacations"
-                                    selected={!!matchPath('/vacations', pathname)}
+                                    href="/app/vacations"
+                                    selected={!!matchPath('/app/vacations', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="reports"
                                     title="Reports"
                                     icon={<BarChartIcon />}
-                                    href="/reports"
-                                    selected={!!matchPath('/reports', pathname)}
+                                    href="/app/reports"
+                                    selected={!!matchPath('/app/reports', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="resigned"
                                     title="Resigned"
                                     icon={<PersonOffIcon />}
-                                    href="/resigned"
-                                    selected={!!matchPath('/resigned', pathname)}
+                                    href="/app/resigned"
+                                    selected={!!matchPath('/app/resigned', pathname)}
                                 />
                             </>
                         )}
@@ -395,8 +395,8 @@ function DashboardSidebar({
                                     id="users"
                                     title="Users"
                                     icon={<PersonIcon />}
-                                    href="/users"
-                                    selected={!!matchPath('/users', pathname)}
+                                    href="/app/users"
+                                    selected={!!matchPath('/app/users', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Organization</DashboardSidebarHeaderItem>
@@ -404,22 +404,22 @@ function DashboardSidebar({
                                     id="schools"
                                     title="Schools"
                                     icon={<SchoolIcon />}
-                                    href="/schools"
-                                    selected={!!matchPath('/schools', pathname)}
+                                    href="/app/schools"
+                                    selected={!!matchPath('/app/schools', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="departments"
                                     title="Departments"
                                     icon={<BusinessIcon />}
-                                    href="/departments"
-                                    selected={!!matchPath('/departments', pathname)}
+                                    href="/app/departments"
+                                    selected={!!matchPath('/app/departments', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="positions"
                                     title="Positions"
                                     icon={<WorkIcon />}
-                                    href="/positions"
-                                    selected={!!matchPath('/positions', pathname)}
+                                    href="/app/positions"
+                                    selected={!!matchPath('/app/positions', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>HR Operations</DashboardSidebarHeaderItem>
@@ -427,36 +427,36 @@ function DashboardSidebar({
                                     id="attendance"
                                     title="Attendance"
                                     icon={<AccessTimeIcon />}
-                                    href="/attendance"
-                                    selected={!!matchPath('/attendance', pathname)}
+                                    href="/app/attendance"
+                                    selected={!!matchPath('/app/attendance', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="leaves"
                                     title="Leaves"
                                     icon={<EventAvailableIcon />}
-                                    href="/leaves"
-                                    selected={!!matchPath('/leaves', pathname)}
+                                    href="/app/leaves"
+                                    selected={!!matchPath('/app/leaves', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="permissions"
                                     title="Permissions"
                                     icon={<AssignmentIcon />}
-                                    href="/permissions"
-                                    selected={!!matchPath('/permissions', pathname)}
+                                    href="/app/permissions"
+                                    selected={!!matchPath('/app/permissions', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="requests"
                                     title="Requests"
                                     icon={<RequestPageIcon />}
-                                    href="/requests"
-                                    selected={!!matchPath('/requests', pathname)}
+                                    href="/app/requests"
+                                    selected={!!matchPath('/app/requests', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="payroll"
                                     title="Payroll"
                                     icon={<PaymentIcon />}
-                                    href="/payroll"
-                                    selected={!!matchPath('/payroll', pathname)}
+                                    href="/app/payroll"
+                                    selected={!!matchPath('/app/payroll', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Documents</DashboardSidebarHeaderItem>
@@ -464,15 +464,15 @@ function DashboardSidebar({
                                     id="documents"
                                     title="Documents"
                                     icon={<DescriptionIcon />}
-                                    href="/documents"
-                                    selected={!!matchPath('/documents', pathname)}
+                                    href="/app/documents"
+                                    selected={!!matchPath('/app/documents', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="templates"
                                     title="Templates"
                                     icon={<ArticleIcon />}
-                                    href="/templates"
-                                    selected={!!matchPath('/templates', pathname)}
+                                    href="/app/templates"
+                                    selected={!!matchPath('/app/templates', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Communication</DashboardSidebarHeaderItem>
@@ -480,22 +480,22 @@ function DashboardSidebar({
                                     id="announcements"
                                     title="Announcements"
                                     icon={<AnnouncementIcon />}
-                                    href="/announcements"
-                                    selected={!!matchPath('/announcements', pathname)}
+                                    href="/app/announcements"
+                                    selected={!!matchPath('/app/announcements', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="events"
                                     title="Events"
                                     icon={<EventIcon />}
-                                    href="/events"
-                                    selected={!!matchPath('/events', pathname)}
+                                    href="/app/events"
+                                    selected={!!matchPath('/app/events', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="surveys"
                                     title="Surveys"
                                     icon={<PollIcon />}
-                                    href="/surveys"
-                                    selected={!!matchPath('/surveys', pathname)}
+                                    href="/app/surveys"
+                                    selected={!!matchPath('/app/surveys', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Advanced</DashboardSidebarHeaderItem>
@@ -503,29 +503,29 @@ function DashboardSidebar({
                                     id="holidays"
                                     title="Holidays"
                                     icon={<CalendarTodayIcon />}
-                                    href="/holidays"
-                                    selected={!!matchPath('/holidays', pathname)}
+                                    href="/app/holidays"
+                                    selected={!!matchPath('/app/holidays', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="vacations"
                                     title="Vacations"
                                     icon={<BeachAccessIcon />}
-                                    href="/vacations"
-                                    selected={!!matchPath('/vacations', pathname)}
+                                    href="/app/vacations"
+                                    selected={!!matchPath('/app/vacations', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="reports"
                                     title="Reports"
                                     icon={<BarChartIcon />}
-                                    href="/reports"
-                                    selected={!!matchPath('/reports', pathname)}
+                                    href="/app/reports"
+                                    selected={!!matchPath('/app/reports', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="analytics"
                                     title="Analytics"
                                     icon={<AssessmentIcon />}
-                                    href="/analytics"
-                                    selected={!!matchPath('/analytics', pathname)}
+                                    href="/app/analytics"
+                                    selected={!!matchPath('/app/analytics', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Administration</DashboardSidebarHeaderItem>
@@ -533,22 +533,22 @@ function DashboardSidebar({
                                     id="security"
                                     title="Security"
                                     icon={<SecurityIcon />}
-                                    href="/security"
-                                    selected={!!matchPath('/security', pathname)}
+                                    href="/app/security"
+                                    selected={!!matchPath('/app/security', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="backups"
                                     title="Backups"
                                     icon={<BackupIcon />}
-                                    href="/backups"
-                                    selected={!!matchPath('/backups', pathname)}
+                                    href="/app/backups"
+                                    selected={!!matchPath('/app/backups', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="resigned"
                                     title="Resigned"
                                     icon={<PersonOffIcon />}
-                                    href="/resigned"
-                                    selected={!!matchPath('/resigned', pathname)}
+                                    href="/app/resigned"
+                                    selected={!!matchPath('/app/resigned', pathname)}
                                 />
                             </>
                         )}
