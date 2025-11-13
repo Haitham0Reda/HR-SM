@@ -105,7 +105,7 @@ const ForgotPassword = () => {
 
                     <Button
                         component={Link}
-                        to="/login"
+                        to="/"
                         fullWidth
                         variant="contained"
                         startIcon={<ArrowBackIcon />}
@@ -292,7 +292,7 @@ const ForgotPassword = () => {
 
                     <Button
                         component={Link}
-                        to="/login"
+                        to="/"
                         fullWidth
                         variant="outlined"
                         startIcon={<ArrowBackIcon />}

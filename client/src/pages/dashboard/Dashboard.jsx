@@ -439,7 +439,7 @@ const Dashboard = () => {
                             <Button
                                 variant="contained"
                                 fullWidth
-                                onClick={() => navigate('/attendance')}
+                                onClick={() => navigate('/app/attendance')}
                                 startIcon={<CalendarIcon />}
                                 sx={{
                                     bgcolor: 'info.main',
@@ -481,7 +481,7 @@ const Dashboard = () => {
                             <Button
                                 variant="contained"
                                 fullWidth
-                                onClick={() => navigate('/leaves')}
+                                onClick={() => navigate('/app/leaves')}
                                 startIcon={<VacationIcon />}
                                 sx={{
                                     bgcolor: 'success.main',
@@ -524,7 +524,7 @@ const Dashboard = () => {
                                 <Button
                                     variant="contained"
                                     fullWidth
-                                    onClick={() => navigate('/permissions')}
+                                    onClick={() => navigate('/app/permissions')}
                                     sx={{
                                         bgcolor: 'warning.main',
                                         color: 'warning.contrastText',
@@ -539,7 +539,7 @@ const Dashboard = () => {
                                 <Button
                                     variant="outlined"
                                     fullWidth
-                                    onClick={() => navigate('/permissions')}
+                                    onClick={() => navigate('/app/permissions')}
                                     sx={{
                                         borderColor: 'warning.main',
                                         borderWidth: 2,
@@ -600,7 +600,7 @@ const Dashboard = () => {
                                 <Button
                                     variant="contained"
                                     fullWidth
-                                    onClick={() => navigate('/requests')}
+                                    onClick={() => navigate('/app/requests')}
                                     sx={{
                                         bgcolor: 'error.main',
                                         color: 'error.contrastText',
@@ -615,7 +615,7 @@ const Dashboard = () => {
                                 <Button
                                     variant="outlined"
                                     fullWidth
-                                    onClick={() => navigate('/requests')}
+                                    onClick={() => navigate('/app/requests')}
                                     sx={{
                                         borderColor: 'error.main',
                                         borderWidth: 2,
@@ -663,7 +663,7 @@ const Dashboard = () => {
                                 <Button
                                     variant="contained"
                                     fullWidth
-                                    onClick={() => navigate('/leaves')}
+                                    onClick={() => navigate('/app/leaves')}
                                     sx={{
                                         bgcolor: 'error.main',
                                         color: 'error.contrastText',
@@ -678,7 +678,7 @@ const Dashboard = () => {
                                 <Button
                                     variant="outlined"
                                     fullWidth
-                                    onClick={() => navigate('/leaves')}
+                                    onClick={() => navigate('/app/leaves')}
                                     sx={{
                                         borderColor: 'error.main',
                                         borderWidth: 2,

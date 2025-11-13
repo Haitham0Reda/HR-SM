@@ -240,14 +240,7 @@ const OvertimePage = () => {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate('/overtime/create')}
-                    sx={{
-                        minWidth: { xs: '100%', sm: 'auto' },
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        py: 1.2,
-                        px: 3,
-                    }}
+                    onClick={() => navigate('/app/overtime/create')}
                 >
                     New Overtime Request
                 </Button>

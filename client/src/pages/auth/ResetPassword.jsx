@@ -84,7 +84,7 @@ const ResetPassword = () => {
             });
             setSuccess(true);
             setTimeout(() => {
-                navigate('/login');
+                navigate('/');
             }, 3000);
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to reset password. Please try again.');
@@ -172,7 +172,7 @@ const ResetPassword = () => {
 
                     <Button
                         component={Link}
-                        to="/login"
+                        to="/"
                         fullWidth
                         variant="contained"
                         sx={{
@@ -263,7 +263,7 @@ const ResetPassword = () => {
 
                     <Button
                         component={Link}
-                        to="/login"
+                        to="/"
                         fullWidth
                         variant="outlined"
                         sx={{
@@ -549,7 +549,7 @@ const ResetPassword = () => {
 
                     <Button
                         component={Link}
-                        to="/login"
+                        to="/"
                         fullWidth
                         variant="outlined"
                         sx={{

@@ -125,7 +125,7 @@ const PermissionsPage = () => {
             setOpenDialog(true);
         } else {
             // Navigate to create page instead of opening dialog
-            navigate('/permissions/create');
+            navigate('/app/permissions/create');
         }
     };
 
@@ -334,24 +334,7 @@ const PermissionsPage = () => {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => handleOpenDialog()}
-                    sx={{
-                        minWidth: { xs: '100%', sm: 'auto' },
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        fontWeight: 600,
-                        py: 1.2,
-                        px: 3,
-                        borderRadius: 2,
-                        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                        textTransform: 'none',
-                        fontSize: '1rem',
-                        '&:hover': {
-                            background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                            boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
-                            transform: 'translateY(-2px)'
-                        },
-                        transition: 'all 0.3s ease'
-                    }}
+                    onClick={() => navigate('/app/permissions/create')}
                 >
                     New Permission Request
                 </Button>

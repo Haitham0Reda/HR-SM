@@ -59,12 +59,16 @@ const CreatePermissionPage = () => {
             const response = await permissionService.create(formData);
             console.log('Permission created successfully:', response);
             showNotification('Permission request created successfully', 'success');
-            navigate('/permissions');
+            navigate('/app/permissions');
         } catch (error) {
             console.error('Error creating permission:', error);
             const errorMessage = error?.message || error?.data?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }
+    };
+
+    const handleCancel = () => {
+        navigate('/app/permissions');
     };
 
     return (
@@ -87,7 +91,7 @@ const CreatePermissionPage = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/permissions')}
+                    onClick={() => navigate('/app/permissions')}
                     startIcon={<Cancel />}
                     sx={{
                         textTransform: 'none',
@@ -202,7 +206,7 @@ const CreatePermissionPage = () => {
                                 Submit Request
                             </Button>
                             <Button
-                                onClick={() => navigate('/permissions')}
+                                onClick={() => navigate('/app/permissions')}
                                 variant="outlined"
                                 size="large"
                                 sx={{

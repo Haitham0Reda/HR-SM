@@ -86,12 +86,16 @@ const CreateLeavePage = () => {
             const response = await leaveService.create(formData);
             console.log('Leave created successfully:', response);
             showNotification('Leave request created successfully', 'success');
-            navigate('/leaves');
+            navigate('/app/leaves');
         } catch (error) {
             console.error('Error creating leave:', error);
             const errorMessage = error?.message || error?.data?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }
+    };
+
+    const handleCancel = () => {
+        navigate('/app/leaves');
     };
 
     return (
@@ -114,7 +118,7 @@ const CreateLeavePage = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/leaves')}
+                    onClick={() => navigate('/app/leaves')}
                     startIcon={<Cancel />}
                     sx={{
                         textTransform: 'none',
@@ -251,7 +255,7 @@ const CreateLeavePage = () => {
                                 Submit Request
                             </Button>
                             <Button
-                                onClick={() => navigate('/leaves')}
+                                onClick={() => navigate('/app/leaves')}
                                 variant="outlined"
                                 size="large"
                                 sx={{

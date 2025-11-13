@@ -51,20 +51,20 @@ function App() {
           <Router>
             <Routes>
               {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
 
               {/* Protected Routes */}
               <Route
-                path="/"
+                path="/app"
                 element={
                   <PrivateRoute>
                     <DashboardLayout />
                   </PrivateRoute>
                 }
               >
-                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route index element={<Navigate to="/app/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
 
                 {/* User Management */}
@@ -112,7 +112,7 @@ function App() {
               </Route>
 
               {/* Catch all */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
         </NotificationProvider>

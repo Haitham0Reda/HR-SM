@@ -20,7 +20,7 @@ const PrivateRoute = ({ children, requiredRole }) => {
     }
 
     if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/" replace />;
     }
 
     // Check role-based access

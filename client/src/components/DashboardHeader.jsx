@@ -214,7 +214,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     const handleLogout = () => {
         handleProfileClose();
         logout();
-        navigate('/login');
+        navigate('/');
     };
 
     const getMenuIcon = React.useCallback(
@@ -256,7 +256,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                 >
                     <Stack direction="row" alignItems="center">
                         <Box sx={{ mr: 1 }}>{getMenuIcon(menuOpen)}</Box>
-                        <Link to="/" style={{ textDecoration: 'none' }}>
+                        <Link to="/app" style={{ textDecoration: 'none' }}>
                             <Stack direction="row" alignItems="center">
                                 {logo ? <LogoContainer>{logo}</LogoContainer> : null}
                                 {title ? (
@@ -471,13 +471,13 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                     </Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
-                <MenuItem onClick={handleProfileClose} component={Link} to="/profile">
+                <MenuItem onClick={handleProfileClose} component={Link} to="/app/profile">
                     <ListItemIcon>
                         <PersonIcon fontSize="small" />
                     </ListItemIcon>
                     <Typography variant="body2">Profile</Typography>
                 </MenuItem>
-                <MenuItem onClick={handleProfileClose} component={Link} to="/settings">
+                <MenuItem onClick={handleProfileClose} component={Link} to="/app/settings">
                     <ListItemIcon>
                         <SettingsIcon fontSize="small" />
                     </ListItemIcon>
@@ -544,15 +544,15 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
 
                                 // Navigate to appropriate page
                                 if (notifType === 'leave') {
-                                    navigate(`/requests/${notification._id}`);
+                                    navigate(`/app/requests/${notification._id}`);
                                 } else if (notifType === 'permission') {
-                                    navigate('/permissions');
+                                    navigate('/app/permissions');
                                 } else if (notifType === 'announcement') {
-                                    navigate('/announcements');
+                                    navigate('/app/announcements');
                                 } else if (notifType === 'event') {
-                                    navigate('/events');
+                                    navigate('/app/events');
                                 } else if (notifType === 'survey') {
-                                    navigate('/surveys');
+                                    navigate('/app/surveys');
                                 }
 
                                 // Refresh notifications after marking as viewed
@@ -640,7 +640,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                             size="small"
                             onClick={() => {
                                 handleNotificationClose();
-                                navigate('/requests');
+                                navigate('/app/requests');
                             }}
                             sx={{ fontSize: '0.8rem' }}
                         >

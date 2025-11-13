@@ -62,7 +62,7 @@ const Login = () => {
             setError('');
             await login(formData);
             showSuccess('Login successful!');
-            navigate('/dashboard');
+            navigate('/app/dashboard');
         } catch (err) {
             setError(err || 'Login failed. Please check your credentials.');
             showError(err || 'Login failed');

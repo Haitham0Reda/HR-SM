@@ -17,6 +17,7 @@ import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext'; // Added import
 import announcementService from '../../services/announcement.service';
 
 const AnnouncementsPage = () => {
@@ -28,14 +29,15 @@ const AnnouncementsPage = () => {
     const [formData, setFormData] = useState({
         title: '',
         content: '',
-        priority: 'normal',
+        priority: 'medium',
         targetAudience: 'all',
         isActive: true
     });
     const { showNotification } = useNotification();
+    const { user } = useAuth(); // Added destructuring
 
-    const priorities = ['low', 'normal', 'high', 'urgent'];
-    const audiences = ['all', 'employees', 'hr', 'admin'];
+    const priorities = ['low', 'medium', 'high']; // Match database model
+    const audiences = ['all', 'department', 'specific']; // Match database model
 
     useEffect(() => {
         fetchAnnouncements();
@@ -45,10 +47,56 @@ const AnnouncementsPage = () => {
     const fetchAnnouncements = async () => {
         try {
             setLoading(true);
-            const data = await announcementService.getAll();
+            console.log('=== FETCHING ANNOUNCEMENTS ===');
+            
+            // Test direct axios call
+            const token = localStorage.getItem('token');
+            console.log('Token from localStorage:', token);
+            
+            if (!token) {
+                console.log('No token found, cannot fetch announcements');
+                setAnnouncements([]);
+                setLoading(false);
+                return;
+            }
+            
+            // Try the service call first (this should work better)
+            console.log('Calling announcementService.getAll()...');
+            const serviceResponse = await announcementService.getAll();
+            console.log('Service response:', serviceResponse);
+            console.log('Service response type:', typeof serviceResponse);
+            
+            // Process the data
+            let data = [];
+            if (Array.isArray(serviceResponse)) {
+                data = serviceResponse;
+            } else if (serviceResponse && Array.isArray(serviceResponse.data)) {
+                data = serviceResponse.data;
+            } else if (serviceResponse && Array.isArray(serviceResponse.announcements)) {
+                data = serviceResponse.announcements;
+            } else {
+                data = [];
+            }
+            
+            console.log('Final processed data:', data);
+            console.log('Data length:', data.length);
+            
+            // Log the first item to see its structure
+            if (data.length > 0) {
+                console.log('First announcement:', data[0]);
+                console.log('First announcement priority:', data[0].priority);
+            }
+            
             setAnnouncements(data);
         } catch (error) {
-            showNotification('Failed to fetch announcements', 'error');
+            console.error('=== ERROR FETCHING ANNOUNCEMENTS ===');
+            console.error('Error:', error);
+            console.error('Error message:', error.message);
+            if (error.response) {
+                console.error('Error response:', error.response);
+            }
+            showNotification('Failed to fetch announcements: ' + error.message, 'error');
+            setAnnouncements([]);
         } finally {
             setLoading(false);
         }
@@ -60,7 +108,7 @@ const AnnouncementsPage = () => {
             setFormData({
                 title: announcement.title || '',
                 content: announcement.content || '',
-                priority: announcement.priority || 'normal',
+                priority: announcement.priority || 'medium',
                 targetAudience: announcement.targetAudience || 'all',
                 isActive: announcement.isActive !== false
             });
@@ -69,7 +117,7 @@ const AnnouncementsPage = () => {
             setFormData({
                 title: '',
                 content: '',
-                priority: 'normal',
+                priority: 'medium',
                 targetAudience: 'all',
                 isActive: true
             });
@@ -115,12 +163,32 @@ const AnnouncementsPage = () => {
         }
     };
 
+    const createTestAnnouncement = async () => {
+        try {
+            const testData = {
+                title: 'Test Announcement',
+                content: 'This is a test announcement created for debugging purposes',
+                priority: 'medium',
+                targetAudience: 'all',
+                isActive: true
+            };
+            
+            console.log('Creating test announcement:', testData);
+            const response = await announcementService.create(testData);
+            console.log('Test announcement created:', response);
+            showNotification('Test announcement created successfully', 'success');
+            fetchAnnouncements(); // Refresh the list
+        } catch (error) {
+            console.error('Error creating test announcement:', error);
+            showNotification('Failed to create test announcement: ' + error.message, 'error');
+        }
+    };
+
     const getPriorityColor = (priority) => {
         const colors = {
-            low: 'default',
-            normal: 'info',
-            high: 'warning',
-            urgent: 'error'
+            low: 'success',
+            medium: 'warning',
+            high: 'error'
         };
         return colors[priority] || 'default';
     };
@@ -132,65 +200,145 @@ const AnnouncementsPage = () => {
             field: 'priority',
             headerName: 'Priority',
             width: 120,
-            renderCell: (params) => (
-                <Chip
-                    label={params.row.priority}
-                    color={getPriorityColor(params.row.priority)}
-                    size="small"
-                />
-            )
+            renderCell: (params) => {
+                try {
+                    // Add null check
+                    if (!params || !params.row) return null;
+                    const priority = params.row.priority || 'medium';
+                    
+                    // Define background colors based on priority
+                    let backgroundColor = '#e0e0e0'; // default
+                    let textColor = '#000000'; // default
+                    
+                    if (priority === 'high') {
+                        backgroundColor = '#f44336'; // red
+                        textColor = '#ffffff';
+                    } else if (priority === 'medium') {
+                        backgroundColor = '#ffeb3b'; // yellow
+                        textColor = '#000000';
+                    } else if (priority === 'low') {
+                        backgroundColor = '#4caf50'; // green
+                        textColor = '#ffffff';
+                    }
+                    
+                    return (
+                        <Chip
+                            label={priority.charAt(0).toUpperCase() + priority.slice(1)}
+                            color={getPriorityColor(priority)}
+                            size="small"
+                            sx={{
+                                backgroundColor: backgroundColor,
+                                color: textColor,
+                                fontWeight: 'bold'
+                            }}
+                        />
+                    );
+                } catch (error) {
+                    console.error('Error rendering priority cell:', error);
+                    console.error('Params:', params);
+                    return null;
+                }
+            }
         },
         {
             field: 'targetAudience',
             headerName: 'Audience',
             width: 120,
-            renderCell: (params) => (
-                <Chip label={params.row.targetAudience} size="small" variant="outlined" />
-            )
+            renderCell: (params) => {
+                try {
+                    // Add null check
+                    if (!params || !params.row) return null;
+                    const audience = params.row.targetAudience || 'all';
+                    return (
+                        <Chip label={audience} size="small" variant="outlined" />
+                    );
+                } catch (error) {
+                    console.error('Error rendering targetAudience cell:', error);
+                    console.error('Params:', params);
+                    return null;
+                }
+            }
         },
         {
             field: 'isActive',
             headerName: 'Status',
             width: 100,
-            renderCell: (params) => (
-                <Chip
-                    label={params.row.isActive ? 'Active' : 'Inactive'}
-                    color={params.row.isActive ? 'success' : 'default'}
-                    size="small"
-                />
-            )
+            renderCell: (params) => {
+                try {
+                    // Add null check
+                    if (!params || !params.row) return null;
+                    const isActive = params.row.isActive !== undefined ? params.row.isActive : true;
+                    return (
+                        <Chip
+                            label={isActive ? 'Active' : 'Inactive'}
+                            color={isActive ? 'success' : 'default'}
+                            size="small"
+                        />
+                    );
+                } catch (error) {
+                    console.error('Error rendering isActive cell:', error);
+                    console.error('Params:', params);
+                    return null;
+                }
+            }
         },
         {
             field: 'createdAt',
             headerName: 'Created',
             width: 120,
-            renderCell: (params) => new Date(params.row.createdAt).toLocaleDateString()
+            renderCell: (params) => {
+                try {
+                    // Add null check
+                    if (!params || !params.row || !params.row.createdAt) return 'N/A';
+                    try {
+                        return new Date(params.row.createdAt).toLocaleDateString();
+                    } catch (e) {
+                        return 'N/A';
+                    }
+                } catch (error) {
+                    console.error('Error rendering createdAt cell:', error);
+                    console.error('Params:', params);
+                    return 'N/A';
+                }
+            }
         },
         {
             field: 'actions',
             headerName: 'Actions',
             width: 120,
-            renderCell: (params) => (
-                <Box>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(params.row)}
-                        color="primary"
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => {
-                            setSelectedAnnouncement(params.row);
-                            setOpenConfirm(true);
-                        }}
-                        color="error"
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Box>
-            )
+            renderCell: (params) => {
+                try {
+                    // Add null check
+                    if (!params || !params.row) return null;
+                    return (
+                        <Box>
+                            <IconButton
+                                size="small"
+                                onClick={() => handleOpenDialog(params.row)}
+                                color="primary"
+                                disabled={!user || (user.role !== 'hr' && user.role !== 'admin')}
+                            >
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                                size="small"
+                                onClick={() => {
+                                    setSelectedAnnouncement(params.row);
+                                    setOpenConfirm(true);
+                                }}
+                                color="error"
+                                disabled={!user || (user.role !== 'hr' && user.role !== 'admin')}
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
+                    );
+                } catch (error) {
+                    console.error('Error rendering actions cell:', error);
+                    console.error('Params:', params);
+                    return null;
+                }
+            }
         }
     ];
 
@@ -200,17 +348,27 @@ const AnnouncementsPage = () => {
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4">Announcements</Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenDialog()}
-                >
-                    New Announcement
-                </Button>
+                <Box>
+                    <Button
+                        variant="outlined"
+                        onClick={createTestAnnouncement}
+                        sx={{ mr: 2 }}
+                    >
+                        Create Test
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpenDialog()}
+                        disabled={!user || (user.role !== 'hr' && user.role !== 'admin')}
+                    >
+                        New Announcement
+                    </Button>
+                </Box>
             </Box>
 
             <DataTable
-                rows={announcements}
+                data={announcements}
                 columns={columns}
                 getRowId={(row) => row._id}
             />
