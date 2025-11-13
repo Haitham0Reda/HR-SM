@@ -133,12 +133,10 @@ const leaveSchema = new mongoose.Schema({
   // Mission-specific fields
   mission: {
     location: {
-      type: String,
-      required: function () { return this.leaveType === 'mission'; }
+      type: String
     },
     purpose: {
       type: String,
-      required: function () { return this.leaveType === 'mission'; },
       maxlength: 500
     },
     relatedDepartment: {
@@ -210,6 +208,8 @@ const leaveSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Pre-save validation hook (removed mission validation - now optional)
 
 // Virtual to check if leave is active
 leaveSchema.virtual('isActive').get(function () {

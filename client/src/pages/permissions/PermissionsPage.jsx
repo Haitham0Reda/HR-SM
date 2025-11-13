@@ -10,8 +10,7 @@ import {
     IconButton,
     Typography,
     Chip,
-    MenuItem,
-    Grid
+    MenuItem
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -20,9 +19,7 @@ import {
     CheckCircle,
     Cancel,
     Schedule,
-    ExitToApp,
-    CalendarToday,
-    AccessTime
+    ExitToApp
 } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
@@ -203,11 +200,13 @@ const PermissionsPage = () => {
         {
             field: 'employee',
             headerName: 'Employee',
+            align: 'center',
             renderCell: (row) => row.employee?.name || 'N/A'
         },
         {
             field: 'type',
             headerName: 'Type',
+            align: 'center',
             renderCell: (row) => {
                 const type = row.permissionType || row.type || '';
                 return (
@@ -223,24 +222,28 @@ const PermissionsPage = () => {
         {
             field: 'date',
             headerName: 'Date',
+            align: 'center',
             renderCell: (row) => new Date(row.date).toLocaleDateString()
         },
         {
             field: 'startTime',
             headerName: 'Start Time',
+            align: 'center',
             renderCell: (row) => row.time?.scheduled || row.startTime || 'N/A'
         },
         {
             field: 'endTime',
             headerName: 'End Time',
             width: 100,
+            align: 'center',
             renderCell: (row) => row.time?.requested || row.endTime || 'N/A'
         },
-        { field: 'reason', headerName: 'Reason', width: 200 },
+        { field: 'reason', headerName: 'Reason', width: 200, align: 'center' },
         {
             field: 'status',
             headerName: 'Status',
             width: 120,
+            align: 'center',
             renderCell: (row) => (
                 <Chip
                     label={row.status}
@@ -253,6 +256,7 @@ const PermissionsPage = () => {
             field: 'actions',
             headerName: 'Actions',
             width: 200,
+            align: 'center',
             renderCell: (row) => (
                 <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
                     {row.status === 'pending' && canManage && (
@@ -351,78 +355,86 @@ const PermissionsPage = () => {
             <Dialog
                 open={openDialog}
                 onClose={handleCloseDialog}
-                fullScreen
+                maxWidth="lg"
+                fullWidth
                 PaperProps={{
                     sx: {
-                        bgcolor: '#2c3e50',
-                        color: 'white',
+                        bgcolor: '#f5f7fa',
+                        color: '#2c3e50',
+                        borderRadius: 2
                     }
                 }}
             >
-                <Box sx={{ p: 4, minHeight: '100vh' }}>
-                    {/* Header */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                        <Typography variant="h4" sx={{ fontWeight: 700, color: 'white' }}>
-                            {selectedPermission ? 'Edit Permission Request' : 'Create Permission Request'}
-                        </Typography>
-                        <Button
-                            variant="outlined"
-                            onClick={handleCloseDialog}
-                            startIcon={<Cancel />}
-                            sx={{
-                                color: 'white',
-                                borderColor: 'rgba(255,255,255,0.3)',
-                                textTransform: 'none',
-                                '&:hover': {
-                                    borderColor: 'white',
-                                    bgcolor: 'rgba(255,255,255,0.1)'
-                                }
-                            }}
-                        >
-                            Back to Dashboard
-                        </Button>
-                    </Box>
+                <DialogTitle sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    bgcolor: 'white',
+                    borderBottom: '1px solid #e0e0e0'
+                }}>
+                    <Typography variant="h5" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                        {selectedPermission ? 'Edit Permission Request' : 'View Permission Request'}
+                    </Typography>
+                    <IconButton onClick={handleCloseDialog} size="small">
+                        <Cancel />
+                    </IconButton>
+                </DialogTitle>
 
-                    {/* Main Content */}
-                    <Grid container spacing={3}>
+                <DialogContent sx={{ p: 3, bgcolor: '#f5f7fa' }}>
+                    <Box sx={{
+                        display: 'flex',
+                        gap: 3,
+                        flexDirection: { xs: 'column', md: 'row' },
+                        mt: 0.5
+                    }}>
                         {/* Form Section */}
-                        <Grid item xs={12} md={8}>
-                            <Box sx={{ bgcolor: '#34495e', borderRadius: 2, p: 3 }}>
-                                <Typography variant="h6" sx={{ color: '#5dade2', mb: 3, fontWeight: 600 }}>
-                                    Permission Request Form
+                        <Box sx={{
+                            flex: '1 1 58%',
+                            minWidth: 0
+                        }}>
+                            <Box sx={{
+                                bgcolor: 'white',
+                                borderRadius: 2,
+                                p: 3,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                border: '1px solid #e0e0e0',
+                                height: '100%'
+                            }}>
+                                <Typography variant="h6" sx={{ color: '#3498db', mb: 2.5, fontWeight: 600 }}>
+                                    Permission Details
                                 </Typography>
                                 <Box sx={{
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: 3,
+                                    gap: 2.5,
                                     '& .MuiTextField-root': {
                                         '& .MuiInputLabel-root': {
-                                            color: 'rgba(255,255,255,0.7)',
+                                            color: '#7f8c8d',
                                             '&.Mui-focused': {
-                                                color: '#5dade2',
+                                                color: '#3498db',
                                             }
                                         },
                                         '& .MuiOutlinedInput-root': {
-                                            color: 'white',
-                                            bgcolor: '#2c3e50',
+                                            color: '#2c3e50',
+                                            bgcolor: 'white',
                                             '& fieldset': {
-                                                borderColor: 'rgba(255,255,255,0.2)',
+                                                borderColor: '#d1d8e0',
                                             },
                                             '&:hover fieldset': {
-                                                borderColor: 'rgba(255,255,255,0.3)',
+                                                borderColor: '#95a5a6',
                                             },
                                             '&.Mui-focused fieldset': {
-                                                borderColor: '#5dade2',
+                                                borderColor: '#3498db',
                                             },
                                         },
                                         '& .MuiInputBase-input': {
-                                            color: 'white',
+                                            color: '#2c3e50',
                                         },
                                         '& .MuiFormHelperText-root': {
-                                            color: 'rgba(255,255,255,0.5)',
+                                            color: '#7f8c8d',
                                         },
                                         '& .MuiSelect-icon': {
-                                            color: 'rgba(255,255,255,0.7)',
+                                            color: '#7f8c8d',
                                         }
                                     }
                                 }}>
@@ -472,32 +484,28 @@ const PermissionsPage = () => {
                                         ))}
                                     </TextField>
 
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                type="time"
-                                                label="Expected Time *"
-                                                name="startTime"
-                                                value={formData.startTime}
-                                                onChange={handleChange}
-                                                fullWidth
-                                                InputLabelProps={{ shrink: true }}
-                                                helperText="This field is automatically set based on working hours."
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                type="time"
-                                                label="Actual Time *"
-                                                name="endTime"
-                                                value={formData.endTime}
-                                                onChange={handleChange}
-                                                fullWidth
-                                                InputLabelProps={{ shrink: true }}
-                                                placeholder="--:-- --"
-                                            />
-                                        </Grid>
-                                    </Grid>
+                                    <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                        <TextField
+                                            type="time"
+                                            label="Expected Time *"
+                                            name="startTime"
+                                            value={formData.startTime}
+                                            onChange={handleChange}
+                                            fullWidth
+                                            InputLabelProps={{ shrink: true }}
+                                            helperText="This field is automatically set based on working hours."
+                                        />
+                                        <TextField
+                                            type="time"
+                                            label="Actual Time *"
+                                            name="endTime"
+                                            value={formData.endTime}
+                                            onChange={handleChange}
+                                            fullWidth
+                                            InputLabelProps={{ shrink: true }}
+                                            placeholder="--:-- --"
+                                        />
+                                    </Box>
 
                                     <TextField
                                         label="Reason *"
@@ -528,104 +536,122 @@ const PermissionsPage = () => {
                                         </TextField>
                                     )}
 
-                                    {/* Action Buttons */}
-                                    <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                                        <Button
-                                            onClick={handleSubmit}
-                                            variant="contained"
-                                            size="large"
-                                            startIcon={<CheckCircle />}
-                                            sx={{
-                                                bgcolor: '#3498db',
-                                                textTransform: 'none',
-                                                fontWeight: 600,
-                                                px: 4,
-                                                '&:hover': {
-                                                    bgcolor: '#2980b9'
-                                                }
-                                            }}
-                                        >
-                                            Submit Request
-                                        </Button>
-                                        <Button
-                                            onClick={handleCloseDialog}
-                                            variant="outlined"
-                                            size="large"
-                                            sx={{
-                                                color: 'white',
-                                                borderColor: 'rgba(255,255,255,0.3)',
-                                                textTransform: 'none',
-                                                fontWeight: 600,
-                                                '&:hover': {
-                                                    borderColor: 'white',
-                                                    bgcolor: 'rgba(255,255,255,0.1)'
-                                                }
-                                            }}
-                                        >
-                                            Cancel
-                                        </Button>
-                                    </Box>
+
                                 </Box>
                             </Box>
-                        </Grid>
+                        </Box>
 
                         {/* Information Sidebar */}
-                        <Grid item xs={12} md={4}>
-                            <Box sx={{ bgcolor: '#34495e', borderRadius: 2, p: 3 }}>
-                                <Typography variant="h6" sx={{ color: '#5dade2', mb: 3, fontWeight: 600 }}>
+                        <Box sx={{
+                            flex: '1 1 42%',
+                            minWidth: 0
+                        }}>
+                            <Box sx={{
+                                bgcolor: 'white',
+                                borderRadius: 2,
+                                p: 3,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                border: '1px solid #e0e0e0',
+                                height: '100%'
+                            }}>
+                                <Typography variant="h6" sx={{ color: '#3498db', mb: 3, fontWeight: 600 }}>
                                     Information
                                 </Typography>
 
                                 <Box sx={{ mb: 3 }}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: '#2c3e50' }}>
                                         Working Hours
                                     </Typography>
-                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                    <Typography variant="body2" sx={{ color: '#7f8c8d' }}>
                                         09:00 - 15:30
                                     </Typography>
                                 </Box>
 
                                 <Box sx={{ mb: 3 }}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: '#2c3e50' }}>
                                         Late Arrival
                                     </Typography>
-                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                                    <Typography variant="body2" sx={{ color: '#7f8c8d', lineHeight: 1.6 }}>
                                         Use this option if you arrived after 09:00. The expected time should be 09:00 and the actual time should be when you actually arrived.
                                     </Typography>
                                 </Box>
 
                                 <Box sx={{ mb: 3 }}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: '#2c3e50' }}>
                                         Early Departure
                                     </Typography>
-                                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                                    <Typography variant="body2" sx={{ color: '#7f8c8d', lineHeight: 1.6 }}>
                                         Use this option if you left before 15:30. The expected time should be 15:30 and the actual time should be when you actually left.
                                     </Typography>
                                 </Box>
 
                                 <Box sx={{ mb: 3 }}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: '#2c3e50' }}>
                                         Permission Limits
                                     </Typography>
-                                    <Box component="ul" sx={{ pl: 2, m: 0, color: 'rgba(255,255,255,0.7)' }}>
+                                    <Box component="ul" sx={{ pl: 2, m: 0, color: '#7f8c8d' }}>
                                         <li><strong>Daily Limit:</strong> 2 hours</li>
                                         <li><strong>Monthly Limit:</strong> 4 hours</li>
                                     </Box>
                                 </Box>
 
-                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block', mt: 2 }}>
+                                <Typography variant="caption" sx={{ color: '#95a5a6', display: 'block', mt: 2 }}>
                                     HR Month: Day 20 to Day 19
                                 </Typography>
                             </Box>
-                        </Grid>
-                    </Grid>
-                </Box>
+                        </Box>
+                    </Box>
+                </DialogContent>
+
+                <DialogActions sx={{
+                    p: 2.5,
+                    bgcolor: 'white',
+                    borderTop: '1px solid #e0e0e0',
+                    gap: 1.5
+                }}>
+                    <Button
+                        onClick={handleCloseDialog}
+                        variant="outlined"
+                        sx={{
+                            color: '#7f8c8d',
+                            borderColor: '#d1d8e0',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            px: 3,
+                            '&:hover': {
+                                borderColor: '#95a5a6',
+                                bgcolor: 'rgba(127, 140, 141, 0.05)'
+                            }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleSubmit}
+                        variant="contained"
+                        startIcon={<CheckCircle />}
+                        sx={{
+                            bgcolor: '#3498db',
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            px: 3,
+                            '&:hover': {
+                                bgcolor: '#2980b9'
+                            }
+                        }}
+                    >
+                        Update Request
+                    </Button>
+                </DialogActions>
             </Dialog>
 
             <ConfirmDialog
                 open={openConfirm}
                 title="Delete Permission Request"
-                message="Are you sure you want to delete this permission request?"
+                message="Are you sure you want to delete this permission request? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                confirmColor="error"
                 onConfirm={handleDelete}
                 onCancel={() => {
                     setOpenConfirm(false);

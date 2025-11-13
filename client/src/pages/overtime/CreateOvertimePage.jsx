@@ -42,11 +42,6 @@ const CreateOvertimePage = () => {
             showNotification('Please enter end time', 'error');
             return;
         }
-        if (!formData.reason || formData.reason.trim() === '') {
-            showNotification('Please provide a reason for overtime', 'error');
-            return;
-        }
-
         try {
             console.log('Submitting overtime request:', formData);
 
@@ -72,9 +67,7 @@ const CreateOvertimePage = () => {
         }
     };
 
-    const handleCancel = () => {
-        navigate('/app/overtime');
-    };
+
 
     return (
         <Box sx={{
@@ -178,16 +171,15 @@ const CreateOvertimePage = () => {
                         </Box>
 
                         <TextField
-                            label="Reason *"
+                            label="Reason (Optional)"
                             name="reason"
                             value={formData.reason}
                             onChange={handleChange}
                             multiline
                             rows={4}
-                            required
                             fullWidth
-                            placeholder="Please provide a detailed reason for your overtime work."
-                            helperText="Please provide a detailed reason for your overtime work."
+                            placeholder="Provide additional details about your overtime work (optional)."
+                            helperText="Optional: Provide additional details about your overtime work."
                         />
 
                         {/* Action Buttons */}

@@ -29,7 +29,10 @@ export const getAllLeaves = async (req, res) => {
 
 export const createLeave = async (req, res) => {
     try {
-    
+        console.log('=== CREATE LEAVE REQUEST ===');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('Leave type:', req.body.leaveType);
+        console.log('Mission data:', req.body.mission);
 
         // Handle file upload for sick leave
         if (req.file && req.body.leaveType === 'sick') {
@@ -46,7 +49,7 @@ export const createLeave = async (req, res) => {
             }];
         }
 
-        
+
 
         const leave = new Leave(req.body);
         const savedLeave = await leave.save();
