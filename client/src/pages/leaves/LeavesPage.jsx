@@ -34,18 +34,20 @@ const LeavesPage = () => {
     const [selectedLeave, setSelectedLeave] = useState(null);
     const [formData, setFormData] = useState({
         user: '',
-        type: 'annual',
+        type: 'mission',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
         reason: '',
-        status: 'pending'
+        status: 'pending',
+        missionLocation: '',
+        missionPurpose: ''
     });
     const { showNotification } = useNotification();
 
     const canManage = isHR || isAdmin;
     const isDoctor = user?.role === 'doctor';
 
-    const leaveTypes = ['annual', 'sick', 'personal', 'maternity', 'paternity', 'unpaid', 'other'];
+    const leaveTypes = ['mission', 'sick'];
     const statuses = ['pending', 'approved', 'rejected', 'cancelled'];
 
     useEffect(() => {
@@ -77,9 +79,15 @@ const LeavesPage = () => {
                     return leaveUserId === currentUserId || String(leaveUserId) === String(currentUserId);
                 });
 
-            console.log('Filtered leaves count:', filteredData.length);
-            console.log('Filtered leaves:', filteredData);
-            setLeaves(filteredData);
+            // Filter to show only mission and sick leaves
+            const finalFilteredData = filteredData.filter(leave => {
+                const leaveType = leave.leaveType || leave.type;
+                return leaveType === 'mission' || leaveType === 'sick';
+            });
+
+            console.log('Filtered leaves count:', finalFilteredData.length);
+            console.log('Filtered leaves:', finalFilteredData);
+            setLeaves(finalFilteredData);
         } catch (error) {
             console.error('Error fetching leaves:', error);
             showNotification('Failed to fetch leave requests', 'error');
@@ -110,17 +118,21 @@ const LeavesPage = () => {
                 startDate: leave.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
                 endDate: leave.endDate?.split('T')[0] || new Date().toISOString().split('T')[0],
                 reason: leave.reason || '',
-                status: leave.status || 'pending'
+                status: leave.status || 'pending',
+                missionLocation: leave.mission?.location || '',
+                missionPurpose: leave.mission?.purpose || ''
             });
         } else {
             setSelectedLeave(null);
             setFormData({
                 user: canManage ? '' : user?._id || '',
-                type: 'annual',
+                type: 'mission',
                 startDate: new Date().toISOString().split('T')[0],
                 endDate: new Date().toISOString().split('T')[0],
                 reason: '',
-                status: 'pending'
+                status: 'pending',
+                missionLocation: '',
+                missionPurpose: ''
             });
         }
         setOpenDialog(true);
@@ -133,22 +145,52 @@ const LeavesPage = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        console.log('Form field changed:', name, '=', value);
+        setFormData(prev => {
+            const updated = { ...prev, [name]: value };
+            console.log('Updated formData:', updated);
+            return updated;
+        });
     };
 
     const handleSubmit = async () => {
         try {
+            console.log('=== SUBMIT STARTED ===');
+            console.log('Current formData:', formData);
+            console.log('Leave type:', formData.type);
+            console.log('Mission location:', formData.missionLocation);
+            console.log('Mission purpose:', formData.missionPurpose);
+
+            // Prepare data for submission
+            const submitData = { ...formData };
+
+            // If mission type, add mission object (only if fields are provided)
+            if (formData.type === 'mission') {
+                if (formData.missionLocation || formData.missionPurpose) {
+                    submitData.mission = {
+                        location: formData.missionLocation?.trim() || '',
+                        purpose: formData.missionPurpose?.trim() || ''
+                    };
+                }
+                // Remove the flat fields
+                delete submitData.missionLocation;
+                delete submitData.missionPurpose;
+            }
+
+            console.log('Submitting leave data:', submitData);
+
             if (selectedLeave) {
-                await leaveService.update(selectedLeave._id, formData);
+                await leaveService.update(selectedLeave._id, submitData);
                 showNotification('Leave request updated successfully', 'success');
             } else {
-                await leaveService.create(formData);
+                await leaveService.create(submitData);
                 showNotification('Leave request created successfully', 'success');
             }
             handleCloseDialog();
             fetchLeaves();
         } catch (error) {
-            showNotification(error.response?.data?.message || 'Operation failed', 'error');
+            console.error('Submit error:', error);
+            showNotification(error.response?.data?.message || error.message || 'Operation failed', 'error');
         }
     };
 
@@ -219,32 +261,41 @@ const LeavesPage = () => {
             field: 'employee',
             headerName: 'Employee',
             width: 180,
+            align: 'center',
             renderCell: (row) => row.employee?.name || row.user?.name || 'N/A'
         },
         {
             field: 'leaveType',
             headerName: 'Type',
             width: 120,
-            renderCell: (row) => (
-                <Chip label={row.leaveType || row.type} size="small" variant="outlined" />
-            )
+            align: 'center',
+            renderCell: (row) => {
+                const type = row.leaveType || row.type;
+                const label = type ? type.charAt(0).toUpperCase() + type.slice(1) : '';
+                return (
+                    <Chip label={label} size="small" variant="outlined" />
+                );
+            }
         },
         {
             field: 'startDate',
             headerName: 'Start Date',
             width: 120,
+            align: 'center',
             renderCell: (row) => new Date(row.startDate).toLocaleDateString()
         },
         {
             field: 'endDate',
             headerName: 'End Date',
             width: 120,
+            align: 'center',
             renderCell: (row) => new Date(row.endDate).toLocaleDateString()
         },
         {
             field: 'days',
             headerName: 'Days',
             width: 80,
+            align: 'center',
             renderCell: (row) => {
                 // Use duration from backend if available
                 if (row.duration) return row.duration;
@@ -266,11 +317,12 @@ const LeavesPage = () => {
                 return workingDays;
             }
         },
-        { field: 'reason', headerName: 'Reason', width: 200 },
+        { field: 'reason', headerName: 'Reason', width: 200, align: 'center' },
         {
             field: 'status',
             headerName: 'Status',
             width: 120,
+            align: 'center',
             renderCell: (row) => (
                 <Chip
                     label={row.status}
@@ -283,6 +335,7 @@ const LeavesPage = () => {
             field: 'actions',
             headerName: 'Actions',
             width: 180,
+            align: 'center',
             renderCell: (row) => {
                 const isSickLeave = row.leaveType === 'sick' || row.type === 'sick';
                 const isPending = row.status === 'pending';
@@ -431,15 +484,40 @@ const LeavesPage = () => {
                                 />
                             </Grid>
                         </Grid>
+                        {formData.type === 'mission' && (
+                            <>
+                                <TextField
+                                    label="Mission Location (Optional)"
+                                    name="missionLocation"
+                                    value={formData.missionLocation}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    placeholder="Enter the mission location"
+                                    helperText="Optional: Specify where the mission will take place"
+                                />
+                                <TextField
+                                    label="Mission Purpose (Optional)"
+                                    name="missionPurpose"
+                                    value={formData.missionPurpose}
+                                    onChange={handleChange}
+                                    multiline
+                                    rows={3}
+                                    fullWidth
+                                    placeholder="Describe the purpose of the mission"
+                                    helperText="Optional: Provide details about the mission"
+                                />
+                            </>
+                        )}
                         <TextField
-                            label="Reason"
+                            label="Reason (Optional)"
                             name="reason"
                             value={formData.reason}
                             onChange={handleChange}
                             multiline
                             rows={3}
-                            required
                             fullWidth
+                            placeholder="Optional: Provide additional details"
+                            helperText="Optional: Provide additional context if needed"
                         />
                         {canManage && (
                             <TextField

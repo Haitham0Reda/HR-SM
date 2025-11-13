@@ -219,6 +219,7 @@ const DataTable = ({
                                 return (
                                     <TableCell
                                         key={column.field}
+                                        align={column.align || 'left'}
                                         sx={{
                                             py: { xs: 2, sm: 2.5 },
                                             px: { xs: 1.5, sm: 2 },

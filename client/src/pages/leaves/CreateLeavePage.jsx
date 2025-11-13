@@ -25,6 +25,8 @@ const CreateLeavePage = () => {
         startTime: '',
         endTime: '',
         reason: '',
+        missionLocation: '',
+        missionPurpose: ''
     });
 
     const leaveTypes = [
@@ -37,26 +39,7 @@ const CreateLeavePage = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const calculateDays = () => {
-        const start = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
 
-        let workingDays = 0;
-        const current = new Date(start);
-
-        // Loop through each day and count only working days (Sunday-Thursday)
-        while (current <= end) {
-            const dayOfWeek = current.getDay();
-            // 0 = Sunday, 1 = Monday, ..., 4 = Thursday (working days)
-            // 5 = Friday, 6 = Saturday (official holidays - excluded)
-            if (dayOfWeek !== 5 && dayOfWeek !== 6) {
-                workingDays++;
-            }
-            current.setDate(current.getDate() + 1);
-        }
-
-        return workingDays > 0 ? workingDays : 0;
-    };
 
     const handleSubmit = async () => {
         // Validate required fields
@@ -76,27 +59,39 @@ const CreateLeavePage = () => {
             showNotification('End date cannot be before start date', 'error');
             return;
         }
-        if (!formData.reason) {
-            showNotification('Please provide a reason', 'error');
-            return;
-        }
+
+
 
         try {
-            console.log('Submitting leave request:', formData);
-            const response = await leaveService.create(formData);
+            // Prepare data for submission
+            const submitData = { ...formData };
+
+            // If mission type, add mission object (only if fields are provided)
+            if (formData.type === 'mission') {
+                if (formData.missionLocation || formData.missionPurpose) {
+                    submitData.mission = {
+                        location: formData.missionLocation?.trim() || '',
+                        purpose: formData.missionPurpose?.trim() || ''
+                    };
+                }
+                // Remove the flat fields
+                delete submitData.missionLocation;
+                delete submitData.missionPurpose;
+            }
+
+            console.log('Submitting leave request:', submitData);
+            const response = await leaveService.create(submitData);
             console.log('Leave created successfully:', response);
             showNotification('Leave request created successfully', 'success');
             navigate('/app/leaves');
         } catch (error) {
             console.error('Error creating leave:', error);
-            const errorMessage = error?.message || error?.data?.message || 'Operation failed';
+            const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }
     };
 
-    const handleCancel = () => {
-        navigate('/app/leaves');
-    };
+
 
     return (
         <Box sx={{
@@ -226,17 +221,41 @@ const CreateLeavePage = () => {
                             </Grid>
                         </Grid>
 
+                        {formData.type === 'mission' && (
+                            <>
+                                <TextField
+                                    label="Mission Location (Optional)"
+                                    name="missionLocation"
+                                    value={formData.missionLocation}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    placeholder="Enter the mission location"
+                                    helperText="Optional: Specify where the mission will take place"
+                                />
+                                <TextField
+                                    label="Mission Purpose (Optional)"
+                                    name="missionPurpose"
+                                    value={formData.missionPurpose}
+                                    onChange={handleChange}
+                                    multiline
+                                    rows={4}
+                                    fullWidth
+                                    placeholder="Describe the purpose of the mission"
+                                    helperText="Optional: Provide details about the mission"
+                                />
+                            </>
+                        )}
+
                         <TextField
-                            label="Reason *"
+                            label="Reason (Optional)"
                             name="reason"
                             value={formData.reason}
                             onChange={handleChange}
                             multiline
                             rows={4}
-                            required
                             fullWidth
-                            placeholder="Please provide a detailed reason for your leave request."
-                            helperText="Provide a clear explanation for your leave request."
+                            placeholder="Optional: Provide additional details"
+                            helperText="Optional: Provide additional context if needed"
                         />
 
                         {/* Action Buttons */}

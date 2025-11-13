@@ -34,6 +34,7 @@ const OvertimePage = () => {
 
     useEffect(() => {
         fetchOvertimeRequests();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchOvertimeRequests = async () => {
@@ -128,37 +129,44 @@ const OvertimePage = () => {
         {
             field: 'employee',
             headerName: 'Employee',
+            align: 'center',
             renderCell: (row) => row.employee?.name || 'N/A'
         },
         {
             field: 'date',
             headerName: 'Date',
+            align: 'center',
             renderCell: (row) => new Date(row.date).toLocaleDateString()
         },
         {
             field: 'startTime',
             headerName: 'Start Time',
+            align: 'center',
             renderCell: (row) => row.startTime || 'N/A'
         },
         {
             field: 'endTime',
             headerName: 'End Time',
+            align: 'center',
             renderCell: (row) => row.endTime || 'N/A'
         },
         {
             field: 'hours',
             headerName: 'Hours',
+            align: 'center',
             renderCell: (row) => `${row.hours || 0} hrs`
         },
         {
             field: 'reason',
             headerName: 'Reason',
-            width: 200
+            width: 200,
+            align: 'center'
         },
         {
             field: 'status',
             headerName: 'Status',
             width: 120,
+            align: 'center',
             renderCell: (row) => (
                 <Chip
                     label={row.status}
@@ -171,6 +179,7 @@ const OvertimePage = () => {
             field: 'actions',
             headerName: 'Actions',
             width: 200,
+            align: 'center',
             renderCell: (row) => (
                 <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
                     {row.status === 'pending' && canManage && (
