@@ -39,6 +39,14 @@ const announcementSchema = new mongoose.Schema({
         default: Date.now
     },
     expiryDate: Date,
+    startDate: {
+        type: Date,
+        default: null
+    },
+    endDate: {
+        type: Date,
+        default: null
+    },
     isActive: {
         type: Boolean,
         default: true
