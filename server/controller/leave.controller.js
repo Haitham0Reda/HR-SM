@@ -5,27 +5,21 @@ import { sendLeaveRequestNotification, sendLeaveStatusUpdateNotification } from 
 
 export const getAllLeaves = async (req, res) => {
     try {
-        console.log('=== GET ALL LEAVES ===');
-        console.log('Query params:', req.query);
-
         const query = {};
 
         // Filter by user/employee if provided
         if (req.query.user) {
             query.employee = req.query.user;
-            console.log('Filtering by employee:', req.query.user);
         } else if (req.query.employee) {
             query.employee = req.query.employee;
-            console.log('Filtering by employee:', req.query.employee);
         }
 
-        console.log('Final query:', query);
+
 
         const leaves = await Leave.find(query)
             .populate('employee', 'name email profile')
             .sort({ createdAt: -1 });
 
-        console.log(`Found ${leaves.length} leave requests`);
         res.json(leaves);
     } catch (err) {
         console.error('Get leaves error:', err);
@@ -35,10 +29,7 @@ export const getAllLeaves = async (req, res) => {
 
 export const createLeave = async (req, res) => {
     try {
-        console.log('=== CREATE LEAVE REQUEST ===');
-        console.log('Body:', req.body);
-        console.log('File:', req.file);
-        console.log('User:', req.user);
+    
 
         // Handle file upload for sick leave
         if (req.file && req.body.leaveType === 'sick') {
@@ -55,7 +46,7 @@ export const createLeave = async (req, res) => {
             }];
         }
 
-        console.log('Final data before save:', req.body);
+        
 
         const leave = new Leave(req.body);
         const savedLeave = await leave.save();
