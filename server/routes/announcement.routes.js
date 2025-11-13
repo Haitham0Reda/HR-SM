@@ -5,7 +5,8 @@ import {
     getAnnouncementById,
     updateAnnouncement,
     deleteAnnouncement,
-    getActiveAnnouncements
+    getActiveAnnouncements,
+    getAnnouncementsByStatus
 } from '../controller/announcement.controller.js';
 import {
     protect,
@@ -19,6 +20,9 @@ const router = express.Router();
 
 // Get active announcements - All authenticated users can view
 router.get('/active', protect, getActiveAnnouncements);
+
+// Get announcements by status (upcoming, active, expired) - All authenticated users can view
+router.get('/status/:status', protect, getAnnouncementsByStatus);
 
 // Get all announcements - All authenticated users can view
 router.get('/', protect, getAllAnnouncements);

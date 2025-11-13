@@ -12,7 +12,7 @@ import {
     Chip,
     MenuItem
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -24,6 +24,7 @@ const AnnouncementsPage = () => {
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
+    const [openViewDialog, setOpenViewDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
     const [formData, setFormData] = useState({
@@ -31,7 +32,9 @@ const AnnouncementsPage = () => {
         content: '',
         priority: 'medium',
         targetAudience: 'all',
-        isActive: true
+        isActive: true,
+        startDate: '',
+        endDate: ''
     });
     const { showNotification } = useNotification();
     const { user } = useAuth(); // Added destructuring
@@ -48,24 +51,24 @@ const AnnouncementsPage = () => {
         try {
             setLoading(true);
             console.log('=== FETCHING ANNOUNCEMENTS ===');
-            
+
             // Test direct axios call
             const token = localStorage.getItem('token');
             console.log('Token from localStorage:', token);
-            
+
             if (!token) {
                 console.log('No token found, cannot fetch announcements');
                 setAnnouncements([]);
                 setLoading(false);
                 return;
             }
-            
+
             // Try the service call first (this should work better)
             console.log('Calling announcementService.getAll()...');
             const serviceResponse = await announcementService.getAll();
             console.log('Service response:', serviceResponse);
             console.log('Service response type:', typeof serviceResponse);
-            
+
             // Process the data
             let data = [];
             if (Array.isArray(serviceResponse)) {
@@ -77,16 +80,16 @@ const AnnouncementsPage = () => {
             } else {
                 data = [];
             }
-            
+
             console.log('Final processed data:', data);
             console.log('Data length:', data.length);
-            
+
             // Log the first item to see its structure
             if (data.length > 0) {
                 console.log('First announcement:', data[0]);
                 console.log('First announcement priority:', data[0].priority);
             }
-            
+
             setAnnouncements(data);
         } catch (error) {
             console.error('=== ERROR FETCHING ANNOUNCEMENTS ===');
@@ -102,6 +105,26 @@ const AnnouncementsPage = () => {
         }
     };
 
+    const getAnnouncementStatus = (announcement) => {
+        if (!announcement.isActive) {
+            return { label: 'Inactive', color: 'default' };
+        }
+
+        const now = new Date();
+        const startDate = announcement.startDate ? new Date(announcement.startDate) : null;
+        const endDate = announcement.endDate ? new Date(announcement.endDate) : null;
+
+        if (startDate && now < startDate) {
+            return { label: 'Upcoming', color: 'info' };
+        }
+
+        if (endDate && now > endDate) {
+            return { label: 'Expired', color: 'error' };
+        }
+
+        return { label: 'Active', color: 'success' };
+    };
+
     const handleOpenDialog = (announcement = null) => {
         if (announcement) {
             setSelectedAnnouncement(announcement);
@@ -110,7 +133,9 @@ const AnnouncementsPage = () => {
                 content: announcement.content || '',
                 priority: announcement.priority || 'medium',
                 targetAudience: announcement.targetAudience || 'all',
-                isActive: announcement.isActive !== false
+                isActive: announcement.isActive !== false,
+                startDate: announcement.startDate ? new Date(announcement.startDate).toISOString().split('T')[0] : '',
+                endDate: announcement.endDate ? new Date(announcement.endDate).toISOString().split('T')[0] : ''
             });
         } else {
             setSelectedAnnouncement(null);
@@ -119,7 +144,9 @@ const AnnouncementsPage = () => {
                 content: '',
                 priority: 'medium',
                 targetAudience: 'all',
-                isActive: true
+                isActive: true,
+                startDate: '',
+                endDate: ''
             });
         }
         setOpenDialog(true);
@@ -127,6 +154,16 @@ const AnnouncementsPage = () => {
 
     const handleCloseDialog = () => {
         setOpenDialog(false);
+        setSelectedAnnouncement(null);
+    };
+
+    const handleViewAnnouncement = (announcement) => {
+        setSelectedAnnouncement(announcement);
+        setOpenViewDialog(true);
+    };
+
+    const handleCloseViewDialog = () => {
+        setOpenViewDialog(false);
         setSelectedAnnouncement(null);
     };
 
@@ -163,27 +200,6 @@ const AnnouncementsPage = () => {
         }
     };
 
-    const createTestAnnouncement = async () => {
-        try {
-            const testData = {
-                title: 'Test Announcement',
-                content: 'This is a test announcement created for debugging purposes',
-                priority: 'medium',
-                targetAudience: 'all',
-                isActive: true
-            };
-            
-            console.log('Creating test announcement:', testData);
-            const response = await announcementService.create(testData);
-            console.log('Test announcement created:', response);
-            showNotification('Test announcement created successfully', 'success');
-            fetchAnnouncements(); // Refresh the list
-        } catch (error) {
-            console.error('Error creating test announcement:', error);
-            showNotification('Failed to create test announcement: ' + error.message, 'error');
-        }
-    };
-
     const getPriorityColor = (priority) => {
         const colors = {
             low: 'success',
@@ -194,22 +210,22 @@ const AnnouncementsPage = () => {
     };
 
     const columns = [
-        { field: 'title', headerName: 'Title', width: 250 },
-        { field: 'content', headerName: 'Content', width: 350 },
+        { field: 'title', headerName: 'Title', width: 250, align: 'left' },
+        { field: 'content', headerName: 'Content', width: 350, align: 'left' },
         {
             field: 'priority',
             headerName: 'Priority',
             width: 120,
-            renderCell: (params) => {
+            align: 'center',
+            renderCell: (row) => {
                 try {
-                    // Add null check
-                    if (!params || !params.row) return null;
-                    const priority = params.row.priority || 'medium';
-                    
+                    if (!row) return null;
+                    const priority = row.priority || 'medium';
+
                     // Define background colors based on priority
                     let backgroundColor = '#e0e0e0'; // default
                     let textColor = '#000000'; // default
-                    
+
                     if (priority === 'high') {
                         backgroundColor = '#f44336'; // red
                         textColor = '#ffffff';
@@ -220,11 +236,10 @@ const AnnouncementsPage = () => {
                         backgroundColor = '#4caf50'; // green
                         textColor = '#ffffff';
                     }
-                    
+
                     return (
                         <Chip
                             label={priority.charAt(0).toUpperCase() + priority.slice(1)}
-                            color={getPriorityColor(priority)}
                             size="small"
                             sx={{
                                 backgroundColor: backgroundColor,
@@ -235,7 +250,7 @@ const AnnouncementsPage = () => {
                     );
                 } catch (error) {
                     console.error('Error rendering priority cell:', error);
-                    console.error('Params:', params);
+                    console.error('Row:', row);
                     return null;
                 }
             }
@@ -244,17 +259,17 @@ const AnnouncementsPage = () => {
             field: 'targetAudience',
             headerName: 'Audience',
             width: 120,
-            renderCell: (params) => {
+            align: 'center',
+            renderCell: (row) => {
                 try {
-                    // Add null check
-                    if (!params || !params.row) return null;
-                    const audience = params.row.targetAudience || 'all';
+                    if (!row) return null;
+                    const audience = row.targetAudience || 'all';
                     return (
                         <Chip label={audience} size="small" variant="outlined" />
                     );
                 } catch (error) {
                     console.error('Error rendering targetAudience cell:', error);
-                    console.error('Params:', params);
+                    console.error('Row:', row);
                     return null;
                 }
             }
@@ -262,22 +277,40 @@ const AnnouncementsPage = () => {
         {
             field: 'isActive',
             headerName: 'Status',
-            width: 100,
-            renderCell: (params) => {
+            width: 150,
+            align: 'center',
+            renderCell: (row) => {
                 try {
-                    // Add null check
-                    if (!params || !params.row) return null;
-                    const isActive = params.row.isActive !== undefined ? params.row.isActive : true;
+                    if (!row) return null;
+                    const status = getAnnouncementStatus(row);
+
+                    // Add date information to the status display
+                    let dateInfo = '';
+                    const now = new Date();
+
+                    if (status.label === 'Upcoming' && row.startDate) {
+                        const startDate = new Date(row.startDate);
+                        dateInfo = ` (${startDate.toLocaleDateString()})`;
+                    } else if (status.label === 'Expired' && row.endDate) {
+                        const endDate = new Date(row.endDate);
+                        dateInfo = ` (${endDate.toLocaleDateString()})`;
+                    } else if (status.label === 'Active' && (row.startDate || row.endDate)) {
+                        if (row.endDate) {
+                            const endDate = new Date(row.endDate);
+                            dateInfo = ` (Until ${endDate.toLocaleDateString()})`;
+                        }
+                    }
+
                     return (
                         <Chip
-                            label={isActive ? 'Active' : 'Inactive'}
-                            color={isActive ? 'success' : 'default'}
+                            label={status.label + dateInfo}
+                            color={status.color}
                             size="small"
                         />
                     );
                 } catch (error) {
                     console.error('Error rendering isActive cell:', error);
-                    console.error('Params:', params);
+                    console.error('Row:', row);
                     return null;
                 }
             }
@@ -286,18 +319,18 @@ const AnnouncementsPage = () => {
             field: 'createdAt',
             headerName: 'Created',
             width: 120,
-            renderCell: (params) => {
+            align: 'center',
+            renderCell: (row) => {
                 try {
-                    // Add null check
-                    if (!params || !params.row || !params.row.createdAt) return 'N/A';
+                    if (!row || !row.createdAt) return 'N/A';
                     try {
-                        return new Date(params.row.createdAt).toLocaleDateString();
+                        return new Date(row.createdAt).toLocaleDateString();
                     } catch (e) {
                         return 'N/A';
                     }
                 } catch (error) {
                     console.error('Error rendering createdAt cell:', error);
-                    console.error('Params:', params);
+                    console.error('Row:', row);
                     return 'N/A';
                 }
             }
@@ -306,15 +339,22 @@ const AnnouncementsPage = () => {
             field: 'actions',
             headerName: 'Actions',
             width: 120,
-            renderCell: (params) => {
+            align: 'center',
+            renderCell: (row) => {
                 try {
-                    // Add null check
-                    if (!params || !params.row) return null;
+                    if (!row) return null;
                     return (
-                        <Box>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
                             <IconButton
                                 size="small"
-                                onClick={() => handleOpenDialog(params.row)}
+                                onClick={() => handleViewAnnouncement(row)}
+                                color="info"
+                            >
+                                <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                                size="small"
+                                onClick={() => handleOpenDialog(row)}
                                 color="primary"
                                 disabled={!user || (user.role !== 'hr' && user.role !== 'admin')}
                             >
@@ -323,7 +363,7 @@ const AnnouncementsPage = () => {
                             <IconButton
                                 size="small"
                                 onClick={() => {
-                                    setSelectedAnnouncement(params.row);
+                                    setSelectedAnnouncement(row);
                                     setOpenConfirm(true);
                                 }}
                                 color="error"
@@ -335,7 +375,7 @@ const AnnouncementsPage = () => {
                     );
                 } catch (error) {
                     console.error('Error rendering actions cell:', error);
-                    console.error('Params:', params);
+                    console.error('Row:', row);
                     return null;
                 }
             }
@@ -345,33 +385,32 @@ const AnnouncementsPage = () => {
     if (loading) return <Loading />;
 
     return (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{
+            p: 3,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden'
+        }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4">Announcements</Typography>
-                <Box>
-                    <Button
-                        variant="outlined"
-                        onClick={createTestAnnouncement}
-                        sx={{ mr: 2 }}
-                    >
-                        Create Test
-                    </Button>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpenDialog()}
-                        disabled={!user || (user.role !== 'hr' && user.role !== 'admin')}
-                    >
-                        New Announcement
-                    </Button>
-                </Box>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => handleOpenDialog()}
+                    disabled={!user || (user.role !== 'hr' && user.role !== 'admin')}
+                >
+                    New Announcement
+                </Button>
             </Box>
 
-            <DataTable
-                data={announcements}
-                columns={columns}
-                getRowId={(row) => row._id}
-            />
+            <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                <DataTable
+                    data={announcements}
+                    columns={columns}
+                    getRowId={(row) => row._id}
+                />
+            </Box>
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
                 <DialogTitle>
@@ -436,6 +475,30 @@ const AnnouncementsPage = () => {
                             <MenuItem value="true">Active</MenuItem>
                             <MenuItem value="false">Inactive</MenuItem>
                         </TextField>
+                        <TextField
+                            label="Start Date"
+                            name="startDate"
+                            type="date"
+                            value={formData.startDate}
+                            onChange={handleChange}
+                            fullWidth
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            helperText="Optional: When the announcement becomes active"
+                        />
+                        <TextField
+                            label="End Date"
+                            name="endDate"
+                            type="date"
+                            value={formData.endDate}
+                            onChange={handleChange}
+                            fullWidth
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            helperText="Optional: When the announcement expires"
+                        />
                     </Box>
                 </DialogContent>
                 <DialogActions>
@@ -443,6 +506,101 @@ const AnnouncementsPage = () => {
                     <Button onClick={handleSubmit} variant="contained">
                         {selectedAnnouncement ? 'Update' : 'Create'}
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={openViewDialog} onClose={handleCloseViewDialog} maxWidth="md" fullWidth>
+                <DialogTitle>View Announcement</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Title
+                            </Typography>
+                            <Typography variant="body1">
+                                {selectedAnnouncement?.title || 'N/A'}
+                            </Typography>
+                        </Box>
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Content
+                            </Typography>
+                            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                                {selectedAnnouncement?.content || 'N/A'}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Priority
+                                </Typography>
+                                <Chip
+                                    label={selectedAnnouncement?.priority?.charAt(0).toUpperCase() + selectedAnnouncement?.priority?.slice(1) || 'N/A'}
+                                    size="small"
+                                    sx={{
+                                        backgroundColor: selectedAnnouncement?.priority === 'high' ? '#f44336' :
+                                            selectedAnnouncement?.priority === 'medium' ? '#ffeb3b' :
+                                                selectedAnnouncement?.priority === 'low' ? '#4caf50' : '#e0e0e0',
+                                        color: selectedAnnouncement?.priority === 'medium' ? '#000000' : '#ffffff',
+                                        fontWeight: 'bold'
+                                    }}
+                                />
+                            </Box>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Target Audience
+                                </Typography>
+                                <Chip
+                                    label={selectedAnnouncement?.targetAudience || 'N/A'}
+                                    size="small"
+                                    variant="outlined"
+                                />
+                            </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Status
+                                </Typography>
+                                {selectedAnnouncement && (
+                                    <Chip
+                                        label={getAnnouncementStatus(selectedAnnouncement).label}
+                                        color={getAnnouncementStatus(selectedAnnouncement).color}
+                                        size="small"
+                                    />
+                                )}
+                            </Box>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Created
+                                </Typography>
+                                <Typography variant="body1">
+                                    {selectedAnnouncement?.createdAt ? new Date(selectedAnnouncement.createdAt).toLocaleDateString() : 'N/A'}
+                                </Typography>
+                            </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Start Date
+                                </Typography>
+                                <Typography variant="body1">
+                                    {selectedAnnouncement?.startDate ? new Date(selectedAnnouncement.startDate).toLocaleDateString() : 'N/A'}
+                                </Typography>
+                            </Box>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    End Date
+                                </Typography>
+                                <Typography variant="body1">
+                                    {selectedAnnouncement?.endDate ? new Date(selectedAnnouncement.endDate).toLocaleDateString() : 'N/A'}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseViewDialog}>Close</Button>
                 </DialogActions>
             </Dialog>
 

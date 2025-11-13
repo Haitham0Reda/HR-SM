@@ -29,12 +29,12 @@ const DataTable = ({
     console.log('DataTable received data:', data);
     console.log('DataTable data length:', data ? data.length : 'undefined');
     console.log('DataTable columns:', columns);
-    
+
     // Log the first row if data exists
     if (data && data.length > 0) {
         console.log('First row data:', data[0]);
     }
-    
+
     // Check if data is valid
     if (!data) {
         console.log('DataTable: data is null or undefined');
@@ -55,7 +55,7 @@ const DataTable = ({
             </Paper>
         );
     }
-    
+
     // Check if data is an array
     if (!Array.isArray(data)) {
         console.log('DataTable: data is not an array, type:', typeof data);
@@ -76,7 +76,7 @@ const DataTable = ({
             </Paper>
         );
     }
-    
+
     // Check if data array is empty
     if (data.length === 0) {
         console.log('DataTable showing empty state');
@@ -97,7 +97,7 @@ const DataTable = ({
             </Paper>
         );
     }
-    
+
     console.log('DataTable rendering table with', data.length, 'rows');
     return (
         <TableContainer
@@ -139,6 +139,7 @@ const DataTable = ({
                         {columns.map((column) => (
                             <TableCell
                                 key={column.field}
+                                align={column.align || 'left'}
                                 sx={{
                                     fontWeight: 700,
                                     bgcolor: 'background.default',
@@ -150,6 +151,7 @@ const DataTable = ({
                                     py: { xs: 2, sm: 2.5 },
                                     px: { xs: 1.5, sm: 2 },
                                     color: 'text.primary',
+                                    verticalAlign: 'middle',
                                 }}
                             >
                                 {column.headerName}
@@ -157,6 +159,7 @@ const DataTable = ({
                         ))}
                         {(onEdit || onDelete || onView) && (
                             <TableCell
+                                align="center"
                                 sx={{
                                     fontWeight: 700,
                                     bgcolor: 'background.default',
@@ -168,6 +171,7 @@ const DataTable = ({
                                     py: { xs: 2, sm: 2.5 },
                                     px: { xs: 1.5, sm: 2 },
                                     color: 'text.primary',
+                                    verticalAlign: 'middle',
                                 }}
                             >
                                 Actions

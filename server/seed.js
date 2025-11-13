@@ -4,7 +4,14 @@
  */
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from parent directory (root)
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 import connectDB from './config/db.js';
 import User from './models/user.model.js';
 import School from './models/school.model.js';
@@ -876,6 +883,8 @@ const seedData = async () => {
                 targetAudience: 'all',
                 publishDate: new Date('2025-01-01'),
                 expiryDate: new Date('2025-12-31'),
+                startDate: new Date('2025-01-01'),
+                endDate: new Date('2025-12-31'),
                 isActive: true,
                 createdBy: users[0]._id
             },
@@ -889,8 +898,52 @@ const seedData = async () => {
                 targetAudience: 'all',
                 publishDate: new Date('2025-01-10'),
                 expiryDate: new Date('2025-01-20'),
+                startDate: new Date('2025-01-10'),
+                endDate: new Date('2025-01-20'),
                 isActive: true,
                 createdBy: users[1]._id
+            },
+            {
+                title: 'Upcoming Training Session',
+                arabicTitle: 'جلسة تدريبية قادمة',
+                content: 'A professional development training session will be held next month. Registration opens soon.',
+                arabicContent: 'سيتم عقد جلسة تدريب للتطوير المهني الشهر القادم. سيتم فتح التسجيل قريباً.',
+                type: 'event',
+                priority: 'medium',
+                targetAudience: 'all',
+                publishDate: new Date('2025-01-05'),
+                startDate: new Date('2025-02-01'),
+                endDate: new Date('2025-02-28'),
+                isActive: true,
+                createdBy: users[1]._id
+            },
+            {
+                title: 'System Upgrade Completed',
+                arabicTitle: 'اكتمال ترقية النظام',
+                content: 'The HR system upgrade has been successfully completed. All features are now available.',
+                arabicContent: 'تم إكمال ترقية نظام الموارد البشرية بنجاح. جميع الميزات متاحة الآن.',
+                type: 'general',
+                priority: 'low',
+                targetAudience: 'all',
+                publishDate: new Date('2024-12-15'),
+                startDate: new Date('2024-12-15'),
+                endDate: new Date('2025-01-01'),
+                isActive: true,
+                createdBy: users[0]._id
+            },
+            {
+                title: 'Holiday Schedule 2025',
+                arabicTitle: 'جدول العطلات 2025',
+                content: 'The official holiday schedule for 2025 has been published. Please check the calendar for details.',
+                arabicContent: 'تم نشر جدول العطلات الرسمية لعام 2025. يرجى التحقق من التقويم للحصول على التفاصيل.',
+                type: 'general',
+                priority: 'high',
+                targetAudience: 'all',
+                publishDate: new Date('2024-12-01'),
+                startDate: new Date('2024-12-01'),
+                endDate: new Date('2025-12-31'),
+                isActive: true,
+                createdBy: users[0]._id
             }
         ]);
         console.log(`✅ Created ${announcements.length} announcements\n`);
