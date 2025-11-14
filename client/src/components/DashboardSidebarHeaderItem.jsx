@@ -19,6 +19,7 @@ function DashboardSidebarHeaderItem({ children }) {
 
     return (
         <ListSubheader
+            disableSticky
             sx={{
                 fontSize: 11,
                 fontWeight: '700',
@@ -32,7 +33,6 @@ function DashboardSidebarHeaderItem({ children }) {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                zIndex: 2,
                 textTransform: 'uppercase',
                 letterSpacing: 1,
                 color: 'text.secondary',
