@@ -171,10 +171,17 @@ export const createLeaveNotifications = async (leave, previousValues) => {
         const Notification = mongoose.model('Notification');
         const User = mongoose.model('User');
 
+        console.log('createLeaveNotifications called:', {
+            status: leave.status,
+            previousValues,
+            shouldCreateNotification: leave.status === 'pending' && !previousValues
+        });
+
         // If this is a new request (status is pending and no previous values), notify HR/Admin
         if (leave.status === 'pending' && !previousValues) {
             // Get all HR and Admin users
             const hrAdminUsers = await User.find({ role: { $in: ['hr', 'admin'] } });
+            console.log('Found HR/Admin users:', hrAdminUsers.length);
 
             // Get employee details
             const employee = await User.findById(leave.employee);
@@ -191,7 +198,11 @@ export const createLeaveNotifications = async (leave, previousValues) => {
             }));
 
             if (hrNotifications.length > 0) {
+                console.log('Creating notifications:', hrNotifications.length);
                 await Notification.insertMany(hrNotifications);
+                console.log('Notifications created successfully');
+            } else {
+                console.log('No HR/Admin users found to notify');
             }
         }
 
