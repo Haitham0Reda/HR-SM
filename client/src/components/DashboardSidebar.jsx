@@ -164,6 +164,10 @@ function DashboardSidebar({
                             padding: mini ? 0 : 0.5,
                             mb: 4,
                             width: mini ? MINI_DRAWER_WIDTH : 'auto',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            flexGrow: 1,
+                            minHeight: 0, // Allow list to shrink below its natural size
                         }}
                     >
                         {/* Common for all roles */}
@@ -552,6 +556,9 @@ function DashboardSidebar({
                                 />
                             </>
                         )}
+                        
+                        {/* Spacer to push content to top */}
+                        <Box sx={{ flex: 1, minHeight: 0 }} />
                     </List>
                 </Box>
             </Box>
