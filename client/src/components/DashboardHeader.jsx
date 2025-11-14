@@ -30,6 +30,7 @@ import announcementService from '../services/announcement.service';
 import eventService from '../services/event.service';
 import surveyService from '../services/survey.service';
 import permissionService from '../services/permission.service';
+import notificationService from '../services/notification.service';
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
     borderWidth: 0,
@@ -91,111 +92,21 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
 
     const fetchNotifications = async () => {
         try {
-            const allNotifications = [];
+            // Fetch notifications from the notification API
+            const notificationData = await notificationService.getAll();
+            const notifications = Array.isArray(notificationData) ? notificationData : (notificationData.data || []);
 
-            // Get viewed notifications from localStorage
-            const viewedNotifications = JSON.parse(localStorage.getItem('viewedNotifications') || '[]');
-
-            // Fetch leave requests (pending and rejected only)
-            const leaveData = await leaveService.getAll({ user: user._id });
-            const requests = Array.isArray(leaveData) ? leaveData : (leaveData.data || []);
-            const leaveRequests = requests
-                .filter(r => {
-                    // Only show pending or rejected (not approved)
-                    if (!['pending', 'rejected'].includes(r.status)) return false;
-                    // Don't show if already viewed
-                    return !viewedNotifications.includes(r._id);
-                })
-                .map(r => ({
-                    ...r,
-                    notifType: 'leave',
-                    title: `${(r.leaveType || r.type || '').charAt(0).toUpperCase() + (r.leaveType || r.type || '').slice(1)} Leave Request`,
-                    icon: r.status === 'rejected' ? '❌' : '📝',
-                }));
-            allNotifications.push(...leaveRequests);
-
-            // Fetch permission requests (pending and rejected only)
-            try {
-                const permissionData = await permissionService.getAll();
-                const permissions = Array.isArray(permissionData) ? permissionData : (permissionData.data || []);
-                const permissionRequests = permissions
-                    .filter(p => {
-                        // Only show pending or rejected (not approved)
-                        if (!['pending', 'rejected'].includes(p.status)) return false;
-                        // Don't show if already viewed
-                        return !viewedNotifications.includes(p._id);
-                    })
-                    .map(p => ({
-                        ...p,
-                        notifType: 'permission',
-                        title: `${(p.permissionType || '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Permission`,
-                        icon: p.status === 'rejected' ? '❌' : '⏰',
-                    }));
-                allNotifications.push(...permissionRequests);
-            } catch (err) {
-                // Silently skip if service unavailable
-            }
-
-            // Fetch recent announcements (available to all users)
-            try {
-                const announcementData = await announcementService.getAll();
-                const announcements = Array.isArray(announcementData) ? announcementData : (announcementData.data || []);
-                const recentAnnouncements = announcements
-                    .slice(0, 3)
-                    .map(a => ({
-                        ...a,
-                        notifType: 'announcement',
-                        title: a.title || 'New Announcement',
-                        icon: '📢',
-                    }));
-                allNotifications.push(...recentAnnouncements);
-            } catch (err) {
-                // Silently skip if service unavailable
-            }
-
-            // Fetch upcoming events (available to all users)
-            try {
-                const eventData = await eventService.getAll();
-                const events = Array.isArray(eventData) ? eventData : (eventData.data || []);
-                const upcomingEvents = events
-                    .filter(e => new Date(e.date) >= new Date())
-                    .slice(0, 3)
-                    .map(e => ({
-                        ...e,
-                        notifType: 'event',
-                        title: e.title || 'Upcoming Event',
-                        icon: '📅',
-                    }));
-                allNotifications.push(...upcomingEvents);
-            } catch (err) {
-                // Silently skip if service unavailable
-            }
-
-            // Fetch active surveys (available to all users to participate)
-            try {
-                const surveyData = await surveyService.getMySurveys();
-                const surveys = Array.isArray(surveyData) ? surveyData : (surveyData.data || []);
-                const activeSurveys = surveys
-                    .slice(0, 2)
-                    .map(s => ({
-                        ...s,
-                        notifType: 'survey',
-                        title: s.title || 'New Survey',
-                        icon: '📊',
-                    }));
-                allNotifications.push(...activeSurveys);
-            } catch (err) {
-                // Silently skip if service unavailable
-            }
-
-            // Sort by date and limit to 10
-            const sortedNotifications = allNotifications
-                .sort((a, b) => new Date(b.updatedAt || b.createdAt || b.date) - new Date(a.updatedAt || a.createdAt || a.date))
+            // Filter to show only unread notifications and sort by date
+            const unreadNotifications = notifications
+                .filter(n => !n.isRead)
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .slice(0, 10);
 
-            setNotifications(sortedNotifications);
+            setNotifications(unreadNotifications);
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
+            // Fallback to empty array if API fails
+            setNotifications([]);
         }
     };
 
@@ -539,33 +450,45 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                 {notifications.length > 0 ? (
                     <Box sx={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
                         {notifications.map((notification) => {
-                            const notifType = notification.notifType;
-                            const statusColor = notification.status === 'pending' ? 'warning.main' : 'info.main';
+                            const notifType = notification.type;
 
-                            const handleClick = () => {
-                                // Mark as viewed
-                                const viewedNotifications = JSON.parse(localStorage.getItem('viewedNotifications') || '[]');
-                                if (!viewedNotifications.includes(notification._id)) {
-                                    viewedNotifications.push(notification._id);
-                                    localStorage.setItem('viewedNotifications', JSON.stringify(viewedNotifications));
+                            const handleClick = async () => {
+                                // Mark notification as read in database
+                                try {
+                                    if (!notification.isRead) {
+                                        await notificationService.markAsRead(notification._id);
+                                    }
+                                } catch (error) {
+                                    console.error('Error marking notification as read:', error);
                                 }
 
                                 handleNotificationClose();
 
-                                // Navigate to appropriate page
+                                // Navigate to appropriate page based on type
                                 if (notifType === 'leave') {
-                                    navigate(`/app/requests/${notification._id}`);
+                                    navigate('/app/leaves');
                                 } else if (notifType === 'permission') {
                                     navigate('/app/permissions');
                                 } else if (notifType === 'announcement') {
                                     navigate('/app/announcements');
                                 } else if (notifType === 'event') {
                                     navigate('/app/events');
-                                } else if (notifType === 'survey') {
-                                    navigate('/app/surveys');
+                                } else if (notifType === 'request' || notifType === 'request-control') {
+                                    if (notification.relatedId) {
+                                        navigate(`/app/requests/${notification.relatedId}`);
+                                    } else {
+                                        navigate('/app/requests');
+                                    }
+                                } else if (notifType === 'attendance') {
+                                    navigate('/app/attendance');
+                                } else if (notifType === 'payroll') {
+                                    navigate('/app/payroll');
+                                } else {
+                                    // Default: navigate to requests list
+                                    navigate('/app/requests');
                                 }
 
-                                // Refresh notifications after marking as viewed
+                                // Refresh notifications after marking as read
                                 setTimeout(fetchNotifications, 500);
                             };
 
@@ -589,33 +512,25 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                     <Box sx={{ width: '100%' }}>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                                             <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                                                {notification.icon} {notification.title}
+                                                {notification.title}
                                             </Typography>
-                                            {(notifType === 'leave' || notifType === 'permission') && (
-                                                <Chip
-                                                    label={notification.status?.toUpperCase()}
-                                                    size="small"
-                                                    sx={{
-                                                        height: 20,
-                                                        fontSize: '0.7rem',
-                                                        fontWeight: 'bold',
-                                                        backgroundColor: notification.status === 'approved' ? 'success.main' :
-                                                            notification.status === 'rejected' ? 'error.main' :
-                                                                'warning.main',
-                                                        color: 'white',
-                                                    }}
-                                                />
-                                            )}
+                                            <Chip
+                                                label={notifType.toUpperCase()}
+                                                size="small"
+                                                sx={{
+                                                    height: 20,
+                                                    fontSize: '0.7rem',
+                                                    fontWeight: 'bold',
+                                                    backgroundColor: 'primary.main',
+                                                    color: 'white',
+                                                }}
+                                            />
                                         </Box>
                                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', mb: 0.5 }}>
-                                            {notifType === 'leave' && `${notification.duration || 0} day(s) • ${new Date(notification.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`}
-                                            {notifType === 'permission' && `${new Date(notification.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • ${notification.time?.scheduled || ''} - ${notification.time?.requested || ''}`}
-                                            {notifType === 'event' && `${new Date(notification.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`}
-                                            {notifType === 'announcement' && (notification.description || '').substring(0, 50)}
-                                            {notifType === 'survey' && 'Please complete this survey'}
+                                            {notification.message}
                                         </Typography>
                                         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                                            {new Date(notification.updatedAt || notification.createdAt || notification.date).toLocaleString('en-GB', {
+                                            {new Date(notification.createdAt).toLocaleString('en-GB', {
                                                 day: '2-digit',
                                                 month: 'short',
                                                 hour: '2-digit',
