@@ -84,8 +84,10 @@ const CreateLeavePage = () => {
             console.log('Leave created successfully:', response);
             showNotification('Leave request created successfully', 'success');
 
-            // Trigger notification refresh for HR/Admin
-            window.dispatchEvent(new CustomEvent('notificationUpdate'));
+            // Trigger notification refresh for HR/Admin (with small delay to ensure backend completes)
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('notificationUpdate'));
+            }, 500);
 
             navigate('/app/leaves');
         } catch (error) {

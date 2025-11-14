@@ -60,8 +60,11 @@ const CreateOvertimePage = () => {
 
             showNotification('Overtime request created successfully', 'success');
 
-            // Trigger notification refresh for HR/Admin
-            window.dispatchEvent(new CustomEvent('notificationUpdate'));
+            // Trigger notification refresh for HR/Admin (with small delay)
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('notificationUpdate'));
+            }, 500);
+
             navigate('/app/overtime');
         } catch (error) {
             console.error('Error creating overtime:', error);
