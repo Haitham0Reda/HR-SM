@@ -48,10 +48,10 @@ const leaveSchema = new mongoose.Schema({
       validator: function (v) {
         // If sick leave, reason is required and must be at least 10 characters
         if (this.leaveType === 'sick') {
-          return v && v.length >= 10;
+          return v && v.trim().length >= 10;
         }
-        // For other leave types, if reason is provided, it must be at least 10 characters
-        if (v && v.length > 0 && v.length < 10) {
+        // For other leave types, if reason is provided and not empty, it must be at least 10 characters
+        if (v && v.trim().length > 0 && v.trim().length < 10) {
           return false;
         }
         // If not provided or empty for non-sick leave, it's valid

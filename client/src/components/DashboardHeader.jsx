@@ -79,9 +79,11 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
 
             // Listen for notification updates from other components
             const handleNotificationUpdate = () => {
+                console.log('notificationUpdate event received, fetching notifications...');
                 fetchNotifications();
             };
             window.addEventListener('notificationUpdate', handleNotificationUpdate);
+            console.log('Notification event listener registered');
 
             return () => {
                 clearInterval(interval);
@@ -92,9 +94,13 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
 
     const fetchNotifications = async () => {
         try {
+            console.log('Fetching notifications...');
             // Fetch notifications from the notification API
             const notificationData = await notificationService.getAll();
+            console.log('Notification data received:', notificationData);
+
             const notifications = Array.isArray(notificationData) ? notificationData : (notificationData.data || []);
+            console.log('Parsed notifications:', notifications.length);
 
             // Filter to show only unread notifications and sort by date
             const unreadNotifications = notifications
@@ -102,6 +108,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .slice(0, 10);
 
+            console.log('Unread notifications:', unreadNotifications.length);
             setNotifications(unreadNotifications);
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
@@ -452,6 +459,32 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                         {notifications.map((notification) => {
                             const notifType = notification.type;
 
+                            // Calculate time ago
+                            const getTimeAgo = (date) => {
+                                const now = new Date();
+                                const created = new Date(date);
+                                const diffMs = now - created;
+                                const diffMins = Math.floor(diffMs / 60000);
+                                const diffHours = Math.floor(diffMs / 3600000);
+                                const diffDays = Math.floor(diffMs / 86400000);
+
+                                if (diffMins < 1) return 'Just now';
+                                if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+                                if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                                return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                            };
+
+                            // Get status color
+                            const getStatusColor = (status) => {
+                                const colors = {
+                                    pending: 'warning',
+                                    approved: 'success',
+                                    rejected: 'error',
+                                    cancelled: 'default'
+                                };
+                                return colors[status] || 'default';
+                            };
+
                             const handleClick = async () => {
                                 // Mark notification as read in database
                                 try {
@@ -512,30 +545,21 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                     <Box sx={{ width: '100%' }}>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                                             <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                                                {notification.title}
+                                                {notifType.charAt(0).toUpperCase() + notifType.slice(1)} Request
                                             </Typography>
                                             <Chip
-                                                label={notifType.toUpperCase()}
+                                                label={notification.status?.toUpperCase() || 'PENDING'}
                                                 size="small"
+                                                color={getStatusColor(notification.status || 'pending')}
                                                 sx={{
                                                     height: 20,
                                                     fontSize: '0.7rem',
                                                     fontWeight: 'bold',
-                                                    backgroundColor: 'primary.main',
-                                                    color: 'white',
                                                 }}
                                             />
                                         </Box>
-                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', mb: 0.5 }}>
-                                            {notification.message}
-                                        </Typography>
                                         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                                            {new Date(notification.createdAt).toLocaleString('en-GB', {
-                                                day: '2-digit',
-                                                month: 'short',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
+                                            {getTimeAgo(notification.createdAt)}
                                         </Typography>
                                     </Box>
                                 </MenuItem>
