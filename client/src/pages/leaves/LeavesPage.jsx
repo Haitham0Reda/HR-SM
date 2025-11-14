@@ -224,25 +224,31 @@ const LeavesPage = () => {
     };
 
     const handleReject = async (leaveId, leaveType) => {
-        const reason = prompt('Please provide a reason for rejection:');
+        const reason = prompt('Please provide a reason for rejection (minimum 10 characters):');
         if (reason === null) {
             // User cancelled the prompt
             return;
         }
         
-        if (!reason || reason.trim() === '') {
+        const trimmedReason = reason.trim();
+        if (!trimmedReason) {
             showNotification('Rejection reason is required', 'error');
+            return;
+        }
+        
+        if (trimmedReason.length < 10) {
+            showNotification('Rejection reason must be at least 10 characters long', 'error');
             return;
         }
 
         try {
             if (isDoctor && leaveType === 'sick') {
                 // Doctor rejecting sick leave
-                await leaveService.rejectSickLeaveByDoctor(leaveId, reason.trim());
+                await leaveService.rejectSickLeaveByDoctor(leaveId, trimmedReason);
                 showNotification('Sick leave rejected by doctor', 'success');
             } else {
                 // Supervisor/HR/Admin rejecting
-                await leaveService.reject(leaveId, reason.trim());
+                await leaveService.reject(leaveId, trimmedReason);
                 showNotification('Leave request rejected', 'success');
             }
             fetchLeaves();

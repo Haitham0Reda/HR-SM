@@ -180,12 +180,21 @@ export const rejectLeave = async (req, res) => {
         }
 
         // Validate reason
-        if (!reason || typeof reason !== 'string' || reason.trim() === '') {
-            return res.status(400).json({ error: 'Rejection reason is required and must be a non-empty string' });
+        if (!reason || typeof reason !== 'string') {
+            return res.status(400).json({ error: 'Rejection reason is required and must be a string' });
+        }
+        
+        const trimmedReason = reason.trim();
+        if (!trimmedReason) {
+            return res.status(400).json({ error: 'Rejection reason is required and cannot be empty' });
+        }
+        
+        if (trimmedReason.length < 10) {
+            return res.status(400).json({ error: 'Rejection reason must be at least 10 characters long' });
         }
 
         // Use supervisor rejection method
-        await leave.rejectBySupervisor(userId, reason);
+        await leave.rejectBySupervisor(userId, trimmedReason);
 
         // Send notification
         await sendLeaveStatusUpdateNotification(leave, 'pending');
@@ -249,12 +258,21 @@ export const rejectSickLeaveByDoctor = async (req, res) => {
         const doctorId = req.user._id;
 
         // Validate reason
-        if (!reason || typeof reason !== 'string' || reason.trim() === '') {
-            return res.status(400).json({ error: 'Rejection reason is required and must be a non-empty string' });
+        if (!reason || typeof reason !== 'string') {
+            return res.status(400).json({ error: 'Rejection reason is required and must be a string' });
+        }
+        
+        const trimmedReason = reason.trim();
+        if (!trimmedReason) {
+            return res.status(400).json({ error: 'Rejection reason is required and cannot be empty' });
+        }
+        
+        if (trimmedReason.length < 10) {
+            return res.status(400).json({ error: 'Rejection reason must be at least 10 characters long' });
         }
 
         // Use doctor rejection method
-        await leave.rejectByDoctor(doctorId, reason);
+        await leave.rejectByDoctor(doctorId, trimmedReason);
 
         // Send notification
         await sendLeaveStatusUpdateNotification(leave, 'pending');
