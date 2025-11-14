@@ -83,6 +83,10 @@ const CreateLeavePage = () => {
             const response = await leaveService.create(submitData);
             console.log('Leave created successfully:', response);
             showNotification('Leave request created successfully', 'success');
+
+            // Trigger notification refresh for HR/Admin
+            window.dispatchEvent(new CustomEvent('notificationUpdate'));
+
             navigate('/app/leaves');
         } catch (error) {
             console.error('Error creating leave:', error);
