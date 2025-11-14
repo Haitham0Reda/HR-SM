@@ -169,7 +169,33 @@ export const handleVacationBalanceUpdate = async (leave) => {
 export const createLeaveNotifications = async (leave, previousValues) => {
     try {
         const Notification = mongoose.model('Notification');
+        const User = mongoose.model('User');
 
+        // If this is a new request (status is pending and no previous values), notify HR/Admin
+        if (leave.status === 'pending' && !previousValues) {
+            // Get all HR and Admin users
+            const hrAdminUsers = await User.find({ role: { $in: ['hr', 'admin'] } });
+
+            // Get employee details
+            const employee = await User.findById(leave.employee);
+            const employeeName = employee?.name || 'An employee';
+
+            // Create notifications for each HR/Admin
+            const hrNotifications = hrAdminUsers.map(user => ({
+                recipient: user._id,
+                type: 'leave',
+                title: 'New Leave Request',
+                message: `${employeeName} has submitted a ${leave.leaveType} leave request from ${leave.startDate.toLocaleDateString()} to ${leave.endDate.toLocaleDateString()}.`,
+                relatedModel: 'Leave',
+                relatedId: leave._id
+            }));
+
+            if (hrNotifications.length > 0) {
+                await Notification.insertMany(hrNotifications);
+            }
+        }
+
+        // Notify employee about status changes
         let notificationData = {
             recipient: leave.employee,
             relatedModel: 'Leave',

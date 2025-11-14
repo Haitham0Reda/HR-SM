@@ -53,6 +53,9 @@ router.get('/:id', protect, async (req, res) => {
 router.post('/', protect, async (req, res) => {
     try {
         const { type, date, startTime, endTime, reason } = req.body;
+        const mongoose = await import('mongoose');
+        const User = mongoose.default.model('User');
+        const Notification = mongoose.default.model('Notification');
 
         // Map frontend field names to backend schema
         const permissionData = {
@@ -71,6 +74,27 @@ router.post('/', protect, async (req, res) => {
         const permission = await Permission.create(permissionData);
         const populatedPermission = await Permission.findById(permission._id)
             .populate('employee', 'name email profile');
+
+        // Create notifications for HR/Admin
+        if (permission.status === 'pending') {
+            const hrAdminUsers = await User.find({ role: { $in: ['hr', 'admin'] } });
+            const employee = await User.findById(permission.employee);
+            const employeeName = employee?.name || 'An employee';
+            const permissionTypeName = type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+            const hrNotifications = hrAdminUsers.map(user => ({
+                recipient: user._id,
+                type: 'permission',
+                title: 'New Permission Request',
+                message: `${employeeName} has submitted a ${permissionTypeName} request for ${new Date(date).toLocaleDateString()}.`,
+                relatedModel: 'Permission',
+                relatedId: permission._id
+            }));
+
+            if (hrNotifications.length > 0) {
+                await Notification.insertMany(hrNotifications);
+            }
+        }
 
         res.status(201).json(populatedPermission);
     } catch (error) {
