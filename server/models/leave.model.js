@@ -77,15 +77,24 @@ const leaveSchema = new mongoose.Schema({
     ref: 'User'
   },
   rejectedAt: Date,
-  rejectionReason: String,
+  rejectionReason: {
+    type: String,
+    trim: true
+  },
   cancelledBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
   cancelledAt: Date,
-  cancellationReason: String,
+  cancellationReason: {
+    type: String,
+    trim: true
+  },
   attachments: [{
-    filename: String,
+    filename: {
+      type: String,
+      trim: true
+    },
     url: String,
     uploadedAt: {
       type: Date,
@@ -103,7 +112,10 @@ const leaveSchema = new mongoose.Schema({
       default: false
     },
     documents: [{
-      filename: String,
+      filename: {
+        type: String,
+        trim: true
+      },
       url: String,
       uploadedAt: {
         type: Date,
@@ -123,20 +135,28 @@ const leaveSchema = new mongoose.Schema({
       ref: 'User'
     },
     doctorReviewedAt: Date,
-    doctorNotes: String,
+    doctorNotes: {
+      type: String,
+      trim: true
+    },
     additionalDocRequested: {
       type: Boolean,
       default: false
     },
-    requestNotes: String
+    requestNotes: {
+      type: String,
+      trim: true
+    }
   },
   // Mission-specific fields
   mission: {
     location: {
-      type: String
+      type: String,
+      trim: true
     },
     purpose: {
       type: String,
+      trim: true,
       maxlength: 500
     },
     relatedDepartment: {
@@ -204,7 +224,10 @@ const leaveSchema = new mongoose.Schema({
     }
   },
   // Notes from approver
-  approverNotes: String
+  approverNotes: {
+    type: String,
+    trim: true
+  }
 }, {
   timestamps: true
 });
@@ -283,7 +306,7 @@ leaveSchema.methods.requestAdditionalDocs = async function (doctorId, requestNot
   }
 
   this.medicalDocumentation.additionalDocRequested = true;
-  this.medicalDocumentation.requestNotes = requestNotes;
+  this.medicalDocumentation.requestNotes = requestNotes && typeof requestNotes === 'string' ? requestNotes.trim() : '';
   this.medicalDocumentation.doctorReviewedBy = doctorId;
   this.medicalDocumentation.doctorReviewedAt = new Date();
 
@@ -296,7 +319,7 @@ leaveSchema.methods.approve = async function (approverId, notes) {
   this.approvedBy = approverId;
   this.approvedAt = new Date();
   this.workflow.currentStep = 'completed';
-  if (notes) this.approverNotes = notes;
+  if (notes && typeof notes === 'string') this.approverNotes = notes.trim();
   return await this.save();
 };
 
@@ -306,7 +329,7 @@ leaveSchema.methods.rejectBySupervisor = async function (supervisorId, reason) {
   this.status = 'rejected';
   this.rejectedBy = supervisorId;
   this.rejectedAt = new Date();
-  this.rejectionReason = reason;
+  this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
   this.workflow.currentStep = 'rejected';
   return await this.save();
 };
@@ -321,7 +344,7 @@ leaveSchema.methods.rejectByDoctor = async function (doctorId, reason) {
   this.status = 'rejected';
   this.rejectedBy = doctorId;
   this.rejectedAt = new Date();
-  this.rejectionReason = reason;
+  this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
   this.medicalDocumentation.reviewedByDoctor = true;
   this.medicalDocumentation.doctorReviewedBy = doctorId;
   this.medicalDocumentation.doctorReviewedAt = new Date();
@@ -334,7 +357,7 @@ leaveSchema.methods.reject = async function (rejecterId, reason) {
   this.status = 'rejected';
   this.rejectedBy = rejecterId;
   this.rejectedAt = new Date();
-  this.rejectionReason = reason;
+  this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
   this.workflow.currentStep = 'rejected';
   return await this.save();
 };
@@ -344,7 +367,7 @@ leaveSchema.methods.cancel = async function (userId, reason) {
   this.status = 'cancelled';
   this.cancelledBy = userId;
   this.cancelledAt = new Date();
-  this.cancellationReason = reason;
+  this.cancellationReason = reason && typeof reason === 'string' ? reason.trim() : '';
   return await this.save();
 };
 

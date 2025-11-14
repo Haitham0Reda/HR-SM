@@ -179,8 +179,9 @@ export const rejectLeave = async (req, res) => {
             return res.status(403).json({ error: 'You do not have permission to reject leaves' });
         }
 
-        if (!reason) {
-            return res.status(400).json({ error: 'Rejection reason is required' });
+        // Validate reason
+        if (!reason || typeof reason !== 'string' || reason.trim() === '') {
+            return res.status(400).json({ error: 'Rejection reason is required and must be a non-empty string' });
         }
 
         // Use supervisor rejection method
@@ -247,8 +248,9 @@ export const rejectSickLeaveByDoctor = async (req, res) => {
         const { reason } = req.body;
         const doctorId = req.user._id;
 
-        if (!reason) {
-            return res.status(400).json({ error: 'Rejection reason is required' });
+        // Validate reason
+        if (!reason || typeof reason !== 'string' || reason.trim() === '') {
+            return res.status(400).json({ error: 'Rejection reason is required and must be a non-empty string' });
         }
 
         // Use doctor rejection method
