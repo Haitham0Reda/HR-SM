@@ -59,6 +59,9 @@ const CreatePermissionPage = () => {
             const response = await permissionService.create(formData);
             console.log('Permission created successfully:', response);
             showNotification('Permission request created successfully', 'success');
+
+            // Trigger notification refresh for HR/Admin
+            window.dispatchEvent(new CustomEvent('notificationUpdate'));
             navigate('/app/permissions');
         } catch (error) {
             console.error('Error creating permission:', error);

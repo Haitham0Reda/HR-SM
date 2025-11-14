@@ -145,6 +145,9 @@ const PermissionsPage = () => {
             } else {
                 await permissionService.create(formData);
                 showNotification('Permission request created successfully', 'success');
+
+                // Trigger notification refresh for HR/Admin
+                window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
             handleCloseDialog();
             fetchPermissions();
