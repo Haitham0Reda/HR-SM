@@ -46,6 +46,11 @@ const leaveSchema = new mongoose.Schema({
     },
     validate: {
       validator: function (v) {
+        // Skip validation if document is not new and reason field is not modified
+        if (!this.isNew && !this.isModified('reason')) {
+          return true;
+        }
+        
         // If sick leave, reason is required and must be at least 10 characters
         if (this.leaveType === 'sick') {
           return v && v.trim().length >= 10;
