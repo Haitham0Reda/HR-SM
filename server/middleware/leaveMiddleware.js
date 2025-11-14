@@ -177,7 +177,7 @@ export const createLeaveNotifications = async (leave, previousValues) => {
             shouldCreateNotification: leave.status === 'pending' && !previousValues
         });
 
-        // If this is a new request (status is pending and no previous values), notify HR/Admin
+        // If this is a new request (status is pending and no previous values), notify HR/Admin and employee
         if (leave.status === 'pending' && !previousValues) {
             // Get all HR and Admin users
             const hrAdminUsers = await User.find({ role: { $in: ['hr', 'admin'] } });
@@ -193,16 +193,30 @@ export const createLeaveNotifications = async (leave, previousValues) => {
                 type: 'leave',
                 title: 'New Leave Request',
                 message: `${employeeName} has submitted a ${leave.leaveType} leave request from ${leave.startDate.toLocaleDateString()} to ${leave.endDate.toLocaleDateString()}.`,
+                status: leave.status,
                 relatedModel: 'Leave',
                 relatedId: leave._id
             }));
 
-            if (hrNotifications.length > 0) {
-                console.log('Creating notifications:', hrNotifications.length);
-                await Notification.insertMany(hrNotifications);
+            // Create notification for the employee (confirmation)
+            const employeeNotification = {
+                recipient: leave.employee,
+                type: 'leave',
+                title: 'Leave Request Submitted',
+                message: `Your ${leave.leaveType} leave request from ${leave.startDate.toLocaleDateString()} to ${leave.endDate.toLocaleDateString()} has been submitted and is pending approval.`,
+                status: leave.status,
+                relatedModel: 'Leave',
+                relatedId: leave._id
+            };
+
+            const allNotifications = [...hrNotifications, employeeNotification];
+
+            if (allNotifications.length > 0) {
+                console.log('Creating notifications:', allNotifications.length);
+                await Notification.insertMany(allNotifications);
                 console.log('Notifications created successfully');
             } else {
-                console.log('No HR/Admin users found to notify');
+                console.log('No users found to notify');
             }
         }
 
@@ -210,7 +224,8 @@ export const createLeaveNotifications = async (leave, previousValues) => {
         let notificationData = {
             recipient: leave.employee,
             relatedModel: 'Leave',
-            relatedId: leave._id
+            relatedId: leave._id,
+            status: leave.status
         };
 
         switch (leave.workflow.currentStep) {
@@ -232,6 +247,7 @@ export const createLeaveNotifications = async (leave, previousValues) => {
                 notificationData.type = 'leave';
                 notificationData.title = `${leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1)} Leave Rejected`;
                 notificationData.message = `Your ${leave.leaveType} leave request has been rejected. Reason: ${leave.rejectionReason}`;
+                notificationData.status = 'rejected';
                 break;
         }
 
@@ -246,6 +262,7 @@ export const createLeaveNotifications = async (leave, previousValues) => {
                 type: 'leave',
                 title: 'Additional Medical Documentation Required',
                 message: `The doctor has requested additional medical documentation for your sick leave request. ${leave.medicalDocumentation.requestNotes || ''}`,
+                status: leave.status,
                 relatedModel: 'Leave',
                 relatedId: leave._id
             });

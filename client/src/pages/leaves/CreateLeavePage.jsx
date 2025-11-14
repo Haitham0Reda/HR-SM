@@ -66,6 +66,17 @@ const CreateLeavePage = () => {
             // Prepare data for submission
             const submitData = { ...formData };
 
+            // Remove empty optional fields
+            if (!submitData.reason || submitData.reason.trim() === '') {
+                delete submitData.reason;
+            }
+            if (!submitData.startTime || submitData.startTime.trim() === '') {
+                delete submitData.startTime;
+            }
+            if (!submitData.endTime || submitData.endTime.trim() === '') {
+                delete submitData.endTime;
+            }
+
             // If mission type, add mission object (only if fields are provided)
             if (formData.type === 'mission') {
                 if (formData.missionLocation || formData.missionPurpose) {
@@ -85,9 +96,8 @@ const CreateLeavePage = () => {
             showNotification('Leave request created successfully', 'success');
 
             // Trigger notification refresh for HR/Admin (with small delay to ensure backend completes)
-            setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('notificationUpdate'));
-            }, 500);
+
+            window.dispatchEvent(new CustomEvent('notificationUpdate'));
 
             navigate('/app/leaves');
         } catch (error) {
@@ -157,6 +167,7 @@ const CreateLeavePage = () => {
                     }}>
                         <TextField
                             select
+                            id="leave-type"
                             label="Leave Type *"
                             name="type"
                             value={formData.type}
@@ -175,6 +186,7 @@ const CreateLeavePage = () => {
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     type="date"
+                                    id="leave-start-date"
                                     label="Start Date *"
                                     name="startDate"
                                     value={formData.startDate}
@@ -188,6 +200,7 @@ const CreateLeavePage = () => {
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     type="date"
+                                    id="leave-end-date"
                                     label="End Date *"
                                     name="endDate"
                                     value={formData.endDate}
@@ -204,6 +217,7 @@ const CreateLeavePage = () => {
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     type="time"
+                                    id="leave-start-time"
                                     label="From Time"
                                     name="startTime"
                                     value={formData.startTime}
@@ -216,6 +230,7 @@ const CreateLeavePage = () => {
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     type="time"
+                                    id="leave-end-time"
                                     label="To Time"
                                     name="endTime"
                                     value={formData.endTime}
@@ -230,6 +245,7 @@ const CreateLeavePage = () => {
                         {formData.type === 'mission' && (
                             <>
                                 <TextField
+                                    id="mission-location"
                                     label="Mission Location (Optional)"
                                     name="missionLocation"
                                     value={formData.missionLocation}
@@ -239,6 +255,7 @@ const CreateLeavePage = () => {
                                     helperText="Optional: Specify where the mission will take place"
                                 />
                                 <TextField
+                                    id="mission-purpose"
                                     label="Mission Purpose (Optional)"
                                     name="missionPurpose"
                                     value={formData.missionPurpose}
@@ -253,6 +270,7 @@ const CreateLeavePage = () => {
                         )}
 
                         <TextField
+                            id="leave-reason"
                             label="Reason (Optional)"
                             name="reason"
                             value={formData.reason}

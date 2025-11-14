@@ -39,24 +39,25 @@ export const createPermissionNotification = async (permission, previousStatus) =
         let notificationData = {
             recipient: permission.employee,
             relatedModel: 'Permission',
-            relatedId: permission._id
+            relatedId: permission._id,
+            status: permission.status
         };
 
         switch (permission.status) {
             case 'approved':
-                notificationData.type = 'request';
+                notificationData.type = 'permission';
                 notificationData.title = 'Permission Request Approved';
                 notificationData.message = `Your ${permission.permissionType} request for ${permission.date.toLocaleDateString()} has been approved.`;
                 break;
 
             case 'rejected':
-                notificationData.type = 'request';
+                notificationData.type = 'permission';
                 notificationData.title = 'Permission Request Rejected';
                 notificationData.message = `Your ${permission.permissionType} request for ${permission.date.toLocaleDateString()} has been rejected. Reason: ${permission.rejection.reason}`;
                 break;
 
             case 'cancelled':
-                notificationData.type = 'request';
+                notificationData.type = 'permission';
                 notificationData.title = 'Permission Request Cancelled';
                 notificationData.message = `Your ${permission.permissionType} request for ${permission.date.toLocaleDateString()} has been cancelled.`;
                 break;

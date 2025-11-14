@@ -90,6 +90,7 @@ router.post('/', protect, async (req, res) => {
                 type: 'permission',
                 title: 'New Permission Request',
                 message: `${employeeName} has submitted a ${permissionTypeName} request for ${new Date(date).toLocaleDateString()}.`,
+                status: permission.status,
                 relatedModel: 'Permission',
                 relatedId: permission._id
             }));
