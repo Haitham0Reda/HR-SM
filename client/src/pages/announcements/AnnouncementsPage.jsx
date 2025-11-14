@@ -17,8 +17,9 @@ import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext'; // Added import
+import { useAuth } from '../../context/AuthContext';
 import announcementService from '../../services/announcement.service';
+import notificationService from '../../services/notification.service';
 
 const AnnouncementsPage = () => {
     const [announcements, setAnnouncements] = useState([]);
@@ -157,9 +158,26 @@ const AnnouncementsPage = () => {
         setSelectedAnnouncement(null);
     };
 
-    const handleViewAnnouncement = (announcement) => {
+    const handleViewAnnouncement = async (announcement) => {
         setSelectedAnnouncement(announcement);
         setOpenViewDialog(true);
+
+        // Mark related notification as read
+        try {
+            // Find and mark notification related to this announcement
+            const notifications = await notificationService.getAll({ type: 'announcement', relatedId: announcement._id });
+            if (notifications && notifications.length > 0) {
+                for (const notification of notifications) {
+                    if (!notification.isRead) {
+                        await notificationService.markAsRead(notification._id);
+                    }
+                }
+                // Trigger notification refresh in header
+                window.dispatchEvent(new CustomEvent('notificationUpdate'));
+            }
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
     };
 
     const handleCloseViewDialog = () => {

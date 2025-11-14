@@ -11,19 +11,33 @@ import {
     Typography,
     Chip,
     MenuItem,
-    Grid
+    Grid,
+    Card,
+    CardContent,
+    CardActions
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import DataTable from '../../components/common/DataTable';
+import {
+    Add as AddIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon,
+    Visibility as VisibilityIcon,
+    CalendarToday as CalendarIcon,
+    LocationOn as LocationIcon,
+    Category as CategoryIcon
+} from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import eventService from '../../services/event.service';
+import notificationService from '../../services/notification.service';
 
 const EventsPage = () => {
+    const { isHR, isAdmin } = useAuth();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
+    const [openViewDialog, setOpenViewDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [formData, setFormData] = useState({
@@ -36,6 +50,8 @@ const EventsPage = () => {
         isAllDay: false
     });
     const { showNotification } = useNotification();
+
+    const canManage = isHR || isAdmin;
 
     const eventTypes = ['meeting', 'training', 'conference', 'workshop', 'social', 'holiday', 'other'];
 
@@ -121,68 +137,40 @@ const EventsPage = () => {
         }
     };
 
-    const columns = [
-        { field: 'title', headerName: 'Event Title', width: 250 },
-        {
-            field: 'type',
-            headerName: 'Type',
-            width: 120,
-            renderCell: (params) => (
-                <Chip label={params.row.type} size="small" variant="outlined" />
-            )
-        },
-        {
-            field: 'startDate',
-            headerName: 'Start Date',
-            width: 120,
-            renderCell: (params) => new Date(params.row.startDate).toLocaleDateString()
-        },
-        {
-            field: 'endDate',
-            headerName: 'End Date',
-            width: 120,
-            renderCell: (params) => new Date(params.row.endDate).toLocaleDateString()
-        },
-        { field: 'location', headerName: 'Location', width: 200 },
-        {
-            field: 'isAllDay',
-            headerName: 'All Day',
-            width: 100,
-            renderCell: (params) => (
-                <Chip
-                    label={params.row.isAllDay ? 'Yes' : 'No'}
-                    color={params.row.isAllDay ? 'primary' : 'default'}
-                    size="small"
-                />
-            )
-        },
-        {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 120,
-            renderCell: (params) => (
-                <Box>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(params.row)}
-                        color="primary"
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => {
-                            setSelectedEvent(params.row);
-                            setOpenConfirm(true);
-                        }}
-                        color="error"
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Box>
-            )
+    const handleViewEvent = async (event) => {
+        setSelectedEvent(event);
+        setOpenViewDialog(true);
+
+        // Mark related notification as read
+        try {
+            // Find and mark notification related to this event
+            const notifications = await notificationService.getAll({ type: 'event', relatedId: event._id });
+            if (notifications && notifications.length > 0) {
+                for (const notification of notifications) {
+                    if (!notification.isRead) {
+                        await notificationService.markAsRead(notification._id);
+                    }
+                }
+                // Trigger notification refresh in header
+                window.dispatchEvent(new CustomEvent('notificationUpdate'));
+            }
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
         }
-    ];
+    };
+
+    const getEventTypeColor = (type) => {
+        const colors = {
+            meeting: '#3498db',
+            training: '#9b59b6',
+            conference: '#e74c3c',
+            workshop: '#f39c12',
+            social: '#1abc9c',
+            holiday: '#e67e22',
+            other: '#95a5a6'
+        };
+        return colors[type] || '#95a5a6';
+    };
 
     if (loading) return <Loading />;
 
@@ -190,20 +178,132 @@ const EventsPage = () => {
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4">Events</Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenDialog()}
-                >
-                    Create Event
-                </Button>
+                {canManage && (
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpenDialog()}
+                    >
+                        Create Event
+                    </Button>
+                )}
             </Box>
 
-            <DataTable
-                rows={events}
-                columns={columns}
-                getRowId={(row) => row._id}
-            />
+            {events.length === 0 ? (
+                <Box sx={{
+                    p: 6,
+                    textAlign: 'center',
+                    bgcolor: 'background.paper',
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider'
+                }}>
+                    <Typography variant="body1" color="text.secondary">
+                        No events found.
+                    </Typography>
+                </Box>
+            ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {events.map((event) => (
+                        <Card key={event._id} sx={{
+                            width: '100%',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-2px)',
+                                boxShadow: 4
+                            }
+                        }}>
+                            <CardContent sx={{ flexGrow: 1 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                                        {event.title}
+                                    </Typography>
+                                    <Chip
+                                        label={event.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'Other'}
+                                        size="small"
+                                        sx={{
+                                            bgcolor: getEventTypeColor(event.type || 'other'),
+                                            color: 'white',
+                                            fontWeight: 600
+                                        }}
+                                    />
+                                </Box>
+
+                                {event.description && (
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                        {event.description.length > 100
+                                            ? `${event.description.substring(0, 100)}...`
+                                            : event.description}
+                                    </Typography>
+                                )}
+
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <CalendarIcon fontSize="small" color="action" />
+                                        <Typography variant="body2" color="text.secondary">
+                                            {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
+                                        </Typography>
+                                    </Box>
+
+                                    {event.location && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <LocationIcon fontSize="small" color="action" />
+                                            <Typography variant="body2" color="text.secondary">
+                                                {event.location}
+                                            </Typography>
+                                        </Box>
+                                    )}
+
+                                    {event.isAllDay && (
+                                        <Chip
+                                            label="All Day Event"
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                            sx={{ width: 'fit-content' }}
+                                        />
+                                    )}
+                                </Box>
+                            </CardContent>
+
+                            <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => handleViewEvent(event)}
+                                    color="primary"
+                                    title="View Details"
+                                >
+                                    <VisibilityIcon fontSize="small" />
+                                </IconButton>
+                                {canManage && (
+                                    <>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleOpenDialog(event)}
+                                            color="primary"
+                                            title="Edit"
+                                        >
+                                            <EditIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                setSelectedEvent(event);
+                                                setOpenConfirm(true);
+                                            }}
+                                            color="error"
+                                            title="Delete"
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    </>
+                                )}
+                            </CardActions>
+                        </Card>
+                    ))}
+                </Box>
+            )
+            }
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>
@@ -297,17 +397,97 @@ const EventsPage = () => {
                 </DialogActions>
             </Dialog>
 
+            {/* View Event Dialog */}
+            <Dialog open={openViewDialog} onClose={() => setOpenViewDialog(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Event Details</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Event Title
+                            </Typography>
+                            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                {selectedEvent?.title}
+                            </Typography>
+                        </Box>
+
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Type
+                            </Typography>
+                            <Chip
+                                label={selectedEvent?.type ? selectedEvent.type.charAt(0).toUpperCase() + selectedEvent.type.slice(1) : 'Other'}
+                                size="small"
+                                sx={{
+                                    bgcolor: getEventTypeColor(selectedEvent?.type || 'other'),
+                                    color: 'white',
+                                    fontWeight: 600
+                                }}
+                            />
+                        </Box>
+
+                        {selectedEvent?.description && (
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Description
+                                </Typography>
+                                <Typography variant="body1">
+                                    {selectedEvent.description}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Date
+                            </Typography>
+                            <Typography variant="body1">
+                                {selectedEvent && `${new Date(selectedEvent.startDate).toLocaleDateString()} - ${new Date(selectedEvent.endDate).toLocaleDateString()}`}
+                            </Typography>
+                        </Box>
+
+                        {selectedEvent?.location && (
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Location
+                                </Typography>
+                                <Typography variant="body1">
+                                    {selectedEvent.location}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                All Day Event
+                            </Typography>
+                            <Chip
+                                label={selectedEvent?.isAllDay ? 'Yes' : 'No'}
+                                size="small"
+                                color={selectedEvent?.isAllDay ? 'primary' : 'default'}
+                            />
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenViewDialog(false)}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
             <ConfirmDialog
                 open={openConfirm}
                 title="Delete Event"
-                message={`Are you sure you want to delete "${selectedEvent?.title}"?`}
+                message={`Are you sure you want to delete "${selectedEvent?.title}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                confirmColor="error"
                 onConfirm={handleDelete}
                 onCancel={() => {
                     setOpenConfirm(false);
                     setSelectedEvent(null);
                 }}
             />
-        </Box>
+        </Box >
     );
 };
 

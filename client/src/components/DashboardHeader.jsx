@@ -75,7 +75,17 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             fetchNotifications();
             // Refresh notifications every 30 seconds
             const interval = setInterval(fetchNotifications, 30000);
-            return () => clearInterval(interval);
+
+            // Listen for notification updates from other components
+            const handleNotificationUpdate = () => {
+                fetchNotifications();
+            };
+            window.addEventListener('notificationUpdate', handleNotificationUpdate);
+
+            return () => {
+                clearInterval(interval);
+                window.removeEventListener('notificationUpdate', handleNotificationUpdate);
+            };
         }
     }, [user]);
 
