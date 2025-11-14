@@ -225,7 +225,12 @@ const LeavesPage = () => {
 
     const handleReject = async (leaveId, leaveType) => {
         const reason = prompt('Please provide a reason for rejection:');
-        if (!reason) {
+        if (reason === null) {
+            // User cancelled the prompt
+            return;
+        }
+        
+        if (!reason || reason.trim() === '') {
             showNotification('Rejection reason is required', 'error');
             return;
         }
@@ -233,11 +238,11 @@ const LeavesPage = () => {
         try {
             if (isDoctor && leaveType === 'sick') {
                 // Doctor rejecting sick leave
-                await leaveService.rejectSickLeaveByDoctor(leaveId, reason);
+                await leaveService.rejectSickLeaveByDoctor(leaveId, reason.trim());
                 showNotification('Sick leave rejected by doctor', 'success');
             } else {
                 // Supervisor/HR/Admin rejecting
-                await leaveService.reject(leaveId, reason);
+                await leaveService.reject(leaveId, reason.trim());
                 showNotification('Leave request rejected', 'success');
             }
             fetchLeaves();
