@@ -189,19 +189,11 @@ const RequestsPage = () => {
             headerName: 'Actions',
             width: 100,
             renderCell: (row) => {
-                let route = '/requests';
-                if (row.requestType === 'leave') {
-                    route = '/leaves';
-                } else if (row.permissionType === 'overtime') {
-                    route = '/overtime';
-                } else {
-                    route = '/permissions';
-                }
                 return (
                     <Button
                         variant="contained"
                         size="small"
-                        onClick={() => navigate(route)}
+                        onClick={() => navigate(`/app/requests/${row._id}`)}
                     >
                         View
                     </Button>

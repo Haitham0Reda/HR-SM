@@ -41,29 +41,7 @@ const leaveSchema = new mongoose.Schema({
   },
   reason: {
     type: String,
-    required: function () {
-      return this.leaveType === 'sick';
-    },
-    validate: {
-      validator: function (v) {
-        // Skip validation if document is not new and reason field is not modified
-        if (!this.isNew && !this.isModified('reason')) {
-          return true;
-        }
-        
-        // If sick leave, reason is required and must be at least 10 characters
-        if (this.leaveType === 'sick') {
-          return v && v.trim().length >= 10;
-        }
-        // For other leave types, if reason is provided and not empty, it must be at least 10 characters
-        if (v && v.trim().length > 0 && v.trim().length < 10) {
-          return false;
-        }
-        // If not provided or empty for non-sick leave, it's valid
-        return true;
-      },
-      message: 'Reason must be at least 10 characters long when provided'
-    },
+    required: false,
     maxlength: 500
   },
   status: {
@@ -336,7 +314,7 @@ leaveSchema.methods.rejectBySupervisor = async function (supervisorId, reason) {
   this.rejectedAt = new Date();
   this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
   this.workflow.currentStep = 'rejected';
-  return await this.save();
+  return await this.save({ validateBeforeSave: false });
 };
 
 // Instance method for doctor to reject sick leave
@@ -354,7 +332,7 @@ leaveSchema.methods.rejectByDoctor = async function (doctorId, reason) {
   this.medicalDocumentation.doctorReviewedBy = doctorId;
   this.medicalDocumentation.doctorReviewedAt = new Date();
   this.workflow.currentStep = 'rejected';
-  return await this.save();
+  return await this.save({ validateBeforeSave: false });
 };
 
 // Instance method to reject leave (legacy - for backward compatibility)
@@ -364,7 +342,7 @@ leaveSchema.methods.reject = async function (rejecterId, reason) {
   this.rejectedAt = new Date();
   this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
   this.workflow.currentStep = 'rejected';
-  return await this.save();
+  return await this.save({ validateBeforeSave: false });
 };
 
 // Instance method to cancel leave

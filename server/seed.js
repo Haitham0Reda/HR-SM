@@ -1950,6 +1950,118 @@ const seedData = async () => {
         ]);
         console.log(`✅ Created ${securityAudits.length} security audits\n`);
 
+        // Create Leave Requests
+        console.log('🏖️ Creating leave requests...');
+        const leaves = await Leave.create([
+            // Mission leave - pending
+            {
+                employee: users[3]._id, // John Doe
+                leaveType: 'mission',
+                startDate: new Date('2025-02-10'),
+                endDate: new Date('2025-02-12'),
+                duration: 3,
+                reason: 'Business trip to Cairo for conference',
+                status: 'pending',
+                department: departments[0]._id,
+                position: positions[0]._id,
+                mission: {
+                    location: 'Cairo, Egypt',
+                    purpose: 'Attending International Business Conference'
+                },
+                workflow: {
+                    supervisorApprovalStatus: 'pending',
+                    currentStep: 'supervisor-review'
+                }
+            },
+            // Mission leave - approved
+            {
+                employee: users[4]._id, // Jane Smith
+                leaveType: 'mission',
+                startDate: new Date('2025-01-20'),
+                endDate: new Date('2025-01-22'),
+                duration: 3,
+                reason: 'Site visit for engineering project',
+                status: 'approved',
+                approvedBy: users[1]._id,
+                approvedAt: new Date('2025-01-15'),
+                department: departments[3]._id,
+                position: positions[4]._id,
+                mission: {
+                    location: 'Alexandria, Egypt',
+                    purpose: 'Construction site inspection and project review'
+                },
+                workflow: {
+                    supervisorApprovalStatus: 'approved',
+                    currentStep: 'completed'
+                }
+            },
+            // Sick leave - pending doctor review
+            {
+                employee: users[5]._id, // Ahmed Ali
+                leaveType: 'sick',
+                startDate: new Date('2025-02-05'),
+                endDate: new Date('2025-02-07'),
+                duration: 3,
+                reason: 'Medical treatment required for back pain',
+                status: 'pending',
+                department: departments[6]._id,
+                position: positions[7]._id,
+                medicalDocumentation: {
+                    required: true,
+                    provided: false
+                },
+                workflow: {
+                    supervisorApprovalStatus: 'pending',
+                    doctorApprovalStatus: 'pending',
+                    currentStep: 'supervisor-review'
+                }
+            },
+            // Mission leave - pending
+            {
+                employee: users[6]._id, // Fatma Mohamed
+                leaveType: 'mission',
+                startDate: new Date('2025-03-01'),
+                endDate: new Date('2025-03-03'),
+                duration: 3,
+                reason: 'Research collaboration visit',
+                status: 'pending',
+                department: departments[7]._id,
+                position: positions[8]._id,
+                mission: {
+                    location: 'Giza, Egypt',
+                    purpose: 'AI research collaboration with Cairo University'
+                },
+                workflow: {
+                    supervisorApprovalStatus: 'pending',
+                    currentStep: 'supervisor-review'
+                }
+            },
+            // Mission leave - rejected
+            {
+                employee: users[7]._id, // Omar Ibrahim
+                leaveType: 'mission',
+                startDate: new Date('2025-01-25'),
+                endDate: new Date('2025-01-27'),
+                duration: 3,
+                reason: 'Training workshop attendance',
+                status: 'rejected',
+                rejectedBy: users[1]._id,
+                rejectedAt: new Date('2025-01-20'),
+                rejectionReason: 'Insufficient budget allocation for this quarter',
+                department: departments[4]._id,
+                position: positions[5]._id,
+                mission: {
+                    location: 'Hurghada, Egypt',
+                    purpose: 'Professional development workshop'
+                },
+                workflow: {
+                    supervisorApprovalStatus: 'rejected',
+                    currentStep: 'rejected'
+                }
+            }
+        ]);
+        console.log(`✅ Created ${leaves.length} leave requests\n`);
+
         // Update schools with deans
         console.log('🎓 Assigning deans to schools...');
         await School.findByIdAndUpdate(schools[0]._id, { dean: users[0]._id });

@@ -51,6 +51,7 @@ function DashboardSidebar({
 
     const { pathname } = useLocation();
 
+    // eslint-disable-next-line no-unused-vars
     const [expandedItemIds, setExpandedItemIds] = React.useState([]);
 
     const isOverSmViewport = useMediaQuery(theme.breakpoints.up('sm'));
@@ -96,6 +97,7 @@ function DashboardSidebar({
         [setExpanded],
     );
 
+    // eslint-disable-next-line no-unused-vars
     const handlePageItemClick = React.useCallback(
         (itemId, hasNestedNavigation) => {
             if (hasNestedNavigation && !mini) {
@@ -179,7 +181,7 @@ function DashboardSidebar({
                         />
 
                         {/* Employee View - for employee, supervisor, manager, head-of-department, dean, doctor, id-card-admin */}
-                        {['employee', 'supervisor', 'manager', 'head-of-department', 'dean', 'doctor', 'id-card-admin'].includes(userRole) && (
+                        {['employee', 'supervisor', 'manager', 'head-of-department', 'doctor', 'id-card-admin'].includes(userRole) && (
                             <>
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>My Work</DashboardSidebarHeaderItem>
@@ -191,8 +193,8 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/vacation', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="my-permissions"
-                                    title="My Permissions"
+                                    id="permissions"
+                                    title="Permissions"
                                     icon={<AssignmentIcon />}
                                     href="/app/permissions"
                                     selected={!!matchPath('/app/permissions', pathname)}
@@ -205,8 +207,8 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/overtime', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="my-leaves"
-                                    title="My Leaves"
+                                    id="leaves"
+                                    title="Leaves"
                                     icon={<EventAvailableIcon />}
                                     href="/app/leaves"
                                     selected={!!matchPath('/app/leaves', pathname)}
