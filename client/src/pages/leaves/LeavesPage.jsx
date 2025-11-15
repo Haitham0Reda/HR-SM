@@ -67,27 +67,39 @@ const LeavesPage = () => {
             console.log('Fetched leaves:', leavesArray);
             console.log('Current user ID:', user?._id);
             console.log('Can manage:', canManage);
+            console.log('Is doctor:', isDoctor);
 
-            // Filter to show only current user's leaves if not HR/Admin
-            // Note: API returns 'employee' field, not 'user'
-            const filteredData = canManage
-                ? leavesArray
-                : leavesArray.filter(leave => {
+            // Filter to show only mission and sick leaves
+            const missionAndSickLeaves = leavesArray.filter(leave => {
+                const leaveType = leave.leaveType || leave.type;
+                return leaveType === 'mission' || leaveType === 'sick';
+            });
+
+            // Apply role-based filtering
+            let filteredData;
+            if (canManage) {
+                // HR/Admin see all mission and sick leaves (including pending ones to approve/reject)
+                filteredData = missionAndSickLeaves;
+            } else if (isDoctor) {
+                // Doctors see only sick leaves that are pending doctor review
+                filteredData = missionAndSickLeaves.filter(leave => {
+                    const leaveType = leave.leaveType || leave.type;
+                    return leaveType === 'sick' &&
+                        leave.workflow?.currentStep === 'doctor-review';
+                });
+            } else {
+                // Regular users see only their own leaves
+                filteredData = missionAndSickLeaves.filter(leave => {
                     const leaveUserId = leave.employee?._id || leave.employee || leave.user?._id || leave.user;
                     const currentUserId = user?._id;
                     console.log('Comparing leave user:', leaveUserId, 'with current user:', currentUserId);
                     return leaveUserId === currentUserId || String(leaveUserId) === String(currentUserId);
                 });
+            }
 
-            // Filter to show only mission and sick leaves
-            const finalFilteredData = filteredData.filter(leave => {
-                const leaveType = leave.leaveType || leave.type;
-                return leaveType === 'mission' || leaveType === 'sick';
-            });
-
-            console.log('Filtered leaves count:', finalFilteredData.length);
-            console.log('Filtered leaves:', finalFilteredData);
-            setLeaves(finalFilteredData);
+            console.log('Filtered leaves count:', filteredData.length);
+            console.log('Filtered leaves:', filteredData);
+            setLeaves(filteredData);
         } catch (error) {
             console.error('Error fetching leaves:', error);
             showNotification('Failed to fetch leave requests', 'error');
@@ -217,9 +229,12 @@ const LeavesPage = () => {
                 await leaveService.approve(leaveId);
                 showNotification('Leave request approved', 'success');
             }
-            fetchLeaves();
+            // Add small delay to ensure backend has processed the update
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await fetchLeaves();
         } catch (error) {
-            showNotification(error.response?.data?.message || 'Approval failed', 'error');
+            console.error('Approve error:', error);
+            showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
 
@@ -229,13 +244,13 @@ const LeavesPage = () => {
             // User cancelled the prompt
             return;
         }
-        
+
         const trimmedReason = reason.trim();
         if (!trimmedReason) {
             showNotification('Rejection reason is required', 'error');
             return;
         }
-        
+
         if (trimmedReason.length < 10) {
             showNotification('Rejection reason must be at least 10 characters long', 'error');
             return;
@@ -251,9 +266,12 @@ const LeavesPage = () => {
                 await leaveService.reject(leaveId, trimmedReason);
                 showNotification('Leave request rejected', 'success');
             }
-            fetchLeaves();
+            // Add small delay to ensure backend has processed the update
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await fetchLeaves();
         } catch (error) {
-            showNotification(error.response?.data?.message || 'Rejection failed', 'error');
+            console.error('Reject error:', error);
+            showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };
 

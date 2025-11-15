@@ -7,14 +7,25 @@ import {
     TextField,
     Typography,
     Grid,
-    Alert,
     Chip,
     Divider,
     Tabs,
     Tab,
-    MenuItem
+    MenuItem,
+    IconButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions
 } from '@mui/material';
-import { BeachAccess as BeachAccessIcon, Send as SendIcon, History as HistoryIcon } from '@mui/icons-material';
+import {
+    BeachAccess as BeachAccessIcon,
+    Send as SendIcon,
+    History as HistoryIcon,
+    Visibility as VisibilityIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon
+} from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../hooks/useAuth';
 import leaveService from '../../services/leave.service';
@@ -22,17 +33,23 @@ import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 
 const VacationPage = () => {
-    const [activeTab, setActiveTab] = useState(0);
+    const { user, isHR, isAdmin } = useAuth();
+    const { showNotification } = useNotification();
+
+    // HR/Admin default to history tab, regular users default to request tab
+    const [activeTab, setActiveTab] = useState((isHR || isAdmin) ? 1 : 0);
     const [loading, setLoading] = useState(false);
     const [vacationHistory, setVacationHistory] = useState([]);
+    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [viewDialogOpen, setViewDialogOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [formData, setFormData] = useState({
         type: 'annual',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
         reason: ''
     });
-    const { showNotification } = useNotification();
-    const { user, isHR, isAdmin } = useAuth();
 
     useEffect(() => {
         fetchVacationHistory();
@@ -42,19 +59,42 @@ const VacationPage = () => {
     const fetchVacationHistory = async () => {
         try {
             setLoading(true);
-            
-            // For HR and Admin users, fetch all vacation requests
-            // For regular users, fetch only their own vacation requests
-            const params = (isHR || isAdmin) ? {} : { user: user._id };
-            const data = await leaveService.getAll(params);
-            
-            // Filter only vacation-related leaves (annual, casual, sick)
-            const vacationData = data.filter(leave => 
-                ['annual', 'casual', 'sick'].includes(leave.leaveType)
+
+            const data = await leaveService.getAll();
+
+            console.log('Fetched all leaves:', data);
+            console.log('User role - isHR:', isHR, 'isAdmin:', isAdmin);
+            console.log('Current user ID:', user?._id);
+
+            // Ensure data is an array
+            const leavesArray = Array.isArray(data) ? data : [];
+
+            // Filter to only show vacation types (annual, casual, sick)
+            const vacationTypes = ['annual', 'casual', 'sick'];
+            const vacationRequests = leavesArray.filter(leave =>
+                vacationTypes.includes(leave.leaveType?.toLowerCase())
             );
-            
-            setVacationHistory(vacationData);
+
+            // For HR and Admin users, show all vacation requests
+            // For regular users, show only their own vacation requests
+            let filteredData;
+            if (isHR || isAdmin) {
+                // HR/Admin see all vacation requests
+                filteredData = vacationRequests;
+                console.log('HR/Admin - showing all vacation requests:', filteredData.length);
+            } else {
+                // Regular users see only their own vacation requests
+                filteredData = vacationRequests.filter(leave => {
+                    const leaveUserId = leave.employee?._id || leave.employee || leave.user?._id || leave.user;
+                    const currentUserId = user?._id;
+                    return leaveUserId === currentUserId || String(leaveUserId) === String(currentUserId);
+                });
+                console.log('Regular user - showing own vacation requests:', filteredData.length);
+            }
+
+            setVacationHistory(filteredData);
         } catch (error) {
+            console.error('Error fetching vacation history:', error);
             showNotification('Failed to fetch vacation history', 'error');
         } finally {
             setLoading(false);
@@ -71,7 +111,7 @@ const VacationPage = () => {
 
         try {
             setLoading(true);
-            
+
             const submitData = {
                 user: user._id,
                 leaveType: formData.type,
@@ -82,7 +122,7 @@ const VacationPage = () => {
 
             await leaveService.create(submitData);
             showNotification('Vacation request submitted successfully', 'success');
-            
+
             // Reset form
             setFormData({
                 type: 'annual',
@@ -90,7 +130,7 @@ const VacationPage = () => {
                 endDate: new Date().toISOString().split('T')[0],
                 reason: ''
             });
-            
+
             // Refresh history
             fetchVacationHistory();
         } catch (error) {
@@ -132,6 +172,115 @@ const VacationPage = () => {
         return colors[status] || 'default';
     };
 
+    const handleApprove = async (leaveId, leaveType) => {
+        try {
+            if (leaveType === 'sick') {
+                showNotification('Sick leave requests can only be approved by doctors', 'warning');
+                return;
+            }
+
+            await leaveService.approve(leaveId);
+            showNotification('Leave request approved successfully', 'success');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await fetchVacationHistory();
+        } catch (error) {
+            console.error('Approve error:', error);
+            showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
+        }
+    };
+
+    const handleReject = async (leaveId, leaveType) => {
+        if (leaveType === 'sick') {
+            showNotification('Sick leave requests can only be rejected by doctors', 'warning');
+            return;
+        }
+
+        const reason = prompt('Please provide a reason for rejection (minimum 10 characters):');
+        if (reason === null) {
+            return;
+        }
+
+        const trimmedReason = reason.trim();
+        if (!trimmedReason) {
+            showNotification('Rejection reason is required', 'error');
+            return;
+        }
+
+        if (trimmedReason.length < 10) {
+            showNotification('Rejection reason must be at least 10 characters long', 'error');
+            return;
+        }
+
+        try {
+            await leaveService.reject(leaveId, trimmedReason);
+            showNotification('Leave request rejected successfully', 'success');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await fetchVacationHistory();
+        } catch (error) {
+            console.error('Reject error:', error);
+            showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
+        }
+    };
+
+    const handleViewRequest = (request) => {
+        setSelectedRequest(request);
+        setViewDialogOpen(true);
+    };
+
+    const handleEditRequest = (request) => {
+        setSelectedRequest(request);
+        setFormData({
+            type: request.leaveType || 'annual',
+            startDate: request.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+            endDate: request.endDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+            reason: request.reason || ''
+        });
+        setEditDialogOpen(true);
+    };
+
+    const handleUpdateRequest = async () => {
+        try {
+            setLoading(true);
+            const submitData = {
+                leaveType: formData.type,
+                startDate: formData.startDate,
+                endDate: formData.endDate,
+                reason: formData.reason.trim()
+            };
+
+            await leaveService.update(selectedRequest._id, submitData);
+            showNotification('Request updated successfully', 'success');
+            setEditDialogOpen(false);
+            setSelectedRequest(null);
+            await fetchVacationHistory();
+        } catch (error) {
+            const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update request';
+            showNotification(errorMessage, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteRequest = (request) => {
+        setSelectedRequest(request);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        try {
+            setLoading(true);
+            await leaveService.delete(selectedRequest._id);
+            showNotification('Request deleted successfully', 'success');
+            setDeleteDialogOpen(false);
+            setSelectedRequest(null);
+            await fetchVacationHistory();
+        } catch (error) {
+            showNotification(error.response?.data?.error || error.response?.data?.message || 'Delete failed', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const historyColumns = [
         // Show user column only for HR/Admin users
         ...(isHR || isAdmin ? [{
@@ -140,9 +289,9 @@ const VacationPage = () => {
             renderCell: (row) => {
                 const userObj = row.employee || row.user;
                 if (!userObj) return 'Unknown User';
-                
-                const fullName = `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim();
-                return fullName || userObj.username || userObj.email || 'Unknown User';
+
+                const fullName = `${userObj.profile?.firstName || ''} ${userObj.profile?.lastName || ''}`.trim();
+                return fullName || userObj.name || userObj.username || userObj.email || 'Unknown User';
             }
         }] : []),
         {
@@ -187,6 +336,77 @@ const VacationPage = () => {
             field: 'reason',
             headerName: 'Reason',
             renderCell: (row) => row.reason || 'N/A'
+        },
+        {
+            field: 'actions',
+            headerName: 'Actions',
+            width: 200,
+            renderCell: (row) => {
+                const isPending = row.status === 'pending';
+                const isSickLeave = row.leaveType === 'sick';
+                const isOwnRequest = row.employee?._id === user?._id || row.employee === user?._id;
+
+                return (
+                    <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                        {/* View button for everyone */}
+                        <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleViewRequest(row)}
+                            title="View Details"
+                        >
+                            <VisibilityIcon fontSize="small" />
+                        </IconButton>
+
+                        {/* Edit button - only for own pending requests */}
+                        {isOwnRequest && isPending && (
+                            <IconButton
+                                size="small"
+                                color="info"
+                                onClick={() => handleEditRequest(row)}
+                                title="Edit Request"
+                            >
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                        )}
+
+                        {/* Delete button - only for own pending requests */}
+                        {isOwnRequest && isPending && (
+                            <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDeleteRequest(row)}
+                                title="Delete Request"
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        )}
+
+                        {/* HR/Admin approve/reject buttons for non-sick pending leaves */}
+                        {(isHR || isAdmin) && isPending && !isSickLeave && (
+                            <>
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => handleApprove(row._id, row.leaveType)}
+                                    sx={{ ml: 1 }}
+                                >
+                                    Approve
+                                </Button>
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="error"
+                                    onClick={() => handleReject(row._id, row.leaveType)}
+                                >
+                                    Reject
+                                </Button>
+                            </>
+                        )}
+                    </Box>
+                );
+            }
         }
     ];
 
@@ -196,8 +416,8 @@ const VacationPage = () => {
                 <Typography variant="h4">Vacation Management</Typography>
             </Box>
 
-            <Tabs 
-                value={activeTab} 
+            <Tabs
+                value={activeTab}
                 onChange={(e, newValue) => setActiveTab(newValue)}
                 sx={{ mb: 3 }}
             >
@@ -212,7 +432,7 @@ const VacationPage = () => {
                             Request New Vacation
                         </Typography>
                         <Divider sx={{ mb: 3 }} />
-                        
+
                         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
                             <Grid container spacing={3}>
                                 <Grid item xs={12} md={6}>
@@ -225,12 +445,12 @@ const VacationPage = () => {
                                         fullWidth
                                         required
                                     >
-                                        <MenuItem value="annual">Annual Leave</MenuItem>
-                                        <MenuItem value="casual">Casual Leave</MenuItem>
-                                        <MenuItem value="sick">Sick Leave</MenuItem>
+                                        <MenuItem value="annual">Annual Vacation</MenuItem>
+                                        <MenuItem value="casual">Casual Vacation</MenuItem>
+                                        <MenuItem value="sick">Sick Vacation</MenuItem>
                                     </TextField>
                                 </Grid>
-                                
+
                                 <Grid item xs={12} md={6}>
                                     <TextField
                                         label="Days Requested"
@@ -241,7 +461,7 @@ const VacationPage = () => {
                                         fullWidth
                                     />
                                 </Grid>
-                                
+
                                 <Grid item xs={12} md={6}>
                                     <TextField
                                         type="date"
@@ -254,7 +474,7 @@ const VacationPage = () => {
                                         required
                                     />
                                 </Grid>
-                                
+
                                 <Grid item xs={12} md={6}>
                                     <TextField
                                         type="date"
@@ -267,7 +487,7 @@ const VacationPage = () => {
                                         required
                                     />
                                 </Grid>
-                                
+
                                 <Grid item xs={12}>
                                     <TextField
                                         label="Reason"
@@ -279,7 +499,7 @@ const VacationPage = () => {
                                         fullWidth
                                     />
                                 </Grid>
-                                
+
                                 <Grid item xs={12}>
                                     <Button
                                         type="submit"
@@ -303,7 +523,7 @@ const VacationPage = () => {
                             Vacation History
                         </Typography>
                         <Divider sx={{ mb: 3 }} />
-                        
+
                         {loading ? (
                             <Loading />
                         ) : (
@@ -316,6 +536,131 @@ const VacationPage = () => {
                     </CardContent>
                 </Card>
             )}
+
+            {/* View Request Dialog */}
+            <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Request Details</DialogTitle>
+                <DialogContent>
+                    {selectedRequest && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">Type</Typography>
+                                <Chip
+                                    label={selectedRequest.leaveType?.charAt(0).toUpperCase() + selectedRequest.leaveType?.slice(1)}
+                                    size="small"
+                                    color="primary"
+                                />
+                            </Box>
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">Start Date</Typography>
+                                <Typography>{new Date(selectedRequest.startDate).toLocaleDateString()}</Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">End Date</Typography>
+                                <Typography>{new Date(selectedRequest.endDate).toLocaleDateString()}</Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">Duration</Typography>
+                                <Typography>{selectedRequest.duration || 0} days</Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">Status</Typography>
+                                <Chip
+                                    label={selectedRequest.status?.toUpperCase()}
+                                    color={getStatusColor(selectedRequest.status)}
+                                    size="small"
+                                />
+                            </Box>
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">Reason</Typography>
+                                <Typography>{selectedRequest.reason || 'N/A'}</Typography>
+                            </Box>
+                            {selectedRequest.rejectionReason && (
+                                <Box>
+                                    <Typography variant="subtitle2" color="error">Rejection Reason</Typography>
+                                    <Typography color="error">{selectedRequest.rejectionReason}</Typography>
+                                </Box>
+                            )}
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Request Dialog */}
+            <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Edit Request</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        <TextField
+                            select
+                            label="Vacation Type"
+                            name="type"
+                            value={formData.type}
+                            onChange={handleChange}
+                            fullWidth
+                            required
+                        >
+                            <MenuItem value="annual">Annual Leave</MenuItem>
+                            <MenuItem value="casual">Casual Leave</MenuItem>
+                            <MenuItem value="sick">Sick Leave</MenuItem>
+                        </TextField>
+                        <TextField
+                            type="date"
+                            label="Start Date"
+                            name="startDate"
+                            value={formData.startDate}
+                            onChange={handleChange}
+                            InputLabelProps={{ shrink: true }}
+                            fullWidth
+                            required
+                        />
+                        <TextField
+                            type="date"
+                            label="End Date"
+                            name="endDate"
+                            value={formData.endDate}
+                            onChange={handleChange}
+                            InputLabelProps={{ shrink: true }}
+                            fullWidth
+                            required
+                        />
+                        <TextField
+                            label="Reason"
+                            name="reason"
+                            value={formData.reason}
+                            onChange={handleChange}
+                            multiline
+                            rows={3}
+                            fullWidth
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleUpdateRequest} variant="contained" disabled={loading}>
+                        {loading ? 'Updating...' : 'Update'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Delete Request</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to delete this request? This action cannot be undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleConfirmDelete} variant="contained" color="error" disabled={loading}>
+                        {loading ? 'Deleting...' : 'Delete'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

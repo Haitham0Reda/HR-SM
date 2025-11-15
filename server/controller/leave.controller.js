@@ -160,8 +160,14 @@ export const approveLeave = async (req, res) => {
 // Reject leave by supervisor
 export const rejectLeave = async (req, res) => {
     try {
-        const leave = await Leave.findById(req.params.id);
+        const leave = await Leave.findById(req.params.id).populate('employee', 'profile email');
         if (!leave) return res.status(404).json({ error: 'Leave not found' });
+
+        console.log('=== REJECT LEAVE ===');
+        console.log('Leave ID:', req.params.id);
+        console.log('Leave type:', leave.leaveType);
+        console.log('User role:', req.user.role);
+        console.log('Request body:', req.body);
 
         // IMPORTANT: Sick leave can ONLY be rejected by doctors
         if (leave.leaveType === 'sick') {
@@ -181,20 +187,27 @@ export const rejectLeave = async (req, res) => {
 
         // Validate reason
         if (!reason || typeof reason !== 'string') {
+            console.error('Rejection reason validation failed: not a string or missing');
             return res.status(400).json({ error: 'Rejection reason is required and must be a string' });
         }
-        
+
         const trimmedReason = reason.trim();
         if (!trimmedReason) {
+            console.error('Rejection reason validation failed: empty after trim');
             return res.status(400).json({ error: 'Rejection reason is required and cannot be empty' });
         }
-        
+
         if (trimmedReason.length < 10) {
+            console.error('Rejection reason validation failed: too short', trimmedReason.length);
             return res.status(400).json({ error: 'Rejection reason must be at least 10 characters long' });
         }
 
+        console.log('Calling rejectBySupervisor with reason:', trimmedReason);
+
         // Use supervisor rejection method
         await leave.rejectBySupervisor(userId, trimmedReason);
+
+        console.log('Leave rejected successfully');
 
         // Send notification
         await sendLeaveStatusUpdateNotification(leave, 'pending');
@@ -202,6 +215,7 @@ export const rejectLeave = async (req, res) => {
         res.json(leave);
     } catch (err) {
         console.error('Reject leave error:', err);
+        console.error('Error stack:', err.stack);
         res.status(400).json({ error: err.message });
     }
 };
@@ -261,12 +275,12 @@ export const rejectSickLeaveByDoctor = async (req, res) => {
         if (!reason || typeof reason !== 'string') {
             return res.status(400).json({ error: 'Rejection reason is required and must be a string' });
         }
-        
+
         const trimmedReason = reason.trim();
         if (!trimmedReason) {
             return res.status(400).json({ error: 'Rejection reason is required and cannot be empty' });
         }
-        
+
         if (trimmedReason.length < 10) {
             return res.status(400).json({ error: 'Rejection reason must be at least 10 characters long' });
         }
