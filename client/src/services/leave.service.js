@@ -22,6 +22,13 @@ const leaveService = {
     },
     update: async (id, data) => {
         const result = await api.put(`/leaves/${id}`, data);
+        // If status is being updated, dispatch notification update event
+        if (data && (data.status === 'approved' || data.status === 'rejected')) {
+            // Add a small delay to ensure server has time to create notification
+            await new Promise(resolve => setTimeout(resolve, 500));
+            // Dispatch notification update event
+            window.dispatchEvent(new CustomEvent('notificationUpdate'));
+        }
         return result;
     },
     delete: async (id) => {
@@ -34,18 +41,34 @@ const leaveService = {
     },
     approve: async (id, notes = '') => {
         const result = await api.post(`/leaves/${id}/approve`, { notes });
+        // Add a small delay to ensure server has time to create notification
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Dispatch notification update event
+        window.dispatchEvent(new CustomEvent('notificationUpdate'));
         return result;
     },
     reject: async (id, reason) => {
         const result = await api.post(`/leaves/${id}/reject`, { reason });
+        // Add a small delay to ensure server has time to create notification
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Dispatch notification update event
+        window.dispatchEvent(new CustomEvent('notificationUpdate'));
         return result;
     },
     approveSickLeaveByDoctor: async (id, notes = '') => {
         const result = await api.post(`/leaves/${id}/approve-doctor`, { notes });
+        // Add a small delay to ensure server has time to create notification
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Dispatch notification update event
+        window.dispatchEvent(new CustomEvent('notificationUpdate'));
         return result;
     },
     rejectSickLeaveByDoctor: async (id, reason) => {
         const result = await api.post(`/leaves/${id}/reject-doctor`, { reason });
+        // Add a small delay to ensure server has time to create notification
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Dispatch notification update event
+        window.dispatchEvent(new CustomEvent('notificationUpdate'));
         return result;
     },
     getPendingDoctorReview: async () => {

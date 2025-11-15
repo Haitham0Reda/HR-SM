@@ -184,11 +184,11 @@ function DashboardSidebar({
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>My Work</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
-                                    id="vacation-request"
-                                    title="Vacation Request"
+                                    id="vacation"
+                                    title="Vacation"
                                     icon={<BeachAccessIcon />}
-                                    href="/app/vacation-request"
-                                    selected={!!matchPath('/app/vacation-request', pathname)}
+                                    href="/app/vacation"
+                                    selected={!!matchPath('/app/vacation', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="my-permissions"
@@ -277,6 +277,14 @@ function DashboardSidebar({
                                     href="/app/positions"
                                     selected={!!matchPath('/app/positions', pathname)}
                                 />
+                                <DashboardSidebarPageItem
+                                    id="users"
+                                    title="Users"
+                                    icon={<PersonIcon />}
+                                    href="/app/users"
+                                    selected={!!matchPath('/app/users', pathname)}
+                                />
+
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>HR Operations</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -301,11 +309,25 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/permissions', pathname)}
                                 />
                                 <DashboardSidebarPageItem
+                                    id="overtime"
+                                    title="Overtime"
+                                    icon={<AccessTimeIcon />}
+                                    href="/app/overtime"
+                                    selected={!!matchPath('/app/overtime', pathname)}
+                                />
+                                <DashboardSidebarPageItem
                                     id="requests"
                                     title="Requests"
                                     icon={<RequestPageIcon />}
                                     href="/app/requests"
                                     selected={!!matchPath('/app/requests', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="vacation-management"
+                                    title="Vacation"
+                                    icon={<BeachAccessIcon />}
+                                    href="/app/vacations"
+                                    selected={!!matchPath('/app/vacations', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="payroll"
@@ -314,6 +336,7 @@ function DashboardSidebar({
                                     href="/app/payroll"
                                     selected={!!matchPath('/app/payroll', pathname)}
                                 />
+
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Documents</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -330,6 +353,7 @@ function DashboardSidebar({
                                     href="/app/templates"
                                     selected={!!matchPath('/app/templates', pathname)}
                                 />
+
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Communication</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -353,6 +377,7 @@ function DashboardSidebar({
                                     href="/app/surveys"
                                     selected={!!matchPath('/app/surveys', pathname)}
                                 />
+
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Advanced</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -363,13 +388,6 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/holidays', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="vacations"
-                                    title="Vacations"
-                                    icon={<BeachAccessIcon />}
-                                    href="/app/vacations"
-                                    selected={!!matchPath('/app/vacations', pathname)}
-                                />
-                                <DashboardSidebarPageItem
                                     id="reports"
                                     title="Reports"
                                     icon={<BarChartIcon />}
@@ -377,11 +395,11 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/reports', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="resigned"
-                                    title="Resigned"
-                                    icon={<PersonOffIcon />}
-                                    href="/app/resigned"
-                                    selected={!!matchPath('/app/resigned', pathname)}
+                                    id="analytics"
+                                    title="Analytics"
+                                    icon={<AssessmentIcon />}
+                                    href="/app/analytics"
+                                    selected={!!matchPath('/app/analytics', pathname)}
                                 />
                             </>
                         )}
@@ -389,15 +407,6 @@ function DashboardSidebar({
                         {/* Admin View */}
                         {userRole === 'admin' && (
                             <>
-                                <DashboardSidebarDividerItem />
-                                <DashboardSidebarHeaderItem>User Management</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="users"
-                                    title="Users"
-                                    icon={<PersonIcon />}
-                                    href="/app/users"
-                                    selected={!!matchPath('/app/users', pathname)}
-                                />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Organization</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -421,6 +430,14 @@ function DashboardSidebar({
                                     href="/app/positions"
                                     selected={!!matchPath('/app/positions', pathname)}
                                 />
+                                <DashboardSidebarPageItem
+                                    id="users"
+                                    title="Users"
+                                    icon={<PersonIcon />}
+                                    href="/app/users"
+                                    selected={!!matchPath('/app/users', pathname)}
+                                />
+
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>HR Operations</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -445,11 +462,25 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/permissions', pathname)}
                                 />
                                 <DashboardSidebarPageItem
+                                    id="overtime"
+                                    title="Overtime"
+                                    icon={<AccessTimeIcon />}
+                                    href="/app/overtime"
+                                    selected={!!matchPath('/app/overtime', pathname)}
+                                />
+                                <DashboardSidebarPageItem
                                     id="requests"
                                     title="Requests"
                                     icon={<RequestPageIcon />}
                                     href="/app/requests"
                                     selected={!!matchPath('/app/requests', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="vacation-management"
+                                    title="Vacation"
+                                    icon={<BeachAccessIcon />}
+                                    href="/app/vacations"
+                                    selected={!!matchPath('/app/vacations', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="payroll"
@@ -458,6 +489,7 @@ function DashboardSidebar({
                                     href="/app/payroll"
                                     selected={!!matchPath('/app/payroll', pathname)}
                                 />
+
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Documents</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -474,6 +506,7 @@ function DashboardSidebar({
                                     href="/app/templates"
                                     selected={!!matchPath('/app/templates', pathname)}
                                 />
+
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Communication</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -497,6 +530,7 @@ function DashboardSidebar({
                                     href="/app/surveys"
                                     selected={!!matchPath('/app/surveys', pathname)}
                                 />
+
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Advanced</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -505,13 +539,6 @@ function DashboardSidebar({
                                     icon={<CalendarTodayIcon />}
                                     href="/app/holidays"
                                     selected={!!matchPath('/app/holidays', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="vacations"
-                                    title="Vacations"
-                                    icon={<BeachAccessIcon />}
-                                    href="/app/vacations"
-                                    selected={!!matchPath('/app/vacations', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="reports"
@@ -527,6 +554,7 @@ function DashboardSidebar({
                                     href="/app/analytics"
                                     selected={!!matchPath('/app/analytics', pathname)}
                                 />
+
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Administration</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -545,104 +573,67 @@ function DashboardSidebar({
                                 />
                                 <DashboardSidebarPageItem
                                     id="resigned"
-                                    title="Resigned"
+                                    title="Resigned Employees"
                                     icon={<PersonOffIcon />}
                                     href="/app/resigned"
                                     selected={!!matchPath('/app/resigned', pathname)}
                                 />
                             </>
                         )}
-                        
-                        {/* Spacer to push content to top */}
-                        <Box sx={{ flex: 1, minHeight: 0 }} />
+
+                        {/* ID Card Admin View */}
+                        {userRole === 'id-card-admin' && (
+                            <>
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>ID Card Management</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="documents"
+                                    title="Documents"
+                                    icon={<DescriptionIcon />}
+                                    href="/app/documents"
+                                    selected={!!matchPath('/app/documents', pathname)}
+                                />
+                            </>
+                        )}
                     </List>
                 </Box>
             </Box>
         ),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [mini, hasDrawerTransitions, isFullyExpanded, pathname, userRole],
-    );
-
-    const getDrawerSharedSx = React.useCallback(
-        (isTemporary) => {
-            const drawerWidth = mini ? MINI_DRAWER_WIDTH : DRAWER_WIDTH;
-
-            return {
-                displayPrint: 'none',
-                width: drawerWidth,
-                flexShrink: 0,
-                height: '100vh',
-                ...getDrawerWidthTransitionMixin(expanded),
-                ...(isTemporary ? { position: 'absolute' } : {}),
-                [`& .MuiDrawer-paper`]: {
-                    position: isTemporary ? 'absolute' : 'fixed',
-                    width: drawerWidth,
-                    height: '100vh',
-                    boxSizing: 'border-box',
-                    backgroundImage: 'none',
-                    overflow: 'hidden',
-                    ...getDrawerWidthTransitionMixin(expanded),
-                },
-            };
-        },
-        [expanded, mini],
-    );
-
-    const sidebarContextValue = React.useMemo(() => {
-        return {
-            onPageItemClick: handlePageItemClick,
-            mini,
-            fullyExpanded: isFullyExpanded,
-            fullyCollapsed: isFullyCollapsed,
+        [
             hasDrawerTransitions,
-        };
-    }, [
-        handlePageItemClick,
-        mini,
-        isFullyExpanded,
-        isFullyCollapsed,
-        hasDrawerTransitions,
-    ]);
+            isFullyExpanded,
+            mini,
+            pathname,
+            userRole,
+        ],
+    );
 
     return (
-        <DashboardSidebarContext.Provider value={sidebarContextValue}>
+        <DashboardSidebarContext.Provider
+            value={{
+                expanded: isFullyExpanded && !isFullyCollapsed,
+                mini,
+                setExpanded: handleSetSidebarExpanded,
+            }}
+        >
             <Drawer
                 container={container}
-                variant="temporary"
-                open={expanded}
-                onClose={handleSetSidebarExpanded(false)}
-                ModalProps={{
-                    keepMounted: true, // Better open performance on mobile.
-                }}
-                sx={{
-                    display: {
-                        xs: 'block',
-                        sm: disableCollapsibleSidebar ? 'block' : 'none',
-                        md: 'none',
-                    },
-                    ...getDrawerSharedSx(true),
-                }}
-            >
-                {getDrawerContent('phone')}
-            </Drawer>
-            <Drawer
                 variant="permanent"
+                anchor="left"
                 sx={{
-                    display: {
-                        xs: 'none',
-                        sm: disableCollapsibleSidebar ? 'none' : 'block',
-                        md: 'none',
-                    },
-                    ...getDrawerSharedSx(false),
+                    width: mini ? MINI_DRAWER_WIDTH : DRAWER_WIDTH,
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap',
+                    boxSizing: 'border-box',
+                    ...getDrawerWidthTransitionMixin(isFullyExpanded),
                 }}
-            >
-                {getDrawerContent('tablet')}
-            </Drawer>
-            <Drawer
-                variant="permanent"
-                sx={{
-                    display: { xs: 'none', md: 'block' },
-                    ...getDrawerSharedSx(false),
+                PaperProps={{
+                    sx: {
+                        ...getDrawerWidthTransitionMixin(isFullyExpanded),
+                        overflowX: 'hidden',
+                        borderRight: 0,
+                        boxShadow: 4,
+                    },
                 }}
             >
                 {getDrawerContent('desktop')}
@@ -652,15 +643,7 @@ function DashboardSidebar({
 }
 
 DashboardSidebar.propTypes = {
-    container: (props, propName) => {
-        if (props[propName] == null) {
-            return null;
-        }
-        if (typeof props[propName] !== 'object' || props[propName].nodeType !== 1) {
-            return new Error(`Expected prop '${propName}' to be of type Element`);
-        }
-        return null;
-    },
+    container: PropTypes.any,
     disableCollapsibleSidebar: PropTypes.bool,
     expanded: PropTypes.bool,
     setExpanded: PropTypes.func.isRequired,
