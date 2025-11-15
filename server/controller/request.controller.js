@@ -1,6 +1,7 @@
 // Request Controller
 import Request from '../models/request.model.js';
 import User from '../models/user.model.js';
+import Notification from '../models/notification.model.js';
 import { createPermissionNotification } from '../middleware/index.js';
 import { sendEmail, getEmployeeManager, getHREmployee, getDoctor } from '../utils/emailService.js';
 import {
@@ -178,6 +179,9 @@ async function handleSickLeaveNotifications(request, employee, action, previousS
                     html: emailTemplate.html,
                     text: emailTemplate.text
                 });
+                
+                // Create in-app notification
+                await createRequestStatusNotification(request, employee);
             }
             break;
     }
@@ -224,6 +228,9 @@ async function handleDaySwapNotifications(request, employee, action, previousSta
                     html: emailTemplate.html,
                     text: emailTemplate.text
                 });
+                
+                // Create in-app notification
+                await createRequestStatusNotification(request, employee);
             }
             break;
     }
@@ -258,8 +265,46 @@ async function handleGeneralRequestNotifications(request, employee, action, prev
                     html: emailTemplate.html,
                     text: emailTemplate.text
                 });
+                
+                // Create in-app notification
+                await createRequestStatusNotification(request, employee);
             }
             break;
+    }
+}
+
+/**
+ * Create in-app notification for request status change
+ */
+async function createRequestStatusNotification(request, employee) {
+    try {
+        // Only create notification for final statuses (approved/rejected)
+        if (!['approved', 'rejected'].includes(request.status)) {
+            return;
+        }
+        
+        const statusText = request.status === 'approved' ? 'approved' : 'rejected';
+        const title = `Your ${request.type} request has been ${statusText}`;
+        let message = `Your ${request.type} request submitted on ${new Date(request.createdAt).toLocaleDateString()} has been ${statusText}.`;
+        
+        // Add reason/comments if available
+        if (request.comments) {
+            message += ` Reason: ${request.comments}`;
+        }
+        
+        const notification = new Notification({
+            recipient: employee._id,
+            type: 'request',
+            title,
+            message,
+            status: request.status,
+            relatedModel: 'Request',
+            relatedId: request._id
+        });
+        
+        await notification.save();
+    } catch (error) {
+        console.error('Error creating request status notification:', error);
     }
 }
 

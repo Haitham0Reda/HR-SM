@@ -24,6 +24,7 @@ import CreateOvertimePage from './pages/overtime/CreateOvertimePage';
 import RequestsPage from './pages/requests/RequestsPage';
 import RequestDetailsPage from './pages/requests/RequestDetailsPage';
 import VacationRequestPage from './pages/vacation/VacationRequestPage';
+import VacationPage from './pages/vacation/VacationPage';
 import PayrollPage from './pages/payroll/PayrollPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import TemplatesPage from './pages/templates/TemplatesPage';
@@ -88,6 +89,7 @@ function App() {
                 <Route path="requests" element={<RequestsPage />} />
                 <Route path="requests/:id" element={<RequestDetailsPage />} />
                 <Route path="vacation-request" element={<VacationRequestPage />} />
+                <Route path="vacation" element={<VacationPage />} />
                 <Route path="payroll" element={<PayrollPage />} />
 
                 {/* Documents */}
