@@ -6,7 +6,6 @@ import {
     CardContent,
     TextField,
     Typography,
-    Grid,
     Chip,
     Divider,
     Tabs,
@@ -434,73 +433,75 @@ const VacationPage = () => {
                         <Divider sx={{ mb: 3 }} />
 
                         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-                            <Grid container spacing={3}>
-                                <Grid item xs={12} md={6}>
-                                    <TextField
-                                        select
-                                        label="Vacation Type"
-                                        name="type"
-                                        value={formData.type}
-                                        onChange={handleChange}
-                                        fullWidth
-                                        required
-                                    >
-                                        <MenuItem value="annual">Annual Vacation</MenuItem>
-                                        <MenuItem value="casual">Casual Vacation</MenuItem>
-                                        <MenuItem value="sick">Sick Vacation</MenuItem>
-                                    </TextField>
-                                </Grid>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                    <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+                                        <TextField
+                                            select
+                                            label="Vacation Type"
+                                            name="type"
+                                            value={formData.type}
+                                            onChange={handleChange}
+                                            fullWidth
+                                            required
+                                        >
+                                            <MenuItem value="annual">Annual Vacation</MenuItem>
+                                            <MenuItem value="casual">Casual Vacation</MenuItem>
+                                            <MenuItem value="sick">Sick Vacation</MenuItem>
+                                        </TextField>
+                                    </Box>
 
-                                <Grid item xs={12} md={6}>
-                                    <TextField
-                                        label="Days Requested"
-                                        value={`${calculateDays()} day(s)`}
-                                        InputProps={{
-                                            readOnly: true,
-                                        }}
-                                        fullWidth
-                                    />
-                                </Grid>
+                                    <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+                                        <TextField
+                                            label="Days Requested"
+                                            value={`${calculateDays()} day(s)`}
+                                            InputProps={{
+                                                readOnly: true,
+                                            }}
+                                            fullWidth
+                                        />
+                                    </Box>
+                                </Box>
 
-                                <Grid item xs={12} md={6}>
-                                    <TextField
-                                        type="date"
-                                        label="Start Date"
-                                        name="startDate"
-                                        value={formData.startDate}
-                                        onChange={handleChange}
-                                        InputLabelProps={{ shrink: true }}
-                                        fullWidth
-                                        required
-                                    />
-                                </Grid>
+                                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                    <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+                                        <TextField
+                                            type="date"
+                                            label="Start Date"
+                                            name="startDate"
+                                            value={formData.startDate}
+                                            onChange={handleChange}
+                                            InputLabelProps={{ shrink: true }}
+                                            fullWidth
+                                            required
+                                        />
+                                    </Box>
 
-                                <Grid item xs={12} md={6}>
-                                    <TextField
-                                        type="date"
-                                        label="End Date"
-                                        name="endDate"
-                                        value={formData.endDate}
-                                        onChange={handleChange}
-                                        InputLabelProps={{ shrink: true }}
-                                        fullWidth
-                                        required
-                                    />
-                                </Grid>
+                                    <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+                                        <TextField
+                                            type="date"
+                                            label="End Date"
+                                            name="endDate"
+                                            value={formData.endDate}
+                                            onChange={handleChange}
+                                            InputLabelProps={{ shrink: true }}
+                                            fullWidth
+                                            required
+                                        />
+                                    </Box>
+                                </Box>
 
-                                <Grid item xs={12}>
-                                    <TextField
-                                        label="Reason"
-                                        name="reason"
-                                        value={formData.reason}
-                                        onChange={handleChange}
-                                        multiline
-                                        rows={3}
-                                        fullWidth
-                                    />
-                                </Grid>
+                                <TextField
+                                    label="Reason"
+                                    name="reason"
+                                    value={formData.reason}
+                                    onChange={handleChange}
+                                    multiline
+                                    rows={3}
+                                    fullWidth
+                                />
 
-                                <Grid item xs={12}>
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                     <Button
                                         type="submit"
                                         variant="contained"
@@ -509,8 +510,8 @@ const VacationPage = () => {
                                     >
                                         {loading ? 'Submitting...' : 'Submit Request'}
                                     </Button>
-                                </Grid>
-                            </Grid>
+                                </Box>
+                            </Box>
                         </Box>
                     </CardContent>
                 </Card>
