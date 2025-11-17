@@ -192,7 +192,7 @@ function DashboardSidebar({
                                 />
                                 <DashboardSidebarPageItem
                                     id="my-leaves"
-                                    title="My Leaves"
+                                    title="Mission & Sick"
                                     icon={<EventAvailableIcon />}
                                     href="/leaves"
                                     selected={!!matchPath('/leaves', pathname)}
@@ -288,7 +288,7 @@ function DashboardSidebar({
                                 />
                                 <DashboardSidebarPageItem
                                     id="leaves"
-                                    title="Leaves"
+                                    title="Mission & Sick"
                                     icon={<EventAvailableIcon />}
                                     href="/leaves"
                                     selected={!!matchPath('/leaves', pathname)}
@@ -364,7 +364,7 @@ function DashboardSidebar({
                                 />
                                 <DashboardSidebarPageItem
                                     id="vacations"
-                                    title="Vacations"
+                                    title="Annual, Casual, Sick & Unpaid"
                                     icon={<BeachAccessIcon />}
                                     href="/vacations"
                                     selected={!!matchPath('/vacations', pathname)}
@@ -432,7 +432,7 @@ function DashboardSidebar({
                                 />
                                 <DashboardSidebarPageItem
                                     id="leaves"
-                                    title="Leaves"
+                                    title="Mission & Sick"
                                     icon={<EventAvailableIcon />}
                                     href="/leaves"
                                     selected={!!matchPath('/leaves', pathname)}
@@ -508,7 +508,7 @@ function DashboardSidebar({
                                 />
                                 <DashboardSidebarPageItem
                                     id="vacations"
-                                    title="Vacations"
+                                    title="Annual, Casual, Sick & Unpaid"
                                     icon={<BeachAccessIcon />}
                                     href="/vacations"
                                     selected={!!matchPath('/vacations', pathname)}

@@ -4,7 +4,20 @@ import { createAnnouncementNotifications } from '../middleware/index.js';
 
 export const getAllAnnouncements = async (req, res) => {
     try {
-        const announcements = await Announcement.find()
+        let query = {};
+
+        // If user is not HR or Admin, filter announcements based on their role
+        if (req.user.role !== 'hr' && req.user.role !== 'admin') {
+            query = {
+                $or: [
+                    { targetAudience: 'all' },
+                    { targetAudience: 'employees' },
+                    { targetAudience: req.user.role }
+                ]
+            };
+        }
+
+        const announcements = await Announcement.find(query)
             .populate('createdBy', 'username email')
             .populate('departments', 'name code')
             .sort({ publishDate: -1 });
@@ -17,10 +30,24 @@ export const getAllAnnouncements = async (req, res) => {
 export const getActiveAnnouncements = async (req, res) => {
     try {
         const now = new Date();
-        const announcements = await Announcement.find({
+        let query = {
             publishDate: { $lte: now },
             expiryDate: { $gte: now }
-        })
+        };
+
+        // If user is not HR or Admin, filter announcements based on their role
+        if (req.user.role !== 'hr' && req.user.role !== 'admin') {
+            query = {
+                ...query,
+                $or: [
+                    { targetAudience: 'all' },
+                    { targetAudience: 'employees' },
+                    { targetAudience: req.user.role }
+                ]
+            };
+        }
+
+        const announcements = await Announcement.find(query)
             .populate('createdBy', 'username email')
             .populate('departments', 'name code')
             .sort({ publishDate: -1 });
