@@ -32,7 +32,7 @@ const LeavesPage = () => {
     const [selectedLeave, setSelectedLeave] = useState(null);
     const [formData, setFormData] = useState({
         user: '',
-        type: 'annual',
+        type: 'mission',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
         reason: '',
@@ -40,7 +40,8 @@ const LeavesPage = () => {
     });
     const { showNotification } = useNotification();
 
-    const leaveTypes = ['annual', 'sick', 'personal', 'maternity', 'paternity', 'unpaid', 'other'];
+    // Only show mission and sick leave types
+    const leaveTypes = ['mission', 'sick'];
     const statuses = ['pending', 'approved', 'rejected', 'cancelled'];
 
     useEffect(() => {
@@ -53,12 +54,15 @@ const LeavesPage = () => {
             const params = (isHR || isAdmin) ? {} : { user: user?._id };
             const data = await leaveService.getAll(params);
             // Map backend 'employee' field to frontend 'user' field and 'leaveType' to 'type'
-            const mappedData = Array.isArray(data) ? data.map(leave => ({
+            // Filter to show only mission and sick leaves
+            const filteredData = Array.isArray(data) ? data.filter(leave => 
+                ['mission', 'sick'].includes(leave.leaveType || leave.type)
+            ).map(leave => ({
                 ...leave,
                 user: leave.employee || leave.user,
                 type: leave.leaveType || leave.type
             })) : [];
-            setLeaves(mappedData);
+            setLeaves(filteredData);
         } catch (error) {
             showNotification('Failed to fetch leave requests', 'error');
         } finally {
@@ -90,7 +94,7 @@ const LeavesPage = () => {
             setSelectedLeave(leave);
             setFormData({
                 user: leave.user?._id || leave.user || '',
-                type: leave.type || 'annual',
+                type: leave.type || 'mission',
                 startDate: leave.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
                 endDate: leave.endDate?.split('T')[0] || new Date().toISOString().split('T')[0],
                 reason: leave.reason || '',
@@ -100,7 +104,7 @@ const LeavesPage = () => {
             setSelectedLeave(null);
             setFormData({
                 user: (isHR || isAdmin) ? '' : user?._id || '',
-                type: 'annual',
+                type: 'mission',
                 startDate: new Date().toISOString().split('T')[0],
                 endDate: new Date().toISOString().split('T')[0],
                 reason: '',
@@ -283,9 +287,9 @@ const LeavesPage = () => {
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box>
-                    <Typography variant="h4">Leave Requests</Typography>
+                    <Typography variant="h4">Mission & Sick Requests</Typography>
                     <Typography variant="body2" color="text.secondary">
-                        {(isHR || isAdmin) ? 'Manage all employee leave requests' : 'View and manage your leave requests'}
+                        {(isHR || isAdmin) ? 'Manage all mission and sick requests' : 'View and manage your mission and sick requests'}
                     </Typography>
                 </Box>
                 <Button
@@ -293,7 +297,7 @@ const LeavesPage = () => {
                     startIcon={<AddIcon />}
                     onClick={() => handleOpenDialog()}
                 >
-                    New Leave Request
+                    New Request
                 </Button>
             </Box>
 
@@ -304,7 +308,7 @@ const LeavesPage = () => {
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>
-                    {selectedLeave ? 'Edit Leave Request' : 'New Leave Request'}
+                    {selectedLeave ? 'Edit Request' : 'New Request'}
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
@@ -334,7 +338,7 @@ const LeavesPage = () => {
                         )}
                         <TextField
                             select
-                            label="Leave Type"
+                            label="Request Type"
                             name="type"
                             value={formData.type}
                             onChange={handleChange}
@@ -404,15 +408,15 @@ const LeavesPage = () => {
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>Cancel</Button>
                     <Button onClick={handleSubmit} variant="contained">
-                        {selectedLeave ? 'Update' : 'Submit'}
+                        {selectedLeave ? 'Update' : 'Create'}
                     </Button>
                 </DialogActions>
             </Dialog>
 
             <ConfirmDialog
                 open={openConfirm}
-                title="Delete Leave Request"
-                message="Are you sure you want to delete this leave request?"
+                title="Delete Request"
+                message="Are you sure you want to delete this request?"
                 onConfirm={handleDelete}
                 onCancel={() => {
                     setOpenConfirm(false);

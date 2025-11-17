@@ -49,7 +49,11 @@ const VacationsPage = () => {
         try {
             setLoading(true);
             const data = await vacationService.getAll();
-            setVacations(data);
+            // Filter to show only annual, casual, sick, and unpaid vacation types
+            const filteredData = data.filter(vacation => 
+                ['annual', 'casual', 'sick', 'unpaid'].includes(vacation.type)
+            );
+            setVacations(filteredData);
         } catch (error) {
             showNotification('Failed to fetch vacation records', 'error');
         } finally {
@@ -160,6 +164,18 @@ const VacationsPage = () => {
         },
         { field: 'year', headerName: 'Year', width: 100 },
         {
+            field: 'type',
+            headerName: 'Type',
+            width: 120,
+            renderCell: (params) => (
+                <Chip 
+                    label={params.row.type || 'annual'} 
+                    size="small" 
+                    variant="outlined" 
+                />
+            )
+        },
+        {
             field: 'totalDays',
             headerName: 'Total Days',
             width: 120,
@@ -223,7 +239,7 @@ const VacationsPage = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4">Vacation Management</Typography>
+                <Typography variant="h4">Annual, Casual, Sick & Unpaid Vacation</Typography>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
@@ -269,6 +285,20 @@ const VacationsPage = () => {
                             required
                             fullWidth
                         />
+                        <TextField
+                            select
+                            label="Vacation Type"
+                            name="type"
+                            value={formData.type || 'annual'}
+                            onChange={handleChange}
+                            required
+                            fullWidth
+                        >
+                            <MenuItem value="annual">Annual</MenuItem>
+                            <MenuItem value="casual">Casual</MenuItem>
+                            <MenuItem value="sick">Sick</MenuItem>
+                            <MenuItem value="unpaid">Unpaid</MenuItem>
+                        </TextField>
                         <Grid container spacing={2}>
                             <Grid item xs={6}>
                                 <TextField

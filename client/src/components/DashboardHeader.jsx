@@ -69,17 +69,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
         return () => clearInterval(timer);
     }, []);
 
-    // Fetch notifications
-    React.useEffect(() => {
-        if (user && user._id) {
-            fetchNotifications();
-            // Refresh notifications every 30 seconds
-            const interval = setInterval(fetchNotifications, 30000);
-            return () => clearInterval(interval);
-        }
-    }, [user]);
-
-    const fetchNotifications = async () => {
+    // Define fetchNotifications before useEffect that uses it
+    const fetchNotifications = React.useCallback(async () => {
         try {
             const allNotifications = [];
 
@@ -187,7 +178,17 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
         }
-    };
+    }, [user]);
+
+    // Fetch notifications
+    React.useEffect(() => {
+        if (user && user._id) {
+            fetchNotifications();
+            // Refresh notifications every 60 seconds instead of 30 to reduce load
+            const interval = setInterval(fetchNotifications, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [user, fetchNotifications]);
 
     const notificationCount = notifications.length;
 
@@ -530,7 +531,6 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                     <Box sx={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
                         {notifications.map((notification) => {
                             const notifType = notification.notifType;
-                            const statusColor = notification.status === 'pending' ? 'warning.main' : 'info.main';
 
                             const handleClick = () => {
                                 // Mark as viewed
@@ -538,6 +538,10 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 if (!viewedNotifications.includes(notification._id)) {
                                     viewedNotifications.push(notification._id);
                                     localStorage.setItem('viewedNotifications', JSON.stringify(viewedNotifications));
+                                    
+                                    // Immediately update the notifications state to decrease the badge count
+                                    const updatedNotifications = notifications.filter(n => n._id !== notification._id);
+                                    setNotifications(updatedNotifications);
                                 }
 
                                 handleNotificationClose();
@@ -554,9 +558,6 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 } else if (notifType === 'survey') {
                                     navigate('/surveys');
                                 }
-
-                                // Refresh notifications after marking as viewed
-                                setTimeout(fetchNotifications, 500);
                             };
 
                             return (
