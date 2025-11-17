@@ -18,10 +18,12 @@ import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import leaveService from '../../services/leave.service';
 import userService from '../../services/user.service';
 
 const LeavesPage = () => {
+    const { user, isHR, isAdmin } = useAuth();
     const [leaves, setLeaves] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -42,16 +44,21 @@ const LeavesPage = () => {
     const statuses = ['pending', 'approved', 'rejected', 'cancelled'];
 
     useEffect(() => {
-        fetchLeaves();
-        fetchUsers();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchLeaves = async () => {
         try {
             setLoading(true);
-            const data = await leaveService.getAll();
-            setLeaves(data);
+            // If HR/Admin, fetch all leaves. Otherwise, fetch only user's leaves
+            const params = (isHR || isAdmin) ? {} : { user: user?._id };
+            const data = await leaveService.getAll(params);
+            // Map backend 'employee' field to frontend 'user' field and 'leaveType' to 'type'
+            const mappedData = Array.isArray(data) ? data.map(leave => ({
+                ...leave,
+                user: leave.employee || leave.user,
+                type: leave.leaveType || leave.type
+            })) : [];
+            setLeaves(mappedData);
         } catch (error) {
             showNotification('Failed to fetch leave requests', 'error');
         } finally {
@@ -61,12 +68,22 @@ const LeavesPage = () => {
 
     const fetchUsers = async () => {
         try {
-            const data = await userService.getAll();
-            setUsers(data);
+            // Only fetch all users if HR/Admin, otherwise just use current user
+            if (isHR || isAdmin) {
+                const data = await userService.getAll();
+                setUsers(data);
+            } else {
+                setUsers([user]);
+            }
         } catch (error) {
             console.error('Failed to fetch users:', error);
         }
     };
+
+    useEffect(() => {
+        fetchLeaves();
+        fetchUsers();
+    }, []);
 
     const handleOpenDialog = (leave = null) => {
         if (leave) {
@@ -82,7 +99,7 @@ const LeavesPage = () => {
         } else {
             setSelectedLeave(null);
             setFormData({
-                user: '',
+                user: (isHR || isAdmin) ? '' : user?._id || '',
                 type: 'annual',
                 startDate: new Date().toISOString().split('T')[0],
                 endDate: new Date().toISOString().split('T')[0],
@@ -166,35 +183,35 @@ const LeavesPage = () => {
             field: 'user',
             headerName: 'Employee',
             width: 180,
-            renderCell: (params) => params.row.user?.name || 'N/A'
+            renderCell: (row) => row.user?.name || 'N/A'
         },
         {
             field: 'type',
             headerName: 'Type',
             width: 120,
-            renderCell: (params) => (
-                <Chip label={params.row.type} size="small" variant="outlined" />
+            renderCell: (row) => (
+                <Chip label={row.type} size="small" variant="outlined" />
             )
         },
         {
             field: 'startDate',
             headerName: 'Start Date',
             width: 120,
-            renderCell: (params) => new Date(params.row.startDate).toLocaleDateString()
+            renderCell: (row) => new Date(row.startDate).toLocaleDateString()
         },
         {
             field: 'endDate',
             headerName: 'End Date',
             width: 120,
-            renderCell: (params) => new Date(params.row.endDate).toLocaleDateString()
+            renderCell: (row) => new Date(row.endDate).toLocaleDateString()
         },
         {
             field: 'days',
             headerName: 'Days',
             width: 80,
-            renderCell: (params) => {
-                const start = new Date(params.row.startDate);
-                const end = new Date(params.row.endDate);
+            renderCell: (row) => {
+                const start = new Date(row.startDate);
+                const end = new Date(row.endDate);
                 const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
                 return days;
             }
@@ -204,10 +221,10 @@ const LeavesPage = () => {
             field: 'status',
             headerName: 'Status',
             width: 120,
-            renderCell: (params) => (
+            renderCell: (row) => (
                 <Chip
-                    label={params.row.status}
-                    color={getStatusColor(params.row.status)}
+                    label={row.status}
+                    color={getStatusColor(row.status)}
                     size="small"
                 />
             )
@@ -216,13 +233,13 @@ const LeavesPage = () => {
             field: 'actions',
             headerName: 'Actions',
             width: 180,
-            renderCell: (params) => (
+            renderCell: (row) => (
                 <Box>
-                    {params.row.status === 'pending' && (
+                    {(isHR || isAdmin) && row.status === 'pending' && (
                         <>
                             <IconButton
                                 size="small"
-                                onClick={() => handleApprove(params.row._id)}
+                                onClick={() => handleApprove(row._id)}
                                 color="success"
                                 title="Approve"
                             >
@@ -230,7 +247,7 @@ const LeavesPage = () => {
                             </IconButton>
                             <IconButton
                                 size="small"
-                                onClick={() => handleReject(params.row._id)}
+                                onClick={() => handleReject(row._id)}
                                 color="error"
                                 title="Reject"
                             >
@@ -240,7 +257,7 @@ const LeavesPage = () => {
                     )}
                     <IconButton
                         size="small"
-                        onClick={() => handleOpenDialog(params.row)}
+                        onClick={() => handleOpenDialog(row)}
                         color="primary"
                     >
                         <EditIcon fontSize="small" />
@@ -248,7 +265,7 @@ const LeavesPage = () => {
                     <IconButton
                         size="small"
                         onClick={() => {
-                            setSelectedLeave(params.row);
+                            setSelectedLeave(row);
                             setOpenConfirm(true);
                         }}
                         color="error"
@@ -265,7 +282,12 @@ const LeavesPage = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4">Leave Requests</Typography>
+                <Box>
+                    <Typography variant="h4">Leave Requests</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        {(isHR || isAdmin) ? 'Manage all employee leave requests' : 'View and manage your leave requests'}
+                    </Typography>
+                </Box>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
@@ -276,9 +298,8 @@ const LeavesPage = () => {
             </Box>
 
             <DataTable
-                rows={leaves}
+                data={leaves}
                 columns={columns}
-                getRowId={(row) => row._id}
             />
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
@@ -287,21 +308,30 @@ const LeavesPage = () => {
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                        <TextField
-                            select
-                            label="Employee"
-                            name="user"
-                            value={formData.user}
-                            onChange={handleChange}
-                            required
-                            fullWidth
-                        >
-                            {users.map((user) => (
-                                <MenuItem key={user._id} value={user._id}>
-                                    {user.name} - {user.email}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                        {(isHR || isAdmin) ? (
+                            <TextField
+                                select
+                                label="Employee"
+                                name="user"
+                                value={formData.user}
+                                onChange={handleChange}
+                                required
+                                fullWidth
+                            >
+                                {users.map((u) => (
+                                    <MenuItem key={u._id} value={u._id}>
+                                        {u.name || u.username} - {u.email}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        ) : (
+                            <TextField
+                                label="Employee"
+                                value={user?.name || user?.username || ''}
+                                disabled
+                                fullWidth
+                            />
+                        )}
                         <TextField
                             select
                             label="Leave Type"
@@ -353,20 +383,22 @@ const LeavesPage = () => {
                             required
                             fullWidth
                         />
-                        <TextField
-                            select
-                            label="Status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            fullWidth
-                        >
-                            {statuses.map((status) => (
-                                <MenuItem key={status} value={status}>
-                                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                        {(isHR || isAdmin) && (
+                            <TextField
+                                select
+                                label="Status"
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                fullWidth
+                            >
+                                {statuses.map((status) => (
+                                    <MenuItem key={status} value={status}>
+                                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        )}
                     </Box>
                 </DialogContent>
                 <DialogActions>
