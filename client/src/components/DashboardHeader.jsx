@@ -373,8 +373,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 }}
                             >
                                 <Avatar
-                                    src={user?.profilePicture}
-                                    alt={user?.name || 'User'}
+                                    src={user?.profile?.profilePicture || user?.profilePicture}
+                                    alt={user?.name || user?.username || 'User'}
                                     sx={{
                                         width: 36,
                                         height: 36,
@@ -387,8 +387,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                         },
                                     }}
                                 >
-                                    {!user?.profilePicture && user?.name
-                                        ? user.name.charAt(0).toUpperCase()
+                                    {!(user?.profile?.profilePicture || user?.profilePicture) && (user?.name || user?.username)
+                                        ? (user?.name || user?.username).charAt(0).toUpperCase()
                                         : <PersonIcon />}
                                 </Avatar>
                             </IconButton>
@@ -464,7 +464,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             >
                 <Box sx={{ px: 2.5, py: 2 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        {user?.name || 'User'}
+                        {user?.name || user?.username || 'User'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
                         {user?.email || ''}
@@ -661,8 +661,15 @@ DashboardHeader.propTypes = {
     user: PropTypes.shape({
         _id: PropTypes.string,
         name: PropTypes.string,
+        username: PropTypes.string,
         email: PropTypes.string,
+        role: PropTypes.string,
         profilePicture: PropTypes.string,
+        profile: PropTypes.shape({
+            firstName: PropTypes.string,
+            lastName: PropTypes.string,
+            profilePicture: PropTypes.string,
+        }),
     }),
 };
 

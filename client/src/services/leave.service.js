@@ -28,6 +28,14 @@ const leaveService = {
         const result = await api.delete(`/leaves/${id}`);
         return result;
     },
+    approve: async (id) => {
+        const result = await api.put(`/leaves/${id}`, { status: 'approved' });
+        return result;
+    },
+    reject: async (id) => {
+        const result = await api.put(`/leaves/${id}`, { status: 'rejected' });
+        return result;
+    },
     getBalance: async (userId) => {
         const data = await api.get(`/leaves/balance/${userId}`);
         return data;
