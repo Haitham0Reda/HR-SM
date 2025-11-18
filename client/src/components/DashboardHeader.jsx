@@ -1,66 +1,46 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
-import { styled, useTheme } from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import MuiAppBar from '@mui/material/AppBar';
-import IconButton from '@mui/material/IconButton';
-import Toolbar from '@mui/material/Toolbar';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import MenuIcon from '@mui/icons-material/Menu';
-import MenuOpenIcon from '@mui/icons-material/MenuOpen';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import Avatar from '@mui/material/Avatar';
-import Badge from '@mui/material/Badge';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Divider from '@mui/material/Divider';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import PersonIcon from '@mui/icons-material/Person';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LogoutIcon from '@mui/icons-material/Logout';
-import Stack from '@mui/material/Stack';
+import { styled, useTheme, alpha } from '@mui/material/styles';
+import {
+    AppBar,
+    Box,
+    Toolbar,
+    Typography,
+    IconButton,
+    Tooltip,
+    Menu,
+    MenuItem,
+    Avatar,
+    Stack,
+    Badge,
+    Divider,
+    ListItemIcon,
+    ListItemText,
+    Chip,
+    Button,
+} from '@mui/material';
+import {
+    Menu as MenuIcon,
+    MenuOpen as MenuOpenIcon,
+    AccountCircle as AccountCircleIcon,
+    Logout as LogoutIcon,
+    Notifications as NotificationsIcon,
+    Settings as SettingsIcon,
+    Person as PersonIcon,
+} from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
-import ThemeSwitcher from './ThemeSwitcher';
+import SitemarkIcon from './SitemarkIcon';
 import { useAuth } from '../context/AuthContext';
-import leaveService from '../services/leave.service';
-import announcementService from '../services/announcement.service';
-import eventService from '../services/event.service';
-import surveyService from '../services/survey.service';
-import permissionService from '../services/permission.service';
 import notificationService from '../services/notification.service';
 
-const AppBar = styled(MuiAppBar)(({ theme }) => ({
-    borderWidth: 0,
-    borderBottomWidth: 1,
-    borderStyle: 'solid',
-    borderColor: (theme.vars ?? theme).palette.divider,
-    boxShadow: 'none',
-    zIndex: theme.zIndex.drawer + 1,
-}));
-
-const LogoContainer = styled('div')({
-    position: 'relative',
-    height: 40,
-    display: 'flex',
-    alignItems: 'center',
-    '& img': {
-        maxHeight: 40,
-    },
-});
-
-function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
+const DashboardHeader = ({ menuOpen, onToggleMenu, logo, title }) => {
     const theme = useTheme();
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
     const [notifications, setNotifications] = React.useState([]);
     const [currentTime, setCurrentTime] = React.useState(new Date());
-    const profileMenuOpen = Boolean(anchorEl);
-    const notificationMenuOpen = Boolean(notificationAnchorEl);
 
     // Update time every second
     React.useEffect(() => {
@@ -70,34 +50,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
         return () => clearInterval(timer);
     }, []);
 
-<<<<<<< HEAD
-    // Fetch notifications
-    React.useEffect(() => {
-        if (user && user._id) {
-            fetchNotifications();
-            // Refresh notifications every 30 seconds
-            const interval = setInterval(fetchNotifications, 30000);
-
-            // Listen for notification updates from other components
-            const handleNotificationUpdate = () => {
-                console.log('notificationUpdate event received, fetching notifications...');
-                fetchNotifications();
-            };
-            window.addEventListener('notificationUpdate', handleNotificationUpdate);
-            console.log('Notification event listener registered');
-
-            return () => {
-                clearInterval(interval);
-                window.removeEventListener('notificationUpdate', handleNotificationUpdate);
-            };
-        }
-    }, [user]);
-
-    const fetchNotifications = async () => {
-=======
     // Define fetchNotifications before useEffect that uses it
     const fetchNotifications = React.useCallback(async () => {
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
         try {
             console.log('Fetching notifications...');
             // Fetch notifications from the notification API
@@ -128,7 +82,19 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             fetchNotifications();
             // Refresh notifications every 60 seconds instead of 30 to reduce load
             const interval = setInterval(fetchNotifications, 60000);
-            return () => clearInterval(interval);
+            
+            // Listen for notification updates from other components
+            const handleNotificationUpdate = () => {
+                console.log('notificationUpdate event received, fetching notifications...');
+                fetchNotifications();
+            };
+            window.addEventListener('notificationUpdate', handleNotificationUpdate);
+            console.log('Notification event listener registered');
+
+            return () => {
+                clearInterval(interval);
+                window.removeEventListener('notificationUpdate', handleNotificationUpdate);
+            };
         }
     }, [user, fetchNotifications]);
 
@@ -185,6 +151,38 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
         [handleMenuOpen],
     );
 
+    // Helper function to get color based on status
+    const getStatusColor = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'approved':
+                return 'success';
+            case 'rejected':
+                return 'error';
+            case 'pending':
+            default:
+                return 'warning';
+        }
+    };
+
+    // Helper function to format time ago
+    const getTimeAgo = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInMs = now - date;
+        const diffInHours = diffInMs / (1000 * 60 * 60);
+        const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+        if (diffInHours < 1) {
+            return 'Just now';
+        } else if (diffInHours < 24) {
+            return `${Math.floor(diffInHours)}h ago`;
+        } else if (diffInDays < 7) {
+            return `${Math.floor(diffInDays)}d ago`;
+        } else {
+            return date.toLocaleDateString();
+        }
+    };
+
     return (
         <AppBar color="inherit" position="absolute" sx={{ displayPrint: 'none' }}>
             <Toolbar sx={{ backgroundColor: 'inherit', mx: { xs: -0.75, sm: -1 } }}>
@@ -201,7 +199,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                         <Box sx={{ mr: 1 }}>{getMenuIcon(menuOpen)}</Box>
                         <Link to="/app" style={{ textDecoration: 'none' }}>
                             <Stack direction="row" alignItems="center">
-                                {logo ? <LogoContainer>{logo}</LogoContainer> : null}
+                                {logo ? <SitemarkIcon /> : null}
                                 {title ? (
                                     <Typography
                                         variant="h6"
@@ -274,8 +272,6 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                             </Typography>
                         </Box>
 
-                        <ThemeSwitcher />
-
                         <Tooltip title="Notifications">
                             <IconButton
                                 size="medium"
@@ -305,9 +301,9 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                             <IconButton
                                 onClick={handleProfileClick}
                                 size="small"
-                                aria-controls={profileMenuOpen ? 'account-menu' : undefined}
+                                aria-controls={Boolean(anchorEl) ? 'account-menu' : undefined}
                                 aria-haspopup="true"
-                                aria-expanded={profileMenuOpen ? 'true' : undefined}
+                                aria-expanded={Boolean(anchorEl) ? 'true' : undefined}
                                 sx={{
                                     ml: 1,
                                     '&:hover': {
@@ -316,13 +312,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 }}
                             >
                                 <Avatar
-<<<<<<< HEAD
-                                    src={user?.profile?.profilePicture}
-                                    alt={user?.name || 'User'}
-=======
                                     src={user?.profile?.profilePicture || user?.profilePicture}
                                     alt={user?.name || user?.username || 'User'}
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                                     sx={{
                                         width: 36,
                                         height: 36,
@@ -335,13 +326,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                         },
                                     }}
                                 >
-<<<<<<< HEAD
-                                    {!user?.profile?.profilePicture && user?.name
-                                        ? user.name.charAt(0).toUpperCase()
-=======
                                     {!(user?.profile?.profilePicture || user?.profilePicture) && (user?.name || user?.username)
                                         ? (user?.name || user?.username).charAt(0).toUpperCase()
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                                         : <PersonIcon />}
                                 </Avatar>
                             </IconButton>
@@ -388,7 +374,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             <Menu
                 anchorEl={anchorEl}
                 id="account-menu"
-                open={profileMenuOpen}
+                open={Boolean(anchorEl)}
                 onClose={handleProfileClose}
                 onClick={handleProfileClose}
                 slotProps={{
@@ -449,7 +435,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             <Menu
                 anchorEl={notificationAnchorEl}
                 id="notifications-menu"
-                open={notificationMenuOpen}
+                open={Boolean(notificationAnchorEl)}
                 onClose={handleNotificationClose}
                 slotProps={{
                     paper: {
@@ -482,44 +468,6 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                 {notifications.length > 0 ? (
                     <Box sx={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
                         {notifications.map((notification) => {
-<<<<<<< HEAD
-                            const notifType = notification.type;
-
-                            // Calculate time ago
-                            const getTimeAgo = (date) => {
-                                const now = new Date();
-                                const created = new Date(date);
-                                const diffMs = now - created;
-                                const diffMins = Math.floor(diffMs / 60000);
-                                const diffHours = Math.floor(diffMs / 3600000);
-                                const diffDays = Math.floor(diffMs / 86400000);
-
-                                if (diffMins < 1) return 'Just now';
-                                if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-                                if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-                                return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-                            };
-
-                            // Get status color
-                            const getStatusColor = (status) => {
-                                const colors = {
-                                    pending: 'warning',
-                                    approved: 'success',
-                                    rejected: 'error',
-                                    cancelled: 'default'
-                                };
-                                return colors[status] || 'default';
-                            };
-
-                            const handleClick = async () => {
-                                // Mark notification as read in database
-                                try {
-                                    if (!notification.isRead) {
-                                        await notificationService.markAsRead(notification._id);
-                                    }
-                                } catch (error) {
-                                    console.error('Error marking notification as read:', error);
-=======
                             const notifType = notification.notifType;
 
                             const handleClick = () => {
@@ -532,7 +480,6 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                     // Immediately update the notifications state to decrease the badge count
                                     const updatedNotifications = notifications.filter(n => n._id !== notification._id);
                                     setNotifications(updatedNotifications);
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                                 }
 
                                 handleNotificationClose();
@@ -560,12 +507,6 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                     // Default: navigate to requests list
                                     navigate('/app/requests');
                                 }
-<<<<<<< HEAD
-
-                                // Refresh notifications after marking as read
-                                setTimeout(fetchNotifications, 500);
-=======
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                             };
 
                             return (

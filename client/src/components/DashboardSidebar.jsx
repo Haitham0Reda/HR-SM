@@ -193,10 +193,6 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/vacation', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-<<<<<<< HEAD
-                                    id="permissions"
-                                    title="Permissions"
-=======
                                     id="my-leaves"
                                     title="Mission & Sick"
                                     icon={<EventAvailableIcon />}
@@ -206,7 +202,6 @@ function DashboardSidebar({
                                 <DashboardSidebarPageItem
                                     id="my-permissions"
                                     title="My Permissions"
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                                     icon={<AssignmentIcon />}
                                     href="/app/permissions"
                                     selected={!!matchPath('/app/permissions', pathname)}
@@ -398,10 +393,6 @@ function DashboardSidebar({
                                     id="holidays"
                                     title="Holidays"
                                     icon={<CalendarTodayIcon />}
-<<<<<<< HEAD
-                                    href="/app/holidays"
-                                    selected={!!matchPath('/app/holidays', pathname)}
-=======
                                     href="/holidays"
                                     selected={!!matchPath('/holidays', pathname)}
                                 />
@@ -411,7 +402,6 @@ function DashboardSidebar({
                                     icon={<BeachAccessIcon />}
                                     href="/vacations"
                                     selected={!!matchPath('/vacations', pathname)}
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                                 />
                                 <DashboardSidebarPageItem
                                     id="reports"
@@ -563,10 +553,6 @@ function DashboardSidebar({
                                     id="holidays"
                                     title="Holidays"
                                     icon={<CalendarTodayIcon />}
-<<<<<<< HEAD
-                                    href="/app/holidays"
-                                    selected={!!matchPath('/app/holidays', pathname)}
-=======
                                     href="/holidays"
                                     selected={!!matchPath('/holidays', pathname)}
                                 />
@@ -576,7 +562,6 @@ function DashboardSidebar({
                                     icon={<BeachAccessIcon />}
                                     href="/vacations"
                                     selected={!!matchPath('/vacations', pathname)}
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                                 />
                                 <DashboardSidebarPageItem
                                     id="reports"
