@@ -70,6 +70,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
         return () => clearInterval(timer);
     }, []);
 
+<<<<<<< HEAD
     // Fetch notifications
     React.useEffect(() => {
         if (user && user._id) {
@@ -93,6 +94,10 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     }, [user]);
 
     const fetchNotifications = async () => {
+=======
+    // Define fetchNotifications before useEffect that uses it
+    const fetchNotifications = React.useCallback(async () => {
+>>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
         try {
             console.log('Fetching notifications...');
             // Fetch notifications from the notification API
@@ -115,7 +120,17 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             // Fallback to empty array if API fails
             setNotifications([]);
         }
-    };
+    }, [user]);
+
+    // Fetch notifications
+    React.useEffect(() => {
+        if (user && user._id) {
+            fetchNotifications();
+            // Refresh notifications every 60 seconds instead of 30 to reduce load
+            const interval = setInterval(fetchNotifications, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [user, fetchNotifications]);
 
     const notificationCount = notifications.length;
 
@@ -301,8 +316,13 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 }}
                             >
                                 <Avatar
+<<<<<<< HEAD
                                     src={user?.profile?.profilePicture}
                                     alt={user?.name || 'User'}
+=======
+                                    src={user?.profile?.profilePicture || user?.profilePicture}
+                                    alt={user?.name || user?.username || 'User'}
+>>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                                     sx={{
                                         width: 36,
                                         height: 36,
@@ -315,8 +335,13 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                         },
                                     }}
                                 >
+<<<<<<< HEAD
                                     {!user?.profile?.profilePicture && user?.name
                                         ? user.name.charAt(0).toUpperCase()
+=======
+                                    {!(user?.profile?.profilePicture || user?.profilePicture) && (user?.name || user?.username)
+                                        ? (user?.name || user?.username).charAt(0).toUpperCase()
+>>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                                         : <PersonIcon />}
                                 </Avatar>
                             </IconButton>
@@ -392,7 +417,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             >
                 <Box sx={{ px: 2.5, py: 2 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        {user?.name || 'User'}
+                        {user?.name || user?.username || 'User'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
                         {user?.email || ''}
@@ -457,6 +482,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                 {notifications.length > 0 ? (
                     <Box sx={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
                         {notifications.map((notification) => {
+<<<<<<< HEAD
                             const notifType = notification.type;
 
                             // Calculate time ago
@@ -493,6 +519,20 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                     }
                                 } catch (error) {
                                     console.error('Error marking notification as read:', error);
+=======
+                            const notifType = notification.notifType;
+
+                            const handleClick = () => {
+                                // Mark as viewed
+                                const viewedNotifications = JSON.parse(localStorage.getItem('viewedNotifications') || '[]');
+                                if (!viewedNotifications.includes(notification._id)) {
+                                    viewedNotifications.push(notification._id);
+                                    localStorage.setItem('viewedNotifications', JSON.stringify(viewedNotifications));
+                                    
+                                    // Immediately update the notifications state to decrease the badge count
+                                    const updatedNotifications = notifications.filter(n => n._id !== notification._id);
+                                    setNotifications(updatedNotifications);
+>>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                                 }
 
                                 handleNotificationClose();
@@ -520,9 +560,12 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                     // Default: navigate to requests list
                                     navigate('/app/requests');
                                 }
+<<<<<<< HEAD
 
                                 // Refresh notifications after marking as read
                                 setTimeout(fetchNotifications, 500);
+=======
+>>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
                             };
 
                             return (
@@ -610,8 +653,15 @@ DashboardHeader.propTypes = {
     user: PropTypes.shape({
         _id: PropTypes.string,
         name: PropTypes.string,
+        username: PropTypes.string,
         email: PropTypes.string,
+        role: PropTypes.string,
         profilePicture: PropTypes.string,
+        profile: PropTypes.shape({
+            firstName: PropTypes.string,
+            lastName: PropTypes.string,
+            profilePicture: PropTypes.string,
+        }),
     }),
 };
 

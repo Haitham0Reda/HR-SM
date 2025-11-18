@@ -10,10 +10,18 @@ import {
     IconButton,
     Typography,
     Chip,
-    MenuItem
+    MenuItem,
+    Card,
+    CardContent,
+    CardActions,
+    Divider
 } from '@mui/material';
+<<<<<<< HEAD
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
+=======
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as ViewIcon } from '@mui/icons-material';
+>>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
@@ -25,9 +33,14 @@ const AnnouncementsPage = () => {
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
+<<<<<<< HEAD
     const [openViewDialog, setOpenViewDialog] = useState(false);
+=======
+    const [viewDialogOpen, setViewDialogOpen] = useState(false);
+>>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+    const [viewAnnouncement, setViewAnnouncement] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
         content: '',
@@ -153,6 +166,16 @@ const AnnouncementsPage = () => {
         setOpenDialog(true);
     };
 
+    const handleViewDialogOpen = (announcement) => {
+        setViewAnnouncement(announcement);
+        setViewDialogOpen(true);
+    };
+
+    const handleViewDialogClose = () => {
+        setViewDialogOpen(false);
+        setViewAnnouncement(null);
+    };
+
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setSelectedAnnouncement(null);
@@ -227,6 +250,7 @@ const AnnouncementsPage = () => {
         return colors[priority] || 'default';
     };
 
+<<<<<<< HEAD
     const columns = [
         { field: 'title', headerName: 'Title', width: 250, align: 'left' },
         { field: 'content', headerName: 'Content', width: 350, align: 'left' },
@@ -400,6 +424,8 @@ const AnnouncementsPage = () => {
         }
     ];
 
+=======
+>>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
     if (loading) return <Loading />;
 
     return (
@@ -422,6 +448,7 @@ const AnnouncementsPage = () => {
                 </Button>
             </Box>
 
+<<<<<<< HEAD
             <Box sx={{ flex: 1, overflow: 'hidden' }}>
                 <DataTable
                     data={announcements}
@@ -429,7 +456,154 @@ const AnnouncementsPage = () => {
                     getRowId={(row) => row._id}
                 />
             </Box>
+=======
+            {announcements.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 5 }}>
+                    <Typography variant="h6" color="text.secondary">
+                        No announcements available
+                    </Typography>
+                </Box>
+            ) : (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                    {announcements.map((announcement) => (
+                        <Box key={announcement._id} sx={{ flex: '1 1 300px', minWidth: 300 }}>
+                            <Card 
+                                sx={{ 
+                                    height: '100%', 
+                                    display: 'flex', 
+                                    flexDirection: 'column',
+                                    borderLeft: '4px solid',
+                                    borderLeftColor: announcement.priority === 'urgent' ? 'error.main' : 
+                                                    announcement.priority === 'high' ? 'warning.main' : 
+                                                    announcement.priority === 'normal' ? 'info.main' : 'grey.400'
+                                }}
+                            >
+                                <CardContent sx={{ flexGrow: 1 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                                            {announcement.title}
+                                        </Typography>
+                                        <Chip 
+                                            label={announcement.priority} 
+                                            color={getPriorityColor(announcement.priority)} 
+                                            size="small" 
+                                            sx={{ ml: 1 }}
+                                        />
+                                    </Box>
+                                    
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                        {announcement.content.substring(0, 100)}...
+                                    </Typography>
+                                    
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                        <Chip 
+                                            label={announcement.targetAudience} 
+                                            size="small" 
+                                            variant="outlined" 
+                                        />
+                                        <Chip 
+                                            label={announcement.isActive ? 'Active' : 'Inactive'} 
+                                            color={announcement.isActive ? 'success' : 'default'} 
+                                            size="small" 
+                                        />
+                                    </Box>
+                                    
+                                    <Typography variant="caption" color="text.secondary">
+                                        Created: {new Date(announcement.createdAt).toLocaleDateString()}
+                                    </Typography>
+                                </CardContent>
+                                
+                                <CardActions sx={{ justifyContent: 'space-between', p: 2, pt: 0 }}>
+                                    <Button 
+                                        size="small" 
+                                        startIcon={<ViewIcon />}
+                                        onClick={() => handleViewDialogOpen(announcement)}
+                                    >
+                                        View
+                                    </Button>
+                                    <Box>
+                                        <IconButton 
+                                            size="small" 
+                                            onClick={() => handleOpenDialog(announcement)}
+                                            color="primary"
+                                        >
+                                            <EditIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton 
+                                            size="small" 
+                                            onClick={() => {
+                                                setSelectedAnnouncement(announcement);
+                                                setOpenConfirm(true);
+                                            }}
+                                            color="error"
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    </Box>
+                                </CardActions>
+                            </Card>
+                        </Box>
+                    ))}
+                </Box>
+            )}
+>>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
 
+            {/* View Announcement Dialog */}
+            <Dialog open={viewDialogOpen} onClose={handleViewDialogClose} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    {viewAnnouncement?.title}
+                    <Chip 
+                        label={viewAnnouncement?.priority} 
+                        color={getPriorityColor(viewAnnouncement?.priority)} 
+                        size="small" 
+                        sx={{ ml: 2 }}
+                    />
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ py: 2 }}>
+                        <Typography variant="body1" sx={{ whiteSpace: 'pre-line', mb: 3 }}>
+                            {viewAnnouncement?.content}
+                        </Typography>
+                        
+                        <Divider sx={{ my: 2 }} />
+                        
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                    Target Audience
+                                </Typography>
+                                <Chip 
+                                    label={viewAnnouncement?.targetAudience} 
+                                    size="small" 
+                                    variant="outlined" 
+                                />
+                            </Box>
+                            
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                    Status
+                                </Typography>
+                                <Chip 
+                                    label={viewAnnouncement?.isActive ? 'Active' : 'Inactive'} 
+                                    color={viewAnnouncement?.isActive ? 'success' : 'default'} 
+                                    size="small" 
+                                />
+                            </Box>
+                        </Box>
+                        
+                        <Typography variant="caption" color="text.secondary">
+                            Published: {viewAnnouncement?.createdAt ? new Date(viewAnnouncement.createdAt).toLocaleString() : ''}
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleViewDialogClose} variant="contained">
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Create/Edit Announcement Dialog */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
                 <DialogTitle>
                     {selectedAnnouncement ? 'Edit Announcement' : 'New Announcement'}
