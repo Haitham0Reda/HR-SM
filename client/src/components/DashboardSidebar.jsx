@@ -29,6 +29,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import SecurityIcon from '@mui/icons-material/Security';
 import BackupIcon from '@mui/icons-material/Backup';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
@@ -196,8 +197,8 @@ function DashboardSidebar({
                                     id="my-leaves"
                                     title="Mission & Sick"
                                     icon={<EventAvailableIcon />}
-                                    href="/leaves"
-                                    selected={!!matchPath('/leaves', pathname)}
+                                    href="/app/leaves"
+                                    selected={!!matchPath('/app/leaves', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="my-permissions"
@@ -214,11 +215,11 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/overtime', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="leaves"
-                                    title="Leaves"
-                                    icon={<EventAvailableIcon />}
-                                    href="/app/leaves"
-                                    selected={!!matchPath('/app/leaves', pathname)}
+                                    id="forget-check"
+                                    title="Forget Check"
+                                    icon={<ErrorOutlineIcon />}
+                                    href="/app/forget-check"
+                                    selected={!!matchPath('/app/forget-check', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Information</DashboardSidebarHeaderItem>
@@ -330,6 +331,13 @@ function DashboardSidebar({
                                     icon={<RequestPageIcon />}
                                     href="/app/requests"
                                     selected={!!matchPath('/app/requests', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="forget-check"
+                                    title="Forget Check"
+                                    icon={<ErrorOutlineIcon />}
+                                    href="/app/forget-check"
+                                    selected={!!matchPath('/app/forget-check', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="vacation-management"
@@ -490,6 +498,13 @@ function DashboardSidebar({
                                     icon={<RequestPageIcon />}
                                     href="/app/requests"
                                     selected={!!matchPath('/app/requests', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="forget-check"
+                                    title="Forget Check"
+                                    icon={<ErrorOutlineIcon />}
+                                    href="/app/forget-check"
+                                    selected={!!matchPath('/app/forget-check', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="vacation-management"
@@ -656,6 +671,11 @@ function DashboardSidebar({
                         overflowX: 'hidden',
                         borderRight: 0,
                         boxShadow: 4,
+                        // Start below the header
+                        top: { xs: 56, sm: 64 },
+                        height: { xs: 'calc(100% - 56px)', sm: 'calc(100% - 64px)' },
+                        // Add some positioning adjustments
+                        position: 'absolute',
                     },
                 }}
             >

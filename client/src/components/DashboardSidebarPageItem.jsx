@@ -159,7 +159,7 @@ function DashboardSidebarPageItem({
                                     ? {
                                         position: 'absolute',
                                         left: '50%',
-                                        top: 'calc(50% - 6px)',
+                                        top: '50%',
                                         transform: 'translate(-50%, -50%)',
                                     }
                                     : {}
@@ -170,10 +170,25 @@ function DashboardSidebarPageItem({
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: mini ? 'center' : 'auto',
+                                    minWidth: 0,
                                 }}
                             >
-                                {icon ?? null}
-                                {!icon && mini ? (
+                                {icon ? (
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: '50%',
+                                            bgcolor: selected ? 'primary.main' : 'action.selected',
+                                            color: selected ? 'primary.contrastText' : 'action.active',
+                                        }}
+                                    >
+                                        {icon}
+                                    </Box>
+                                ) : mini ? (
                                     <Avatar
                                         sx={{
                                             fontSize: 10,
@@ -188,26 +203,6 @@ function DashboardSidebarPageItem({
                                     </Avatar>
                                 ) : null}
                             </ListItemIcon>
-                            {mini ? (
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        position: 'absolute',
-                                        bottom: -18,
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        fontSize: 10,
-                                        fontWeight: 500,
-                                        textAlign: 'center',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        maxWidth: MINI_DRAWER_WIDTH - 28,
-                                    }}
-                                >
-                                    {title}
-                                </Typography>
-                            ) : null}
                         </Box>
                     ) : null}
                     {!mini ? (

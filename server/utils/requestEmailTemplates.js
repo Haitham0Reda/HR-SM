@@ -85,6 +85,93 @@ HR Management System
 };
 
 /**
+ * New Forget Check Notification Template (to manager and HR)
+ */
+export const newForgetCheckNotificationTemplate = (forgetCheck, employee) => {
+    const requestType = forgetCheck.requestType === 'forget-check-in' ? 'Forget Check-In' : 'Forget Check-Out';
+    
+    return {
+        subject: `New ${requestType} Request from ${employee.profile?.firstName || employee.username}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #2196F3; color: white; padding: 20px; text-align: center; }
+                    .content { background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+                    .button { 
+                        display: inline-block; 
+                        padding: 12px 24px; 
+                        background-color: #2196F3; 
+                        color: white !important; 
+                        text-decoration: none; 
+                        border-radius: 4px; 
+                        margin: 20px 0;
+                    }
+                    .footer { text-align: center; padding: 20px; color: #777; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>📝 New Forget Check Request</h1>
+                    </div>
+                    <div class="content">
+                        <p>Dear Manager/HR,</p>
+                        
+                        <p>${employee.profile?.firstName || employee.username} has submitted a new ${requestType} request:</p>
+                        
+                        <h2>Forget Check Request Details</h2>
+                        
+                        <p><strong>Employee:</strong> ${employee.profile?.firstName || employee.username} ${employee.profile?.lastName || ''}</p>
+                        <p><strong>Date:</strong> ${forgetCheck.date ? new Date(forgetCheck.date).toLocaleDateString() : 'N/A'}</p>
+                        <p><strong>Request Type:</strong> ${requestType}</p>
+                        <p><strong>Requested Time:</strong> ${forgetCheck.requestedTime ? new Date(forgetCheck.requestedTime).toLocaleTimeString() : 'N/A'}</p>
+                        ${forgetCheck.reason ? `<p><strong>Reason:</strong> ${forgetCheck.reason}</p>` : ''}
+                        
+                        <p><strong>Submitted:</strong> ${new Date(forgetCheck.createdAt).toLocaleDateString()}</p>
+                        
+                        <p style="text-align: center;">
+                            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/forget-checks/${forgetCheck._id}" class="button">
+                                Review Request
+                            </a>
+                        </p>
+                        
+                        <p>Best regards,<br>HR Management System</p>
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated message from the HR Management System.</p>
+                        <p>Please do not reply to this email.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `,
+        text: `
+New ${requestType} Request from ${employee.profile?.firstName || employee.username}
+
+${employee.profile?.firstName || employee.username} has submitted a new ${requestType} request.
+
+Forget Check Request Details:
+Employee: ${employee.profile?.firstName || employee.username} ${employee.profile?.lastName || ''}
+Date: ${forgetCheck.date ? new Date(forgetCheck.date).toLocaleDateString() : 'N/A'}
+Request Type: ${requestType}
+Requested Time: ${forgetCheck.requestedTime ? new Date(forgetCheck.requestedTime).toLocaleTimeString() : 'N/A'}
+${forgetCheck.reason ? `Reason: ${forgetCheck.reason}` : ''}
+
+Submitted: ${new Date(forgetCheck.createdAt).toLocaleDateString()}
+
+To review this request, please visit: ${process.env.FRONTEND_URL || 'http://localhost:3000'}/forget-checks/${forgetCheck._id}
+
+Best regards,
+HR Management System
+        `
+    };
+};
+
+/**
  * Sick Leave Request Notification Template (to doctor)
  */
 export const sickLeaveRequestToDoctorTemplate = (request, employee) => {
@@ -235,6 +322,76 @@ Type: ${requestType}
 Status: ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
 ${request.reviewedAt ? `Reviewed: ${new Date(request.reviewedAt).toLocaleDateString()}` : ''}
 ${request.comments ? `Comments: ${request.comments}` : ''}
+
+Best regards,
+HR Management System
+        `
+    };
+};
+
+/**
+ * Forget Check Approval Notification Template (to employee)
+ */
+export const forgetCheckApprovalNotificationTemplate = (forgetCheck, employee) => {
+    const requestType = forgetCheck.requestType === 'forget-check-in' ? 'Forget Check-In' : 'Forget Check-Out';
+    const action = forgetCheck.status === 'approved' ? 'approved' : 'rejected';
+    const actionColor = forgetCheck.status === 'approved' ? '#4CAF50' : '#f44336';
+    
+    return {
+        subject: `${requestType} Request ${action.charAt(0).toUpperCase() + action.slice(1)}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: ${actionColor}; color: white; padding: 20px; text-align: center; }
+                    .content { background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+                    .footer { text-align: center; padding: 20px; color: #777; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>${forgetCheck.status === 'approved' ? '✅' : '❌'} Forget Check Request ${action.charAt(0).toUpperCase() + action.slice(1)}</h1>
+                    </div>
+                    <div class="content">
+                        <p>Dear ${employee.profile?.firstName || employee.username},</p>
+                        
+                        <p>Your ${requestType} request has been ${action}:</p>
+                        
+                        <h2>Request Details</h2>
+                        
+                        <p><strong>Type:</strong> ${requestType}</p>
+                        <p><strong>Status:</strong> ${forgetCheck.status.charAt(0).toUpperCase() + forgetCheck.status.slice(1)}</p>
+                        ${forgetCheck.approvedAt || forgetCheck.rejectedAt ? 
+                            `<p><strong>Reviewed:</strong> ${new Date(forgetCheck.approvedAt || forgetCheck.rejectedAt).toLocaleDateString()}</p>` : ''}
+                        ${forgetCheck.rejectionReason ? `<p><strong>Reason:</strong> ${forgetCheck.rejectionReason}</p>` : ''}
+                        
+                        <p>Best regards,<br>HR Management System</p>
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated message from the HR Management System.</p>
+                        <p>Please do not reply to this email.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `,
+        text: `
+${requestType} Request ${action.charAt(0).toUpperCase() + action.slice(1)}
+
+Dear ${employee.profile?.firstName || employee.username},
+
+Your ${requestType} request has been ${action}.
+
+Request Details:
+Type: ${requestType}
+Status: ${forgetCheck.status.charAt(0).toUpperCase() + forgetCheck.status.slice(1)}
+${forgetCheck.approvedAt || forgetCheck.rejectedAt ? 
+    `Reviewed: ${new Date(forgetCheck.approvedAt || forgetCheck.rejectedAt).toLocaleDateString()}` : ''}
+${forgetCheck.rejectionReason ? `Reason: ${forgetCheck.rejectionReason}` : ''}
 
 Best regards,
 HR Management System
@@ -552,8 +709,10 @@ Reason: ${request.details.reason || 'N/A'}
 
 export default {
     newRequestNotificationTemplate,
+    newForgetCheckNotificationTemplate,
     sickLeaveRequestToDoctorTemplate,
     requestApprovalNotificationTemplate,
+    forgetCheckApprovalNotificationTemplate,
     reminderNotificationTemplate,
     sickLeaveApprovalNotificationTemplate
 };

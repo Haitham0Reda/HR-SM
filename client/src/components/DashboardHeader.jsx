@@ -1,6 +1,6 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
-import { styled, useTheme, alpha } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import {
     AppBar,
     Box,
@@ -15,23 +15,21 @@ import {
     Badge,
     Divider,
     ListItemIcon,
-    ListItemText,
     Chip,
     Button,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
     MenuOpen as MenuOpenIcon,
-    AccountCircle as AccountCircleIcon,
     Logout as LogoutIcon,
     Notifications as NotificationsIcon,
     Settings as SettingsIcon,
     Person as PersonIcon,
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
-import SitemarkIcon from './SitemarkIcon';
 import { useAuth } from '../context/AuthContext';
 import notificationService from '../services/notification.service';
+import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
 
 const DashboardHeader = ({ menuOpen, onToggleMenu, logo, title }) => {
     const theme = useTheme();
@@ -74,7 +72,7 @@ const DashboardHeader = ({ menuOpen, onToggleMenu, logo, title }) => {
             // Fallback to empty array if API fails
             setNotifications([]);
         }
-    }, [user]);
+    }, []); // Removed 'user' from dependency array as it's not used in the function
 
     // Fetch notifications
     React.useEffect(() => {
@@ -199,7 +197,7 @@ const DashboardHeader = ({ menuOpen, onToggleMenu, logo, title }) => {
                         <Box sx={{ mr: 1 }}>{getMenuIcon(menuOpen)}</Box>
                         <Link to="/app" style={{ textDecoration: 'none' }}>
                             <Stack direction="row" alignItems="center">
-                                {logo ? <SitemarkIcon /> : null}
+                                {logo ? logo : null}
                                 {title ? (
                                     <Typography
                                         variant="h6"

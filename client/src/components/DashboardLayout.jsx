@@ -61,7 +61,7 @@ export default function DashboardLayout() {
         >
             <DashboardHeader
                 logo={<SitemarkIcon />}
-                title=""
+                title="HR-SM"
                 menuOpen={isNavigationExpanded}
                 onToggleMenu={handleToggleHeaderMenu}
                 user={user}

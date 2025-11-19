@@ -40,6 +40,7 @@ import BackupsPage from './pages/backups/BackupsPage';
 import ResignedPage from './pages/resigned/ResignedPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import SettingsPage from './pages/settings/SettingsPage';
+import ForgetCheckPage from './pages/forget-check/ForgetCheckPage';
 import theme from './theme/customizations';
 import './App.css';
 
@@ -86,6 +87,7 @@ function App() {
                 <Route path="permissions/create" element={<CreatePermissionPage />} />
                 <Route path="overtime" element={<OvertimePage />} />
                 <Route path="overtime/create" element={<CreateOvertimePage />} />
+                <Route path="forget-check" element={<ForgetCheckPage />} />
                 <Route path="requests" element={<RequestsPage />} />
                 <Route path="requests/:id" element={<RequestDetailsPage />} />
                 <Route path="vacation-request" element={<VacationRequestPage />} />
