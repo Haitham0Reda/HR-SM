@@ -10,7 +10,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
+
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Link } from 'react-router';
@@ -107,6 +107,8 @@ function DashboardSidebarPageItem({
                     px: 1,
                     overflowX: 'hidden',
                     ...sx,
+                    // Keep adjustments when sidebar is closed
+                    minWidth: mini ? MINI_DRAWER_WIDTH : 'auto',
                 }}
             >
                 <ListItemButton
@@ -132,6 +134,8 @@ function DashboardSidebarPageItem({
                             bgcolor: 'action.hover',
                             transform: 'translateX(4px)',
                         },
+                        // Keep adjustments when sidebar is closed
+                        minHeight: 48,
                     }}
                     {...(nestedNavigation && !mini
                         ? {
@@ -161,6 +165,11 @@ function DashboardSidebarPageItem({
                                         left: '50%',
                                         top: '50%',
                                         transform: 'translate(-50%, -50%)',
+                                        // Keep adjustments when sidebar is closed
+                                        minWidth: 36,
+                                        minHeight: 36,
+                                        width: 36,
+                                        height: 36,
                                     }
                                     : {}
                             }
@@ -171,6 +180,9 @@ function DashboardSidebarPageItem({
                                     alignItems: 'center',
                                     justifyContent: mini ? 'center' : 'auto',
                                     minWidth: 0,
+                                    // Keep adjustments when sidebar is closed
+                                    width: '100%',
+                                    height: '100%',
                                 }}
                             >
                                 {icon ? (

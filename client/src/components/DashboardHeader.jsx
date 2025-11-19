@@ -29,7 +29,6 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import notificationService from '../services/notification.service';
-import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
 
 const DashboardHeader = ({ menuOpen, onToggleMenu, logo, title }) => {
     const theme = useTheme();

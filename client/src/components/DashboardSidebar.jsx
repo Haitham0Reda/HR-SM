@@ -132,7 +132,7 @@ function DashboardSidebar({
                     overflow: 'hidden',
                 }}
             >
-                <Toolbar sx={{ flexShrink: 0 }} />
+                <Toolbar sx={{ flexShrink: 0, minHeight: 0, padding: 0 }} />
                 <Box
                     component="nav"
                     aria-label={`${viewport.charAt(0).toUpperCase()}${viewport.slice(1)}`}
@@ -159,14 +159,18 @@ function DashboardSidebar({
                         ...(hasDrawerTransitions
                             ? getDrawerSxTransitionMixin(isFullyExpanded, 'padding')
                             : {}),
+                        // Keep adjustments when sidebar is closed
+                        minWidth: mini ? MINI_DRAWER_WIDTH : 'auto',
                     }}
                 >
                     <List
                         dense
                         sx={{
-                            padding: mini ? 0 : 0.5,
+                            padding: 0,
                             mb: 4,
                             width: mini ? MINI_DRAWER_WIDTH : 'auto',
+                            // Keep adjustments when sidebar is closed
+                            minWidth: mini ? MINI_DRAWER_WIDTH : 'auto',
                         }}
                     >
                         {/* Common for all roles */}
@@ -177,7 +181,7 @@ function DashboardSidebar({
                             href="/app/dashboard"
                             selected={!!matchPath('/app/dashboard', pathname)}
                             sx={{
-                                marginTop: 3,
+                                // Removed marginTop to eliminate top spacing
                             }}
                         />
 
@@ -664,6 +668,8 @@ function DashboardSidebar({
                     whiteSpace: 'nowrap',
                     boxSizing: 'border-box',
                     ...getDrawerWidthTransitionMixin(isFullyExpanded),
+                    // Keep adjustments when sidebar is closed
+                    minWidth: mini ? MINI_DRAWER_WIDTH : DRAWER_WIDTH,
                 }}
                 PaperProps={{
                     sx: {
@@ -676,6 +682,8 @@ function DashboardSidebar({
                         height: { xs: 'calc(100% - 56px)', sm: 'calc(100% - 64px)' },
                         // Add some positioning adjustments
                         position: 'absolute',
+                        // Keep adjustments when sidebar is closed
+                        minWidth: mini ? MINI_DRAWER_WIDTH : DRAWER_WIDTH,
                     },
                 }}
             >
