@@ -14,11 +14,9 @@ export const getAllLeaves = async (req, res) => {
             query.employee = req.query.employee;
         }
 
-<<<<<<< HEAD
 
 
-=======
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
+d93211611f4a47689b466866f76db5ab2a5fe742
         const leaves = await Leave.find(query)
             .populate('employee', 'name email profile')
             .sort({ createdAt: -1 });
