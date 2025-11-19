@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import PrivateRoute from './routes/PrivateRoute';
+import logger from './utils/logger';
 import Login from './pages/auth/Login';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
@@ -44,6 +45,12 @@ import theme from './theme/customizations';
 import './App.css';
 
 function App() {
+  useEffect(() => {
+    // Setup global error handler
+    logger.setupGlobalErrorHandler();
+    logger.info('Application started');
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline enableColorScheme />

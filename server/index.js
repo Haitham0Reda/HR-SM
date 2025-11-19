@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import { startAllScheduledTasks, stopAllTasks } from './utils/scheduler.js';
+import logger from './utils/logger.js';
 
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
@@ -47,6 +48,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Request logging middleware
+app.use((req, res, next) => {
+    logger.info(`${req.method} ${req.path}`, {
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+    });
+    next();
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/announcements', announcementRoutes);
@@ -79,6 +89,17 @@ app.get('/', (req, res) => {
     res.send('API is running...');
 });
 
+// API endpoint to receive logs from frontend
+app.post('/api/logs', (req, res) => {
+    const { level, message, meta } = req.body;
+    if (level && message) {
+        logger[level](message, { source: 'frontend', ...meta });
+        res.status(200).json({ success: true, message: 'Log recorded' });
+    } else {
+        res.status(400).json({ success: false, message: 'Invalid log format' });
+    }
+});
+
 app.use(notFound);
 app.use(errorHandler);
 
@@ -94,6 +115,7 @@ if (isMainModule) {
     connectDB();
 
     const server = app.listen(PORT, () => {
+        logger.info(`Server is running on port ${PORT}`);
         console.log(`Server is running on port ${PORT}`);
 
         // Start scheduled tasks
@@ -102,18 +124,22 @@ if (isMainModule) {
 
     // Handle graceful shutdown
     process.on('SIGINT', () => {
+        logger.info('Shutting down gracefully...');
         console.log('Shutting down gracefully...');
         stopAllTasks();
         server.close(() => {
+            logger.info('Server closed');
             console.log('Server closed');
             process.exit(0);
         });
     });
 
     process.on('SIGTERM', () => {
+        logger.info('Shutting down gracefully...');
         console.log('Shutting down gracefully...');
         stopAllTasks();
         server.close(() => {
+            logger.info('Server closed');
             console.log('Server closed');
             process.exit(0);
         });

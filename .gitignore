@@ -28,3 +28,8 @@ yarn-error.log*
 # uploads
 server/uploads/medical-documents/*
 !server/uploads/.gitkeep
+
+# logs
+logs/
+*.log
+*.log.gz

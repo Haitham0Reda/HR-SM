@@ -30,8 +30,7 @@ export const getAllAnnouncements = async (req, res) => {
 export const getActiveAnnouncements = async (req, res) => {
     try {
         const now = new Date();
-<<<<<<< HEAD
-        const announcements = await Announcement.find({
+        let query = {
             isActive: true,
             $or: [
                 // No date restrictions
@@ -43,27 +42,26 @@ export const getActiveAnnouncements = async (req, res) => {
                 // Both dates - must be within range
                 { startDate: { $lte: now }, endDate: { $gte: now } }
             ]
-        })
-=======
-        let query = {
-            publishDate: { $lte: now },
-            expiryDate: { $gte: now }
         };
 
         // If user is not HR or Admin, filter announcements based on their role
         if (req.user.role !== 'hr' && req.user.role !== 'admin') {
             query = {
                 ...query,
-                $or: [
-                    { targetAudience: 'all' },
-                    { targetAudience: 'employees' },
-                    { targetAudience: req.user.role }
+                $and: [
+                    query,
+                    {
+                        $or: [
+                            { targetAudience: 'all' },
+                            { targetAudience: 'employees' },
+                            { targetAudience: req.user.role }
+                        ]
+                    }
                 ]
             };
         }
 
         const announcements = await Announcement.find(query)
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
             .populate('createdBy', 'username email')
             .populate('departments', 'name code')
             .sort({ publishDate: -1 });

@@ -51,5 +51,8 @@
   },
   "devDependencies": {
     "@craco/craco": "^7.1.0"
+  },
+  "overrides": {
+    "glob": "^10.0.0"
   }
 }

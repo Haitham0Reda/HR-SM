@@ -70,34 +70,9 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
         return () => clearInterval(timer);
     }, []);
 
-<<<<<<< HEAD
-    // Fetch notifications
-    React.useEffect(() => {
-        if (user && user._id) {
-            fetchNotifications();
-            // Refresh notifications every 30 seconds
-            const interval = setInterval(fetchNotifications, 30000);
 
-            // Listen for notification updates from other components
-            const handleNotificationUpdate = () => {
-                console.log('notificationUpdate event received, fetching notifications...');
-                fetchNotifications();
-            };
-            window.addEventListener('notificationUpdate', handleNotificationUpdate);
-            console.log('Notification event listener registered');
-
-            return () => {
-                clearInterval(interval);
-                window.removeEventListener('notificationUpdate', handleNotificationUpdate);
-            };
-        }
-    }, [user]);
-
-    const fetchNotifications = async () => {
-=======
     // Define fetchNotifications before useEffect that uses it
     const fetchNotifications = React.useCallback(async () => {
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
         try {
             console.log('Fetching notifications...');
             // Fetch notifications from the notification API
@@ -120,13 +95,13 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             // Fallback to empty array if API fails
             setNotifications([]);
         }
-    }, [user]);
+    }, []);
 
     // Fetch notifications
     React.useEffect(() => {
         if (user && user._id) {
             fetchNotifications();
-            // Refresh notifications every 60 seconds instead of 30 to reduce load
+            // Refresh notifications every 60 seconds
             const interval = setInterval(fetchNotifications, 60000);
             return () => clearInterval(interval);
         }
@@ -316,13 +291,12 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 }}
                             >
                                 <Avatar
-<<<<<<< HEAD
+
                                     src={user?.profile?.profilePicture}
                                     alt={user?.name || 'User'}
-=======
                                     src={user?.profile?.profilePicture || user?.profilePicture}
                                     alt={user?.name || user?.username || 'User'}
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
+
                                     sx={{
                                         width: 36,
                                         height: 36,
@@ -335,17 +309,14 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                         },
                                     }}
                                 >
-<<<<<<< HEAD
-                                    {!user?.profile?.profilePicture && user?.name
-                                        ? user.name.charAt(0).toUpperCase()
-=======
-                                    {!(user?.profile?.profilePicture || user?.profilePicture) && (user?.name || user?.username)
-                                        ? (user?.name || user?.username).charAt(0).toUpperCase()
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
-                                        : <PersonIcon />}
-                                </Avatar>
-                            </IconButton>
-                        </Tooltip>
+                                    {
+                                        !user?.profile?.profilePicture && user?.name
+                                            ? user.name.charAt(0).toUpperCase()
+                                            : <PersonIcon />
+                                    }
+                                </Avatar >
+                            </IconButton >
+                        </Tooltip >
 
                         <Box
                             sx={{
@@ -380,12 +351,12 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 }}
                             />
                         </Box>
-                    </Stack>
-                </Stack>
-            </Toolbar>
+                    </Stack >
+                </Stack >
+            </Toolbar >
 
             {/* Profile Menu */}
-            <Menu
+            < Menu
                 anchorEl={anchorEl}
                 id="account-menu"
                 open={profileMenuOpen}
@@ -411,7 +382,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                             },
                         },
                     },
-                }}
+                }
+                }
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
@@ -443,10 +415,10 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                     </ListItemIcon>
                     <Typography variant="body2">Logout</Typography>
                 </MenuItem>
-            </Menu>
+            </Menu >
 
             {/* Notifications Menu */}
-            <Menu
+            < Menu
                 anchorEl={notificationAnchorEl}
                 id="notifications-menu"
                 open={notificationMenuOpen}
@@ -479,153 +451,136 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                         </Typography>
                     )}
                 </Box>
-                {notifications.length > 0 ? (
-                    <Box sx={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
-                        {notifications.map((notification) => {
-<<<<<<< HEAD
-                            const notifType = notification.type;
+                {
+                    notifications.length > 0 ? (
+                        <Box sx={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}>
+                            {notifications.map((notification) => {
+                                const notifType = notification.type;
 
-                            // Calculate time ago
-                            const getTimeAgo = (date) => {
-                                const now = new Date();
-                                const created = new Date(date);
-                                const diffMs = now - created;
-                                const diffMins = Math.floor(diffMs / 60000);
-                                const diffHours = Math.floor(diffMs / 3600000);
-                                const diffDays = Math.floor(diffMs / 86400000);
+                                // Calculate time ago
+                                const getTimeAgo = (date) => {
+                                    const now = new Date();
+                                    const created = new Date(date);
+                                    const diffMs = now - created;
+                                    const diffMins = Math.floor(diffMs / 60000);
+                                    const diffHours = Math.floor(diffMs / 3600000);
+                                    const diffDays = Math.floor(diffMs / 86400000);
 
-                                if (diffMins < 1) return 'Just now';
-                                if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-                                if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-                                return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-                            };
-
-                            // Get status color
-                            const getStatusColor = (status) => {
-                                const colors = {
-                                    pending: 'warning',
-                                    approved: 'success',
-                                    rejected: 'error',
-                                    cancelled: 'default'
+                                    if (diffMins < 1) return 'Just now';
+                                    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+                                    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                                    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
                                 };
-                                return colors[status] || 'default';
-                            };
 
-                            const handleClick = async () => {
-                                // Mark notification as read in database
-                                try {
-                                    if (!notification.isRead) {
-                                        await notificationService.markAsRead(notification._id);
+                                // Get status color
+                                const getStatusColor = (status) => {
+                                    const colors = {
+                                        pending: 'warning',
+                                        approved: 'success',
+                                        rejected: 'error',
+                                        cancelled: 'default'
+                                    };
+                                    return colors[status] || 'default';
+                                };
+
+                                const handleClick = async () => {
+                                    // Mark notification as read in database
+                                    try {
+                                        if (!notification.isRead) {
+                                            await notificationService.markAsRead(notification._id);
+                                        }
+                                    } catch (error) {
+                                        console.error('Error marking notification as read:', error);
                                     }
-                                } catch (error) {
-                                    console.error('Error marking notification as read:', error);
-=======
-                            const notifType = notification.notifType;
 
-                            const handleClick = () => {
-                                // Mark as viewed
-                                const viewedNotifications = JSON.parse(localStorage.getItem('viewedNotifications') || '[]');
-                                if (!viewedNotifications.includes(notification._id)) {
-                                    viewedNotifications.push(notification._id);
-                                    localStorage.setItem('viewedNotifications', JSON.stringify(viewedNotifications));
-                                    
-                                    // Immediately update the notifications state to decrease the badge count
-                                    const updatedNotifications = notifications.filter(n => n._id !== notification._id);
-                                    setNotifications(updatedNotifications);
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
-                                }
+                                    handleNotificationClose();
 
-                                handleNotificationClose();
-
-                                // Navigate to appropriate page based on type
-                                if (notifType === 'leave') {
-                                    navigate('/app/leaves');
-                                } else if (notifType === 'permission') {
-                                    navigate('/app/permissions');
-                                } else if (notifType === 'announcement') {
-                                    navigate('/app/announcements');
-                                } else if (notifType === 'event') {
-                                    navigate('/app/events');
-                                } else if (notifType === 'request' || notifType === 'request-control') {
-                                    if (notification.relatedId) {
-                                        navigate(`/app/requests/${notification.relatedId}`);
+                                    // Navigate to appropriate page based on type
+                                    if (notifType === 'leave') {
+                                        navigate('/app/leaves');
+                                    } else if (notifType === 'permission') {
+                                        navigate('/app/permissions');
+                                    } else if (notifType === 'announcement') {
+                                        navigate('/app/announcements');
+                                    } else if (notifType === 'event') {
+                                        navigate('/app/events');
+                                    } else if (notifType === 'request' || notifType === 'request-control') {
+                                        if (notification.relatedId) {
+                                            navigate(`/app/requests/${notification.relatedId}`);
+                                        } else {
+                                            navigate('/app/requests');
+                                        }
+                                    } else if (notifType === 'attendance') {
+                                        navigate('/app/attendance');
+                                    } else if (notifType === 'payroll') {
+                                        navigate('/app/payroll');
                                     } else {
+                                        // Default: navigate to requests list
                                         navigate('/app/requests');
                                     }
-                                } else if (notifType === 'attendance') {
-                                    navigate('/app/attendance');
-                                } else if (notifType === 'payroll') {
-                                    navigate('/app/payroll');
-                                } else {
-                                    // Default: navigate to requests list
-                                    navigate('/app/requests');
-                                }
-<<<<<<< HEAD
 
-                                // Refresh notifications after marking as read
-                                setTimeout(fetchNotifications, 500);
-=======
->>>>>>> d93211611f4a47689b466866f76db5ab2a5fe742
-                            };
+                                    // Refresh notifications after marking as read
+                                    setTimeout(fetchNotifications, 500);
+                                };
 
-                            return (
-                                <MenuItem
-                                    key={notification._id}
-                                    onClick={handleClick}
-                                    sx={{
-                                        py: 1.5,
-                                        px: 2.5,
-                                        borderBottom: '1px solid',
-                                        borderColor: 'divider',
-                                        '&:last-child': {
-                                            borderBottom: 'none',
-                                        },
-                                        '&:hover': {
-                                            backgroundColor: 'action.hover',
-                                        },
-                                    }}
-                                >
-                                    <Box sx={{ width: '100%' }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                                            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                                                {notifType.charAt(0).toUpperCase() + notifType.slice(1)} Request
+                                return (
+                                    <MenuItem
+                                        key={notification._id}
+                                        onClick={handleClick}
+                                        sx={{
+                                            py: 1.5,
+                                            px: 2.5,
+                                            borderBottom: '1px solid',
+                                            borderColor: 'divider',
+                                            '&:last-child': {
+                                                borderBottom: 'none',
+                                            },
+                                            '&:hover': {
+                                                backgroundColor: 'action.hover',
+                                            },
+                                        }}
+                                    >
+                                        <Box sx={{ width: '100%' }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                                <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                                                    {notifType.charAt(0).toUpperCase() + notifType.slice(1)} Request
+                                                </Typography>
+                                                <Chip
+                                                    label={notification.status?.toUpperCase() || 'PENDING'}
+                                                    size="small"
+                                                    color={getStatusColor(notification.status || 'pending')}
+                                                    sx={{
+                                                        height: 20,
+                                                        fontSize: '0.7rem',
+                                                        fontWeight: 'bold',
+                                                    }}
+                                                />
+                                            </Box>
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                                {getTimeAgo(notification.createdAt)}
                                             </Typography>
-                                            <Chip
-                                                label={notification.status?.toUpperCase() || 'PENDING'}
-                                                size="small"
-                                                color={getStatusColor(notification.status || 'pending')}
-                                                sx={{
-                                                    height: 20,
-                                                    fontSize: '0.7rem',
-                                                    fontWeight: 'bold',
-                                                }}
-                                            />
                                         </Box>
-                                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                                            {getTimeAgo(notification.createdAt)}
-                                        </Typography>
-                                    </Box>
-                                </MenuItem>
-                            );
-                        })}
-                    </Box>
-                ) : (
-                    <Box
-                        sx={{
-                            p: 4,
-                            textAlign: 'center',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 1,
-                        }}
-                    >
-                        <NotificationsIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
-                        <Typography variant="body2" color="text.secondary">
-                            No notifications
-                        </Typography>
-                    </Box>
-                )}
+                                    </MenuItem>
+                                );
+                            })}
+                        </Box>
+                    ) : (
+                        <Box
+                            sx={{
+                                p: 4,
+                                textAlign: 'center',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 1,
+                            }}
+                        >
+                            <NotificationsIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
+                            <Typography variant="body2" color="text.secondary">
+                                No notifications
+                            </Typography>
+                        </Box>
+                    )}
                 {notifications.length > 0 && (
                     <Box sx={{ p: 1.5, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
                         <Button
