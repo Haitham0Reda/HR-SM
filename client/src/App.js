@@ -31,6 +31,7 @@ import VacationPage from './pages/vacation/VacationPage';
 import PayrollPage from './pages/payroll/PayrollPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import TemplatesPage from './pages/templates/TemplatesPage';
+import HardCopiesPage from './pages/hardcopies/HardCopiesPage';
 import AnnouncementsPage from './pages/announcements/AnnouncementsPage';
 import EventsPage from './pages/events/EventsPage';
 import SurveysPage from './pages/surveys/SurveysPage';
@@ -106,6 +107,7 @@ function App() {
                 {/* Documents */}
                 <Route path="documents" element={<DocumentsPage />} />
                 <Route path="templates" element={<TemplatesPage />} />
+                <Route path="hardcopies" element={<HardCopiesPage />} />
 
                 {/* Communication */}
                 <Route path="announcements" element={<AnnouncementsPage />} />
