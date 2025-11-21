@@ -373,13 +373,10 @@ const AttendancePage = () => {
                 color: #333;
             }
             h1 { 
-                color: #667eea;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
+                color: #007bff;
                 margin-bottom: 10px;
                 font-size: 28px;
+                font-weight: 700;
             }
             .info { 
                 margin-bottom: 20px; 
@@ -387,7 +384,7 @@ const AttendancePage = () => {
                 line-height: 1.8;
                 padding: 15px;
                 background-color: #f5f7fa;
-                border-left: 4px solid #667eea;
+                border-left: 4px solid #007bff;
                 border-radius: 4px;
             }
             table { 
@@ -397,7 +394,7 @@ const AttendancePage = () => {
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
             th { 
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #007bff;
                 color: white; 
                 padding: 14px 10px; 
                 text-align: left; 
@@ -571,10 +568,10 @@ const AttendancePage = () => {
                 {/* Report Header Card */}
                 <Paper sx={{
                     p: 3,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
                     color: 'white',
                     borderRadius: 3,
-                    boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
+                    boxShadow: '0 4px 20px rgba(0, 123, 255, 0.4)',
                     border: 'none'
                 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
@@ -614,16 +611,6 @@ const AttendancePage = () => {
                                 onChange={(e) => setStartDate(e.target.value)}
                                 fullWidth
                                 InputLabelProps={{ shrink: true }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        '&:hover fieldset': {
-                                            borderColor: '#667eea',
-                                        },
-                                        '&.Mui-focused fieldset': {
-                                            borderColor: '#667eea',
-                                        },
-                                    },
-                                }}
                             />
                         </Box>
                         <Box sx={{ flex: '1 1 calc(33.33% - 16px)', minWidth: '200px' }}>
@@ -634,16 +621,6 @@ const AttendancePage = () => {
                                 onChange={(e) => setEndDate(e.target.value)}
                                 fullWidth
                                 InputLabelProps={{ shrink: true }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        '&:hover fieldset': {
-                                            borderColor: '#667eea',
-                                        },
-                                        '&.Mui-focused fieldset': {
-                                            borderColor: '#667eea',
-                                        },
-                                    },
-                                }}
                             />
                         </Box>
                         <Box sx={{ flex: '1 1 calc(33.33% - 16px)', minWidth: '200px' }}>
@@ -654,12 +631,7 @@ const AttendancePage = () => {
                                 fullWidth
                                 sx={{
                                     height: 56,
-                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                    fontWeight: 600,
-                                    '&:hover': {
-                                        background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                                        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
-                                    }
+                                    fontWeight: 600
                                 }}
                             >
                                 Filter
@@ -686,8 +658,8 @@ const AttendancePage = () => {
                         }}>
                             <CardContent>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                                    <PersonIcon sx={{ color: '#667eea', fontSize: 28 }} />
-                                    <Typography variant="h6" fontWeight="600" sx={{ color: '#667eea' }}>
+                                    <PersonIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+                                    <Typography variant="h6" fontWeight="600" sx={{ color: 'primary.main' }}>
                                         Employee Information
                                     </Typography>
                                 </Box>
@@ -748,8 +720,8 @@ const AttendancePage = () => {
                         }}>
                             <CardContent>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                                    <TrendingUpIcon sx={{ color: '#667eea', fontSize: 28 }} />
-                                    <Typography variant="h6" fontWeight="600" sx={{ color: '#667eea' }}>
+                                    <TrendingUpIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+                                    <Typography variant="h6" fontWeight="600" sx={{ color: 'primary.main' }}>
                                         Attendance Summary
                                     </Typography>
                                 </Box>
@@ -789,13 +761,13 @@ const AttendancePage = () => {
                 </Box>
 
                 {/* Attendance Table */}
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#667eea' }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
                     📋 Attendance Records ({filteredAttendances.length})
                 </Typography>
                 <Box sx={{ width: '100%', overflowX: 'auto', mb: 3, minHeight: 400 }}>
                     <TableContainer component={Paper} sx={{
                         borderRadius: 3,
-                        boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
+                        boxShadow: 3,
                         minWidth: 800,
                         bgcolor: 'background.paper',
                         border: '1px solid',
@@ -804,7 +776,7 @@ const AttendancePage = () => {
                         <Table sx={{ minWidth: 800, tableLayout: 'fixed' }} id="attendance-table-print">
                             <TableHead>
                                 <TableRow sx={{
-                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    bgcolor: 'primary.main',
                                     height: 56
                                 }}>
                                     <TableCell sx={{ color: 'white', fontWeight: 600 }}>DATE</TableCell>

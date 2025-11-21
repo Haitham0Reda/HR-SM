@@ -423,7 +423,7 @@ const AnnouncementsPage = () => {
             display: 'flex',
             flexDirection: 'column',
             height: '100%',
-            overflow: 'hidden'
+            overflow: 'auto'
         }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4">Announcements</Typography>
@@ -437,13 +437,139 @@ const AnnouncementsPage = () => {
                 </Button>
             </Box>
 
-            <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                <DataTable
-                    data={announcements}
-                    columns={columns}
-                    getRowId={(row) => row._id}
-                />
-            </Box>
+            {announcements.length === 0 ? (
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    minHeight: '400px'
+                }}>
+                    <Typography variant="h6" color="text.secondary">
+                        No announcements found
+                    </Typography>
+                </Box>
+            ) : (
+                <Box sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 3,
+                    pb: 3
+                }}>
+                    {announcements.map((announcement) => {
+                        const status = getAnnouncementStatus(announcement);
+                        const priorityColor = announcement.priority === 'high' ? '#f44336' :
+                            announcement.priority === 'medium' ? '#ffeb3b' :
+                                announcement.priority === 'low' ? '#4caf50' : '#e0e0e0';
+
+                        return (
+                            <Card
+                                key={announcement._id}
+                                sx={{
+                                    flex: '1 1 calc(33.333% - 24px)',
+                                    minWidth: '300px',
+                                    maxWidth: 'calc(33.333% - 24px)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    boxShadow: 3,
+                                    borderLeft: `6px solid ${priorityColor}`,
+                                    '&:hover': {
+                                        boxShadow: 6,
+                                        transform: 'translateY(-4px)',
+                                        transition: 'all 0.3s ease'
+                                    }
+                                }}
+                            >
+                                <CardContent sx={{ flex: 1 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                        <Typography variant="h6" component="div" sx={{ fontWeight: 600, flex: 1 }}>
+                                            {announcement.title}
+                                        </Typography>
+                                        <Chip
+                                            label={announcement.priority.charAt(0).toUpperCase() + announcement.priority.slice(1)}
+                                            size="small"
+                                            sx={{
+                                                backgroundColor: announcement.priority === 'high' ? '#f44336' :
+                                                    announcement.priority === 'medium' ? '#ffeb3b' :
+                                                        announcement.priority === 'low' ? '#4caf50' : '#e0e0e0',
+                                                color: announcement.priority === 'medium' ? '#000000' : '#ffffff',
+                                                fontWeight: 'bold',
+                                                ml: 1
+                                            }}
+                                        />
+                                    </Box>
+
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{
+                                            mb: 2,
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 3,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            minHeight: '60px'
+                                        }}
+                                    >
+                                        {announcement.content}
+                                    </Typography>
+
+                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                                        <Chip
+                                            label={status.label}
+                                            color={status.color}
+                                            size="small"
+                                        />
+                                        <Chip
+                                            label={announcement.targetAudience}
+                                            size="small"
+                                            variant="outlined"
+                                        />
+                                    </Box>
+
+                                    <Typography variant="caption" color="text.secondary">
+                                        {announcement.createdAt ? new Date(announcement.createdAt).toLocaleDateString() : 'N/A'}
+                                    </Typography>
+                                </CardContent>
+
+                                <Divider />
+
+                                <CardActions sx={{ justifyContent: 'flex-end', p: 1.5 }}>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => handleViewAnnouncement(announcement)}
+                                        color="info"
+                                        title="View"
+                                    >
+                                        <VisibilityIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => handleOpenDialog(announcement)}
+                                        color="primary"
+                                        disabled={!user || (user.role !== 'hr' && user.role !== 'admin')}
+                                        title="Edit"
+                                    >
+                                        <EditIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => {
+                                            setSelectedAnnouncement(announcement);
+                                            setOpenConfirm(true);
+                                        }}
+                                        color="error"
+                                        disabled={!user || (user.role !== 'hr' && user.role !== 'admin')}
+                                        title="Delete"
+                                    >
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                </CardActions>
+                            </Card>
+                        );
+                    })}
+                </Box>
+            )}
 
             {/* View Announcement Dialog */}
             <Dialog open={openViewDialog} onClose={handleViewDialogClose} maxWidth="md" fullWidth>
