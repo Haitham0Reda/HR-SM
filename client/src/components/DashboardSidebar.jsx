@@ -258,6 +258,13 @@ function DashboardSidebar({
                                     href="/app/events"
                                     selected={!!matchPath('/app/events', pathname)}
                                 />
+                                <DashboardSidebarPageItem
+                                    id="surveys"
+                                    title="Surveys"
+                                    icon={<PollIcon />}
+                                    href="/app/surveys"
+                                    selected={!!matchPath('/app/surveys', pathname)}
+                                />
                             </>
                         )}
 

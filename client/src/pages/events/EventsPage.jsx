@@ -191,116 +191,143 @@ const EventsPage = () => {
 
             {events.length === 0 ? (
                 <Box sx={{
-                    p: 6,
-                    textAlign: 'center',
-                    bgcolor: 'background.paper',
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'divider'
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    minHeight: '400px'
                 }}>
-                    <Typography variant="body1" color="text.secondary">
-                        No events found.
+                    <Typography variant="h6" color="text.secondary">
+                        No events found
                     </Typography>
                 </Box>
             ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {events.map((event) => (
-                        <Card key={event._id} sx={{
-                            width: '100%',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
-                            '&:hover': {
-                                transform: 'translateY(-2px)',
-                                boxShadow: 4
-                            }
-                        }}>
-                            <CardContent sx={{ flexGrow: 1 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                                        {event.title}
-                                    </Typography>
-                                    <Chip
-                                        label={event.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'Other'}
-                                        size="small"
-                                        sx={{
-                                            bgcolor: getEventTypeColor(event.type || 'other'),
-                                            color: 'white',
-                                            fontWeight: 600
-                                        }}
-                                    />
-                                </Box>
+                <Box sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 3,
+                    pb: 3
+                }}>
+                    {events.map((event) => {
+                        const eventTypeColor = getEventTypeColor(event.type || 'other');
 
-                                {event.description && (
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                        {event.description.length > 100
-                                            ? `${event.description.substring(0, 100)}...`
-                                            : event.description}
-                                    </Typography>
-                                )}
-
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <CalendarIcon fontSize="small" color="action" />
-                                        <Typography variant="body2" color="text.secondary">
-                                            {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
+                        return (
+                            <Card
+                                key={event._id}
+                                sx={{
+                                    flex: '1 1 calc(33.333% - 24px)',
+                                    minWidth: '300px',
+                                    maxWidth: 'calc(33.333% - 24px)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    boxShadow: 3,
+                                    borderLeft: `6px solid ${eventTypeColor}`,
+                                    '&:hover': {
+                                        boxShadow: 6,
+                                        transform: 'translateY(-4px)',
+                                        transition: 'all 0.3s ease'
+                                    }
+                                }}
+                            >
+                                <CardContent sx={{ flex: 1 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                        <Typography variant="h6" component="div" sx={{ fontWeight: 600, flex: 1 }}>
+                                            {event.title}
                                         </Typography>
+                                        <Chip
+                                            label={event.type ? event.type.charAt(0).toUpperCase() + event.type.slice(1) : 'Other'}
+                                            size="small"
+                                            sx={{
+                                                bgcolor: eventTypeColor,
+                                                color: 'white',
+                                                fontWeight: 600,
+                                                ml: 1
+                                            }}
+                                        />
                                     </Box>
 
-                                    {event.location && (
+                                    {event.description && (
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{
+                                                mb: 2,
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 3,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                minHeight: '60px'
+                                            }}
+                                        >
+                                            {event.description}
+                                        </Typography>
+                                    )}
+
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <LocationIcon fontSize="small" color="action" />
+                                            <CalendarIcon fontSize="small" color="action" />
                                             <Typography variant="body2" color="text.secondary">
-                                                {event.location}
+                                                {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
                                             </Typography>
                                         </Box>
-                                    )}
 
-                                    {event.isAllDay && (
-                                        <Chip
-                                            label="All Day Event"
-                                            size="small"
-                                            color="primary"
-                                            variant="outlined"
-                                            sx={{ width: 'fit-content' }}
-                                        />
-                                    )}
-                                </Box>
-                            </CardContent>
+                                        {event.location && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <LocationIcon fontSize="small" color="action" />
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {event.location}
+                                                </Typography>
+                                            </Box>
+                                        )}
 
-                            <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => handleViewEvent(event)}
-                                    color="primary"
-                                    title="View Details"
-                                >
-                                    <VisibilityIcon fontSize="small" />
-                                </IconButton>
-                                {canManage && (
-                                    <>
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => handleOpenDialog(event)}
-                                            color="primary"
-                                            title="Edit"
-                                        >
-                                            <EditIcon fontSize="small" />
-                                        </IconButton>
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                setSelectedEvent(event);
-                                                setOpenConfirm(true);
-                                            }}
-                                            color="error"
-                                            title="Delete"
-                                        >
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                    </>
-                                )}
-                            </CardActions>
-                        </Card>
-                    ))}
+                                        {event.isAllDay && (
+                                            <Chip
+                                                label="All Day Event"
+                                                size="small"
+                                                color="primary"
+                                                variant="outlined"
+                                                sx={{ width: 'fit-content' }}
+                                            />
+                                        )}
+                                    </Box>
+                                </CardContent>
+
+                                <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => handleViewEvent(event)}
+                                        color="info"
+                                        title="View Details"
+                                    >
+                                        <VisibilityIcon fontSize="small" />
+                                    </IconButton>
+                                    {canManage && (
+                                        <>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleOpenDialog(event)}
+                                                color="primary"
+                                                title="Edit"
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => {
+                                                    setSelectedEvent(event);
+                                                    setOpenConfirm(true);
+                                                }}
+                                                color="error"
+                                                title="Delete"
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </>
+                                    )}
+                                </CardActions>
+                            </Card>
+                        );
+                    })}
                 </Box>
             )
             }
