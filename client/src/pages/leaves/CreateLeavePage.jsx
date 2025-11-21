@@ -93,7 +93,7 @@ const CreateLeavePage = () => {
             console.log('Submitting leave request:', submitData);
             const response = await leaveService.create(submitData);
             console.log('Leave created successfully:', response);
-            showNotification('Leave request created successfully', 'success');
+            showNotification('Request created successfully', 'success');
 
             // Trigger notification refresh for HR/Admin (with small delay to ensure backend completes)
 
@@ -125,7 +125,7 @@ const CreateLeavePage = () => {
                 mb: 4
             }}>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                    Create Leave Request
+                    Create Mission & Sick Request
                 </Typography>
                 <Button
                     variant="outlined"
@@ -156,7 +156,7 @@ const CreateLeavePage = () => {
                     boxShadow: 2
                 }}>
                     <Typography variant="h6" sx={{ color: 'primary.main', mb: 3, fontWeight: 600 }}>
-                        Leave Request Form
+                        Request Form
                     </Typography>
 
                     <Box sx={{
@@ -168,7 +168,7 @@ const CreateLeavePage = () => {
                         <TextField
                             select
                             id="leave-type"
-                            label="Leave Type *"
+                            label="Request Type *"
                             name="type"
                             value={formData.type}
                             onChange={handleChange}
@@ -328,10 +328,10 @@ const CreateLeavePage = () => {
 
                     <Box sx={{ mb: 3 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
-                            Leave Types
+                            Request Types
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
-                            Select the appropriate leave type based on your situation.
+                            Select the appropriate request type based on your situation.
                         </Typography>
                     </Box>
 
@@ -358,14 +358,14 @@ const CreateLeavePage = () => {
                             Important Notes
                         </Typography>
                         <Box component="ul" sx={{ pl: 2, m: 0, color: 'text.secondary' }}>
-                            <li>Submit mission requests in advance when possible</li>
+                            <li>Submit requests in advance when possible</li>
                             <li>Provide detailed information about your absence</li>
                             <li>Ensure proper coordination with your team</li>
                         </Box>
                     </Box>
 
                     <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 'auto' }}>
-                        All leave requests require approval from HR
+                        All requests require approval from HR
                     </Typography>
                 </Box>
             </Box>

@@ -7,6 +7,7 @@ export { default as departmentService } from './department.service';
 export { default as positionService } from './position.service';
 export { default as attendanceService } from './attendance.service';
 export { default as leaveService } from './leave.service';
+export { default as forgetCheckService } from './forgetCheck.service';
 export { default as permissionService } from './permission.service';
 export { default as requestService } from './request.service';
 export { default as payrollService } from './payroll.service';

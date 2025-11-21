@@ -29,6 +29,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import SecurityIcon from '@mui/icons-material/Security';
 import BackupIcon from '@mui/icons-material/Backup';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
@@ -208,10 +209,17 @@ function DashboardSidebar({
                                 />
                                 <DashboardSidebarPageItem
                                     id="leaves"
-                                    title="Leaves"
+                                    title="Mission & Sick"
                                     icon={<EventAvailableIcon />}
                                     href="/app/leaves"
                                     selected={!!matchPath('/app/leaves', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="forget-checks"
+                                    title="Forget Check"
+                                    icon={<ErrorOutlineIcon />}
+                                    href="/app/forget-checks"
+                                    selected={!!matchPath('/app/forget-checks', pathname)}
                                 />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Information</DashboardSidebarHeaderItem>
@@ -295,6 +303,13 @@ function DashboardSidebar({
                                     icon={<AccessTimeIcon />}
                                     href="/app/attendance"
                                     selected={!!matchPath('/app/attendance', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="forget-checks"
+                                    title="Forget Check"
+                                    icon={<ErrorOutlineIcon />}
+                                    href="/app/forget-checks"
+                                    selected={!!matchPath('/app/forget-checks', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="leaves"
@@ -448,6 +463,13 @@ function DashboardSidebar({
                                     icon={<AccessTimeIcon />}
                                     href="/app/attendance"
                                     selected={!!matchPath('/app/attendance', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="forget-checks"
+                                    title="Forget Check"
+                                    icon={<ErrorOutlineIcon />}
+                                    href="/app/forget-checks"
+                                    selected={!!matchPath('/app/forget-checks', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="leaves"
