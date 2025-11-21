@@ -66,7 +66,10 @@ const SurveysPage = () => {
     const fetchSurveys = async () => {
         try {
             setLoading(true);
-            const data = await surveyService.getAll();
+            // Use different endpoints based on user role
+            const data = canManage 
+                ? (await surveyService.getAll()).surveys 
+                : (await surveyService.getMySurveys()).surveys;
             setSurveys(data);
         } catch (error) {
             showNotification('Failed to fetch surveys', 'error');

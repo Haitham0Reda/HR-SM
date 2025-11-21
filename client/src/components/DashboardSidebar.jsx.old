@@ -245,13 +245,6 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/documents', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="hard-copies"
-                                    title="Hard Copies"
-                                    icon={<DescriptionIcon />}
-                                    href="/app/hardcopies"
-                                    selected={!!matchPath('/app/hardcopies', pathname)}
-                                />
-                                <DashboardSidebarPageItem
                                     id="announcements"
                                     title="Announcements"
                                     icon={<AnnouncementIcon />}
