@@ -99,7 +99,7 @@ const LeavesPage = () => {
             setLeaves(filteredData);
         } catch (error) {
             console.error('Error fetching leaves:', error);
-            showNotification('Failed to fetch leave requests', 'error');
+            showNotification('Failed to fetch requests', 'error');
             setLeaves([]);
         } finally {
             setLoading(false);
@@ -195,10 +195,10 @@ const LeavesPage = () => {
 
             if (selectedLeave) {
                 await leaveService.update(selectedLeave._id, submitData);
-                showNotification('Leave request updated successfully', 'success');
+                showNotification('Request updated successfully', 'success');
             } else {
                 await leaveService.create(submitData);
-                showNotification('Leave request created successfully', 'success');
+                showNotification('Request created successfully', 'success');
             }
             handleCloseDialog();
             fetchLeaves();
@@ -211,7 +211,7 @@ const LeavesPage = () => {
     const handleDelete = async () => {
         try {
             await leaveService.delete(selectedLeave._id);
-            showNotification('Leave request deleted successfully', 'success');
+            showNotification('Request deleted successfully', 'success');
             setOpenConfirm(false);
             setSelectedLeave(null);
             fetchLeaves();
@@ -229,7 +229,7 @@ const LeavesPage = () => {
             } else {
                 // Supervisor/HR/Admin approving
                 await leaveService.approve(leaveId);
-                showNotification('Leave request approved', 'success');
+                showNotification('Request approved', 'success');
             }
             // Add small delay to ensure backend has processed the update
             await new Promise(resolve => setTimeout(resolve, 300));
@@ -266,7 +266,7 @@ const LeavesPage = () => {
             } else {
                 // Supervisor/HR/Admin rejecting
                 await leaveService.reject(leaveId, trimmedReason);
-                showNotification('Leave request rejected', 'success');
+                showNotification('Request rejected', 'success');
             }
             // Add small delay to ensure backend has processed the update
             await new Promise(resolve => setTimeout(resolve, 300));
@@ -453,7 +453,7 @@ const LeavesPage = () => {
             <DataTable
                 data={leaves}
                 columns={columns}
-                emptyMessage="No leave requests found. Click 'New Leave Request' to create one."
+                emptyMessage="No requests found. Click 'New Request' to create one."
             />
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
@@ -481,7 +481,7 @@ const LeavesPage = () => {
                         )}
                         <TextField
                             select
-                            label="Leave Type"
+                            label="Request Type"
                             name="type"
                             value={formData.type}
                             onChange={handleChange}
