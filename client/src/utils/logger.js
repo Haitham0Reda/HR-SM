@@ -1,4 +1,4 @@
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 // Log levels
 const LOG_LEVELS = {
@@ -11,7 +11,7 @@ const LOG_LEVELS = {
 // Send log to backend
 const sendLogToBackend = async (level, message, meta = {}) => {
     try {
-        await fetch(`${API_URL}/api/logs`, {
+        await fetch(`${API_URL}/logs`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
