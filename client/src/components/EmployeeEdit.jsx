@@ -121,10 +121,10 @@ export default function EmployeeEdit() {
 
     const [employee, setEmployee] = React.useState(null);
     const [isLoading, setIsLoading] = React.useState(true);
-    const [error, setError] = React.useState(null);
+    const [error, setError] = React.useState('');
 
     const loadData = React.useCallback(async () => {
-        setError(null);
+        setError('');
         setIsLoading(true);
 
         try {
@@ -132,7 +132,9 @@ export default function EmployeeEdit() {
 
             setEmployee(showData);
         } catch (showDataError) {
-            setError(showDataError);
+            // Ensure we're setting a string value for the error
+            const errorMessage = showDataError?.message || (typeof showDataError === 'string' ? showDataError : 'An unexpected error occurred');
+            setError(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred');
         }
         setIsLoading(false);
     }, [employeeId]);
@@ -167,10 +169,10 @@ export default function EmployeeEdit() {
                 </Box>
             );
         }
-        if (error) {
+        if (error && error.length > 0) {
             return (
                 <Box sx={{ flexGrow: 1 }}>
-                    <Alert severity="error">{error.message}</Alert>
+                    <Alert severity="error">{error?.message || (typeof error === 'string' ? error : 'An error occurred. Please try again.')}</Alert>
                 </Box>
             );
         }

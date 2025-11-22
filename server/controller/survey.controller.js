@@ -215,7 +215,13 @@ export const deleteSurvey = async (req, res) => {
  */
 export const submitSurveyResponse = async (req, res) => {
     try {
-        const { answers, isAnonymous = false } = req.body;
+        console.log('Received survey submission request:', { 
+            surveyId: req.params.id, 
+            body: req.body,
+            userId: req.user._id 
+        });
+        
+        const { responses, isAnonymous = false } = req.body;
 
         const survey = await Survey.findById(req.params.id);
 
@@ -238,7 +244,7 @@ export const submitSurveyResponse = async (req, res) => {
         }
 
         // Add response with metadata
-        await survey.addResponse(req.user._id, answers, isAnonymous, {
+        await survey.addResponse(req.user._id, responses, isAnonymous, {
             ipAddress: req.ip,
             userAgent: req.get('user-agent')
         });
@@ -249,6 +255,7 @@ export const submitSurveyResponse = async (req, res) => {
             totalResponses: survey.stats.totalResponses
         });
     } catch (err) {
+        console.error('Survey submission error:', err);
         res.status(400).json({ error: err.message });
     }
 };

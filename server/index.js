@@ -1,6 +1,16 @@
 import express from 'express';
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the directory name in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables from the root .env file
+// This works whether the server is started from root or server directory
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';

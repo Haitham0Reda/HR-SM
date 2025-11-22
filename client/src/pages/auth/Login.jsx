@@ -64,7 +64,9 @@ const Login = () => {
             showSuccess('Login successful!');
             navigate('/app/dashboard');
         } catch (err) {
-            setError(err || 'Login failed. Please check your credentials.');
+            // Ensure we're setting a string value for the error
+            const errorMessage = err?.message || err?.response?.data?.error || (typeof err === 'string' ? err : 'Login failed. Please check your credentials.');
+            setError(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred. Please try again.');
             showError(err || 'Login failed');
         } finally {
             setLoading(false);
@@ -303,7 +305,7 @@ const Login = () => {
                                     }}
                                     onClose={() => setError('')}
                                 >
-                                    {error}
+                                    {typeof error === 'string' ? error : 'An error occurred. Please try again.'}
                                 </Alert>
                             )}
 

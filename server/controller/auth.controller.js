@@ -4,7 +4,7 @@ import nodemailer from 'nodemailer';
 
 // Configure email transporter (you'll need to set these in your .env)
 const createTransporter = () => {
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
         host: process.env.EMAIL_HOST || 'smtp.gmail.com',
         port: process.env.EMAIL_PORT || 587,
         secure: false,
@@ -73,11 +73,27 @@ export const forgotPassword = async (req, res) => {
             user.resetPasswordExpire = undefined;
             await user.save();
 
-            return res.status(500).json({ error: 'Failed to send reset email. Please try again later.' });
+            // Provide more detailed error information
+            if (process.env.NODE_ENV === 'development') {
+                return res.status(500).json({ 
+                    error: `Failed to send reset email: ${emailError.message}`,
+                    details: emailError.toString()
+                });
+            } else {
+                return res.status(500).json({ error: 'Failed to send reset email. Please try again later.' });
+            }
         }
     } catch (error) {
         console.error('Forgot password error:', error);
-        res.status(500).json({ error: 'An error occurred. Please try again later.' });
+        // Provide more detailed error information in development
+        if (process.env.NODE_ENV === 'development') {
+            return res.status(500).json({ 
+                error: `An error occurred: ${error.message}`,
+                details: error.toString()
+            });
+        } else {
+            res.status(500).json({ error: 'An error occurred. Please try again later.' });
+        }
     }
 };
 
@@ -117,7 +133,15 @@ export const resetPassword = async (req, res) => {
         res.json({ message: 'Password has been reset successfully. You can now login with your new password.' });
     } catch (error) {
         console.error('Reset password error:', error);
-        res.status(500).json({ error: 'An error occurred. Please try again later.' });
+        // Provide more detailed error information in development
+        if (process.env.NODE_ENV === 'development') {
+            return res.status(500).json({ 
+                error: `An error occurred: ${error.message}`,
+                details: error.toString()
+            });
+        } else {
+            res.status(500).json({ error: 'An error occurred. Please try again later.' });
+        }
     }
 };
 
@@ -140,6 +164,14 @@ export const verifyResetToken = async (req, res) => {
         res.json({ message: 'Token is valid', email: user.email });
     } catch (error) {
         console.error('Verify token error:', error);
-        res.status(500).json({ error: 'An error occurred. Please try again later.' });
+        // Provide more detailed error information in development
+        if (process.env.NODE_ENV === 'development') {
+            return res.status(500).json({ 
+                error: `An error occurred: ${error.message}`,
+                details: error.toString()
+            });
+        } else {
+            res.status(500).json({ error: 'An error occurred. Please try again later.' });
+        }
     }
 };

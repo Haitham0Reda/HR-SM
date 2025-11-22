@@ -8,6 +8,7 @@ import DashboardHeader from './DashboardHeader';
 import DashboardSidebar from './DashboardSidebar';
 import SitemarkIcon from './SitemarkIcon';
 import { useAuth } from '../context/AuthContext';
+import SurveyRedirect from './SurveyRedirect';
 
 export default function DashboardLayout() {
     const theme = useTheme();
@@ -90,6 +91,7 @@ export default function DashboardLayout() {
                         overflow: 'auto',
                     }}
                 >
+                    <SurveyRedirect />
                     <Outlet />
                 </Box>
             </Box>

@@ -57,7 +57,7 @@ export default function EmployeeList() {
     });
 
     const [isLoading, setIsLoading] = React.useState(true);
-    const [error, setError] = React.useState(null);
+    const [error, setError] = React.useState('');
 
     const handlePaginationModelChange = React.useCallback(
         (model) => {
@@ -117,7 +117,7 @@ export default function EmployeeList() {
     );
 
     const loadData = React.useCallback(async () => {
-        setError(null);
+        setError('');
         setIsLoading(true);
 
         try {
@@ -132,7 +132,9 @@ export default function EmployeeList() {
                 rowCount: listData.itemCount,
             });
         } catch (listDataError) {
-            setError(listDataError);
+            // Ensure we're setting a string value for the error
+            const errorMessage = listDataError?.message || (typeof listDataError === 'string' ? listDataError : 'An unexpected error occurred');
+            setError(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred');
         }
 
         setIsLoading(false);
@@ -280,9 +282,9 @@ export default function EmployeeList() {
             }
         >
             <Box sx={{ flex: 1, width: '100%' }}>
-                {error ? (
+                {error && error.length > 0 ? (
                     <Box sx={{ flexGrow: 1 }}>
-                        <Alert severity="error">{error.message}</Alert>
+                        <Alert severity="error">{error?.message || (typeof error === 'string' ? error : 'An error occurred. Please try again.')}</Alert>
                     </Box>
                 ) : (
                     <DataGrid
