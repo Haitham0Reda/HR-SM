@@ -14,7 +14,7 @@ import {
     ArrowBack as ArrowBackIcon,
     CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import api from '../../services/api';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
@@ -33,10 +33,12 @@ const ForgotPassword = () => {
         try {
             setLoading(true);
             setError('');
-            await axios.post('/api/auth/forgot-password', { email });
+            await api.post('/auth/forgot-password', { email });
             setSuccess(true);
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to send reset email. Please try again.');
+            // Ensure we're setting a string value for the error
+            const errorMessage = err.message || err.response?.data?.error || (err.data?.error) || 'Failed to send reset email. Please try again.';
+            setError(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -185,7 +187,7 @@ const ForgotPassword = () => {
                             },
                         }}
                     >
-                        {error}
+                        {typeof error === 'string' ? error : 'An error occurred. Please try again.'}
                     </Alert>
                 )}
 

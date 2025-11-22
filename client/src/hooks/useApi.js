@@ -16,7 +16,9 @@ export const useApi = (apiFunc) => {
                 setData(result);
                 return result;
             } catch (err) {
-                setError(err);
+                // Ensure we're setting a string value for the error
+                const errorMessage = err?.message || err?.response?.data?.error || (typeof err === 'string' ? err : 'An unexpected error occurred');
+                setError(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred');
                 showError(err);
                 throw err;
             } finally {

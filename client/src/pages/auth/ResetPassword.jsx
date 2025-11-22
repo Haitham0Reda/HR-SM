@@ -87,7 +87,9 @@ const ResetPassword = () => {
                 navigate('/');
             }, 3000);
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to reset password. Please try again.');
+            // Ensure we're setting a string value for the error
+            const errorMessage = err.response?.data?.error || err.message || (typeof err === 'string' ? err : 'Failed to reset password. Please try again.');
+            setError(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -237,7 +239,7 @@ const ResetPassword = () => {
                             mb: 4,
                         }}
                     >
-                        {error}
+                        {typeof error === 'string' ? error : 'An error occurred. Please try again.'}
                     </Typography>
 
                     <Button
@@ -344,7 +346,7 @@ const ResetPassword = () => {
                             },
                         }}
                     >
-                        {error}
+                        {typeof error === 'string' ? error : 'An error occurred. Please try again.'}
                     </Alert>
                 )}
 

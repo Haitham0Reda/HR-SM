@@ -113,6 +113,7 @@ function App() {
                 <Route path="announcements" element={<AnnouncementsPage />} />
                 <Route path="events" element={<EventsPage />} />
                 <Route path="surveys" element={<SurveysPage />} />
+                <Route path="surveys/:id" element={<SurveysPage />} />
 
                 {/* Advanced */}
                 <Route path="holidays" element={<HolidaysPage />} />

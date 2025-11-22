@@ -14,29 +14,30 @@ import {
     Card,
     CardContent,
     CardActions,
-    Divider
+    FormControlLabel,
+    Checkbox
 } from '@mui/material';
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
-    Assessment,
     Visibility as VisibilityIcon,
-    CalendarToday as CalendarIcon,
     QuestionAnswer as QuestionIcon,
     CheckCircle,
-    AccessTime as AccessTimeIcon,
     Poll as PollIcon
 } from '@mui/icons-material';
-import DataTable from '../../components/common/DataTable';
+import { useParams, useNavigate } from 'react-router-dom';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import surveyService from '../../services/survey.service';
+import SurveyForm from '../../components/surveys/SurveyForm';
 
 const SurveysPage = () => {
-    const { user, isHR, isAdmin } = useAuth();
+    const { user, isHR, isAdmin, setHasPendingSurveys } = useAuth();
+    const { id } = useParams();
+    const navigate = useNavigate();
     const [surveys, setSurveys] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
@@ -46,12 +47,39 @@ const SurveysPage = () => {
         title: '',
         description: '',
         surveyType: 'custom',
-        questions: '',
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: '',
-        status: 'draft',
-        isMandatory: false,
-        allowAnonymous: false
+        questionsList: [
+            {
+                questionText: '',
+                questionType: 'text',
+                options: [],
+                ratingScale: { min: 1, max: 5 },
+                required: false,
+                order: 1
+            }
+        ],
+        // Enhanced settings to match the survey model
+        settings: {
+            isMandatory: false,
+            allowAnonymous: false,
+            allowMultipleSubmissions: false,
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: '',
+            emailNotifications: {
+                enabled: true,
+                sendOnAssignment: true,
+                sendReminders: true,
+                reminderFrequency: 3
+            }
+        },
+        // Assignment fields to match the survey model
+        assignedTo: {
+            allEmployees: false,
+            campuses: [],
+            departments: [],
+            roles: [],
+            specificEmployees: []
+        },
+        status: 'draft'
     });
     const { showNotification } = useNotification();
 
@@ -59,9 +87,15 @@ const SurveysPage = () => {
     const canManage = isHR || isAdmin;
 
     useEffect(() => {
+        if (id) {
+            // If there's an ID in the URL, we're viewing a specific survey
+            // The SurveyForm component will handle loading and displaying it
+            return;
+        }
+        
         fetchSurveys();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [id]);
 
     const fetchSurveys = async () => {
         try {
@@ -85,12 +119,37 @@ const SurveysPage = () => {
                 title: survey.title || '',
                 description: survey.description || '',
                 surveyType: survey.surveyType || 'custom',
-                questions: survey.questions?.map(q => q.questionText).join('\n') || '',
-                startDate: survey.settings?.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-                endDate: survey.settings?.endDate?.split('T')[0] || '',
-                status: survey.status || 'draft',
-                isMandatory: survey.settings?.isMandatory || false,
-                allowAnonymous: survey.settings?.allowAnonymous || false
+                questionsList: survey.questions || [
+                    {
+                        questionText: '',
+                        questionType: 'text',
+                        options: [],
+                        ratingScale: { min: 1, max: 5 },
+                        required: false,
+                        order: 1
+                    }
+                ],
+                settings: {
+                    isMandatory: survey.settings?.isMandatory || false,
+                    allowAnonymous: survey.settings?.allowAnonymous || false,
+                    allowMultipleSubmissions: survey.settings?.allowMultipleSubmissions || false,
+                    startDate: survey.settings?.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+                    endDate: survey.settings?.endDate?.split('T')[0] || '',
+                    emailNotifications: {
+                        enabled: survey.settings?.emailNotifications?.enabled !== undefined ? survey.settings.emailNotifications.enabled : true,
+                        sendOnAssignment: survey.settings?.emailNotifications?.sendOnAssignment !== undefined ? survey.settings.emailNotifications.sendOnAssignment : true,
+                        sendReminders: survey.settings?.emailNotifications?.sendReminders !== undefined ? survey.settings.emailNotifications.sendReminders : true,
+                        reminderFrequency: survey.settings?.emailNotifications?.reminderFrequency || 3
+                    }
+                },
+                assignedTo: {
+                    allEmployees: survey.assignedTo?.allEmployees || false,
+                    campuses: survey.assignedTo?.campuses || [],
+                    departments: survey.assignedTo?.departments || [],
+                    roles: survey.assignedTo?.roles || [],
+                    specificEmployees: survey.assignedTo?.specificEmployees || []
+                },
+                status: survey.status || 'draft'
             });
         } else {
             setSelectedSurvey(null);
@@ -98,12 +157,37 @@ const SurveysPage = () => {
                 title: '',
                 description: '',
                 surveyType: 'custom',
-                questions: '',
-                startDate: new Date().toISOString().split('T')[0],
-                endDate: '',
-                status: 'draft',
-                isMandatory: false,
-                allowAnonymous: false
+                questionsList: [
+                    {
+                        questionText: '',
+                        questionType: 'text',
+                        options: [],
+                        ratingScale: { min: 1, max: 5 },
+                        required: false,
+                        order: 1
+                    }
+                ],
+                settings: {
+                    isMandatory: false,
+                    allowAnonymous: false,
+                    allowMultipleSubmissions: false,
+                    startDate: new Date().toISOString().split('T')[0],
+                    endDate: '',
+                    emailNotifications: {
+                        enabled: true,
+                        sendOnAssignment: true,
+                        sendReminders: true,
+                        reminderFrequency: 3
+                    }
+                },
+                assignedTo: {
+                    allEmployees: false,
+                    campuses: [],
+                    departments: [],
+                    roles: [],
+                    specificEmployees: []
+                },
+                status: 'draft'
             });
         }
         setOpenDialog(true);
@@ -114,19 +198,11 @@ const SurveysPage = () => {
         setSelectedSurvey(null);
     };
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
     const handleSubmit = async () => {
         try {
-            // Convert questions to proper format
-            const questionTexts = formData.questions.split('\n').filter(q => q.trim());
-            const questions = questionTexts.map((text, index) => ({
-                questionText: text,
-                questionType: 'text',
-                required: false,
+            // Use the questionsList directly
+            const questions = formData.questionsList.map((question, index) => ({
+                ...question,
                 order: index + 1
             }));
 
@@ -135,12 +211,8 @@ const SurveysPage = () => {
                 description: formData.description,
                 surveyType: formData.surveyType,
                 questions: questions,
-                settings: {
-                    isMandatory: formData.isMandatory,
-                    allowAnonymous: formData.allowAnonymous,
-                    startDate: formData.startDate,
-                    endDate: formData.endDate
-                },
+                settings: formData.settings,
+                assignedTo: formData.assignedTo,
                 status: formData.status,
                 createdBy: user._id
             };
@@ -155,7 +227,15 @@ const SurveysPage = () => {
             handleCloseDialog();
             fetchSurveys();
         } catch (error) {
-            showNotification(error.response?.data?.message || 'Operation failed', 'error');
+            // Provide more specific error messages
+            let errorMessage = error.response?.data?.message || 'Operation failed';
+            
+            // Check if it's the specific error about updating surveys with responses
+            if (errorMessage.includes('Cannot update survey that has responses')) {
+                errorMessage = 'Cannot modify a survey that already has responses. Close the survey and create a new one instead.';
+            }
+            
+            showNotification(errorMessage, 'error');
         }
     };
 
@@ -170,87 +250,6 @@ const SurveysPage = () => {
             showNotification(error.response?.data?.message || 'Delete failed', 'error');
         }
     };
-
-    const columns = [
-        { field: 'title', headerName: 'Survey Title', width: 250 },
-        { field: 'description', headerName: 'Description', width: 300 },
-        {
-            field: 'questions',
-            headerName: 'Questions',
-            width: 100,
-            renderCell: (params) => params.row.questions?.length || 0
-        },
-        {
-            field: 'startDate',
-            headerName: 'Start Date',
-            width: 120,
-            renderCell: (params) => new Date(params.row.startDate).toLocaleDateString()
-        },
-        {
-            field: 'endDate',
-            headerName: 'End Date',
-            width: 120,
-            renderCell: (params) => params.row.endDate ? new Date(params.row.endDate).toLocaleDateString() : 'N/A'
-        },
-        {
-            field: 'isAnonymous',
-            headerName: 'Anonymous',
-            width: 100,
-            renderCell: (params) => (
-                <Chip
-                    label={params.row.isAnonymous ? 'Yes' : 'No'}
-                    color={params.row.isAnonymous ? 'primary' : 'default'}
-                    size="small"
-                />
-            )
-        },
-        {
-            field: 'isActive',
-            headerName: 'Status',
-            width: 100,
-            renderCell: (params) => (
-                <Chip
-                    label={params.row.isActive ? 'Active' : 'Closed'}
-                    color={params.row.isActive ? 'success' : 'default'}
-                    size="small"
-                />
-            )
-        },
-        {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 150,
-            renderCell: (params) => (
-                <Box>
-                    <IconButton
-                        size="small"
-                        onClick={() => showNotification('Results view coming soon', 'info')}
-                        color="primary"
-                        title="View Results"
-                    >
-                        <Assessment fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(params.row)}
-                        color="primary"
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => {
-                            setSelectedSurvey(params.row);
-                            setOpenConfirm(true);
-                        }}
-                        color="error"
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Box>
-            )
-        }
-    ];
 
     const getSurveyStatusColor = (survey) => {
         if (survey.status === 'draft') return 'default';
@@ -286,13 +285,25 @@ const SurveysPage = () => {
         (s.settings?.endDate && new Date(s.settings.endDate) < new Date())
     );
 
-    // Calculate statistics
-    const stats = {
-        total: surveys.length,
-        pending: pendingSurveys.length,
-        completed: completedSurveys.length,
-        mandatory: surveys.filter(s => s.settings?.isMandatory).length
-    };
+    // If we're viewing a specific survey, show the survey form
+    if (id) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Button 
+                    variant="outlined" 
+                    onClick={() => navigate('/app/surveys')}
+                    sx={{ mb: 2 }}
+                >
+                    ← Back to Surveys
+                </Button>
+                <SurveyForm onSurveyComplete={() => {
+                    // Reset the pending surveys flag when survey is completed
+                    setHasPendingSurveys(false);
+                    navigate('/app/surveys');
+                }} />
+            </Box>
+        );
+    }
 
     if (loading) return <Loading />;
 
@@ -390,7 +401,7 @@ const SurveysPage = () => {
                                                 <Button
                                                     size="small"
                                                     variant="contained"
-                                                    onClick={() => showNotification('Survey form coming soon', 'info')}
+                                                    onClick={() => navigate(`/app/surveys/${survey._id}`)}
                                                 >
                                                     Take Survey
                                                 </Button>
@@ -399,7 +410,14 @@ const SurveysPage = () => {
                                                     <IconButton size="small" onClick={() => handleOpenDialog(survey)} color="primary">
                                                         <EditIcon fontSize="small" />
                                                     </IconButton>
-                                                    <IconButton size="small" onClick={() => { setSelectedSurvey(survey); setOpenConfirm(true); }} color="error">
+                                                    <IconButton 
+                                                        size="small" 
+                                                        onClick={() => {
+                                                            setSelectedSurvey(survey);
+                                                            setOpenConfirm(true);
+                                                        }} 
+                                                        color="error"
+                                                    >
                                                         <DeleteIcon fontSize="small" />
                                                     </IconButton>
                                                 </>
@@ -445,56 +463,52 @@ const SurveysPage = () => {
                         minHeight: 300,
                         bgcolor: 'background.paper',
                         boxShadow: 2,
-                        p: 2
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        p: 3
                     }}>
                         {completedSurveys.length === 0 ? (
-                            <Box sx={{ textAlign: 'center', py: 8 }}>
+                            <Box sx={{ textAlign: 'center' }}>
+                                <PollIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                                    No Completed Surveys
+                                </Typography>
                                 <Typography variant="body2" color="text.secondary">
-                                    No completed surveys yet
+                                    Completed surveys will appear here.
                                 </Typography>
                             </Box>
                         ) : (
-                            <Box>
-                                {completedSurveys.map((survey) => (
+                            <Box sx={{ width: '100%' }}>
+                                {completedSurveys.slice(0, 5).map((survey) => (
                                     <Card key={survey._id} sx={{ mb: 2, boxShadow: 1, '&:hover': { boxShadow: 3 } }}>
                                         <CardContent>
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                                                 <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                                                     {survey.title}
                                                 </Typography>
-                                                <Chip label="COMPLETED" size="small" color="success" sx={{ fontWeight: 600 }} />
+                                                <Chip 
+                                                    label={getSurveyStatusLabel(survey)} 
+                                                    size="small" 
+                                                    color={getSurveyStatusColor(survey)}
+                                                    sx={{ fontWeight: 600 }}
+                                                />
+                                            </Box>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                <QuestionIcon fontSize="small" color="action" />
+                                                <Typography variant="caption">
+                                                    {survey.questions?.length || 0} questions
+                                                </Typography>
                                             </Box>
                                             <Typography variant="caption" color="text.secondary">
-                                                ✅ Completed: {survey.settings?.endDate ? new Date(survey.settings.endDate).toLocaleDateString() : 'N/A'}
+                                                📅 Completed: {survey.submittedAt ? new Date(survey.submittedAt).toLocaleDateString() : 'N/A'}
                                             </Typography>
                                         </CardContent>
                                         <CardActions sx={{ justifyContent: 'flex-end' }}>
-                                            {canManage && (
-                                                <>
-                                                    <Button
-                                                        size="small"
-                                                        variant="outlined"
-                                                        color="success"
-                                                        startIcon={<Assessment />}
-                                                        onClick={() => showNotification('Results view coming soon', 'info')}
-                                                    >
-                                                        View Results
-                                                    </Button>
-                                                    <IconButton size="small" onClick={() => { setSelectedSurvey(survey); setOpenConfirm(true); }} color="error">
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </>
-                                            )}
-                                            {!canManage && (
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    color="success"
-                                                    disabled
-                                                >
-                                                    ✓ DONE
-                                                </Button>
-                                            )}
+                                            <IconButton size="small" onClick={() => showNotification('Survey results coming soon', 'info')}>
+                                                <VisibilityIcon fontSize="small" />
+                                            </IconButton>
                                         </CardActions>
                                     </Card>
                                 ))}
@@ -504,228 +518,447 @@ const SurveysPage = () => {
                 </Box>
             </Box>
 
-            {/* Survey Statistics */}
-            <Card sx={{ bgcolor: 'background.paper', boxShadow: 2, p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                    <Assessment sx={{ color: 'primary.main' }} />
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Survey Statistics
-                    </Typography>
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                    <Box sx={{
-                        flex: '1 1 calc(25% - 18px)',
-                        minWidth: '150px',
-                        bgcolor: 'info.main',
-                        color: 'white',
-                        p: 2,
-                        borderRadius: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2
-                    }}>
-                        <Box sx={{
-                            bgcolor: 'rgba(255,255,255,0.3)',
-                            width: 48,
-                            height: 48,
-                            borderRadius: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <Assessment sx={{ fontSize: 32 }} />
-                        </Box>
-                        <Box>
-                            <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                                {stats.total}
-                            </Typography>
-                            <Typography variant="body2">
-                                Total Surveys
-                            </Typography>
-                        </Box>
-                    </Box>
-
-                    <Box sx={{
-                        flex: '1 1 calc(25% - 18px)',
-                        minWidth: '150px',
-                        bgcolor: 'warning.main',
-                        color: 'white',
-                        p: 2,
-                        borderRadius: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2
-                    }}>
-                        <Box sx={{
-                            bgcolor: 'rgba(255,255,255,0.3)',
-                            width: 48,
-                            height: 48,
-                            borderRadius: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <AccessTimeIcon sx={{ fontSize: 32 }} />
-                        </Box>
-                        <Box>
-                            <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                                {stats.pending}
-                            </Typography>
-                            <Typography variant="body2">
-                                Pending
-                            </Typography>
-                        </Box>
-                    </Box>
-
-                    <Box sx={{
-                        flex: '1 1 calc(25% - 18px)',
-                        minWidth: '150px',
-                        bgcolor: 'success.main',
-                        color: 'white',
-                        p: 2,
-                        borderRadius: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2
-                    }}>
-                        <Box sx={{
-                            bgcolor: 'rgba(255,255,255,0.3)',
-                            width: 48,
-                            height: 48,
-                            borderRadius: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <CheckCircle sx={{ fontSize: 32 }} />
-                        </Box>
-                        <Box>
-                            <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                                {stats.completed}
-                            </Typography>
-                            <Typography variant="body2">
-                                Completed
-                            </Typography>
-                        </Box>
-                    </Box>
-
-                    <Box sx={{
-                        flex: '1 1 calc(25% - 18px)',
-                        minWidth: '150px',
-                        bgcolor: 'error.main',
-                        color: 'white',
-                        p: 2,
-                        borderRadius: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2
-                    }}>
-                        <Box sx={{
-                            bgcolor: 'rgba(255,255,255,0.3)',
-                            width: 48,
-                            height: 48,
-                            borderRadius: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <PollIcon sx={{ fontSize: 32 }} />
-                        </Box>
-                        <Box>
-                            <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                                {stats.mandatory}
-                            </Typography>
-                            <Typography variant="body2">
-                                Mandatory
-                            </Typography>
-                        </Box>
-                    </Box>
-                </Box>
-            </Card>
-
+            {/* Dialogs */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
                 <DialogTitle>
                     {selectedSurvey ? 'Edit Survey' : 'Create Survey'}
                 </DialogTitle>
                 <DialogContent>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                    <TextField
+                        fullWidth
+                        label="Title"
+                        name="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                        margin="normal"
+                        required
+                    />
+                    <TextField
+                        fullWidth
+                        label="Description"
+                        name="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                        margin="normal"
+                        multiline
+                        rows={3}
+                    />
+                    
+                    <TextField
+                        select
+                        fullWidth
+                        label="Survey Type"
+                        name="surveyType"
+                        value={formData.surveyType}
+                        onChange={(e) => setFormData(prev => ({ ...prev, surveyType: e.target.value }))}
+                        margin="normal"
+                    >
+                        <MenuItem value="custom">Custom</MenuItem>
+                        <MenuItem value="satisfaction">Satisfaction</MenuItem>
+                        <MenuItem value="training">Training</MenuItem>
+                        <MenuItem value="performance">Performance</MenuItem>
+                        <MenuItem value="policy">Policy</MenuItem>
+                        <MenuItem value="360-feedback">360 Feedback</MenuItem>
+                        <MenuItem value="exit-interview">Exit Interview</MenuItem>
+                    </TextField>
+                    
+                    {/* Questions Section */}
+                    <Box sx={{ mt: 3, mb: 2 }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>Questions</Typography>
+                        {formData.questionsList && formData.questionsList.map((question, index) => (
+                            <Card key={index} sx={{ mb: 2, p: 2 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                    <Typography variant="subtitle1">Question {index + 1}</Typography>
+                                    <IconButton 
+                                        size="small" 
+                                        onClick={() => {
+                                            const newQuestions = [...formData.questionsList];
+                                            newQuestions.splice(index, 1);
+                                            setFormData(prev => ({ ...prev, questionsList: newQuestions }));
+                                        }}
+                                        color="error"
+                                    >
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </Box>
+                                
+                                <TextField
+                                    fullWidth
+                                    label="Question Text"
+                                    value={question.questionText}
+                                    onChange={(e) => {
+                                        const newQuestions = [...formData.questionsList];
+                                        newQuestions[index].questionText = e.target.value;
+                                        setFormData(prev => ({ ...prev, questionsList: newQuestions }));
+                                    }}
+                                    margin="normal"
+                                    required
+                                />
+                                
+                                <TextField
+                                    select
+                                    fullWidth
+                                    label="Question Type"
+                                    value={question.questionType}
+                                    onChange={(e) => {
+                                        const newQuestions = [...formData.questionsList];
+                                        newQuestions[index].questionType = e.target.value;
+                                        // Reset options when changing question type
+                                        if (e.target.value !== 'single-choice' && e.target.value !== 'multiple-choice') {
+                                            newQuestions[index].options = [];
+                                        }
+                                        if (e.target.value !== 'rating') {
+                                            newQuestions[index].ratingScale = { min: 1, max: 5 };
+                                        }
+                                        setFormData(prev => ({ ...prev, questionsList: newQuestions }));
+                                    }}
+                                    margin="normal"
+                                >
+                                    <MenuItem value="text">Text</MenuItem>
+                                    <MenuItem value="textarea">Text Area</MenuItem>
+                                    <MenuItem value="single-choice">Single Choice</MenuItem>
+                                    <MenuItem value="multiple-choice">Multiple Choice</MenuItem>
+                                    <MenuItem value="rating">Rating</MenuItem>
+                                    <MenuItem value="yes-no">Yes/No</MenuItem>
+                                    <MenuItem value="number">Number</MenuItem>
+                                    <MenuItem value="date">Date</MenuItem>
+                                </TextField>
+                                
+                                {/* Options for choice-based questions */}
+                                {(question.questionType === 'single-choice' || question.questionType === 'multiple-choice') && (
+                                    <Box sx={{ mt: 2 }}>
+                                        <Typography variant="subtitle2" sx={{ mb: 1 }}>Options</Typography>
+                                        {question.options.map((option, optionIndex) => (
+                                            <Box key={optionIndex} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                                                <TextField
+                                                    fullWidth
+                                                    value={option}
+                                                    onChange={(e) => {
+                                                        const newQuestions = [...formData.questionsList];
+                                                        newQuestions[index].options[optionIndex] = e.target.value;
+                                                        setFormData(prev => ({ ...prev, questionsList: newQuestions }));
+                                                    }}
+                                                    placeholder={`Option ${optionIndex + 1}`}
+                                                />
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => {
+                                                        const newQuestions = [...formData.questionsList];
+                                                        newQuestions[index].options.splice(optionIndex, 1);
+                                                        setFormData(prev => ({ ...prev, questionsList: newQuestions }));
+                                                    }}
+                                                    color="error"
+                                                >
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            </Box>
+                                        ))}
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<AddIcon />}
+                                            onClick={() => {
+                                                const newQuestions = [...formData.questionsList];
+                                                newQuestions[index].options.push('');
+                                                setFormData(prev => ({ ...prev, questionsList: newQuestions }));
+                                            }}
+                                            size="small"
+                                        >
+                                            Add Option
+                                        </Button>
+                                    </Box>
+                                )}
+                                
+                                {/* Rating scale for rating questions */}
+                                {question.questionType === 'rating' && (
+                                    <Box sx={{ mt: 2 }}>
+                                        <Typography variant="subtitle2" sx={{ mb: 1 }}>Rating Scale</Typography>
+                                        <Box sx={{ display: 'flex', gap: 2 }}>
+                                            <TextField
+                                                type="number"
+                                                label="Min"
+                                                value={question.ratingScale.min}
+                                                onChange={(e) => {
+                                                    const newQuestions = [...formData.questionsList];
+                                                    newQuestions[index].ratingScale.min = parseInt(e.target.value) || 1;
+                                                    setFormData(prev => ({ ...prev, questionsList: newQuestions }));
+                                                }}
+                                                size="small"
+                                            />
+                                            <TextField
+                                                type="number"
+                                                label="Max"
+                                                value={question.ratingScale.max}
+                                                onChange={(e) => {
+                                                    const newQuestions = [...formData.questionsList];
+                                                    newQuestions[index].ratingScale.max = parseInt(e.target.value) || 5;
+                                                    setFormData(prev => ({ ...prev, questionsList: newQuestions }));
+                                                }}
+                                                size="small"
+                                            />
+                                        </Box>
+                                    </Box>
+                                )}
+                                
+                                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={question.required}
+                                                onChange={(e) => {
+                                                    const newQuestions = [...formData.questionsList];
+                                                    newQuestions[index].required = e.target.checked;
+                                                    setFormData(prev => ({ ...prev, questionsList: newQuestions }));
+                                                }}
+                                            />
+                                        }
+                                        label="Required"
+                                    />
+                                </Box>
+                            </Card>
+                        ))}
+                        
+                        <Button
+                            variant="outlined"
+                            startIcon={<AddIcon />}
+                            onClick={() => {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    questionsList: [
+                                        ...prev.questionsList,
+                                        {
+                                            questionText: '',
+                                            questionType: 'text',
+                                            options: [],
+                                            ratingScale: { min: 1, max: 5 },
+                                            required: false,
+                                            order: prev.questionsList.length + 1
+                                        }
+                                    ]
+                                }));
+                            }}
+                        >
+                            Add Question
+                        </Button>
+                    </Box>
+                    
+                    {/* Settings Section */}
+                    <Box sx={{ mt: 3, mb: 2 }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>Settings</Typography>
+                        
                         <TextField
-                            label="Survey Title"
-                            name="title"
-                            value={formData.title}
-                            onChange={handleChange}
-                            required
+                            select
                             fullWidth
-                        />
-                        <TextField
-                            label="Description"
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            multiline
-                            rows={2}
-                            fullWidth
-                        />
-                        <TextField
-                            label="Questions"
-                            name="questions"
-                            value={formData.questions}
-                            onChange={handleChange}
-                            multiline
-                            rows={8}
-                            required
-                            fullWidth
-                            helperText="Enter one question per line"
-                        />
-                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            label="Status"
+                            value={formData.status}
+                            onChange={(e) => setFormData(prev => ({ 
+                                ...prev, 
+                                status: e.target.value
+                            }))}
+                            margin="normal"
+                        >
+                            <MenuItem value="draft">Draft</MenuItem>
+                            <MenuItem value="active">Active</MenuItem>
+                            <MenuItem value="closed">Closed</MenuItem>
+                            <MenuItem value="archived">Archived</MenuItem>
+                        </TextField>
+                        
+                        <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap' }}>
+                            <Button
+                                variant={formData.settings.isMandatory ? "contained" : "outlined"}
+                                onClick={() => setFormData(prev => ({ 
+                                    ...prev, 
+                                    settings: { ...prev.settings, isMandatory: !prev.settings.isMandatory }
+                                }))}
+                            >
+                                Mandatory
+                            </Button>
+                            <Button
+                                variant={formData.settings.allowAnonymous ? "contained" : "outlined"}
+                                onClick={() => setFormData(prev => ({ 
+                                    ...prev, 
+                                    settings: { ...prev.settings, allowAnonymous: !prev.settings.allowAnonymous }
+                                }))}
+                            >
+                                Allow Anonymous
+                            </Button>
+                            <Button
+                                variant={formData.settings.allowMultipleSubmissions ? "contained" : "outlined"}
+                                onClick={() => setFormData(prev => ({ 
+                                    ...prev, 
+                                    settings: { ...prev.settings, allowMultipleSubmissions: !prev.settings.allowMultipleSubmissions }
+                                }))}
+                            >
+                                Allow Multiple Submissions
+                            </Button>
+                        </Box>
+                        
+                        <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                             <TextField
                                 type="date"
                                 label="Start Date"
-                                name="startDate"
-                                value={formData.startDate}
-                                onChange={handleChange}
-                                required
-                                fullWidth
+                                value={formData.settings.startDate}
+                                onChange={(e) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    settings: { ...prev.settings, startDate: e.target.value }
+                                }))}
                                 InputLabelProps={{ shrink: true }}
+                                fullWidth
                             />
                             <TextField
                                 type="date"
-                                label="End Date (Optional)"
-                                name="endDate"
-                                value={formData.endDate}
-                                onChange={handleChange}
-                                fullWidth
+                                label="End Date"
+                                value={formData.settings.endDate}
+                                onChange={(e) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    settings: { ...prev.settings, endDate: e.target.value }
+                                }))}
                                 InputLabelProps={{ shrink: true }}
+                                fullWidth
                             />
                         </Box>
-                        <TextField
-                            select
-                            label="Anonymous Responses"
-                            name="isAnonymous"
-                            value={formData.isAnonymous}
-                            onChange={(e) => setFormData(prev => ({ ...prev, isAnonymous: e.target.value === 'true' }))}
-                            fullWidth
-                        >
-                            <MenuItem value="true">Yes (Anonymous)</MenuItem>
-                            <MenuItem value="false">No (Track respondents)</MenuItem>
-                        </TextField>
-                        <TextField
-                            select
-                            label="Status"
-                            name="isActive"
-                            value={formData.isActive}
-                            onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
-                            fullWidth
-                        >
-                            <MenuItem value="true">Active</MenuItem>
-                            <MenuItem value="false">Closed</MenuItem>
-                        </TextField>
+                        
+                        {/* Email Notifications */}
+                        <Box sx={{ mt: 3 }}>
+                            <Typography variant="subtitle1" sx={{ mb: 1 }}>Email Notifications</Typography>
+                            <Box sx={{ display: 'flex', gap: 2, mt: 1, flexWrap: 'wrap' }}>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.settings.emailNotifications.enabled}
+                                            onChange={(e) => setFormData(prev => ({ 
+                                                ...prev, 
+                                                settings: { 
+                                                    ...prev.settings, 
+                                                    emailNotifications: { 
+                                                        ...prev.settings.emailNotifications, 
+                                                        enabled: e.target.checked 
+                                                    }
+                                                }
+                                            }))}
+                                        />
+                                    }
+                                    label="Enable Notifications"
+                                />
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.settings.emailNotifications.sendOnAssignment}
+                                            onChange={(e) => setFormData(prev => ({ 
+                                                ...prev, 
+                                                settings: { 
+                                                    ...prev.settings, 
+                                                    emailNotifications: { 
+                                                        ...prev.settings.emailNotifications, 
+                                                        sendOnAssignment: e.target.checked 
+                                                    }
+                                                }
+                                            }))}
+                                        />
+                                    }
+                                    label="Send on Assignment"
+                                />
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.settings.emailNotifications.sendReminders}
+                                            onChange={(e) => setFormData(prev => ({ 
+                                                ...prev, 
+                                                settings: { 
+                                                    ...prev.settings, 
+                                                    emailNotifications: { 
+                                                        ...prev.settings.emailNotifications, 
+                                                        sendReminders: e.target.checked 
+                                                    }
+                                                }
+                                            }))}
+                                        />
+                                    }
+                                    label="Send Reminders"
+                                />
+                            </Box>
+                            {formData.settings.emailNotifications.sendReminders && (
+                                <TextField
+                                    type="number"
+                                    label="Reminder Frequency (days)"
+                                    value={formData.settings.emailNotifications.reminderFrequency}
+                                    onChange={(e) => setFormData(prev => ({ 
+                                        ...prev, 
+                                        settings: { 
+                                            ...prev.settings, 
+                                            emailNotifications: { 
+                                                ...prev.settings.emailNotifications, 
+                                                reminderFrequency: parseInt(e.target.value) || 3
+                                            }
+                                        }
+                                    }))}
+                                    sx={{ mt: 1, width: 200 }}
+                                    InputProps={{ inputProps: { min: 1, max: 30 } }}
+                                />
+                            )}
+                        </Box>
+                    </Box>
+                    
+                    {/* Assignment Section */}
+                    <Box sx={{ mt: 3, mb: 2 }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>Assignment</Typography>
+                        
+                        <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={formData.assignedTo.allEmployees}
+                                        onChange={(e) => setFormData(prev => ({ 
+                                            ...prev, 
+                                            assignedTo: { ...prev.assignedTo, allEmployees: e.target.checked }
+                                        }))}
+                                    />
+                                }
+                                label="Assign to All Employees"
+                            />
+                        </Box>
+                        
+                        {/* Role Assignment */}
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="subtitle1" sx={{ mb: 1 }}>Assign to Specific Roles</Typography>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                {['admin', 'hr', 'manager', 'employee', 'id-card-admin', 'supervisor', 'head-of-department', 'dean'].map((role) => (
+                                    <Button
+                                        key={role}
+                                        variant={formData.assignedTo.roles.includes(role) ? "contained" : "outlined"}
+                                        size="small"
+                                        onClick={() => {
+                                            setFormData(prev => {
+                                                const roles = [...prev.assignedTo.roles];
+                                                if (roles.includes(role)) {
+                                                    return {
+                                                        ...prev,
+                                                        assignedTo: {
+                                                            ...prev.assignedTo,
+                                                            roles: roles.filter(r => r !== role)
+                                                        }
+                                                    };
+                                                } else {
+                                                    return {
+                                                        ...prev,
+                                                        assignedTo: {
+                                                            ...prev.assignedTo,
+                                                            roles: [...roles, role]
+                                                        }
+                                                    };
+                                                }
+                                            });
+                                        }}
+                                    >
+                                        {role}
+                                    </Button>
+                                ))}
+                            </Box>
+                        </Box>
                     </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>Cancel</Button>
-                    <Button onClick={handleSubmit} variant="contained">
+                    <Button onClick={handleSubmit} variant="contained" color="primary">
                         {selectedSurvey ? 'Update' : 'Create'}
                     </Button>
                 </DialogActions>
@@ -733,13 +966,10 @@ const SurveysPage = () => {
 
             <ConfirmDialog
                 open={openConfirm}
-                title="Delete Survey"
-                message={`Are you sure you want to delete "${selectedSurvey?.title}"?`}
+                onClose={() => setOpenConfirm(false)}
                 onConfirm={handleDelete}
-                onCancel={() => {
-                    setOpenConfirm(false);
-                    setSelectedSurvey(null);
-                }}
+                title="Delete Survey"
+                content="Are you sure you want to delete this survey? This action cannot be undone."
             />
         </Box>
     );

@@ -9,7 +9,9 @@ import {
     getHolidaySuggestions,
     addFromSuggestions,
     checkWorkingDay,
-    parseDateString
+    parseDateString,
+    getEgyptHolidays,
+    importEgyptHolidays
 } from '../controller/holiday.controller.js';
 import {
     protect,
@@ -106,6 +108,21 @@ router.get('/campus/:campusId/check-working-day',
 router.get('/parse-date',
     protect,
     parseDateString
+);
+
+// Get Egypt holidays from date-holidays package
+router.get('/egypt-holidays',
+    protect,
+    hrOrAdmin,
+    getEgyptHolidays
+);
+
+// Import Egypt holidays to database
+router.post('/campus/:campusId/import-egypt-holidays',
+    protect,
+    hrOrAdmin,
+    validateCampus,
+    importEgyptHolidays
 );
 
 export default router;

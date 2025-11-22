@@ -5,6 +5,7 @@
  */
 import Holiday from '../models/holiday.model.js';
 import axios from 'axios';
+import Holidays from 'date-holidays';
 
 /**
  * Get holiday settings for campus
@@ -313,6 +314,95 @@ function getEgyptFallbackHolidays(year, weekendDays = [5, 6]) {
         source: 'fallback'
     }));
 }
+
+/**
+ * Get official holidays for Egypt from date-holidays package
+ */
+export const getEgyptHolidays = async (req, res) => {
+    try {
+        const { year = new Date().getFullYear() } = req.query;
+        
+        // Create instance for Egypt
+        const hd = new Holidays('EG');
+        
+        // Get holidays for the specified year
+        const holidays = hd.getHolidays(year);
+        
+        res.status(200).json({
+            success: true,
+            year,
+            holidays
+        });
+    } catch (err) {
+        console.error('Error fetching Egypt holidays:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+/**
+ * Import Egypt holidays to database
+ */
+export const importEgyptHolidays = async (req, res) => {
+    try {
+        const { campusId } = req.params;
+        const { year = new Date().getFullYear() } = req.body;
+        
+        // Create instance for Egypt
+        const hd = new Holidays('EG');
+        
+        // Get holidays for the specified year
+        const holidays = hd.getHolidays(year);
+        
+        // Get holiday settings for campus
+        const settings = await Holiday.getOrCreateForCampus(campusId);
+        
+        // Import holidays to database
+        let importedCount = 0;
+        const errors = [];
+        
+        for (const holiday of holidays) {
+            try {
+                // Format date as DD-MM-YYYY for our system
+                const dateObj = new Date(holiday.date);
+                const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${dateObj.getFullYear()}`;
+                
+                // Check if holiday already exists
+                const exists = settings.officialHolidays.some(h => 
+                    h.date.getTime() === dateObj.getTime() && h.name === holiday.name
+                );
+                
+                if (!exists) {
+                    settings.addOfficialHoliday(formattedDate, holiday.name, holiday.description || '');
+                    importedCount++;
+                }
+            } catch (error) {
+                errors.push({
+                    date: holiday.date,
+                    name: holiday.name,
+                    error: error.message
+                });
+            }
+        }
+        
+        // Save settings if any holidays were imported
+        if (importedCount > 0) {
+            settings.lastModified = new Date();
+            settings.lastModifiedBy = req.user._id;
+            await settings.save();
+        }
+        
+        res.status(200).json({
+            success: true,
+            message: `Imported ${importedCount} holidays`,
+            importedCount,
+            errors: errors.length > 0 ? errors : undefined,
+            settings
+        });
+    } catch (err) {
+        console.error('Error importing Egypt holidays:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
 
 /**
  * Add holidays from suggestions

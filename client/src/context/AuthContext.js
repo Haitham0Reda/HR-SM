@@ -1,11 +1,13 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import authService from '../services/auth.service';
+import surveyService from '../services/survey.service';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [hasPendingSurveys, setHasPendingSurveys] = useState(false);
 
     console.log('AuthProvider initialized, current user state:', user);
 
@@ -54,6 +56,23 @@ export const AuthProvider = ({ children }) => {
             console.error('Failed to fetch profile after login:', error);
         }
 
+        // Check for pending mandatory surveys
+        try {
+            const surveys = await surveyService.getMySurveys();
+            const pendingMandatorySurveys = surveys.surveys?.filter(survey => 
+                survey.isMandatory && !survey.hasResponded
+            );
+
+            if (pendingMandatorySurveys && pendingMandatorySurveys.length > 0) {
+                setHasPendingSurveys(true);
+                console.log('User has pending mandatory surveys');
+            } else {
+                setHasPendingSurveys(false);
+            }
+        } catch (error) {
+            console.error('Error checking for pending surveys:', error);
+        }
+
         return response;
     };
 
@@ -61,6 +80,7 @@ export const AuthProvider = ({ children }) => {
         console.log('AuthProvider - logout called');
         authService.logout();
         setUser(null);
+        setHasPendingSurveys(false);
     };
 
     const updateUser = (userData) => {
@@ -75,6 +95,8 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         updateUser,
+        hasPendingSurveys,
+        setHasPendingSurveys,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
         isHR: user?.role === 'hr' || user?.role === 'admin',

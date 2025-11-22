@@ -260,15 +260,18 @@ surveySchema.methods.calculateCompletionRate = function () {
 };
 
 // Method to add response
-surveySchema.methods.addResponse = async function (userId, answers, isAnonymous = false, metadata = {}) {
+surveySchema.methods.addResponse = async function (userId, answers = [], isAnonymous = false, metadata = {}) {
     // Check if already responded and multiple submissions not allowed
     if (!this.settings.allowMultipleSubmissions && this.hasUserResponded(userId)) {
         throw new Error('You have already submitted a response to this survey');
     }
 
+    // Ensure answers is an array
+    const responses = Array.isArray(answers) ? answers : [];
+    
     // Calculate completion percentage
     const requiredQuestions = this.questions.filter(q => q.required).length;
-    const answeredRequired = answers.filter(a => {
+    const answeredRequired = responses.filter(a => {
         const question = this.questions.id(a.questionId);
         return question && question.required;
     }).length;
@@ -283,7 +286,7 @@ surveySchema.methods.addResponse = async function (userId, answers, isAnonymous 
     this.responses.push({
         respondent: isAnonymous ? null : userId,
         isAnonymous,
-        answers,
+        answers: responses,
         completionPercentage,
         isComplete,
         submittedAt: isComplete ? new Date() : null,
