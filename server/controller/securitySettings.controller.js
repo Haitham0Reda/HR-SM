@@ -28,6 +28,7 @@ export const getSecuritySettings = async (req, res) => {
 export const updateSecuritySettings = async (req, res) => {
     try {
         const updates = req.body;
+        
         const settings = await SecuritySettings.updateSettings(updates, req.user._id);
 
         // Log security settings change

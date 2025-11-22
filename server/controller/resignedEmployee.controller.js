@@ -23,9 +23,12 @@ export const getAllResignedEmployees = async (req, res) => {
 
         const total = await ResignedEmployee.countDocuments(status ? { status } : {});
 
+        // Ensure we return an array
+        const employeesArray = Array.isArray(resignedEmployees) ? resignedEmployees : [];
+
         res.json({
             success: true,
-            resignedEmployees,
+            resignedEmployees: employeesArray,
             pagination: {
                 total,
                 page: parseInt(page),

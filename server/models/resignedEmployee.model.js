@@ -289,17 +289,18 @@ resignedEmployeeSchema.pre('save', function (next) {
 });
 
 // Static method to find all resigned employees
-resignedEmployeeSchema.statics.findAllResigned = function (options = {}) {
+resignedEmployeeSchema.statics.findAllResigned = async function (options = {}) {
     const { status, limit = 50, skip = 0 } = options;
 
     const query = status ? { status } : {};
 
-    return this.find(query)
+    return await this.find(query)
         .populate('employee', 'profile employeeId department position school')
         .populate('processedBy', 'username email')
         .sort({ resignationDate: -1 })
         .limit(limit)
-        .skip(skip);
+        .skip(skip)
+        .exec(); // Execute the query and return the actual results
 };
 
 // Static method to convert number to Arabic numerals

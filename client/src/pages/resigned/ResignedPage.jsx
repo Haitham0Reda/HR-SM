@@ -60,8 +60,14 @@ const ResignedPage = () => {
         try {
             setLoading(true);
             const data = await resignedService.getAll();
-            setResignedEmployees(data);
+            // Ensure we're working with an array
+            if (!Array.isArray(data)) {
+                setResignedEmployees([]);
+            } else {
+                setResignedEmployees(data);
+            }
         } catch (error) {
+            console.error('Failed to fetch resigned employees:', error);
             showNotification('Failed to fetch resigned employees', 'error');
         } finally {
             setLoading(false);
