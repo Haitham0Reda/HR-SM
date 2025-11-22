@@ -274,6 +274,14 @@ export const logSecurityEvent = (eventType, severity = 'info') => {
 export const validateSecuritySettings = (req, res, next) => {
     const updates = req.body;
 
+    // Handle case where twoFactorAuth is sent as boolean instead of object
+    if (typeof updates.twoFactorAuth === 'boolean') {
+        updates.twoFactorAuth = {
+            enabled: updates.twoFactorAuth,
+            enforced: updates.twoFactorAuth // Default to same value
+        };
+    }
+
     // Validate 2FA settings
     if (updates.twoFactorAuth) {
         if (updates.twoFactorAuth.backupCodesCount !== undefined) {

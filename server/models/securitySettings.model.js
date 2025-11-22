@@ -200,6 +200,18 @@ const securitySettingsSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Pre-save hook to handle boolean values for twoFactorAuth
+securitySettingsSchema.pre('save', function (next) {
+    // Handle case where twoFactorAuth is set as boolean instead of object
+    if (typeof this.twoFactorAuth === 'boolean') {
+        this.twoFactorAuth = {
+            enabled: this.twoFactorAuth,
+            enforced: this.twoFactorAuth
+        };
+    }
+    next();
+});
+
 // Static method to get current settings
 securitySettingsSchema.statics.getSettings = async function () {
     let settings = await this.findOne();
