@@ -98,7 +98,10 @@ export const setSurveyCreatedBy = (req, res, next) => {
  */
 export const validateSurveyResponse = async (req, res, next) => {
     try {
-        if (req.body.answers && req.params.id) {
+        // Support both 'answers' and 'responses' field names
+        const answers = req.body.answers || req.body.responses;
+
+        if (answers && req.params.id) {
             const Survey = mongoose.model('Survey');
             const survey = await Survey.findById(req.params.id);
 
@@ -125,8 +128,8 @@ export const validateSurveyResponse = async (req, res, next) => {
             }
 
             // Validate all answers have questionId
-            for (let i = 0; i < req.body.answers.length; i++) {
-                const answer = req.body.answers[i];
+            for (let i = 0; i < answers.length; i++) {
+                const answer = answers[i];
 
                 if (!answer.questionId) {
                     return res.status(400).json({

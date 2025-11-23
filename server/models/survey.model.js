@@ -268,7 +268,14 @@ surveySchema.methods.addResponse = async function (userId, answers = [], isAnony
 
     // Ensure answers is an array
     const responses = Array.isArray(answers) ? answers : [];
-    
+
+    console.log('addResponse called with:', {
+        userId,
+        answersCount: responses.length,
+        isAnonymous,
+        totalQuestions: this.questions.length
+    });
+
     // Calculate completion percentage
     const requiredQuestions = this.questions.filter(q => q.required).length;
     const answeredRequired = responses.filter(a => {
@@ -280,7 +287,22 @@ surveySchema.methods.addResponse = async function (userId, answers = [], isAnony
         ? (answeredRequired / requiredQuestions) * 100
         : 100;
 
-    const isComplete = completionPercentage === 100;
+    // Consider complete if all questions are answered (not just required ones)
+    const totalAnswered = responses.filter(a => {
+        const answer = a.answer;
+        return answer !== undefined && answer !== null && answer !== '';
+    }).length;
+
+    const isComplete = totalAnswered >= this.questions.length || completionPercentage === 100;
+
+    console.log('Completion calculation:', {
+        requiredQuestions,
+        answeredRequired,
+        totalAnswered,
+        totalQuestions: this.questions.length,
+        completionPercentage,
+        isComplete
+    });
 
     // Add response
     this.responses.push({
@@ -300,6 +322,11 @@ surveySchema.methods.addResponse = async function (userId, answers = [], isAnony
         this.stats.lastResponseAt = new Date();
         this.calculateCompletionRate();
     }
+
+    console.log('Response added. Stats:', {
+        totalResponses: this.stats.totalResponses,
+        isComplete
+    });
 
     return await this.save();
 };

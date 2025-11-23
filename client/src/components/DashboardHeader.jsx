@@ -25,11 +25,17 @@ import Stack from '@mui/material/Stack';
 import { Link, useNavigate } from 'react-router-dom';
 import ThemeSwitcher from './ThemeSwitcher';
 import { useAuth } from '../context/AuthContext';
+// eslint-disable-next-line no-unused-vars
 import leaveService from '../services/leave.service';
+// eslint-disable-next-line no-unused-vars
 import announcementService from '../services/announcement.service';
+// eslint-disable-next-line no-unused-vars
 import eventService from '../services/event.service';
+// eslint-disable-next-line no-unused-vars
 import surveyService from '../services/survey.service';
+// eslint-disable-next-line no-unused-vars
 import permissionService from '../services/permission.service';
+// eslint-disable-next-line no-unused-vars
 import notificationService from '../services/notification.service';
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
@@ -291,12 +297,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 }}
                             >
                                 <Avatar
-
-                                    src={user?.profile?.profilePicture}
-                                    alt={user?.name || 'User'}
                                     src={user?.profile?.profilePicture || user?.profilePicture}
                                     alt={user?.name || user?.username || 'User'}
-
                                     sx={{
                                         width: 36,
                                         height: 36,

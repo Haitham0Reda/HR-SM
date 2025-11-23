@@ -92,7 +92,7 @@ const SurveysPage = () => {
             // The SurveyForm component will handle loading and displaying it
             return;
         }
-        
+
         fetchSurveys();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
@@ -101,9 +101,16 @@ const SurveysPage = () => {
         try {
             setLoading(true);
             // Use different endpoints based on user role
-            const data = canManage 
-                ? (await surveyService.getAll()).surveys 
+            const data = canManage
+                ? (await surveyService.getAll()).surveys
                 : (await surveyService.getMySurveys()).surveys;
+            console.log('Fetched surveys:', data);
+            console.log('Survey completion status:', data.map(s => ({
+                title: s.title,
+                hasResponded: s.hasResponded,
+                isComplete: s.isComplete,
+                submittedAt: s.submittedAt
+            })));
             setSurveys(data);
         } catch (error) {
             showNotification('Failed to fetch surveys', 'error');
@@ -114,6 +121,11 @@ const SurveysPage = () => {
 
     const handleOpenDialog = (survey = null) => {
         if (survey) {
+            // Check if survey has responses and prevent editing
+            if (survey.stats?.totalResponses > 0 || survey.responses?.length > 0) {
+                showNotification('Cannot edit a survey that has responses. Close it and create a new one instead.', 'warning');
+                return;
+            }
             setSelectedSurvey(survey);
             setFormData({
                 title: survey.title || '',
@@ -217,7 +229,19 @@ const SurveysPage = () => {
                 createdBy: user._id
             };
 
+            console.log('Submitting survey:', {
+                isUpdate: !!selectedSurvey,
+                surveyId: selectedSurvey?._id,
+                hasResponses: selectedSurvey?.stats?.totalResponses || selectedSurvey?.responses?.length
+            });
+
             if (selectedSurvey) {
+                // Double-check before updating
+                if (selectedSurvey.stats?.totalResponses > 0 || selectedSurvey.responses?.length > 0) {
+                    showNotification('Cannot modify a survey that already has responses. Close the survey and create a new one instead.', 'error');
+                    handleCloseDialog();
+                    return;
+                }
                 await surveyService.update(selectedSurvey._id, submitData);
                 showNotification('Survey updated successfully', 'success');
             } else {
@@ -227,14 +251,16 @@ const SurveysPage = () => {
             handleCloseDialog();
             fetchSurveys();
         } catch (error) {
+            console.error('Survey submit error:', error);
+            console.error('Error response:', error.response?.data);
             // Provide more specific error messages
-            let errorMessage = error.response?.data?.message || 'Operation failed';
-            
+            let errorMessage = error.response?.data?.error || error.response?.data?.message || 'Operation failed';
+
             // Check if it's the specific error about updating surveys with responses
             if (errorMessage.includes('Cannot update survey that has responses')) {
                 errorMessage = 'Cannot modify a survey that already has responses. Close the survey and create a new one instead.';
             }
-            
+
             showNotification(errorMessage, 'error');
         }
     };
@@ -274,23 +300,34 @@ const SurveysPage = () => {
         return 'Active';
     };
 
-    // Separate surveys into pending and completed based on model structure
-    const pendingSurveys = surveys.filter(s =>
-        s.status === 'active' &&
-        (!s.settings?.endDate || new Date(s.settings.endDate) >= new Date())
-    );
-    const completedSurveys = surveys.filter(s =>
-        s.status === 'closed' ||
-        s.status === 'archived' ||
-        (s.settings?.endDate && new Date(s.settings.endDate) < new Date())
-    );
+    // Separate surveys into pending and completed based on user's response status
+    const pendingSurveys = surveys.filter(s => {
+        // For regular users, check if they haven't completed the survey
+        if (!canManage) {
+            return !s.hasResponded || !s.isComplete;
+        }
+        // For HR/Admin, show active surveys
+        return s.status === 'active' &&
+            (!s.settings?.endDate || new Date(s.settings.endDate) >= new Date());
+    });
+
+    const completedSurveys = surveys.filter(s => {
+        // For regular users, check if they have completed the survey
+        if (!canManage) {
+            return s.hasResponded && s.isComplete;
+        }
+        // For HR/Admin, show closed/archived surveys
+        return s.status === 'closed' ||
+            s.status === 'archived' ||
+            (s.settings?.endDate && new Date(s.settings.endDate) < new Date());
+    });
 
     // If we're viewing a specific survey, show the survey form
     if (id) {
         return (
             <Box sx={{ p: 3 }}>
-                <Button 
-                    variant="outlined" 
+                <Button
+                    variant="outlined"
                     onClick={() => navigate('/app/surveys')}
                     sx={{ mb: 2 }}
                 >
@@ -410,12 +447,12 @@ const SurveysPage = () => {
                                                     <IconButton size="small" onClick={() => handleOpenDialog(survey)} color="primary">
                                                         <EditIcon fontSize="small" />
                                                     </IconButton>
-                                                    <IconButton 
-                                                        size="small" 
+                                                    <IconButton
+                                                        size="small"
                                                         onClick={() => {
                                                             setSelectedSurvey(survey);
                                                             setOpenConfirm(true);
-                                                        }} 
+                                                        }}
                                                         color="error"
                                                     >
                                                         <DeleteIcon fontSize="small" />
@@ -488,9 +525,9 @@ const SurveysPage = () => {
                                                 <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                                                     {survey.title}
                                                 </Typography>
-                                                <Chip 
-                                                    label={getSurveyStatusLabel(survey)} 
-                                                    size="small" 
+                                                <Chip
+                                                    label={getSurveyStatusLabel(survey)}
+                                                    size="small"
                                                     color={getSurveyStatusColor(survey)}
                                                     sx={{ fontWeight: 600 }}
                                                 />
@@ -543,7 +580,7 @@ const SurveysPage = () => {
                         multiline
                         rows={3}
                     />
-                    
+
                     <TextField
                         select
                         fullWidth
@@ -561,7 +598,7 @@ const SurveysPage = () => {
                         <MenuItem value="360-feedback">360 Feedback</MenuItem>
                         <MenuItem value="exit-interview">Exit Interview</MenuItem>
                     </TextField>
-                    
+
                     {/* Questions Section */}
                     <Box sx={{ mt: 3, mb: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Questions</Typography>
@@ -569,8 +606,8 @@ const SurveysPage = () => {
                             <Card key={index} sx={{ mb: 2, p: 2 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                     <Typography variant="subtitle1">Question {index + 1}</Typography>
-                                    <IconButton 
-                                        size="small" 
+                                    <IconButton
+                                        size="small"
                                         onClick={() => {
                                             const newQuestions = [...formData.questionsList];
                                             newQuestions.splice(index, 1);
@@ -581,7 +618,7 @@ const SurveysPage = () => {
                                         <DeleteIcon />
                                     </IconButton>
                                 </Box>
-                                
+
                                 <TextField
                                     fullWidth
                                     label="Question Text"
@@ -594,7 +631,7 @@ const SurveysPage = () => {
                                     margin="normal"
                                     required
                                 />
-                                
+
                                 <TextField
                                     select
                                     fullWidth
@@ -623,7 +660,7 @@ const SurveysPage = () => {
                                     <MenuItem value="number">Number</MenuItem>
                                     <MenuItem value="date">Date</MenuItem>
                                 </TextField>
-                                
+
                                 {/* Options for choice-based questions */}
                                 {(question.questionType === 'single-choice' || question.questionType === 'multiple-choice') && (
                                     <Box sx={{ mt: 2 }}>
@@ -667,7 +704,7 @@ const SurveysPage = () => {
                                         </Button>
                                     </Box>
                                 )}
-                                
+
                                 {/* Rating scale for rating questions */}
                                 {question.questionType === 'rating' && (
                                     <Box sx={{ mt: 2 }}>
@@ -698,7 +735,7 @@ const SurveysPage = () => {
                                         </Box>
                                     </Box>
                                 )}
-                                
+
                                 <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                                     <FormControlLabel
                                         control={
@@ -716,7 +753,7 @@ const SurveysPage = () => {
                                 </Box>
                             </Card>
                         ))}
-                        
+
                         <Button
                             variant="outlined"
                             startIcon={<AddIcon />}
@@ -740,18 +777,18 @@ const SurveysPage = () => {
                             Add Question
                         </Button>
                     </Box>
-                    
+
                     {/* Settings Section */}
                     <Box sx={{ mt: 3, mb: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Settings</Typography>
-                        
+
                         <TextField
                             select
                             fullWidth
                             label="Status"
                             value={formData.status}
-                            onChange={(e) => setFormData(prev => ({ 
-                                ...prev, 
+                            onChange={(e) => setFormData(prev => ({
+                                ...prev,
                                 status: e.target.value
                             }))}
                             margin="normal"
@@ -761,12 +798,12 @@ const SurveysPage = () => {
                             <MenuItem value="closed">Closed</MenuItem>
                             <MenuItem value="archived">Archived</MenuItem>
                         </TextField>
-                        
+
                         <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap' }}>
                             <Button
                                 variant={formData.settings.isMandatory ? "contained" : "outlined"}
-                                onClick={() => setFormData(prev => ({ 
-                                    ...prev, 
+                                onClick={() => setFormData(prev => ({
+                                    ...prev,
                                     settings: { ...prev.settings, isMandatory: !prev.settings.isMandatory }
                                 }))}
                             >
@@ -774,8 +811,8 @@ const SurveysPage = () => {
                             </Button>
                             <Button
                                 variant={formData.settings.allowAnonymous ? "contained" : "outlined"}
-                                onClick={() => setFormData(prev => ({ 
-                                    ...prev, 
+                                onClick={() => setFormData(prev => ({
+                                    ...prev,
                                     settings: { ...prev.settings, allowAnonymous: !prev.settings.allowAnonymous }
                                 }))}
                             >
@@ -783,22 +820,22 @@ const SurveysPage = () => {
                             </Button>
                             <Button
                                 variant={formData.settings.allowMultipleSubmissions ? "contained" : "outlined"}
-                                onClick={() => setFormData(prev => ({ 
-                                    ...prev, 
+                                onClick={() => setFormData(prev => ({
+                                    ...prev,
                                     settings: { ...prev.settings, allowMultipleSubmissions: !prev.settings.allowMultipleSubmissions }
                                 }))}
                             >
                                 Allow Multiple Submissions
                             </Button>
                         </Box>
-                        
+
                         <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                             <TextField
                                 type="date"
                                 label="Start Date"
                                 value={formData.settings.startDate}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
+                                onChange={(e) => setFormData(prev => ({
+                                    ...prev,
                                     settings: { ...prev.settings, startDate: e.target.value }
                                 }))}
                                 InputLabelProps={{ shrink: true }}
@@ -808,15 +845,15 @@ const SurveysPage = () => {
                                 type="date"
                                 label="End Date"
                                 value={formData.settings.endDate}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
+                                onChange={(e) => setFormData(prev => ({
+                                    ...prev,
                                     settings: { ...prev.settings, endDate: e.target.value }
                                 }))}
                                 InputLabelProps={{ shrink: true }}
                                 fullWidth
                             />
                         </Box>
-                        
+
                         {/* Email Notifications */}
                         <Box sx={{ mt: 3 }}>
                             <Typography variant="subtitle1" sx={{ mb: 1 }}>Email Notifications</Typography>
@@ -825,13 +862,13 @@ const SurveysPage = () => {
                                     control={
                                         <Checkbox
                                             checked={formData.settings.emailNotifications.enabled}
-                                            onChange={(e) => setFormData(prev => ({ 
-                                                ...prev, 
-                                                settings: { 
-                                                    ...prev.settings, 
-                                                    emailNotifications: { 
-                                                        ...prev.settings.emailNotifications, 
-                                                        enabled: e.target.checked 
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                settings: {
+                                                    ...prev.settings,
+                                                    emailNotifications: {
+                                                        ...prev.settings.emailNotifications,
+                                                        enabled: e.target.checked
                                                     }
                                                 }
                                             }))}
@@ -843,13 +880,13 @@ const SurveysPage = () => {
                                     control={
                                         <Checkbox
                                             checked={formData.settings.emailNotifications.sendOnAssignment}
-                                            onChange={(e) => setFormData(prev => ({ 
-                                                ...prev, 
-                                                settings: { 
-                                                    ...prev.settings, 
-                                                    emailNotifications: { 
-                                                        ...prev.settings.emailNotifications, 
-                                                        sendOnAssignment: e.target.checked 
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                settings: {
+                                                    ...prev.settings,
+                                                    emailNotifications: {
+                                                        ...prev.settings.emailNotifications,
+                                                        sendOnAssignment: e.target.checked
                                                     }
                                                 }
                                             }))}
@@ -861,13 +898,13 @@ const SurveysPage = () => {
                                     control={
                                         <Checkbox
                                             checked={formData.settings.emailNotifications.sendReminders}
-                                            onChange={(e) => setFormData(prev => ({ 
-                                                ...prev, 
-                                                settings: { 
-                                                    ...prev.settings, 
-                                                    emailNotifications: { 
-                                                        ...prev.settings.emailNotifications, 
-                                                        sendReminders: e.target.checked 
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                settings: {
+                                                    ...prev.settings,
+                                                    emailNotifications: {
+                                                        ...prev.settings.emailNotifications,
+                                                        sendReminders: e.target.checked
                                                     }
                                                 }
                                             }))}
@@ -881,12 +918,12 @@ const SurveysPage = () => {
                                     type="number"
                                     label="Reminder Frequency (days)"
                                     value={formData.settings.emailNotifications.reminderFrequency}
-                                    onChange={(e) => setFormData(prev => ({ 
-                                        ...prev, 
-                                        settings: { 
-                                            ...prev.settings, 
-                                            emailNotifications: { 
-                                                ...prev.settings.emailNotifications, 
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        settings: {
+                                            ...prev.settings,
+                                            emailNotifications: {
+                                                ...prev.settings.emailNotifications,
                                                 reminderFrequency: parseInt(e.target.value) || 3
                                             }
                                         }
@@ -897,18 +934,18 @@ const SurveysPage = () => {
                             )}
                         </Box>
                     </Box>
-                    
+
                     {/* Assignment Section */}
                     <Box sx={{ mt: 3, mb: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Assignment</Typography>
-                        
+
                         <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                             <FormControlLabel
                                 control={
                                     <Checkbox
                                         checked={formData.assignedTo.allEmployees}
-                                        onChange={(e) => setFormData(prev => ({ 
-                                            ...prev, 
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
                                             assignedTo: { ...prev.assignedTo, allEmployees: e.target.checked }
                                         }))}
                                     />
@@ -916,7 +953,7 @@ const SurveysPage = () => {
                                 label="Assign to All Employees"
                             />
                         </Box>
-                        
+
                         {/* Role Assignment */}
                         <Box sx={{ mt: 2 }}>
                             <Typography variant="subtitle1" sx={{ mb: 1 }}>Assign to Specific Roles</Typography>
