@@ -121,6 +121,7 @@ const LeavesPage = () => {
     useEffect(() => {
         fetchLeaves();
         fetchUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleOpenDialog = (leave = null) => {

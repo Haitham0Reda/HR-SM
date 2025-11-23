@@ -67,11 +67,14 @@ export const getEmployeeSurveys = async (req, res) => {
                 title: survey.title,
                 description: survey.description,
                 surveyType: survey.surveyType,
+                questions: survey.questions,
                 questionCount: survey.questions.length,
+                settings: survey.settings,
                 isMandatory: survey.settings.isMandatory,
                 allowAnonymous: survey.settings.allowAnonymous,
                 startDate: survey.settings.startDate,
                 endDate: survey.settings.endDate,
+                status: survey.status,
                 hasResponded,
                 isComplete: response?.isComplete || false,
                 completionPercentage: response?.completionPercentage || 0,
@@ -215,13 +218,17 @@ export const deleteSurvey = async (req, res) => {
  */
 export const submitSurveyResponse = async (req, res) => {
     try {
-        console.log('Received survey submission request:', { 
-            surveyId: req.params.id, 
+        console.log('Received survey submission request:', {
+            surveyId: req.params.id,
             body: req.body,
-            userId: req.user._id 
+            userId: req.user._id
         });
-        
+
         const { responses, isAnonymous = false } = req.body;
+
+        if (!responses || !Array.isArray(responses)) {
+            return res.status(400).json({ error: 'Invalid responses format. Expected an array.' });
+        }
 
         const survey = await Survey.findById(req.params.id);
 
@@ -243,11 +250,15 @@ export const submitSurveyResponse = async (req, res) => {
             return res.status(400).json({ error: 'Anonymous responses are not allowed for this survey' });
         }
 
-        // Add response with metadata
+        console.log('Adding response with answers:', responses);
+
+        // Add response with metadata - pass responses as the answers parameter
         await survey.addResponse(req.user._id, responses, isAnonymous, {
             ipAddress: req.ip,
             userAgent: req.get('user-agent')
         });
+
+        console.log('Response added successfully. Total responses:', survey.stats.totalResponses);
 
         res.status(201).json({
             success: true,
