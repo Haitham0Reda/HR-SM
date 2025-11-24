@@ -15,6 +15,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
+import { logUserActivity } from './middleware/activityLogger.js';
 import { startAllScheduledTasks, stopAllTasks } from './utils/scheduler.js';
 import logger from './utils/logger.js';
 
@@ -60,7 +61,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging middleware
+// Request logging middleware - basic logging for all requests
 app.use((req, res, next) => {
     logger.info(`${req.method} ${req.path}`, {
         ip: req.ip,
@@ -68,6 +69,9 @@ app.use((req, res, next) => {
     });
     next();
 });
+
+// User activity logging middleware - detailed logging for authenticated users
+app.use(logUserActivity);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

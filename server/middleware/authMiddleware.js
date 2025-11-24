@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
+import { logAuthEvent, logAccessControl } from './activityLogger.js';
 
 /**
  * Protect middleware - Verify JWT token and attach user to request
@@ -14,12 +15,32 @@ export const protect = async (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             req.user = await User.findById(decoded.id).select('-password').populate('department position school');
-            if (!req.user) return res.status(401).json({ message: 'User not found' });
+
+            if (!req.user) {
+                logAuthEvent('UNAUTHORIZED_ACCESS', null, req, {
+                    reason: 'User not found',
+                    userId: decoded.id
+                });
+                return res.status(401).json({ message: 'User not found' });
+            }
             next();
         } catch (error) {
+            if (error.name === 'TokenExpiredError') {
+                logAuthEvent('TOKEN_EXPIRED', null, req, {
+                    reason: 'Token expired'
+                });
+            } else {
+                logAuthEvent('UNAUTHORIZED_ACCESS', null, req, {
+                    reason: 'Invalid token',
+                    error: error.message
+                });
+            }
             res.status(401).json({ message: 'Not authorized, token failed' });
         }
     } else {
+        logAuthEvent('UNAUTHORIZED_ACCESS', null, req, {
+            reason: 'No token provided'
+        });
         res.status(401).json({ message: 'Not authorized, no token' });
     }
 };
@@ -31,6 +52,11 @@ export const admin = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
+        logAccessControl('ACCESS_DENIED', req.user, req, {
+            requiredRole: 'admin',
+            userRole: req.user?.role,
+            reason: 'Insufficient permissions'
+        });
         res.status(403).json({ message: 'Not authorized as admin' });
     }
 };
@@ -42,6 +68,11 @@ export const hrOrAdmin = (req, res, next) => {
     if (req.user && ['hr', 'admin'].includes(req.user.role)) {
         next();
     } else {
+        logAccessControl('ACCESS_DENIED', req.user, req, {
+            requiredRoles: ['hr', 'admin'],
+            userRole: req.user?.role,
+            reason: 'Insufficient permissions'
+        });
         res.status(403).json({
             message: 'Access denied. HR or Admin role required.'
         });

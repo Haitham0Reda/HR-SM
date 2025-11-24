@@ -2,6 +2,7 @@
 import User from '../models/user.model.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { logAuthEvent } from '../middleware/activityLogger.js';
 
 // Helper: sanitize user object (remove sensitive fields)
 const sanitizeUser = (user) => {
@@ -111,11 +112,25 @@ export const loginUser = async (req, res) => {
     }
     try {
         const user = await User.findOne({ email }).populate('department position school');
-        if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
+
+        if (!user) {
+            // Log failed login attempt - user not found
+            logAuthEvent('LOGIN_FAILED', null, req, {
+                email,
+                reason: 'User not found'
+            });
+            return res.status(401).json({ error: 'Invalid email or password.' });
+        }
 
         // Compare password using model method
         const isMatch = await user.matchPassword(password);
-        if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
+        if (!isMatch) {
+            // Log failed login attempt - wrong password
+            logAuthEvent('LOGIN_FAILED', user, req, {
+                reason: 'Invalid password'
+            });
+            return res.status(401).json({ error: 'Invalid email or password.' });
+        }
 
         // Update last login
         user.lastLogin = new Date();
@@ -123,8 +138,22 @@ export const loginUser = async (req, res) => {
 
         // Generate JWT token with user's role from database
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+
+        // Log successful login with detailed information
+        logAuthEvent('LOGIN_SUCCESS', user, req, {
+            department: user.department?.name,
+            position: user.position?.title,
+            school: user.school?.name,
+            lastLogin: user.lastLogin
+        });
+
         res.json({ user: sanitizeUser(user), token });
     } catch (err) {
+        logAuthEvent('LOGIN_FAILED', null, req, {
+            email,
+            reason: 'Server error',
+            error: err.message
+        });
         res.status(500).json({ error: err.message });
     }
 };
