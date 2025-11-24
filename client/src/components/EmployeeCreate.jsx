@@ -9,8 +9,36 @@ import EmployeeForm from './EmployeeForm';
 import PageContainer from './PageContainer';
 
 const INITIAL_FORM_VALUES = {
-    role: 'Market',
-    isFullTime: true,
+    username: '',
+    email: '',
+    password: '',
+    role: 'employee',
+    profile: {
+        firstName: '',
+        medName: '',
+        lastName: '',
+        arabicName: '',
+        phone: '',
+        dateOfBirth: null,
+        gender: 'male',
+        nationalId: '',
+        nationality: '',
+        profilePicture: ''
+    },
+    department: '',
+    position: '',
+    employment: {
+        hireDate: null,
+        contractType: 'fulltime',
+        employmentStatus: 'active'
+    },
+    category: '',
+    section: '',
+    supervisor: '',
+    alternativeSupervisor: '',
+    allowResearch: false,
+    includeInAttendance: true,
+    isActive: true
 };
 
 export default function EmployeeCreate() {

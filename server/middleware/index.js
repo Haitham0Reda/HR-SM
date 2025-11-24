@@ -125,12 +125,7 @@
  *     - setRequestEmployee, validateReviewer
  *     - setReviewMetadata, createRequestNotification
  * 
- * 22. SCHOOL (schoolMiddleware.js)
- *     - validateSchoolCode, validateSchoolNameMatch
- *     - checkSchoolCodeUnique, validateDean
- *     - validateSchoolDeletion
- * 
- * 23. SURVEY (surveyMiddleware.js)
+ * 22. SURVEY (surveyMiddleware.js)
  *     - validateSurveyQuestions, setSurveyCreatedBy
  *     - validateSurveyResponse, checkDuplicateResponse
  * 
@@ -237,9 +232,6 @@ export * from './positionMiddleware.js';
 
 // Request
 export * from './requestMiddleware.js';
-
-// School
-export * from './schoolMiddleware.js';
 
 // Survey
 export * from './surveyMiddleware.js';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Box,
     Button,
@@ -10,27 +10,28 @@ import {
     IconButton,
     Typography,
     Chip,
-    MenuItem
+    MenuItem,
+    InputAdornment
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, Search as SearchIcon } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
 import departmentService from '../../services/department.service';
-import schoolService from '../../services/school.service';
 
 const DepartmentsPage = () => {
     const [departments, setDepartments] = useState([]);
-    const [schools, setSchools] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [formData, setFormData] = useState({
         name: '',
+        arabicName: '',
         code: '',
-        school: '',
         description: '',
         isActive: true
     });
@@ -38,7 +39,6 @@ const DepartmentsPage = () => {
 
     useEffect(() => {
         fetchDepartments();
-        fetchSchools();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -48,18 +48,10 @@ const DepartmentsPage = () => {
             const data = await departmentService.getAll();
             setDepartments(data);
         } catch (error) {
-            showNotification('Failed to fetch departments', 'error');
+            console.error('Fetch departments error:', error);
+            showNotification(error?.message || 'Failed to fetch departments', 'error');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchSchools = async () => {
-        try {
-            const data = await schoolService.getAll();
-            setSchools(data);
-        } catch (error) {
-            console.error('Failed to fetch schools:', error);
         }
     };
 
@@ -68,8 +60,8 @@ const DepartmentsPage = () => {
             setSelectedDepartment(department);
             setFormData({
                 name: department.name,
+                arabicName: department.arabicName || '',
                 code: department.code,
-                school: department.school?._id || department.school || '',
                 description: department.description || '',
                 isActive: department.isActive !== false
             });
@@ -77,8 +69,8 @@ const DepartmentsPage = () => {
             setSelectedDepartment(null);
             setFormData({
                 name: '',
+                arabicName: '',
                 code: '',
-                school: '',
                 description: '',
                 isActive: true
             });
@@ -108,7 +100,9 @@ const DepartmentsPage = () => {
             handleCloseDialog();
             fetchDepartments();
         } catch (error) {
-            showNotification(error.response?.data?.message || 'Operation failed', 'error');
+            console.error('Submit error:', error);
+            const errorMessage = error?.message || error?.response?.data?.message || 'Operation failed';
+            showNotification(errorMessage, 'error');
         }
     };
 
@@ -120,22 +114,45 @@ const DepartmentsPage = () => {
             setSelectedDepartment(null);
             fetchDepartments();
         } catch (error) {
-            showNotification(error.response?.data?.message || 'Delete failed', 'error');
+            console.error('Delete error:', error);
+            const errorMessage = error?.message || error?.response?.data?.message || 'Delete failed';
+            showNotification(errorMessage, 'error');
         }
     };
 
+    // Filter and search departments
+    const filteredDepartments = useMemo(() => {
+        return departments.filter(dept => {
+            // Status filter
+            if (statusFilter === 'active' && !dept.isActive) return false;
+            if (statusFilter === 'inactive' && dept.isActive) return false;
+
+            // Search filter
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                return (
+                    dept.name?.toLowerCase().includes(query) ||
+                    dept.arabicName?.toLowerCase().includes(query) ||
+                    dept.code?.toLowerCase().includes(query)
+                );
+            }
+
+            return true;
+        });
+    }, [departments, searchQuery, statusFilter]);
+
     const columns = [
-        { field: 'code', headerName: 'Code' },
-        { field: 'name', headerName: 'Department Name' },
-        {
-            field: 'school',
-            headerName: 'School',
-            renderCell: (row) => row.school?.name || 'N/A'
+        { 
+            field: 'no', 
+            headerName: 'No',
+            renderCell: (row, index) => index + 1
         },
+        { field: 'code', headerName: 'Code' },
+        { field: 'name', headerName: 'Name (English)' },
         {
-            field: 'description',
-            headerName: 'Description',
-            renderCell: (row) => row.description || 'N/A'
+            field: 'arabicName',
+            headerName: 'Name (Arabic)',
+            renderCell: (row) => row.arabicName || 'N/A'
         },
         {
             field: 'isActive',
@@ -143,7 +160,7 @@ const DepartmentsPage = () => {
             renderCell: (row) => (
                 <Chip
                     label={row.isActive ? 'Active' : 'Inactive'}
-                    color={row.isActive ? 'success' : 'default'}
+                    color={row.isActive ? 'success' : 'error'}
                     size="small"
                 />
             )
@@ -153,23 +170,84 @@ const DepartmentsPage = () => {
     if (loading) return <Loading />;
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4">Departments</Typography>
+        <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: 'calc(100vh - 100px)',
+            p: 3,
+            gap: 2
+        }}>
+            <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                flexShrink: 0
+            }}>
+                <Typography variant="h4" sx={{ fontWeight: 600 }}>Departments</Typography>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpenDialog()}
+                    sx={{ px: 3 }}
                 >
                     Add Department
                 </Button>
             </Box>
 
-            <DataTable
-                rows={departments}
-                columns={columns}
-                getRowId={(row) => row._id}
-            />
+            <Box sx={{ 
+                flex: 1, 
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2
+            }}>
+                {/* Search and Filter Bar */}
+                <Box sx={{ 
+                    display: 'flex', 
+                    gap: 2,
+                    px: 2,
+                    flexShrink: 0
+                }}>
+                    <TextField
+                        placeholder="Search by name, code..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        size="small"
+                        sx={{ flex: 1, maxWidth: 400 }}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon />
+                                </InputAdornment>
+                            ),
+                        }}
+                    />
+                    <TextField
+                        select
+                        label="Status"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        size="small"
+                        sx={{ minWidth: 150 }}
+                    >
+                        <MenuItem value="all">All</MenuItem>
+                        <MenuItem value="active">Active</MenuItem>
+                        <MenuItem value="inactive">Inactive</MenuItem>
+                    </TextField>
+                </Box>
+
+                <DataTable
+                    data={filteredDepartments}
+                    columns={columns}
+                    onEdit={handleOpenDialog}
+                    onDelete={(dept) => {
+                        setSelectedDepartment(dept);
+                        setOpenConfirm(true);
+                    }}
+                    defaultRowsPerPage={8}
+                    rowsPerPageOptions={[8, 16, 24]}
+                />
+            </Box>
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>
@@ -177,16 +255,18 @@ const DepartmentsPage = () => {
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        {selectedDepartment && (
+                            <TextField
+                                label="Department Code"
+                                name="code"
+                                value={formData.code}
+                                disabled
+                                fullWidth
+                                helperText="Auto-generated"
+                            />
+                        )}
                         <TextField
-                            label="Department Code"
-                            name="code"
-                            value={formData.code}
-                            onChange={handleChange}
-                            required
-                            fullWidth
-                        />
-                        <TextField
-                            label="Department Name"
+                            label="Department Name (English)"
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
@@ -194,20 +274,13 @@ const DepartmentsPage = () => {
                             fullWidth
                         />
                         <TextField
-                            select
-                            label="School"
-                            name="school"
-                            value={formData.school}
+                            label="Department Name (Arabic)"
+                            name="arabicName"
+                            value={formData.arabicName}
                             onChange={handleChange}
-                            required
                             fullWidth
-                        >
-                            {schools.map((school) => (
-                                <MenuItem key={school._id} value={school._id}>
-                                    {school.name}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                            dir="rtl"
+                        />
                         <TextField
                             label="Description"
                             name="description"

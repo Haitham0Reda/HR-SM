@@ -289,9 +289,8 @@ const BackupsPage = () => {
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 2 }}>Backup History</Typography>
                             <DataTable
-                                rows={backups}
+                                data={backups}
                                 columns={columns}
-                                getRowId={(row) => row._id}
                             />
                         </CardContent>
                     </Card>

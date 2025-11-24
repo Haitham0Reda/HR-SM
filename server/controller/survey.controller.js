@@ -6,7 +6,6 @@
 import Survey from '../models/survey.model.js';
 import User from '../models/user.model.js';
 import Department from '../models/department.model.js';
-import School from '../models/school.model.js';
 import { sendSurveyAssignmentNotifications } from './surveyNotification.controller.js';
 import { calculateTotalAssigned, convertToCSV } from '../utils/surveyHelpers.js';
 

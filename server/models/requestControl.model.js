@@ -22,12 +22,6 @@ const requestControlSchema = new mongoose.Schema({
         index: true
     },
 
-    school: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'School',
-        index: true
-    },
-
     // System-wide control
     systemWide: {
         enabled: {
@@ -618,20 +612,17 @@ requestControlSchema.methods.getDisabledRequests = function () {
  * Static method to get or create control configuration
  * 
  * @param {String} organization - Organization name
- * @param {ObjectId} schoolId - School ID (optional)
  * @returns {Promise<RequestControl>} Control configuration
  */
-requestControlSchema.statics.getControl = async function (organization = 'default', schoolId = null) {
+requestControlSchema.statics.getControl = async function (organization = 'default') {
     let control = await this.findOne({
         organization,
-        school: schoolId,
         isActive: true
     });
 
     if (!control) {
         control = await this.create({
-            organization,
-            school: schoolId
+            organization
         });
     }
 
@@ -643,11 +634,11 @@ requestControlSchema.statics.getControl = async function (organization = 'defaul
  * 
  * @param {String} requestType - Type of request
  * @param {String} organization - Organization name
- * @param {ObjectId} schoolId - School ID (optional)
+ * @param {ObjectId} )
  * @returns {Promise<Object>} { allowed: Boolean, message: String }
  */
-requestControlSchema.statics.checkRequestAllowed = async function (requestType, organization = 'default', schoolId = null) {
-    const control = await this.getControl(organization, schoolId);
+requestControlSchema.statics.checkRequestAllowed = async function (requestType, organization = 'default', ) {
+    const control = await this.getControl(organization, );
     return control.isRequestAllowed(requestType);
 };
 
@@ -743,7 +734,7 @@ requestControlSchema.statics.notifyUsers = async function (userIds, title, messa
  */
 requestControlSchema.statics.getAllActiveControls = function () {
     return this.find({ isActive: true })
-        .populate('school', 'name schoolCode')
+        
         .sort({ organization: 1, 'school.name': 1 });
 };
 
@@ -765,7 +756,7 @@ requestControlSchema.statics.validateRequest = async function (requestType, empl
             return { allowed: false, message: 'Employee not found' };
         }
 
-        const control = await this.getControl('default', employee.school);
+        const control = await this.getControl('default', null);
         return control.isRequestAllowed(requestType, subType);
     } catch (error) {
         console.error('Error validating request:', error);
@@ -784,3 +775,4 @@ requestControlSchema.index({ 'changeHistory.changedAt': -1 });
 requestControlSchema.index({ 'changeHistory.changedBy': 1 });
 
 export default mongoose.model('RequestControl', requestControlSchema);
+

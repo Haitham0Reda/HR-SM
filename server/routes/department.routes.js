@@ -10,8 +10,7 @@ import {
     protect,
     admin,
     checkDepartmentCodeUnique,
-    validateManager,
-    validateSchool
+    validateManager
 } from '../middleware/index.js';
 
 const router = express.Router();
@@ -23,9 +22,7 @@ router.get('/', protect, getAllDepartments);
 router.post('/',
     protect,
     admin,
-    checkDepartmentCodeUnique,
     validateManager,
-    validateSchool,
     createDepartment
 );
 
@@ -36,9 +33,7 @@ router.get('/:id', protect, getDepartmentById);
 router.put('/:id',
     protect,
     admin,
-    checkDepartmentCodeUnique,
     validateManager,
-    validateSchool,
     updateDepartment
 );
 

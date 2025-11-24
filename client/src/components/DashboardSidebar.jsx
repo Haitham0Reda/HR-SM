@@ -283,13 +283,6 @@ function DashboardSidebar({
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Organization</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
-                                    id="schools"
-                                    title="Schools"
-                                    icon={<SchoolIcon />}
-                                    href="/app/schools"
-                                    selected={!!matchPath('/app/schools', pathname)}
-                                />
-                                <DashboardSidebarPageItem
                                     id="departments"
                                     title="Departments"
                                     icon={<BusinessIcon />}
@@ -456,13 +449,6 @@ function DashboardSidebar({
                             <>
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Organization</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="schools"
-                                    title="Schools"
-                                    icon={<SchoolIcon />}
-                                    href="/app/schools"
-                                    selected={!!matchPath('/app/schools', pathname)}
-                                />
                                 <DashboardSidebarPageItem
                                     id="departments"
                                     title="Departments"
