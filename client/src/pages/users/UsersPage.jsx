@@ -282,9 +282,14 @@ const UsersPage = () => {
                                 required
                             >
                                 <MenuItem value="employee">Employee</MenuItem>
-                                <MenuItem value="manager">Manager</MenuItem>
-                                <MenuItem value="hr">HR</MenuItem>
                                 <MenuItem value="admin">Admin</MenuItem>
+                                <MenuItem value="hr">HR</MenuItem>
+                                <MenuItem value="manager">Manager</MenuItem>
+                                <MenuItem value="supervisor">Supervisor</MenuItem>
+                                <MenuItem value="head-of-department">Head of Department</MenuItem>
+                                <MenuItem value="dean">Dean</MenuItem>
+                                <MenuItem value="doctor">Doctor</MenuItem>
+                                <MenuItem value="id-card-admin">ID Card Admin</MenuItem>
                             </TextField>
                         </Grid>
                         <Grid item xs={12} sm={6}>

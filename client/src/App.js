@@ -14,7 +14,6 @@ import DashboardEditPage from './pages/dashboard/DashboardEditPage';
 import ThemeEditorPage from './pages/theme/ThemeEditorPage';
 import DashboardLayout from './components/DashboardLayout';
 import UsersPage from './pages/users/UsersPage';
-import SchoolsPage from './pages/schools/SchoolsPage';
 import DepartmentsPage from './pages/departments/DepartmentsPage';
 import PositionsPage from './pages/positions/PositionsPage';
 import AttendancePage from './pages/attendance/AttendancePage';
@@ -87,7 +86,6 @@ function App() {
                 <Route path="users" element={<UsersPage />} />
 
                 {/* Organization */}
-                <Route path="schools" element={<SchoolsPage />} />
                 <Route path="departments" element={<DepartmentsPage />} />
                 <Route path="positions" element={<PositionsPage />} />
 

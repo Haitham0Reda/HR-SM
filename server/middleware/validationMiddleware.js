@@ -16,13 +16,12 @@ export const populateEmployeeFields = async (req, res, next) => {
         if (req.body.employee) {
             const User = mongoose.model('User');
             const employee = await User.findById(req.body.employee)
-                .select('department position school');
+                .select('department position');
 
             if (employee) {
                 req.employeeData = {
                     department: employee.department,
-                    position: employee.position,
-                    school: employee.school
+                    position: employee.position
                 };
             }
         }
@@ -173,7 +172,7 @@ export const validateIDCardData = async (req, res, next) => {
         if (req.body.employee) {
             const User = mongoose.model('User');
             const employee = await User.findById(req.body.employee)
-                .select('profile employeeId department school position');
+                .select('profile employeeId department position');
 
             if (!employee) {
                 return res.status(404).json({
@@ -192,7 +191,6 @@ export const validateIDCardData = async (req, res, next) => {
             // Attach employee data for denormalization
             req.idCardEmployeeData = {
                 department: employee.department,
-                school: employee.school,
                 position: employee.position,
                 employeeId: employee.employeeId
             };

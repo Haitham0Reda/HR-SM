@@ -9,8 +9,8 @@ import {
 
 const router = express.Router();
 
-// Get active theme configuration (all authenticated users)
-router.get('/', protect, getTheme);
+// Get active theme configuration (public - no auth required for theme display)
+router.get('/', getTheme);
 
 // Update theme configuration (admin only)
 router.put('/', protect, admin, updateTheme);
@@ -18,7 +18,7 @@ router.put('/', protect, admin, updateTheme);
 // Reset theme to defaults (admin only)
 router.post('/reset', protect, admin, resetTheme);
 
-// Get theme presets (all authenticated users)
-router.get('/presets', protect, getThemePresets);
+// Get theme presets (public - no auth required)
+router.get('/presets', getThemePresets);
 
 export default router;

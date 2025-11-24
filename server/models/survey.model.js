@@ -122,7 +122,7 @@ const surveySchema = new mongoose.Schema({
         // Specific Campuses
         campuses: [{
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'School'
+            ref: 'Department'
         }],
 
         // Specific Departments
@@ -370,7 +370,7 @@ surveySchema.statics.findActiveSurveysForUser = async function (userId) {
             return true;
         }
 
-        if (user.school && survey.assignedTo.campuses.some(id => id.toString() === user.school.toString())) {
+        if (user.department && survey.assignedTo.campuses.some(id => id.toString() === user.department.toString())) {
             return true;
         }
 
@@ -387,3 +387,4 @@ surveySchema.statics.findActiveSurveysForUser = async function (userId) {
 };
 
 export default mongoose.model('Survey', surveySchema);
+

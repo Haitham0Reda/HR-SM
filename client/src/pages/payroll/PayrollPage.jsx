@@ -267,9 +267,8 @@ const PayrollPage = () => {
             </Box>
 
             <DataTable
-                rows={payrolls}
+                data={payrolls}
                 columns={columns}
-                getRowId={(row) => row._id}
             />
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>

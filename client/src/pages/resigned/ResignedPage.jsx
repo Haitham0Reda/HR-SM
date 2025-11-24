@@ -291,9 +291,8 @@ const ResignedPage = () => {
             </Grid>
 
             <DataTable
-                rows={resignedEmployees}
+                data={resignedEmployees}
                 columns={columns}
-                getRowId={(row) => row._id}
             />
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>

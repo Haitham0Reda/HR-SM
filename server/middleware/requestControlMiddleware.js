@@ -19,7 +19,7 @@ export const validateVacationRequest = async (req, res, next) => {
             return next(); // Not a vacation type, skip validation
         }
 
-        const user = await User.findById(employee).select('school');
+        const user = await User.findById(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -27,7 +27,7 @@ export const validateVacationRequest = async (req, res, next) => {
             });
         }
 
-        const control = await RequestControl.getControl('default', user.school);
+        const control = await RequestControl.getControl('default', null);
         const { allowed, message } = control.isRequestAllowed('vacation', leaveType);
 
         if (!allowed) {
@@ -55,7 +55,7 @@ export const validatePermissionRequest = async (req, res, next) => {
     try {
         const { employee, permissionType } = req.body;
 
-        const user = await User.findById(employee).select('school');
+        const user = await User.findById(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -70,7 +70,7 @@ export const validatePermissionRequest = async (req, res, next) => {
             'overtime': 'overtime'
         };
 
-        const control = await RequestControl.getControl('default', user.school);
+        const control = await RequestControl.getControl('default', null);
         const { allowed, message } = control.isRequestAllowed('permission', typeMap[permissionType]);
 
         if (!allowed) {
@@ -103,7 +103,7 @@ export const validateSickLeaveRequest = async (req, res, next) => {
             return next(); // Not a sick leave, skip validation
         }
 
-        const user = await User.findById(employee).select('school');
+        const user = await User.findById(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -111,7 +111,7 @@ export const validateSickLeaveRequest = async (req, res, next) => {
             });
         }
 
-        const control = await RequestControl.getControl('default', user.school);
+        const control = await RequestControl.getControl('default', null);
         const { allowed, message } = control.isRequestAllowed('sick-leave');
 
         if (!allowed) {
@@ -143,7 +143,7 @@ export const validateMissionRequest = async (req, res, next) => {
             return next(); // Not a mission, skip validation
         }
 
-        const user = await User.findById(employee).select('school');
+        const user = await User.findById(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -151,7 +151,7 @@ export const validateMissionRequest = async (req, res, next) => {
             });
         }
 
-        const control = await RequestControl.getControl('default', user.school);
+        const control = await RequestControl.getControl('default', null);
         const { allowed, message } = control.isRequestAllowed('mission');
 
         if (!allowed) {
@@ -179,7 +179,7 @@ export const validateForgotCheckRequest = async (req, res, next) => {
     try {
         const { employee } = req.body;
 
-        const user = await User.findById(employee).select('school');
+        const user = await User.findById(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -187,7 +187,7 @@ export const validateForgotCheckRequest = async (req, res, next) => {
             });
         }
 
-        const control = await RequestControl.getControl('default', user.school);
+        const control = await RequestControl.getControl('default', null);
         const { allowed, message } = control.isRequestAllowed('forgot-check');
 
         if (!allowed) {
@@ -215,7 +215,7 @@ export const validateLeaveRequest = async (req, res, next) => {
     try {
         const { employee, leaveType } = req.body;
 
-        const user = await User.findById(employee).select('school');
+        const user = await User.findById(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -233,7 +233,7 @@ export const validateLeaveRequest = async (req, res, next) => {
             requestType = 'mission';
         }
 
-        const control = await RequestControl.getControl('default', user.school);
+        const control = await RequestControl.getControl('default', null);
         const { allowed, message } = control.isRequestAllowed(requestType, leaveType);
 
         if (!allowed) {
@@ -261,13 +261,13 @@ export const validateLeaveRequest = async (req, res, next) => {
 export const checkRequestControlStatus = async (req, res, next) => {
     try {
         const userId = req.user._id;
-        const user = await User.findById(userId).select('school');
+        const user = await User.findById(userId);
 
         if (!user) {
             return next();
         }
 
-        const control = await RequestControl.getControl('default', user.school);
+        const control = await RequestControl.getControl('default', null);
 
         // Attach control info to request for use in response
         req.requestControl = {
@@ -348,3 +348,4 @@ export const sendRequestControlNotifications = async (doc, previousChangeCount) 
 export default {
     sendRequestControlNotifications
 };
+

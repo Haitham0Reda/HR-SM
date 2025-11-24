@@ -88,10 +88,6 @@ const reportExportSchema = new mongoose.Schema({
             ref: 'User'
         },
         // School/Campus filter
-        school: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'School'
-        },
         // Position filter
         position: {
             type: mongoose.Schema.Types.ObjectId,
@@ -576,7 +572,7 @@ reportExportSchema.methods.logAccess = async function (userId, action = 'view') 
  */
 reportExportSchema.statics.createReport = async function (reportData, userId) {
     // Get report configuration
-    const config = await ReportConfig.getConfig(reportData.organization || 'default', reportData.schoolId);
+    const config = await ReportConfig.getConfig(reportData.organization || 'default', reportData.);
 
     // Get date range
     const dateRange = config.getDateRange(
@@ -703,3 +699,4 @@ reportExportSchema.index({ 'filters.employee': 1 });
 reportExportSchema.index({ status: 1, createdAt: -1 });
 
 export default mongoose.model('ReportExport', reportExportSchema);
+
