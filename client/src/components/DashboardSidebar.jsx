@@ -30,6 +30,8 @@ import SecurityIcon from '@mui/icons-material/Security';
 import BackupIcon from '@mui/icons-material/Backup';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import EditIcon from '@mui/icons-material/Edit';
+import PaletteIcon from '@mui/icons-material/Palette';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
@@ -419,6 +421,13 @@ function DashboardSidebar({
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Advanced</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
+                                    id="dashboard-edit"
+                                    title="Dashboard Settings"
+                                    icon={<EditIcon />}
+                                    href="/app/dashboard/edit"
+                                    selected={!!matchPath('/app/dashboard/edit', pathname)}
+                                />
+                                <DashboardSidebarPageItem
                                     id="holidays"
                                     title="Holidays"
                                     icon={<CalendarTodayIcon />}
@@ -609,6 +618,20 @@ function DashboardSidebar({
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Administration</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="dashboard-edit"
+                                    title="Dashboard Settings"
+                                    icon={<EditIcon />}
+                                    href="/app/dashboard/edit"
+                                    selected={!!matchPath('/app/dashboard/edit', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="theme-editor"
+                                    title="Theme & Colors"
+                                    icon={<PaletteIcon />}
+                                    href="/app/theme"
+                                    selected={!!matchPath('/app/theme', pathname)}
+                                />
                                 <DashboardSidebarPageItem
                                     id="security"
                                     title="Security"

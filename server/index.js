@@ -21,6 +21,8 @@ import logger from './utils/logger.js';
 
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
+import themeRoutes from './routes/theme.routes.js';
 import announcementRoutes from './routes/announcement.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import attendanceRoutes from './routes/attendance.routes.js';
@@ -75,6 +77,8 @@ app.use(logUserActivity);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/theme', themeRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/attendance', attendanceRoutes);
