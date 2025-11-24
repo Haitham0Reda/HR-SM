@@ -22,6 +22,7 @@ export { default as analyticsRoutes } from './analytics.routes.js';
 export { default as announcementRoutes } from './announcement.routes.js';
 export { default as attendanceRoutes } from './attendance.routes.js';
 export { default as authRoutes } from './auth.routes.js';
+export { default as dashboardRoutes } from './dashboard.routes.js';
 export { default as backupRoutes } from './backup.routes.js';
 export { default as backupExecutionRoutes } from './backupExecution.routes.js';
 export { default as departmentRoutes } from './department.routes.js';

@@ -1,15 +1,17 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { ThemeConfigProvider } from './context/ThemeContext';
 import PrivateRoute from './routes/PrivateRoute';
 import logger from './utils/logger';
 import Login from './pages/auth/Login';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import Dashboard from './pages/dashboard/Dashboard';
+import DashboardEditPage from './pages/dashboard/DashboardEditPage';
+import ThemeEditorPage from './pages/theme/ThemeEditorPage';
 import DashboardLayout from './components/DashboardLayout';
 import UsersPage from './pages/users/UsersPage';
 import SchoolsPage from './pages/schools/SchoolsPage';
@@ -44,7 +46,6 @@ import BackupsPage from './pages/backups/BackupsPage';
 import ResignedPage from './pages/resigned/ResignedPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import SettingsPage from './pages/settings/SettingsPage';
-import theme from './theme/customizations';
 import './App.css';
 
 function App() {
@@ -55,7 +56,7 @@ function App() {
   }, []);
 
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeConfigProvider>
       <CssBaseline enableColorScheme />
       <AuthProvider>
         <NotificationProvider>
@@ -77,10 +78,12 @@ function App() {
               >
                 <Route index element={<Navigate to="/app/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
+                <Route path="dashboard/edit" element={<DashboardEditPage />} />
 
                 {/* User Management */}
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="theme" element={<ThemeEditorPage />} />
                 <Route path="users" element={<UsersPage />} />
 
                 {/* Organization */}
@@ -133,7 +136,7 @@ function App() {
           </Router>
         </NotificationProvider>
       </AuthProvider>
-    </ThemeProvider>
+    </ThemeConfigProvider>
   );
 }
 
