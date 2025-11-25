@@ -295,7 +295,7 @@ resignedEmployeeSchema.statics.findAllResigned = async function (options = {}) {
     const query = status ? { status } : {};
 
     return await this.find(query)
-        .populate('employee', 'profile employeeId department position school')
+        .populate('employee', 'profile employeeId department position')
         .populate('processedBy', 'username email')
         .sort({ resignationDate: -1 })
         .limit(limit)
@@ -310,3 +310,4 @@ resignedEmployeeSchema.statics.toArabicNumerals = function (num) {
 };
 
 export default mongoose.model('ResignedEmployee', resignedEmployeeSchema);
+

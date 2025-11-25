@@ -29,6 +29,7 @@ const PositionsPage = () => {
     const [selectedPosition, setSelectedPosition] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
+        arabicTitle: '',
         code: '',
         department: '',
         level: '',
@@ -71,6 +72,7 @@ const PositionsPage = () => {
             setSelectedPosition(position);
             setFormData({
                 title: position.title,
+                arabicTitle: position.arabicTitle || '',
                 code: position.code,
                 department: position.department?._id || position.department || '',
                 level: position.level || '',
@@ -81,6 +83,7 @@ const PositionsPage = () => {
             setSelectedPosition(null);
             setFormData({
                 title: '',
+                arabicTitle: '',
                 code: '',
                 department: '',
                 level: '',
@@ -103,11 +106,31 @@ const PositionsPage = () => {
 
     const handleSubmit = async () => {
         try {
+            // Validate required fields
+            if (!formData.department) {
+                showNotification('Please select a department', 'error');
+                return;
+            }
+
+            // Clean up the data before sending
+            const submitData = {
+                ...formData,
+                // Remove empty strings for optional fields
+                level: formData.level || undefined,
+                description: formData.description || undefined,
+                arabicTitle: formData.arabicTitle || undefined,
+            };
+
+            // Remove code field for new positions (let backend generate it)
+            if (!selectedPosition) {
+                delete submitData.code;
+            }
+
             if (selectedPosition) {
-                await positionService.update(selectedPosition._id, formData);
+                await positionService.update(selectedPosition._id, submitData);
                 showNotification('Position updated successfully', 'success');
             } else {
-                await positionService.create(formData);
+                await positionService.create(submitData);
                 showNotification('Position created successfully', 'success');
             }
             handleCloseDialog();
@@ -126,28 +149,28 @@ const PositionsPage = () => {
             fetchPositions();
         } catch (error) {
             showNotification(error.response?.data?.message || 'Delete failed', 'error');
+            setOpenConfirm(false);
+            setSelectedPosition(null);
         }
     };
 
     const columns = [
+        { 
+            field: 'no', 
+            headerName: 'No',
+            renderCell: (row, index) => index + 1
+        },
         { field: 'code', headerName: 'Code' },
-        { field: 'title', headerName: 'Position Title' },
+        { field: 'title', headerName: 'Name (English)' },
+        {
+            field: 'arabicTitle',
+            headerName: 'Name (Arabic)',
+            renderCell: (row) => row.arabicTitle || 'N/A'
+        },
         {
             field: 'department',
             headerName: 'Department',
             renderCell: (row) => row.department?.name || 'N/A'
-        },
-        {
-            field: 'level',
-            headerName: 'Level',
-            renderCell: (row) => (
-                <Chip label={row.level || 'N/A'} size="small" color="primary" variant="outlined" />
-            )
-        },
-        {
-            field: 'description',
-            headerName: 'Description',
-            renderCell: (row) => row.description || 'N/A'
         },
         {
             field: 'isActive',
@@ -155,7 +178,7 @@ const PositionsPage = () => {
             renderCell: (row) => (
                 <Chip
                     label={row.isActive ? 'Active' : 'Inactive'}
-                    color={row.isActive ? 'success' : 'default'}
+                    color={row.isActive ? 'success' : 'error'}
                     size="small"
                 />
             )
@@ -178,9 +201,13 @@ const PositionsPage = () => {
             </Box>
 
             <DataTable
-                rows={positions}
+                data={positions}
                 columns={columns}
-                getRowId={(row) => row._id}
+                onEdit={handleOpenDialog}
+                onDelete={(position) => {
+                    setSelectedPosition(position);
+                    setOpenConfirm(true);
+                }}
             />
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
@@ -189,21 +216,31 @@ const PositionsPage = () => {
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        {selectedPosition && (
+                            <TextField
+                                label="Position Code"
+                                name="code"
+                                value={formData.code}
+                                disabled
+                                fullWidth
+                                helperText="Auto-generated"
+                            />
+                        )}
                         <TextField
-                            label="Position Code"
-                            name="code"
-                            value={formData.code}
-                            onChange={handleChange}
-                            required
-                            fullWidth
-                        />
-                        <TextField
-                            label="Position Title"
+                            label="Position Title (English)"
                             name="title"
                             value={formData.title}
                             onChange={handleChange}
                             required
                             fullWidth
+                        />
+                        <TextField
+                            label="Position Title (Arabic)"
+                            name="arabicTitle"
+                            value={formData.arabicTitle}
+                            onChange={handleChange}
+                            fullWidth
+                            dir="rtl"
                         />
                         <TextField
                             select

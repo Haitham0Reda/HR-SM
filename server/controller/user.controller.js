@@ -19,7 +19,6 @@ const validateUserInput = (data, isUpdate = false) => {
         if (!data.username || typeof data.username !== 'string') return 'Username is required.';
         if (!data.email || typeof data.email !== 'string') return 'Email is required.';
         if (!data.password || typeof data.password !== 'string') return 'Password is required.';
-        if (!data.school) return 'School is required.';
     }
     if (data.role && !validRoles.includes(data.role)) return 'Invalid role.';
     if (data.profile) {
@@ -143,7 +142,6 @@ export const loginUser = async (req, res) => {
         logAuthEvent('LOGIN_SUCCESS', user, req, {
             department: user.department?.name,
             position: user.position?.title,
-            school: user.school?.name,
             lastLogin: user.lastLogin
         });
 
@@ -204,3 +202,4 @@ export const updateUserProfile = async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 };
+

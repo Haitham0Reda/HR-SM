@@ -13,7 +13,7 @@ import {
 import EmployeeForm from './EmployeeForm';
 import PageContainer from './PageContainer';
 
-function EmployeeEditForm({ initialValues, onSubmit }) {
+function EmployeeEditForm({ initialValues, onSubmit, isEditMode }) {
     const { employeeId } = useParams();
     const navigate = useNavigate();
 
@@ -101,19 +101,15 @@ function EmployeeEditForm({ initialValues, onSubmit }) {
             onReset={handleFormReset}
             submitButtonLabel="Save"
             backButtonPath={`/app/users/${employeeId}`}
+            isEditMode={isEditMode}
         />
     );
 }
 
 EmployeeEditForm.propTypes = {
-    initialValues: PropTypes.shape({
-        age: PropTypes.number,
-        isFullTime: PropTypes.bool,
-        joinDate: PropTypes.string,
-        name: PropTypes.string,
-        role: PropTypes.oneOf(['Development', 'Finance', 'Market']),
-    }).isRequired,
+    initialValues: PropTypes.object.isRequired,
     onSubmit: PropTypes.func.isRequired,
+    isEditMode: PropTypes.bool,
 };
 
 export default function EmployeeEdit() {
@@ -178,7 +174,7 @@ export default function EmployeeEdit() {
         }
 
         return employee ? (
-            <EmployeeEditForm initialValues={employee} onSubmit={handleSubmit} />
+            <EmployeeEditForm initialValues={employee} onSubmit={handleSubmit} isEditMode />
         ) : null;
     }, [isLoading, error, employee, handleSubmit]);
 

@@ -11,9 +11,14 @@ export const NotificationProvider = ({ children }) => {
     });
 
     const showNotification = useCallback((message, severity = 'info') => {
+        // Ensure message is always a string
+        const messageStr = typeof message === 'string' 
+            ? message 
+            : message?.message || JSON.stringify(message) || 'An error occurred';
+        
         setNotification({
             open: true,
-            message,
+            message: messageStr,
             severity,
         });
     }, []);
