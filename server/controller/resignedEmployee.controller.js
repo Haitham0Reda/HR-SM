@@ -47,10 +47,9 @@ export const getAllResignedEmployees = async (req, res) => {
 export const getResignedEmployeeById = async (req, res) => {
     try {
         const resignedEmployee = await ResignedEmployee.findById(req.params.id)
-            .populate('employee', 'profile employeeId department position school employment')
+            .populate('employee', 'profile employeeId department position employment')
             .populate('employee.department', 'name arabicName')
             .populate('employee.position', 'title arabicTitle')
-            .populate('employee.school', 'name arabicName')
             .populate('processedBy', 'username email')
             .populate('letterGeneratedBy', 'username email')
             .populate('penalties.addedBy', 'username email');

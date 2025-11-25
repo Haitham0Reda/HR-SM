@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Table,
     TableBody,
@@ -11,6 +11,7 @@ import {
     Tooltip,
     Box,
     Typography,
+    TablePagination,
 } from '@mui/material';
 import {
     Edit as EditIcon,
@@ -25,7 +26,20 @@ const DataTable = ({
     onDelete,
     onView,
     emptyMessage = 'No data available',
+    rowsPerPageOptions = [10, 25, 50],
+    defaultRowsPerPage = 10,
 }) => {
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
     console.log('DataTable received data:', data);
     console.log('DataTable data length:', data ? data.length : 'undefined');
     console.log('DataTable columns:', columns);
@@ -100,36 +114,25 @@ const DataTable = ({
 
     console.log('DataTable rendering table with', data.length, 'rows');
     return (
-        <TableContainer
-            component={Paper}
-            sx={{
-                boxShadow: 2,
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'divider',
-                flex: 1,
-                overflow: 'auto',
-                height: '100%',
+        <Box sx={{ 
+            flex: 1, 
+            display: 'flex', 
+            flexDirection: 'column',
+            px: 2,
+        }}>
+            <TableContainer
+                component={Paper}
+                sx={{
+                    boxShadow: 2,
+                    borderRadius: '8px 8px 0 0',
+                    border: '1px solid',
+                    borderColor: 'divider',
                 '& .MuiTable-root': {
                     minWidth: { xs: 600, sm: 650 },
                 },
-                '&::-webkit-scrollbar': {
-                    width: { xs: '6px', sm: '10px' },
-                    height: { xs: '6px', sm: '10px' },
-                },
-                '&::-webkit-scrollbar-track': {
-                    bgcolor: 'background.default',
-                    borderRadius: 2,
-                },
-                '&::-webkit-scrollbar-thumb': {
-                    bgcolor: 'divider',
-                    borderRadius: 2,
-                    '&:hover': {
-                        bgcolor: 'text.secondary',
-                    },
-                },
-                '&::-webkit-scrollbar-corner': {
-                    bgcolor: 'background.default',
+                '& .MuiTableCell-root': {
+                    px: 3,
+                    py: 2.5,
                 },
             }}
         >
@@ -172,6 +175,7 @@ const DataTable = ({
                                     px: { xs: 1.5, sm: 2 },
                                     color: 'text.primary',
                                     verticalAlign: 'middle',
+                                    width: '100px',
                                 }}
                             >
                                 Actions
@@ -180,7 +184,9 @@ const DataTable = ({
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {data.map((row, index) => (
+                    {data
+                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                        .map((row, index) => (
                         <TableRow
                             key={row._id || row.id || index}
                             hover
@@ -202,7 +208,7 @@ const DataTable = ({
                             {columns.map((column) => {
                                 let cellContent;
                                 if (column.renderCell) {
-                                    cellContent = column.renderCell(row);
+                                    cellContent = column.renderCell(row, page * rowsPerPage + index);
                                 } else {
                                     const value = row[column.field];
                                     // Handle different value types
@@ -233,12 +239,14 @@ const DataTable = ({
                             })}
                             {(onEdit || onDelete || onView) && (
                                 <TableCell
+                                    align="center"
                                     sx={{
                                         py: { xs: 2, sm: 2.5 },
                                         px: { xs: 1.5, sm: 2 },
+                                        width: '100px',
                                     }}
                                 >
-                                    <Box display="flex" gap={0.5}>
+                                    <Box display="flex" gap={0.5} justifyContent="center">
                                         {onView && (
                                             <Tooltip title="View" arrow>
                                                 <IconButton
@@ -298,6 +306,28 @@ const DataTable = ({
                 </TableBody>
             </Table>
         </TableContainer>
+        <TablePagination
+            component={Paper}
+            count={data.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={rowsPerPageOptions}
+            sx={{
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'background.paper',
+                borderRadius: '0 0 8px 8px',
+                boxShadow: 2,
+                border: '1px solid',
+                borderTop: 'none',
+                '.MuiTablePagination-toolbar': {
+                    px: 2,
+                },
+            }}
+        />
+        </Box>
     );
 };
 

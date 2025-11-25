@@ -260,9 +260,8 @@ const VacationsPage = () => {
             </Box>
 
             <DataTable
-                rows={vacations}
+                data={vacations}
                 columns={columns}
-                getRowId={(row) => row._id}
             />
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
