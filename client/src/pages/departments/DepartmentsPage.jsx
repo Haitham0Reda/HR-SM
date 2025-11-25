@@ -29,9 +29,8 @@ const DepartmentsPage = () => {
     const [selectedDepartment, setSelectedDepartment] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
+        arabicName: '',
         code: '',
-
-        description: '',
         isActive: true
     });
     const { showNotification } = useNotification();
@@ -61,17 +60,16 @@ const DepartmentsPage = () => {
             setSelectedDepartment(department);
             setFormData({
                 name: department.name,
+                arabicName: department.arabicName || '',
                 code: department.code,
-
-                description: department.description || '',
                 isActive: department.isActive !== false
             });
         } else {
             setSelectedDepartment(null);
             setFormData({
                 name: '',
+                arabicName: '',
                 code: '',
-                description: '',
                 isActive: true
             });
         }
@@ -119,12 +117,7 @@ const DepartmentsPage = () => {
     const columns = [
         { field: 'code', headerName: 'Code' },
         { field: 'name', headerName: 'Department Name' },
-
-        {
-            field: 'description',
-            headerName: 'Description',
-            renderCell: (row) => row.description || 'N/A'
-        },
+        { field: 'arabicName', headerName: 'Arabic Name', renderCell: (row) => row.arabicName || 'N/A' },
         {
             field: 'isActive',
             headerName: 'Status',
@@ -186,15 +179,13 @@ const DepartmentsPage = () => {
                             required
                             fullWidth
                         />
-
                         <TextField
-                            label="Description"
-                            name="description"
-                            value={formData.description}
+                            label="Arabic Name"
+                            name="arabicName"
+                            value={formData.arabicName}
                             onChange={handleChange}
-                            multiline
-                            rows={3}
                             fullWidth
+                            dir="rtl"
                         />
                         <TextField
                             select
