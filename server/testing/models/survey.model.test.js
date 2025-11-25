@@ -1,29 +1,19 @@
 import mongoose from 'mongoose';
 import Survey from '../../models/survey.model.js';
 import User from '../../models/user.model.js';
-import School from '../../models/school.model.js';
 import Department from '../../models/department.model.js';
 
 let user;
 let manager;
-let school;
 let department;
 
 beforeEach(async () => {
   // Clear surveys collection
   await Survey.deleteMany({});
 
-  // Create required references
-  school = await School.create({
-    name: 'School of Engineering',
-    schoolCode: 'ENG',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
-
   department = await Department.create({
     name: 'Test Department',
-    code: 'TEST',
-    school: school._id
+    code: 'TEST'
   });
 
   user = await User.create({
@@ -32,7 +22,6 @@ beforeEach(async () => {
     password: 'password123',
     role: 'employee',
     employeeId: 'EMP001',
-    school: school._id,
     department: department._id
   });
 
@@ -42,7 +31,6 @@ beforeEach(async () => {
     password: 'password123',
     role: 'manager',
     employeeId: 'MGR001',
-    school: school._id,
     department: department._id
   });
 });

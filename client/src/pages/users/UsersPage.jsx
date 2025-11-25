@@ -124,7 +124,7 @@ const UsersPage = () => {
             handleCloseDialog();
             fetchUsers();
         } catch (error) {
-            showError(error || 'Failed to save user');
+            showError(error.response?.data?.message || error.message || 'Failed to save user');
         }
     };
 

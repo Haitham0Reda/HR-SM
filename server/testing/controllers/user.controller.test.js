@@ -3,26 +3,18 @@
  */
 import mongoose from 'mongoose';
 import User from '../../models/user.model.js';
-import School from '../../models/school.model.js';
 import Department from '../../models/department.model.js';
 import Position from '../../models/position.model.js';
 import * as userController from '../../controller/user.controller.js';
 
 describe('User Controller - All 7 Functions', () => {
-  let mockReq, mockRes, testSchool, testDepartment, testPosition, testUser;
+  let mockReq, mockRes, testDepartment, testPosition, testUser;
 
   beforeEach(async () => {
-    testSchool = await School.create({
-      schoolCode: 'BUS',
-      name: 'School of Business',
-      arabicName: 'المعهد الكندى العالى للإدارة بالسادس من اكتوبر'
-    });
-
     testDepartment = await Department.create({
       name: 'IT Department',
       arabicName: 'قسم تكنولوجيا المعلومات',
-      code: 'IT001',
-      school: testSchool._id
+      code: 'IT001'
     });
 
     testPosition = await Position.create({
@@ -37,7 +29,6 @@ describe('User Controller - All 7 Functions', () => {
       email: 'test@test.com',
       password: 'password123',
       role: 'employee',
-      school: testSchool._id,
       department: testDepartment._id,
       position: testPosition._id,
       profile: {
@@ -75,7 +66,6 @@ describe('User Controller - All 7 Functions', () => {
     await User.deleteMany({});
     await Position.deleteMany({});
     await Department.deleteMany({});
-    await School.deleteMany({});
   });
 
   describe('1. getAllUsers', () => {
@@ -137,7 +127,6 @@ describe('User Controller - All 7 Functions', () => {
         email: 'new@test.com',
         password: 'password123',
         role: 'employee',
-        school: testSchool._id,
         department: testDepartment._id,
         position: testPosition._id,
         profile: {
@@ -160,8 +149,7 @@ describe('User Controller - All 7 Functions', () => {
     it('should reject missing username', async () => {
       mockReq.body = {
         email: 'new@test.com',
-        password: 'password123',
-        school: testSchool._id
+        password: 'password123'
       };
 
       await userController.createUser(mockReq, mockRes);
@@ -173,8 +161,7 @@ describe('User Controller - All 7 Functions', () => {
     it('should reject missing email', async () => {
       mockReq.body = {
         username: 'newuser',
-        password: 'password123',
-        school: testSchool._id
+        password: 'password123'
       };
 
       await userController.createUser(mockReq, mockRes);
@@ -186,8 +173,7 @@ describe('User Controller - All 7 Functions', () => {
     it('should reject missing password', async () => {
       mockReq.body = {
         username: 'newuser',
-        email: 'new@test.com',
-        school: testSchool._id
+        email: 'new@test.com'
       };
 
       await userController.createUser(mockReq, mockRes);
@@ -200,8 +186,7 @@ describe('User Controller - All 7 Functions', () => {
       mockReq.body = {
         username: 'differentuser',
         email: 'test@test.com', // Already exists
-        password: 'password123',
-        school: testSchool._id
+        password: 'password123'
       };
 
       await userController.createUser(mockReq, mockRes);
@@ -214,8 +199,7 @@ describe('User Controller - All 7 Functions', () => {
       mockReq.body = {
         username: 'testuser', // Already exists
         email: 'different@test.com',
-        password: 'password123',
-        school: testSchool._id
+        password: 'password123'
       };
 
       await userController.createUser(mockReq, mockRes);
@@ -229,8 +213,7 @@ describe('User Controller - All 7 Functions', () => {
         username: 'newuser',
         email: 'new@test.com',
         password: 'password123',
-        role: 'invalid-role',
-        school: testSchool._id
+        role: 'invalid-role'
       };
 
       await userController.createUser(mockReq, mockRes);
@@ -270,7 +253,6 @@ describe('User Controller - All 7 Functions', () => {
         username: 'another',
         email: 'another@test.com',
         password: 'password123',
-        school: testSchool._id,
         role: 'employee'
       });
 

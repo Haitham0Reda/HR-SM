@@ -9,8 +9,8 @@ import {
 
 const router = express.Router();
 
-// Get active theme configuration (all authenticated users)
-router.get('/', protect, getTheme);
+// Get active theme configuration (public - no authentication required)
+router.get('/', getTheme);
 
 // Update theme configuration (admin only)
 router.put('/', protect, admin, updateTheme);

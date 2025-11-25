@@ -16,11 +16,6 @@ const departmentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    school: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'School',
-        required: true
-    },
     description: String,
     isActive: {
         type: Boolean,

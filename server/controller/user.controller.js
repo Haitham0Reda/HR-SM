@@ -35,7 +35,7 @@ const validateUserInput = (data, isUpdate = false) => {
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find().populate('department position school');
+        const users = await User.find().populate('department position');
         res.json(users.map(sanitizeUser));
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -44,7 +44,7 @@ export const getAllUsers = async (req, res) => {
 
 export const getUserById = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id).populate('department position school');
+        const user = await User.findById(req.params.id).populate('department position');
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(sanitizeUser(user));
     } catch (err) {
@@ -61,7 +61,7 @@ export const createUser = async (req, res) => {
         if (existing) return res.status(409).json({ error: 'Username or email already exists' });
         const user = new User(req.body);
         await user.save();
-        await user.populate('department position school');
+        await user.populate('department position');
         res.status(201).json(sanitizeUser(user));
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -86,7 +86,7 @@ export const updateUser = async (req, res) => {
             });
             if (conflict) return res.status(409).json({ error: 'Username or email already exists' });
         }
-        const user = await User.findByIdAndUpdate(userId, req.body, { new: true }).populate('department position school');
+        const user = await User.findByIdAndUpdate(userId, req.body, { new: true }).populate('department position');
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(sanitizeUser(user));
     } catch (err) {
@@ -111,7 +111,7 @@ export const loginUser = async (req, res) => {
         return res.status(400).json({ error: 'Email and password are required.' });
     }
     try {
-        const user = await User.findOne({ email }).populate('department position school');
+        const user = await User.findOne({ email }).populate('department position');
 
         if (!user) {
             // Log failed login attempt - user not found
@@ -162,7 +162,7 @@ export const loginUser = async (req, res) => {
 export const getUserProfile = async (req, res) => {
     try {
         // req.user is set by the protect middleware
-        const user = await User.findById(req.user._id).populate('department position school');
+        const user = await User.findById(req.user._id).populate('department position');
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(sanitizeUser(user));
     } catch (err) {
@@ -193,7 +193,7 @@ export const updateUserProfile = async (req, res) => {
         }
 
         const user = await User.findByIdAndUpdate(userId, allowedUpdates, { new: true, runValidators: true })
-            .populate('department position school');
+            .populate('department position');
 
         if (!user) return res.status(404).json({ error: 'User not found' });
 

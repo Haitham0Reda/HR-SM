@@ -4,15 +4,16 @@
 import mongoose from 'mongoose';
 import Survey from '../../models/survey.model.js';
 import * as surveyController from '../../controller/survey.controller.js';
-import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestDepartment, createTestPosition, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('Survey Controller - All 11 Functions', () => {
-    let mockReq, mockRes, testSchool, testUser;
+    let mockReq, mockRes, testDepartment, testPosition, testUser;
 
     beforeEach(async () => {
-        testSchool = await createTestSchool();
-        testUser = await createTestUser(testSchool._id, null, null);
-        
+        testDepartment = await createTestDepartment();
+        testPosition = await createTestPosition(testDepartment._id);
+        testUser = await createTestUser(null, testDepartment._id, testPosition._id);
+
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();
     });

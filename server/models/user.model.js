@@ -60,11 +60,6 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Department'
     },
-    school: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'School',
-        required: true
-    },
     position: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Position'

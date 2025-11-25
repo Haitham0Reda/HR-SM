@@ -4,15 +4,13 @@
 import mongoose from 'mongoose';
 import SecuritySettings from '../../models/securitySettings.model.js';
 import * as securitySettingsController from '../../controller/securitySettings.controller.js';
-import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('SecuritySettings Controller - All 13 Functions', () => {
-    let mockReq, mockRes, testSchool, testUser;
+    let mockReq, mockRes, testUser;
 
     beforeEach(async () => {
-        testSchool = await createTestSchool();
-        testUser = await createTestUser(testSchool._id, null, null);
-        
+        testUser = await createTestUser(null, null, null);
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();
     });

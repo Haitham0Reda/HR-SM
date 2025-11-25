@@ -26,10 +26,6 @@ export async function getAssignedUsers(survey, options = {}) {
         filters.push({ _id: { $in: survey.assignedTo.specificEmployees } });
     }
 
-    if (survey.assignedTo.campuses?.length > 0) {
-        filters.push({ school: { $in: survey.assignedTo.campuses } });
-    }
-
     if (survey.assignedTo.departments?.length > 0) {
         filters.push({ department: { $in: survey.assignedTo.departments } });
     }
@@ -62,10 +58,6 @@ export async function calculateTotalAssigned(survey) {
 
         if (survey.assignedTo.specificEmployees?.length > 0) {
             query.$or.push({ _id: { $in: survey.assignedTo.specificEmployees } });
-        }
-
-        if (survey.assignedTo.campuses?.length > 0) {
-            query.$or.push({ school: { $in: survey.assignedTo.campuses } });
         }
 
         if (survey.assignedTo.departments?.length > 0) {

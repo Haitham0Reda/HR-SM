@@ -24,8 +24,7 @@ export const createPosition = async (req, res) => {
 export const getPositionById = async (req, res) => {
     try {
         const position = await Position.findById(req.params.id)
-            .populate('department', 'name code school')
-            .populate('department.school', 'name schoolCode');
+            .populate('department', 'name code');
         if (!position) return res.status(404).json({ error: 'Position not found' });
         res.json(position);
     } catch (err) {

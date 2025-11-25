@@ -43,10 +43,6 @@ const idCardBatchSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Department'
         },
-        school: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'School'
-        },
         position: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Position'
@@ -318,10 +314,6 @@ idCardBatchSchema.statics.createBatch = async function (batchData, userId) {
         query.department = batchData.filters.department;
     }
 
-    if (batchData.filters.school) {
-        query.school = batchData.filters.school;
-    }
-
     if (batchData.filters.cardType) {
         query.cardType = batchData.filters.cardType;
     }
@@ -413,7 +405,6 @@ idCardBatchSchema.statics.getUserBatches = function (userId, filters = {}) {
 
     return this.find(query)
         .populate('filters.department', 'name code')
-        .populate('filters.school', 'name schoolCode')
         .sort({ createdAt: -1 })
         .limit(50);
 };

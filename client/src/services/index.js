@@ -4,7 +4,7 @@ export { default as authService } from './auth.service';
 export { default as dashboardService } from './dashboard.service';
 export { default as themeService } from './theme.service';
 export { default as userService } from './user.service';
-export { default as schoolService } from './school.service';
+
 export { default as departmentService } from './department.service';
 export { default as positionService } from './position.service';
 export { default as attendanceService } from './attendance.service';

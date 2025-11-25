@@ -67,7 +67,7 @@ const Login = () => {
             // Ensure we're setting a string value for the error
             const errorMessage = err?.message || err?.response?.data?.error || (typeof err === 'string' ? err : 'Login failed. Please check your credentials.');
             setError(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred. Please try again.');
-            showError(err || 'Login failed');
+            showError(errorMessage);
         } finally {
             setLoading(false);
         }

@@ -31,13 +31,6 @@ const idCardSchema = new mongoose.Schema({
         index: true
     },
 
-    // Employee's school/campus (denormalized)
-    school: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'School',
-        index: true
-    },
-
     // Employee's position (denormalized)
     position: {
         type: mongoose.Schema.Types.ObjectId,
@@ -350,7 +343,6 @@ idCardSchema.methods.replaceCard = async function (issuedBy, reason) {
     const newCard = new this.constructor({
         employee: this.employee,
         department: this.department,
-        school: this.school,
         position: this.position,
         cardType: this.cardType,
         cardNumber: cardNumber,
@@ -417,7 +409,6 @@ idCardSchema.statics.getEmployeeCard = function (employeeId) {
     })
         .populate('employee', 'profile employeeId email')
         .populate('department', 'name code')
-        .populate('school', 'name schoolCode')
         .populate('position', 'title')
         .populate('issue.issuedBy', 'profile.firstName profile.lastName');
 };
@@ -592,7 +583,6 @@ idCardSchema.index({ employee: 1, status: 1 });
 idCardSchema.index({ employee: 1, isActive: 1 });
 idCardSchema.index({ department: 1, status: 1 });
 idCardSchema.index({ department: 1, isActive: 1 });
-idCardSchema.index({ school: 1, status: 1 });
 idCardSchema.index({ 'expiry.expiryDate': 1, status: 1 });
 idCardSchema.index({ 'issue.issuedDate': 1 });
 idCardSchema.index({ 'printHistory.printedAt': 1 });

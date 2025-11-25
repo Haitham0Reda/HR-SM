@@ -21,10 +21,6 @@ const reportConfigSchema = new mongoose.Schema({
         default: 'default',
         index: true
     },
-    school: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'School'
-    },
     // HR Month Configuration
     hrMonth: {
         // Day of month when HR month starts (default: 21)
@@ -545,20 +541,17 @@ reportConfigSchema.methods.generateHRReport = async function (departmentId = nul
  * Static method to get or create default configuration
  * 
  * @param {String} organization - Organization name
- * @param {ObjectId} schoolId - School ID (optional)
  * @returns {Promise<ReportConfig>} Configuration document
  */
-reportConfigSchema.statics.getConfig = async function (organization = 'default', schoolId = null) {
+reportConfigSchema.statics.getConfig = async function (organization = 'default') {
     let config = await this.findOne({
         organization,
-        school: schoolId,
         isActive: true
     });
 
     if (!config) {
         config = await this.create({
-            organization,
-            school: schoolId
+            organization
         });
     }
 
@@ -739,9 +732,7 @@ reportConfigSchema.methods.calculateExpectedHours = function (rangeType = 'hr-mo
 };
 
 // Indexes for better query performance
-reportConfigSchema.index({ organization: 1, school: 1 }, { unique: true });
-reportConfigSchema.index({ organization: 1, isActive: 1 });
-reportConfigSchema.index({ school: 1, isActive: 1 });
+reportConfigSchema.index({ organization: 1, isActive: 1 }, { unique: true });
 reportConfigSchema.index({ 'hrMonth.startDay': 1 });
 reportConfigSchema.index({ 'payrollCycle.type': 1 });
 
