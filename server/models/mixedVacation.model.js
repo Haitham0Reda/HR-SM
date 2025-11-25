@@ -61,10 +61,6 @@ const mixedVacationSchema = new mongoose.Schema({
 
     // Campus/Department Filter
     applicableTo: {
-        campuses: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'School'
-        }],
         departments: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Department'
@@ -395,10 +391,6 @@ mixedVacationSchema.methods.applyToAll = async function (approvedBy) {
     // Filter by campus/department if specified
     if (!this.applicableTo.allEmployees) {
         const filters = [];
-
-        if (this.applicableTo.campuses.length > 0) {
-            filters.push({ school: { $in: this.applicableTo.campuses } });
-        }
 
         if (this.applicableTo.departments.length > 0) {
             filters.push({ department: { $in: this.applicableTo.departments } });

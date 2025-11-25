@@ -16,7 +16,7 @@ import {
     VisibilityOff,
     CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import api from '../../services/api';
 
 const ResetPassword = () => {
     const { token } = useParams();
@@ -40,7 +40,7 @@ const ResetPassword = () => {
 
     const verifyToken = async () => {
         try {
-            await axios.get(`/api/auth/verify-reset-token/${token}`);
+            await api.get(`/auth/verify-reset-token/${token}`);
             setTokenValid(true);
         } catch (err) {
             setError('Invalid or expired reset link. Please request a new one.');
@@ -79,7 +79,7 @@ const ResetPassword = () => {
         try {
             setLoading(true);
             setError('');
-            await axios.post(`/api/auth/reset-password/${token}`, {
+            await api.post(`/auth/reset-password/${token}`, {
                 password: formData.password,
             });
             setSuccess(true);

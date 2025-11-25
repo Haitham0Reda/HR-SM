@@ -9,7 +9,6 @@ describe('User Model', () => {
       email: 'test@example.com',
       password: 'Password123!',
       role: 'employee',
-      school: new mongoose.Types.ObjectId(),
       profile: {
         firstName: 'Test',
         lastName: 'User',
@@ -57,8 +56,7 @@ describe('User Model', () => {
     const userData = {
       username: 'testuser2',
       email: 'test2@example.com',
-      password: 'Password123!',
-      school: new mongoose.Types.ObjectId()
+      password: 'Password123!'
     };
 
     const user = new User(userData);
@@ -74,8 +72,7 @@ describe('User Model', () => {
     const userData = {
       username: 'testuser3',
       email: 'test3@example.com',
-      password: 'Password123!',
-      school: new mongoose.Types.ObjectId()
+      password: 'Password123!'
     };
 
     const user = new User(userData);
@@ -89,8 +86,7 @@ describe('User Model', () => {
     const userData = {
       username: 'testuser4',
       email: 'test4@example.com',
-      password: 'Password123!',
-      school: new mongoose.Types.ObjectId()
+      password: 'Password123!'
     };
 
     const user = new User(userData);
@@ -113,7 +109,6 @@ describe('User Model Methods', () => {
       email: 'methodtest@example.com',
       password: 'Password123!',
       role: 'employee',
-      school: new mongoose.Types.ObjectId(),
       profile: {
         firstName: 'Method',
         lastName: 'Test'

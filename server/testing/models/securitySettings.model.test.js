@@ -1,27 +1,17 @@
 import mongoose from 'mongoose';
 import SecuritySettings from '../../models/securitySettings.model.js';
 import User from '../../models/user.model.js';
-import School from '../../models/school.model.js';
 
 let user;
-let school;
 
 beforeAll(async () => {
-  // Create required references
-  school = await School.create({
-    name: 'School of Engineering',
-    schoolCode: 'ENG',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
-
   // Create user for testing
   user = await User.create({
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'admin',
-    employeeId: 'EMP001',
-    school: school._id
+    employeeId: 'EMP001'
   });
 });
 

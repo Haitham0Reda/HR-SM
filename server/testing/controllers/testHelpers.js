@@ -1,4 +1,3 @@
-import School from '../../models/school.model.js';
 import Department from '../../models/department.model.js';
 import Position from '../../models/position.model.js';
 import User from '../../models/user.model.js';
@@ -24,20 +23,11 @@ export const createMockRequest = (overrides = {}) => ({
     ...overrides
 });
 
-export const createTestSchool = async () => {
-    return await School.create({
-        schoolCode: 'BUS',
-        name: 'School of Business',
-        arabicName: 'المعهد الكندى العالى للإدارة بالسادس من اكتوبر'
-    });
-};
-
-export const createTestDepartment = async (schoolId) => {
+export const createTestDepartment = async () => {
     return await Department.create({
         name: 'IT Department',
         arabicName: 'قسم تكنولوجيا المعلومات',
-        code: 'IT001',
-        school: schoolId
+        code: 'IT001'
     });
 };
 
@@ -50,19 +40,12 @@ export const createTestPosition = async (departmentId) => {
     });
 };
 
-export const createTestUser = async (schoolId, departmentId, positionId, overrides = {}) => {
-    // If no school provided, create one
-    if (!schoolId) {
-        const school = await createTestSchool();
-        schoolId = school._id;
-    }
-
+export const createTestUser = async (departmentId, positionId, overrides = {}) => {
     return await User.create({
         username: 'testuser',
         email: 'test@test.com',
         password: 'password123',
         role: 'employee',
-        school: schoolId,
         department: departmentId,
         position: positionId,
         profile: {
@@ -81,5 +64,4 @@ export const cleanupTestData = async () => {
     await User.deleteMany({});
     await Position.deleteMany({});
     await Department.deleteMany({});
-    await School.deleteMany({});
 };

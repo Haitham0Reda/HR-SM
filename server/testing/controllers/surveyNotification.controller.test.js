@@ -6,14 +6,13 @@ import SurveyNotification from '../../models/surveyNotification.model.js';
 import Survey from '../../models/survey.model.js';
 import User from '../../models/user.model.js';
 import * as surveyNotificationController from '../../controller/surveyNotification.controller.js';
-import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('SurveyNotification Controller - All 5 Functions', () => {
-    let mockReq, mockRes, testSchool, testUser, testSurvey;
+    let mockReq, mockRes, testUser, testSurvey;
 
     beforeEach(async () => {
-        testSchool = await createTestSchool();
-        testUser = await createTestUser(testSchool._id, null, null);
+        testUser = await createTestUser(null, null);
 
         testSurvey = await Survey.create({
             title: 'Test Survey',

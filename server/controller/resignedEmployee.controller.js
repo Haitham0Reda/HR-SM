@@ -227,9 +227,8 @@ export const generateLetter = async (req, res) => {
 export const generateArabicDisclaimer = async (req, res) => {
     try {
         const resignedEmployee = await ResignedEmployee.findById(req.params.id)
-            .populate('employee', 'profile employeeId department position school employment')
-            .populate('employee.department', 'arabicName')
-            .populate('employee.school', 'arabicName');
+            .populate('employee', 'profile employeeId department position employment')
+            .populate('employee.department', 'arabicName');
 
         if (!resignedEmployee) {
             return res.status(404).json({ error: 'Resigned employee not found' });

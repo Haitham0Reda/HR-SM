@@ -9,7 +9,6 @@ import Toolbar from '@mui/material/Toolbar';
 
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PersonIcon from '@mui/icons-material/Person';
-import SchoolIcon from '@mui/icons-material/School';
 import BusinessIcon from '@mui/icons-material/Business';
 import WorkIcon from '@mui/icons-material/Work';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -283,13 +282,6 @@ function DashboardSidebar({
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Organization</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
-                                    id="schools"
-                                    title="Schools"
-                                    icon={<SchoolIcon />}
-                                    href="/app/schools"
-                                    selected={!!matchPath('/app/schools', pathname)}
-                                />
-                                <DashboardSidebarPageItem
                                     id="departments"
                                     title="Departments"
                                     icon={<BusinessIcon />}
@@ -456,13 +448,6 @@ function DashboardSidebar({
                             <>
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Organization</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="schools"
-                                    title="Schools"
-                                    icon={<SchoolIcon />}
-                                    href="/app/schools"
-                                    selected={!!matchPath('/app/schools', pathname)}
-                                />
                                 <DashboardSidebarPageItem
                                     id="departments"
                                     title="Departments"

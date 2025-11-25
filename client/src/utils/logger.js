@@ -20,10 +20,10 @@ const sendLogToBackend = async (level, message, meta = {}) => {
                 level,
                 message,
                 meta: {
-                    ...meta,
                     timestamp: new Date().toISOString(),
                     userAgent: navigator.userAgent,
-                    url: window.location.href
+                    pageUrl: window.location.href,
+                    ...meta
                 }
             }),
         });

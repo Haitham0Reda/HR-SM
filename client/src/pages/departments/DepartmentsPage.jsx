@@ -18,11 +18,11 @@ import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
 import departmentService from '../../services/department.service';
-import schoolService from '../../services/school.service';
+
 
 const DepartmentsPage = () => {
     const [departments, setDepartments] = useState([]);
-    const [schools, setSchools] = useState([]);
+
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
@@ -30,7 +30,7 @@ const DepartmentsPage = () => {
     const [formData, setFormData] = useState({
         name: '',
         code: '',
-        school: '',
+
         description: '',
         isActive: true
     });
@@ -38,7 +38,7 @@ const DepartmentsPage = () => {
 
     useEffect(() => {
         fetchDepartments();
-        fetchSchools();
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -54,14 +54,7 @@ const DepartmentsPage = () => {
         }
     };
 
-    const fetchSchools = async () => {
-        try {
-            const data = await schoolService.getAll();
-            setSchools(data);
-        } catch (error) {
-            console.error('Failed to fetch schools:', error);
-        }
-    };
+
 
     const handleOpenDialog = (department = null) => {
         if (department) {
@@ -69,7 +62,7 @@ const DepartmentsPage = () => {
             setFormData({
                 name: department.name,
                 code: department.code,
-                school: department.school?._id || department.school || '',
+
                 description: department.description || '',
                 isActive: department.isActive !== false
             });
@@ -78,7 +71,6 @@ const DepartmentsPage = () => {
             setFormData({
                 name: '',
                 code: '',
-                school: '',
                 description: '',
                 isActive: true
             });
@@ -127,11 +119,7 @@ const DepartmentsPage = () => {
     const columns = [
         { field: 'code', headerName: 'Code' },
         { field: 'name', headerName: 'Department Name' },
-        {
-            field: 'school',
-            headerName: 'School',
-            renderCell: (row) => row.school?.name || 'N/A'
-        },
+
         {
             field: 'description',
             headerName: 'Description',
@@ -166,9 +154,14 @@ const DepartmentsPage = () => {
             </Box>
 
             <DataTable
-                rows={departments}
+                data={departments}
                 columns={columns}
-                getRowId={(row) => row._id}
+                onEdit={handleOpenDialog}
+                onDelete={(department) => {
+                    setSelectedDepartment(department);
+                    setOpenConfirm(true);
+                }}
+                emptyMessage="No departments found. Click 'Add Department' to create one."
             />
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
@@ -193,21 +186,7 @@ const DepartmentsPage = () => {
                             required
                             fullWidth
                         />
-                        <TextField
-                            select
-                            label="School"
-                            name="school"
-                            value={formData.school}
-                            onChange={handleChange}
-                            required
-                            fullWidth
-                        >
-                            {schools.map((school) => (
-                                <MenuItem key={school._id} value={school._id}>
-                                    {school.name}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+
                         <TextField
                             label="Description"
                             name="description"
