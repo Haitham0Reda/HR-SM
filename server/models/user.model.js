@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    plainPassword: {
+        type: String,
+        required: false,
+        select: false  // Don't include in queries by default for security
+    },
     role: {
         type: String,
         enum: [
@@ -38,22 +43,22 @@ const userSchema = new mongoose.Schema({
         ],
         default: 'employee'
     },
-    profile: {
+    personalInfo: {
+        fullName: String,
         firstName: String,
         medName: String,
         lastName: String,
         arabicName: String,
-        phone: String,
         dateOfBirth: Date,
-        gender: {
-            type: String,
-            enum: ['male', 'female']
-        },
+        gender: String,
+        nationality: String,
+        nationalId: String,
+        phone: String,
+        address: String,
         maritalStatus: {
             type: String,
             enum: ['single', 'married', 'divorced', 'widowed']
         },
-        nationalId: Number,
         profilePicture: String
     },
     department: {
@@ -72,12 +77,17 @@ const userSchema = new mongoose.Schema({
         },
         employmentStatus: {
             type: String,
-            enum: ['active', 'on-leave', 'terminated', 'resigned']
+            enum: ['active', 'on-leave', 'vacation', 'inactive', 'terminated', 'resigned']
         },
     },
     isActive: {
         type: Boolean,
         default: true
+    },
+    status: {
+        type: String,
+        enum: ['active', 'vacation', 'resigned', 'inactive'],
+        default: 'active'
     },
     lastLogin: Date,
     // Permission Management
@@ -128,6 +138,9 @@ userSchema.pre('save', async function (next) {
 
     // Hash password if modified
     if (this.isModified('password')) {
+        // Store plain password before hashing (for credential generation)
+        this.plainPassword = this.password;
+        
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
     }
@@ -178,8 +191,11 @@ userSchema.methods.hasAllPermissions = async function (permissions) {
 
 // Virtual for full name
 userSchema.virtual('name').get(function () {
-    if (this.profile?.firstName && this.profile?.lastName) {
-        return `${this.profile.firstName} ${this.profile.lastName}`;
+    if (this.personalInfo?.fullName) {
+        return this.personalInfo.fullName;
+    }
+    if (this.personalInfo?.firstName && this.personalInfo?.lastName) {
+        return `${this.personalInfo.firstName} ${this.personalInfo.lastName}`;
     }
     return this.username;
 });

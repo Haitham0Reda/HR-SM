@@ -235,6 +235,10 @@ securitySettingsSchema.statics.updateSettings = async function (updates, userId)
             const parts = key.split('.');
             let current = settings;
             for (let i = 0; i < parts.length - 1; i++) {
+                // Ensure the current level is an object, not a primitive
+                if (typeof current[parts[i]] !== 'object' || current[parts[i]] === null) {
+                    current[parts[i]] = {};
+                }
                 current = current[parts[i]];
             }
             current[parts[parts.length - 1]] = value;
