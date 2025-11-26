@@ -14,6 +14,9 @@ import DashboardEditPage from './pages/dashboard/DashboardEditPage';
 import ThemeEditorPage from './pages/theme/ThemeEditorPage';
 import DashboardLayout from './components/DashboardLayout';
 import UsersPage from './pages/users/UsersPage';
+import CreateUserPage from './pages/users/CreateUserPage';
+import UserDetailsPage from './pages/users/UserDetailsPage';
+import EditUserPage from './pages/users/EditUserPage';
 
 import DepartmentsPage from './pages/departments/DepartmentsPage';
 import PositionsPage from './pages/positions/PositionsPage';
@@ -85,6 +88,9 @@ function App() {
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="theme" element={<ThemeEditorPage />} />
                 <Route path="users" element={<UsersPage />} />
+                <Route path="users/create" element={<CreateUserPage />} />
+                <Route path="users/:id" element={<UserDetailsPage />} />
+                <Route path="users/:id/edit" element={<EditUserPage />} />
 
                 {/* Organization */}
 

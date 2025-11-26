@@ -7,8 +7,10 @@ import {
     deleteUser,
     loginUser,
     getUserProfile,
-    updateUserProfile
+    updateUserProfile,
+    getUserPlainPassword
 } from '../controller/user.controller.js';
+import { bulkDownloadPhotos } from '../controller/userPhoto.controller.js';
 import {
     protect,
     admin,
@@ -36,6 +38,18 @@ router.put('/profile', protect, updateUserProfile);
 // Get all users - Protected, all authenticated users can view
 router.get('/', protect, getAllUsers);
 
+// Bulk download user photos - Protected (supports both POST and GET)
+router.post('/bulk-download-photos', protect, bulkDownloadPhotos);
+router.get('/bulk-download-photos', bulkDownloadPhotos); // GET with token in query
+
+// Test photo download endpoint
+router.get('/test-photo-download', protect, async (req, res) => {
+    res.json({ 
+        message: 'Photo download endpoint is working',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Create user - Admin only with full validation
 router.post('/',
     protect,
@@ -52,6 +66,9 @@ router.post('/',
 
 // Get user by ID - Protected
 router.get('/:id', protect, getUserById);
+
+// Get user plain password - Admin only (for credential generation)
+router.get('/:id/plain-password', protect, admin, getUserPlainPassword);
 
 // Update user - Admin only with validation
 router.put('/:id',

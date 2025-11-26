@@ -21,13 +21,14 @@ const validateUserInput = (data, isUpdate = false) => {
         if (!data.password || typeof data.password !== 'string') return 'Password is required.';
     }
     if (data.role && !validRoles.includes(data.role)) return 'Invalid role.';
+    if (data.status && !['active', 'vacation', 'resigned', 'inactive'].includes(data.status)) return 'Invalid status.';
     if (data.profile) {
         if (data.profile.gender && !['male', 'female'].includes(data.profile.gender)) return 'Invalid gender.';
         if (data.profile.maritalStatus && !['single', 'married', 'divorced', 'widowed'].includes(data.profile.maritalStatus)) return 'Invalid marital status.';
     }
     if (data.employment) {
         if (data.employment.contractType && !['full-time', 'part-time', 'contract', 'probation'].includes(data.employment.contractType)) return 'Invalid contract type.';
-        if (data.employment.employmentStatus && !['active', 'on-leave', 'terminated', 'resigned'].includes(data.employment.employmentStatus)) return 'Invalid employment status.';
+        if (data.employment.employmentStatus && !['active', 'on-leave', 'vacation', 'inactive', 'terminated', 'resigned'].includes(data.employment.employmentStatus)) return 'Invalid employment status.';
     }
     return null;
 };
@@ -200,6 +201,24 @@ export const updateUserProfile = async (req, res) => {
     } catch (err) {
         console.error('Error in updateUserProfile:', err);
         res.status(400).json({ error: err.message });
+    }
+};
+
+// Get user plain password (for credential generation - Admin only)
+export const getUserPlainPassword = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('+plainPassword');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        if (!user.plainPassword) {
+            return res.status(404).json({ 
+                error: 'Plain password not available. Password was set before this feature was implemented.' 
+            });
+        }
+        
+        res.json({ plainPassword: user.plainPassword });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 };
 

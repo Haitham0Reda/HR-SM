@@ -35,6 +35,20 @@ const userService = {
     updateProfile: async (data) => {
         return await api.put('/users/profile', data);
     },
+
+    // Upload profile picture
+    uploadProfilePicture: async (id, formData) => {
+        return await api.post(`/users/${id}/profile-picture`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
+
+    // Get user plain password (for credential generation)
+    getPlainPassword: async (id) => {
+        return await api.get(`/users/${id}/plain-password`);
+    },
 };
 
 export default userService;
