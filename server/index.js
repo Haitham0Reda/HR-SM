@@ -2,6 +2,11 @@ import express from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import hpp from 'hpp';
 
 // Get the directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -18,6 +23,7 @@ import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import { logUserActivity } from './middleware/activityLogger.js';
 import { startAllScheduledTasks, stopAllTasks } from './utils/scheduler.js';
 import logger from './utils/logger.js';
+import backupScheduler from './services/backupScheduler.service.js';
 
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
@@ -53,17 +59,112 @@ import surveyRoutes from './routes/survey.routes.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Security Middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"],
+        },
+    },
+    crossOriginEmbedderPolicy: false,
+}));
+
+// CORS must be FIRST - before any other middleware
 app.use(cors({
     origin: 'http://localhost:3000',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Content-Disposition']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Disposition'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
+
+// Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Compression middleware
+app.use(compression());
+
+// Rate limiting - AFTER CORS
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => req.method === 'OPTIONS' // Skip rate limiting for OPTIONS requests
+});
+app.use('/api/', limiter);
+
+// Stricter rate limit for auth routes
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: 'Too many login attempts, please try again later.',
+    skip: (req) => req.method === 'OPTIONS' // Skip rate limiting for OPTIONS requests
+});
+
+// Data sanitization against NoSQL injection - Custom middleware for Express 5 compatibility
+// express-mongo-sanitize v2.2.0 is not compatible with Express 5's read-only req.query
+app.use((req, res, next) => {
+    // Sanitize body
+    if (req.body) {
+        req.body = sanitizeObject(req.body);
+    }
+    // Sanitize params
+    if (req.params) {
+        req.params = sanitizeObject(req.params);
+    }
+    // For query, we need to create a new object since it's read-only in Express 5
+    if (req.query && Object.keys(req.query).length > 0) {
+        const sanitizedQuery = sanitizeObject({ ...req.query });
+        // Replace the query object
+        Object.defineProperty(req, 'query', {
+            value: sanitizedQuery,
+            writable: true,
+            enumerable: true,
+            configurable: true
+        });
+    }
+    next();
+});
+
+// Helper function to sanitize objects
+function sanitizeObject(obj) {
+    if (typeof obj !== 'object' || obj === null) return obj;
+    
+    const sanitized = Array.isArray(obj) ? [] : {};
+    
+    for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            const value = obj[key];
+            
+            // Check for dangerous keys
+            if (key.includes('$') || key.includes('.')) {
+                logger.warn(`Sanitized potentially malicious key: ${key}`);
+                continue; // Skip dangerous keys
+            }
+            
+            // Recursively sanitize nested objects
+            if (typeof value === 'object' && value !== null) {
+                sanitized[key] = sanitizeObject(value);
+            } else {
+                sanitized[key] = value;
+            }
+        }
+    }
+    
+    return sanitized;
+}
+
+// Prevent HTTP Parameter Pollution
+app.use(hpp());
 
 // Request logging middleware - basic logging for all requests
 app.use((req, res, next) => {
@@ -77,7 +178,7 @@ app.use((req, res, next) => {
 // User activity logging middleware - detailed logging for authenticated users
 app.use(logUserActivity);
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/theme', themeRoutes);
@@ -143,6 +244,11 @@ if (isMainModule) {
 
         // Start scheduled tasks
         startAllScheduledTasks();
+        
+        // Initialize backup scheduler
+        backupScheduler.initialize().catch(err => {
+            logger.error('Failed to initialize backup scheduler:', err);
+        });
     });
 
     // Handle graceful shutdown
@@ -150,6 +256,7 @@ if (isMainModule) {
         logger.info('Shutting down gracefully...');
         console.log('Shutting down gracefully...');
         stopAllTasks();
+        backupScheduler.stopAll();
         server.close(() => {
             logger.info('Server closed');
             console.log('Server closed');

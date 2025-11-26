@@ -1,15 +1,197 @@
 /**
- * Validation Middleware
+ * Unified Validation Middleware
  * 
- * Centralized validation logic extracted from models.
- * Validates data before it reaches the database layer.
+ * Combines input validation (express-validator) with business logic validation
+ * Provides reusable validation rules for common fields and business constraints
  */
+import { body, param, query, validationResult } from 'express-validator';
+import sanitizeHtml from 'sanitize-html';
 import mongoose from 'mongoose';
+
+/**
+ * Middleware to handle validation errors
+ */
+export const handleValidationErrors = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            message: 'Validation failed',
+            errors: errors.array()
+        });
+    }
+    next();
+};
+
+/**
+ * Sanitize HTML content to prevent XSS
+ */
+export const sanitizeHtmlContent = (field) => {
+    return body(field).customSanitizer((value) => {
+        if (typeof value === 'string') {
+            return sanitizeHtml(value, {
+                allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
+                allowedAttributes: {
+                    'a': ['href']
+                }
+            });
+        }
+        return value;
+    });
+};
+
+/**
+ * Common validation rules
+ */
+export const validateEmail = body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Please provide a valid email address')
+    .normalizeEmail();
+
+export const validatePasswordField = body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number');
+
+export const validateName = (field = 'name') => 
+    body(field)
+        .trim()
+        .isLength({ min: 2, max: 100 })
+        .withMessage(`${field} must be between 2 and 100 characters`)
+        .matches(/^[a-zA-Z\s'-]+$/)
+        .withMessage(`${field} can only contain letters, spaces, hyphens, and apostrophes`);
+
+export const validatePhone = body('phone')
+    .optional()
+    .trim()
+    .matches(/^[\d\s\-\+\(\)]+$/)
+    .withMessage('Please provide a valid phone number');
+
+export const validateMongoId = (field = 'id') =>
+    param(field)
+        .isMongoId()
+        .withMessage('Invalid ID format');
+
+export const validateDate = (field) =>
+    body(field)
+        .isISO8601()
+        .withMessage(`${field} must be a valid date`);
+
+export const validatePagination = [
+    query('page')
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage('Page must be a positive integer'),
+    query('limit')
+        .optional()
+        .isInt({ min: 1, max: 100 })
+        .withMessage('Limit must be between 1 and 100')
+];
+
+/**
+ * User validation rules
+ */
+export const validateUserCreate = [
+    validateEmail,
+    validatePasswordField,
+    validateName('firstName'),
+    validateName('lastName'),
+    validatePhone,
+    body('role')
+        .isIn(['employee', 'manager', 'hr', 'admin'])
+        .withMessage('Invalid role'),
+    handleValidationErrors
+];
+
+export const validateUserUpdate = [
+    validateMongoId('id'),
+    body('email').optional().isEmail().normalizeEmail(),
+    body('firstName').optional().trim().isLength({ min: 2, max: 100 }),
+    body('lastName').optional().trim().isLength({ min: 2, max: 100 }),
+    validatePhone,
+    handleValidationErrors
+];
+
+/**
+ * Leave validation rules
+ */
+export const validateLeaveCreate = [
+    body('leaveType')
+        .isIn(['sick', 'annual', 'personal', 'maternity', 'paternity', 'unpaid'])
+        .withMessage('Invalid leave type'),
+    validateDate('startDate'),
+    validateDate('endDate'),
+    body('reason')
+        .trim()
+        .isLength({ min: 10, max: 500 })
+        .withMessage('Reason must be between 10 and 500 characters'),
+    sanitizeHtmlContent('reason'),
+    handleValidationErrors
+];
+
+/**
+ * Announcement validation rules
+ */
+export const validateAnnouncementCreate = [
+    body('title')
+        .trim()
+        .isLength({ min: 5, max: 200 })
+        .withMessage('Title must be between 5 and 200 characters'),
+    body('content')
+        .trim()
+        .isLength({ min: 10, max: 5000 })
+        .withMessage('Content must be between 10 and 5000 characters'),
+    sanitizeHtmlContent('content'),
+    body('priority')
+        .optional()
+        .isIn(['low', 'medium', 'high', 'urgent'])
+        .withMessage('Invalid priority level'),
+    handleValidationErrors
+];
+
+/**
+ * Department validation rules
+ */
+export const validateDepartmentCreate = [
+    body('name')
+        .trim()
+        .isLength({ min: 2, max: 100 })
+        .withMessage('Department name must be between 2 and 100 characters'),
+    body('description')
+        .optional()
+        .trim()
+        .isLength({ max: 500 })
+        .withMessage('Description must not exceed 500 characters'),
+    sanitizeHtmlContent('description'),
+    handleValidationErrors
+];
+
+export default {
+    handleValidationErrors,
+    sanitizeHtmlContent,
+    validateEmail,
+    validatePasswordField,
+    validateName,
+    validatePhone,
+    validateMongoId,
+    validateDate,
+    validatePagination,
+    validateUserCreate,
+    validateUserUpdate,
+    validateLeaveCreate,
+    validateAnnouncementCreate,
+    validateDepartmentCreate
+};
+
+// ============================================================================
+// BUSINESS LOGIC VALIDATION
+// ============================================================================
 
 /**
  * Populate denormalized fields middleware
  * Extracts department and position from employee reference
- * Use before creating/updating leave or other employee-related records
  */
 export const populateEmployeeFields = async (req, res, next) => {
     try {
@@ -28,25 +210,12 @@ export const populateEmployeeFields = async (req, res, next) => {
         next();
     } catch (error) {
         console.error('Error populating employee fields:', error);
-        next(); // Don't block on population error
+        next();
     }
 };
 
-// REMOVED: Duplicate of calculateDuration in leaveMiddleware.js
-// Use: import { calculateDuration } from './leaveMiddleware.js'
-
-// REMOVED: Duplicate of calculatePermissionDuration in permissionMiddleware.js
-// Use: import { calculatePermissionDuration } from './permissionMiddleware.js'
-
-// REMOVED: Duplicate of setMedicalDocRequirement in leaveMiddleware.js
-// Use: import { setMedicalDocRequirement } from './leaveMiddleware.js'
-
-// REMOVED: Duplicate of initializeWorkflow in leaveMiddleware.js
-// Use: import { initializeWorkflow } from './leaveMiddleware.js'
-
 /**
  * Validate vacation balance middleware
- * Checks if employee has sufficient vacation balance
  */
 export const validateVacationBalance = async (req, res, next) => {
     try {
@@ -66,7 +235,6 @@ export const validateVacationBalance = async (req, res, next) => {
                 });
             }
 
-            // For sick leave, check annual balance
             const balanceType = req.body.leaveType === 'sick' ? 'annual' : req.body.leaveType;
             const typeBalance = balance.leaveTypes[balanceType];
 
@@ -77,7 +245,6 @@ export const validateVacationBalance = async (req, res, next) => {
                 });
             }
 
-            // Attach balance ID to request for linking
             req.vacationBalanceId = balance._id;
         }
         next();
@@ -91,8 +258,7 @@ export const validateVacationBalance = async (req, res, next) => {
 };
 
 /**
- * Validate mission required fields middleware
- * Ensures mission location and purpose are provided
+ * Validate mission required fields
  */
 export const validateMissionFields = (req, res, next) => {
     if (req.body.leaveType === 'mission') {
@@ -107,8 +273,7 @@ export const validateMissionFields = (req, res, next) => {
 };
 
 /**
- * Validate date is not in past middleware
- * Prevents backdating requests
+ * Validate date is not in past
  */
 export const validateDateNotPast = (fieldName = 'startDate') => {
     return (req, res, next) => {
@@ -129,8 +294,7 @@ export const validateDateNotPast = (fieldName = 'startDate') => {
 };
 
 /**
- * Validate overlapping leave middleware
- * Prevents overlapping leave requests for same employee
+ * Validate overlapping leave
  */
 export const validateOverlappingLeave = async (req, res, next) => {
     try {
@@ -159,13 +323,12 @@ export const validateOverlappingLeave = async (req, res, next) => {
         next();
     } catch (error) {
         console.error('Error checking overlapping leave:', error);
-        next(); // Don't block on validation error
+        next();
     }
 };
 
 /**
- * Validate ID card data middleware
- * Ensures required fields for ID card creation
+ * Validate ID card data
  */
 export const validateIDCardData = async (req, res, next) => {
     try {
@@ -188,7 +351,6 @@ export const validateIDCardData = async (req, res, next) => {
                 });
             }
 
-            // Attach employee data for denormalization
             req.idCardEmployeeData = {
                 department: employee.department,
                 position: employee.position,
@@ -206,8 +368,7 @@ export const validateIDCardData = async (req, res, next) => {
 };
 
 /**
- * Validate attendance data middleware
- * Ensures valid attendance fields
+ * Validate attendance data
  */
 export const validateAttendanceData = (req, res, next) => {
     if (req.body.checkIn?.time && req.body.checkOut?.time) {
@@ -225,8 +386,7 @@ export const validateAttendanceData = (req, res, next) => {
 };
 
 /**
- * Validate report export data middleware
- * Ensures valid date range for reports
+ * Validate report date range
  */
 export const validateReportDateRange = (req, res, next) => {
     if (req.body.dateRange) {
@@ -243,7 +403,6 @@ export const validateReportDateRange = (req, res, next) => {
                 });
             }
 
-            // Limit to 1 year range
             const oneYear = 365 * 24 * 60 * 60 * 1000;
             if (end - start > oneYear) {
                 return res.status(400).json({
@@ -258,7 +417,6 @@ export const validateReportDateRange = (req, res, next) => {
 
 /**
  * Sanitize input middleware
- * Removes dangerous characters and trims strings
  */
 export const sanitizeInput = (req, res, next) => {
     const sanitize = (obj) => {
@@ -283,8 +441,7 @@ export const sanitizeInput = (req, res, next) => {
 };
 
 /**
- * Validate required fields middleware factory
- * @param {Array<String>} fields - Required field names
+ * Validate required fields factory
  */
 export const validateRequiredFields = (fields) => {
     return (req, res, next) => {
@@ -292,7 +449,6 @@ export const validateRequiredFields = (fields) => {
 
         for (const field of fields) {
             if (field.includes('.')) {
-                // Nested field check
                 const parts = field.split('.');
                 let value = req.body;
                 for (const part of parts) {

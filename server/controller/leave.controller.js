@@ -1,7 +1,7 @@
 // Leave Controller
 import Leave from '../models/leave.model.js';
 import { handleVacationBalanceUpdate, createLeaveNotifications } from '../middleware/index.js';
-import { sendLeaveRequestNotification, sendLeaveStatusUpdateNotification } from '../utils/leaveEmailService.js';
+import { sendLeaveRequestNotification, sendLeaveStatusUpdateNotification } from '../utils/leaveEmailNotifications.js';
 
 export const getAllLeaves = async (req, res) => {
     try {
@@ -100,7 +100,7 @@ export const updateLeave = async (req, res) => {
 
             // Send status update email to employee
             if (['approved', 'rejected', 'cancelled'].includes(leave.status)) {
-                await sendLeaveStatusUpdateNotification(leave, previousStatus);
+                await sendLeaveStatusUpdateNotification(leave);
             }
         }
 
@@ -146,7 +146,7 @@ export const approveLeave = async (req, res) => {
         await leave.approveBySupervisor(userId, notes);
 
         // Send notification
-        await sendLeaveStatusUpdateNotification(leave, 'pending');
+        await sendLeaveStatusUpdateNotification(leave);
 
         res.json(leave);
     } catch (err) {
@@ -208,7 +208,7 @@ export const rejectLeave = async (req, res) => {
         console.log('Leave rejected successfully');
 
         // Send notification
-        await sendLeaveStatusUpdateNotification(leave, 'pending');
+        await sendLeaveStatusUpdateNotification(leave);
 
         res.json(leave);
     } catch (err) {
@@ -241,7 +241,7 @@ export const approveSickLeaveByDoctor = async (req, res) => {
         await leave.approveByDoctor(doctorId, notes);
 
         // Send notification
-        await sendLeaveStatusUpdateNotification(leave, 'pending');
+        await sendLeaveStatusUpdateNotification(leave);
 
         res.json(leave);
     } catch (err) {
@@ -287,7 +287,7 @@ export const rejectSickLeaveByDoctor = async (req, res) => {
         await leave.rejectByDoctor(doctorId, trimmedReason);
 
         // Send notification
-        await sendLeaveStatusUpdateNotification(leave, 'pending');
+        await sendLeaveStatusUpdateNotification(leave);
 
         res.json(leave);
     } catch (err) {

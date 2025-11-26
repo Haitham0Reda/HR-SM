@@ -11,6 +11,7 @@ import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
+import os from 'os';
 import { createReadStream, createWriteStream } from 'fs';
 import { createGzip } from 'zlib';
 import { pipeline } from 'stream/promises';
@@ -202,7 +203,7 @@ export const executeBackup = async (req, res) => {
             triggeredBy: req.user._id,
             status: 'running',
             serverInfo: {
-                hostname: require('os').hostname(),
+                hostname: os.hostname(),
                 nodeVersion: process.version,
                 platform: process.platform
             }
@@ -229,10 +230,14 @@ export const executeBackup = async (req, res) => {
 async function performBackup(backup, execution) {
     try {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const backupDir = path.join(backup.storage.location, backup.backupType);
+        // Use absolute path for backup directory
+        const backupDir = path.isAbsolute(backup.storage.location)
+            ? path.join(backup.storage.location, backup.backupType)
+            : path.join(process.cwd(), backup.storage.location, backup.backupType);
 
         // Ensure backup directory exists
         await fs.mkdir(backupDir, { recursive: true });
+        console.log('Backup directory created:', backupDir);
 
         let result = {};
 
@@ -293,11 +298,17 @@ async function performDatabaseBackup(backup, backupDir, timestamp) {
     const backupFile = `database-${timestamp}.gz`;
     const backupPath = path.join(backupDir, backupFile);
 
-    // MongoDB dump command
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/hrms';
-    const dbName = mongoUri.split('/').pop().split('?')[0];
+    // MongoDB dump command - use full path for Windows
+    const mongodumpPath = process.platform === 'win32' 
+        ? '"C:\\Program Files\\MongoDB\\Tools\\100\\bin\\mongodump.exe"'
+        : 'mongodump';
+    
+    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/hrms';
+    const dbName = mongoUri.includes('mongodb+srv') 
+        ? mongoUri.split('/')[3]?.split('?')[0] || 'hrsm_db'
+        : mongoUri.split('/').pop().split('?')[0];
 
-    let command = `mongodump --uri="${mongoUri}" --archive="${backupPath}" --gzip`;
+    let command = `${mongodumpPath} --uri="${mongoUri}" --archive="${backupPath}" --gzip`;
 
     // Add specific collections if specified
     if (backup.sources.databases && backup.sources.databases.length > 0) {
@@ -310,7 +321,19 @@ async function performDatabaseBackup(backup, backupDir, timestamp) {
         });
     }
 
-    const { stdout, stderr } = await execAsync(command);
+    try {
+        const { stdout, stderr } = await execAsync(command, { 
+            maxBuffer: 1024 * 1024 * 100, // 100MB buffer for large databases
+            timeout: 300000 // 5 minutes timeout
+        });
+        
+        if (stderr && !stderr.includes('done dumping')) {
+            console.warn('Mongodump stderr:', stderr);
+        }
+    } catch (error) {
+        console.error('Mongodump error:', error);
+        throw new Error(`Database backup failed: ${error.message}`);
+    }
 
     const stats = await fs.stat(backupPath);
     const backupSize = stats.size;

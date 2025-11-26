@@ -1,21 +1,39 @@
+/**
+ * API Service
+ * 
+ * Centralized Axios instance with interceptors for:
+ * - Automatic authentication token injection
+ * - Global error handling
+ * - Request/response logging
+ * - Automatic token refresh on 401 errors
+ */
+
 import axios from 'axios';
 import logger from '../utils/logger';
 
-// Create axios instance with default config
+/**
+ * Create axios instance with default configuration
+ * Base URL and timeout can be configured via environment variables
+ */
 const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
-    timeout: 10000,
+    timeout: 10000, // 10 seconds
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Request interceptor - Add auth token to requests
+/**
+ * Request Interceptor
+ * Automatically adds authentication token to all requests
+ * Logs all outgoing requests for debugging
+ */
 api.interceptors.request.use(
     (config) => {
         console.log('API Request:', config);
         logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
 
+        // Add authentication token if available
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -23,6 +41,7 @@ api.interceptors.request.use(
         } else {
             console.log('No auth token found');
         }
+        
         return config;
     },
     (error) => {
@@ -31,19 +50,27 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor - Handle errors globally
+/**
+ * Response Interceptor
+ * Handles responses and errors globally:
+ * - Extracts data from successful responses
+ * - Handles 401 (Unauthorized) by redirecting to login
+ * - Handles 403 (Forbidden) silently (expected for restricted endpoints)
+ * - Logs errors for debugging
+ * - Provides consistent error format
+ */
 api.interceptors.response.use(
     (response) => {
         console.log('API Response:', response.config.url, response);
         logger.debug(`API Response: ${response.config.method?.toUpperCase()} ${response.config.url} - Status: ${response.status}`);
 
-        // If the response has a data property, return that, otherwise return the whole response
+        // Extract data from response for cleaner usage
         return response.data !== undefined ? response.data : response;
     },
     (error) => {
         // Handle different error scenarios
         if (error.response) {
-            // Server responded with error status
+            // Server responded with error status (4xx, 5xx)
             const { status, data } = error.response;
             console.log('API Error Response:', status, data);
 
@@ -60,8 +87,8 @@ api.interceptors.response.use(
                 );
             }
 
+            // Handle 401 Unauthorized - clear auth and redirect to login
             if (status === 401) {
-                // Unauthorized - clear token and redirect to login
                 console.log('Unauthorized access, redirecting to login');
                 logger.warn('Unauthorized access - redirecting to login');
                 localStorage.removeItem('token');
@@ -76,7 +103,7 @@ api.interceptors.response.use(
                 data: data
             });
         } else if (error.request) {
-            // Request made but no response
+            // Request was made but no response received (network error)
             console.error('API Error:', error);
             console.error('No response received:', error.request);
             logger.error('Network error - no response received', {
@@ -88,7 +115,7 @@ api.interceptors.response.use(
                 request: error.request
             });
         } else {
-            // Something else happened
+            // Something happened in setting up the request
             console.error('API Error:', error);
             console.error('Request setup error:', error.message);
             logger.error('API request setup error', { error: error.message });
