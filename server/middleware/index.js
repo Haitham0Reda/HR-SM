@@ -177,7 +177,7 @@ export * from './authMiddleware.js';
 export * from './requestControlMiddleware.js';
 
 // Validation
-export * from './validationMiddleware.js';
+export * from './validation.middleware.js';
 
 // Attendance
 export * from './attendanceMiddleware.js';

@@ -7,7 +7,7 @@
 
 import Request from '../models/request.model.js';
 import User from '../models/user.model.js';
-import { sendEmail, getEmployeeManager, getHREmployee, getDoctor } from './emailService.js';
+import { sendEmail, getEmployeeManager, getHREmployee, getDoctor } from '../services/email.service.js';
 import { reminderNotificationTemplate } from './requestEmailTemplates.js';
 
 /**

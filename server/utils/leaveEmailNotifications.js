@@ -1,58 +1,30 @@
 /**
- * Leave Email Notification Service
+ * Leave Email Notifications
  * 
- * Handles sending email notifications for leave requests
+ * Handles email notifications for leave requests
+ * Uses the unified email service
  */
 
-import nodemailer from 'nodemailer';
+import { sendEmail, getEmployeeManager } from '../services/email.service.js';
 import User from '../models/user.model.js';
-import Department from '../models/department.model.js';
-
-// Create email transporter
-const createTransporter = () => {
-    return nodemailer.createTransporter({
-        host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-        port: process.env.EMAIL_PORT || 587,
-        secure: false,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        }
-    });
-};
-
-/**
- * Get employee's manager
- */
-async function getEmployeeManager(employeeId) {
-    try {
-        const employee = await User.findById(employeeId).populate('department');
-        if (!employee || !employee.department) {
-            return null;
-        }
-
-        const department = await Department.findById(employee.department).populate('manager');
-        return department?.manager || null;
-    } catch (error) {
-        console.error('Error getting employee manager:', error);
-        return null;
-    }
-}
 
 /**
  * Send leave request notification to manager
+ * 
+ * @param {Object} leave - Leave document
+ * @returns {Promise<Object>} Result of email send operation
  */
 export async function sendLeaveRequestNotification(leave) {
     try {
         // Get employee details
-        const employee = await User.findById(leave.employee).select('name email profile');
+        const employee = await User.findById(leave.employee).select('username email profile');
         if (!employee) {
             console.error('Employee not found for leave request');
             return { success: false, error: 'Employee not found' };
         }
 
         // Get manager
-        const manager = await getEmployeeManager(leave.employee);
+        const manager = await getEmployeeManager(employee);
         if (!manager || !manager.email) {
             console.log('⚠️  No manager found or manager has no email');
             return { success: false, error: 'Manager not found or has no email' };
@@ -60,11 +32,11 @@ export async function sendLeaveRequestNotification(leave) {
 
         const employeeName = employee.profile?.firstName && employee.profile?.lastName
             ? `${employee.profile.firstName} ${employee.profile.lastName}`
-            : employee.name || employee.email;
+            : employee.username || employee.email;
 
         const managerName = manager.profile?.firstName && manager.profile?.lastName
             ? `${manager.profile.firstName} ${manager.profile.lastName}`
-            : manager.name || 'Manager';
+            : manager.username || 'Manager';
 
         // Format dates
         const startDate = new Date(leave.startDate).toLocaleDateString('en-US', {
@@ -78,10 +50,8 @@ export async function sendLeaveRequestNotification(leave) {
             day: 'numeric'
         });
 
-        // Email subject
         const subject = `New ${leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1)} Leave Request - ${employeeName}`;
 
-        // Email HTML content
         const html = `
             <!DOCTYPE html>
             <html>
@@ -159,7 +129,6 @@ export async function sendLeaveRequestNotification(leave) {
             </html>
         `;
 
-        // Plain text version
         const text = `
 New Leave Request
 
@@ -181,29 +150,12 @@ Please review and approve or reject this request in the HR Management System.
 This is an automated notification from HR Management System
         `;
 
-        // Check if email is configured
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log('📧 EMAIL NOTIFICATION (Email not configured - showing preview):');
-            console.log('To:', manager.email);
-            console.log('Subject:', subject);
-            console.log('---');
-            console.log(text);
-            console.log('---');
-            return { success: true, preview: true };
-        }
-
-        // Send email
-        const transporter = createTransporter();
-        await transporter.sendMail({
-            from: `"HR Management System" <${process.env.EMAIL_USER}>`,
+        return await sendEmail({
             to: manager.email,
-            subject: subject,
-            html: html,
-            text: text
+            subject,
+            html,
+            text
         });
-
-        console.log(`✅ Leave request notification sent to ${manager.email}`);
-        return { success: true };
 
     } catch (error) {
         console.error('Error sending leave request notification:', error);
@@ -213,11 +165,14 @@ This is an automated notification from HR Management System
 
 /**
  * Send leave status update notification to employee
+ * 
+ * @param {Object} leave - Leave document
+ * @returns {Promise<Object>} Result of email send operation
  */
-export async function sendLeaveStatusUpdateNotification(leave, previousStatus) {
+export async function sendLeaveStatusUpdateNotification(leave) {
     try {
         // Get employee details
-        const employee = await User.findById(leave.employee).select('name email profile');
+        const employee = await User.findById(leave.employee).select('username email profile');
         if (!employee || !employee.email) {
             console.error('Employee not found or has no email');
             return { success: false, error: 'Employee not found or has no email' };
@@ -225,7 +180,7 @@ export async function sendLeaveStatusUpdateNotification(leave, previousStatus) {
 
         const employeeName = employee.profile?.firstName && employee.profile?.lastName
             ? `${employee.profile.firstName} ${employee.profile.lastName}`
-            : employee.name || employee.email;
+            : employee.username || employee.email;
 
         // Format dates
         const startDate = new Date(leave.startDate).toLocaleDateString('en-US', {
@@ -243,10 +198,8 @@ export async function sendLeaveStatusUpdateNotification(leave, previousStatus) {
         const statusColor = leave.status === 'approved' ? '#10b981' : leave.status === 'rejected' ? '#ef4444' : '#f59e0b';
         const statusIcon = leave.status === 'approved' ? '✅' : leave.status === 'rejected' ? '❌' : '⏳';
 
-        // Email subject
         const subject = `Leave Request ${leave.status.charAt(0).toUpperCase() + leave.status.slice(1)} - ${leaveTypeName} Leave`;
 
-        // Email HTML content
         const html = `
             <!DOCTYPE html>
             <html>
@@ -329,7 +282,6 @@ export async function sendLeaveStatusUpdateNotification(leave, previousStatus) {
             </html>
         `;
 
-        // Plain text version
         const text = `
 Leave Request ${leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
 
@@ -352,29 +304,12 @@ ${leave.status === 'approved' ? 'Your leave has been approved. Enjoy your time o
 This is an automated notification from HR Management System
         `;
 
-        // Check if email is configured
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log('📧 STATUS UPDATE EMAIL (Email not configured - showing preview):');
-            console.log('To:', employee.email);
-            console.log('Subject:', subject);
-            console.log('---');
-            console.log(text);
-            console.log('---');
-            return { success: true, preview: true };
-        }
-
-        // Send email
-        const transporter = createTransporter();
-        await transporter.sendMail({
-            from: `"HR Management System" <${process.env.EMAIL_USER}>`,
+        return await sendEmail({
             to: employee.email,
-            subject: subject,
-            html: html,
-            text: text
+            subject,
+            html,
+            text
         });
-
-        console.log(`✅ Leave status update notification sent to ${employee.email}`);
-        return { success: true };
 
     } catch (error) {
         console.error('Error sending leave status update notification:', error);
