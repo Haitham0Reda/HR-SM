@@ -28,6 +28,7 @@ function DashboardSidebarPageItem({
     selected = false,
     disabled = false,
     nestedNavigation,
+    isNested = false,
     sx,
 }) {
     const sidebarContext = React.useContext(DashboardSidebarContext);
@@ -43,7 +44,12 @@ function DashboardSidebarPageItem({
 
     const [isHovered, setIsHovered] = React.useState(false);
 
-    const handleClick = React.useCallback(() => {
+    const handleClick = React.useCallback((e) => {
+        console.log('🟡 Button clicked:', id, 'hasNested:', !!nestedNavigation);
+        if (nestedNavigation) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         if (onPageItemClick) {
             onPageItemClick(id, !!nestedNavigation);
         }
@@ -116,7 +122,15 @@ function DashboardSidebarPageItem({
                         height: mini ? 50 : 'auto',
                         borderRadius: 2,
                         mb: 0.5,
+                        ml: isNested ? 0.5 : 0,
+                        mr: isNested ? 0.5 : 0,
+                        pl: isNested ? 1.5 : 2,
+                        pr: isNested ? 0.5 : 2,
+                        bgcolor: isNested ? 'rgba(0, 0, 0, 0.02)' : 'transparent',
                         transition: 'all 0.2s',
+                        width: isNested ? 'calc(100% - 8px)' : '100%',
+                        maxWidth: '100%',
+                        overflow: 'hidden',
                         '&.Mui-selected': {
                             bgcolor: 'primary.main',
                             color: 'primary.contrastText',
@@ -129,17 +143,16 @@ function DashboardSidebarPageItem({
                             },
                         },
                         '&:hover': {
-                            bgcolor: 'action.hover',
+                            bgcolor: isNested ? 'action.selected' : 'action.hover',
                             transform: 'translateX(4px)',
                         },
                     }}
-                    {...(nestedNavigation && !mini
+                    onClick={handleClick}
+                    {...(nestedNavigation
                         ? {
-                            onClick: handleClick,
+                            component: 'div',
                         }
-                        : {})}
-                    {...(!nestedNavigation
-                        ? {
+                        : {
                             LinkComponent,
                             ...(hasExternalHref
                                 ? {
@@ -148,9 +161,7 @@ function DashboardSidebarPageItem({
                                 }
                                 : {}),
                             to: href,
-                            onClick: handleClick,
-                        }
-                        : {})}
+                        })}
                 >
                     {icon || mini ? (
                         <Box
@@ -170,6 +181,10 @@ function DashboardSidebarPageItem({
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: mini ? 'center' : 'auto',
+                                    minWidth: isNested ? 34 : 40,
+                                    '& svg': {
+                                        fontSize: isNested ? '1.125rem' : '1.5rem',
+                                    },
                                 }}
                             >
                                 {icon ?? null}
@@ -215,7 +230,12 @@ function DashboardSidebarPageItem({
                             primary={title}
                             sx={{
                                 whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
                                 zIndex: 1,
+                                '& .MuiListItemText-primary': {
+                                    fontSize: isNested ? '0.8125rem' : '1rem',
+                                },
                             }}
                         />
                     ) : null}
@@ -268,6 +288,7 @@ DashboardSidebarPageItem.propTypes = {
     href: PropTypes.string.isRequired,
     icon: PropTypes.node,
     id: PropTypes.string.isRequired,
+    isNested: PropTypes.bool,
     nestedNavigation: PropTypes.node,
     selected: PropTypes.bool,
     title: PropTypes.string.isRequired,

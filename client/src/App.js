@@ -47,6 +47,19 @@ import AnalyticsPage from './pages/analytics/AnalyticsPage';
 import SecurityPage from './pages/security/SecurityPage';
 import BackupsPage from './pages/backups/BackupsPage';
 import ResignedPage from './pages/resigned/ResignedPage';
+import SystemSettingsPage from './pages/settings/SystemSettingsPage';
+import SeasonalSettingsPage from './pages/settings/SeasonalSettingsPage';
+import RequestControlPage from './pages/settings/RequestControlPage';
+import EmailCreationPage from './pages/settings/EmailCreationPage';
+import EmailManagementPage from './pages/settings/EmailManagementPage';
+import MaintenancePage from './pages/settings/MaintenancePage';
+import NotificationsPage from './pages/settings/NotificationsPage';
+import HRManagementPage from './pages/settings/HRManagementPage';
+import WorkSchedulesPage from './pages/settings/WorkSchedulesPage';
+import VacationManagementPage from './pages/settings/VacationManagementPage';
+import VacationBalancesPage from './pages/settings/VacationBalancesPage';
+import MixedVacationPage from './pages/settings/MixedVacationPage';
+import EmployeeOfMonthPage from './pages/settings/EmployeeOfMonthPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import SettingsPage from './pages/settings/SettingsPage';
 import './App.css';
@@ -85,7 +98,7 @@ function App() {
 
                 {/* User Management */}
                 <Route path="profile" element={<ProfilePage />} />
-                <Route path="settings" element={<SettingsPage />} />
+                <Route path="profile/settings" element={<SettingsPage />} />
                 <Route path="theme" element={<ThemeEditorPage />} />
                 <Route path="users" element={<UsersPage />} />
                 <Route path="users/create" element={<CreateUserPage />} />
@@ -134,6 +147,19 @@ function App() {
                 <Route path="security" element={<SecurityPage />} />
                 <Route path="backups" element={<BackupsPage />} />
                 <Route path="resigned" element={<ResignedPage />} />
+                <Route path="system-settings" element={<SystemSettingsPage />} />
+                <Route path="system-settings/seasonal" element={<SeasonalSettingsPage />} />
+                <Route path="system-settings/request-control" element={<RequestControlPage />} />
+                <Route path="system-settings/email-creation" element={<EmailCreationPage />} />
+                <Route path="system-settings/email-management" element={<EmailManagementPage />} />
+                <Route path="system-settings/maintenance" element={<MaintenancePage />} />
+                <Route path="system-settings/notifications" element={<NotificationsPage />} />
+                <Route path="system-settings/hr-management" element={<HRManagementPage />} />
+                <Route path="system-settings/work-schedules" element={<WorkSchedulesPage />} />
+                <Route path="system-settings/vacation-management" element={<VacationManagementPage />} />
+                <Route path="system-settings/vacation-balances" element={<VacationBalancesPage />} />
+                <Route path="system-settings/mixed-vacation" element={<MixedVacationPage />} />
+                <Route path="system-settings/employee-of-month" element={<EmployeeOfMonthPage />} />
               </Route>
 
               {/* Catch all */}
