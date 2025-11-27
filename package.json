@@ -15,7 +15,9 @@
     "test-backup": "node server/scripts/testBackup.js",
     "setup-backup-email": "node server/scripts/updateBackupEmail.js",
     "check-google-api": "node server/scripts/setupGoogleAPI.js",
-    "cli": "node server/cli/hr-cli.js"
+    "cli": "node server/cli/hr-cli.js",
+    "sync-roles": "node server/scripts/syncSystemRoles.js",
+    "verify-roles": "node server/scripts/verifySystemRoles.js"
   },
   "keywords": [],
   "author": "",

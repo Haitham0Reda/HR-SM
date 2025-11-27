@@ -38,6 +38,13 @@ const securityAuditSchema = new mongoose.Schema({
             'permission-removed',
             'permission-audit-cleanup',
 
+            // Role Management Events
+            'role-created',
+            'role-updated',
+            'role-deleted',
+            'role-viewed',
+            'roles-synced',
+
             // Security Events
             'ip-blocked',
             'unauthorized-access',

@@ -54,7 +54,7 @@ export const validateManager = async (req, res, next) => {
             if (!['manager', 'hr', 'admin'].includes(manager.role)) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Manager must have manager, HR, or admin role'
+                    message: 'Manager must have manager, HR or admin role'
                 });
             }
         }

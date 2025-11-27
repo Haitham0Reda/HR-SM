@@ -122,10 +122,10 @@ export const initializeWorkflow = (req, res, next) => {
     }
 
     if (req.body.leaveType === 'sick') {
-        req.body.workflow.currentStep = 'supervisor-review';
+        req.body.workflow.currentStep = 'manager-review';
         req.body.workflow.doctorApprovalStatus = 'pending';
     } else if (req.body.leaveType === 'mission') {
-        req.body.workflow.currentStep = 'supervisor-review';
+        req.body.workflow.currentStep = 'manager-review';
         req.body.workflow.doctorApprovalStatus = 'not-required';
     } else {
         req.body.workflow.doctorApprovalStatus = 'not-required';
@@ -232,7 +232,7 @@ export const createLeaveNotifications = async (leave, previousValues) => {
             case 'doctor-review':
                 notificationData.type = 'leave';
                 notificationData.title = 'Sick Leave - Pending Doctor Review';
-                notificationData.message = `Your sick leave request has been approved by your supervisor and is now pending doctor review.`;
+                notificationData.message = `Your sick leave request has been approved by your manager and is now pending doctor review.`;
                 break;
 
             case 'completed':

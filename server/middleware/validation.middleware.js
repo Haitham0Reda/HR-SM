@@ -100,7 +100,7 @@ export const validateUserCreate = [
     validateName('lastName'),
     validatePhone,
     body('role')
-        .isIn(['employee', 'manager', 'hr', 'admin'])
+        .isIn(['employee', 'manager', 'hr', 'admin', 'id-card-admin'])
         .withMessage('Invalid role'),
     handleValidationErrors
 ];

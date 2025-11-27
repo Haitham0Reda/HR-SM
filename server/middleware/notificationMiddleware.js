@@ -70,8 +70,8 @@ export const validateBulkNotification = async (req, res, next) => {
  * Ensures user can send notifications
  */
 export const checkNotificationPermissions = (req, res, next) => {
-    // Only HR, Admin, and Managers can send custom notifications
-    if (!['hr', 'admin', 'manager'].includes(req.user.role)) {
+    // Only Manager, HR and Admin can send custom notifications
+    if (!['manager', 'hr', 'admin'].includes(req.user.role)) {
         return res.status(403).json({
             success: false,
             message: 'Insufficient permissions to send notifications'

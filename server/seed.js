@@ -14,7 +14,6 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 import connectDB from './config/db.js';
 import User from './models/user.model.js';
-// import School from './models/school.model.js'; // Removed - schools no longer used
 import Department from './models/department.model.js';
 import Position from './models/position.model.js';
 import Attendance from './models/attendance.model.js';
@@ -23,7 +22,6 @@ import Event from './models/event.model.js';
 import Report from './models/report.model.js';
 import Request from './models/request.model.js';
 import MixedVacation from './models/mixedVacation.model.js';
-// Additional models to be seeded
 import Announcement from './models/announcement.model.js';
 import Backup from './models/backup.model.js';
 import BackupExecution from './models/backupExecution.model.js';
@@ -36,12 +34,9 @@ import PermissionAudit from './models/permissionAudit.model.js';
 import ResignedEmployee from './models/resignedEmployee.model.js';
 import SecuritySettings from './models/securitySettings.model.js';
 import Survey from './models/survey.model.js';
-// Additional specialized models
 import DocumentTemplate from './models/documentTemplate.model.js';
 import VacationBalance from './models/vacationBalance.model.js';
 import RequestControl from './models/requestControl.model.js';
-
-// NEW: Import missing models
 import IDCard from './models/idCard.model.js';
 import IDCardBatch from './models/idCardBatch.model.js';
 import ReportConfig from './models/reportConfig.model.js';
@@ -49,6 +44,11 @@ import ReportExecution from './models/reportExecution.model.js';
 import ReportExport from './models/reportExport.model.js';
 import SurveyNotification from './models/surveyNotification.model.js';
 import SecurityAudit from './models/securityAudit.model.js';
+import Role from './models/role.model.js';
+import ForgetCheck from './models/forgetCheck.model.js';
+import Hardcopy from './models/hardcopy.model.js';
+import DashboardConfig from './models/dashboardConfig.model.js';
+import ThemeConfig from './models/themeConfig.model.js';
 
 const seedData = async () => {
     try {
@@ -60,7 +60,6 @@ const seedData = async () => {
         // Clear existing data
         console.log('🗑️  Clearing existing data...');
         await User.deleteMany({});
-        await School.deleteMany({});
         await Department.deleteMany({});
         await Position.deleteMany({});
         await Attendance.deleteMany({});
@@ -69,7 +68,6 @@ const seedData = async () => {
         await Report.deleteMany({});
         await Request.deleteMany({});
         await MixedVacation.deleteMany({});
-        // Clear additional models
         await Announcement.deleteMany({});
         await Backup.deleteMany({});
         await BackupExecution.deleteMany({});
@@ -82,12 +80,9 @@ const seedData = async () => {
         await ResignedEmployee.deleteMany({});
         await SecuritySettings.deleteMany({});
         await Survey.deleteMany({});
-        // Clear additional specialized models
         await DocumentTemplate.deleteMany({});
         await VacationBalance.deleteMany({});
         await RequestControl.deleteMany({});
-
-        // NEW: Clear missing models
         await IDCard.deleteMany({});
         await IDCardBatch.deleteMany({});
         await ReportConfig.deleteMany({});
@@ -95,96 +90,70 @@ const seedData = async () => {
         await ReportExport.deleteMany({});
         await SurveyNotification.deleteMany({});
         await SecurityAudit.deleteMany({});
+        await Role.deleteMany({});
+        await ForgetCheck.deleteMany({});
+        await Hardcopy.deleteMany({});
+        await DashboardConfig.deleteMany({});
+        await ThemeConfig.deleteMany({});
         console.log('✅ Existing data cleared\n');
 
-        // Create Schools
-        console.log('🏫 Creating schools...');
-        const schools = await School.create([
-            {
-                schoolCode: 'BUS',
-                name: 'School of Business',
-                arabicName: 'المعهد الكندى العالى للإدارة بالسادس من اكتوبر'
-            },
-            {
-                schoolCode: 'ENG',
-                name: 'School of Engineering',
-                arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-            },
-            {
-                schoolCode: 'CS',
-                name: 'School of Computer Science',
-                arabicName: 'المعهد الكندى العالى للحاسبات والذكاء الاصطناعى بالسادس من اكتوبر'
-            }
-        ]);
-        console.log(`✅ Created ${schools.length} schools\n`);
+        // Note: Schools model has been removed from the system
 
         // Create Departments
         console.log('🏢 Creating departments...');
         const departments = await Department.create([
-            // Business School Departments
             {
                 name: 'Accounting',
                 arabicName: 'المحاسبة',
-                code: 'BUS-ACC',
-                school: schools[0]._id,
+                code: 'ACC',
                 description: 'Accounting and Financial Management'
             },
             {
                 name: 'Marketing',
                 arabicName: 'التسويق',
-                code: 'BUS-MKT',
-                school: schools[0]._id,
+                code: 'MKT',
                 description: 'Marketing and Business Development'
             },
             {
                 name: 'Human Resources',
                 arabicName: 'الموارد البشرية',
-                code: 'BUS-HR',
-                school: schools[0]._id,
+                code: 'HR',
                 description: 'Human Resources Management'
             },
-            // Engineering School Departments
             {
                 name: 'Civil Engineering',
                 arabicName: 'الهندسة المدنية',
-                code: 'ENG-CIV',
-                school: schools[1]._id,
+                code: 'CIV',
                 description: 'Civil and Construction Engineering'
             },
             {
                 name: 'Mechanical Engineering',
                 arabicName: 'الهندسة الميكانيكية',
-                code: 'ENG-MEC',
-                school: schools[1]._id,
+                code: 'MEC',
                 description: 'Mechanical and Industrial Engineering'
             },
             {
                 name: 'Electrical Engineering',
                 arabicName: 'الهندسة الكهربائية',
-                code: 'ENG-ELE',
-                school: schools[1]._id,
+                code: 'ELE',
                 description: 'Electrical and Electronics Engineering'
             },
-            // Computer Science School Departments
             {
                 name: 'Software Engineering',
                 arabicName: 'هندسة البرمجيات',
-                code: 'CS-SWE',
-                school: schools[2]._id,
+                code: 'SWE',
                 description: 'Software Development and Engineering'
             },
             {
                 name: 'Artificial Intelligence',
                 arabicName: 'الذكاء الاصطناعي',
-                code: 'CS-AI',
-                school: schools[2]._id,
+                code: 'AI',
                 description: 'AI and Machine Learning'
             },
             {
                 name: 'Information Systems',
                 arabicName: 'نظم المعلومات',
-                code: 'CS-IS',
-                school: schools[2]._id,
+                code: 'IS',
                 description: 'Information Systems and Database Management'
             }
         ]);
@@ -193,76 +162,73 @@ const seedData = async () => {
         // Create Positions
         console.log('💼 Creating positions...');
         const positions = await Position.create([
-            // Business Positions
             {
                 title: 'Professor',
                 arabicTitle: 'أستاذ',
-                code: 'BUS-ACC-PROF',
+                code: 'PROF-ACC',
                 department: departments[0]._id,
                 jobDescription: 'Senior academic position'
             },
             {
                 title: 'Associate Professor',
                 arabicTitle: 'أستاذ مساعد',
-                code: 'BUS-ACC-ASPROF',
+                code: 'ASPROF-ACC',
                 department: departments[0]._id,
                 jobDescription: 'Mid-level academic position'
             },
             {
                 title: 'Lecturer',
                 arabicTitle: 'محاضر',
-                code: 'BUS-MKT-LEC',
+                code: 'LEC-MKT',
                 department: departments[1]._id,
                 jobDescription: 'Teaching and research'
             },
             {
                 title: 'HR Manager',
                 arabicTitle: 'مدير الموارد البشرية',
-                code: 'BUS-HR-MGR',
+                code: 'MGR-HR',
                 department: departments[2]._id,
                 jobDescription: 'Human resources management'
             },
-            // Engineering Positions
             {
                 title: 'Professor',
                 arabicTitle: 'أستاذ',
-                code: 'ENG-CIV-PROF',
+                code: 'PROF-CIV',
                 department: departments[3]._id,
                 jobDescription: 'Senior academic position'
             },
             {
                 title: 'Assistant Lecturer',
                 arabicTitle: 'معيد',
-                code: 'ENG-MEC-ASLEC',
+                code: 'ASLEC-MEC',
                 department: departments[4]._id,
                 jobDescription: 'Junior teaching position'
             },
             {
                 title: 'Lab Engineer',
                 arabicTitle: 'مهندس مختبر',
-                code: 'ENG-ELE-LAB',
+                code: 'LAB-ELE',
                 department: departments[5]._id,
                 jobDescription: 'Laboratory management and support'
             },
-            // Computer Science Positions
             {
                 title: 'Professor',
                 arabicTitle: 'أستاذ',
-                code: 'CS-SWE-PROF',
+                code: 'PROF-SWE',
                 department: departments[6]._id,
                 jobDescription: 'Senior academic position'
             },
             {
                 title: 'Research Assistant',
                 arabicTitle: 'مساعد بحث',
-                code: 'CS-AI-RA',
+                code: 'RA-AI',
                 department: departments[7]._id,
                 jobDescription: 'Research and development'
             },
             {
                 title: 'System Administrator',
                 arabicTitle: 'مسؤول نظام',
-                code: 'CS-IS-SYSADM',
+                code: 'SYSADM-IS',
                 department: departments[8]._id,
                 jobDescription: 'System administration and maintenance'
             }
@@ -289,7 +255,6 @@ const seedData = async () => {
                     maritalStatus: 'married',
                     nationalId: 29001010101010
                 },
-                school: schools[0]._id,
                 department: departments[2]._id,
                 position: positions[3]._id,
                 employment: {
@@ -315,7 +280,6 @@ const seedData = async () => {
                     maritalStatus: 'married',
                     nationalId: 28505150101011
                 },
-                school: schools[0]._id,
                 department: departments[2]._id,
                 position: positions[3]._id,
                 employment: {
@@ -341,7 +305,6 @@ const seedData = async () => {
                     maritalStatus: 'married',
                     nationalId: 27808200101012
                 },
-                school: schools[2]._id,
                 department: departments[6]._id,
                 position: positions[7]._id,
                 employment: {
@@ -368,7 +331,6 @@ const seedData = async () => {
                     maritalStatus: 'single',
                     nationalId: 29003100101013
                 },
-                school: schools[0]._id,
                 department: departments[0]._id,
                 position: positions[0]._id,
                 employment: {
@@ -393,7 +355,6 @@ const seedData = async () => {
                     maritalStatus: 'single',
                     nationalId: 29207250201014
                 },
-                school: schools[1]._id,
                 department: departments[3]._id,
                 position: positions[4]._id,
                 employment: {
@@ -418,7 +379,6 @@ const seedData = async () => {
                     maritalStatus: 'married',
                     nationalId: 28811300301015
                 },
-                school: schools[2]._id,
                 department: departments[6]._id,
                 position: positions[7]._id,
                 employment: {
@@ -443,7 +403,6 @@ const seedData = async () => {
                     maritalStatus: 'single',
                     nationalId: 29502140201016
                 },
-                school: schools[2]._id,
                 department: departments[7]._id,
                 position: positions[8]._id,
                 employment: {
@@ -457,7 +416,7 @@ const seedData = async () => {
                 username: 'omar.ibrahim',
                 email: 'omar.ibrahim@cic.edu.eg',
                 password: 'employee123',
-                role: 'supervisor',
+                role: 'employee',
                 profile: {
                     firstName: 'Omar',
                     lastName: 'Ibrahim',
@@ -468,7 +427,6 @@ const seedData = async () => {
                     maritalStatus: 'married',
                     nationalId: 28306180101017
                 },
-                school: schools[1]._id,
                 department: departments[4]._id,
                 position: positions[5]._id,
                 employment: {
@@ -491,7 +449,6 @@ const seedData = async () => {
         console.log('📅 Creating holidays...');
         const holidays = await Holiday.create([
             {
-                campus: schools[0]._id,
                 officialHolidays: [
                     {
                         date: new Date('2025-01-07'),
@@ -1265,39 +1222,7 @@ const seedData = async () => {
         ]);
         console.log(`✅ Created ${documents.length} documents\n`);
 
-        // Create Leaves
-        console.log('🌴 Creating leaves...');
-        const leaves = await Leave.create([
-            {
-                employee: users[3]._id,
-                leaveType: 'annual',
-                startDate: new Date(new Date().setDate(new Date().getDate() + 10)),
-                endDate: new Date(new Date().setDate(new Date().getDate() + 15)),
-                duration: 5,
-                reason: 'Annual vacation with family',
-                status: 'approved',
-                approvedBy: users[1]._id,
-                approvedAt: new Date(),
-                department: departments[0]._id,
-                position: positions[0]._id
-            },
-            {
-                employee: users[5]._id,
-                leaveType: 'sick',
-                startDate: new Date(new Date().setDate(new Date().getDate() + 5)),
-                endDate: new Date(new Date().setDate(new Date().getDate() + 7)),
-                duration: 3,
-                reason: 'Medical treatment required',
-                status: 'pending',
-                department: departments[6]._id,
-                position: positions[7]._id,
-                medicalDocumentation: {
-                    required: true,
-                    provided: false
-                }
-            }
-        ]);
-        console.log(`✅ Created ${leaves.length} leaves\n`);
+        // Note: Leaves are created later in the seed file with more comprehensive data
 
         // Create Notifications
         console.log('🔔 Creating notifications...');
@@ -1735,7 +1660,6 @@ const seedData = async () => {
             {
                 employee: users[3]._id,
                 department: departments[0]._id,
-                school: schools[0]._id,
                 position: positions[0]._id,
                 cardNumber: 'ID-0001',
                 cardType: 'employee',
@@ -1762,7 +1686,6 @@ const seedData = async () => {
             {
                 employee: users[4]._id,
                 department: departments[3]._id,
-                school: schools[1]._id,
                 position: positions[4]._id,
                 cardNumber: 'ID-0002',
                 cardType: 'employee',
@@ -1950,6 +1873,384 @@ const seedData = async () => {
         ]);
         console.log(`✅ Created ${securityAudits.length} security audits\n`);
 
+        // Create Roles
+        console.log('👥 Creating roles...');
+        const roles = await Role.create([
+            {
+                name: 'admin',
+                displayName: 'Administrator',
+                description: 'Full system access with all permissions',
+                permissions: Object.keys(await import('./models/permission.system.js').then(m => m.PERMISSIONS)),
+                isSystemRole: true,
+                createdBy: users[0]._id
+            },
+            {
+                name: 'employee',
+                displayName: 'Employee',
+                description: 'Basic employee permissions for own data access',
+                permissions: [
+                    'leaves.view-own',
+                    'leaves.create',
+                    'permissions.view-own',
+                    'permissions.create',
+                    'attendance.view-own',
+                    'payroll.view-own',
+                    'documents.view-own',
+                    'documents.upload',
+                    'announcements.view',
+                    'events.view',
+                    'surveys.view',
+                    'surveys.respond',
+                    'notifications.view-own',
+                    'templates.view',
+                    'departments.view',
+                    'positions.view'
+                ],
+                isSystemRole: true,
+                createdBy: users[0]._id
+            },
+            {
+                name: 'manager',
+                displayName: 'Manager',
+                description: 'Team and department management with approval permissions',
+                permissions: [
+                    // Employee permissions
+                    'leaves.view-own', 'leaves.create', 'permissions.view-own', 'permissions.create',
+                    'attendance.view-own', 'payroll.view-own', 'documents.view-own', 'documents.upload',
+                    'announcements.view', 'events.view', 'surveys.view', 'surveys.respond',
+                    'notifications.view-own', 'templates.view', 'departments.view', 'positions.view',
+                    // Manager-specific permissions
+                    'users.view',
+                    'leaves.view', 'leaves.approve',
+                    'permissions.view', 'permissions.approve',
+                    'attendance.view', 'attendance.manage-all',
+                    'payroll.view',
+                    'documents.view', 'documents.edit',
+                    'reports.view', 'reports.create', 'reports.export',
+                    'events.create', 'events.edit', 'events.manage-attendees'
+                ],
+                isSystemRole: true,
+                createdBy: users[0]._id
+            },
+            {
+                name: 'hr',
+                displayName: 'HR Manager',
+                description: 'Human resources management with full HR permissions (98 permissions)',
+                permissions: [
+                    // Dashboard
+                    'dashboard.view',
+                    
+                    // Attendance (11 permissions)
+                    'attendance.list',
+                    'attendance.create',
+                    'attendance.edit',
+                    'attendance.delete',
+                    'attendance.view',
+                    'attendance.reports',
+                    'attendance.manage',
+                    'attendance.approve-forget-check',
+                    'attendance.reject-forget-check',
+                    'attendance.create-forget-check',
+                    'attendance.view-forget-check-hr',
+                    
+                    // Departments (6 permissions)
+                    'departments.list',
+                    'departments.create',
+                    'departments.edit',
+                    'departments.delete',
+                    'departments.view',
+                    'departments.manage',
+                    
+                    // Employees (7 permissions)
+                    'employees.list',
+                    'employees.create',
+                    'employees.edit',
+                    'employees.view',
+                    'employees.copy-campus',
+                    'employees.print-credentials',
+                    'employees.reports',
+                    
+                    // Documents (7 permissions)
+                    'documents.view',
+                    'documents.upload',
+                    'documents.download',
+                    'documents.approve',
+                    'documents.bulk-upload',
+                    'documents.reports',
+                    'documents.manage',
+                    
+                    // Permissions (Leave Permission) (6 permissions)
+                    'permissions.approve',
+                    'permissions.create',
+                    'permissions.edit',
+                    'permissions.list',
+                    'permissions.view',
+                    'permissions.reports',
+                    
+                    // Positions (6 permissions)
+                    'positions.list',
+                    'positions.create',
+                    'positions.edit',
+                    'positions.delete',
+                    'positions.view',
+                    'positions.manage',
+                    
+                    // Vacations (6 permissions)
+                    'vacations.list',
+                    'vacations.create',
+                    'vacations.edit',
+                    'vacations.view',
+                    'vacations.approve',
+                    'vacations.reports',
+                    
+                    // Reports (30+ permissions)
+                    'reports.daily-attendance',
+                    'reports.weekly-attendance',
+                    'reports.department-attendance',
+                    'reports.employee-attendance',
+                    'reports.sick-leave',
+                    'reports.early-departure',
+                    'reports.late-departure',
+                    'reports.pending-requests',
+                    'reports.permission-requests',
+                    'reports.vacation-requests',
+                    'reports.documentation',
+                    'reports.id-card-logs',
+                    'reports.email-logs',
+                    'reports.custom-builder',
+                    'reports.audit-logs',
+                    'reports.reminder-settings',
+                    'reports.view',
+                    'reports.create',
+                    'reports.export',
+                    'reports.configure',
+                    'reports.employee-of-month',
+                    
+                    // Settings (3 permissions)
+                    'settings.view',
+                    'settings.edit',
+                    'settings.reminder-view',
+                    
+                    // Roles (3 permissions)
+                    'roles.view',
+                    'roles.edit',
+                    'roles.list',
+                    
+                    // Additional HR permissions
+                    'users.view',
+                    'users.create',
+                    'users.edit',
+                    'users.delete',
+                    'users.manage-roles',
+                    'users.manage-permissions',
+                    'leaves.view',
+                    'leaves.create',
+                    'leaves.edit',
+                    'leaves.delete',
+                    'leaves.approve',
+                    'leaves.manage-all',
+                    'payroll.view',
+                    'payroll.create',
+                    'payroll.edit',
+                    'payroll.delete',
+                    'payroll.process',
+                    'announcements.view',
+                    'announcements.create',
+                    'announcements.edit',
+                    'announcements.delete',
+                    'events.view',
+                    'events.create',
+                    'events.edit',
+                    'events.delete',
+                    'events.manage-attendees',
+                    'surveys.view',
+                    'surveys.create',
+                    'surveys.edit',
+                    'surveys.delete',
+                    'surveys.respond',
+                    'surveys.view-responses',
+                    'notifications.view-own',
+                    'notifications.create',
+                    'notifications.manage-all',
+                    'templates.view',
+                    'templates.create',
+                    'templates.edit',
+                    'templates.delete',
+                    'request-controls.view',
+                    'request-controls.manage',
+                    'audit.view',
+                    'audit.export'
+                ],
+                isSystemRole: true,
+                createdBy: users[0]._id
+            },
+            {
+                name: 'id-card-admin',
+                displayName: 'ID Card Administrator',
+                description: 'ID card management and printing operations',
+                permissions: [
+                    'leaves.view-own', 'leaves.create', 'permissions.view-own', 'permissions.create',
+                    'attendance.view-own', 'payroll.view-own', 'notifications.view-own',
+                    'announcements.view', 'events.view',
+                    'id-cards.view', 'id-cards.create', 'id-cards.edit', 'id-cards.print',
+                    'id-cards.batch-print', 'id-cards.manage-batches',
+                    'users.view', 'documents.view'
+                ],
+                isSystemRole: true,
+                createdBy: users[0]._id
+            }
+        ]);
+        console.log(`✅ Created ${roles.length} roles\n`);
+
+        // Create Forget Check Requests
+        console.log('🕐 Creating forget check requests...');
+        const forgetChecks = await ForgetCheck.create([
+            {
+                employee: users[3]._id,
+                date: new Date('2025-01-15'),
+                requestType: 'check-in',
+                requestedTime: '09:00',
+                reason: 'Forgot to check in due to urgent meeting with department head',
+                status: 'pending',
+                department: departments[0]._id,
+                position: positions[0]._id
+            },
+            {
+                employee: users[5]._id,
+                date: new Date('2025-01-18'),
+                requestType: 'check-out',
+                requestedTime: '17:00',
+                reason: 'System was down when I tried to check out at the end of the day',
+                status: 'approved',
+                approvedBy: users[1]._id,
+                approvedAt: new Date('2025-01-19'),
+                department: departments[6]._id,
+                position: positions[7]._id
+            },
+            {
+                employee: users[4]._id,
+                date: new Date('2025-01-20'),
+                requestType: 'check-in',
+                requestedTime: '08:30',
+                reason: 'Biometric reader was not working properly in the morning',
+                status: 'rejected',
+                rejectedBy: users[1]._id,
+                rejectedAt: new Date('2025-01-21'),
+                rejectionReason: 'No evidence of biometric system failure at that time',
+                department: departments[3]._id,
+                position: positions[4]._id
+            }
+        ]);
+        console.log(`✅ Created ${forgetChecks.length} forget check requests\n`);
+
+        // Create Hardcopies
+        console.log('📑 Creating hardcopy records...');
+        const hardcopies = await Hardcopy.create([
+            {
+                title: 'Original Employment Contracts - 2025',
+                description: 'Physical copies of all employment contracts signed in 2025',
+                category: 'contract',
+                location: 'HR Office - Cabinet A, Drawer 3',
+                fileUrl: '/hardcopies/contracts-2025.pdf',
+                fileName: 'contracts-2025-scan.pdf',
+                fileSize: 5242880,
+                uploadedBy: users[1]._id
+            },
+            {
+                title: 'Employee ID Cards Archive',
+                description: 'Backup copies of all issued employee ID cards',
+                category: 'id-card',
+                location: 'HR Office - Safe Box',
+                fileUrl: '/hardcopies/id-cards-archive.pdf',
+                fileName: 'id-cards-backup.pdf',
+                fileSize: 2097152,
+                uploadedBy: users[1]._id
+            },
+            {
+                title: 'Academic Certificates - Engineering Department',
+                description: 'Original academic certificates for engineering faculty',
+                category: 'certificate',
+                location: 'Engineering Department - File Room, Shelf B',
+                fileUrl: '/hardcopies/eng-certificates.pdf',
+                fileName: 'engineering-certificates.pdf',
+                fileSize: 10485760,
+                uploadedBy: users[0]._id
+            },
+            {
+                title: 'Payroll Records - Q4 2024',
+                description: 'Printed payroll records for the last quarter of 2024',
+                category: 'payroll',
+                location: 'Finance Office - Archive Room',
+                fileUrl: '/hardcopies/payroll-q4-2024.pdf',
+                fileName: 'payroll-q4-2024.pdf',
+                fileSize: 3145728,
+                uploadedBy: users[1]._id
+            }
+        ]);
+        console.log(`✅ Created ${hardcopies.length} hardcopy records\n`);
+
+        // Create Dashboard Configuration
+        console.log('📊 Creating dashboard configuration...');
+        const dashboardConfig = await DashboardConfig.create({
+            employeeOfTheMonth: {
+                enabled: true,
+                selectedEmployee: users[3]._id,
+                month: 'January 2025',
+                updatedAt: new Date()
+            },
+            widgets: {
+                todayAttendance: true,
+                quickActions: true,
+                announcements: true
+            },
+            quickActionCards: {
+                attendance: true,
+                vacations: true,
+                permissions: true,
+                forgetCheck: true,
+                sickLeave: true,
+                profile: true
+            },
+            updatedBy: users[0]._id
+        });
+        console.log('✅ Created dashboard configuration\n');
+
+        // Create Theme Configuration
+        console.log('🎨 Creating theme configuration...');
+        const themeConfig = await ThemeConfig.create({
+            light: {
+                primary: { main: '#007bff', light: '#4da3ff', dark: '#0056b3' },
+                secondary: { main: '#6c757d', light: '#9ca3a8', dark: '#495057' },
+                success: { main: '#28a745', light: '#5cb85c', dark: '#1e7e34' },
+                error: { main: '#dc3545', light: '#e4606d', dark: '#bd2130' },
+                warning: { main: '#ffc107', light: '#ffcd39', dark: '#d39e00' },
+                info: { main: '#17a2b8', light: '#45b5c6', dark: '#117a8b' },
+                background: { default: '#f8f9fa', paper: '#ffffff' },
+                text: { primary: '#212529', secondary: '#6c757d' }
+            },
+            dark: {
+                primary: { main: '#4da3ff', light: '#80bdff', dark: '#007bff' },
+                secondary: { main: '#9ca3a8', light: '#c1c6ca', dark: '#6c757d' },
+                success: { main: '#5cb85c', light: '#7ec87e', dark: '#28a745' },
+                error: { main: '#e4606d', light: '#ea8089', dark: '#dc3545' },
+                warning: { main: '#ffcd39', light: '#ffd966', dark: '#ffc107' },
+                info: { main: '#45b5c6', light: '#6dc5d3', dark: '#17a2b8' },
+                background: { default: '#1a1d23', paper: '#25282e' },
+                text: { primary: '#f8f9fa', secondary: '#adb5bd' }
+            },
+            typography: {
+                fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+                fontSize: 14
+            },
+            shape: {
+                borderRadius: 12
+            },
+            spacing: 8,
+            isActive: true,
+            updatedBy: users[0]._id
+        });
+        console.log('✅ Created theme configuration\n');
+
         // Create Leave Requests
         console.log('🏖️ Creating leave requests...');
         const leaves = await Leave.create([
@@ -2062,12 +2363,7 @@ const seedData = async () => {
         ]);
         console.log(`✅ Created ${leaves.length} leave requests\n`);
 
-        // Update schools with deans
-        console.log('🎓 Assigning deans to schools...');
-        await School.findByIdAndUpdate(schools[0]._id, { dean: users[0]._id });
-        await School.findByIdAndUpdate(schools[1]._id, { dean: users[4]._id });
-        await School.findByIdAndUpdate(schools[2]._id, { dean: users[2]._id });
-        console.log('✅ Deans assigned\n');
+        // Note: School model has been removed from the system
 
         // Update departments with managers
         console.log('👔 Assigning managers to departments...');
@@ -2092,7 +2388,7 @@ const seedData = async () => {
         console.log('  Password: hr123');
         console.log('  Role: hr\n');
 
-        console.log('Department Manager:');
+        console.log('Manager:');
         console.log('  Email: manager@cic.edu.eg');
         console.log('  Password: manager123');
         console.log('  Role: manager\n');
@@ -2102,10 +2398,10 @@ const seedData = async () => {
         console.log('  Password: employee123');
         console.log('  Role: employee\n');
 
-        console.log('Supervisor:');
+        console.log('Employee:');
         console.log('  Email: omar.ibrahim@cic.edu.eg');
         console.log('  Password: employee123');
-        console.log('  Role: supervisor\n');
+        console.log('  Role: employee\n');
 
         console.log('════════════════════════════════════════\n');
 

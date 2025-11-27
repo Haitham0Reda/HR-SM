@@ -47,6 +47,9 @@ import AnalyticsPage from './pages/analytics/AnalyticsPage';
 import SecurityPage from './pages/security/SecurityPage';
 import BackupsPage from './pages/backups/BackupsPage';
 import ResignedPage from './pages/resigned/ResignedPage';
+import RolesPage from './pages/roles/RolesPage';
+import RoleEditPage from './pages/roles/RoleEditPage';
+import RoleViewPage from './pages/roles/RoleViewPage';
 import SystemSettingsPage from './pages/settings/SystemSettingsPage';
 import SeasonalSettingsPage from './pages/settings/SeasonalSettingsPage';
 import RequestControlPage from './pages/settings/RequestControlPage';
@@ -147,6 +150,10 @@ function App() {
                 <Route path="security" element={<SecurityPage />} />
                 <Route path="backups" element={<BackupsPage />} />
                 <Route path="resigned" element={<ResignedPage />} />
+                <Route path="roles" element={<PrivateRoute requiredRole="admin"><RolesPage /></PrivateRoute>} />
+                <Route path="roles/create" element={<PrivateRoute requiredRole="admin"><RoleEditPage /></PrivateRoute>} />
+                <Route path="roles/:id" element={<PrivateRoute requiredRole="admin"><RoleViewPage /></PrivateRoute>} />
+                <Route path="roles/:id/edit" element={<PrivateRoute requiredRole="admin"><RoleEditPage /></PrivateRoute>} />
                 <Route path="system-settings" element={<SystemSettingsPage />} />
                 <Route path="system-settings/seasonal" element={<SeasonalSettingsPage />} />
                 <Route path="system-settings/request-control" element={<RequestControlPage />} />
