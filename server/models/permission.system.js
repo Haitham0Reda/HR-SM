@@ -14,13 +14,10 @@
  * 
  * ROLES:
  * - admin: Full system access (all permissions)
+ * - employee: Basic access to own data
  * - hr: HR management functions
  * - manager: Team and department management
- * - employee: Basic access to own data
  * - id-card-admin: ID card operations only
- * - supervisor: Team supervision (approvals)
- * - head-of-department: Department-level management
- * - dean: School-level management
  * 
  * USAGE EXAMPLES:
  * 
@@ -191,7 +188,7 @@ export const PERMISSIONS = {
 };
 
 // Role-Based Default Permissions
-// Define employee permissions first
+// Define employee permissions
 const employeePermissions = [
     // Own data access
     'leaves.view-own',
@@ -214,7 +211,7 @@ const employeePermissions = [
     'positions.view'
 ];
 
-// Define manager permissions (employee + additional)
+// Define manager permissions (employee + team management)
 const managerPermissions = [
     ...employeePermissions,
 
@@ -243,70 +240,100 @@ const managerPermissions = [
     'events.manage-attendees'
 ];
 
-// Define HR permissions (manager + additional)
+// Define HR permissions (manager + HR-specific)
 const hrPermissions = [
     ...managerPermissions,
 
-    // HR-specific
+    // User Management
     'users.create',
     'users.edit',
     'users.delete',
     'users.manage-roles',
+    'users.manage-permissions',
 
+    // Department & Position Management
     'departments.create',
     'departments.edit',
     'departments.delete',
-
     'positions.create',
     'positions.edit',
     'positions.delete',
 
+    // Leave Management
+    'leaves.edit',
+    'leaves.delete',
     'leaves.manage-all',
+
+    // Permission Requests
+    'permissions.edit',
+    'permissions.delete',
+
+    // Attendance
+    'attendance.create',
+    'attendance.edit',
+    'attendance.delete',
+
+    // Payroll
     'payroll.create',
     'payroll.edit',
+    'payroll.delete',
     'payroll.process',
 
-    'documents.view-confidential',
+    // Documents
     'documents.delete',
+    'documents.view-confidential',
 
+    // Templates
     'templates.create',
     'templates.edit',
     'templates.delete',
 
+    // Announcements
     'announcements.create',
     'announcements.edit',
     'announcements.delete',
 
+    // Surveys
     'surveys.create',
     'surveys.edit',
     'surveys.delete',
     'surveys.view-responses',
 
+    // Notifications
     'notifications.create',
     'notifications.manage-all',
 
+    // Reports
+    'reports.configure',
+
+    // Request Controls
     'request-controls.view',
     'request-controls.manage',
 
-    'reports.configure',
+    // Settings & Audit
     'settings.view',
-    'audit.view'
+    'settings.edit',
+    'audit.view',
+    'audit.export'
 ];
+
+// Helper to remove duplicates from permission arrays
+const deduplicatePermissions = (permissions) => [...new Set(permissions)];
 
 // Export ROLE_PERMISSIONS object
 export const ROLE_PERMISSIONS = {
-    'employee': employeePermissions,
-
-    'manager': managerPermissions,
-
-    'hr': hrPermissions,
-
-    'admin': [
+    'admin': deduplicatePermissions([
         // All permissions
         ...Object.keys(PERMISSIONS)
-    ],
+    ]),
 
-    'id-card-admin': [
+    'employee': deduplicatePermissions(employeePermissions),
+
+    'manager': deduplicatePermissions(managerPermissions),
+
+    'hr': deduplicatePermissions(hrPermissions),
+
+    'id-card-admin': deduplicatePermissions([
         // Basic employee permissions
         'leaves.view-own',
         'leaves.create',
@@ -327,33 +354,7 @@ export const ROLE_PERMISSIONS = {
         'id-cards.manage-batches',
         'users.view', // Need to view users for ID card creation
         'documents.view' // May need to view documents for ID card photos
-    ],
-
-    'supervisor': [
-        ...employeePermissions,
-        'leaves.approve',
-        'permissions.approve',
-        'attendance.view',
-        'users.view'
-    ],
-
-    'head-of-department': [
-        ...managerPermissions,
-        'departments.edit',
-        'positions.create',
-        'positions.edit'
-    ],
-
-    'dean': [
-        ...managerPermissions,
-        'schools.view',
-        'schools.edit',
-        'departments.view',
-        'departments.create',
-        'departments.edit',
-        'users.create',
-        'users.edit'
-    ]
+    ])
 };
 
 // Permission Categories (for UI grouping)

@@ -44,6 +44,7 @@ import BeachAccessOutlinedIcon from '@mui/icons-material/BeachAccessOutlined';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import PolicyIcon from '@mui/icons-material/Policy';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
@@ -630,6 +631,13 @@ function DashboardSidebar({
                                     icon={<EditIcon />}
                                     href="/app/dashboard/edit"
                                     selected={!!matchPath('/app/dashboard/edit', pathname)}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="roles"
+                                    title="Roles"
+                                    icon={<AdminPanelSettingsIcon />}
+                                    href="/app/roles"
+                                    selected={pathname.startsWith('/app/roles')}
                                 />
                                 <DashboardSidebarPageItem
                                     id="settings"

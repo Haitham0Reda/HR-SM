@@ -7,6 +7,7 @@ import {
     Button,
     Typography,
     Box,
+    CircularProgress,
 } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
@@ -19,6 +20,7 @@ const ConfirmDialog = ({
     confirmText = 'Confirm',
     cancelText = 'Cancel',
     confirmColor = 'primary',
+    loading = false,
 }) => {
     const getColorScheme = () => {
         switch (confirmColor) {
@@ -128,28 +130,33 @@ const ConfirmDialog = ({
                         justifyContent: 'center'
                     }}
                 >
-                    <Button
-                        onClick={onCancel}
-                        variant="outlined"
-                        size="large"
-                        sx={{
-                            minWidth: 120,
-                            borderColor: '#d1d8e0',
-                            color: '#7f8c8d',
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            '&:hover': {
-                                borderColor: '#95a5a6',
-                                bgcolor: 'rgba(127, 140, 141, 0.05)'
-                            }
-                        }}
-                    >
-                        {cancelText}
-                    </Button>
+                    {cancelText && (
+                        <Button
+                            onClick={onCancel}
+                            variant="outlined"
+                            size="large"
+                            disabled={loading}
+                            sx={{
+                                minWidth: 120,
+                                borderColor: '#d1d8e0',
+                                color: '#7f8c8d',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                '&:hover': {
+                                    borderColor: '#95a5a6',
+                                    bgcolor: 'rgba(127, 140, 141, 0.05)'
+                                }
+                            }}
+                        >
+                            {cancelText}
+                        </Button>
+                    )}
                     <Button
                         onClick={onConfirm}
                         variant="contained"
                         size="large"
+                        disabled={loading}
+                        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
                         sx={{
                             minWidth: 120,
                             bgcolor: colors.buttonBg,
@@ -159,6 +166,11 @@ const ConfirmDialog = ({
                             '&:hover': {
                                 bgcolor: colors.buttonHover,
                                 boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
+                            },
+                            '&.Mui-disabled': {
+                                bgcolor: colors.buttonBg,
+                                opacity: 0.7,
+                                color: 'white'
                             }
                         }}
                     >

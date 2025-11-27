@@ -30,3 +30,4 @@ export { default as mixedVacationService } from './mixedVacation.service';
 export { default as permissionAuditService } from './permissionAudit.service';
 export { default as backupExecutionService } from './backupExecution.service';
 export { default as systemPermissionService } from './systemPermission.service';
+export { default as roleService } from './role.service';

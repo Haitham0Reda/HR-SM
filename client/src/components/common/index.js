@@ -15,3 +15,6 @@ export { default as Loading } from './Loading';
 export { default as LoadingOverlay } from './LoadingOverlay';
 export { default as LoadingSkeleton } from './LoadingSkeleton';
 export { default as LoadingButton } from './LoadingButton';
+
+// Error Handling Components
+export { default as ErrorBoundary } from './ErrorBoundary';

@@ -4,7 +4,7 @@
  */
 
 // Layout Constants
-export const DRAWER_WIDTH = 280;
+export const DRAWER_WIDTH = 305;
 export const MINI_DRAWER_WIDTH = 64;
 export const APP_NAME = 'HR SM';
 

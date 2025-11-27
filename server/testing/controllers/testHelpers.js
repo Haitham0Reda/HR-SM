@@ -20,6 +20,11 @@ export const createMockRequest = (overrides = {}) => ({
     params: {},
     query: {},
     user: {},
+    get: function(header) {
+        return this.headers?.[header.toLowerCase()] || null;
+    },
+    headers: {},
+    ip: '127.0.0.1',
     ...overrides
 });
 

@@ -77,10 +77,10 @@ export const validateReviewer = async (req, res, next) => {
                 });
             }
 
-            if (!['supervisor', 'manager', 'hr', 'admin'].includes(reviewer.role)) {
+            if (!['manager', 'hr', 'admin'].includes(reviewer.role)) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Reviewer must have supervisor, manager, HR, or admin role'
+                    message: 'Reviewer must have manager, HR or admin role'
                 });
             }
         }

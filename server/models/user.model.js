@@ -2,6 +2,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { getRolePermissions } from './permission.system.js';
+import Role from './role.model.js';
 
 const userSchema = new mongoose.Schema({
     employeeId: {
@@ -30,18 +31,9 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: [
-            'employee',
-            'admin',
-            'hr',
-            'manager',
-            'id-card-admin',
-            'supervisor',
-            'head-of-department',
-            'dean',
-            'doctor'
-        ],
+        required: true,
         default: 'employee'
+        // No enum constraint - supports both system roles and custom roles from database
     },
     personalInfo: {
         fullName: String,
@@ -155,7 +147,23 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 
 // Method to get effective permissions (role + overrides)
 userSchema.methods.getEffectivePermissions = async function () {
-    const rolePerms = getRolePermissions(this.role);
+    let rolePerms = [];
+    
+    // Try to get permissions from database Role collection first
+    try {
+        const roleDoc = await Role.findByName(this.role);
+        if (roleDoc && roleDoc.permissions) {
+            rolePerms = roleDoc.permissions;
+        } else {
+            // Fallback to permission.system.js for backward compatibility
+            rolePerms = getRolePermissions(this.role);
+        }
+    } catch (error) {
+        // If database query fails, fallback to permission.system.js
+        console.error('Error fetching role from database, using fallback:', error);
+        rolePerms = getRolePermissions(this.role);
+    }
+    
     const added = this.addedPermissions || [];
     const removed = this.removedPermissions || [];
 

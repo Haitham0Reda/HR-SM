@@ -91,7 +91,7 @@ export const hr = (req, res, next) => {
 };
 
 /**
- * Manager or above middleware - Requires manager, HR, or admin role
+ * Manager or above middleware - Requires manager, HR or admin role
  */
 export const managerOrAbove = (req, res, next) => {
     if (req.user && ['manager', 'hr', 'admin'].includes(req.user.role)) {
@@ -117,14 +117,14 @@ export const idCardAdmin = (req, res, next) => {
 };
 
 /**
- * Supervisor or above middleware - Requires supervisor, manager, HR, or admin role
+ * Supervisor or above middleware - Requires manager, HR or admin role
  */
 export const supervisorOrAbove = (req, res, next) => {
-    if (req.user && ['supervisor', 'manager', 'hr', 'admin'].includes(req.user.role)) {
+    if (req.user && ['manager', 'hr', 'admin'].includes(req.user.role)) {
         next();
     } else {
         res.status(403).json({
-            message: 'Access denied. Supervisor role or above required.'
+            message: 'Access denied. Manager role or above required.'
         });
     }
 };
