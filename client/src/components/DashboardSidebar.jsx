@@ -31,6 +31,19 @@ import PersonOffIcon from '@mui/icons-material/PersonOff';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import PaletteIcon from '@mui/icons-material/Palette';
+import SettingsIcon from '@mui/icons-material/Settings';
+import CelebrationIcon from '@mui/icons-material/Celebration';
+import ToggleOnIcon from '@mui/icons-material/ToggleOn';
+import EmailIcon from '@mui/icons-material/Email';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import BuildIcon from '@mui/icons-material/Build';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import GroupIcon from '@mui/icons-material/Group';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import BeachAccessOutlinedIcon from '@mui/icons-material/BeachAccessOutlined';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import PolicyIcon from '@mui/icons-material/Policy';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
@@ -53,8 +66,15 @@ function DashboardSidebar({
 
     const { pathname } = useLocation();
 
-    // eslint-disable-next-line no-unused-vars
+    // State for expanded menu items
     const [expandedItemIds, setExpandedItemIds] = React.useState([]);
+
+    // Auto-expand Settings dropdown if on a settings page
+    React.useEffect(() => {
+        if (pathname.startsWith('/app/system-settings') && !expandedItemIds.includes('settings')) {
+            setExpandedItemIds((prev) => [...prev, 'settings']);
+        }
+    }, [pathname]);
 
     const isOverSmViewport = useMediaQuery(theme.breakpoints.up('sm'));
     const isOverMdViewport = useMediaQuery(theme.breakpoints.up('md'));
@@ -99,17 +119,17 @@ function DashboardSidebar({
         [setExpanded],
     );
 
-    // eslint-disable-next-line no-unused-vars
     const handlePageItemClick = React.useCallback(
         (itemId, hasNestedNavigation) => {
+            console.log('🔵 Clicked:', itemId, 'hasNested:', hasNestedNavigation, 'mini:', mini);
             if (hasNestedNavigation && !mini) {
-                setExpandedItemIds((previousValue) =>
-                    previousValue.includes(itemId)
-                        ? previousValue.filter(
-                            (previousValueItemId) => previousValueItemId !== itemId,
-                        )
-                        : [...previousValue, itemId],
-                );
+                setExpandedItemIds((previousValue) => {
+                    const newValue = previousValue.includes(itemId)
+                        ? previousValue.filter((previousValueItemId) => previousValueItemId !== itemId)
+                        : [...previousValue, itemId];
+                    console.log('🟢 Expanded items:', previousValue, '->', newValue);
+                    return newValue;
+                });
             } else if (!isOverSmViewport && !hasNestedNavigation) {
                 setExpanded(false);
             }
@@ -167,7 +187,8 @@ function DashboardSidebar({
                         sx={{
                             padding: mini ? 0 : 0.5,
                             mb: 4,
-                            width: mini ? MINI_DRAWER_WIDTH : 'auto',
+                            width: '100%',
+                            maxWidth: mini ? MINI_DRAWER_WIDTH : DRAWER_WIDTH,
                         }}
                     >
                         {/* Common for all roles */}
@@ -611,6 +632,131 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/dashboard/edit', pathname)}
                                 />
                                 <DashboardSidebarPageItem
+                                    id="settings"
+                                    title="Settings"
+                                    icon={<SettingsIcon />}
+                                    href="#"
+                                    selected={pathname.startsWith('/app/system-settings')}
+                                    expanded={expandedItemIds.includes('settings')}
+                                    nestedNavigation={
+                                        <List dense sx={{ 
+                                            bgcolor: 'rgba(0, 0, 0, 0.08)', 
+                                            py: 0.5,
+                                            borderRadius: 1,
+                                            mt: 0.5,
+                                            px: 0,
+                                            mx: 2,
+                                            width: 'calc(100% - 32px)',
+                                            overflow: 'hidden'
+                                        }}>
+                                            <DashboardSidebarPageItem
+                                                id="system-settings"
+                                                title="System Settings"
+                                                icon={<SettingsIcon />}
+                                                href="/app/system-settings"
+                                                selected={!!matchPath('/app/system-settings', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="seasonal-settings"
+                                                title="Seasonal Settings"
+                                                icon={<CelebrationIcon />}
+                                                href="/app/system-settings/seasonal"
+                                                selected={!!matchPath('/app/system-settings/seasonal', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="request-submission"
+                                                title="Request Submission Control"
+                                                icon={<ToggleOnIcon />}
+                                                href="/app/system-settings/request-control"
+                                                selected={!!matchPath('/app/system-settings/request-control', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="email-creation"
+                                                title="Employee Email Creation"
+                                                icon={<EmailIcon />}
+                                                href="/app/system-settings/email-creation"
+                                                selected={!!matchPath('/app/system-settings/email-creation', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="email-management"
+                                                title="Employee Email Management"
+                                                icon={<ManageAccountsIcon />}
+                                                href="/app/system-settings/email-management"
+                                                selected={!!matchPath('/app/system-settings/email-management', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="maintenance-settings"
+                                                title="Maintenance Settings"
+                                                icon={<BuildIcon />}
+                                                href="/app/system-settings/maintenance"
+                                                selected={!!matchPath('/app/system-settings/maintenance', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="system-notifications"
+                                                title="System Notifications"
+                                                icon={<NotificationsIcon />}
+                                                href="/app/system-settings/notifications"
+                                                selected={!!matchPath('/app/system-settings/notifications', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="hr-management-settings"
+                                                title="HR Management Settings"
+                                                icon={<GroupIcon />}
+                                                href="/app/system-settings/hr-management"
+                                                selected={!!matchPath('/app/system-settings/hr-management', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="work-schedules"
+                                                title="Work Schedules"
+                                                icon={<ScheduleIcon />}
+                                                href="/app/system-settings/work-schedules"
+                                                selected={!!matchPath('/app/system-settings/work-schedules', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="vacation-management-settings"
+                                                title="Vacation Management"
+                                                icon={<BeachAccessOutlinedIcon />}
+                                                href="/app/system-settings/vacation-management"
+                                                selected={!!matchPath('/app/system-settings/vacation-management', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="vacation-balances"
+                                                title="Manage Vacation Balances"
+                                                icon={<AccountBalanceIcon />}
+                                                href="/app/system-settings/vacation-balances"
+                                                selected={!!matchPath('/app/system-settings/vacation-balances', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="mixed-vacation-policies"
+                                                title="Mixed Vacation Policies"
+                                                icon={<PolicyIcon />}
+                                                href="/app/system-settings/mixed-vacation"
+                                                selected={!!matchPath('/app/system-settings/mixed-vacation', pathname)}
+                                                isNested={true}
+                                            />
+                                            <DashboardSidebarPageItem
+                                                id="employee-of-month"
+                                                title="Employee of the Month"
+                                                icon={<EmojiEventsIcon />}
+                                                href="/app/system-settings/employee-of-month"
+                                                selected={!!matchPath('/app/system-settings/employee-of-month', pathname)}
+                                                isNested={true}
+                                            />
+                                        </List>
+                                    }
+                                />
+                                <DashboardSidebarPageItem
                                     id="theme-editor"
                                     title="Theme & Colors"
                                     icon={<PaletteIcon />}
@@ -665,6 +811,7 @@ function DashboardSidebar({
             mini,
             pathname,
             userRole,
+            expandedItemIds,
         ],
     );
 
@@ -674,6 +821,9 @@ function DashboardSidebar({
                 expanded: isFullyExpanded && !isFullyCollapsed,
                 mini,
                 setExpanded: handleSetSidebarExpanded,
+                onPageItemClick: handlePageItemClick,
+                fullyExpanded: isFullyExpanded,
+                fullyCollapsed: isFullyCollapsed,
             }}
         >
             <Drawer
