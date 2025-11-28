@@ -7,15 +7,15 @@ import Holiday from '../models/holiday.model.js';
 import axios from 'axios';
 import Holidays from 'date-holidays';
 
+// Default organization ID (campus concept removed)
+const DEFAULT_ORG_ID = 'default-organization';
+
 /**
- * Get holiday settings for campus
+ * Get holiday settings
  */
 export const getHolidaySettings = async (req, res) => {
     try {
-        const { campusId } = req.params;
-
-        const settings = await Holiday.getOrCreateForCampus(campusId);
-        await settings.populate('campus', 'name arabicName');
+        const settings = await Holiday.getOrCreateForCampus(DEFAULT_ORG_ID);
 
         res.status(200).json({
             success: true,
@@ -31,10 +31,9 @@ export const getHolidaySettings = async (req, res) => {
  */
 export const updateHolidaySettings = async (req, res) => {
     try {
-        const { campusId } = req.params;
         const { weekendDays } = req.body;
 
-        const settings = await Holiday.getOrCreateForCampus(campusId);
+        const settings = await Holiday.getOrCreateForCampus(DEFAULT_ORG_ID);
 
         if (weekendDays !== undefined) {
             settings.weekendDays = weekendDays;
@@ -60,14 +59,13 @@ export const updateHolidaySettings = async (req, res) => {
  */
 export const addOfficialHolidays = async (req, res) => {
     try {
-        const { campusId } = req.params;
         const { dates, name, description } = req.body;
 
         if (!dates) {
             return res.status(400).json({ error: 'Dates are required' });
         }
 
-        const settings = await Holiday.getOrCreateForCampus(campusId);
+        const settings = await Holiday.getOrCreateForCampus(DEFAULT_ORG_ID);
 
         const result = settings.addMultipleHolidays(dates, name);
 
@@ -93,9 +91,9 @@ export const addOfficialHolidays = async (req, res) => {
  */
 export const removeOfficialHoliday = async (req, res) => {
     try {
-        const { campusId, holidayId } = req.params;
+        const { holidayId } = req.params;
 
-        const settings = await Holiday.getOrCreateForCampus(campusId);
+        const settings = await Holiday.getOrCreateForCampus(DEFAULT_ORG_ID);
 
         settings.officialHolidays = settings.officialHolidays.filter(
             h => h._id.toString() !== holidayId
@@ -122,14 +120,13 @@ export const removeOfficialHoliday = async (req, res) => {
  */
 export const addWeekendWorkDays = async (req, res) => {
     try {
-        const { campusId } = req.params;
         const { dates, reason } = req.body;
 
         if (!dates) {
             return res.status(400).json({ error: 'Dates are required' });
         }
 
-        const settings = await Holiday.getOrCreateForCampus(campusId);
+        const settings = await Holiday.getOrCreateForCampus(DEFAULT_ORG_ID);
 
         const dateArray = dates.split(',').map(d => d.trim()).filter(d => d);
         const added = [];
@@ -166,9 +163,9 @@ export const addWeekendWorkDays = async (req, res) => {
  */
 export const removeWeekendWorkDay = async (req, res) => {
     try {
-        const { campusId, workDayId } = req.params;
+        const { workDayId } = req.params;
 
-        const settings = await Holiday.getOrCreateForCampus(campusId);
+        const settings = await Holiday.getOrCreateForCampus(DEFAULT_ORG_ID);
 
         settings.weekendWorkDays = settings.weekendWorkDays.filter(
             w => w._id.toString() !== workDayId
@@ -195,10 +192,9 @@ export const removeWeekendWorkDay = async (req, res) => {
  */
 export const getHolidaySuggestions = async (req, res) => {
     try {
-        const { campusId } = req.params;
         const { year = new Date().getFullYear(), country = 'EG' } = req.query;
 
-        const settings = await Holiday.getOrCreateForCampus(campusId);
+        const settings = await Holiday.getOrCreateForCampus(DEFAULT_ORG_ID);
 
         let suggestions = [];
         let source = 'none';
@@ -344,7 +340,6 @@ export const getEgyptHolidays = async (req, res) => {
  */
 export const importEgyptHolidays = async (req, res) => {
     try {
-        const { campusId } = req.params;
         const { year = new Date().getFullYear() } = req.body;
         
         // Create instance for Egypt
@@ -354,7 +349,7 @@ export const importEgyptHolidays = async (req, res) => {
         const holidays = hd.getHolidays(year);
         
         // Get holiday settings for campus
-        const settings = await Holiday.getOrCreateForCampus(campusId);
+        const settings = await Holiday.getOrCreateForCampus(DEFAULT_ORG_ID);
         
         // Import holidays to database
         let importedCount = 0;
@@ -409,14 +404,13 @@ export const importEgyptHolidays = async (req, res) => {
  */
 export const addFromSuggestions = async (req, res) => {
     try {
-        const { campusId } = req.params;
         const { holidays } = req.body; // Array of holiday objects
 
         if (!holidays || !Array.isArray(holidays) || holidays.length === 0) {
             return res.status(400).json({ error: 'Holidays array is required' });
         }
 
-        const settings = await Holiday.getOrCreateForCampus(campusId);
+        const settings = await Holiday.getOrCreateForCampus(DEFAULT_ORG_ID);
 
         const added = [];
         const errors = [];
@@ -474,14 +468,13 @@ export const addFromSuggestions = async (req, res) => {
  */
 export const checkWorkingDay = async (req, res) => {
     try {
-        const { campusId } = req.params;
         const { date } = req.query;
 
         if (!date) {
             return res.status(400).json({ error: 'Date is required' });
         }
 
-        const settings = await Holiday.getOrCreateForCampus(campusId);
+        const settings = await Holiday.getOrCreateForCampus(DEFAULT_ORG_ID);
 
         const checkDate = new Date(date);
         const isWorking = settings.isWorkingDay(checkDate);

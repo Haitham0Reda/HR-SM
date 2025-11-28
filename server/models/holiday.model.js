@@ -6,10 +6,10 @@
 import mongoose from 'mongoose';
 
 const holidaySchema = new mongoose.Schema({
-    // Campus-specific settings
+    // Organization identifier (campus concept removed, using default org)
     campus: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'School',
+        type: String,
+        default: 'default-organization',
         required: true
     },
 

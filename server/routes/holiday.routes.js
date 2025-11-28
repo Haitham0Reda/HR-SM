@@ -16,7 +16,6 @@ import {
 import {
     protect,
     hrOrAdmin,
-    validateCampus,
     validateDateFormat,
     validateHolidayData,
     validateWeekendWorkDay,
@@ -27,80 +26,71 @@ import {
 
 const router = express.Router();
 
-// Get holiday settings for campus
-router.get('/campus/:campusId',
+// Get holiday settings
+router.get('/settings',
     protect,
-    validateCampus,
     getHolidaySettings
 );
 
 // Update holiday settings
-router.put('/campus/:campusId',
+router.put('/settings',
     protect,
     hrOrAdmin,
-    validateCampus,
     updateHolidaySettings
 );
 
 // Add official holidays with validation
-router.post('/campus/:campusId/official',
+router.post('/official',
     protect,
     hrOrAdmin,
-    validateCampus,
     validateHolidayData,
     validateDateFormat,
     addOfficialHolidays
 );
 
 // Remove official holiday
-router.delete('/campus/:campusId/official/:holidayId',
+router.delete('/official/:holidayId',
     protect,
     hrOrAdmin,
-    validateCampus,
     removeOfficialHoliday
 );
 
 // Add weekend work days
-router.post('/campus/:campusId/weekend-work',
+router.post('/weekend-work',
     protect,
     hrOrAdmin,
-    validateCampus,
     validateWeekendWorkDay,
     validateDateFormat,
     addWeekendWorkDays
 );
 
 // Remove weekend work day
-router.delete('/campus/:campusId/weekend-work/:workDayId',
+router.delete('/weekend-work/:workDayId',
     protect,
     hrOrAdmin,
-    validateCampus,
     removeWeekendWorkDay
 );
 
 // Get holiday suggestions from APIs
-router.get('/campus/:campusId/suggestions',
+router.get('/suggestions',
     protect,
     hrOrAdmin,
-    validateCampus,
     validateYear,
     validateCountryCode,
     getHolidaySuggestions
 );
 
 // Add holidays from suggestions
-router.post('/campus/:campusId/suggestions',
+router.post('/suggestions',
     protect,
     hrOrAdmin,
-    validateCampus,
     validateSuggestions,
     addFromSuggestions
 );
 
 // Check if date is working day
-router.get('/campus/:campusId/check-working-day',
+router.get('/check-working-day',
     protect,
-    validateCampus,
     checkWorkingDay
 );
 
@@ -118,10 +108,9 @@ router.get('/egypt-holidays',
 );
 
 // Import Egypt holidays to database
-router.post('/campus/:campusId/import-egypt-holidays',
+router.post('/import-egypt-holidays',
     protect,
     hrOrAdmin,
-    validateCampus,
     importEgyptHolidays
 );
 

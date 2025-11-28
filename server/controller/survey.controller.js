@@ -24,7 +24,6 @@ export const getAllSurveys = async (req, res) => {
 
         const surveys = await Survey.find(query)
             .populate('createdBy', 'username email')
-            .populate('assignedTo.campuses', 'name')
             .populate('assignedTo.departments', 'name')
             .select('-responses') // Don't return responses in list view
             .sort({ createdAt: -1 })
@@ -121,7 +120,6 @@ export const getSurveyById = async (req, res) => {
     try {
         const survey = await Survey.findById(req.params.id)
             .populate('createdBy', 'username email')
-            .populate('assignedTo.campuses', 'name')
             .populate('assignedTo.departments', 'name')
             .populate('responses.respondent', 'username email profile');
 
@@ -292,7 +290,6 @@ export const publishSurvey = async (req, res) => {
 
         // Validate assignment
         const hasAssignment = survey.assignedTo.allEmployees ||
-            survey.assignedTo.campuses.length > 0 ||
             survey.assignedTo.departments.length > 0 ||
             survey.assignedTo.roles.length > 0 ||
             survey.assignedTo.specificEmployees.length > 0;

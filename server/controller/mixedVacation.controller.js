@@ -22,7 +22,6 @@ export const getAllPolicies = async (req, res) => {
 
         const policies = await MixedVacation.find(query)
             .populate('createdBy', 'username email')
-            .populate('applicableTo.campuses', 'name')
             .populate('applicableTo.departments', 'name')
             .sort({ startDate: -1 })
             .limit(parseInt(limit))
@@ -52,7 +51,6 @@ export const getPolicyById = async (req, res) => {
     try {
         const policy = await MixedVacation.findById(req.params.id)
             .populate('createdBy', 'username email')
-            .populate('applicableTo.campuses', 'name')
             .populate('applicableTo.departments', 'name')
             .populate('applications.employee', 'profile employeeId')
             .populate('applications.approvedBy', 'username email');
@@ -76,17 +74,13 @@ export const getPolicyById = async (req, res) => {
  */
 export const createPolicy = async (req, res) => {
     try {
-        const { campusId, ...policyData } = req.body;
-
         const policy = new MixedVacation({
-            ...policyData,
+            ...req.body,
             createdBy: req.user._id
         });
 
-        // Detect official holidays if campus specified
-        if (campusId) {
-            await policy.detectOfficialHolidays(campusId);
-        }
+        // Detect official holidays using default organization
+        await policy.detectOfficialHolidays('default-organization');
 
         // Calculate personal days
         policy.calculatePersonalDays();
@@ -126,9 +120,7 @@ export const updatePolicy = async (req, res) => {
         policy.lastModifiedBy = req.user._id;
 
         // Recalculate if dates changed
-        if (req.body.campusId) {
-            await policy.detectOfficialHolidays(req.body.campusId);
-        }
+        await policy.detectOfficialHolidays('default-organization');
 
         policy.calculatePersonalDays();
 

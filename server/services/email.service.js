@@ -10,13 +10,15 @@ class EmailService {
     constructor() {
         this.transporter = null;
         this.useGmailAPI = false;
-        this.initialize();
+        this.initialized = false;
     }
 
     /**
      * Initialize email transporter
      */
     async initialize() {
+        if (this.initialized) return;
+        
         try {
             // Try Gmail API first if credentials are available
             if (this.hasGmailAPICredentials()) {
@@ -24,9 +26,11 @@ class EmailService {
             } else {
                 this.initializeSMTP();
             }
+            this.initialized = true;
         } catch (error) {
             console.warn('⚠️  Gmail API initialization failed, using SMTP:', error.message);
             this.initializeSMTP();
+            this.initialized = true;
         }
     }
 
@@ -80,7 +84,10 @@ class EmailService {
      * Initialize SMTP
      */
     initializeSMTP() {
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+        const emailUser = process.env.EMAIL_USER?.trim();
+        const emailPassword = process.env.EMAIL_PASSWORD?.trim();
+        
+        if (!emailUser || !emailPassword) {
             console.warn('⚠️  Email credentials not configured. Email sending disabled.');
             this.transporter = null;
             return;
@@ -91,8 +98,8 @@ class EmailService {
             port: parseInt(process.env.EMAIL_PORT) || 587,
             secure: false,
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASSWORD
+                user: emailUser,
+                pass: emailPassword
             }
         });
 
@@ -105,6 +112,11 @@ class EmailService {
      */
     async sendEmail(options) {
         try {
+            // Ensure initialization
+            if (!this.initialized) {
+                await this.initialize();
+            }
+            
             if (!this.transporter) {
                 console.log('📧 EMAIL (not configured - preview):');
                 console.log('To:', options.to);
@@ -187,6 +199,11 @@ class EmailService {
      */
     async verify() {
         try {
+            // Ensure initialization
+            if (!this.initialized) {
+                await this.initialize();
+            }
+            
             if (!this.transporter) return false;
             await this.transporter.verify();
             console.log('✅ Email service verified');

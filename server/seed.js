@@ -49,6 +49,7 @@ import ForgetCheck from './models/forgetCheck.model.js';
 import Hardcopy from './models/hardcopy.model.js';
 import DashboardConfig from './models/dashboardConfig.model.js';
 import ThemeConfig from './models/themeConfig.model.js';
+import School from './models/school.model.js';
 
 const seedData = async () => {
     try {
@@ -95,9 +96,22 @@ const seedData = async () => {
         await Hardcopy.deleteMany({});
         await DashboardConfig.deleteMany({});
         await ThemeConfig.deleteMany({});
+        await School.deleteMany({});
         console.log('✅ Existing data cleared\n');
 
-        // Note: Schools model has been removed from the system
+        // Create School/Campus
+        console.log('🏫 Creating school/campus...');
+        const schools = await School.create([
+            {
+                name: 'Main Campus',
+                arabicName: 'الحرم الجامعي الرئيسي',
+                code: 'MAIN',
+                description: 'Main campus location',
+                isActive: true
+            }
+        ]);
+        const defaultSchool = schools[0];
+        console.log(`✅ Created ${schools.length} school/campus\n`);
 
         // Create Departments
         console.log('🏢 Creating departments...');
@@ -449,6 +463,7 @@ const seedData = async () => {
         console.log('📅 Creating holidays...');
         const holidays = await Holiday.create([
             {
+                campus: defaultSchool._id,
                 officialHolidays: [
                     {
                         date: new Date('2025-01-07'),
@@ -1875,12 +1890,16 @@ const seedData = async () => {
 
         // Create Roles
         console.log('👥 Creating roles...');
+        
+        // Import permission system
+        const { PERMISSIONS, ROLE_PERMISSIONS } = await import('./models/permission.system.js');
+        
         const roles = await Role.create([
             {
                 name: 'admin',
                 displayName: 'Administrator',
                 description: 'Full system access with all permissions',
-                permissions: Object.keys(await import('./models/permission.system.js').then(m => m.PERMISSIONS)),
+                permissions: Object.keys(PERMISSIONS),
                 isSystemRole: true,
                 createdBy: users[0]._id
             },
@@ -1888,24 +1907,7 @@ const seedData = async () => {
                 name: 'employee',
                 displayName: 'Employee',
                 description: 'Basic employee permissions for own data access',
-                permissions: [
-                    'leaves.view-own',
-                    'leaves.create',
-                    'permissions.view-own',
-                    'permissions.create',
-                    'attendance.view-own',
-                    'payroll.view-own',
-                    'documents.view-own',
-                    'documents.upload',
-                    'announcements.view',
-                    'events.view',
-                    'surveys.view',
-                    'surveys.respond',
-                    'notifications.view-own',
-                    'templates.view',
-                    'departments.view',
-                    'positions.view'
-                ],
+                permissions: ROLE_PERMISSIONS['employee'],
                 isSystemRole: true,
                 createdBy: users[0]._id
             },
@@ -1913,174 +1915,15 @@ const seedData = async () => {
                 name: 'manager',
                 displayName: 'Manager',
                 description: 'Team and department management with approval permissions',
-                permissions: [
-                    // Employee permissions
-                    'leaves.view-own', 'leaves.create', 'permissions.view-own', 'permissions.create',
-                    'attendance.view-own', 'payroll.view-own', 'documents.view-own', 'documents.upload',
-                    'announcements.view', 'events.view', 'surveys.view', 'surveys.respond',
-                    'notifications.view-own', 'templates.view', 'departments.view', 'positions.view',
-                    // Manager-specific permissions
-                    'users.view',
-                    'leaves.view', 'leaves.approve',
-                    'permissions.view', 'permissions.approve',
-                    'attendance.view', 'attendance.manage-all',
-                    'payroll.view',
-                    'documents.view', 'documents.edit',
-                    'reports.view', 'reports.create', 'reports.export',
-                    'events.create', 'events.edit', 'events.manage-attendees'
-                ],
+                permissions: ROLE_PERMISSIONS['manager'],
                 isSystemRole: true,
                 createdBy: users[0]._id
             },
             {
                 name: 'hr',
                 displayName: 'HR Manager',
-                description: 'Human resources management with full HR permissions (98 permissions)',
-                permissions: [
-                    // Dashboard
-                    'dashboard.view',
-                    
-                    // Attendance (11 permissions)
-                    'attendance.list',
-                    'attendance.create',
-                    'attendance.edit',
-                    'attendance.delete',
-                    'attendance.view',
-                    'attendance.reports',
-                    'attendance.manage',
-                    'attendance.approve-forget-check',
-                    'attendance.reject-forget-check',
-                    'attendance.create-forget-check',
-                    'attendance.view-forget-check-hr',
-                    
-                    // Departments (6 permissions)
-                    'departments.list',
-                    'departments.create',
-                    'departments.edit',
-                    'departments.delete',
-                    'departments.view',
-                    'departments.manage',
-                    
-                    // Employees (7 permissions)
-                    'employees.list',
-                    'employees.create',
-                    'employees.edit',
-                    'employees.view',
-                    'employees.copy-campus',
-                    'employees.print-credentials',
-                    'employees.reports',
-                    
-                    // Documents (7 permissions)
-                    'documents.view',
-                    'documents.upload',
-                    'documents.download',
-                    'documents.approve',
-                    'documents.bulk-upload',
-                    'documents.reports',
-                    'documents.manage',
-                    
-                    // Permissions (Leave Permission) (6 permissions)
-                    'permissions.approve',
-                    'permissions.create',
-                    'permissions.edit',
-                    'permissions.list',
-                    'permissions.view',
-                    'permissions.reports',
-                    
-                    // Positions (6 permissions)
-                    'positions.list',
-                    'positions.create',
-                    'positions.edit',
-                    'positions.delete',
-                    'positions.view',
-                    'positions.manage',
-                    
-                    // Vacations (6 permissions)
-                    'vacations.list',
-                    'vacations.create',
-                    'vacations.edit',
-                    'vacations.view',
-                    'vacations.approve',
-                    'vacations.reports',
-                    
-                    // Reports (30+ permissions)
-                    'reports.daily-attendance',
-                    'reports.weekly-attendance',
-                    'reports.department-attendance',
-                    'reports.employee-attendance',
-                    'reports.sick-leave',
-                    'reports.early-departure',
-                    'reports.late-departure',
-                    'reports.pending-requests',
-                    'reports.permission-requests',
-                    'reports.vacation-requests',
-                    'reports.documentation',
-                    'reports.id-card-logs',
-                    'reports.email-logs',
-                    'reports.custom-builder',
-                    'reports.audit-logs',
-                    'reports.reminder-settings',
-                    'reports.view',
-                    'reports.create',
-                    'reports.export',
-                    'reports.configure',
-                    'reports.employee-of-month',
-                    
-                    // Settings (3 permissions)
-                    'settings.view',
-                    'settings.edit',
-                    'settings.reminder-view',
-                    
-                    // Roles (3 permissions)
-                    'roles.view',
-                    'roles.edit',
-                    'roles.list',
-                    
-                    // Additional HR permissions
-                    'users.view',
-                    'users.create',
-                    'users.edit',
-                    'users.delete',
-                    'users.manage-roles',
-                    'users.manage-permissions',
-                    'leaves.view',
-                    'leaves.create',
-                    'leaves.edit',
-                    'leaves.delete',
-                    'leaves.approve',
-                    'leaves.manage-all',
-                    'payroll.view',
-                    'payroll.create',
-                    'payroll.edit',
-                    'payroll.delete',
-                    'payroll.process',
-                    'announcements.view',
-                    'announcements.create',
-                    'announcements.edit',
-                    'announcements.delete',
-                    'events.view',
-                    'events.create',
-                    'events.edit',
-                    'events.delete',
-                    'events.manage-attendees',
-                    'surveys.view',
-                    'surveys.create',
-                    'surveys.edit',
-                    'surveys.delete',
-                    'surveys.respond',
-                    'surveys.view-responses',
-                    'notifications.view-own',
-                    'notifications.create',
-                    'notifications.manage-all',
-                    'templates.view',
-                    'templates.create',
-                    'templates.edit',
-                    'templates.delete',
-                    'request-controls.view',
-                    'request-controls.manage',
-                    'audit.view',
-                    'audit.export'
-                ],
+                description: 'Human resources management with full HR permissions',
+                permissions: ROLE_PERMISSIONS['hr'],
                 isSystemRole: true,
                 createdBy: users[0]._id
             },
@@ -2088,14 +1931,7 @@ const seedData = async () => {
                 name: 'id-card-admin',
                 displayName: 'ID Card Administrator',
                 description: 'ID card management and printing operations',
-                permissions: [
-                    'leaves.view-own', 'leaves.create', 'permissions.view-own', 'permissions.create',
-                    'attendance.view-own', 'payroll.view-own', 'notifications.view-own',
-                    'announcements.view', 'events.view',
-                    'id-cards.view', 'id-cards.create', 'id-cards.edit', 'id-cards.print',
-                    'id-cards.batch-print', 'id-cards.manage-batches',
-                    'users.view', 'documents.view'
-                ],
+                permissions: ROLE_PERMISSIONS['id-card-admin'],
                 isSystemRole: true,
                 createdBy: users[0]._id
             }

@@ -119,11 +119,7 @@ const surveySchema = new mongoose.Schema({
             default: false
         },
 
-        // Specific Campuses
-        campuses: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Department'
-        }],
+
 
         // Specific Departments
         departments: [{
@@ -218,7 +214,6 @@ const surveySchema = new mongoose.Schema({
 
 // Indexes
 surveySchema.index({ status: 1, 'settings.endDate': 1 });
-surveySchema.index({ 'assignedTo.campuses': 1 });
 surveySchema.index({ 'assignedTo.departments': 1 });
 surveySchema.index({ 'responses.respondent': 1 });
 
@@ -370,9 +365,7 @@ surveySchema.statics.findActiveSurveysForUser = async function (userId) {
             return true;
         }
 
-        if (user.department && survey.assignedTo.campuses.some(id => id.toString() === user.department.toString())) {
-            return true;
-        }
+
 
         if (user.department && survey.assignedTo.departments.some(id => id.toString() === user.department.toString())) {
             return true;
