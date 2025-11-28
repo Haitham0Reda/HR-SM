@@ -92,13 +92,13 @@ const RoleViewPage = () => {
                 setLoading(true);
 
                 // Load role details
-                const roleResponse = await roleService.getById(id);
-                setRole(roleResponse.data);
+                const role = await roleService.getById(id);
+                setRole(role);
 
                 // Load all permissions for descriptions
                 const permissionsResponse = await roleService.getAllPermissions();
-                setAllPermissions(permissionsResponse.data.permissions || {});
-                setPermissionCategories(permissionsResponse.data.categories || {});
+                setAllPermissions(permissionsResponse.permissions || {});
+                setPermissionCategories(permissionsResponse.categories || {});
             } catch (error) {
                 console.error('Error loading role:', error);
                 showNotification('Failed to load role details', 'error');

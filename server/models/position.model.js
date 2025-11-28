@@ -30,21 +30,30 @@ const positionSchema = new mongoose.Schema({
 positionSchema.pre('validate', async function(next) {
     if (!this.code) {
         try {
-            // Find the highest code number
-            const lastPosition = await this.constructor.findOne({}, { code: 1 })
+            // Find all positions and get the highest code number
+            const positions = await this.constructor.find({}, { code: 1 })
                 .sort({ code: -1 })
                 .lean();
             
             let nextNumber = 1;
-            if (lastPosition && lastPosition.code) {
-                // Extract number from code (e.g., "POS001" -> 1)
-                const match = lastPosition.code.match(/\d+$/);
-                if (match) {
-                    const lastNumber = parseInt(match[0]);
-                    if (!isNaN(lastNumber)) {
-                        nextNumber = lastNumber + 1;
+            const existingNumbers = new Set();
+            
+            // Extract all existing numbers
+            for (const pos of positions) {
+                if (pos.code) {
+                    const match = pos.code.match(/\d+$/);
+                    if (match) {
+                        const num = parseInt(match[0]);
+                        if (!isNaN(num)) {
+                            existingNumbers.add(num);
+                        }
                     }
                 }
+            }
+            
+            // Find the next available number
+            while (existingNumbers.has(nextNumber)) {
+                nextNumber++;
             }
             
             this.code = 'POS' + nextNumber.toString().padStart(3, '0');

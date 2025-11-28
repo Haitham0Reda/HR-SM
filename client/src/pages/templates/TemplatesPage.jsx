@@ -45,9 +45,17 @@ const TemplatesPage = () => {
         try {
             setLoading(true);
             const data = await templateService.getAll();
-            setTemplates(data);
+            // Handle different response formats
+            if (Array.isArray(data)) {
+                setTemplates(data);
+            } else if (data && Array.isArray(data.templates)) {
+                setTemplates(data.templates);
+            } else {
+                setTemplates([]);
+            }
         } catch (error) {
             showNotification('Failed to fetch templates', 'error');
+            setTemplates([]);
         } finally {
             setLoading(false);
         }
@@ -142,67 +150,80 @@ const TemplatesPage = () => {
             field: 'type',
             headerName: 'Type',
             width: 120,
-            renderCell: (params) => (
-                <Chip label={params.row.type} size="small" variant="outlined" />
-            )
+            renderCell: (params) => {
+                if (!params || !params.row) return null;
+                return <Chip label={params.row.type || 'N/A'} size="small" variant="outlined" />;
+            }
         },
         {
             field: 'variables',
             headerName: 'Variables',
             width: 200,
-            renderCell: (params) => params.row.variables?.join(', ') || 'None'
+            renderCell: (params) => {
+                if (!params || !params.row) return 'None';
+                return params.row.variables?.join(', ') || 'None';
+            }
         },
         {
             field: 'isActive',
             headerName: 'Status',
             width: 120,
-            renderCell: (params) => (
-                <Chip
-                    label={params.row.isActive ? 'Active' : 'Inactive'}
-                    color={params.row.isActive ? 'success' : 'default'}
-                    size="small"
-                />
-            )
+            renderCell: (params) => {
+                if (!params || !params.row) return null;
+                return (
+                    <Chip
+                        label={params.row.isActive ? 'Active' : 'Inactive'}
+                        color={params.row.isActive ? 'success' : 'default'}
+                        size="small"
+                    />
+                );
+            }
         },
         {
             field: 'createdAt',
             headerName: 'Created',
             width: 120,
-            renderCell: (params) => new Date(params.row.createdAt).toLocaleDateString()
+            renderCell: (params) => {
+                if (!params || !params.row || !params.row.createdAt) return 'N/A';
+                return new Date(params.row.createdAt).toLocaleDateString();
+            }
         },
         {
             field: 'actions',
             headerName: 'Actions',
             width: 150,
-            renderCell: (params) => (
-                <Box>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleDuplicate(params.row)}
-                        color="primary"
-                        title="Duplicate"
-                    >
-                        <FileCopy fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(params.row)}
-                        color="primary"
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => {
-                            setSelectedTemplate(params.row);
-                            setOpenConfirm(true);
-                        }}
-                        color="error"
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Box>
-            )
+            renderCell: (params) => {
+                if (!params || !params.row) return null;
+                return (
+                    <Box>
+                        <IconButton
+                            size="small"
+                            onClick={() => handleDuplicate(params.row)}
+                            color="primary"
+                            title="Duplicate"
+                        >
+                            <FileCopy fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            onClick={() => handleOpenDialog(params.row)}
+                            color="primary"
+                        >
+                            <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            onClick={() => {
+                                setSelectedTemplate(params.row);
+                                setOpenConfirm(true);
+                            }}
+                            color="error"
+                        >
+                            <DeleteIcon fontSize="small" />
+                        </IconButton>
+                    </Box>
+                );
+            }
         }
     ];
 

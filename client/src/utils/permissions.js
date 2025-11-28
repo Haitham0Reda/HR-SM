@@ -14,78 +14,74 @@
 export const ALL_PERMISSIONS = [
     // Dashboard
     'dashboard.view',
+    'dashboard.admin-view',
     
-    // Attendance
-    'attendance.list',
-    'attendance.create',
-    'attendance.edit',
-    'attendance.delete',
-    'attendance.view',
-    'attendance.view-own',
-    'attendance.reports',
-    'attendance.manage',
-    'attendance.approve-forget-check',
-    'attendance.reject-forget-check',
-    'attendance.create-forget-check',
-    'attendance.view-forget-check-hr',
-    'attendance.view-forget-check-supervisor',
+    // User Management
+    'users.view',
+    'users.create',
+    'users.edit',
+    'users.delete',
+    'users.list',
+    'users.manage-roles',
+    'users.manage-permissions',
+    'users.forgot-password-manage',
     
-    // Departments
-    'departments.list',
-    'departments.create',
-    'departments.edit',
-    'departments.delete',
-    'departments.view',
-    'departments.manage',
-    
-    // Employees
+    // Employee Management
     'employees.list',
     'employees.create',
     'employees.edit',
     'employees.delete',
     'employees.view',
-    'employees.copy-campus',
+    'employees.import',
+    'employees.export',
     'employees.print-credentials',
     'employees.reports',
+    'employees.status-change',
     'employees.employee-of-month',
+    'employees.position-repair',
+    'employees.bulk-edit',
+    'employees.admin-edit',
+    'employees.birthday-validation-edit',
+    'employees.birthday-validation-view',
+    'employees.photo-management-edit',
+    'employees.photo-management-view',
+    'employees.supervision-management-edit',
+    'employees.supervision-management-view',
+    'employees.management-hub-view',
     
-    // Documents
-    'documents.view',
-    'documents.view-own',
-    'documents.upload',
-    'documents.download',
-    'documents.approve',
-    'documents.bulk-upload',
-    'documents.reports',
-    'documents.manage',
-    'documents.delete',
+    // Department Management
+    'departments.view',
+    'departments.create',
+    'departments.edit',
+    'departments.delete',
+    'departments.list',
+    'departments.manage',
+    'departments.statistics-view',
     
-    // Permissions (Leave Permission)
-    'permissions.approve',
-    'permissions.create',
-    'permissions.edit',
-    'permissions.delete',
-    'permissions.list',
-    'permissions.view',
-    'permissions.view-own',
-    'permissions.reports',
-    
-    // Positions
-    'positions.list',
+    // Position Management
+    'positions.view',
     'positions.create',
     'positions.edit',
     'positions.delete',
-    'positions.view',
+    'positions.list',
     'positions.manage',
     
-    // Vacations & Leaves
-    'vacations.list',
-    'vacations.create',
-    'vacations.edit',
-    'vacations.delete',
-    'vacations.view',
-    'vacations.approve',
-    'vacations.reports',
+    // Section Management
+    'sections.view',
+    'sections.create',
+    'sections.edit',
+    'sections.delete',
+    'sections.list',
+    'sections.manage',
+    
+    // Academic Management (Majors)
+    'majors.view',
+    'majors.create',
+    'majors.edit',
+    'majors.delete',
+    'majors.list',
+    
+    // Leave Management
     'leaves.view',
     'leaves.view-own',
     'leaves.create',
@@ -94,14 +90,164 @@ export const ALL_PERMISSIONS = [
     'leaves.approve',
     'leaves.manage-all',
     
+    // Permission Requests
+    'permissions.view',
+    'permissions.view-own',
+    'permissions.create',
+    'permissions.edit',
+    'permissions.delete',
+    'permissions.list',
+    'permissions.approve',
+    'permissions.reports',
+    'permissions.request',
+    
+    // Attendance Management
+    'attendance.view',
+    'attendance.view-own',
+    'attendance.create',
+    'attendance.edit',
+    'attendance.delete',
+    'attendance.list',
+    'attendance.manage',
+    'attendance.reports',
+    
+    // Forgot Check (Attendance)
+    'forgot-check.view',
+    'forgot-check.create',
+    'forgot-check.approve',
+    'forgot-check.reject',
+    'forgot-check.view-hr',
+    'forgot-check.view-supervisor',
+    
+    // Payroll Management
+    'payroll.view',
+    'payroll.view-own',
+    'payroll.create',
+    'payroll.edit',
+    'payroll.delete',
+    'payroll.list',
+    'payroll.upload',
+    'payroll.download',
+    'payroll.manage',
+    'payroll.history-view',
+    
+    // Vacation Management
+    'vacations.view',
+    'vacations.create',
+    'vacations.edit',
+    'vacations.delete',
+    'vacations.list',
+    'vacations.approve',
+    'vacations.reports',
+    'vacations.request',
+    'vacations.manage',
+    
+    // Sick Leave Management
+    'sickleave.view',
+    'sickleave.create',
+    'sickleave.edit',
+    'sickleave.delete',
+    'sickleave.list',
+    'sickleave.approve',
+    'sickleave.reports',
+    'sickleave.manage',
+    
+    // Document Management
+    'documents.view',
+    'documents.view-own',
+    'documents.upload',
+    'documents.download',
+    'documents.edit',
+    'documents.delete',
+    'documents.approve',
+    'documents.bulk-upload',
+    'documents.reports',
+    'documents.manage',
+    'documents.view-confidential',
+    'documents.documentation-view',
+    
+    // Document Templates
+    'templates.view',
+    'templates.create',
+    'templates.edit',
+    'templates.delete',
+    
+    // Announcements
+    'announcements.view',
+    'announcements.create',
+    'announcements.edit',
+    'announcements.delete',
+    
+    // Event Management
+    'events.view',
+    'events.create',
+    'events.edit',
+    'events.delete',
+    'events.list',
+    'events.manage',
+    'events.manage-attendees',
+    
+    // Survey Management
+    'surveys.view',
+    'surveys.create',
+    'surveys.edit',
+    'surveys.delete',
+    'surveys.list',
+    'surveys.respond',
+    'surveys.view-responses',
+    'surveys.statistics',
+    
+    // Notification Management
+    'notifications.view-own',
+    'notifications.create',
+    'notifications.manage',
+    'notifications.send',
+    'notifications.center-view',
+    
+    // Email Communication
+    'email.view',
+    'email.create',
+    'email.send',
+    'email.logs-view',
+    'email.report-send',
+    
+    // ID Card Management
+    'id-cards.view',
+    'id-cards.create',
+    'id-cards.edit',
+    'id-cards.delete',
+    'id-cards.print',
+    'id-cards.batch-print',
+    'id-cards.manage-batches',
+    'id-cards.logs',
+    'id-cards.export',
+    'id-cards.email',
+    
+    // Photo Management
+    'photos.view',
+    'photos.upload',
+    'photos.download',
+    'photos.delete',
+    'photos.bulk-upload',
+    'photos.cleanup',
+    'photos.migrate',
+    'photos.manage',
+    
     // Reports
+    'reports.view',
+    'reports.view-own',
+    'reports.create',
+    'reports.export',
+    'reports.configure',
+    'reports.generate',
+    'reports.schedule',
     'reports.daily-attendance',
     'reports.weekly-attendance',
+    'reports.today-attendance',
     'reports.department-attendance',
     'reports.employee-attendance',
-    'reports.sick-leave',
-    'reports.early-departure',
-    'reports.late-departure',
+    'reports.sickleave-requests',
+    'reports.late-early-departure',
     'reports.pending-requests',
     'reports.permission-requests',
     'reports.vacation-requests',
@@ -111,116 +257,107 @@ export const ALL_PERMISSIONS = [
     'reports.custom-builder',
     'reports.audit-logs',
     'reports.reminder-settings',
-    'reports.view',
-    'reports.create',
-    'reports.export',
-    'reports.configure',
-    'reports.employee-of-month',
+    'reports.employee-deductions',
+    'reports.comprehensive-deduction',
+    'reports.employee-status',
+    'reports.employee-tenure',
+    'reports.forgot-check',
     
-    // Settings
-    'settings.view',
-    'settings.edit',
-    'settings.reminder-view',
-    'settings.security',
-    'settings.backup',
-    'settings.system',
+    // Custom Reports
+    'custom-reports.view',
+    'custom-reports.create',
+    'custom-reports.edit',
+    'custom-reports.delete',
     
-    // Roles & Permissions
-    'roles.view',
-    'roles.create',
-    'roles.edit',
-    'roles.delete',
-    'roles.list',
-    'roles.assign',
-    
-    // User Management
-    'users.view',
-    'users.create',
-    'users.edit',
-    'users.delete',
-    'users.manage-roles',
-    'users.manage-permissions',
-    'users.activate',
-    'users.deactivate',
-    
-    // Payroll
-    'payroll.view',
-    'payroll.view-own',
-    'payroll.create',
-    'payroll.edit',
-    'payroll.delete',
-    'payroll.process',
-    'payroll.approve',
-    
-    // Announcements
-    'announcements.view',
-    'announcements.create',
-    'announcements.edit',
-    'announcements.delete',
-    'announcements.publish',
-    
-    // Events
-    'events.view',
-    'events.create',
-    'events.edit',
-    'events.delete',
-    'events.manage-attendees',
-    
-    // Surveys
-    'surveys.view',
-    'surveys.create',
-    'surveys.edit',
-    'surveys.delete',
-    'surveys.respond',
-    'surveys.view-responses',
-    'surveys.publish',
-    
-    // Notifications
-    'notifications.view-own',
-    'notifications.create',
-    'notifications.manage-all',
-    'notifications.send',
-    
-    // Templates
-    'templates.view',
-    'templates.create',
-    'templates.edit',
-    'templates.delete',
+    // School Management
+    'schools.view',
+    'schools.create',
+    'schools.edit',
+    'schools.delete',
     
     // Request Controls
     'request-controls.view',
     'request-controls.manage',
     
+    // Reminder Settings
+    'reminder-settings.view',
+    'reminder-settings.edit',
+    
+    // Settings Management
+    'settings.view',
+    'settings.edit',
+    'settings.manage',
+    'settings.security',
+    'settings.security-view',
+    'settings.security-manage',
+    
+    // Security Management
+    'security.ip-whitelist-edit',
+    'security.logs-view',
+    'security.session-terminate',
+    
+    // Role Management
+    'roles.view',
+    'roles.create',
+    'roles.edit',
+    'roles.delete',
+    'roles.list',
+    'roles.manage',
+    
     // Audit Logs
     'audit.view',
     'audit.export',
-    'audit.delete',
-    
-    // Backups
-    'backups.view',
-    'backups.create',
-    'backups.restore',
-    'backups.delete',
-    
-    // ID Cards
-    'id-cards.view',
-    'id-cards.create',
-    'id-cards.edit',
-    'id-cards.print',
-    'id-cards.batch-print',
-    'id-cards.manage-batches',
-    
-    // Hardcopy Management
-    'hardcopy.view',
-    'hardcopy.create',
-    'hardcopy.edit',
-    'hardcopy.delete',
     
     // System Administration
     'system.view-logs',
-    'system.manage-database',
-    'system.manage-security',
-    'system.manage-integrations'
+    'system.logs-view',
+    'system.logs-clear',
+    'system.logs-hub-view',
+    'system.backup',
+    'system.restore',
+    'system.maintenance',
+    'system.status-view',
+    'system.administration-hub-view',
+    
+    // Backup Management
+    'backups.manage',
+    
+    // Cache Management
+    'cache.clear',
+    
+    // Data Management
+    'data.management-hub-view',
+    'data.import',
+    'data.export',
+    'data.bulk-operations',
+    
+    // Active Directory
+    'ad.password-management',
+    'ad.user-list',
+    'ad.user-create',
+    'ad.user-edit',
+    'ad.user-delete',
+    'ad.user-view',
+    
+    // Admin Tools
+    'admin-tools.unused-departments-positions-edit',
+    'admin-tools.unused-departments-positions-view',
+    
+    // Advanced Features
+    'advanced.license-manage',
+    'advanced.schedule-manage',
+    
+    // Issue Management
+    'issues.view',
+    'issues.create',
+    'issues.list',
+    'tickets.view',
+    'tickets.list',
+    
+    // Resigned Management
+    'resigned.view',
+    'resigned.manage',
+    'resigned.print'
 ];
 
 // Admin Permissions (ALL PERMISSIONS)
@@ -258,7 +395,6 @@ export const HR_PERMISSIONS = [
     'employees.create',
     'employees.edit',
     'employees.view',
-    'employees.copy-campus',
     'employees.print-credentials',
     'employees.reports',
     
@@ -345,7 +481,7 @@ export const HR_PERMISSIONS = [
     'payroll.create',
     'payroll.edit',
     'payroll.delete',
-    'payroll.process',
+    'payroll.manage',
     'announcements.view',
     'announcements.create',
     'announcements.edit',
@@ -363,7 +499,7 @@ export const HR_PERMISSIONS = [
     'surveys.view-responses',
     'notifications.view-own',
     'notifications.create',
-    'notifications.manage-all',
+    'notifications.manage',
     'templates.view',
     'templates.create',
     'templates.edit',
@@ -400,7 +536,7 @@ export const MANAGER_PERMISSIONS = [
     'permissions.view',
     'permissions.approve',
     'attendance.view',
-    'attendance.manage-all',
+    'attendance.manage',
     'payroll.view',
     'documents.view',
     'documents.edit',
@@ -435,83 +571,26 @@ export const EMPLOYEE_PERMISSIONS = [
 // Permission Categories for UI Organization
 // Admin can assign any of these permissions to any role
 export const PERMISSION_CATEGORIES = {
-    SYSTEM: {
-        label: 'System Administration',
-        description: 'Full system control and administration',
-        permissions: [
-            'system.view-logs',
-            'system.manage-database',
-            'system.manage-security',
-            'system.manage-integrations'
-        ],
-        adminOnly: true
-    },
-    BACKUPS: {
-        label: 'Backup Management',
-        description: 'Database and file backup operations',
-        permissions: [
-            'backups.view',
-            'backups.create',
-            'backups.restore',
-            'backups.delete'
-        ]
-    },
-    ID_CARDS: {
-        label: 'ID Card Management',
-        description: 'Employee ID card creation and printing',
-        permissions: [
-            'id-cards.view',
-            'id-cards.create',
-            'id-cards.edit',
-            'id-cards.print',
-            'id-cards.batch-print',
-            'id-cards.manage-batches'
-        ]
-    },
-    HARDCOPY: {
-        label: 'Hardcopy Management',
-        description: 'Physical document tracking',
-        permissions: [
-            'hardcopy.view',
-            'hardcopy.create',
-            'hardcopy.edit',
-            'hardcopy.delete'
-        ]
-    },
     DASHBOARD: {
         label: 'Dashboard',
-        description: 'Main dashboard access',
-        permissions: ['dashboard.view']
-    },
-    ATTENDANCE: {
-        label: 'Attendance Management',
-        description: 'Employee attendance tracking and management',
+        description: 'Dashboard access and views',
         permissions: [
-            'attendance.list',
-            'attendance.create',
-            'attendance.edit',
-            'attendance.delete',
-            'attendance.view',
-            'attendance.reports',
-            'attendance.manage',
-            'attendance.approve-forget-check',
-            'attendance.reject-forget-check',
-            'attendance.create-forget-check',
-            'attendance.view-forget-check-hr',
-            'attendance.view-own',
-            'attendance.view-forget-check-supervisor'
+            'dashboard.view',
+            'dashboard.admin-view'
         ]
     },
-    DEPARTMENTS: {
-        label: 'Department Management',
-        description: 'Organizational department management',
+    USERS: {
+        label: 'User Management',
+        description: 'User account management',
         permissions: [
-            'departments.list',
-            'departments.create',
-            'departments.edit',
-            'departments.delete',
-            'departments.view',
-            'departments.manage'
+            'users.view',
+            'users.create',
+            'users.edit',
+            'users.delete',
+            'users.list',
+            'users.manage-roles',
+            'users.manage-permissions',
+            'users.forgot-password-manage'
         ]
     },
     EMPLOYEES: {
@@ -523,136 +602,124 @@ export const PERMISSION_CATEGORIES = {
             'employees.edit',
             'employees.delete',
             'employees.view',
-            'employees.copy-campus',
+            'employees.import',
+            'employees.export',
             'employees.print-credentials',
             'employees.reports',
-            'employees.employee-of-month'
+            'employees.status-change',
+            'employees.employee-of-month',
+            'employees.position-repair',
+            'employees.bulk-edit',
+            'employees.admin-edit',
+            'employees.birthday-validation-edit',
+            'employees.birthday-validation-view',
+            'employees.photo-management-edit',
+            'employees.photo-management-view',
+            'employees.supervision-management-edit',
+            'employees.supervision-management-view',
+            'employees.management-hub-view'
         ]
     },
-    DOCUMENTS: {
-        label: 'Document Management',
-        description: 'Employee document storage and management',
+    DEPARTMENTS: {
+        label: 'Department Management',
+        description: 'Organizational department management',
         permissions: [
-            'documents.view',
-            'documents.upload',
-            'documents.download',
-            'documents.approve',
-            'documents.bulk-upload',
-            'documents.reports',
-            'documents.manage',
-            'documents.view-own',
-            'documents.delete'
-        ]
-    },
-    PERMISSIONS: {
-        label: 'Leave Permissions',
-        description: 'Employee leave permission requests',
-        permissions: [
-            'permissions.approve',
-            'permissions.create',
-            'permissions.edit',
-            'permissions.list',
-            'permissions.view',
-            'permissions.reports',
-            'permissions.view-own',
-            'permissions.delete'
+            'departments.view',
+            'departments.create',
+            'departments.edit',
+            'departments.delete',
+            'departments.list',
+            'departments.manage',
+            'departments.statistics-view'
         ]
     },
     POSITIONS: {
         label: 'Position Management',
         description: 'Job position and role definitions',
         permissions: [
-            'positions.list',
+            'positions.view',
             'positions.create',
             'positions.edit',
             'positions.delete',
-            'positions.view',
+            'positions.list',
             'positions.manage'
         ]
     },
-    VACATIONS: {
-        label: 'Vacations & Leaves',
-        description: 'Employee vacation and leave management',
+    SECTIONS: {
+        label: 'Section Management',
+        description: 'Section organization and management',
         permissions: [
-            'vacations.list',
-            'vacations.create',
-            'vacations.edit',
-            'vacations.view',
-            'vacations.approve',
-            'vacations.reports',
-            'vacations.delete',
+            'sections.view',
+            'sections.create',
+            'sections.edit',
+            'sections.delete',
+            'sections.list',
+            'sections.manage'
+        ]
+    },
+    MAJORS: {
+        label: 'Academic Management',
+        description: 'Academic major and program management',
+        permissions: [
+            'majors.view',
+            'majors.create',
+            'majors.edit',
+            'majors.delete',
+            'majors.list'
+        ]
+    },
+    LEAVES: {
+        label: 'Leave Management',
+        description: 'Employee leave requests and approvals',
+        permissions: [
             'leaves.view',
+            'leaves.view-own',
             'leaves.create',
             'leaves.edit',
             'leaves.delete',
             'leaves.approve',
-            'leaves.manage-all',
-            'leaves.view-own'
+            'leaves.manage-all'
         ]
     },
-    REPORTS: {
-        label: 'Reports & Analytics',
-        description: 'System reports and data analytics',
+    PERMISSIONS: {
+        label: 'Permission Requests',
+        description: 'Employee permission requests',
         permissions: [
-            'reports.daily-attendance',
-            'reports.weekly-attendance',
-            'reports.department-attendance',
-            'reports.employee-attendance',
-            'reports.sick-leave',
-            'reports.early-departure',
-            'reports.late-departure',
-            'reports.pending-requests',
-            'reports.permission-requests',
-            'reports.vacation-requests',
-            'reports.documentation',
-            'reports.id-card-logs',
-            'reports.email-logs',
-            'reports.custom-builder',
-            'reports.audit-logs',
-            'reports.reminder-settings',
-            'reports.view',
-            'reports.create',
-            'reports.export',
-            'reports.configure',
-            'reports.employee-of-month'
+            'permissions.view',
+            'permissions.view-own',
+            'permissions.create',
+            'permissions.edit',
+            'permissions.delete',
+            'permissions.list',
+            'permissions.approve',
+            'permissions.reports',
+            'permissions.request'
         ]
     },
-    SETTINGS: {
-        label: 'System Settings',
-        description: 'Application configuration and settings',
+    ATTENDANCE: {
+        label: 'Attendance Management',
+        description: 'Employee attendance tracking and management',
         permissions: [
-            'settings.view',
-            'settings.edit',
-            'settings.reminder-view',
-            'settings.security',
-            'settings.backup',
-            'settings.system'
+            'attendance.view',
+            'attendance.view-own',
+            'attendance.create',
+            'attendance.edit',
+            'attendance.delete',
+            'attendance.list',
+            'attendance.manage',
+            'attendance.reports'
         ]
     },
-    ROLES: {
-        label: 'Roles & Permissions',
-        description: 'User role and permission management',
+    FORGOT_CHECK: {
+        label: 'Forgot Check',
+        description: 'Forgot check-in/out request management',
         permissions: [
-            'roles.view',
-            'roles.create',
-            'roles.edit',
-            'roles.delete',
-            'roles.list',
-            'roles.assign'
-        ]
-    },
-    USERS: {
-        label: 'User Management',
-        description: 'User account management',
-        permissions: [
-            'users.view',
-            'users.create',
-            'users.edit',
-            'users.delete',
-            'users.manage-roles',
-            'users.manage-permissions',
-            'users.activate',
-            'users.deactivate'
+            'forgot-check.view',
+            'forgot-check.create',
+            'forgot-check.approve',
+            'forgot-check.reject',
+            'forgot-check.view-hr',
+            'forgot-check.view-supervisor'
         ]
     },
     PAYROLL: {
@@ -660,57 +727,62 @@ export const PERMISSION_CATEGORIES = {
         description: 'Employee payroll and compensation',
         permissions: [
             'payroll.view',
+            'payroll.view-own',
             'payroll.create',
             'payroll.edit',
             'payroll.delete',
-            'payroll.process',
-            'payroll.approve',
-            'payroll.view-own'
+            'payroll.list',
+            'payroll.upload',
+            'payroll.download',
+            'payroll.manage',
+            'payroll.history-view'
         ]
     },
-    ANNOUNCEMENTS: {
-        label: 'Announcements',
-        description: 'Company announcements and communications',
+    VACATIONS: {
+        label: 'Vacation Management',
+        description: 'Employee vacation requests and management',
         permissions: [
-            'announcements.view',
-            'announcements.create',
-            'announcements.edit',
-            'announcements.delete',
-            'announcements.publish'
+            'vacations.view',
+            'vacations.create',
+            'vacations.edit',
+            'vacations.delete',
+            'vacations.list',
+            'vacations.approve',
+            'vacations.reports',
+            'vacations.request',
+            'vacations.manage'
         ]
     },
-    EVENTS: {
-        label: 'Event Management',
-        description: 'Company events and calendar',
+    SICKLEAVE: {
+        label: 'Sick Leave Management',
+        description: 'Sick leave tracking and management',
         permissions: [
-            'events.view',
-            'events.create',
-            'events.edit',
-            'events.delete',
-            'events.manage-attendees'
+            'sickleave.view',
+            'sickleave.create',
+            'sickleave.edit',
+            'sickleave.delete',
+            'sickleave.list',
+            'sickleave.approve',
+            'sickleave.reports',
+            'sickleave.manage'
         ]
     },
-    SURVEYS: {
-        label: 'Survey Management',
-        description: 'Employee surveys and feedback',
+    DOCUMENTS: {
+        label: 'Document Management',
+        description: 'Employee document storage and management',
         permissions: [
-            'surveys.view',
-            'surveys.create',
-            'surveys.edit',
-            'surveys.delete',
-            'surveys.respond',
-            'surveys.view-responses',
-            'surveys.publish'
-        ]
-    },
-    NOTIFICATIONS: {
-        label: 'Notifications',
-        description: 'System notifications and alerts',
-        permissions: [
-            'notifications.view-own',
-            'notifications.create',
-            'notifications.manage-all',
-            'notifications.send'
+            'documents.view',
+            'documents.view-own',
+            'documents.upload',
+            'documents.download',
+            'documents.edit',
+            'documents.delete',
+            'documents.approve',
+            'documents.bulk-upload',
+            'documents.reports',
+            'documents.manage',
+            'documents.view-confidential',
+            'documents.documentation-view'
         ]
     },
     TEMPLATES: {
@@ -723,6 +795,150 @@ export const PERMISSION_CATEGORIES = {
             'templates.delete'
         ]
     },
+    ANNOUNCEMENTS: {
+        label: 'Announcements',
+        description: 'Company announcements and communications',
+        permissions: [
+            'announcements.view',
+            'announcements.create',
+            'announcements.edit',
+            'announcements.delete'
+        ]
+    },
+    EVENTS: {
+        label: 'Event Management',
+        description: 'Company events and calendar',
+        permissions: [
+            'events.view',
+            'events.create',
+            'events.edit',
+            'events.delete',
+            'events.list',
+            'events.manage',
+            'events.manage-attendees'
+        ]
+    },
+    SURVEYS: {
+        label: 'Survey Management',
+        description: 'Employee surveys and feedback',
+        permissions: [
+            'surveys.view',
+            'surveys.create',
+            'surveys.edit',
+            'surveys.delete',
+            'surveys.list',
+            'surveys.respond',
+            'surveys.view-responses',
+            'surveys.statistics'
+        ]
+    },
+    NOTIFICATIONS: {
+        label: 'Notification Management',
+        description: 'System notifications and alerts',
+        permissions: [
+            'notifications.view-own',
+            'notifications.create',
+            'notifications.manage',
+            'notifications.send',
+            'notifications.center-view'
+        ]
+    },
+    EMAIL: {
+        label: 'Email Communication',
+        description: 'Email communication and logs',
+        permissions: [
+            'email.view',
+            'email.create',
+            'email.send',
+            'email.logs-view',
+            'email.report-send'
+        ]
+    },
+    ID_CARDS: {
+        label: 'ID Card Management',
+        description: 'Employee ID card creation and printing',
+        permissions: [
+            'id-cards.view',
+            'id-cards.create',
+            'id-cards.edit',
+            'id-cards.delete',
+            'id-cards.print',
+            'id-cards.batch-print',
+            'id-cards.manage-batches',
+            'id-cards.logs',
+            'id-cards.export',
+            'id-cards.email'
+        ]
+    },
+    PHOTOS: {
+        label: 'Photo Management',
+        description: 'Employee photo management',
+        permissions: [
+            'photos.view',
+            'photos.upload',
+            'photos.download',
+            'photos.delete',
+            'photos.bulk-upload',
+            'photos.cleanup',
+            'photos.migrate',
+            'photos.manage'
+        ]
+    },
+    REPORTS: {
+        label: 'Reports & Analytics',
+        description: 'System reports and data analytics',
+        permissions: [
+            'reports.view',
+            'reports.view-own',
+            'reports.create',
+            'reports.export',
+            'reports.configure',
+            'reports.generate',
+            'reports.schedule',
+            'reports.daily-attendance',
+            'reports.weekly-attendance',
+            'reports.today-attendance',
+            'reports.department-attendance',
+            'reports.employee-attendance',
+            'reports.sickleave-requests',
+            'reports.late-early-departure',
+            'reports.pending-requests',
+            'reports.permission-requests',
+            'reports.vacation-requests',
+            'reports.documentation',
+            'reports.id-card-logs',
+            'reports.email-logs',
+            'reports.custom-builder',
+            'reports.audit-logs',
+            'reports.reminder-settings',
+            'reports.employee-deductions',
+            'reports.comprehensive-deduction',
+            'reports.employee-status',
+            'reports.employee-tenure',
+            'reports.forgot-check'
+        ]
+    },
+    CUSTOM_REPORTS: {
+        label: 'Custom Reports',
+        description: 'Custom report builder',
+        permissions: [
+            'custom-reports.view',
+            'custom-reports.create',
+            'custom-reports.edit',
+            'custom-reports.delete'
+        ]
+    },
+
+    SCHOOLS: {
+        label: 'School Management',
+        description: 'School and institution management',
+        permissions: [
+            'schools.view',
+            'schools.create',
+            'schools.edit',
+            'schools.delete'
+        ]
+    },
     REQUEST_CONTROLS: {
         label: 'Request Controls',
         description: 'Request workflow and approval settings',
@@ -731,13 +947,140 @@ export const PERMISSION_CATEGORIES = {
             'request-controls.manage'
         ]
     },
+    REMINDER_SETTINGS: {
+        label: 'Reminder Settings',
+        description: 'System reminder configuration',
+        permissions: [
+            'reminder-settings.view',
+            'reminder-settings.edit'
+        ]
+    },
+    SETTINGS: {
+        label: 'Settings Management',
+        description: 'Application configuration and settings',
+        permissions: [
+            'settings.view',
+            'settings.edit',
+            'settings.manage',
+            'settings.security',
+            'settings.security-view',
+            'settings.security-manage'
+        ]
+    },
+    SECURITY: {
+        label: 'Security Management',
+        description: 'Security and access control',
+        permissions: [
+            'security.ip-whitelist-edit',
+            'security.logs-view',
+            'security.session-terminate'
+        ]
+    },
+    ROLES: {
+        label: 'Role Management',
+        description: 'User role and permission management',
+        permissions: [
+            'roles.view',
+            'roles.create',
+            'roles.edit',
+            'roles.delete',
+            'roles.list',
+            'roles.manage'
+        ]
+    },
     AUDIT: {
         label: 'Audit Logs',
         description: 'System audit trail and logs',
         permissions: [
             'audit.view',
-            'audit.export',
-            'audit.delete'
+            'audit.export'
+        ]
+    },
+    SYSTEM: {
+        label: 'System Administration',
+        description: 'Full system control and administration',
+        permissions: [
+            'system.view-logs',
+            'system.logs-view',
+            'system.logs-clear',
+            'system.logs-hub-view',
+            'system.backup',
+            'system.restore',
+            'system.maintenance',
+            'system.status-view',
+            'system.administration-hub-view'
+        ]
+    },
+    BACKUPS: {
+        label: 'Backup Management',
+        description: 'Database and file backup operations',
+        permissions: [
+            'backups.manage'
+        ]
+    },
+    CACHE: {
+        label: 'Cache Management',
+        description: 'System cache management',
+        permissions: [
+            'cache.clear'
+        ]
+    },
+    DATA: {
+        label: 'Data Management',
+        description: 'Data import, export, and operations',
+        permissions: [
+            'data.management-hub-view',
+            'data.import',
+            'data.export',
+            'data.bulk-operations'
+        ]
+    },
+    ACTIVE_DIRECTORY: {
+        label: 'Active Directory',
+        description: 'Active Directory integration and management',
+        permissions: [
+            'ad.password-management',
+            'ad.user-list',
+            'ad.user-create',
+            'ad.user-edit',
+            'ad.user-delete',
+            'ad.user-view'
+        ]
+    },
+    ADMIN_TOOLS: {
+        label: 'Admin Tools',
+        description: 'Administrative utilities and tools',
+        permissions: [
+            'admin-tools.unused-departments-positions-edit',
+            'admin-tools.unused-departments-positions-view'
+        ]
+    },
+    ADVANCED: {
+        label: 'Advanced Features',
+        description: 'Advanced system features',
+        permissions: [
+            'advanced.license-manage',
+            'advanced.schedule-manage'
+        ]
+    },
+    ISSUES: {
+        label: 'Issue Management',
+        description: 'Issue and ticket tracking',
+        permissions: [
+            'issues.view',
+            'issues.create',
+            'issues.list',
+            'tickets.view',
+            'tickets.list'
+        ]
+    },
+    RESIGNED: {
+        label: 'Resigned Management',
+        description: 'Resigned employee management',
+        permissions: [
+            'resigned.view',
+            'resigned.manage',
+            'resigned.print'
         ]
     }
 };

@@ -134,17 +134,16 @@ const RoleEditPage = () => {
                 
                 // Load all available permissions
                 const permissionsResponse = await roleService.getAllPermissions();
-                setAllPermissions(permissionsResponse.data.permissions || {});
-                setPermissionCategories(permissionsResponse.data.categories || {});
+                setAllPermissions(permissionsResponse.permissions || {});
+                setPermissionCategories(permissionsResponse.categories || {});
 
                 // Load all existing roles for duplicate checking
                 const rolesResponse = await roleService.getAll();
-                setExistingRoles(rolesResponse.data.roles || []);
+                setExistingRoles(rolesResponse.roles || []);
 
                 // If editing, load role data
                 if (isEditMode) {
-                    const roleResponse = await roleService.getById(id);
-                    const role = roleResponse.data;
+                    const role = await roleService.getById(id);
                     setRoleData({
                         name: role.name || '',
                         displayName: role.displayName || '',

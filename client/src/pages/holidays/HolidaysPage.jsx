@@ -54,8 +54,10 @@ const HolidaysPage = () => {
         try {
             setLoading(true);
             const response = await holidayService.getSettings();
-            setHolidaySettings(response.settings);
-            setHolidays(response.settings.officialHolidays || []);
+            // API interceptor already extracts response.data
+            const settings = response.settings || response;
+            setHolidaySettings(settings);
+            setHolidays(settings.officialHolidays || []);
         } catch (error) {
             showNotification('Failed to fetch holidays', 'error');
         } finally {

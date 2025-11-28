@@ -143,9 +143,17 @@ const PositionsPage = () => {
                 arabicTitle: formData.arabicTitle || undefined,
             };
 
+            // Remove code field when creating new position (backend will auto-generate)
             if (!selectedPosition) {
                 delete submitData.code;
             }
+            
+            // Remove empty string values
+            Object.keys(submitData).forEach(key => {
+                if (submitData[key] === '') {
+                    delete submitData[key];
+                }
+            });
 
             if (selectedPosition) {
                 await positionService.update(selectedPosition._id, submitData);
