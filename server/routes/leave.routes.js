@@ -21,8 +21,13 @@ import {
 } from '../middleware/index.js';
 import { mapLeaveFields } from '../middleware/mapLeaveFields.js';
 import upload from '../config/multer.config.js';
+import { deprecateEndpoint, checkLegacyEnabled } from '../middleware/deprecation.middleware.js';
 
 const router = express.Router();
+
+// Apply legacy check and deprecation middleware to all routes
+router.use(checkLegacyEnabled);
+router.use(deprecateEndpoint({ endpoint: '/api/leaves' }));
 
 // Get all leaves - protected route
 router.get('/', protect, getAllLeaves);

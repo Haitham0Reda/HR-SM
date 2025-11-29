@@ -55,10 +55,18 @@ export const getEmployeeSurveys = async (req, res) => {
     try {
         const surveys = await Survey.findActiveSurveysForUser(req.user._id);
 
+        console.log(`[getEmployeeSurveys] User: ${req.user.username} (${req.user._id})`);
+        console.log(`[getEmployeeSurveys] Found ${surveys.length} active surveys`);
+
         // Map surveys with completion status
         const surveysWithStatus = surveys.map(survey => {
             const hasResponded = survey.hasUserResponded(req.user._id);
             const response = hasResponded ? survey.getUserResponse(req.user._id) : null;
+
+            console.log(`[getEmployeeSurveys] Survey: ${survey.title}`);
+            console.log(`  - hasResponded: ${hasResponded}`);
+            console.log(`  - isComplete: ${response?.isComplete || false}`);
+            console.log(`  - submittedAt: ${response?.submittedAt}`);
 
             return {
                 _id: survey._id,
@@ -139,9 +147,21 @@ export const getSurveyById = async (req, res) => {
             });
         }
 
+        // For HR/Admin, hide respondent info for anonymous responses
+        const surveyData = survey.toObject();
+        surveyData.responses = surveyData.responses.map(r => {
+            if (r.isAnonymous) {
+                return {
+                    ...r,
+                    respondent: null
+                };
+            }
+            return r;
+        });
+
         res.status(200).json({
             success: true,
-            survey
+            survey: surveyData
         });
     } catch (err) {
         res.status(500).json({ error: err.message });

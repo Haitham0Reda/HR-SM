@@ -335,7 +335,7 @@ export const getEmployeeAnalytics = async (req, res) => {
             {
                 $match: {
                     isActive: true,
-                    'profile.dateOfBirth': { $exists: true }
+                    'personalInfo.dateOfBirth': { $exists: true }
                 }
             },
             {

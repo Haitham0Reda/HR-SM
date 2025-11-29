@@ -215,7 +215,7 @@ const ForgetCheckPage = () => {
             headerName: 'Employee',
             width: 180,
             align: 'center',
-            renderCell: (row) => row.employee?.name || 'N/A'
+            renderCell: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A'
         },
         {
             field: 'date',

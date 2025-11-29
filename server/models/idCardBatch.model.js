@@ -358,7 +358,7 @@ idCardBatchSchema.statics.getPendingBatches = function (limit = 10) {
     return this.find({
         status: { $in: ['pending', 'queued'] }
     })
-        .populate('createdBy', 'profile.firstName profile.lastName')
+        .populate('createdBy', 'username employeeId personalInfo')
         .populate('filters.department', 'name code')
         .sort({ priority: -1, createdAt: 1 })
         .limit(limit);

@@ -647,6 +647,7 @@ const UsersPage = () => {
                                 </Box>
                                 <Divider />
                                 <CardContent sx={{ pt: 2, pb: 1.5, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                    {/* Department */}
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <BusinessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                                         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -663,10 +664,37 @@ const UsersPage = () => {
                                                     whiteSpace: 'nowrap'
                                                 }}
                                             >
-                                                {user.department?.name || 'Not assigned'}
+                                                {user.department?.parentDepartment 
+                                                    ? user.department.parentDepartment.name 
+                                                    : (user.department?.name || 'Not assigned')
+                                                }
                                             </Typography>
                                         </Box>
                                     </Box>
+                                    
+                                    {/* Sub-Department (if exists) */}
+                                    {user.department?.parentDepartment && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <BusinessIcon sx={{ fontSize: 16, color: 'text.secondary', ml: 1 }} />
+                                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                                                    SUB-DEPARTMENT
+                                                </Typography>
+                                                <Typography 
+                                                    variant="body2" 
+                                                    sx={{ 
+                                                        fontWeight: 600,
+                                                        fontSize: '0.85rem',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap'
+                                                    }}
+                                                >
+                                                    {user.department.name}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    )}
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <WorkIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                                         <Box sx={{ flex: 1, minWidth: 0 }}>

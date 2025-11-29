@@ -161,7 +161,7 @@ const VacationsPage = () => {
             field: 'user',
             headerName: 'Employee',
             width: 200,
-            renderCell: (params) => params.row.user?.name || 'N/A'
+            renderCell: (params) => params.row.user?.personalInfo?.fullName || params.row.user?.username || 'N/A'
         },
         { field: 'year', headerName: 'Year', width: 100 },
         {
@@ -281,7 +281,7 @@ const VacationsPage = () => {
                         >
                             {users.map((user) => (
                                 <MenuItem key={user._id} value={user._id}>
-                                    {user.name} - {user.email}
+                                    {user.personalInfo?.fullName || user.username} - {user.email}
                                 </MenuItem>
                             ))}
                         </TextField>

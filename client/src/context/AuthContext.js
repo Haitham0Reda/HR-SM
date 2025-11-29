@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const surveys = await surveyService.getMySurveys();
             const pendingMandatorySurveys = surveys.surveys?.filter(survey => 
-                survey.isMandatory && !survey.hasResponded
+                survey.isMandatory && !survey.isComplete
             );
 
             if (pendingMandatorySurveys && pendingMandatorySurveys.length > 0) {

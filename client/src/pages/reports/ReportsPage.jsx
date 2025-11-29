@@ -71,6 +71,7 @@ import reportService from '../../services/report.service';
 import analyticsService from '../../services/analytics.service';
 import dashboardService from '../../services/dashboard.service';
 import userService from '../../services/user.service';
+import departmentService from '../../services/department.service';
 import { useTheme } from '@mui/material/styles';
 
 const ReportsPage = () => {
@@ -233,11 +234,34 @@ const ReportsPage = () => {
             try {
                 setDataLoading(true);
                 
-                // Fetch users to get employee count
-                const usersResponse = await userService.getAll().catch(() => ({ users: [] }));
-                console.log('Users response:', usersResponse);
+                // Fetch all data in parallel
+                const [usersResponse, stats, analytics, attendanceData, reports, departmentsResponse] = await Promise.all([
+                    userService.getAll().catch(() => ({ users: [] })),
+                    dashboardService.getStatistics().catch(err => {
+                        console.log('Dashboard stats not available:', err.message);
+                        return null;
+                    }),
+                    analyticsService.getKPIs().catch(err => {
+                        console.log('Analytics KPIs not available:', err.message);
+                        return null;
+                    }),
+                    analyticsService.getAttendance({ period: 'monthly', months: 11 }).catch(err => {
+                        console.log('Attendance data not available:', err.message);
+                        return null;
+                    }),
+                    reportService.getAll({ limit: 4, sort: '-createdAt' }).catch(err => {
+                        console.log('Reports not available:', err.message);
+                        return { reports: [] };
+                    }),
+                    departmentService.getAll().catch(err => {
+                        console.log('Departments not available:', err.message);
+                        return { departments: [] };
+                    })
+                ]);
                 
-                // Try different response formats
+                console.log('Fetched departments:', departmentsResponse);
+                
+                // Calculate total employees
                 let totalEmployees = 0;
                 if (usersResponse) {
                     if (Array.isArray(usersResponse)) {
@@ -255,30 +279,51 @@ const ReportsPage = () => {
                 
                 console.log('Total employees calculated:', totalEmployees);
                 
-                // Fetch other data
-                const [stats, analytics, attendanceData, reports] = await Promise.all([
-                    dashboardService.getStatistics().catch(err => {
-                        console.log('Dashboard stats not available:', err.message);
-                        return null;
-                    }),
-                    analyticsService.getKPIs().catch(err => {
-                        console.log('Analytics KPIs not available:', err.message);
-                        return null;
-                    }),
-                    analyticsService.getAttendance({ period: 'monthly', months: 11 }).catch(err => {
-                        console.log('Attendance data not available:', err.message);
-                        return null;
-                    }),
-                    reportService.getAll({ limit: 4, sort: '-createdAt' }).catch(err => {
-                        console.log('Reports not available:', err.message);
-                        return { reports: [] };
-                    })
-                ]);
+                // Process departments data
+                let departmentsArray = [];
+                if (departmentsResponse) {
+                    if (Array.isArray(departmentsResponse)) {
+                        departmentsArray = departmentsResponse;
+                    } else if (departmentsResponse.departments && Array.isArray(departmentsResponse.departments)) {
+                        departmentsArray = departmentsResponse.departments;
+                    } else if (departmentsResponse.data && Array.isArray(departmentsResponse.data)) {
+                        departmentsArray = departmentsResponse.data;
+                    }
+                }
                 
-                // Merge stats with user count
+                // Count employees per department from users
+                const usersArray = Array.isArray(usersResponse) ? usersResponse : 
+                                  (usersResponse.users || usersResponse.data || []);
+                
+                const departmentCounts = {};
+                usersArray.forEach(user => {
+                    if (user.department) {
+                        const deptId = typeof user.department === 'object' ? user.department._id : user.department;
+                        departmentCounts[deptId] = (departmentCounts[deptId] || 0) + 1;
+                    }
+                });
+                
+                // Merge department data with employee counts
+                const departmentsWithCounts = departmentsArray
+                    .filter(dept => dept.isActive !== false && !dept.parentDepartment) // Only main departments
+                    .map(dept => ({
+                        _id: dept._id,
+                        name: dept.name || dept.arabicName || 'Unknown',
+                        value: departmentCounts[dept._id] || 0,
+                        growth: Math.random() * 20 - 5, // TODO: Calculate real growth
+                        code: dept.code
+                    }))
+                    .filter(dept => dept.value > 0) // Only departments with employees
+                    .sort((a, b) => b.value - a.value) // Sort by employee count
+                    .slice(0, 5); // Top 5 departments
+                
+                console.log('Processed departments:', departmentsWithCounts);
+                
+                // Merge stats with user count and departments
                 const mergedStats = {
                     ...stats,
-                    totalEmployees: totalEmployees || stats?.totalEmployees || 0
+                    totalEmployees: totalEmployees || stats?.totalEmployees || 0,
+                    departments: departmentsWithCounts
                 };
                 
                 setDashboardStats(mergedStats);

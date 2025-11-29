@@ -231,16 +231,22 @@ surveySchema.virtual('isCurrentlyActive').get(function () {
 
 // Method to check if user has responded
 surveySchema.methods.hasUserResponded = function (userId) {
-    return this.responses.some(r =>
-        r.respondent && r.respondent.toString() === userId.toString()
-    );
+    return this.responses.some(r => {
+        if (!r.respondent) return false;
+        // Handle both populated (object with _id) and unpopulated (ObjectId) cases
+        const respondentId = r.respondent._id || r.respondent;
+        return respondentId.toString() === userId.toString();
+    });
 };
 
 // Method to get user's response
 surveySchema.methods.getUserResponse = function (userId) {
-    return this.responses.find(r =>
-        r.respondent && r.respondent.toString() === userId.toString()
-    );
+    return this.responses.find(r => {
+        if (!r.respondent) return false;
+        // Handle both populated (object with _id) and unpopulated (ObjectId) cases
+        const respondentId = r.respondent._id || r.respondent;
+        return respondentId.toString() === userId.toString();
+    });
 };
 
 // Method to calculate completion rate
@@ -282,13 +288,20 @@ surveySchema.methods.addResponse = async function (userId, answers = [], isAnony
         ? (answeredRequired / requiredQuestions) * 100
         : 100;
 
-    // Consider complete if all questions are answered (not just required ones)
+    // Consider complete if all required questions are answered
+    // For surveys with no required questions, check if at least one question is answered
     const totalAnswered = responses.filter(a => {
         const answer = a.answer;
+        // Handle arrays (multiple choice) and other types
+        if (Array.isArray(answer)) {
+            return answer.length > 0;
+        }
         return answer !== undefined && answer !== null && answer !== '';
     }).length;
 
-    const isComplete = totalAnswered >= this.questions.length || completionPercentage === 100;
+    const isComplete = requiredQuestions > 0 
+        ? completionPercentage === 100 
+        : totalAnswered > 0;
 
     console.log('Completion calculation:', {
         requiredQuestions,
@@ -300,8 +313,9 @@ surveySchema.methods.addResponse = async function (userId, answers = [], isAnony
     });
 
     // Add response
+    // Always store userId for tracking, use isAnonymous flag for privacy
     this.responses.push({
-        respondent: isAnonymous ? null : userId,
+        respondent: userId,
         isAnonymous,
         answers: responses,
         completionPercentage,

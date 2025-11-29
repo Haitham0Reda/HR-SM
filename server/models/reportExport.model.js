@@ -350,7 +350,7 @@ reportExportSchema.methods.generateLeaveReport = async function () {
                 { path: 'position', select: 'title' }
             ]
         })
-        .populate('approvedBy rejectedBy', 'profile.firstName profile.lastName')
+        .populate('approvedBy rejectedBy', 'username employeeId personalInfo')
         .sort({ startDate: -1 });
 
     // Calculate summary by type and status

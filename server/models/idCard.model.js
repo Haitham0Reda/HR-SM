@@ -410,7 +410,7 @@ idCardSchema.statics.getEmployeeCard = function (employeeId) {
         .populate('employee', 'profile employeeId email')
         .populate('department', 'name code')
         .populate('position', 'title')
-        .populate('issue.issuedBy', 'profile.firstName profile.lastName');
+        .populate('issue.issuedBy', 'username employeeId personalInfo');
 };
 
 /**
@@ -463,9 +463,9 @@ idCardSchema.statics.getDepartmentCards = function (departmentId, filters = {}) 
     };
 
     return this.find(query)
-        .populate('employee', 'profile employeeId email')
+        .populate('employee', 'username employeeId email personalInfo')
         .populate('position', 'title')
-        .populate('issue.issuedBy', 'profile.firstName profile.lastName')
+        .populate('issue.issuedBy', 'username employeeId personalInfo')
         .sort({ 'issue.issuedDate': -1 });
 };
 

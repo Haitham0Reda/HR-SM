@@ -393,7 +393,15 @@ export const generateUserIDCard = (user) => {
                             <div class="info">
                                 <div class="name">${user.personalInfo?.fullName || user.username}</div>
                                 <div class="position">${user.position?.title || 'Employee'}</div>
-                                <div class="department">${user.department?.name || 'General Department'}</div>
+                                <div class="department">${
+                                    user.department?.parentDepartment 
+                                        ? user.department.parentDepartment.name
+                                        : (user.department?.name || 'General Department')
+                                }</div>
+                                ${user.department?.parentDepartment 
+                                    ? `<div class="department" style="font-size: 11px; margin-top: -5px;">└─ ${user.department.name}</div>`
+                                    : ''
+                                }
                                 <div class="divider"></div>
                                 <div class="id-section">
                                     <div class="id-number">Employee ID</div>

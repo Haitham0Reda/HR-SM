@@ -238,8 +238,8 @@ permissionSchema.statics.getEmployeePermissions = function (employeeId, filters 
         { path: 'position', select: 'title' }
       ]
     })
-    .populate('approval.reviewedBy', 'profile.firstName profile.lastName employeeId')
-    .populate('cancellation.cancelledBy', 'profile.firstName profile.lastName employeeId')
+    .populate('approval.reviewedBy', 'username employeeId personalInfo')
+    .populate('cancellation.cancelledBy', 'username employeeId personalInfo')
     .populate('attendanceRecord')
     .sort({ date: -1, createdAt: -1 });
 };
@@ -378,7 +378,7 @@ permissionSchema.statics.getPermissionsByDepartment = async function (department
         { path: 'position', select: 'title' }
       ]
     })
-    .populate('approval.reviewedBy', 'profile.firstName profile.lastName')
+    .populate('approval.reviewedBy', 'username employeeId personalInfo')
     .populate('attendanceRecord')
     .sort({ date: -1, createdAt: -1 });
 };

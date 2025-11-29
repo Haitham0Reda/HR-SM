@@ -38,7 +38,7 @@ export const getAllAuditLogs = async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const logs = await SecurityAudit.find(query)
-            .populate('user', 'username email profile.firstName profile.lastName role')
+            .populate('user', 'username email employeeId personalInfo role')
             .sort({ timestamp: -1 })
             .limit(parseInt(limit))
             .skip(skip);
@@ -337,8 +337,8 @@ export const getDataAccessLogs = async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const logs = await SecurityAudit.find(query)
-            .populate('user', 'username email profile.firstName profile.lastName')
-            .sort({ timestamp: -1 })
+            .populate('user', 'username email employeeId personalInfo')
+            .sort({ createdAt: -1 })
             .limit(parseInt(limit))
             .skip(skip);
 

@@ -50,10 +50,10 @@ export const getAllPolicies = async (req, res) => {
 export const getPolicyById = async (req, res) => {
     try {
         const policy = await MixedVacation.findById(req.params.id)
-            .populate('createdBy', 'username email')
+            .populate('createdBy', 'username email employeeId personalInfo')
             .populate('applicableTo.departments', 'name')
-            .populate('applications.employee', 'profile employeeId')
-            .populate('applications.approvedBy', 'username email');
+            .populate('applications.employee', 'username email employeeId personalInfo')
+            .populate('applications.approvedBy', 'username email employeeId personalInfo');
 
         if (!policy) {
             return res.status(404).json({ error: 'Mixed vacation policy not found' });

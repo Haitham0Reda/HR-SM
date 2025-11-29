@@ -230,7 +230,7 @@ const AttendancePage = () => {
             field: 'employee',
             headerName: 'Employee',
             width: 200,
-            renderCell: (row) => row.employee?.name || row.employee?.username || 'N/A'
+            renderCell: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A'
         }] : []),
         {
             field: 'date',
@@ -463,7 +463,7 @@ const AttendancePage = () => {
         printWindow.document.write('<h1>Attendance Report</h1>');
         printWindow.document.write(`
             <div class="info">
-                <strong>Employee:</strong> ${user?.name || user?.username}<br>
+                <strong>Employee:</strong> ${user?.personalInfo?.fullName || user?.username}<br>
                 <strong>Employee ID:</strong> ${user?.employeeId || 'N/A'}<br>
                 <strong>Department:</strong> ${user?.department?.name || 'N/A'}<br>
                 <strong>Report Period:</strong> ${formatDate(startDate)} - ${formatDate(endDate)}<br>
@@ -670,7 +670,7 @@ const AttendancePage = () => {
                                     </Box>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <Typography variant="body2" color="text.secondary">Name:</Typography>
-                                        <Typography variant="body2" fontWeight="600">{user?.name || user?.username}</Typography>
+                                        <Typography variant="body2" fontWeight="600">{user?.personalInfo?.fullName || user?.username}</Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <Typography variant="body2" color="text.secondary">Position:</Typography>
@@ -943,7 +943,7 @@ const AttendancePage = () => {
                         >
                             {users.map((user) => (
                                 <MenuItem key={user._id} value={user._id}>
-                                    {user.name} - {user.email}
+                                    {user.personalInfo?.fullName || user.username} - {user.email}
                                 </MenuItem>
                             ))}
                         </TextField>

@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     Button,
     Typography,
     Chip,
     IconButton,
+    TextField,
+    MenuItem,
+    Grid,
+    Paper,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -12,6 +16,7 @@ import {
     Delete as DeleteIcon,
     CheckCircle,
     Cancel,
+    Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/common/DataTable';
@@ -19,99 +24,179 @@ import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
-import permissionService from '../../services/permission.service';
+import useDocumentTitle from '../../hooks/useDocumentTitle';
+import overtimeService from '../../services/overtime.service';
 
 const OvertimePage = () => {
-    const { user, isHR, isAdmin } = useAuth();
+    useDocumentTitle('Overtime');
     const navigate = useNavigate();
-    const [overtimeRequests, setOvertimeRequests] = useState([]);
+    const { user, isHR, isAdmin } = useAuth();
+    const { showNotification } = useNotification();
+    const [overtime, setOvertime] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openConfirm, setOpenConfirm] = useState(false);
-    const [selectedRequest, setSelectedRequest] = useState(null);
-    const { showNotification } = useNotification();
+    const [selectedOvertime, setSelectedOvertime] = useState(null);
+    const [filters, setFilters] = useState({
+        status: '',
+        compensationType: '',
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+    });
+    const [monthlySummary, setMonthlySummary] = useState({
+        totalHours: 0,
+        pendingHours: 0,
+        approvedHours: 0,
+        compensatedHours: 0,
+    });
 
     const canManage = isHR || isAdmin;
 
-    useEffect(() => {
-        fetchOvertimeRequests();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    const statusOptions = [
+        { value: '', label: 'All Statuses' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'approved', label: 'Approved' },
+        { value: 'rejected', label: 'Rejected' },
+    ];
 
-    const fetchOvertimeRequests = async () => {
+    const compensationTypeOptions = [
+        { value: '', label: 'All Types' },
+        { value: 'paid', label: 'Paid' },
+        { value: 'time-off', label: 'Time Off' },
+        { value: 'none', label: 'None' },
+    ];
+
+    const sortOptions = [
+        { value: 'createdAt', label: 'Date Created' },
+        { value: 'date', label: 'Overtime Date' },
+    ];
+
+    useEffect(() => {
+        fetchOvertime();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filters]);
+
+    const fetchOvertime = async () => {
         try {
             setLoading(true);
-            // Fetch all permission requests
-            const data = await permissionService.getAll();
+            const params = {};
+            if (filters.status) params.status = filters.status;
+            if (filters.compensationType) params.compensationType = filters.compensationType;
+            if (filters.sortBy) params.sortBy = filters.sortBy;
+            if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
-            // Filter only overtime requests
-            let overtimeData = data.filter(permission => permission.permissionType === 'overtime');
+            const data = await overtimeService.getAll(params);
+            const overtimeArray = Array.isArray(data) ? data : [];
 
-            // Filter to show only current user's overtime if not HR/Admin
-            if (!canManage) {
-                overtimeData = overtimeData.filter(permission => {
-                    const permissionUserId = permission.employee?._id || permission.employee;
+            // Filter based on role
+            let filteredData;
+            if (canManage) {
+                // Admin/HR see all overtime
+                filteredData = overtimeArray;
+            } else {
+                // Regular employees see only their own overtime
+                filteredData = overtimeArray.filter(ot => {
+                    const otUserId = ot.employee?._id || ot.employee;
                     const currentUserId = user?._id;
-                    return permissionUserId === currentUserId || String(permissionUserId) === String(currentUserId);
+                    return otUserId === currentUserId || String(otUserId) === String(currentUserId);
                 });
             }
 
-            // Transform data to match table structure
-            const transformedData = overtimeData.map(item => ({
-                _id: item._id,
-                employee: item.employee,
-                date: item.date,
-                startTime: item.time?.scheduled || 'N/A',
-                endTime: item.time?.requested || 'N/A',
-                hours: item.time?.duration ? (item.time.duration / 60).toFixed(2) : 0,
-                reason: item.reason || 'N/A',
-                status: item.status,
-                createdAt: item.createdAt
-            }));
-
-            setOvertimeRequests(transformedData);
+            setOvertime(filteredData);
+            calculateMonthlySummary(filteredData);
         } catch (error) {
-            console.error('Error fetching overtime requests:', error);
-            showNotification('Failed to fetch overtime requests', 'error');
-            setOvertimeRequests([]);
+            console.error('Error fetching overtime:', error);
+            showNotification('Failed to fetch overtime records', 'error');
+            setOvertime([]);
         } finally {
             setLoading(false);
         }
     };
 
+    const calculateMonthlySummary = (data) => {
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+
+        const monthlyData = data.filter(ot => {
+            const otDate = new Date(ot.date);
+            return otDate.getMonth() === currentMonth && otDate.getFullYear() === currentYear;
+        });
+
+        const summary = {
+            totalHours: 0,
+            pendingHours: 0,
+            approvedHours: 0,
+            compensatedHours: 0,
+        };
+
+        monthlyData.forEach(ot => {
+            const hours = ot.duration || 0;
+            summary.totalHours += hours;
+            
+            if (ot.status === 'pending') {
+                summary.pendingHours += hours;
+            } else if (ot.status === 'approved') {
+                summary.approvedHours += hours;
+                if (ot.compensated) {
+                    summary.compensatedHours += hours;
+                }
+            }
+        });
+
+        setMonthlySummary(summary);
+    };
+
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+    };
+
     const handleDelete = async () => {
         try {
-            if (!selectedRequest) return;
-
-            await permissionService.delete(selectedRequest._id);
-            showNotification('Overtime request deleted successfully', 'success');
+            await overtimeService.delete(selectedOvertime._id);
+            showNotification('Overtime record deleted successfully', 'success');
             setOpenConfirm(false);
-            setSelectedRequest(null);
-            fetchOvertimeRequests();
+            setSelectedOvertime(null);
+            fetchOvertime();
         } catch (error) {
-            console.error('Error deleting overtime request:', error);
-            showNotification('Delete failed', 'error');
+            showNotification(error.response?.data?.message || 'Delete failed', 'error');
         }
     };
 
-    const handleApprove = async (requestId) => {
+    const handleApprove = async (overtimeId) => {
         try {
-            await permissionService.approve(requestId, 'Approved by supervisor');
-            showNotification('Overtime request approved', 'success');
-            fetchOvertimeRequests();
+            await overtimeService.approve(overtimeId);
+            showNotification('Overtime approved successfully', 'success');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await fetchOvertime();
         } catch (error) {
-            console.error('Error approving overtime request:', error);
-            showNotification('Approval failed', 'error');
+            console.error('Approve error:', error);
+            showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
 
-    const handleReject = async (requestId) => {
+    const handleReject = async (overtimeId) => {
+        const reason = prompt('Please provide a reason for rejection (minimum 10 characters):');
+        if (reason === null) return;
+
+        const trimmedReason = reason.trim();
+        if (!trimmedReason) {
+            showNotification('Rejection reason is required', 'error');
+            return;
+        }
+
+        if (trimmedReason.length < 10) {
+            showNotification('Rejection reason must be at least 10 characters long', 'error');
+            return;
+        }
+
         try {
-            await permissionService.reject(requestId, 'Rejected by supervisor');
-            showNotification('Overtime request rejected', 'success');
-            fetchOvertimeRequests();
+            await overtimeService.reject(overtimeId, trimmedReason);
+            showNotification('Overtime rejected successfully', 'success');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await fetchOvertime();
         } catch (error) {
-            console.error('Error rejecting overtime request:', error);
-            showNotification('Rejection failed', 'error');
+            console.error('Reject error:', error);
+            showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };
 
@@ -120,47 +205,90 @@ const OvertimePage = () => {
             pending: 'warning',
             approved: 'success',
             rejected: 'error',
-            cancelled: 'default'
         };
         return colors[status] || 'default';
     };
 
+    const getCompensationTypeLabel = (type) => {
+        const labels = {
+            'paid': 'Paid',
+            'time-off': 'Time Off',
+            'none': 'None',
+        };
+        return labels[type] || type;
+    };
+
     const columns = [
-        {
+        ...(canManage ? [{
             field: 'employee',
             headerName: 'Employee',
+            width: 180,
             align: 'center',
-            renderCell: (row) => row.employee?.name || 'N/A'
-        },
+            renderCell: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
+        }] : []),
         {
             field: 'date',
             headerName: 'Date',
+            width: 120,
             align: 'center',
-            renderCell: (row) => new Date(row.date).toLocaleDateString()
+            renderCell: (row) => new Date(row.date).toLocaleDateString(),
         },
         {
-            field: 'startTime',
-            headerName: 'Start Time',
+            field: 'timeRange',
+            headerName: 'Time Range',
+            width: 150,
             align: 'center',
-            renderCell: (row) => row.startTime || 'N/A'
+            renderCell: (row) => `${row.startTime} - ${row.endTime}`,
         },
         {
-            field: 'endTime',
-            headerName: 'End Time',
+            field: 'duration',
+            headerName: 'Duration',
+            width: 100,
             align: 'center',
-            renderCell: (row) => row.endTime || 'N/A'
+            renderCell: (row) => row.duration ? `${row.duration}h` : '-',
         },
         {
-            field: 'hours',
-            headerName: 'Hours',
+            field: 'compensationType',
+            headerName: 'Compensation',
+            width: 130,
             align: 'center',
-            renderCell: (row) => `${row.hours || 0} hrs`
+            renderCell: (row) => (
+                <Chip
+                    label={getCompensationTypeLabel(row.compensationType)}
+                    size="small"
+                    variant="outlined"
+                    color={row.compensationType === 'paid' ? 'success' : row.compensationType === 'time-off' ? 'info' : 'default'}
+                />
+            ),
+        },
+        {
+            field: 'compensated',
+            headerName: 'Compensated',
+            width: 120,
+            align: 'center',
+            renderCell: (row) => (
+                <Chip
+                    label={row.compensated ? 'Yes' : 'No'}
+                    size="small"
+                    color={row.compensated ? 'success' : 'default'}
+                />
+            ),
         },
         {
             field: 'reason',
             headerName: 'Reason',
             width: 200,
-            align: 'center'
+            align: 'center',
+            renderCell: (row) => (
+                <Box sx={{ 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis', 
+                    whiteSpace: 'nowrap',
+                    maxWidth: '200px',
+                }}>
+                    {row.reason || '-'}
+                </Box>
+            ),
         },
         {
             field: 'status',
@@ -173,105 +301,236 @@ const OvertimePage = () => {
                     color={getStatusColor(row.status)}
                     size="small"
                 />
-            )
+            ),
         },
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 200,
+            width: 220,
             align: 'center',
-            renderCell: (row) => (
-                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                    {row.status === 'pending' && canManage && (
-                        <>
+            renderCell: (row) => {
+                const isPending = row.status === 'pending';
+                const isOwnRequest = row.employee?._id === user?._id || String(row.employee?._id) === String(user?._id);
+
+                const canEdit = isOwnRequest && isPending;
+                const canDelete = isOwnRequest;
+                const canApprove = canManage && isPending;
+
+                return (
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        {canApprove && (
+                            <>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => handleApprove(row._id)}
+                                    color="success"
+                                    title="Approve"
+                                >
+                                    <CheckCircle fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => handleReject(row._id)}
+                                    color="error"
+                                    title="Reject"
+                                >
+                                    <Cancel fontSize="small" />
+                                </IconButton>
+                            </>
+                        )}
+                        <IconButton
+                            size="small"
+                            onClick={() => navigate(`/app/overtime/${row._id}`)}
+                            color="info"
+                            title="View Details"
+                        >
+                            <ViewIcon fontSize="small" />
+                        </IconButton>
+                        {canEdit && (
                             <IconButton
                                 size="small"
-                                onClick={() => handleApprove(row._id)}
-                                color="success"
-                                title="Approve"
+                                onClick={() => navigate(`/app/overtime/${row._id}/edit`)}
+                                color="primary"
+                                title="Edit"
                             >
-                                <CheckCircle fontSize="small" />
+                                <EditIcon fontSize="small" />
                             </IconButton>
+                        )}
+                        {canDelete && (
                             <IconButton
                                 size="small"
-                                onClick={() => handleReject(row._id)}
+                                onClick={() => {
+                                    setSelectedOvertime(row);
+                                    setOpenConfirm(true);
+                                }}
                                 color="error"
-                                title="Reject"
+                                title="Delete"
                             >
-                                <Cancel fontSize="small" />
+                                <DeleteIcon fontSize="small" />
                             </IconButton>
-                        </>
-                    )}
-                    <IconButton
-                        size="small"
-                        onClick={() => navigate(`/overtime/${row._id}`)}
-                        color="primary"
-                        title="Edit"
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => {
-                            setSelectedRequest(row);
-                            setOpenConfirm(true);
-                        }}
-                        color="error"
-                        title="Delete"
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Box>
-            )
-        }
+                        )}
+                    </Box>
+                );
+            },
+        },
     ];
 
     if (loading) return <Loading />;
 
     return (
-        <Box sx={{
-            p: { xs: 2, sm: 3 },
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column'
-        }}>
-            <Box sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 3,
-                flexWrap: 'wrap',
-                gap: 2
-            }}>
-                <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-                    Overtime Requests
-                </Typography>
+        <Box sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box>
+                    <Typography variant="h4">Overtime</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        {canManage ? 'Manage all overtime records' : 'View and manage your overtime records'}
+                    </Typography>
+                </Box>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => navigate('/app/overtime/create')}
                 >
-                    New Overtime Request
+                    New Overtime
                 </Button>
             </Box>
 
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-                <DataTable
-                    data={overtimeRequests}
-                    columns={columns}
-                    emptyMessage="No overtime requests found. Click 'New Overtime Request' to create one."
-                />
+            {/* Monthly Summary */}
+            <Paper sx={{ p: 3, mb: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                    Monthly Summary ({new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})
+                </Typography>
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" color="primary">
+                                {monthlySummary.totalHours.toFixed(1)}h
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Total Hours
+                            </Typography>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" color="warning.main">
+                                {monthlySummary.pendingHours.toFixed(1)}h
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Pending
+                            </Typography>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" color="success.main">
+                                {monthlySummary.approvedHours.toFixed(1)}h
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Approved
+                            </Typography>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" color="info.main">
+                                {monthlySummary.compensatedHours.toFixed(1)}h
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Compensated
+                            </Typography>
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            {/* Filters */}
+            <Box sx={{ mb: 3 }}>
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={3}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Status"
+                            name="status"
+                            value={filters.status}
+                            onChange={handleFilterChange}
+                            size="small"
+                        >
+                            {statusOptions.map((option) => (
+                                <MenuItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Compensation Type"
+                            name="compensationType"
+                            value={filters.compensationType}
+                            onChange={handleFilterChange}
+                            size="small"
+                        >
+                            {compensationTypeOptions.map((option) => (
+                                <MenuItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Sort By"
+                            name="sortBy"
+                            value={filters.sortBy}
+                            onChange={handleFilterChange}
+                            size="small"
+                        >
+                            {sortOptions.map((option) => (
+                                <MenuItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Order"
+                            name="sortOrder"
+                            value={filters.sortOrder}
+                            onChange={handleFilterChange}
+                            size="small"
+                        >
+                            <MenuItem value="asc">Ascending</MenuItem>
+                            <MenuItem value="desc">Descending</MenuItem>
+                        </TextField>
+                    </Grid>
+                </Grid>
             </Box>
+
+            <DataTable
+                data={overtime}
+                columns={columns}
+                emptyMessage="No overtime records found. Click 'New Overtime' to create one."
+            />
 
             <ConfirmDialog
                 open={openConfirm}
-                title="Delete Overtime Request"
-                message="Are you sure you want to delete this overtime request?"
+                title="Delete Overtime"
+                message="Are you sure you want to delete this overtime record? This action cannot be undone."
                 onConfirm={handleDelete}
                 onCancel={() => {
                     setOpenConfirm(false);
-                    setSelectedRequest(null);
+                    setSelectedOvertime(null);
                 }}
+                confirmColor="error"
             />
         </Box>
     );

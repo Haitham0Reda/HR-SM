@@ -128,9 +128,7 @@ const RequestDetailsPage = () => {
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
                                     <Typography variant="body1" fontWeight="bold">Employee Name</Typography>
                                     <Typography variant="body1">
-                                        {user?.profile?.firstName && user?.profile?.lastName
-                                            ? `${user.profile.firstName} ${user.profile.lastName}`
-                                            : user?.name || user?.username || 'N/A'}
+                                        {user?.personalInfo?.fullName || user?.username || 'N/A'}
                                     </Typography>
                                 </Box>
 
