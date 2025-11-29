@@ -16,7 +16,7 @@ const SurveyRedirect = () => {
                     // Get the latest survey data
                     const surveys = await surveyService.getMySurveys();
                     const pendingMandatorySurveys = surveys.surveys?.filter(survey => 
-                        survey.isMandatory && !survey.hasResponded
+                        survey.isMandatory && !survey.isComplete
                     );
 
                     if (pendingMandatorySurveys && pendingMandatorySurveys.length > 0) {

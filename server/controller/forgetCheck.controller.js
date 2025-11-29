@@ -20,8 +20,8 @@ export const getAllForgetChecks = async (req, res) => {
         }
 
         const forgetChecks = await ForgetCheck.find(query)
-            .populate('employee', 'name email profile')
-            .populate('approvedBy rejectedBy', 'name profile')
+            .populate('employee', 'username email personalInfo')
+            .populate('approvedBy rejectedBy', 'username personalInfo')
             .populate('department', 'name')
             .populate('position', 'title')
             .sort({ createdAt: -1 });
@@ -73,8 +73,8 @@ export const createForgetCheck = async (req, res) => {
 export const getForgetCheckById = async (req, res) => {
     try {
         const forgetCheck = await ForgetCheck.findById(req.params.id)
-            .populate('employee', 'name email profile')
-            .populate('approvedBy rejectedBy', 'name profile')
+            .populate('employee', 'username email personalInfo')
+            .populate('approvedBy rejectedBy', 'username personalInfo')
             .populate('department', 'name')
             .populate('position', 'title');
 

@@ -466,7 +466,45 @@ const UserDetailsPage = () => {
                                     <DetailRow icon={<CalendarIcon />} label="HIRE DATE" value={new Date(user.employment.hireDate).toLocaleDateString()} />
                                 )}
                                 {user.department?.name && (
-                                    <DetailRow icon={<BusinessIcon />} label="DEPARTMENT" value={user.department.name} />
+                                    <>
+                                        {user.department.parentDepartment ? (
+                                            // User is in a sub-department, show both main and sub
+                                            <>
+                                                <DetailRow 
+                                                    icon={<BusinessIcon />} 
+                                                    label="MAIN DEPARTMENT" 
+                                                    value={
+                                                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                                            {user.department.parentDepartment.name}
+                                                            {user.department.parentDepartment.code && ` (${user.department.parentDepartment.code})`}
+                                                        </Typography>
+                                                    } 
+                                                />
+                                                <DetailRow 
+                                                    icon={<BusinessIcon sx={{ ml: 2 }} />} 
+                                                    label="SUB-DEPARTMENT" 
+                                                    value={
+                                                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                                            {user.department.name}
+                                                            {user.department.code && ` (${user.department.code})`}
+                                                        </Typography>
+                                                    } 
+                                                />
+                                            </>
+                                        ) : (
+                                            // User is in a main department only
+                                            <DetailRow 
+                                                icon={<BusinessIcon />} 
+                                                label="DEPARTMENT" 
+                                                value={
+                                                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                                        {user.department.name}
+                                                        {user.department.code && ` (${user.department.code})`}
+                                                    </Typography>
+                                                } 
+                                            />
+                                        )}
+                                    </>
                                 )}
                                 {user.position?.title && (
                                     <DetailRow icon={<WorkIcon />} label="POSITION" value={user.position.title} />

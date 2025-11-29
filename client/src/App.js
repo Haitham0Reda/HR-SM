@@ -23,12 +23,22 @@ import PositionsPage from './pages/positions/PositionsPage';
 import AttendancePage from './pages/attendance/AttendancePage';
 import LeavesPage from './pages/leaves/LeavesPage';
 import CreateLeavePage from './pages/leaves/CreateLeavePage';
+import MissionsPage from './pages/missions/MissionsPage';
+import MissionForm from './pages/missions/MissionForm';
+import MissionDetails from './pages/missions/MissionDetails';
+import SickLeavesPage from './pages/sick-leaves/SickLeavesPage';
+import SickLeaveForm from './pages/sick-leaves/SickLeaveForm';
+import SickLeaveDetails from './pages/sick-leaves/SickLeaveDetails';
+import DoctorReviewQueue from './pages/sick-leaves/DoctorReviewQueue';
 import ForgetCheckPage from './pages/forgetCheck/ForgetCheckPage';
 import CreateForgetCheckPage from './pages/forgetCheck/CreateForgetCheckPage';
 import PermissionsPage from './pages/permissions/PermissionsPage';
 import CreatePermissionPage from './pages/permissions/CreatePermissionPage';
+import PermissionForm from './pages/permissions/PermissionForm';
+import PermissionDetails from './pages/permissions/PermissionDetails';
 import OvertimePage from './pages/overtime/OvertimePage';
-import CreateOvertimePage from './pages/overtime/CreateOvertimePage';
+import OvertimeForm from './pages/overtime/OvertimeForm';
+import OvertimeDetails from './pages/overtime/OvertimeDetails';
 import RequestsPage from './pages/requests/RequestsPage';
 import RequestDetailsPage from './pages/requests/RequestDetailsPage';
 import VacationRequestPage from './pages/vacation/VacationRequestPage';
@@ -42,6 +52,9 @@ import EventsPage from './pages/events/EventsPage';
 import SurveysPage from './pages/surveys/SurveysPage';
 import HolidaysPage from './pages/holidays/HolidaysPage';
 import VacationsPage from './pages/vacations/VacationsPage';
+import VacationRequestsPage from './pages/vacations/VacationRequestsPage';
+import VacationRequestForm from './pages/vacations/VacationRequestForm';
+import VacationRequestDetails from './pages/vacations/VacationRequestDetails';
 import ReportsPage from './pages/reports/ReportsPage';
 import AnalyticsPage from './pages/analytics/AnalyticsPage';
 import SecurityPage from './pages/security/SecurityPage';
@@ -117,12 +130,25 @@ function App() {
                 <Route path="attendance" element={<AttendancePage />} />
                 <Route path="leaves" element={<LeavesPage />} />
                 <Route path="leaves/create" element={<CreateLeavePage />} />
+                <Route path="missions" element={<MissionsPage />} />
+                <Route path="missions/create" element={<MissionForm />} />
+                <Route path="missions/:id" element={<MissionDetails />} />
+                <Route path="missions/:id/edit" element={<MissionForm />} />
+                <Route path="sick-leaves" element={<SickLeavesPage />} />
+                <Route path="sick-leaves/create" element={<SickLeaveForm />} />
+                <Route path="sick-leaves/doctor-queue" element={<DoctorReviewQueue />} />
+                <Route path="sick-leaves/:id" element={<SickLeaveDetails />} />
+                <Route path="sick-leaves/:id/edit" element={<SickLeaveForm />} />
                 <Route path="forget-checks" element={<ForgetCheckPage />} />
                 <Route path="forget-checks/create" element={<CreateForgetCheckPage />} />
                 <Route path="permissions" element={<PermissionsPage />} />
                 <Route path="permissions/create" element={<CreatePermissionPage />} />
+                <Route path="permissions/:id" element={<PermissionDetails />} />
+                <Route path="permissions/:id/edit" element={<PermissionForm />} />
                 <Route path="overtime" element={<OvertimePage />} />
-                <Route path="overtime/create" element={<CreateOvertimePage />} />
+                <Route path="overtime/create" element={<OvertimeForm />} />
+                <Route path="overtime/:id" element={<OvertimeDetails />} />
+                <Route path="overtime/:id/edit" element={<OvertimeForm />} />
                 <Route path="requests" element={<RequestsPage />} />
                 <Route path="requests/:id" element={<RequestDetailsPage />} />
                 <Route path="vacation-request" element={<VacationRequestPage />} />
@@ -143,6 +169,10 @@ function App() {
                 {/* Advanced */}
                 <Route path="holidays" element={<HolidaysPage />} />
                 <Route path="vacations" element={<VacationsPage />} />
+                <Route path="vacation-requests" element={<VacationRequestsPage />} />
+                <Route path="vacation-requests/create" element={<VacationRequestForm />} />
+                <Route path="vacation-requests/:id" element={<VacationRequestDetails />} />
+                <Route path="vacation-requests/:id/edit" element={<VacationRequestForm />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
 

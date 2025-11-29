@@ -15,7 +15,9 @@ export const getAllLeaves = async (req, res) => {
         }
 
         const leaves = await Leave.find(query)
-            .populate('employee', 'name email profile')
+            .populate('employee', 'username email employeeId personalInfo department position')
+            .populate('department', 'name code')
+            .populate('position', 'title')
             .sort({ createdAt: -1 });
 
         res.json(leaves);

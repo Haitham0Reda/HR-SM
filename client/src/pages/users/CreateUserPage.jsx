@@ -60,6 +60,7 @@ const CreateUserPage = () => {
         password: '',
         role: 'employee',
         department: '',
+        subDepartment: '',
         position: '',
         personalInfo: {
             fullName: '',
@@ -88,11 +89,31 @@ const CreateUserPage = () => {
 
     const fetchData = async () => {
         try {
-            const [deptData, posData] = await Promise.all([
+            let [deptData, posData] = await Promise.all([
                 departmentService.getAll(),
                 positionService.getAll()
             ]);
-            setDepartments(deptData);
+            
+            // Sort departments hierarchically (main departments first, then sub-departments)
+            const sortedDepts = [];
+            const mainDepts = deptData.filter(d => !d.parentDepartment);
+            const subDepts = deptData.filter(d => d.parentDepartment);
+            
+            mainDepts.forEach(mainDept => {
+                sortedDepts.push(mainDept);
+                // Add sub-departments of this main department
+                const children = subDepts.filter(sub => 
+                    (typeof sub.parentDepartment === 'object' ? sub.parentDepartment._id : sub.parentDepartment) === mainDept._id
+                );
+                sortedDepts.push(...children);
+            });
+            
+            // Add any remaining sub-departments (orphaned)
+            const addedSubIds = new Set(sortedDepts.filter(d => d.parentDepartment).map(d => d._id));
+            const remainingSubs = subDepts.filter(d => !addedSubIds.has(d._id));
+            sortedDepts.push(...remainingSubs);
+            
+            setDepartments(sortedDepts);
             setPositions(posData);
         } catch (error) {
             console.error('Failed to fetch data:', error);
@@ -217,7 +238,17 @@ const CreateUserPage = () => {
                 formData.personalInfo.profilePicture = profilePicturePreview;
             }
             
-            await userService.create(formData);
+            // Prepare data for submission
+            const submitData = {
+                ...formData,
+                // Use sub-department if selected, otherwise use main department
+                department: formData.subDepartment || formData.department
+            };
+            
+            // Remove subDepartment field as it's not part of the user model
+            delete submitData.subDepartment;
+            
+            await userService.create(submitData);
             showNotification('User created successfully', 'success');
             navigate('/app/users');
         } catch (error) {
@@ -529,9 +560,13 @@ const CreateUserPage = () => {
                             <Stack spacing={3}>
                                 <TextField 
                                     select 
-                                    label="Department" 
+                                    label="Main Department" 
                                     value={formData.department} 
-                                    onChange={(e) => handleChange('department', e.target.value)} 
+                                    onChange={(e) => {
+                                        handleChange('department', e.target.value);
+                                        // Reset sub-department when main department changes
+                                        handleChange('subDepartment', '');
+                                    }} 
                                     fullWidth
                                     InputProps={{
                                         startAdornment: (
@@ -541,11 +576,55 @@ const CreateUserPage = () => {
                                         )
                                     }}
                                 >
-                                    <MenuItem value="">Select Department</MenuItem>
-                                    {departments.map((dept) => (
-                                        <MenuItem key={dept._id} value={dept._id}>{dept.name}</MenuItem>
+                                    <MenuItem value="">Select Main Department</MenuItem>
+                                    {departments.filter(dept => !dept.parentDepartment).map((dept) => (
+                                        <MenuItem 
+                                            key={dept._id} 
+                                            value={dept._id}
+                                        >
+                                            {dept.name}
+                                            {dept.code ? ` (${dept.code})` : ''}
+                                        </MenuItem>
                                     ))}
                                 </TextField>
+
+                                {/* Sub-Department Dropdown - Only show if main department is selected */}
+                                {formData.department && departments.filter(dept => 
+                                    dept.parentDepartment && 
+                                    (typeof dept.parentDepartment === 'object' ? dept.parentDepartment._id : dept.parentDepartment) === formData.department
+                                ).length > 0 && (
+                                    <TextField
+                                        select
+                                        label="Sub-Department (Optional)"
+                                        value={formData.subDepartment || ''}
+                                        onChange={(e) => handleChange('subDepartment', e.target.value)}
+                                        fullWidth
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <BusinessIcon color="action" />
+                                                </InputAdornment>
+                                            )
+                                        }}
+                                    >
+                                        <MenuItem value="">None - Use Main Department Only</MenuItem>
+                                        {departments
+                                            .filter(dept => 
+                                                dept.parentDepartment && 
+                                                (typeof dept.parentDepartment === 'object' ? dept.parentDepartment._id : dept.parentDepartment) === formData.department
+                                            )
+                                            .map((dept) => (
+                                                <MenuItem 
+                                                    key={dept._id} 
+                                                    value={dept._id}
+                                                >
+                                                    {dept.name}
+                                                    {dept.code ? ` (${dept.code})` : ''}
+                                                </MenuItem>
+                                            ))
+                                        }
+                                    </TextField>
+                                )}
 
                                 <TextField 
                                     select 

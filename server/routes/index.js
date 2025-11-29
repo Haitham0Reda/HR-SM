@@ -4,6 +4,7 @@ export { default as eventRoutes } from './event.routes.js';
 export { default as hardcopyRoutes } from './hardcopy.routes.js';
 export { default as holidayRoutes } from './holiday.routes.js';
 export { default as leaveRoutes } from './leave.routes.js';
+export { default as missionRoutes } from './mission.routes.js';
 export { default as mixedVacationRoutes } from './mixedVacation.routes.js';
 export { default as forgetCheckRoutes } from './forgetCheck.routes.js';
 export { default as notificationRoutes } from './notification.routes.js';

@@ -100,10 +100,8 @@ const SurveysPage = () => {
     const fetchSurveys = async () => {
         try {
             setLoading(true);
-            // Use different endpoints based on user role
-            const data = canManage
-                ? (await surveyService.getAll()).surveys
-                : (await surveyService.getMySurveys()).surveys;
+            // Everyone uses getMySurveys to get their personal completion status
+            const data = (await surveyService.getMySurveys()).surveys;
             console.log('Fetched surveys:', data);
             console.log('Survey completion status:', data.map(s => ({
                 title: s.title,
@@ -301,25 +299,15 @@ const SurveysPage = () => {
     };
 
     // Separate surveys into pending and completed based on user's response status
+    // Everyone (including admin/HR) sees their personal completion status
     const pendingSurveys = surveys.filter(s => {
-        // For regular users, check if they haven't completed the survey
-        if (!canManage) {
-            return !s.hasResponded || !s.isComplete;
-        }
-        // For HR/Admin, show active surveys
-        return s.status === 'active' &&
-            (!s.settings?.endDate || new Date(s.settings.endDate) >= new Date());
+        // A survey is pending if the user hasn't completed it
+        return !s.isComplete;
     });
 
     const completedSurveys = surveys.filter(s => {
-        // For regular users, check if they have completed the survey
-        if (!canManage) {
-            return s.hasResponded && s.isComplete;
-        }
-        // For HR/Admin, show closed/archived surveys
-        return s.status === 'closed' ||
-            s.status === 'archived' ||
-            (s.settings?.endDate && new Date(s.settings.endDate) < new Date());
+        // A survey is completed if the user has completed it
+        return s.isComplete === true;
     });
 
     // If we're viewing a specific survey, show the survey form

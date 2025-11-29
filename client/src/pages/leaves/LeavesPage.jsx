@@ -74,18 +74,18 @@ const LeavesPage = () => {
 
             // Apply role-based filtering
             let filteredData;
-            if (canManage) {
-                // HR/Admin see all mission and sick leaves (including pending ones to approve/reject)
-                filteredData = missionAndSickLeaves;
-            } else if (isDoctor) {
+            if (isDoctor) {
                 // Doctors see only sick leaves that are pending doctor review
                 filteredData = missionAndSickLeaves.filter(leave => {
                     const leaveType = leave.leaveType || leave.type;
                     return leaveType === 'sick' &&
                         leave.workflow?.currentStep === 'doctor-review';
                 });
+            } else if (canManage) {
+                // Admin/HR see all mission and sick leaves (to approve mission leaves)
+                filteredData = missionAndSickLeaves;
             } else {
-                // Regular users see only their own leaves
+                // Regular employees see only their own mission and sick leaves
                 filteredData = missionAndSickLeaves.filter(leave => {
                     const leaveUserId = leave.employee?._id || leave.employee || leave.user?._id || leave.user;
                     const currentUserId = user?._id;
@@ -140,7 +140,7 @@ const LeavesPage = () => {
         } else {
             setSelectedLeave(null);
             setFormData({
-                user: canManage ? '' : user?._id || '',
+                user: user?._id || '', // Always use logged-in user
                 type: 'mission',
                 startDate: new Date().toISOString().split('T')[0],
                 endDate: new Date().toISOString().split('T')[0],
@@ -289,13 +289,14 @@ const LeavesPage = () => {
     };
 
     const columns = [
-        {
+        // Show Employee column for doctors and admin/HR (who see other people's leaves)
+        ...((isDoctor || canManage) ? [{
             field: 'employee',
             headerName: 'Employee',
             width: 180,
             align: 'center',
-            renderCell: (row) => row.employee?.name || row.user?.name || 'N/A'
-        },
+            renderCell: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || row.user?.personalInfo?.fullName || row.user?.username || 'N/A'
+        }] : []),
         {
             field: 'leaveType',
             headerName: 'Type',
@@ -366,28 +367,34 @@ const LeavesPage = () => {
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 180,
+            width: 220,
             align: 'center',
             renderCell: (row) => {
                 const isSickLeave = row.leaveType === 'sick' || row.type === 'sick';
+                const isMissionLeave = row.leaveType === 'mission' || row.type === 'mission';
                 const isPending = row.status === 'pending';
+                const isOwnRequest = row.employee?._id === user?._id || String(row.employee?._id) === String(user?._id);
 
-                // IMPORTANT: Only doctors can approve/reject sick leave
-                // HR/Admin can only approve/reject non-sick leaves
-                const showApproveReject = isPending && (
-                    (canManage && !isSickLeave) || // HR/Admin can ONLY approve non-sick leaves
-                    (isDoctor && isSickLeave) // Doctor can ONLY approve sick leaves
-                );
+                // Permission checks based on role and leave type
+                const canEdit = isOwnRequest && isPending; // Users can edit their own pending requests
+                const canDelete = isOwnRequest; // Users can delete their own requests
+                
+                // Approval permissions:
+                // - Doctors can approve/reject sick leaves
+                // - Admin/HR can approve/reject mission leaves (but not sick leaves)
+                const canApproveSick = isDoctor && isSickLeave && isPending;
+                const canApproveMission = (isAdmin || isHR) && isMissionLeave && isPending;
 
                 return (
-                    <Box>
-                        {showApproveReject && (
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        {/* Approve/Reject buttons for doctors (sick leave) or admin/HR (mission leave) */}
+                        {(canApproveSick || canApproveMission) && (
                             <>
                                 <IconButton
                                     size="small"
                                     onClick={() => handleApprove(row._id, row.leaveType || row.type)}
                                     color="success"
-                                    title={isDoctor ? "Approve (Doctor)" : "Approve"}
+                                    title={canApproveSick ? "Approve (Doctor)" : "Approve"}
                                 >
                                     <CheckCircle fontSize="small" />
                                 </IconButton>
@@ -395,32 +402,38 @@ const LeavesPage = () => {
                                     size="small"
                                     onClick={() => handleReject(row._id, row.leaveType || row.type)}
                                     color="error"
-                                    title={isDoctor ? "Reject (Doctor)" : "Reject"}
+                                    title={canApproveSick ? "Reject (Doctor)" : "Reject"}
                                 >
                                     <Cancel fontSize="small" />
                                 </IconButton>
                             </>
                         )}
-                        {!isDoctor && (
-                            <>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => handleOpenDialog(row)}
-                                    color="primary"
-                                >
-                                    <EditIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => {
-                                        setSelectedLeave(row);
-                                        setOpenConfirm(true);
-                                    }}
-                                    color="error"
-                                >
-                                    <DeleteIcon fontSize="small" />
-                                </IconButton>
-                            </>
+                        
+                        {/* Edit button for own pending requests */}
+                        {canEdit && (
+                            <IconButton
+                                size="small"
+                                onClick={() => handleOpenDialog(row)}
+                                color="primary"
+                                title="Edit"
+                            >
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                        )}
+                        
+                        {/* Delete button for own requests */}
+                        {canDelete && (
+                            <IconButton
+                                size="small"
+                                onClick={() => {
+                                    setSelectedLeave(row);
+                                    setOpenConfirm(true);
+                                }}
+                                color="error"
+                                title="Delete"
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
                         )}
                     </Box>
                 );
@@ -463,23 +476,7 @@ const LeavesPage = () => {
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                        {canManage && (
-                            <TextField
-                                select
-                                label="Employee"
-                                name="user"
-                                value={formData.user}
-                                onChange={handleChange}
-                                required
-                                fullWidth
-                            >
-                                {users.map((u) => (
-                                    <MenuItem key={u._id} value={u._id}>
-                                        {u.name} - {u.email}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        )}
+                        {/* Employee field removed - users can only create requests for themselves */}
                         <TextField
                             select
                             label="Request Type"

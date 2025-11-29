@@ -130,7 +130,7 @@ reportExecutionSchema.statics.getHistory = async function (reportId, options = {
     const { limit = 50, skip = 0 } = options;
 
     return await this.find({ report: reportId })
-        .populate('executedBy', 'username email profile.firstName profile.lastName')
+        .populate('executedBy', 'username email employeeId personalInfo')
         .sort({ createdAt: -1 })
         .limit(limit)
         .skip(skip)

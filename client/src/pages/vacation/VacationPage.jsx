@@ -289,8 +289,7 @@ const VacationPage = () => {
                 const userObj = row.employee || row.user;
                 if (!userObj) return 'Unknown User';
 
-                const fullName = `${userObj.profile?.firstName || ''} ${userObj.profile?.lastName || ''}`.trim();
-                return fullName || userObj.name || userObj.username || userObj.email || 'Unknown User';
+                return userObj.personalInfo?.fullName || userObj.username || userObj.email || 'Unknown User';
             }
         }] : []),
         {

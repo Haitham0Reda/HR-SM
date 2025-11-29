@@ -343,7 +343,7 @@ attendanceSchema.statics.getEmployeeAttendance = function (employeeId, startDate
     })
         .populate('leave', 'leaveType startDate endDate status')
         .populate('permissionRequests', 'permissionType time status')
-        .populate('approvedBy', 'profile.firstName profile.lastName')
+        .populate('approvedBy', 'username employeeId personalInfo')
         .sort({ date: 1 });
 };
 
@@ -506,7 +506,7 @@ attendanceSchema.statics.getCurrentlyPresent = function (departmentId = null) {
     return this.find(query)
         .populate({
             path: 'employee',
-            select: 'profile department position employeeId',
+            select: 'username employeeId personalInfo department position',
             populate: [
                 { path: 'department', select: 'name code' },
                 { path: 'position', select: 'title' }

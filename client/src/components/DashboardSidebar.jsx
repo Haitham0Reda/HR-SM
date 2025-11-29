@@ -23,6 +23,11 @@ import EventIcon from '@mui/icons-material/Event';
 import PollIcon from '@mui/icons-material/Poll';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import BeachAccessIcon from '@mui/icons-material/BeachAccess';
+import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -39,7 +44,6 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import BuildIcon from '@mui/icons-material/Build';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import GroupIcon from '@mui/icons-material/Group';
-import ScheduleIcon from '@mui/icons-material/Schedule';
 import BeachAccessOutlinedIcon from '@mui/icons-material/BeachAccessOutlined';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import PolicyIcon from '@mui/icons-material/Policy';
@@ -210,29 +214,52 @@ function DashboardSidebar({
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>My Work</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
-                                    id="vacation"
-                                    title="Vacation"
-                                    icon={<BeachAccessIcon />}
-                                    href="/app/vacation"
-                                    selected={!!matchPath('/app/vacation', pathname)}
+                                    id="missions"
+                                    title="Missions"
+                                    icon={<FlightTakeoffIcon />}
+                                    href="/app/missions"
+                                    selected={pathname.startsWith('/app/missions')}
                                 />
+                                <DashboardSidebarPageItem
+                                    id="sick-leaves"
+                                    title="Sick Leaves"
+                                    icon={<LocalHospitalIcon />}
+                                    href="/app/sick-leaves"
+                                    selected={pathname.startsWith('/app/sick-leaves')}
+                                />
+                                {userRole === 'doctor' && (
+                                    <DashboardSidebarPageItem
+                                        id="doctor-review-queue"
+                                        title="Doctor Review Queue"
+                                        icon={<MedicalServicesIcon />}
+                                        href="/app/sick-leaves/doctor-queue"
+                                        selected={!!matchPath('/app/sick-leaves/doctor-queue', pathname)}
+                                    />
+                                )}
                                 <DashboardSidebarPageItem
                                     id="permissions"
                                     title="Permissions"
-                                    icon={<AssignmentIcon />}
+                                    icon={<AccessAlarmIcon />}
                                     href="/app/permissions"
-                                    selected={!!matchPath('/app/permissions', pathname)}
+                                    selected={pathname.startsWith('/app/permissions')}
                                 />
                                 <DashboardSidebarPageItem
                                     id="overtime"
                                     title="Overtime"
                                     icon={<AccessTimeIcon />}
                                     href="/app/overtime"
-                                    selected={!!matchPath('/app/overtime', pathname)}
+                                    selected={pathname.startsWith('/app/overtime')}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="vacation-requests"
+                                    title="Vacation Requests"
+                                    icon={<BeachAccessIcon />}
+                                    href="/app/vacation-requests"
+                                    selected={pathname.startsWith('/app/vacation-requests')}
                                 />
                                 <DashboardSidebarPageItem
                                     id="leaves"
-                                    title="Mission & Sick"
+                                    title="Legacy Leaves"
                                     icon={<EventAvailableIcon />}
                                     href="/app/leaves"
                                     selected={!!matchPath('/app/leaves', pathname)}
@@ -342,25 +369,46 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/forget-checks', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="leaves"
-                                    title="Mission & Sick"
-                                    icon={<EventAvailableIcon />}
-                                    href="/app/leaves"
-                                    selected={!!matchPath('/app/leaves', pathname)}
+                                    id="missions"
+                                    title="Missions"
+                                    icon={<FlightTakeoffIcon />}
+                                    href="/app/missions"
+                                    selected={pathname.startsWith('/app/missions')}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="sick-leaves"
+                                    title="Sick Leaves"
+                                    icon={<LocalHospitalIcon />}
+                                    href="/app/sick-leaves"
+                                    selected={pathname.startsWith('/app/sick-leaves')}
                                 />
                                 <DashboardSidebarPageItem
                                     id="permissions"
                                     title="Permissions"
-                                    icon={<AssignmentIcon />}
+                                    icon={<AccessAlarmIcon />}
                                     href="/app/permissions"
-                                    selected={!!matchPath('/app/permissions', pathname)}
+                                    selected={pathname.startsWith('/app/permissions')}
                                 />
                                 <DashboardSidebarPageItem
                                     id="overtime"
                                     title="Overtime"
                                     icon={<AccessTimeIcon />}
                                     href="/app/overtime"
-                                    selected={!!matchPath('/app/overtime', pathname)}
+                                    selected={pathname.startsWith('/app/overtime')}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="vacation-requests"
+                                    title="Vacation Requests"
+                                    icon={<BeachAccessIcon />}
+                                    href="/app/vacation-requests"
+                                    selected={pathname.startsWith('/app/vacation-requests')}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="leaves"
+                                    title="Legacy Leaves"
+                                    icon={<EventAvailableIcon />}
+                                    href="/app/leaves"
+                                    selected={!!matchPath('/app/leaves', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="requests"
@@ -371,8 +419,8 @@ function DashboardSidebar({
                                 />
                                 <DashboardSidebarPageItem
                                     id="vacation-management"
-                                    title="Vacation"
-                                    icon={<BeachAccessIcon />}
+                                    title="Vacation Balances"
+                                    icon={<BeachAccessOutlinedIcon />}
                                     href="/app/vacations"
                                     selected={!!matchPath('/app/vacations', pathname)}
                                 />
@@ -509,25 +557,46 @@ function DashboardSidebar({
                                     selected={!!matchPath('/app/forget-checks', pathname)}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="leaves"
-                                    title="Mission & Sick"
-                                    icon={<EventAvailableIcon />}
-                                    href="/app/leaves"
-                                    selected={!!matchPath('/app/leaves', pathname)}
+                                    id="missions"
+                                    title="Missions"
+                                    icon={<FlightTakeoffIcon />}
+                                    href="/app/missions"
+                                    selected={pathname.startsWith('/app/missions')}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="sick-leaves"
+                                    title="Sick Leaves"
+                                    icon={<LocalHospitalIcon />}
+                                    href="/app/sick-leaves"
+                                    selected={pathname.startsWith('/app/sick-leaves')}
                                 />
                                 <DashboardSidebarPageItem
                                     id="permissions"
                                     title="Permissions"
-                                    icon={<AssignmentIcon />}
+                                    icon={<AccessAlarmIcon />}
                                     href="/app/permissions"
-                                    selected={!!matchPath('/app/permissions', pathname)}
+                                    selected={pathname.startsWith('/app/permissions')}
                                 />
                                 <DashboardSidebarPageItem
                                     id="overtime"
                                     title="Overtime"
                                     icon={<AccessTimeIcon />}
                                     href="/app/overtime"
-                                    selected={!!matchPath('/app/overtime', pathname)}
+                                    selected={pathname.startsWith('/app/overtime')}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="vacation-requests"
+                                    title="Vacation Requests"
+                                    icon={<BeachAccessIcon />}
+                                    href="/app/vacation-requests"
+                                    selected={pathname.startsWith('/app/vacation-requests')}
+                                />
+                                <DashboardSidebarPageItem
+                                    id="leaves"
+                                    title="Legacy Leaves"
+                                    icon={<EventAvailableIcon />}
+                                    href="/app/leaves"
+                                    selected={!!matchPath('/app/leaves', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="requests"
@@ -538,8 +607,8 @@ function DashboardSidebar({
                                 />
                                 <DashboardSidebarPageItem
                                     id="vacation-management"
-                                    title="Vacation"
-                                    icon={<BeachAccessIcon />}
+                                    title="Vacation Balances"
+                                    icon={<BeachAccessOutlinedIcon />}
                                     href="/app/vacations"
                                     selected={!!matchPath('/app/vacations', pathname)}
                                 />

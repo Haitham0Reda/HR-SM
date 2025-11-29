@@ -87,6 +87,27 @@ const EditUserPage = () => {
             try {
                 deptData = await departmentService.getAll();
                 console.log('Departments:', deptData);
+                
+                // Sort departments hierarchically (main departments first, then sub-departments)
+                const sortedDepts = [];
+                const mainDepts = deptData.filter(d => !d.parentDepartment);
+                const subDepts = deptData.filter(d => d.parentDepartment);
+                
+                mainDepts.forEach(mainDept => {
+                    sortedDepts.push(mainDept);
+                    // Add sub-departments of this main department
+                    const children = subDepts.filter(sub => 
+                        (typeof sub.parentDepartment === 'object' ? sub.parentDepartment._id : sub.parentDepartment) === mainDept._id
+                    );
+                    sortedDepts.push(...children);
+                });
+                
+                // Add any remaining sub-departments (orphaned)
+                const addedSubIds = new Set(sortedDepts.filter(d => d.parentDepartment).map(d => d._id));
+                const remainingSubs = subDepts.filter(d => !addedSubIds.has(d._id));
+                sortedDepts.push(...remainingSubs);
+                
+                deptData = sortedDepts;
             } catch (err) {
                 console.error('Failed to fetch departments:', err);
             }
@@ -106,12 +127,30 @@ const EditUserPage = () => {
                 setProfilePicturePreview(userData.personalInfo.profilePicture);
             }
             
+            // Determine if the selected department is a main or sub-department
+            let mainDept = '';
+            let subDept = '';
+            if (userData.department?._id) {
+                const userDept = deptData.find(d => d._id === userData.department._id);
+                if (userDept) {
+                    if (userDept.parentDepartment) {
+                        // User is assigned to a sub-department
+                        subDept = userDept._id;
+                        mainDept = typeof userDept.parentDepartment === 'object' ? userDept.parentDepartment._id : userDept.parentDepartment;
+                    } else {
+                        // User is assigned to a main department
+                        mainDept = userDept._id;
+                    }
+                }
+            }
+            
             setFormData({
                 username: userData.username || '',
                 email: userData.email || '',
                 role: userData.role || 'user',
                 employeeId: userData.employeeId || '',
-                department: userData.department?._id || '',
+                department: mainDept,
+                subDepartment: subDept,
                 position: userData.position?._id || '',
                 personalInfo: {
                     fullName: userData.personalInfo?.fullName || '',
@@ -270,7 +309,17 @@ const EditUserPage = () => {
                 formData.personalInfo.profilePicture = profilePicturePreview;
             }
             
-            await userService.update(id, formData);
+            // Prepare data for submission
+            const submitData = {
+                ...formData,
+                // Use sub-department if selected, otherwise use main department
+                department: formData.subDepartment || formData.department
+            };
+            
+            // Remove subDepartment field as it's not part of the user model
+            delete submitData.subDepartment;
+            
+            await userService.update(id, submitData);
             showNotification('User updated successfully', 'success');
             navigate(`/app/users/${id}`);
         } catch (error) {
@@ -705,19 +754,58 @@ const EditUserPage = () => {
                         </Typography>
                         <Stack spacing={2.5}>
                             <TextField
-                                label="Department"
+                                label="Main Department"
                                 select
                                 value={formData.department}
-                                onChange={(e) => handleChange('department', e.target.value)}
+                                onChange={(e) => {
+                                    handleChange('department', e.target.value);
+                                    // Reset sub-department when main department changes
+                                    handleChange('subDepartment', '');
+                                }}
                                 fullWidth
                             >
-                                <MenuItem value="">Select Department</MenuItem>
-                                {departments.map((dept) => (
-                                    <MenuItem key={dept._id} value={dept._id}>
+                                <MenuItem value="">Select Main Department</MenuItem>
+                                {departments.filter(dept => !dept.parentDepartment).map((dept) => (
+                                    <MenuItem 
+                                        key={dept._id} 
+                                        value={dept._id}
+                                    >
                                         {dept.name}
+                                        {dept.code ? ` (${dept.code})` : ''}
                                     </MenuItem>
                                 ))}
                             </TextField>
+
+                            {/* Sub-Department Dropdown - Only show if main department is selected */}
+                            {formData.department && departments.filter(dept => 
+                                dept.parentDepartment && 
+                                (typeof dept.parentDepartment === 'object' ? dept.parentDepartment._id : dept.parentDepartment) === formData.department
+                            ).length > 0 && (
+                                <TextField
+                                    label="Sub-Department (Optional)"
+                                    select
+                                    value={formData.subDepartment || ''}
+                                    onChange={(e) => handleChange('subDepartment', e.target.value)}
+                                    fullWidth
+                                >
+                                    <MenuItem value="">None - Use Main Department Only</MenuItem>
+                                    {departments
+                                        .filter(dept => 
+                                            dept.parentDepartment && 
+                                            (typeof dept.parentDepartment === 'object' ? dept.parentDepartment._id : dept.parentDepartment) === formData.department
+                                        )
+                                        .map((dept) => (
+                                            <MenuItem 
+                                                key={dept._id} 
+                                                value={dept._id}
+                                            >
+                                                {dept.name}
+                                                {dept.code ? ` (${dept.code})` : ''}
+                                            </MenuItem>
+                                        ))
+                                    }
+                                </TextField>
+                            )}
                             <TextField
                                 label="Position"
                                 select

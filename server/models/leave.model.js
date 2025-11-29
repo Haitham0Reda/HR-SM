@@ -366,9 +366,9 @@ leaveSchema.statics.getEmployeeLeaves = function (employeeId, filters = {}) {
         { path: 'position', select: 'title code' }
       ]
     })
-    .populate('approvedBy rejectedBy cancelledBy', 'profile.firstName profile.lastName employeeId')
-    .populate('medicalDocumentation.doctorReviewedBy', 'profile.firstName profile.lastName employeeId role')
-    .populate('medicalDocumentation.documents.uploadedBy', 'profile.firstName profile.lastName')
+    .populate('approvedBy rejectedBy cancelledBy', 'username employeeId personalInfo')
+    .populate('medicalDocumentation.doctorReviewedBy', 'username employeeId personalInfo role')
+    .populate('medicalDocumentation.documents.uploadedBy', 'username employeeId personalInfo')
     .populate('mission.relatedDepartment', 'name code')
     .populate('department', 'name code')
     .populate('position', 'title')
@@ -425,8 +425,8 @@ leaveSchema.statics.getPendingDoctorReview = function (departmentId = null) {
         { path: 'position', select: 'title code' }
       ]
     })
-    .populate('approvedBy', 'profile.firstName profile.lastName employeeId role')
-    .populate('medicalDocumentation.documents.uploadedBy', 'profile.firstName profile.lastName')
+    .populate('approvedBy', 'username employeeId personalInfo role')
+    .populate('medicalDocumentation.documents.uploadedBy', 'username employeeId personalInfo')
     .populate('department', 'name code')
     .populate('vacationBalance')
     .sort({ createdAt: 1 });
@@ -447,7 +447,7 @@ leaveSchema.statics.getMissionRequests = function (departmentId = null, status =
         { path: 'position', select: 'title code' }
       ]
     })
-    .populate('approvedBy rejectedBy', 'profile.firstName profile.lastName employeeId')
+    .populate('approvedBy rejectedBy', 'username employeeId personalInfo')
     .populate('mission.relatedDepartment', 'name code manager')
     .populate('department', 'name code')
     .sort({ startDate: -1 });
@@ -468,9 +468,9 @@ leaveSchema.statics.getSickLeaveRequests = function (departmentId = null, status
         { path: 'position', select: 'title code' }
       ]
     })
-    .populate('approvedBy rejectedBy', 'profile.firstName profile.lastName employeeId role')
-    .populate('medicalDocumentation.doctorReviewedBy', 'profile.firstName profile.lastName employeeId role')
-    .populate('medicalDocumentation.documents.uploadedBy', 'profile.firstName profile.lastName')
+    .populate('approvedBy rejectedBy', 'username employeeId personalInfo role')
+    .populate('medicalDocumentation.doctorReviewedBy', 'username employeeId personalInfo role')
+    .populate('medicalDocumentation.documents.uploadedBy', 'username employeeId personalInfo')
     .populate('department', 'name code')
     .populate('vacationBalance')
     .sort({ createdAt: -1 });
@@ -493,8 +493,8 @@ leaveSchema.statics.getLeavesByDepartment = function (departmentId, filters = {}
       select: 'profile position employeeId email',
       populate: { path: 'position', select: 'title code' }
     })
-    .populate('approvedBy rejectedBy cancelledBy', 'profile.firstName profile.lastName')
-    .populate('medicalDocumentation.doctorReviewedBy', 'profile.firstName profile.lastName role')
+    .populate('approvedBy rejectedBy cancelledBy', 'username employeeId personalInfo')
+    .populate('medicalDocumentation.doctorReviewedBy', 'username employeeId personalInfo role')
     .populate('mission.relatedDepartment', 'name code')
     .populate('vacationBalance')
     .sort({ startDate: -1 });

@@ -294,7 +294,7 @@ reportSchema.statics.getUserReports = function (userId) {
             { 'sharedWith.user': userId }
         ],
         isActive: true
-    }).populate('createdBy', 'username email profile.firstName profile.lastName');
+    }).populate('createdBy', 'username email employeeId personalInfo');
 };
 
 // Static method to get templates

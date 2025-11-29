@@ -327,8 +327,7 @@ const HardCopiesPage = () => {
                                             Size: {formatFileSize(hardCopy.fileSize)}
                                         </Typography>
                                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                            By: {hardCopy.uploadedBy?.profile?.firstName ? 
-                                                `${hardCopy.uploadedBy.profile.firstName} ${hardCopy.uploadedBy.profile.lastName?.charAt(0)}.` : 
+                                            By: {hardCopy.uploadedBy?.personalInfo?.fullName || 
                                                 hardCopy.uploadedBy?.username?.substring(0, 10) || 'N/A'}
                                         </Typography>
                                     </Box>

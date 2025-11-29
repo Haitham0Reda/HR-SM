@@ -318,8 +318,8 @@ const Dashboard = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                                 <Zoom in={true} timeout={1000}>
                                     <Avatar
-                                        src={employeeOfMonth.selectedEmployee.profile?.profilePicture}
-                                        alt={employeeOfMonth.selectedEmployee.profile?.firstName}
+                                        src={employeeOfMonth.selectedEmployee.personalInfo?.profilePicture}
+                                        alt={employeeOfMonth.selectedEmployee.personalInfo?.fullName}
                                         sx={{
                                             width: 80,
                                             height: 80,
@@ -331,7 +331,7 @@ const Dashboard = () => {
                                             bgcolor: 'warning.light',
                                         }}
                                     >
-                                        {employeeOfMonth.selectedEmployee.profile?.firstName?.charAt(0) ||
+                                        {employeeOfMonth.selectedEmployee.personalInfo?.fullName?.charAt(0) ||
                                             employeeOfMonth.selectedEmployee.username?.charAt(0)}
                                     </Avatar>
                                 </Zoom>
@@ -352,8 +352,7 @@ const Dashboard = () => {
                                         </Typography>
                                     </Box>
                                     <Typography variant="h5" fontWeight="700" sx={{ mb: 0.5 }}>
-                                        {employeeOfMonth.selectedEmployee.profile?.firstName}{' '}
-                                        {employeeOfMonth.selectedEmployee.profile?.lastName}
+                                        {employeeOfMonth.selectedEmployee.personalInfo?.fullName || employeeOfMonth.selectedEmployee.username}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
                                         {employeeOfMonth?.month || new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}

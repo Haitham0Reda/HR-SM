@@ -311,8 +311,19 @@ export const generateUserCredentialPDF = (user, tempPassword = null) => {
                         </div>
                         <div class="info-row">
                             <div class="info-label">Department:</div>
-                            <div class="info-value">${user.department?.name || 'Not assigned'}</div>
+                            <div class="info-value">${
+                                user.department?.parentDepartment 
+                                    ? user.department.parentDepartment.name 
+                                    : (user.department?.name || 'Not assigned')
+                            }</div>
                         </div>
+                        ${user.department?.parentDepartment 
+                            ? `<div class="info-row">
+                                <div class="info-label">Sub-Department:</div>
+                                <div class="info-value">${user.department.name}</div>
+                            </div>`
+                            : ''
+                        }
                         <div class="info-row">
                             <div class="info-label">Position:</div>
                             <div class="info-value">${user.position?.title || 'Not assigned'}</div>

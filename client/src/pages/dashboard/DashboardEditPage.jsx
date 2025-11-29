@@ -223,7 +223,7 @@ const DashboardEditPage = () => {
                                         <Autocomplete
                                             options={users}
                                             getOptionLabel={(option) =>
-                                                `${option.profile?.firstName || ''} ${option.profile?.lastName || ''} (${option.username})`.trim()
+                                                `${option.personalInfo?.fullName || option.username} (${option.username})`.trim()
                                             }
                                             value={config.employeeOfTheMonth.selectedEmployee}
                                             onChange={handleEmployeeSelect}
@@ -240,11 +240,11 @@ const DashboardEditPage = () => {
                                                         src={option.profile?.profilePicture}
                                                         sx={{ mr: 2, width: 32, height: 32 }}
                                                     >
-                                                        {option.profile?.firstName?.charAt(0) || option.username?.charAt(0)}
+                                                        {option.personalInfo?.fullName?.charAt(0) || option.username?.charAt(0)}
                                                     </Avatar>
                                                     <Box>
                                                         <Typography variant="body2">
-                                                            {option.profile?.firstName} {option.profile?.lastName}
+                                                            {option.personalInfo?.fullName || option.username}
                                                         </Typography>
                                                         <Typography variant="caption" color="text.secondary">
                                                             {option.username} - {option.employeeId}
@@ -261,15 +261,14 @@ const DashboardEditPage = () => {
                                                 <CardContent>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                                         <Avatar
-                                                            src={config.employeeOfTheMonth.selectedEmployee.profile?.profilePicture}
+                                                            src={config.employeeOfTheMonth.selectedEmployee.personalInfo?.profilePicture}
                                                             sx={{ width: 64, height: 64 }}
                                                         >
-                                                            {config.employeeOfTheMonth.selectedEmployee.profile?.firstName?.charAt(0)}
+                                                            {config.employeeOfTheMonth.selectedEmployee.personalInfo?.fullName?.charAt(0) || config.employeeOfTheMonth.selectedEmployee.username?.charAt(0)}
                                                         </Avatar>
                                                         <Box>
                                                             <Typography variant="h6" fontWeight="600">
-                                                                {config.employeeOfTheMonth.selectedEmployee.profile?.firstName}{' '}
-                                                                {config.employeeOfTheMonth.selectedEmployee.profile?.lastName}
+                                                                {config.employeeOfTheMonth.selectedEmployee.personalInfo?.fullName || config.employeeOfTheMonth.selectedEmployee.username}
                                                             </Typography>
                                                             <Typography variant="body2">
                                                                 {config.employeeOfTheMonth.selectedEmployee.username} -{' '}
