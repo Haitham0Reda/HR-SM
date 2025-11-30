@@ -8,15 +8,13 @@ import Backup from '../models/backup.model.js';
 import BackupExecution from '../models/backupExecution.model.js';
 import mongooseBackup from './mongooseBackup.service.js';
 import backupEmail from './backupEmail.service.js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import fs from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { createReadStream, createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
-
-const execAsync = promisify(exec);
+import archiver from 'archiver';
 
 class BackupSchedulerService {
     constructor() {
@@ -193,26 +191,106 @@ class BackupSchedulerService {
     }
 
     /**
-     * Perform file backup
+     * Perform file backup using archiver (cross-platform)
      */
     async performFileBackup(backup, backupDir, timestamp) {
-        const backupFile = `files-${timestamp}.tar.gz`;
+        const backupFile = `files-${timestamp}.zip`;
         const backupPath = path.join(backupDir, backupFile);
 
-        const filePaths = backup.sources.filePaths.join(' ');
-        const command = `tar -czf "${backupPath}" ${filePaths}`;
+        console.log('📦 Starting file backup...');
 
-        await execAsync(command);
+        // Create write stream
+        const output = createWriteStream(backupPath);
+        const archive = archiver('zip', {
+            zlib: { level: 6 } // Compression level
+        });
+
+        // Track total size before compression
+        let totalSize = 0;
+
+        // Promise to handle archive completion
+        const archivePromise = new Promise((resolve, reject) => {
+            output.on('close', () => {
+                resolve();
+            });
+            archive.on('error', (err) => {
+                reject(err);
+            });
+            output.on('error', (err) => {
+                reject(err);
+            });
+        });
+
+        // Pipe archive to output
+        archive.pipe(output);
+
+        // Add files/directories to archive
+        for (const filePath of backup.sources.filePaths) {
+            const fullPath = path.resolve(filePath);
+            
+            // Check if path exists
+            if (!existsSync(fullPath)) {
+                console.log(`   ⚠️  Path not found, skipping: ${filePath}`);
+                continue;
+            }
+
+            const stats = await fs.stat(fullPath);
+            
+            if (stats.isDirectory()) {
+                console.log(`   Adding directory: ${filePath}`);
+                archive.directory(fullPath, path.basename(fullPath));
+                // Approximate size for directories
+                totalSize += await this.getDirectorySize(fullPath);
+            } else {
+                console.log(`   Adding file: ${filePath}`);
+                archive.file(fullPath, { name: path.basename(fullPath) });
+                totalSize += stats.size;
+            }
+        }
+
+        // Finalize archive
+        await archive.finalize();
+        await archivePromise;
 
         const stats = await fs.stat(backupPath);
+        console.log(`✅ File backup completed`);
+        console.log(`   Size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
+        console.log(`   Compressed: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
         return {
             backupFile,
             backupPath,
-            backupSize: stats.size,
+            backupSize: totalSize,
             compressedSize: stats.size,
+            compressionRatio: totalSize > 0 ? (totalSize / stats.size).toFixed(2) : 1,
             checksum: await this.calculateChecksum(backupPath)
         };
+    }
+
+    /**
+     * Calculate directory size recursively
+     */
+    async getDirectorySize(dirPath) {
+        let totalSize = 0;
+        
+        try {
+            const entries = await fs.readdir(dirPath, { withFileTypes: true });
+            
+            for (const entry of entries) {
+                const fullPath = path.join(dirPath, entry.name);
+                
+                if (entry.isDirectory()) {
+                    totalSize += await this.getDirectorySize(fullPath);
+                } else {
+                    const stats = await fs.stat(fullPath);
+                    totalSize += stats.size;
+                }
+            }
+        } catch (error) {
+            console.error(`Error calculating size for ${dirPath}:`, error.message);
+        }
+        
+        return totalSize;
     }
 
     /**
