@@ -3,6 +3,19 @@
  * Central location for all application-wide constants
  */
 
+// Import shared constants
+import {
+    ROLES,
+    LEAVE_TYPES,
+    REQUEST_STATUS,
+    ATTENDANCE_STATUS,
+    PRIORITY_LEVELS,
+    DATE_FORMATS as SHARED_DATE_FORMATS
+} from '../shared-constants.js';
+
+// Re-export shared constants
+export { ROLES, LEAVE_TYPES, REQUEST_STATUS, ATTENDANCE_STATUS, PRIORITY_LEVELS };
+
 // Layout Constants
 export const DRAWER_WIDTH = 305;
 export const MINI_DRAWER_WIDTH = 64;
@@ -16,45 +29,11 @@ export const API_TIMEOUT = 30000; // 30 seconds
 export const DEFAULT_PAGE_SIZE = 10;
 export const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
 
-// Date Formats
-export const DATE_FORMAT = 'YYYY-MM-DD';
-export const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
-export const DISPLAY_DATE_FORMAT = 'MMM DD, YYYY';
+// Date Formats (client-specific display formats)
+export const DATE_FORMAT = SHARED_DATE_FORMATS.ISO;
+export const DATETIME_FORMAT = SHARED_DATE_FORMATS.DATETIME;
+export const DISPLAY_DATE_FORMAT = SHARED_DATE_FORMATS.DISPLAY;
 export const DISPLAY_DATETIME_FORMAT = 'MMM DD, YYYY HH:mm';
-
-// User Roles
-export const ROLES = {
-    ADMIN: 'admin',
-    HR: 'hr',
-    MANAGER: 'manager',
-    EMPLOYEE: 'employee',
-};
-
-// Leave Types
-export const LEAVE_TYPES = {
-    SICK: 'sick',
-    ANNUAL: 'annual',
-    PERSONAL: 'personal',
-    MATERNITY: 'maternity',
-    PATERNITY: 'paternity',
-    UNPAID: 'unpaid',
-};
-
-// Request Status
-export const REQUEST_STATUS = {
-    PENDING: 'pending',
-    APPROVED: 'approved',
-    REJECTED: 'rejected',
-    CANCELLED: 'cancelled',
-};
-
-// Attendance Status
-export const ATTENDANCE_STATUS = {
-    PRESENT: 'present',
-    ABSENT: 'absent',
-    LATE: 'late',
-    HALF_DAY: 'half-day',
-};
 
 // File Upload
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB

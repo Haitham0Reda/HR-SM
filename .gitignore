@@ -26,8 +26,16 @@ yarn-debug.log*
 yarn-error.log*
 
 # uploads
-server/uploads/medical-documents/*
+uploads/*
+!uploads/.gitkeep
+server/uploads/*
 !server/uploads/.gitkeep
+
+# backups
+backups/*
+!backups/.gitkeep
+server/backups/*
+!server/backups/README.md
 
 # logs
 logs/

@@ -5,42 +5,18 @@
  * Provides type-safe constants for the entire application
  */
 
-// User Roles
-export const ROLES = {
-    ADMIN: 'admin',
-    HR: 'hr',
-    MANAGER: 'manager',
-    EMPLOYEE: 'employee',
-};
+// Import shared constants
+import {
+    ROLES,
+    REQUEST_STATUS,
+    LEAVE_TYPES,
+    ATTENDANCE_STATUS,
+    PRIORITY_LEVELS,
+    DATE_FORMATS
+} from '../../shared-constants.js';
 
-// Request Status
-export const REQUEST_STATUS = {
-    PENDING: 'pending',
-    APPROVED: 'approved',
-    REJECTED: 'rejected',
-    CANCELLED: 'cancelled',
-};
-
-// Leave Types
-export const LEAVE_TYPES = {
-    SICK: 'sick',
-    ANNUAL: 'annual',
-    CASUAL: 'casual',
-    PERSONAL: 'personal',
-    MATERNITY: 'maternity',
-    PATERNITY: 'paternity',
-    UNPAID: 'unpaid',
-    MISSION: 'mission',
-};
-
-// Attendance Status
-export const ATTENDANCE_STATUS = {
-    PRESENT: 'present',
-    ABSENT: 'absent',
-    LATE: 'late',
-    HALF_DAY: 'half-day',
-    ON_LEAVE: 'on-leave',
-};
+// Re-export shared constants
+export { ROLES, REQUEST_STATUS, LEAVE_TYPES, ATTENDANCE_STATUS, PRIORITY_LEVELS, DATE_FORMATS };
 
 // Document Types
 export const DOCUMENT_TYPES = {
@@ -64,14 +40,6 @@ export const NOTIFICATION_TYPES = {
     SURVEY: 'survey',
     DOCUMENT: 'document',
     SYSTEM: 'system',
-};
-
-// Priority Levels
-export const PRIORITY_LEVELS = {
-    LOW: 'low',
-    MEDIUM: 'medium',
-    HIGH: 'high',
-    URGENT: 'urgent',
 };
 
 // Backup Types
@@ -141,13 +109,6 @@ export const EMAIL_CONFIG = {
     },
 };
 
-// Date Formats
-export const DATE_FORMATS = {
-    ISO: 'YYYY-MM-DD',
-    DISPLAY: 'MMM DD, YYYY',
-    DATETIME: 'YYYY-MM-DD HH:mm:ss',
-};
-
 // HTTP Status Codes
 export const HTTP_STATUS = {
     OK: 200,
@@ -182,13 +143,16 @@ export const SUCCESS_MESSAGES = {
 };
 
 export default {
+    // Shared constants (imported)
     ROLES,
     REQUEST_STATUS,
     LEAVE_TYPES,
     ATTENDANCE_STATUS,
+    PRIORITY_LEVELS,
+    DATE_FORMATS,
+    // Server-specific constants
     DOCUMENT_TYPES,
     NOTIFICATION_TYPES,
-    PRIORITY_LEVELS,
     BACKUP_TYPES,
     REPORT_TYPES,
     FILE_LIMITS,
@@ -196,7 +160,6 @@ export default {
     TOKEN_EXPIRATION,
     RATE_LIMITS,
     EMAIL_CONFIG,
-    DATE_FORMATS,
     HTTP_STATUS,
     ERROR_MESSAGES,
     SUCCESS_MESSAGES,
