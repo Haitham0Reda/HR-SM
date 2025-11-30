@@ -10,7 +10,9 @@ import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../hooks/useAuth';
-import leaveService from '../../services/leave.service';
+import vacationService from '../../services/vacation.service';
+import missionService from '../../services/mission.service';
+import sickLeaveService from '../../services/sickLeave.service';
 import permissionService from '../../services/permission.service';
 
 const RequestsPage = () => {
@@ -33,42 +35,44 @@ const RequestsPage = () => {
         try {
             setLoading(true);
 
-            // Fetch leave requests
-            const leaveData = await leaveService.getAll({ user: user._id });
-            const leaves = Array.isArray(leaveData) ? leaveData : (leaveData.data || []);
+            // Fetch vacation requests
+            const vacationData = await vacationService.getAll();
+            const vacations = Array.isArray(vacationData) ? vacationData : (vacationData.data || []);
+            
+            // Transform vacation requests
+            const transformedVacations = vacations.map(vacation => ({
+                ...vacation,
+                requestType: 'vacation',
+                displayType: 'Vacation',
+                date: vacation.startDate,
+                details: `${vacation.duration || 0} day${vacation.duration !== 1 ? 's' : ''}`
+            }));
 
-            // Transform leave requests
-            const transformedLeaves = leaves.map(leave => {
-                const leaveType = leave.leaveType || '';
-                let displayType = leaveType.charAt(0).toUpperCase() + leaveType.slice(1);
-                let vacationType = null;
+            // Fetch mission requests
+            const missionData = await missionService.getAll();
+            const missions = Array.isArray(missionData) ? missionData : (missionData.data || []);
+            
+            // Transform mission requests
+            const transformedMissions = missions.map(mission => ({
+                ...mission,
+                requestType: 'mission',
+                displayType: 'Mission',
+                date: mission.startDate,
+                details: `${mission.duration || 0} day${mission.duration !== 1 ? 's' : ''}`
+            }));
 
-                // Replace "Annual" with "Vacation" and store the vacation type
-                if (leaveType.toLowerCase() === 'annual') {
-                    displayType = 'Vacation';
-                    vacationType = 'Annual';
-                } else if (leaveType.toLowerCase() === 'casual') {
-                    displayType = 'Vacation';
-                    vacationType = 'Casual';
-                } else if (leaveType.toLowerCase() === 'sick') {
-                    displayType = 'Vacation';
-                    vacationType = 'Sick';
-                } else if (leaveType.toLowerCase() === 'unpaid') {
-                    displayType = 'Vacation';
-                    vacationType = 'Unpaid';
-                } else {
-                    displayType = displayType + ' Leave';
-                }
-
-                return {
-                    ...leave,
-                    requestType: 'leave',
-                    displayType,
-                    vacationType,
-                    date: leave.startDate,
-                    details: `${leave.duration || 0} day${leave.duration !== 1 ? 's' : ''}`
-                };
-            });
+            // Fetch sick leave requests
+            const sickLeaveData = await sickLeaveService.getAll();
+            const sickLeaves = Array.isArray(sickLeaveData) ? sickLeaveData : (sickLeaveData.data || []);
+            
+            // Transform sick leave requests
+            const transformedSickLeaves = sickLeaves.map(sickLeave => ({
+                ...sickLeave,
+                requestType: 'sick-leave',
+                displayType: 'Sick Leave',
+                date: sickLeave.startDate,
+                details: `${sickLeave.duration || 0} day${sickLeave.duration !== 1 ? 's' : ''}`
+            }));
 
             // Fetch permission requests (includes late-arrival, early-departure, overtime)
             const permissionData = await permissionService.getAll();
@@ -86,7 +90,7 @@ const RequestsPage = () => {
                 }));
 
             // Combine and sort by date (newest first)
-            const combined = [...transformedLeaves, ...userPermissions].sort((a, b) =>
+            const combined = [...transformedVacations, ...transformedMissions, ...transformedSickLeaves, ...userPermissions].sort((a, b) =>
                 new Date(b.createdAt) - new Date(a.createdAt)
             );
 

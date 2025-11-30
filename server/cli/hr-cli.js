@@ -18,7 +18,9 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 import User from '../models/user.model.js';
 import Department from '../models/department.model.js';
 import Attendance from '../models/attendance.model.js';
-import Leave from '../models/leave.model.js';
+import Vacation from '../models/vacation.model.js';
+import Mission from '../models/mission.model.js';
+import SickLeave from '../models/sickLeave.model.js';
 
 const program = new Command();
 
@@ -182,16 +184,20 @@ program
     .action(async () => {
         await connectDB();
         
-        const leaves = await Leave.find({ status: 'pending' })
-            .populate('user', 'firstName lastName email')
-            .sort({ createdAt: -1 });
+        // Fetch from all leave types
+        const vacations = await Vacation.find({ status: 'pending' }).populate('employee', 'personalInfo').sort({ createdAt: -1 });
+        const missions = await Mission.find({ status: 'pending' }).populate('employee', 'personalInfo').sort({ createdAt: -1 });
+        const sickLeaves = await SickLeave.find({ status: 'pending' }).populate('employee', 'personalInfo').sort({ createdAt: -1 });
+        
+        const leaves = [...vacations, ...missions, ...sickLeaves];
         
         console.log(chalk.yellow(`\nPending Leave Requests (${leaves.length}):\n`));
         leaves.forEach(leave => {
-            const user = `${leave.user.firstName} ${leave.user.lastName}`;
+            const user = leave.employee?.personalInfo?.fullName || 'Unknown';
             const dates = `${leave.startDate.toLocaleDateString()} - ${leave.endDate.toLocaleDateString()}`;
-            console.log(`${chalk.bold(user)} - ${chalk.cyan(leave.leaveType)} - ${dates}`);
-            console.log(chalk.gray(`  Reason: ${leave.reason.substring(0, 60)}...`));
+            const type = leave.constructor.modelName;
+            console.log(`${chalk.bold(user)} - ${chalk.cyan(type)} - ${dates}`);
+            console.log(chalk.gray(`  Reason: ${(leave.reason || leave.purpose || 'N/A').substring(0, 60)}...`));
         });
         
         await disconnectDB();
@@ -207,13 +213,19 @@ program
         const userCount = await User.countDocuments();
         const deptCount = await Department.countDocuments();
         const attendanceCount = await Attendance.countDocuments();
-        const leaveCount = await Leave.countDocuments();
+        const vacationCount = await Vacation.countDocuments();
+        const missionCount = await Mission.countDocuments();
+        const sickLeaveCount = await SickLeave.countDocuments();
+        const totalLeaves = vacationCount + missionCount + sickLeaveCount;
         
         console.log(chalk.yellow('\nDatabase Statistics:\n'));
         console.log(`${chalk.blue('Users:')} ${userCount}`);
         console.log(`${chalk.blue('Departments:')} ${deptCount}`);
         console.log(`${chalk.blue('Attendance Records:')} ${attendanceCount}`);
-        console.log(`${chalk.blue('Leave Requests:')} ${leaveCount}`);
+        console.log(`${chalk.blue('Vacations:')} ${vacationCount}`);
+        console.log(`${chalk.blue('Missions:')} ${missionCount}`);
+        console.log(`${chalk.blue('Sick Leaves:')} ${sickLeaveCount}`);
+        console.log(`${chalk.blue('Total Leave Requests:')} ${totalLeaves}`);
         
         await disconnectDB();
     });

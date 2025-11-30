@@ -49,6 +49,16 @@ const userService = {
     getPlainPassword: async (id) => {
         return await api.get(`/users/${id}/plain-password`);
     },
+
+    // Update vacation balance for a single user
+    updateVacationBalance: async (userId, balanceData) => {
+        return await api.put(`/users/${userId}/vacation-balance`, balanceData);
+    },
+
+    // Bulk update vacation balances
+    bulkUpdateVacationBalances: async (updates) => {
+        return await api.post('/users/bulk-update-vacation-balances', { updates });
+    },
 };
 
 export default userService;

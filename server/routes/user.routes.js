@@ -8,7 +8,9 @@ import {
     loginUser,
     getUserProfile,
     updateUserProfile,
-    getUserPlainPassword
+    getUserPlainPassword,
+    updateVacationBalance,
+    bulkUpdateVacationBalances
 } from '../controller/user.controller.js';
 import { bulkDownloadPhotos } from '../controller/userPhoto.controller.js';
 import {
@@ -69,6 +71,12 @@ router.get('/:id', protect, getUserById);
 
 // Get user plain password - Admin only (for credential generation)
 router.get('/:id/plain-password', protect, admin, getUserPlainPassword);
+
+// Update vacation balance - Admin/HR only
+router.put('/:id/vacation-balance', protect, admin, updateVacationBalance);
+
+// Bulk update vacation balances - Admin/HR only
+router.post('/bulk-update-vacation-balances', protect, admin, bulkUpdateVacationBalances);
 
 // Update user - Admin only with validation
 router.put('/:id',

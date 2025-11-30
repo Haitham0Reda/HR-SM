@@ -26,7 +26,9 @@ import Announcement from './models/announcement.model.js';
 import Backup from './models/backup.model.js';
 import BackupExecution from './models/backupExecution.model.js';
 import Document from './models/document.model.js';
-import Leave from './models/leave.model.js';
+import Vacation from './models/vacation.model.js';
+import Mission from './models/mission.model.js';
+import SickLeave from './models/sickLeave.model.js';
 import Notification from './models/notification.model.js';
 import Payroll from './models/payroll.model.js';
 import Permission from './models/permission.model.js';
@@ -73,7 +75,9 @@ const seedData = async () => {
         await Backup.deleteMany({});
         await BackupExecution.deleteMany({});
         await Document.deleteMany({});
-        await Leave.deleteMany({});
+        await Vacation.deleteMany({});
+        await Mission.deleteMany({});
+        await SickLeave.deleteMany({});
         await Notification.deleteMany({});
         await Payroll.deleteMany({});
         await Permission.deleteMany({});
@@ -2087,9 +2091,9 @@ const seedData = async () => {
         });
         console.log('✅ Created theme configuration\n');
 
-        // Create Leave Requests
-        console.log('🏖️ Creating leave requests...');
-        const leaves = await Leave.create([
+        // Create Leave Requests - TODO: Update to use new models (Vacation, Mission, SickLeave)
+        console.log('🏖️ Skipping legacy leave requests (use specialized models instead)...');
+        const leaves = []; /* await Leave.create([
             // Mission leave - pending
             {
                 employee: users[3]._id, // John Doe
@@ -2196,8 +2200,8 @@ const seedData = async () => {
                     currentStep: 'rejected'
                 }
             }
-        ]);
-        console.log(`✅ Created ${leaves.length} leave requests\n`);
+        ]); */
+        console.log(`✅ Skipped legacy leave requests (0 created)\n`);
 
         // Note: School model has been removed from the system
 

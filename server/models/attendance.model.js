@@ -1,5 +1,6 @@
 // models/Attendance.js
 import mongoose from 'mongoose';
+import { isWeekend, isHoliday, getHolidayInfo } from '../utils/holidayChecker.js';
 
 const attendanceSchema = new mongoose.Schema({
     employee: {
@@ -207,8 +208,46 @@ attendanceSchema.virtual('isFullDay').get(function () {
     return this.hours.actual >= this.hours.expected;
 });
 
-// Note: Middleware hooks moved to attendanceMiddleware.js
-// Use middleware functions in routes for better separation of concerns
+// Pre-save middleware to enforce weekends and official holidays
+attendanceSchema.pre('save', function(next) {
+    // Get holiday information for the date
+    const holidayInfo = getHolidayInfo(this.date);
+    
+    // Check if it's a weekend or official holiday
+    if (holidayInfo.isWeekend || holidayInfo.isHoliday) {
+        // Automatically set as official holiday
+        this.status = 'absent';
+        this.notes = holidayInfo.note || 'Official Holiday';
+        this.isWorkingDay = false;
+        
+        // Clear check-in/check-out for holidays
+        this.checkIn = {
+            time: null,
+            method: undefined,
+            location: undefined,
+            isLate: false,
+            lateMinutes: 0
+        };
+        this.checkOut = {
+            time: null,
+            method: undefined,
+            location: undefined,
+            isEarly: false,
+            earlyMinutes: 0
+        };
+        
+        // Clear hours for holidays
+        this.hours = {
+            actual: 0,
+            expected: 0,
+            overtime: 0,
+            workFromHome: 0,
+            totalHours: 0
+        };
+    }
+    
+    next();
+});
 
 /**
  * Helper method to parse time string (HH:MM) to Date object for today

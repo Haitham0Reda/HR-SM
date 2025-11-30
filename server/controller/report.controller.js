@@ -7,7 +7,9 @@ import Report from '../models/report.model.js';
 import ReportExecution from '../models/reportExecution.model.js';
 import User from '../models/user.model.js';
 import Attendance from '../models/attendance.model.js';
-import Leave from '../models/leave.model.js';
+import Vacation from '../models/vacation.model.js';
+import Mission from '../models/mission.model.js';
+import SickLeave from '../models/sickLeave.model.js';
 import Payroll from '../models/payroll.model.js';
 import Request from '../models/request.model.js';
 
@@ -265,7 +267,24 @@ async function executeReportQuery(report, params) {
             if (endDate) query.date = { ...query.date, $lte: new Date(endDate) };
             break;
         case 'leave':
-            Model = Leave;
+            // Legacy leave type - now split into vacation, mission, sick-leave
+            // Default to vacation for backward compatibility
+            Model = Vacation;
+            if (startDate) query.startDate = { $gte: new Date(startDate) };
+            if (endDate) query.endDate = { ...query.endDate, $lte: new Date(endDate) };
+            break;
+        case 'vacation':
+            Model = Vacation;
+            if (startDate) query.startDate = { $gte: new Date(startDate) };
+            if (endDate) query.endDate = { ...query.endDate, $lte: new Date(endDate) };
+            break;
+        case 'mission':
+            Model = Mission;
+            if (startDate) query.startDate = { $gte: new Date(startDate) };
+            if (endDate) query.endDate = { ...query.endDate, $lte: new Date(endDate) };
+            break;
+        case 'sick-leave':
+            Model = SickLeave;
             if (startDate) query.startDate = { $gte: new Date(startDate) };
             if (endDate) query.endDate = { ...query.endDate, $lte: new Date(endDate) };
             break;

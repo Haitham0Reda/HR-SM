@@ -21,8 +21,6 @@ import EditUserPage from './pages/users/EditUserPage';
 import DepartmentsPage from './pages/departments/DepartmentsPage';
 import PositionsPage from './pages/positions/PositionsPage';
 import AttendancePage from './pages/attendance/AttendancePage';
-import LeavesPage from './pages/leaves/LeavesPage';
-import CreateLeavePage from './pages/leaves/CreateLeavePage';
 import MissionsPage from './pages/missions/MissionsPage';
 import MissionForm from './pages/missions/MissionForm';
 import MissionDetails from './pages/missions/MissionDetails';
@@ -128,8 +126,6 @@ function App() {
 
                 {/* HR Operations */}
                 <Route path="attendance" element={<AttendancePage />} />
-                <Route path="leaves" element={<LeavesPage />} />
-                <Route path="leaves/create" element={<CreateLeavePage />} />
                 <Route path="missions" element={<MissionsPage />} />
                 <Route path="missions/create" element={<MissionForm />} />
                 <Route path="missions/:id" element={<MissionDetails />} />

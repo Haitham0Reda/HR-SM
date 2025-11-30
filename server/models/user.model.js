@@ -102,7 +102,34 @@ const userSchema = new mongoose.Schema({
     },
     // Password reset fields
     resetPasswordToken: String,
-    resetPasswordExpire: Date
+    resetPasswordExpire: Date,
+    // Vacation balance tracking
+    vacationBalance: {
+        annualTotal: {
+            type: Number,
+            default: 0
+        },
+        annualUsed: {
+            type: Number,
+            default: 0
+        },
+        casualTotal: {
+            type: Number,
+            default: 7
+        },
+        casualUsed: {
+            type: Number,
+            default: 0
+        },
+        flexibleTotal: {
+            type: Number,
+            default: 0
+        },
+        flexibleUsed: {
+            type: Number,
+            default: 0
+        }
+    }
 }, {
     timestamps: true
 });

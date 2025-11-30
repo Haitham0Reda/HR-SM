@@ -253,3 +253,100 @@ export const getUserPlainPassword = async (req, res) => {
     }
 };
 
+
+// Update vacation balance for a user
+export const updateVacationBalance = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { annualTotal, casualTotal, flexibleTotal } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Initialize vacationBalance if it doesn't exist
+        if (!user.vacationBalance) {
+            user.vacationBalance = {};
+        }
+
+        // Update the balance totals
+        if (annualTotal !== undefined) {
+            user.vacationBalance.annualTotal = annualTotal;
+        }
+        if (casualTotal !== undefined) {
+            user.vacationBalance.casualTotal = casualTotal;
+        }
+        if (flexibleTotal !== undefined) {
+            user.vacationBalance.flexibleTotal = flexibleTotal;
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Vacation balance updated successfully',
+            vacationBalance: user.vacationBalance
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Bulk update vacation balances for multiple users
+export const bulkUpdateVacationBalances = async (req, res) => {
+    try {
+        const { updates } = req.body; // Array of { userId, annualTotal, casualTotal, flexibleTotal }
+
+        if (!Array.isArray(updates) || updates.length === 0) {
+            return res.status(400).json({ error: 'Updates array is required' });
+        }
+
+        const results = [];
+        const errors = [];
+
+        for (const update of updates) {
+            try {
+                const { userId, annualTotal, casualTotal, flexibleTotal } = update;
+                
+                const user = await User.findById(userId);
+                if (!user) {
+                    errors.push({ userId, error: 'User not found' });
+                    continue;
+                }
+
+                // Initialize vacationBalance if it doesn't exist
+                if (!user.vacationBalance) {
+                    user.vacationBalance = {};
+                }
+
+                // Update the balance totals
+                if (annualTotal !== undefined) {
+                    user.vacationBalance.annualTotal = annualTotal;
+                }
+                if (casualTotal !== undefined) {
+                    user.vacationBalance.casualTotal = casualTotal;
+                }
+                if (flexibleTotal !== undefined) {
+                    user.vacationBalance.flexibleTotal = flexibleTotal;
+                }
+
+                await user.save();
+                results.push({ userId, success: true });
+            } catch (err) {
+                errors.push({ userId: update.userId, error: err.message });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Updated ${results.length} vacation balance(s)`,
+            updated: results.length,
+            failed: errors.length,
+            results,
+            errors
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
