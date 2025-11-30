@@ -231,7 +231,7 @@ const MissionForm = () => {
                         />
 
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="date"
                                     label="Start Date *"
@@ -245,7 +245,7 @@ const MissionForm = () => {
                                     helperText={errors.startDate || 'Select the first day of the mission'}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="date"
                                     label="End Date *"
@@ -262,7 +262,7 @@ const MissionForm = () => {
                         </Grid>
 
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="time"
                                     label="Start Time"
@@ -274,7 +274,7 @@ const MissionForm = () => {
                                     helperText="Optional: Specify start time if needed"
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="time"
                                     label="End Time"

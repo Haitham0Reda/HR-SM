@@ -293,7 +293,7 @@ const PayrollPage = () => {
                             ))}
                         </TextField>
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     select
                                     label="Month"
@@ -310,7 +310,7 @@ const PayrollPage = () => {
                                     ))}
                                 </TextField>
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="number"
                                     label="Year"
@@ -323,7 +323,7 @@ const PayrollPage = () => {
                             </Grid>
                         </Grid>
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="number"
                                     label="Basic Salary"
@@ -335,7 +335,7 @@ const PayrollPage = () => {
                                     inputProps={{ step: '0.01', min: '0' }}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="number"
                                     label="Allowances"
@@ -348,7 +348,7 @@ const PayrollPage = () => {
                             </Grid>
                         </Grid>
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="number"
                                     label="Bonus"
@@ -359,7 +359,7 @@ const PayrollPage = () => {
                                     inputProps={{ step: '0.01', min: '0' }}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="number"
                                     label="Overtime"
@@ -372,7 +372,7 @@ const PayrollPage = () => {
                             </Grid>
                         </Grid>
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="number"
                                     label="Deductions"
@@ -383,7 +383,7 @@ const PayrollPage = () => {
                                     inputProps={{ step: '0.01', min: '0' }}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="number"
                                     label="Tax"

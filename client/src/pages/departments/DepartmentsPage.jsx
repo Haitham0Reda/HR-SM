@@ -225,7 +225,7 @@ const DepartmentsPage = () => {
 
             {/* Stats Cards */}
             <Grid container spacing={2.5} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Paper
                         elevation={0}
                         sx={{
@@ -260,7 +260,7 @@ const DepartmentsPage = () => {
                         </Stack>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Paper
                         elevation={0}
                         sx={{
@@ -295,7 +295,7 @@ const DepartmentsPage = () => {
                         </Stack>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Paper
                         elevation={0}
                         sx={{
@@ -335,7 +335,7 @@ const DepartmentsPage = () => {
             {/* Search and Filter */}
             <Paper elevation={0} sx={{ p: 2.5, mb: 3, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}>
                 <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={8}>
+                    <Grid size={{ xs: 12, md: 8 }}>
                         <TextField
                             fullWidth
                             size="small"
@@ -366,7 +366,7 @@ const DepartmentsPage = () => {
                             }}
                         />
                     </Grid>
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <TextField
                             select
                             fullWidth

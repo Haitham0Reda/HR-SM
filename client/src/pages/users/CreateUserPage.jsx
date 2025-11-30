@@ -399,7 +399,7 @@ const CreateUserPage = () => {
                                 />
                                 
                                 <Grid container spacing={2}>
-                                    <Grid item xs={12} sm={4}>
+                                    <Grid size={{ xs: 12, sm: 4 }}>
                                         <TextField 
                                             label="First Name" 
                                             value={formData.personalInfo.firstName} 
@@ -408,7 +408,7 @@ const CreateUserPage = () => {
                                             size="small"
                                         />
                                     </Grid>
-                                    <Grid item xs={12} sm={4}>
+                                    <Grid size={{ xs: 12, sm: 4 }}>
                                         <TextField 
                                             label="Middle Name" 
                                             value={formData.personalInfo.medName} 
@@ -417,7 +417,7 @@ const CreateUserPage = () => {
                                             size="small"
                                         />
                                     </Grid>
-                                    <Grid item xs={12} sm={4}>
+                                    <Grid size={{ xs: 12, sm: 4 }}>
                                         <TextField 
                                             label="Last Name" 
                                             value={formData.personalInfo.lastName} 
@@ -437,7 +437,7 @@ const CreateUserPage = () => {
                                 />
 
                                 <Grid container spacing={2}>
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField 
                                             label="National ID" 
                                             value={formData.personalInfo.nationalId} 
@@ -454,7 +454,7 @@ const CreateUserPage = () => {
                                             }}
                                         />
                                     </Grid>
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField 
                                             label="Date of Birth" 
                                             type="date" 
@@ -474,7 +474,7 @@ const CreateUserPage = () => {
                                 </Grid>
 
                                 <Grid container spacing={2}>
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField 
                                             select 
                                             label="Gender" 
@@ -487,7 +487,7 @@ const CreateUserPage = () => {
                                             <MenuItem value="Female">Female</MenuItem>
                                         </TextField>
                                     </Grid>
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField 
                                             select 
                                             label="Marital Status" 

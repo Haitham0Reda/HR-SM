@@ -958,7 +958,7 @@ const AttendancePage = () => {
                             InputLabelProps={{ shrink: true }}
                         />
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="time"
                                     label="Check In"
@@ -969,7 +969,7 @@ const AttendancePage = () => {
                                     InputLabelProps={{ shrink: true }}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="time"
                                     label="Check Out"

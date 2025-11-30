@@ -309,7 +309,7 @@ const VacationsPage = () => {
                             <MenuItem value="unpaid">Unpaid</MenuItem>
                         </TextField>
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="number"
                                     label="Total Days Allocated"
@@ -321,7 +321,7 @@ const VacationsPage = () => {
                                     inputProps={{ step: '0.5', min: '0' }}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="number"
                                     label="Carry Over Days"

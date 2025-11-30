@@ -347,7 +347,7 @@ const VacationRequestsPage = () => {
             {/* Filters */}
             <Box sx={{ mb: 3 }}>
                 <Grid container spacing={2}>
-                    <Grid item xs={12} sm={3}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                         <TextField
                             select
                             fullWidth
@@ -364,7 +364,7 @@ const VacationRequestsPage = () => {
                             ))}
                         </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={3}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                         <TextField
                             select
                             fullWidth
@@ -381,7 +381,7 @@ const VacationRequestsPage = () => {
                             ))}
                         </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={3}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                         <TextField
                             select
                             fullWidth
@@ -398,7 +398,7 @@ const VacationRequestsPage = () => {
                             ))}
                         </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={3}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                         <TextField
                             select
                             fullWidth

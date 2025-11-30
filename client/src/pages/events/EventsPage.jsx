@@ -371,7 +371,7 @@ const EventsPage = () => {
                             fullWidth
                         />
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="date"
                                     label="Start Date"
@@ -383,7 +383,7 @@ const EventsPage = () => {
                                     InputLabelProps={{ shrink: true }}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="date"
                                     label="End Date"

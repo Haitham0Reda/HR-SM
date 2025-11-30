@@ -204,7 +204,7 @@ const SickLeaveForm = () => {
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="date"
                                     label="Start Date *"
@@ -218,7 +218,7 @@ const SickLeaveForm = () => {
                                     helperText={errors.startDate || 'Select the first day of sick leave'}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="date"
                                     label="End Date *"

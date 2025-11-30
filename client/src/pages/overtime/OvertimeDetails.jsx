@@ -235,7 +235,7 @@ const OvertimeDetails = () => {
             {/* Main Content */}
             <Grid container spacing={3}>
                 {/* Left Column - Overtime Information */}
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     <Paper sx={{ p: 3, mb: 3 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                             <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -251,7 +251,7 @@ const OvertimeDetails = () => {
                         <Divider sx={{ mb: 3 }} />
 
                         <Grid container spacing={3}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                     <CalendarToday color="primary" />
                                     <Box>
@@ -265,7 +265,7 @@ const OvertimeDetails = () => {
                                 </Box>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                     <AccessTime color="primary" />
                                     <Box>
@@ -279,7 +279,7 @@ const OvertimeDetails = () => {
                                 </Box>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                     <Schedule color="primary" />
                                     <Box>
@@ -293,7 +293,7 @@ const OvertimeDetails = () => {
                                 </Box>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                     <AttachMoney color="primary" />
                                     <Box>
@@ -310,7 +310,7 @@ const OvertimeDetails = () => {
                                 </Box>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                     <CheckCircle color="primary" />
                                     <Box>
@@ -328,7 +328,7 @@ const OvertimeDetails = () => {
                             </Grid>
 
                             {overtime.compensatedAt && (
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                         <CalendarToday color="primary" />
                                         <Box>
@@ -344,7 +344,7 @@ const OvertimeDetails = () => {
                             )}
 
                             {overtime.reason && (
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                         <Description color="primary" />
                                         <Box>
@@ -363,7 +363,7 @@ const OvertimeDetails = () => {
                 </Grid>
 
                 {/* Right Column - Status & Employee Info */}
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Paper sx={{ p: 3, mb: 3 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                             Employee Information

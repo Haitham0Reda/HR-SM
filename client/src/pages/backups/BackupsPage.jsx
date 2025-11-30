@@ -514,7 +514,7 @@ const BackupsPage = () => {
 
             {/* Statistics Cards */}
             <Grid container spacing={3} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                     <Card elevation={2}>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -543,7 +543,7 @@ const BackupsPage = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                     <Card elevation={2}>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -558,7 +558,7 @@ const BackupsPage = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                     <Card elevation={2}>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -577,7 +577,7 @@ const BackupsPage = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                     <Card elevation={2}>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -666,13 +666,13 @@ const BackupsPage = () => {
                                 <Card key={backup._id || index} sx={{ mb: 2 }}>
                                     <CardContent>
                                         <Grid container spacing={2}>
-                                            <Grid item xs={12} md={6}>
+                                            <Grid size={{ xs: 12, md: 6 }}>
                                                 <Typography variant="h6">{backup.name}</Typography>
                                                 <Typography variant="body2" color="text.secondary">
                                                     {backup.description || 'No description'}
                                                 </Typography>
                                             </Grid>
-                                            <Grid item xs={12} md={6}>
+                                            <Grid size={{ xs: 12, md: 6 }}>
                                                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                                     <Chip label={backup.backupType} size="small" color="primary" />
                                                     <Chip 
@@ -884,7 +884,7 @@ const BackupsPage = () => {
 
                             {activeTab === 2 && (
                                 <Grid container spacing={2}>
-                                    <Grid item xs={6}>
+                                    <Grid size={{ xs: 6 }}>
                                         <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
                                             <Typography variant="h4" color="success.main">
                                                 {selectedBackup.stats?.successCount || 0}
@@ -894,7 +894,7 @@ const BackupsPage = () => {
                                             </Typography>
                                         </Paper>
                                     </Grid>
-                                    <Grid item xs={6}>
+                                    <Grid size={{ xs: 6 }}>
                                         <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
                                             <Typography variant="h4" color="error.main">
                                                 {selectedBackup.stats?.failureCount || 0}
@@ -904,7 +904,7 @@ const BackupsPage = () => {
                                             </Typography>
                                         </Paper>
                                     </Grid>
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
                                             <Typography variant="h4">
                                                 {formatSize(selectedBackup.stats?.totalSize || 0)}
@@ -914,7 +914,7 @@ const BackupsPage = () => {
                                             </Typography>
                                         </Paper>
                                     </Grid>
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Paper variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
                                             <Typography variant="h4">
                                                 {formatDuration(selectedBackup.stats?.averageDuration)}

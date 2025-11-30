@@ -106,7 +106,7 @@ const RequestDetailsPage = () => {
 
             <Grid container spacing={3}>
                 {/* Request Information */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>
@@ -182,7 +182,7 @@ const RequestDetailsPage = () => {
                 </Grid>
 
                 {/* Request Details */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>

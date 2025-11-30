@@ -274,7 +274,7 @@ const VacationRequestDetails = () => {
             {/* Main Content */}
             <Grid container spacing={3}>
                 {/* Left Column - Vacation Information */}
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     <Paper sx={{ p: 3, mb: 3 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                             <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -297,7 +297,7 @@ const VacationRequestDetails = () => {
                         <Divider sx={{ mb: 3 }} />
 
                         <Grid container spacing={3}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                     <CalendarToday color="primary" />
                                     <Box>
@@ -316,7 +316,7 @@ const VacationRequestDetails = () => {
                                 </Box>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                     <CalendarToday color="primary" />
                                     <Box>
@@ -335,7 +335,7 @@ const VacationRequestDetails = () => {
                                 </Box>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                     <AccessTime color="primary" />
                                     <Box>
@@ -349,7 +349,7 @@ const VacationRequestDetails = () => {
                                 </Box>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                     <EventAvailable color="primary" />
                                     <Box>
@@ -364,7 +364,7 @@ const VacationRequestDetails = () => {
                             </Grid>
 
                             {vacation.reason && (
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                         <Description color="primary" />
                                         <Box>
@@ -383,7 +383,7 @@ const VacationRequestDetails = () => {
                 </Grid>
 
                 {/* Right Column - Status & Employee Info */}
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Paper sx={{ p: 3, mb: 3 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                             Employee Information

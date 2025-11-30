@@ -109,7 +109,7 @@ const RoleViewSkeleton = () => {
 
             <Grid container spacing={{ xs: 2, sm: 3 }}>
                 {/* Role Metadata Card */}
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Paper
                         elevation={0}
                         sx={{
@@ -154,7 +154,7 @@ const RoleViewSkeleton = () => {
                 </Grid>
 
                 {/* Permissions Card */}
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     <Paper
                         elevation={0}
                         sx={{
@@ -241,7 +241,7 @@ const RoleViewSkeleton = () => {
                                     <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
                                         <Grid container spacing={1}>
                                             {[0, 1, 2, 3].map((permIndex) => (
-                                                <Grid item xs={12} sm={6} key={permIndex}>
+                                                <Grid size={{ xs: 12, sm: 6 }} key={permIndex}>
                                                     <Box sx={{ 
                                                         display: 'flex', 
                                                         alignItems: 'center', 

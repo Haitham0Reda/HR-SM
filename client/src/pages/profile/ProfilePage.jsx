@@ -109,7 +109,7 @@ export default function ProfilePage() {
             </Box>
 
             <Grid container spacing={3}>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Card sx={{ height: '100%' }}>
                         <CardContent>
                             <Stack spacing={3} alignItems="center">
@@ -202,7 +202,7 @@ export default function ProfilePage() {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
@@ -219,7 +219,7 @@ export default function ProfilePage() {
                                     </Alert>
                                 )}
                                 <Grid container spacing={3}>
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField
                                             fullWidth
                                             label="Full Name"
@@ -234,7 +234,7 @@ export default function ProfilePage() {
                                             }}
                                         />
                                     </Grid>
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField
                                             fullWidth
                                             label="Email Address"
@@ -250,7 +250,7 @@ export default function ProfilePage() {
                                             }}
                                         />
                                     </Grid>
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField
                                             fullWidth
                                             label="Phone Number"
@@ -264,7 +264,7 @@ export default function ProfilePage() {
                                             }}
                                         />
                                     </Grid>
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField
                                             fullWidth
                                             label="Department"
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                                             helperText="Managed by HR"
                                         />
                                     </Grid>
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <TextField
                                             fullWidth
                                             label="Position / Job Title"
@@ -298,7 +298,7 @@ export default function ProfilePage() {
                                             helperText="Managed by HR"
                                         />
                                     </Grid>
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Stack direction="row" spacing={2}>
                                             <Button
                                                 type="submit"

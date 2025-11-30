@@ -251,7 +251,7 @@ const OvertimeForm = () => {
                         />
 
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     label="Start Time *"
                                     name="startTime"
@@ -264,7 +264,7 @@ const OvertimeForm = () => {
                                     helperText={errors.startTime || 'Enter start time in HH:MM format'}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     label="End Time *"
                                     name="endTime"

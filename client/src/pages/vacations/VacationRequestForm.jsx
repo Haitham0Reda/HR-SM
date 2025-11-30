@@ -255,7 +255,7 @@ const VacationRequestForm = () => {
                         </TextField>
 
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="date"
                                     label="Start Date *"
@@ -269,7 +269,7 @@ const VacationRequestForm = () => {
                                     helperText={errors.startDate || 'Select the first day of vacation'}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="date"
                                     label="End Date *"
@@ -286,7 +286,7 @@ const VacationRequestForm = () => {
                         </Grid>
 
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="time"
                                     label="Start Time"
@@ -298,7 +298,7 @@ const VacationRequestForm = () => {
                                     helperText="Optional: Specify start time if needed"
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="time"
                                     label="End Time"
@@ -335,7 +335,7 @@ const VacationRequestForm = () => {
                                     </Typography>
                                 </Box>
                                 <Grid container spacing={2}>
-                                    <Grid item xs={4}>
+                                    <Grid size={{ xs: 4 }}>
                                         <Typography variant="caption" color="text.secondary">
                                             Available
                                         </Typography>
@@ -343,7 +343,7 @@ const VacationRequestForm = () => {
                                             {balanceInfo.available} days
                                         </Typography>
                                     </Grid>
-                                    <Grid item xs={4}>
+                                    <Grid size={{ xs: 4 }}>
                                         <Typography variant="caption" color="text.secondary">
                                             Requested
                                         </Typography>
@@ -351,7 +351,7 @@ const VacationRequestForm = () => {
                                             {balanceInfo.requested} days
                                         </Typography>
                                     </Grid>
-                                    <Grid item xs={4}>
+                                    <Grid size={{ xs: 4 }}>
                                         <Typography variant="caption" color="text.secondary">
                                             Remaining
                                         </Typography>

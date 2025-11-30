@@ -61,7 +61,7 @@ export default function SettingsPage() {
             </Box>
 
             <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card>
                         <CardContent>
                             <Stack direction="row" spacing={1.5} alignItems="center" mb={1}>

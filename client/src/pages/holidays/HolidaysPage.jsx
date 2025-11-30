@@ -217,12 +217,7 @@ const HolidaysPage = () => {
                     }}
                 >
                     {holidays.map((holiday) => (
-                        <Grid 
-                            item 
-                            xs={12} 
-                            sm={6} 
-                            md={4} 
-                            lg={3} 
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} 
                             key={holiday._id}
                             sx={{
                                 display: 'flex',

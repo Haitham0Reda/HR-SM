@@ -224,7 +224,7 @@ const SecurityPage = () => {
 
             <Grid container spacing={3}>
                 {/* Authentication */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Fade in timeout={300}>
                         <Card elevation={0} sx={{ borderRadius: 2.5, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                             <CardContent sx={{ p: 3 }}>
@@ -301,7 +301,7 @@ const SecurityPage = () => {
                 </Grid>
 
                 {/* Password Policy */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Fade in timeout={400}>
                         <Card elevation={0} sx={{ borderRadius: 2.5, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                             <CardContent sx={{ p: 3 }}>
@@ -376,7 +376,7 @@ const SecurityPage = () => {
                 </Grid>
 
                 {/* System Security */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Fade in timeout={500}>
                         <Card elevation={0} sx={{ borderRadius: 2.5, border: '1px solid', borderColor: 'divider', height: '100%' }}>
                             <CardContent sx={{ p: 3 }}>

@@ -120,7 +120,7 @@ function SystemSettingsPage() {
             {/* Settings Cards Grid */}
             <Grid container spacing={2}>
                 {settingsCards.map((card, index) => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={index}>
                         <Card
                             sx={{
                                 cursor: 'pointer',

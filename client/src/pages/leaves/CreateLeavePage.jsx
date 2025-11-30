@@ -183,7 +183,7 @@ const CreateLeavePage = () => {
                         </TextField>
 
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="date"
                                     id="leave-start-date"
@@ -197,7 +197,7 @@ const CreateLeavePage = () => {
                                     helperText="Select the first day of your leave."
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="date"
                                     id="leave-end-date"
@@ -214,7 +214,7 @@ const CreateLeavePage = () => {
                         </Grid>
 
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="time"
                                     id="leave-start-time"
@@ -227,7 +227,7 @@ const CreateLeavePage = () => {
                                     helperText="Optional: Specify start time if needed."
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     type="time"
                                     id="leave-end-time"
