@@ -112,7 +112,7 @@ const AnalyticsPage = () => {
 
             <Grid container spacing={3}>
                 {/* Key Metrics */}
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <StatCard
                         title="Total Employees"
                         value={stats.totalEmployees}
@@ -121,7 +121,7 @@ const AnalyticsPage = () => {
                         color="primary"
                     />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <StatCard
                         title="Attendance Rate"
                         value={`${stats.attendanceRate}%`}
@@ -130,7 +130,7 @@ const AnalyticsPage = () => {
                         color="success"
                     />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <StatCard
                         title="Avg Salary"
                         value={`$${stats.avgSalary}`}
@@ -139,7 +139,7 @@ const AnalyticsPage = () => {
                         color="info"
                     />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <StatCard
                         title="Leave Requests"
                         value={stats.leaveRequests}
@@ -150,7 +150,7 @@ const AnalyticsPage = () => {
                 </Grid>
 
                 {/* Department Performance */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 2 }}>Department Performance</Typography>
@@ -174,7 +174,7 @@ const AnalyticsPage = () => {
                 </Grid>
 
                 {/* Monthly Trends */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 2 }}>Monthly Trends</Typography>
@@ -228,7 +228,7 @@ const AnalyticsPage = () => {
                 </Grid>
 
                 {/* Top Performers */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 2 }}>Top Performers (Attendance)</Typography>
@@ -268,7 +268,7 @@ const AnalyticsPage = () => {
                 </Grid>
 
                 {/* Leave Analysis */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 2 }}>Leave Analysis</Typography>
@@ -279,7 +279,7 @@ const AnalyticsPage = () => {
                                     { type: 'Personal Leave', count: 12, color: 'warning' },
                                     { type: 'Unpaid Leave', count: 5, color: 'default' }
                                 ].map((leave) => (
-                                    <Grid item xs={6} key={leave.type}>
+                                    <Grid size={{ xs: 6 }} key={leave.type}>
                                         <Box
                                             sx={{
                                                 p: 2,
@@ -304,12 +304,12 @@ const AnalyticsPage = () => {
                 </Grid>
 
                 {/* Insights */}
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 2 }}>Key Insights</Typography>
                             <Grid container spacing={2}>
-                                <Grid item xs={12} md={4}>
+                                <Grid size={{ xs: 12, md: 4 }}>
                                     <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
                                         <Typography variant="subtitle2" color="success.contrastText" gutterBottom>
                                             ✓ Positive Trend
@@ -319,7 +319,7 @@ const AnalyticsPage = () => {
                                         </Typography>
                                     </Box>
                                 </Grid>
-                                <Grid item xs={12} md={4}>
+                                <Grid size={{ xs: 12, md: 4 }}>
                                     <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
                                         <Typography variant="subtitle2" color="warning.contrastText" gutterBottom>
                                             ⚠ Attention Needed
@@ -329,7 +329,7 @@ const AnalyticsPage = () => {
                                         </Typography>
                                     </Box>
                                 </Grid>
-                                <Grid item xs={12} md={4}>
+                                <Grid size={{ xs: 12, md: 4 }}>
                                     <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
                                         <Typography variant="subtitle2" color="info.contrastText" gutterBottom>
                                             ℹ Information

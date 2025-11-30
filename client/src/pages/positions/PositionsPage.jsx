@@ -278,7 +278,7 @@ const PositionsPage = () => {
 
             {/* Stats Cards */}
             <Grid container spacing={2.5} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Paper
                         elevation={0}
                         sx={{
@@ -313,7 +313,7 @@ const PositionsPage = () => {
                         </Stack>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Paper
                         elevation={0}
                         sx={{
@@ -348,7 +348,7 @@ const PositionsPage = () => {
                         </Stack>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Paper
                         elevation={0}
                         sx={{
@@ -388,7 +388,7 @@ const PositionsPage = () => {
             {/* Search and Filter */}
             <Paper elevation={0} sx={{ p: 2.5, mb: 3, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}>
                 <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <TextField
                             fullWidth
                             size="small"
@@ -419,7 +419,7 @@ const PositionsPage = () => {
                             }}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <TextField
                             select
                             fullWidth
@@ -450,7 +450,7 @@ const PositionsPage = () => {
                             ))}
                         </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <TextField
                             select
                             fullWidth

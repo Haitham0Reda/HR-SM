@@ -203,7 +203,7 @@ const ThemeEditorPage = () => {
             </Typography>
             <Grid container spacing={3}>
                 {Object.entries(colors).map(([colorType, shades]) => (
-                    <Grid item xs={12} md={6} key={colorType}>
+                    <Grid size={{ xs: 12, md: 6 }} key={colorType}>
                         <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
                             <Typography variant="subtitle1" fontWeight="600" sx={{ mb: 2, textTransform: 'capitalize' }}>
                                 {colorType}
@@ -332,7 +332,7 @@ const ThemeEditorPage = () => {
                         Typography Settings
                     </Typography>
                     <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                             <TextField
                                 fullWidth
                                 label="Font Family"
@@ -341,7 +341,7 @@ const ThemeEditorPage = () => {
                                 helperText="CSS font-family value"
                             />
                         </Grid>
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                             <Typography variant="body2" fontWeight="600" sx={{ mb: 1 }}>
                                 Base Font Size: {themeConfig.typography.fontSize}px
                             </Typography>
@@ -382,7 +382,7 @@ const ThemeEditorPage = () => {
                         Layout Settings
                     </Typography>
                     <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                             <Typography variant="body2" fontWeight="600" sx={{ mb: 1 }}>
                                 Border Radius: {themeConfig.shape.borderRadius}px
                             </Typography>
@@ -399,7 +399,7 @@ const ThemeEditorPage = () => {
                                 Controls the roundness of corners for cards, buttons, and inputs
                             </Typography>
                         </Grid>
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                             <Typography variant="body2" fontWeight="600" sx={{ mb: 1 }}>
                                 Spacing Unit: {themeConfig.spacing}px
                             </Typography>
@@ -428,7 +428,7 @@ const ThemeEditorPage = () => {
                         Layout Preview
                     </Typography>
                     <Grid container spacing={2}>
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                             <Card>
                                 <CardContent>
                                     <Typography variant="h6" gutterBottom>Card Example</Typography>
@@ -438,13 +438,13 @@ const ThemeEditorPage = () => {
                                 </CardContent>
                             </Card>
                         </Grid>
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                 <Button variant="contained">Primary Button</Button>
                                 <Button variant="outlined">Outlined Button</Button>
                             </Box>
                         </Grid>
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                 <Chip label="Chip 1" />
                                 <Chip label="Chip 2" color="primary" />
@@ -462,13 +462,13 @@ const ThemeEditorPage = () => {
                     </Typography>
                     <Grid container spacing={3}>
                         {/* Color Swatches */}
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <Typography variant="subtitle1" fontWeight="600" sx={{ mb: 2 }}>
                                 Color Palette
                             </Typography>
                             <Grid container spacing={2}>
                                 {['primary', 'secondary', 'success', 'error', 'warning', 'info'].map((color) => (
-                                    <Grid item xs={6} sm={4} md={2} key={color}>
+                                    <Grid size={{ xs: 6, sm: 4, md: 2 }} key={color}>
                                         <Box sx={{ textAlign: 'center' }}>
                                             <Box
                                                 sx={{
@@ -491,7 +491,7 @@ const ThemeEditorPage = () => {
                         </Grid>
 
                         {/* Component Examples */}
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                             <Card>
                                 <CardContent>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -512,7 +512,7 @@ const ThemeEditorPage = () => {
                             </Card>
                         </Grid>
 
-                        <Grid item xs={12} md={6}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                 <Button variant="contained" color="primary" fullWidth>
                                     Primary Action

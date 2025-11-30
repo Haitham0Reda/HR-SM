@@ -244,7 +244,7 @@ const HardCopiesPage = () => {
             ) : (
                 <Grid container spacing={3}>
                     {hardCopies.map((hardCopy) => (
-                        <Grid item xs={12} sm={4} md={4} key={hardCopy._id}>
+                        <Grid size={{ xs: 12, sm: 4, md: 4 }} key={hardCopy._id}>
                             <Card 
                                 sx={{ 
                                     height: '100%', 

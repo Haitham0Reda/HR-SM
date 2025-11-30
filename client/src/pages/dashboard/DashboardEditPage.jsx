@@ -168,7 +168,7 @@ const DashboardEditPage = () => {
 
             <Grid container spacing={3}>
                 {/* Employee of the Month Section */}
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                     <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <TrophyIcon sx={{ fontSize: 32, mr: 2, color: 'secondary.main' }} />
@@ -179,7 +179,7 @@ const DashboardEditPage = () => {
                         <Divider sx={{ mb: 3 }} />
 
                         <Grid container spacing={3}>
-                            <Grid item xs={12}>
+                            <Grid size={{ xs: 12 }}>
                                 <FormControlLabel
                                     control={
                                         <Switch
@@ -201,7 +201,7 @@ const DashboardEditPage = () => {
 
                             {config.employeeOfTheMonth.enabled && (
                                 <>
-                                    <Grid item xs={12} md={6}>
+                                    <Grid size={{ xs: 12, md: 6 }}>
                                         <TextField
                                             fullWidth
                                             label="Month & Year"
@@ -219,7 +219,7 @@ const DashboardEditPage = () => {
                                         />
                                     </Grid>
 
-                                    <Grid item xs={12} md={6}>
+                                    <Grid size={{ xs: 12, md: 6 }}>
                                         <Autocomplete
                                             options={users}
                                             getOptionLabel={(option) =>
@@ -256,7 +256,7 @@ const DashboardEditPage = () => {
                                     </Grid>
 
                                     {config.employeeOfTheMonth.selectedEmployee && (
-                                        <Grid item xs={12}>
+                                        <Grid size={{ xs: 12 }}>
                                             <Card sx={{ bgcolor: 'secondary.light', color: 'secondary.contrastText' }}>
                                                 <CardContent>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -293,7 +293,7 @@ const DashboardEditPage = () => {
                 </Grid>
 
                 {/* Dashboard Widgets Section */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2, height: '100%' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <VisibilityIcon sx={{ fontSize: 32, mr: 2, color: 'primary.main' }} />
@@ -359,7 +359,7 @@ const DashboardEditPage = () => {
                 </Grid>
 
                 {/* Quick Action Cards Section */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2, height: '100%' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <EditIcon sx={{ fontSize: 32, mr: 2, color: 'success.main' }} />

@@ -376,7 +376,7 @@ const RoleViewPage = () => {
                 <Divider sx={{ mb: 3 }} role="presentation" />
 
                 <Grid container spacing={2.5}>
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Paper 
                             elevation={0}
                             sx={{
@@ -396,7 +396,7 @@ const RoleViewPage = () => {
                         </Paper>
                     </Grid>
 
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Paper 
                             elevation={0}
                             sx={{
@@ -416,7 +416,7 @@ const RoleViewPage = () => {
                         </Paper>
                     </Grid>
 
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Paper 
                             elevation={0}
                             sx={{
@@ -436,7 +436,7 @@ const RoleViewPage = () => {
                         </Paper>
                     </Grid>
 
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Paper 
                             elevation={0}
                             sx={{
@@ -472,7 +472,7 @@ const RoleViewPage = () => {
                         </Paper>
                     </Grid>
 
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Paper 
                             elevation={0}
                             sx={{

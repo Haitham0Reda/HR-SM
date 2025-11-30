@@ -188,7 +188,7 @@ function EmployeeForm(props) {
                         
                         <Grid container spacing={2} sx={{ flex: 1 }}>
                             {isEditMode && (
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <TextField
                                         label="Employee ID"
                                         value={formValues.employeeId || ''}
@@ -198,7 +198,7 @@ function EmployeeForm(props) {
                                     />
                                 </Grid>
                             )}
-                            <Grid item xs={12} sm={isEditMode ? 6 : 12}>
+                            <Grid size={{ xs: 12 }} sm={isEditMode ? 6 : 12}>
                                 <TextField
                                     label="Username"
                                     value={formValues.username || ''}
@@ -210,7 +210,7 @@ function EmployeeForm(props) {
                                 />
                             </Grid>
                             {!isEditMode && (
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <TextField
                                         label="Password"
                                         type="password"
@@ -232,7 +232,7 @@ function EmployeeForm(props) {
                     <Typography variant="h6" sx={{ mb: 3 }}>Personal Information</Typography>
                     
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={3}>
+                        <Grid size={{ xs: 12, sm: 3 }}>
                             <TextField
                                 label="First Name *"
                                 value={formValues.profile?.firstName || ''}
@@ -242,7 +242,7 @@ function EmployeeForm(props) {
                                 helperText="English characters only"
                             />
                         </Grid>
-                        <Grid item xs={12} sm={3}>
+                        <Grid size={{ xs: 12, sm: 3 }}>
                             <TextField
                                 label="Middle Name"
                                 value={formValues.profile?.medName || ''}
@@ -251,7 +251,7 @@ function EmployeeForm(props) {
                                 helperText="English characters only"
                             />
                         </Grid>
-                        <Grid item xs={12} sm={3}>
+                        <Grid size={{ xs: 12, sm: 3 }}>
                             <TextField
                                 label="Last Name *"
                                 value={formValues.profile?.lastName || ''}
@@ -261,7 +261,7 @@ function EmployeeForm(props) {
                                 helperText="English characters only"
                             />
                         </Grid>
-                        <Grid item xs={12} sm={3}>
+                        <Grid size={{ xs: 12, sm: 3 }}>
                             <TextField
                                 label="Arabic Name *"
                                 value={formValues.profile?.arabicName || ''}
@@ -273,7 +273,7 @@ function EmployeeForm(props) {
                             />
                         </Grid>
 
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 label="Mobile Number"
                                 value={formValues.profile?.phone || ''}
@@ -282,7 +282,7 @@ function EmployeeForm(props) {
                                 helperText="Must be exactly 11 digits (optional)"
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 label="Personal Email"
                                 type="email"
@@ -292,7 +292,7 @@ function EmployeeForm(props) {
                                 helperText="Valid email format required (optional)"
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 select
                                 label="Nationality *"
@@ -308,7 +308,7 @@ function EmployeeForm(props) {
                             </TextField>
                         </Grid>
 
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 label="National ID *"
                                 value={formValues.profile?.nationalId || ''}
@@ -319,7 +319,7 @@ function EmployeeForm(props) {
                             />
                         </Grid>
 
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <DatePicker
                                 label="Hire Date"
                                 value={formValues.employment?.hireDate ? dayjs(formValues.employment.hireDate) : null}
@@ -333,7 +333,7 @@ function EmployeeForm(props) {
                             />
                         </Grid>
 
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <DatePicker
                                 label="Birthday"
                                 value={formValues.profile?.dateOfBirth ? dayjs(formValues.profile.dateOfBirth) : null}
@@ -347,7 +347,7 @@ function EmployeeForm(props) {
                             />
                         </Grid>
 
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 select
                                 label="Gender"
@@ -367,7 +367,7 @@ function EmployeeForm(props) {
                     <Typography variant="h6" sx={{ mb: 3 }}>Employment Information</Typography>
                     
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Role *"
@@ -382,7 +382,7 @@ function EmployeeForm(props) {
                                 ))}
                             </TextField>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Category *"
@@ -396,7 +396,7 @@ function EmployeeForm(props) {
                                 ))}
                             </TextField>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Job Type *"
@@ -411,7 +411,7 @@ function EmployeeForm(props) {
                             </TextField>
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Department *"
@@ -427,7 +427,7 @@ function EmployeeForm(props) {
                                 ))}
                             </TextField>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Position *"
@@ -444,7 +444,7 @@ function EmployeeForm(props) {
                             </TextField>
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Section"
@@ -456,7 +456,7 @@ function EmployeeForm(props) {
                             </TextField>
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Status *"
@@ -506,7 +506,7 @@ function EmployeeForm(props) {
                     <Typography variant="h6" sx={{ mb: 3 }}>Supervision Information</Typography>
                     
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Supervisor"
@@ -523,7 +523,7 @@ function EmployeeForm(props) {
                                 ))}
                             </TextField>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Alternative Supervisor"

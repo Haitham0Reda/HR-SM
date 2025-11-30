@@ -251,7 +251,7 @@ const SickLeaveDetails = () => {
 
             <Grid container spacing={3}>
                 {/* Main Information */}
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     <Paper sx={{ p: 3, mb: 3 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                             <Typography variant="h6">Request Information</Typography>
@@ -265,7 +265,7 @@ const SickLeaveDetails = () => {
 
                         <Grid container spacing={2}>
                             {(canManage || isDoctor) && (
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <Assignment color="action" />
                                         <Box>
@@ -280,7 +280,7 @@ const SickLeaveDetails = () => {
                                 </Grid>
                             )}
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <CalendarToday color="action" />
                                     <Box>
@@ -294,7 +294,7 @@ const SickLeaveDetails = () => {
                                 </Box>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <CalendarToday color="action" />
                                     <Box>
@@ -308,7 +308,7 @@ const SickLeaveDetails = () => {
                                 </Box>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <AccessTime color="action" />
                                     <Box>
@@ -323,7 +323,7 @@ const SickLeaveDetails = () => {
                             </Grid>
 
                             {sickLeave.reason && (
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                                         <Description color="action" />
                                         <Box>
@@ -349,7 +349,7 @@ const SickLeaveDetails = () => {
                         <Divider sx={{ mb: 2 }} />
 
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Typography variant="caption" color="text.secondary">
                                     Required
                                 </Typography>
@@ -362,7 +362,7 @@ const SickLeaveDetails = () => {
                                 </Typography>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Typography variant="caption" color="text.secondary">
                                     Provided
                                 </Typography>
@@ -376,7 +376,7 @@ const SickLeaveDetails = () => {
                             </Grid>
 
                             {sickLeave.medicalDocumentation?.documents?.length > 0 && (
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Typography variant="caption" color="text.secondary">
                                         Documents
                                     </Typography>
@@ -398,7 +398,7 @@ const SickLeaveDetails = () => {
                             )}
 
                             {sickLeave.medicalDocumentation?.doctorNotes && (
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Typography variant="caption" color="text.secondary">
                                         Doctor Notes
                                     </Typography>
@@ -476,7 +476,7 @@ const SickLeaveDetails = () => {
                 </Grid>
 
                 {/* Workflow Sidebar */}
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Paper sx={{ p: 3, mb: 3 }}>
                         <Typography variant="h6" sx={{ mb: 3 }}>
                             Approval Workflow

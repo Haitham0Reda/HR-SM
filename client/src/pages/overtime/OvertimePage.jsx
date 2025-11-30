@@ -401,7 +401,7 @@ const OvertimePage = () => {
                     Monthly Summary ({new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})
                 </Typography>
                 <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Box sx={{ textAlign: 'center' }}>
                             <Typography variant="h4" color="primary">
                                 {monthlySummary.totalHours.toFixed(1)}h
@@ -411,7 +411,7 @@ const OvertimePage = () => {
                             </Typography>
                         </Box>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Box sx={{ textAlign: 'center' }}>
                             <Typography variant="h4" color="warning.main">
                                 {monthlySummary.pendingHours.toFixed(1)}h
@@ -421,7 +421,7 @@ const OvertimePage = () => {
                             </Typography>
                         </Box>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Box sx={{ textAlign: 'center' }}>
                             <Typography variant="h4" color="success.main">
                                 {monthlySummary.approvedHours.toFixed(1)}h
@@ -431,7 +431,7 @@ const OvertimePage = () => {
                             </Typography>
                         </Box>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Box sx={{ textAlign: 'center' }}>
                             <Typography variant="h4" color="info.main">
                                 {monthlySummary.compensatedHours.toFixed(1)}h
@@ -447,7 +447,7 @@ const OvertimePage = () => {
             {/* Filters */}
             <Box sx={{ mb: 3 }}>
                 <Grid container spacing={2}>
-                    <Grid item xs={12} sm={3}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                         <TextField
                             select
                             fullWidth
@@ -464,7 +464,7 @@ const OvertimePage = () => {
                             ))}
                         </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={3}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                         <TextField
                             select
                             fullWidth
@@ -481,7 +481,7 @@ const OvertimePage = () => {
                             ))}
                         </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={3}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                         <TextField
                             select
                             fullWidth
@@ -498,7 +498,7 @@ const OvertimePage = () => {
                             ))}
                         </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={3}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                         <TextField
                             select
                             fullWidth

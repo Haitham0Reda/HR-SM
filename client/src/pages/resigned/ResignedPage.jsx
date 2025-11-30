@@ -258,13 +258,13 @@ const ResignedPage = () => {
 
             {/* Summary Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Box sx={{ p: 2, bgcolor: 'primary.light', borderRadius: 1, textAlign: 'center' }}>
                         <Typography variant="h4" color="primary.contrastText">{resignedEmployees.length}</Typography>
                         <Typography variant="body2" color="primary.contrastText">Total Resigned</Typography>
                     </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1, textAlign: 'center' }}>
                         <Typography variant="h4" color="warning.contrastText">
                             {resignedEmployees.filter(e => e.clearanceStatus === 'pending').length}
@@ -272,7 +272,7 @@ const ResignedPage = () => {
                         <Typography variant="body2" color="warning.contrastText">Pending Clearance</Typography>
                     </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1, textAlign: 'center' }}>
                         <Typography variant="h4" color="info.contrastText">
                             {resignedEmployees.filter(e => !e.exitInterview).length}
@@ -280,7 +280,7 @@ const ResignedPage = () => {
                         <Typography variant="body2" color="info.contrastText">Exit Interview Pending</Typography>
                     </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1, textAlign: 'center' }}>
                         <Typography variant="h4" color="success.contrastText">
                             {resignedEmployees.filter(e => e.clearanceStatus === 'completed').length}
@@ -317,7 +317,7 @@ const ResignedPage = () => {
                             ))}
                         </TextField>
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="date"
                                     label="Resignation Date"
@@ -329,7 +329,7 @@ const ResignedPage = () => {
                                     InputLabelProps={{ shrink: true }}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="date"
                                     label="Last Working Day"

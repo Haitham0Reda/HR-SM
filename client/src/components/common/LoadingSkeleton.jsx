@@ -102,7 +102,7 @@ const LoadingSkeleton = ({
             {/* Stats Cards */}
             <Grid container spacing={3} sx={{ mb: 3 }}>
                 {Array.from({ length: 4 }).map((_, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
                         <Card>
                             <CardContent>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -119,7 +119,7 @@ const LoadingSkeleton = ({
             {/* Content Cards */}
             <Grid container spacing={3}>
                 {Array.from({ length: 6 }).map((_, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
                         <CardSkeleton />
                     </Grid>
                 ))}
@@ -142,7 +142,7 @@ const LoadingSkeleton = ({
                 return (
                     <Grid container spacing={3}>
                         {Array.from({ length: count }).map((_, index) => (
-                            <Grid item xs={12} sm={6} md={4} key={index}>
+                            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
                                 <CardSkeleton />
                             </Grid>
                         ))}
