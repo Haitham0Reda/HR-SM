@@ -21,6 +21,8 @@ import {
     TableRow,
     Card,
     CardContent,
+    Tabs,
+    Tab,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -50,6 +52,7 @@ const AttendancePage = () => {
     const [openDialog, setOpenDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedAttendance, setSelectedAttendance] = useState(null);
+    const [currentTab, setCurrentTab] = useState(0);
     const [formData, setFormData] = useState({
         employee: '',
         date: new Date().toISOString().split('T')[0],
@@ -921,10 +924,32 @@ const AttendancePage = () => {
                 </Button>
             </Box>
 
-            <DataTable
-                data={attendances}
-                columns={columns}
-            />
+            {/* Tabs */}
+            <Paper sx={{ mb: 3 }}>
+                <Tabs 
+                    value={currentTab} 
+                    onChange={(e, newValue) => setCurrentTab(newValue)}
+                    sx={{ borderBottom: 1, borderColor: 'divider' }}
+                >
+                    <Tab label="My Attendance" />
+                    <Tab label="All Users Attendance" />
+                </Tabs>
+            </Paper>
+
+            {/* Tab Content */}
+            {currentTab === 0 ? (
+                // My Attendance Tab
+                <DataTable
+                    data={attendances.filter(att => att.employee?._id === user?._id || att.employee === user?._id)}
+                    columns={columns}
+                />
+            ) : (
+                // All Users Attendance Tab
+                <DataTable
+                    data={attendances}
+                    columns={columns}
+                />
+            )}
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>
