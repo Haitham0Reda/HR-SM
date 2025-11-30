@@ -67,6 +67,9 @@ const AttendancePage = () => {
         return date.toISOString().split('T')[0];
     });
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [filterEmployee, setFilterEmployee] = useState('');
+    const [filterStatus, setFilterStatus] = useState('');
+    const [filterDepartment, setFilterDepartment] = useState('');
     const { showNotification } = useNotification();
 
     // Check if user can manage attendance (HR/Admin)
@@ -908,6 +911,38 @@ const AttendancePage = () => {
         );
     }
 
+    // Filter all users attendance
+    const filteredAllUsersAttendance = attendances.filter(att => {
+        const attDate = new Date(att.date);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const dateMatch = attDate >= start && attDate <= end;
+        
+        const employeeMatch = !filterEmployee || 
+            att.employee?._id === filterEmployee || 
+            att.employee === filterEmployee;
+        
+        const statusMatch = !filterStatus || att.status === filterStatus;
+        
+        const departmentMatch = !filterDepartment || 
+            att.employee?.department?._id === filterDepartment ||
+            att.employee?.department === filterDepartment;
+        
+        return dateMatch && employeeMatch && statusMatch && departmentMatch;
+    });
+
+    // Get unique departments from users
+    const departments = [...new Set(users.map(u => u.department).filter(Boolean))];
+
+    // Calculate statistics for all users
+    const allUsersStats = {
+        totalRecords: filteredAllUsersAttendance.length,
+        present: filteredAllUsersAttendance.filter(a => ['present', 'on-time'].includes(a.status)).length,
+        absent: filteredAllUsersAttendance.filter(a => a.status === 'absent').length,
+        late: filteredAllUsersAttendance.filter(a => a.status === 'late').length,
+        workFromHome: filteredAllUsersAttendance.filter(a => a.status === 'work-from-home').length,
+    };
+
     // HR/Admin view - show management interface
     return (
         <Box sx={{ p: 3 }}>
@@ -945,10 +980,158 @@ const AttendancePage = () => {
                 />
             ) : (
                 // All Users Attendance Tab
-                <DataTable
-                    data={attendances}
-                    columns={columns}
-                />
+                <Box>
+                    {/* Filters */}
+                    <Paper sx={{ p: 3, mb: 3 }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>Filters</Typography>
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                                <TextField
+                                    label="Start Date"
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    fullWidth
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                                <TextField
+                                    label="End Date"
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    fullWidth
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                                <TextField
+                                    select
+                                    label="Employee"
+                                    value={filterEmployee}
+                                    onChange={(e) => setFilterEmployee(e.target.value)}
+                                    fullWidth
+                                >
+                                    <MenuItem value="">All Employees</MenuItem>
+                                    {users.map((u) => (
+                                        <MenuItem key={u._id} value={u._id}>
+                                            {u.personalInfo?.fullName || u.username}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                                <TextField
+                                    select
+                                    label="Status"
+                                    value={filterStatus}
+                                    onChange={(e) => setFilterStatus(e.target.value)}
+                                    fullWidth
+                                >
+                                    <MenuItem value="">All Statuses</MenuItem>
+                                    {statuses.map((status) => (
+                                        <MenuItem key={status} value={status}>
+                                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                        </Grid>
+                        <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+                            <Button
+                                variant="outlined"
+                                onClick={() => {
+                                    setFilterEmployee('');
+                                    setFilterStatus('');
+                                    setFilterDepartment('');
+                                    setStartDate(() => {
+                                        const date = new Date();
+                                        date.setDate(date.getDate() - 7);
+                                        return date.toISOString().split('T')[0];
+                                    });
+                                    setEndDate(new Date().toISOString().split('T')[0]);
+                                }}
+                            >
+                                Clear Filters
+                            </Button>
+                        </Box>
+                    </Paper>
+
+                    {/* Statistics Cards */}
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                            <Card>
+                                <CardContent>
+                                    <Typography color="text.secondary" gutterBottom>
+                                        Total Records
+                                    </Typography>
+                                    <Typography variant="h4">
+                                        {allUsersStats.totalRecords}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                            <Card>
+                                <CardContent>
+                                    <Typography color="text.secondary" gutterBottom>
+                                        Present
+                                    </Typography>
+                                    <Typography variant="h4" color="success.main">
+                                        {allUsersStats.present}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                            <Card>
+                                <CardContent>
+                                    <Typography color="text.secondary" gutterBottom>
+                                        Absent
+                                    </Typography>
+                                    <Typography variant="h4" color="error.main">
+                                        {allUsersStats.absent}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                            <Card>
+                                <CardContent>
+                                    <Typography color="text.secondary" gutterBottom>
+                                        Late
+                                    </Typography>
+                                    <Typography variant="h4" color="warning.main">
+                                        {allUsersStats.late}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    </Grid>
+
+                    {/* Attendance Table */}
+                    <Paper sx={{ p: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="h6">
+                                Attendance Records ({filteredAllUsersAttendance.length})
+                            </Typography>
+                            <Button
+                                variant="outlined"
+                                startIcon={<PrintIcon />}
+                                onClick={() => {
+                                    window.print();
+                                }}
+                            >
+                                Print
+                            </Button>
+                        </Box>
+                        <DataTable
+                            data={filteredAllUsersAttendance}
+                            columns={columns}
+                        />
+                    </Paper>
+                </Box>
             )}
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
