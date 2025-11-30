@@ -258,13 +258,6 @@ function DashboardSidebar({
                                     selected={pathname.startsWith('/app/vacation-requests')}
                                 />
                                 <DashboardSidebarPageItem
-                                    id="leaves"
-                                    title="Legacy Leaves"
-                                    icon={<EventAvailableIcon />}
-                                    href="/app/leaves"
-                                    selected={!!matchPath('/app/leaves', pathname)}
-                                />
-                                <DashboardSidebarPageItem
                                     id="forget-checks"
                                     title="Forget Check"
                                     icon={<ErrorOutlineIcon />}
@@ -402,13 +395,6 @@ function DashboardSidebar({
                                     icon={<BeachAccessIcon />}
                                     href="/app/vacation-requests"
                                     selected={pathname.startsWith('/app/vacation-requests')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="leaves"
-                                    title="Legacy Leaves"
-                                    icon={<EventAvailableIcon />}
-                                    href="/app/leaves"
-                                    selected={!!matchPath('/app/leaves', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="requests"
@@ -590,13 +576,6 @@ function DashboardSidebar({
                                     icon={<BeachAccessIcon />}
                                     href="/app/vacation-requests"
                                     selected={pathname.startsWith('/app/vacation-requests')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="leaves"
-                                    title="Legacy Leaves"
-                                    icon={<EventAvailableIcon />}
-                                    href="/app/leaves"
-                                    selected={!!matchPath('/app/leaves', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="requests"
@@ -937,3 +916,5 @@ DashboardSidebar.propTypes = {
 };
 
 export default DashboardSidebar;
+
+

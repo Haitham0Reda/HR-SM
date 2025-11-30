@@ -18,6 +18,7 @@
     "axios": "^1.13.2",
     "bad-words": "^4.0.0",
     "crypto-js": "^4.2.0",
+    "date-holidays": "^3.26.5",
     "dayjs": "^1.11.18",
     "dompurify": "^3.3.0",
     "js-cookie": "^3.0.5",

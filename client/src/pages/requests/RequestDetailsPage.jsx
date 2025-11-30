@@ -16,7 +16,8 @@ import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../hooks/useAuth';
-import leaveService from '../../services/leave.service';
+// Legacy leave service removed - this page needs refactoring to handle different request types
+// import leaveService from '../../services/leave.service';
 
 const RequestDetailsPage = () => {
     const { id } = useParams();
@@ -34,8 +35,10 @@ const RequestDetailsPage = () => {
     const fetchRequestDetails = async () => {
         try {
             setLoading(true);
-            const data = await leaveService.getById(id);
-            setRequest(data);
+            // TODO: Refactor to determine request type and fetch from appropriate service
+            // const data = await appropriateService.getById(id);
+            // setRequest(data);
+            showNotification('This page needs refactoring after legacy leave removal', 'warning');
         } catch (error) {
             console.error('Failed to fetch request details:', error);
             showNotification('Failed to fetch request details', 'error');

@@ -17,7 +17,8 @@
     "check-google-api": "node server/scripts/setupGoogleAPI.js",
     "cli": "node server/cli/hr-cli.js",
     "sync-roles": "node server/scripts/syncSystemRoles.js",
-    "verify-roles": "node server/scripts/verifySystemRoles.js"
+    "verify-roles": "node server/scripts/verifySystemRoles.js",
+    "seed-attendance": "node server/scripts/seedAttendance.js"
   },
   "keywords": [],
   "author": "",

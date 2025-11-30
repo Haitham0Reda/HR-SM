@@ -1,117 +1,24 @@
+// Holiday Routes
 import express from 'express';
-import {
-    getHolidaySettings,
-    updateHolidaySettings,
-    addOfficialHolidays,
-    removeOfficialHoliday,
-    addWeekendWorkDays,
-    removeWeekendWorkDay,
-    getHolidaySuggestions,
-    addFromSuggestions,
-    checkWorkingDay,
-    parseDateString,
-    getEgyptHolidays,
-    importEgyptHolidays
+import { 
+    getHolidayForDate, 
+    getHolidaysForYearController, 
+    checkWorkingDay 
 } from '../controller/holiday.controller.js';
-import {
-    protect,
-    hrOrAdmin,
-    validateDateFormat,
-    validateHolidayData,
-    validateWeekendWorkDay,
-    validateSuggestions,
-    validateYear,
-    validateCountryCode
-} from '../middleware/index.js';
+import { protect } from '../middleware/index.js';
 
 const router = express.Router();
 
-// Get holiday settings
-router.get('/settings',
-    protect,
-    getHolidaySettings
-);
+// Get holiday information for a specific date
+// GET /api/holidays/check?date=2024-12-25
+router.get('/check', protect, getHolidayForDate);
 
-// Update holiday settings
-router.put('/settings',
-    protect,
-    hrOrAdmin,
-    updateHolidaySettings
-);
+// Get all holidays for a specific year
+// GET /api/holidays/year/2024
+router.get('/year/:year', protect, getHolidaysForYearController);
 
-// Add official holidays with validation
-router.post('/official',
-    protect,
-    hrOrAdmin,
-    validateHolidayData,
-    validateDateFormat,
-    addOfficialHolidays
-);
-
-// Remove official holiday
-router.delete('/official/:holidayId',
-    protect,
-    hrOrAdmin,
-    removeOfficialHoliday
-);
-
-// Add weekend work days
-router.post('/weekend-work',
-    protect,
-    hrOrAdmin,
-    validateWeekendWorkDay,
-    validateDateFormat,
-    addWeekendWorkDays
-);
-
-// Remove weekend work day
-router.delete('/weekend-work/:workDayId',
-    protect,
-    hrOrAdmin,
-    removeWeekendWorkDay
-);
-
-// Get holiday suggestions from APIs
-router.get('/suggestions',
-    protect,
-    hrOrAdmin,
-    validateYear,
-    validateCountryCode,
-    getHolidaySuggestions
-);
-
-// Add holidays from suggestions
-router.post('/suggestions',
-    protect,
-    hrOrAdmin,
-    validateSuggestions,
-    addFromSuggestions
-);
-
-// Check if date is working day
-router.get('/check-working-day',
-    protect,
-    checkWorkingDay
-);
-
-// Parse date string utility
-router.get('/parse-date',
-    protect,
-    parseDateString
-);
-
-// Get Egypt holidays from date-holidays package
-router.get('/egypt-holidays',
-    protect,
-    hrOrAdmin,
-    getEgyptHolidays
-);
-
-// Import Egypt holidays to database
-router.post('/import-egypt-holidays',
-    protect,
-    hrOrAdmin,
-    importEgyptHolidays
-);
+// Check if a date is a working day
+// GET /api/holidays/working-day?date=2024-12-25
+router.get('/working-day', protect, checkWorkingDay);
 
 export default router;

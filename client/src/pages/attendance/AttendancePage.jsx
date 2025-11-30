@@ -33,31 +33,41 @@ import {
     Assessment as ReportIcon,
     Person as PersonIcon,
     TrendingUp as TrendingUpIcon,
+    GroupAdd as GroupAddIcon,
 } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import attendanceService from '../../services/attendance.service';
 import userService from '../../services/user.service';
+import { getHolidayInfo } from '../../utils/holidayChecker';
 
 const AttendancePage = () => {
     const { user, isHR, isAdmin } = useAuth();
-    const navigate = useNavigate();
     const [attendances, setAttendances] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
+    const [openBulkDialog, setOpenBulkDialog] = useState(false);
     const [selectedAttendance, setSelectedAttendance] = useState(null);
     const [currentTab, setCurrentTab] = useState(0);
+    const [bulkLoading, setBulkLoading] = useState(false);
     const [formData, setFormData] = useState({
         employee: '',
         date: new Date().toISOString().split('T')[0],
         checkIn: '',
         checkOut: '',
+        status: 'present',
+        notes: ''
+    });
+    const [bulkFormData, setBulkFormData] = useState({
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        checkIn: '09:00',
+        checkOut: '17:00',
         status: 'present',
         notes: ''
     });
@@ -76,12 +86,6 @@ const AttendancePage = () => {
     const canManage = isHR || isAdmin;
 
     const statuses = ['present', 'absent', 'late', 'half-day', 'work-from-home'];
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => {
-        fetchAttendances();
-        fetchUsers();
-    }, []);
 
     const fetchAttendances = async () => {
         try {
@@ -109,6 +113,12 @@ const AttendancePage = () => {
             console.error('Failed to fetch users:', error);
         }
     };
+
+    useEffect(() => {
+        fetchAttendances();
+        fetchUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleOpenDialog = (attendance = null) => {
         if (attendance) {
@@ -219,6 +229,95 @@ const AttendancePage = () => {
         }
     };
 
+    const handleBulkCreate = async () => {
+        try {
+            setBulkLoading(true);
+            
+            // Get all active users
+            const activeUsers = users.filter(u => u.status === 'active' || !u.status);
+            
+            if (activeUsers.length === 0) {
+                showNotification('No active users found', 'warning');
+                return;
+            }
+
+            // Generate date range
+            const start = new Date(bulkFormData.startDate);
+            const end = new Date(bulkFormData.endDate);
+            
+            if (start > end) {
+                showNotification('Start date must be before or equal to end date', 'error');
+                return;
+            }
+
+            const dates = [];
+            const currentDate = new Date(start);
+            while (currentDate <= end) {
+                dates.push(new Date(currentDate).toISOString().split('T')[0]);
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // Create attendance records for all users for all dates
+            const promises = [];
+            
+            for (const date of dates) {
+                // Get holiday information using the holiday package
+                const holidayInfo = getHolidayInfo(date);
+                const isHoliday = holidayInfo.isWeekend || holidayInfo.isHoliday;
+                
+                for (const employee of activeUsers) {
+                    const submitData = {
+                        employee: employee._id,
+                        date: date,
+                        status: isHoliday ? 'absent' : bulkFormData.status,
+                        notes: isHoliday ? (holidayInfo.note || 'Official Holiday') : bulkFormData.notes
+                    };
+
+                    // Add checkIn/checkOut only if not a holiday
+                    if (!isHoliday) {
+                        if (bulkFormData.checkIn) {
+                            const checkInDateTime = new Date(`${date}T${bulkFormData.checkIn}`);
+                            submitData.checkIn = {
+                                time: checkInDateTime,
+                                method: 'manual',
+                                location: 'office'
+                            };
+                        }
+
+                        if (bulkFormData.checkOut) {
+                            const checkOutDateTime = new Date(`${date}T${bulkFormData.checkOut}`);
+                            submitData.checkOut = {
+                                time: checkOutDateTime,
+                                method: 'manual',
+                                location: 'office'
+                            };
+                        }
+                    }
+
+                    promises.push(attendanceService.create(submitData));
+                }
+            }
+
+            await Promise.all(promises);
+            
+            showNotification(
+                `Successfully created ${promises.length} attendance records (${activeUsers.length} users × ${dates.length} days)`, 
+                'success'
+            );
+            setOpenBulkDialog(false);
+            fetchAttendances();
+        } catch (error) {
+            showNotification(error.response?.data?.message || 'Bulk creation failed', 'error');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const handleBulkChange = (e) => {
+        const { name, value } = e.target;
+        setBulkFormData(prev => ({ ...prev, [name]: value }));
+    };
+
     const getStatusColor = (status) => {
         const colors = {
             present: 'success',
@@ -255,7 +354,10 @@ const AttendancePage = () => {
                         minute: '2-digit'
                     });
                 }
-                return row.checkIn || 'N/A';
+                if (typeof row.checkIn === 'string') {
+                    return row.checkIn;
+                }
+                return 'N/A';
             }
         },
         {
@@ -269,7 +371,10 @@ const AttendancePage = () => {
                         minute: '2-digit'
                     });
                 }
-                return row.checkOut || 'N/A';
+                if (typeof row.checkOut === 'string') {
+                    return row.checkOut;
+                }
+                return 'N/A';
             }
         },
         {
@@ -931,9 +1036,6 @@ const AttendancePage = () => {
         return dateMatch && employeeMatch && statusMatch && departmentMatch;
     });
 
-    // Get unique departments from users
-    const departments = [...new Set(users.map(u => u.department).filter(Boolean))];
-
     // Calculate statistics for all users
     const allUsersStats = {
         totalRecords: filteredAllUsersAttendance.length,
@@ -950,13 +1052,23 @@ const AttendancePage = () => {
                 <Typography variant="h4">
                     Attendance Management
                 </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenDialog()}
-                >
-                    Record Attendance
-                </Button>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpenDialog()}
+                    >
+                        Record Attendance
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        startIcon={<GroupAddIcon />}
+                        onClick={() => setOpenBulkDialog(true)}
+                    >
+                        Bulk Create for All Users
+                    </Button>
+                </Box>
             </Box>
 
             {/* Tabs */}
@@ -1219,6 +1331,153 @@ const AttendancePage = () => {
                     <Button onClick={handleCloseDialog}>Cancel</Button>
                     <Button onClick={handleSubmit} variant="contained">
                         {selectedAttendance ? 'Update' : 'Record'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Bulk Create Dialog */}
+            <Dialog open={openBulkDialog} onClose={() => setOpenBulkDialog(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    Create Attendance for All Users
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            This will create attendance records for all active users for the selected date range.
+                        </Typography>
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 6 }}>
+                                <TextField
+                                    type="date"
+                                    label="Start Date"
+                                    name="startDate"
+                                    value={bulkFormData.startDate}
+                                    onChange={handleBulkChange}
+                                    required
+                                    fullWidth
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 6 }}>
+                                <TextField
+                                    type="date"
+                                    label="End Date"
+                                    name="endDate"
+                                    value={bulkFormData.endDate}
+                                    onChange={handleBulkChange}
+                                    required
+                                    fullWidth
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                        </Grid>
+                        <Grid container spacing={2}>
+                            <Grid size={{ xs: 6 }}>
+                                <TextField
+                                    type="time"
+                                    label="Check In"
+                                    name="checkIn"
+                                    value={bulkFormData.checkIn}
+                                    onChange={handleBulkChange}
+                                    fullWidth
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 6 }}>
+                                <TextField
+                                    type="time"
+                                    label="Check Out"
+                                    name="checkOut"
+                                    value={bulkFormData.checkOut}
+                                    onChange={handleBulkChange}
+                                    fullWidth
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                        </Grid>
+                        <TextField
+                            select
+                            label="Status"
+                            name="status"
+                            value={bulkFormData.status}
+                            onChange={handleBulkChange}
+                            required
+                            fullWidth
+                        >
+                            {statuses.map((status) => (
+                                <MenuItem key={status} value={status}>
+                                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                        <TextField
+                            label="Notes"
+                            name="notes"
+                            value={bulkFormData.notes}
+                            onChange={handleBulkChange}
+                            multiline
+                            rows={3}
+                            fullWidth
+                        />
+                        <Box sx={{ p: 2, bgcolor: 'primary.light', borderRadius: 1 }}>
+                            <Typography variant="body2" color="primary.dark" sx={{ fontWeight: 600 }}>
+                                Total active users: {users.filter(u => u.status === 'active' || !u.status).length}
+                            </Typography>
+                            <Typography variant="body2" color="primary.dark" sx={{ fontWeight: 600 }}>
+                                Date range: {(() => {
+                                    const start = new Date(bulkFormData.startDate);
+                                    const end = new Date(bulkFormData.endDate);
+                                    if (start > end) return '0 days (invalid range)';
+                                    const days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                                    
+                                    // Count working days and holidays using holiday checker
+                                    let workingDays = 0;
+                                    let holidays = 0;
+                                    const holidayNames = new Set();
+                                    const current = new Date(start);
+                                    
+                                    while (current <= end) {
+                                        const holidayInfo = getHolidayInfo(current);
+                                        if (holidayInfo.isWeekend || holidayInfo.isHoliday) {
+                                            holidays++;
+                                            if (holidayInfo.holidayName) {
+                                                holidayNames.add(holidayInfo.holidayName);
+                                            }
+                                        } else {
+                                            workingDays++;
+                                        }
+                                        current.setDate(current.getDate() + 1);
+                                    }
+                                    
+                                    return `${days} day${days !== 1 ? 's' : ''} (${workingDays} working days, ${holidays} holidays)`;
+                                })()}
+                            </Typography>
+                            <Typography variant="body2" color="warning.dark" sx={{ fontWeight: 600, fontStyle: 'italic' }}>
+                                ⚠️ Saturdays, Sundays & official holidays will be automatically marked as "Official Holiday" (absent status)
+                            </Typography>
+                            <Typography variant="body2" color="primary.dark" sx={{ fontWeight: 700, mt: 1 }}>
+                                Total records to create: {(() => {
+                                    const start = new Date(bulkFormData.startDate);
+                                    const end = new Date(bulkFormData.endDate);
+                                    if (start > end) return 0;
+                                    const days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                                    const activeUsers = users.filter(u => u.status === 'active' || !u.status).length;
+                                    return days * activeUsers;
+                                })()}
+                            </Typography>
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenBulkDialog(false)} disabled={bulkLoading}>
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={handleBulkCreate} 
+                        variant="contained" 
+                        disabled={bulkLoading}
+                    >
+                        {bulkLoading ? 'Creating...' : 'Create for All Users'}
                     </Button>
                 </DialogActions>
             </Dialog>

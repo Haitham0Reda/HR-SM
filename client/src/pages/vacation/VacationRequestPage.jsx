@@ -14,7 +14,7 @@ import {
 import { BeachAccess as BeachAccessIcon, Send as SendIcon, AttachFile as AttachFileIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../hooks/useAuth';
-import leaveService from '../../services/leave.service';
+import vacationService from '../../services/vacation.service';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 
@@ -43,7 +43,7 @@ const VacationRequestPage = () => {
             console.log('User ID:', user._id);
             console.log('User object:', user);
 
-            const data = await leaveService.getAll({ user: user._id });
+            const data = await vacationService.getAll({ user: user._id });
             console.log('Raw data received:', data);
             console.log('Data type:', typeof data);
             console.log('Is array?', Array.isArray(data));
@@ -125,7 +125,7 @@ const VacationRequestPage = () => {
                 submitData.append('document', selectedFile);
             }
 
-            await leaveService.create(submitData);
+            await vacationService.create(submitData);
             showNotification('Vacation request submitted successfully', 'success');
             setFormData({
                 type: 'annual',
@@ -491,3 +491,4 @@ const VacationRequestPage = () => {
 };
 
 export default VacationRequestPage;
+

@@ -27,7 +27,7 @@ import {
 } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../hooks/useAuth';
-import leaveService from '../../services/leave.service';
+import vacationService from '../../services/vacation.service';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 
@@ -59,7 +59,7 @@ const VacationPage = () => {
         try {
             setLoading(true);
 
-            const data = await leaveService.getAll();
+            const data = await vacationService.getAll();
 
             console.log('Fetched all leaves:', data);
             console.log('User role - isHR:', isHR, 'isAdmin:', isAdmin);
@@ -119,7 +119,7 @@ const VacationPage = () => {
                 reason: formData.reason.trim()
             };
 
-            await leaveService.create(submitData);
+            await vacationService.create(submitData);
             showNotification('Vacation request submitted successfully', 'success');
 
             // Reset form
@@ -178,7 +178,7 @@ const VacationPage = () => {
                 return;
             }
 
-            await leaveService.approve(leaveId);
+            await vacationService.approve(leaveId);
             showNotification('Leave request approved successfully', 'success');
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchVacationHistory();
@@ -211,7 +211,7 @@ const VacationPage = () => {
         }
 
         try {
-            await leaveService.reject(leaveId, trimmedReason);
+            await vacationService.reject(leaveId, trimmedReason);
             showNotification('Leave request rejected successfully', 'success');
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchVacationHistory();
@@ -247,7 +247,7 @@ const VacationPage = () => {
                 reason: formData.reason.trim()
             };
 
-            await leaveService.update(selectedRequest._id, submitData);
+            await vacationService.update(selectedRequest._id, submitData);
             showNotification('Request updated successfully', 'success');
             setEditDialogOpen(false);
             setSelectedRequest(null);
@@ -268,7 +268,7 @@ const VacationPage = () => {
     const handleConfirmDelete = async () => {
         try {
             setLoading(true);
-            await leaveService.delete(selectedRequest._id);
+            await vacationService.delete(selectedRequest._id);
             showNotification('Request deleted successfully', 'success');
             setDeleteDialogOpen(false);
             setSelectedRequest(null);
@@ -666,3 +666,4 @@ const VacationPage = () => {
 };
 
 export default VacationPage;
+
