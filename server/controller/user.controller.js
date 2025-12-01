@@ -72,9 +72,28 @@ export const createUser = async (req, res) => {
     try {
         const error = validateUserInput(req.body);
         if (error) return res.status(400).json({ error });
-        // Check for duplicate username/email
-        const existing = await User.findOne({ $or: [{ email: req.body.email }, { username: req.body.username }] });
-        if (existing) return res.status(409).json({ error: 'Username or email already exists' });
+
+        // Check for duplicate username/email/employeeId
+        const existing = await User.findOne({
+            $or: [
+                { email: req.body.email },
+                { username: req.body.username },
+                { employeeId: req.body.employeeId }
+            ]
+        });
+
+        if (existing) {
+            if (existing.email === req.body.email) {
+                return res.status(409).json({ error: 'Email already exists' });
+            }
+            if (existing.username === req.body.username) {
+                return res.status(409).json({ error: 'Username already exists' });
+            }
+            if (existing.employeeId === req.body.employeeId) {
+                return res.status(409).json({ error: 'Employee ID already exists' });
+            }
+        }
+
         const user = new User(req.body);
         await user.save();
         await user.populate({
@@ -87,6 +106,13 @@ export const createUser = async (req, res) => {
         await user.populate('position');
         res.status(201).json(sanitizeUser(user));
     } catch (err) {
+        // Handle MongoDB duplicate key errors
+        if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern)[0];
+            return res.status(409).json({
+                error: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
+            });
+        }
         res.status(400).json({ error: err.message });
     }
 };
@@ -98,17 +124,32 @@ export const updateUser = async (req, res) => {
 
         const error = validateUserInput(req.body, true);
         if (error) return res.status(400).json({ error });
+
         // Prevent updating unique fields to existing values
-        if (req.body.email || req.body.username) {
+        if (req.body.email || req.body.username || req.body.employeeId) {
+            const conditions = [];
+            if (req.body.email) conditions.push({ email: req.body.email });
+            if (req.body.username) conditions.push({ username: req.body.username });
+            if (req.body.employeeId) conditions.push({ employeeId: req.body.employeeId });
+
             const conflict = await User.findOne({
-                $or: [
-                    req.body.email ? { email: req.body.email } : {},
-                    req.body.username ? { username: req.body.username } : {}
-                ],
+                $or: conditions,
                 _id: { $ne: userId }
             });
-            if (conflict) return res.status(409).json({ error: 'Username or email already exists' });
+
+            if (conflict) {
+                if (conflict.email === req.body.email) {
+                    return res.status(409).json({ error: 'Email already exists' });
+                }
+                if (conflict.username === req.body.username) {
+                    return res.status(409).json({ error: 'Username already exists' });
+                }
+                if (conflict.employeeId === req.body.employeeId) {
+                    return res.status(409).json({ error: 'Employee ID already exists' });
+                }
+            }
         }
+
         const user = await User.findByIdAndUpdate(userId, req.body, { new: true })
             .populate({
                 path: 'department',
@@ -121,6 +162,13 @@ export const updateUser = async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(sanitizeUser(user));
     } catch (err) {
+        // Handle MongoDB duplicate key errors
+        if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern)[0];
+            return res.status(409).json({
+                error: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
+            });
+        }
         res.status(400).json({ error: err.message });
     }
 };
@@ -240,13 +288,13 @@ export const getUserPlainPassword = async (req, res) => {
     try {
         const user = await User.findById(req.params.id).select('+plainPassword');
         if (!user) return res.status(404).json({ error: 'User not found' });
-        
+
         if (!user.plainPassword) {
-            return res.status(404).json({ 
-                error: 'Plain password not available. Password was set before this feature was implemented.' 
+            return res.status(404).json({
+                error: 'Plain password not available. Password was set before this feature was implemented.'
             });
         }
-        
+
         res.json({ plainPassword: user.plainPassword });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -308,7 +356,7 @@ export const bulkUpdateVacationBalances = async (req, res) => {
         for (const update of updates) {
             try {
                 const { userId, annualTotal, casualTotal, flexibleTotal } = update;
-                
+
                 const user = await User.findById(userId);
                 if (!user) {
                     errors.push({ userId, error: 'User not found' });
