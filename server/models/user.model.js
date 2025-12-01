@@ -136,22 +136,31 @@ const userSchema = new mongoose.Schema({
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-    // Auto-increment employeeId for new users
-    if (this.isNew) {
+    // Auto-increment employeeId for new users (only if not provided)
+    if (this.isNew && !this.employeeId) {
         const User = this.constructor;
         try {
-            const lastUser = await User.findOne({}, {}, { sort: { 'createdAt': -1 } });
-            let nextId = 1;
-            if (lastUser && lastUser.employeeId) {
-                const match = lastUser.employeeId.match(/EMID-(\d+)/);
+            // Find all users with employeeId matching the pattern
+            const users = await User.find({ employeeId: /^EMID-\d+$/ }).select('employeeId').lean();
+
+            let maxId = 0;
+            users.forEach(user => {
+                const match = user.employeeId.match(/EMID-(\d+)/);
                 if (match) {
-                    nextId = parseInt(match[1], 10) + 1;
+                    const id = parseInt(match[1], 10);
+                    if (id > maxId) {
+                        maxId = id;
+                    }
                 }
-            }
+            });
+
+            const nextId = maxId + 1;
             this.employeeId = `EMID-${nextId.toString().padStart(4, '0')}`;
         } catch (err) {
-            // If there's an error getting the last user, generate a random ID
-            this.employeeId = `EMID-${Math.floor(1000 + Math.random() * 9000)}`;
+            console.error('Error generating employeeId:', err);
+            // If there's an error, generate a timestamp-based ID
+            const timestamp = Date.now().toString().slice(-4);
+            this.employeeId = `EMID-${timestamp}`;
         }
     }
 
@@ -159,7 +168,7 @@ userSchema.pre('save', async function (next) {
     if (this.isModified('password')) {
         // Store plain password before hashing (for credential generation)
         this.plainPassword = this.password;
-        
+
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
     }
@@ -175,7 +184,7 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 // Method to get effective permissions (role + overrides)
 userSchema.methods.getEffectivePermissions = async function () {
     let rolePerms = [];
-    
+
     // Try to get permissions from database Role collection first
     try {
         const roleDoc = await Role.findByName(this.role);
@@ -190,7 +199,7 @@ userSchema.methods.getEffectivePermissions = async function () {
         console.error('Error fetching role from database, using fallback:', error);
         rolePerms = getRolePermissions(this.role);
     }
-    
+
     const added = this.addedPermissions || [];
     const removed = this.removedPermissions || [];
 
