@@ -1,0 +1,230 @@
+/* ============================================
+   Seasonal Effects - Main Styles
+   ============================================ */
+
+:root {
+    --decorations-opacity: 0.8;
+}
+
+.seasonal-effects-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+/* ============================================
+   Snow Effect
+   ============================================ */
+
+.snow-effect-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.snowflake {
+    position: absolute;
+    top: -50px;
+    color: #fff;
+    font-size: 1em;
+    opacity: var(--decorations-opacity, 0.8);
+    animation: snowfall linear forwards;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+    user-select: none;
+    pointer-events: none;
+}
+
+@keyframes snowfall {
+    0% {
+        transform: translateY(-50px) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: var(--decorations-opacity, 0.8);
+    }
+
+    90% {
+        opacity: var(--decorations-opacity, 0.8);
+    }
+
+    100% {
+        transform: translateY(100vh) translateX(var(--drift, 0px)) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* ============================================
+   Fireworks Effect
+   ============================================ */
+
+.fireworks-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: var(--decorations-opacity, 0.8);
+}
+
+/* ============================================
+   Moon Effect
+   ============================================ */
+
+.moon-effect-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.crescent-moon {
+    position: absolute;
+    font-size: 4em;
+    opacity: var(--decorations-opacity, 0.8);
+    animation: moonGlow 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px rgba(255, 223, 0, 0.8));
+    user-select: none;
+    pointer-events: none;
+    transition: all 0.1s ease-out;
+}
+
+@keyframes moonGlow {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 20px rgba(255, 223, 0, 0.6));
+        transform: scale(1);
+    }
+
+    50% {
+        filter: drop-shadow(0 0 30px rgba(255, 223, 0, 1));
+        transform: scale(1.05);
+    }
+}
+
+/* ============================================
+   Lantern Effect
+   ============================================ */
+
+.lantern-effect-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.lantern {
+    position: absolute;
+    bottom: -100px;
+    font-size: 2em;
+    opacity: var(--decorations-opacity, 0.8);
+    animation: lanternRise linear forwards;
+    filter: drop-shadow(0 0 10px rgba(255, 100, 0, 0.6));
+    user-select: none;
+    pointer-events: none;
+}
+
+@keyframes lanternRise {
+    0% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: var(--decorations-opacity, 0.8);
+    }
+
+    50% {
+        transform: translateY(-50vh) translateX(var(--sway, 0px)) rotate(5deg);
+    }
+
+    90% {
+        opacity: var(--decorations-opacity, 0.8);
+    }
+
+    100% {
+        transform: translateY(-110vh) translateX(calc(var(--sway, 0px) * 2)) rotate(-5deg);
+        opacity: 0;
+    }
+}
+
+/* ============================================
+   Performance Optimizations
+   ============================================ */
+
+.snowflake,
+.crescent-moon,
+.lantern {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================
+   Mobile Optimizations
+   ============================================ */
+
+@media (max-width: 767px) {
+    .snowflake {
+        font-size: 0.8em;
+    }
+
+    .crescent-moon {
+        font-size: 3em;
+    }
+
+    .lantern {
+        font-size: 1.5em;
+    }
+}
+
+/* ============================================
+   Reduced Motion Support
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .snowflake,
+    .crescent-moon,
+    .lantern {
+        animation: none !important;
+        opacity: 0 !important;
+    }
+
+    .fireworks-canvas {
+        display: none !important;
+    }
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+
+    .seasonal-effects-container,
+    .snow-effect-container,
+    .fireworks-canvas,
+    .moon-effect-container,
+    .lantern-effect-container {
+        display: none !important;
+    }
+}

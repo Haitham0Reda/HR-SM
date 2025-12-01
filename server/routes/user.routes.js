@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import {
     getAllUsers,
     createUser,
@@ -10,7 +11,8 @@ import {
     updateUserProfile,
     getUserPlainPassword,
     updateVacationBalance,
-    bulkUpdateVacationBalances
+    bulkUpdateVacationBalances,
+    bulkCreateUsers
 } from '../controller/user.controller.js';
 import { bulkDownloadPhotos } from '../controller/userPhoto.controller.js';
 import {
@@ -26,6 +28,23 @@ import {
 } from '../middleware/index.js';
 
 const router = express.Router();
+
+// Configure multer for Excel file upload
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = [
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only Excel files (.xls, .xlsx) are allowed'));
+        }
+    }
+});
 
 // Login route - Public (no auth required)
 router.post('/login', loginUser);
@@ -46,7 +65,7 @@ router.get('/bulk-download-photos', bulkDownloadPhotos); // GET with token in qu
 
 // Test photo download endpoint
 router.get('/test-photo-download', protect, async (req, res) => {
-    res.json({ 
+    res.json({
         message: 'Photo download endpoint is working',
         timestamp: new Date().toISOString()
     });
@@ -77,6 +96,9 @@ router.put('/:id/vacation-balance', protect, admin, updateVacationBalance);
 
 // Bulk update vacation balances - Admin/HR only
 router.post('/bulk-update-vacation-balances', protect, admin, bulkUpdateVacationBalances);
+
+// Bulk create users from Excel - Admin only
+router.post('/bulk-create', protect, admin, upload.single('file'), bulkCreateUsers);
 
 // Update user - Admin only with validation
 router.put('/:id',
