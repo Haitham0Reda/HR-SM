@@ -73,14 +73,16 @@ export const createUser = async (req, res) => {
         const error = validateUserInput(req.body);
         if (error) return res.status(400).json({ error });
 
-        // Check for duplicate username/email/employeeId
-        const existing = await User.findOne({
-            $or: [
-                { email: req.body.email },
-                { username: req.body.username },
-                { employeeId: req.body.employeeId }
-            ]
-        });
+        // Remove employeeId from request body if provided (it will be auto-generated)
+        delete req.body.employeeId;
+
+        // Check for duplicate username/email
+        const conditions = [
+            { email: req.body.email },
+            { username: req.body.username }
+        ];
+
+        const existing = await User.findOne({ $or: conditions });
 
         if (existing) {
             if (existing.email === req.body.email) {
@@ -88,9 +90,6 @@ export const createUser = async (req, res) => {
             }
             if (existing.username === req.body.username) {
                 return res.status(409).json({ error: 'Username already exists' });
-            }
-            if (existing.employeeId === req.body.employeeId) {
-                return res.status(409).json({ error: 'Employee ID already exists' });
             }
         }
 
