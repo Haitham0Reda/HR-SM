@@ -25,10 +25,10 @@ import {
     alpha,
     Avatar
 } from '@mui/material';
-import { 
-    Add as AddIcon, 
-    Search as SearchIcon, 
-    Edit as EditIcon, 
+import {
+    Add as AddIcon,
+    Search as SearchIcon,
+    Edit as EditIcon,
     Delete as DeleteIcon,
     Person as PersonIcon,
     FilterList as FilterListIcon,
@@ -49,7 +49,9 @@ import {
     Cancel as CancelIcon,
     BeachAccess as BeachAccessIcon,
     ExitToApp as ExitToAppIcon,
-    Block as BlockIcon
+    Block as BlockIcon,
+    Upload as UploadIcon,
+    CloudUpload as CloudUploadIcon
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -68,6 +70,9 @@ const UsersPage = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [tempPassword, setTempPassword] = useState('');
     const [downloadingPhotos, setDownloadingPhotos] = useState(false);
+    const [openBulkUpload, setOpenBulkUpload] = useState(false);
+    const [uploadFile, setUploadFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
     const { showNotification } = useNotification();
 
     useEffect(() => {
@@ -100,13 +105,50 @@ const UsersPage = () => {
         }
     };
 
+    const handleBulkUpload = async () => {
+        if (!uploadFile) {
+            showNotification('Please select a file', 'warning');
+            return;
+        }
+
+        try {
+            setUploading(true);
+            showNotification('Uploading and processing file...', 'info');
+
+            const response = await userService.bulkCreateFromExcel(uploadFile);
+
+            if (response.created > 0) {
+                showNotification(
+                    `Successfully created ${response.created} user(s)${response.failed > 0 ? `, ${response.failed} failed` : ''}`,
+                    response.failed > 0 ? 'warning' : 'success'
+                );
+            } else {
+                showNotification('No users were created', 'warning');
+            }
+
+            // Show detailed errors if any
+            if (response.errors && response.errors.length > 0) {
+                console.log('Upload errors:', response.errors);
+            }
+
+            setOpenBulkUpload(false);
+            setUploadFile(null);
+            fetchUsers();
+        } catch (error) {
+            console.error('Bulk upload error:', error);
+            showNotification(error.response?.data?.error || 'Failed to upload file', 'error');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleBulkDownloadPhotos = async () => {
         try {
             setDownloadingPhotos(true);
             showNotification('Preparing photos for download...', 'info');
 
             // Get user IDs from filtered users who have photos
-            const usersWithPhotos = filteredUsers.filter(user => 
+            const usersWithPhotos = filteredUsers.filter(user =>
                 user.personalInfo?.profilePicture || user.profilePicture || user.avatar || user.photo
             );
             const userIds = usersWithPhotos.map(user => user._id);
@@ -127,7 +169,7 @@ const UsersPage = () => {
             // Create download URL with token in query parameter
             const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
             const url = `${apiBaseUrl}/users/bulk-download-photos?token=${encodeURIComponent(token)}&userIds=${encodeURIComponent(JSON.stringify(userIds))}`;
-            
+
             // Open in new window to bypass IDM
             window.open(url, '_blank');
 
@@ -146,12 +188,12 @@ const UsersPage = () => {
 
     const filteredUsers = useMemo(() => {
         return users.filter(user => {
-            const matchesSearch = searchTerm === '' || 
+            const matchesSearch = searchTerm === '' ||
                 user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 user.email.toLowerCase().includes(searchTerm.toLowerCase());
-            
+
             const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-            
+
             return matchesSearch && matchesRole;
         });
     }, [users, searchTerm, roleFilter]);
@@ -168,15 +210,15 @@ const UsersPage = () => {
     if (loading) return <Loading />;
 
     return (
-        <Box sx={{ 
+        <Box sx={{
             minHeight: '100vh',
             bgcolor: 'background.default',
             p: { xs: 2, sm: 3, md: 4 }
         }}>
             {/* Header Section */}
-            <Paper 
+            <Paper
                 elevation={0}
-                sx={{ 
+                sx={{
                     p: 3,
                     mb: 3,
                     borderRadius: 3,
@@ -184,17 +226,17 @@ const UsersPage = () => {
                     color: 'white'
                 }}
             >
-                <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
                     flexWrap: 'wrap',
                     gap: 2
                 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ 
-                            bgcolor: 'rgba(255,255,255,0.2)', 
-                            width: 56, 
+                        <Avatar sx={{
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            width: 56,
                             height: 56,
                             backdropFilter: 'blur(10px)'
                         }}>
@@ -209,13 +251,37 @@ const UsersPage = () => {
                             </Typography>
                         </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<UploadIcon />}
+                            onClick={() => setOpenBulkUpload(true)}
+                            sx={{
+                                bgcolor: 'rgba(255,255,255,0.1)',
+                                color: 'white',
+                                borderColor: 'rgba(255,255,255,0.3)',
+                                borderRadius: 2.5,
+                                textTransform: 'none',
+                                px: 3,
+                                py: 1.2,
+                                fontSize: '1rem',
+                                fontWeight: 600,
+                                backdropFilter: 'blur(10px)',
+                                '&:hover': {
+                                    bgcolor: 'rgba(255,255,255,0.2)',
+                                    borderColor: 'rgba(255,255,255,0.5)',
+                                    boxShadow: 2
+                                }
+                            }}
+                        >
+                            Bulk Upload
+                        </Button>
                         <Button
                             variant="outlined"
                             startIcon={downloadingPhotos ? <SyncIcon className="spin" /> : <PhotoLibraryIcon />}
                             onClick={handleBulkDownloadPhotos}
                             disabled={downloadingPhotos || filteredUsers.length === 0}
-                            sx={{ 
+                            sx={{
                                 bgcolor: 'rgba(255,255,255,0.1)',
                                 color: 'white',
                                 borderColor: 'rgba(255,255,255,0.3)',
@@ -243,7 +309,7 @@ const UsersPage = () => {
                             variant="contained"
                             startIcon={<AddIcon />}
                             onClick={() => navigate('/app/users/create')}
-                            sx={{ 
+                            sx={{
                                 bgcolor: 'white',
                                 color: 'primary.main',
                                 borderRadius: 2.5,
@@ -283,7 +349,7 @@ const UsersPage = () => {
                     }}
                 >
                     <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar sx={{ 
+                        <Avatar sx={{
                             bgcolor: alpha('#1976d2', 0.1),
                             color: 'primary.main',
                             width: 48,
@@ -317,7 +383,7 @@ const UsersPage = () => {
                     }}
                 >
                     <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar sx={{ 
+                        <Avatar sx={{
                             bgcolor: alpha('#d32f2f', 0.1),
                             color: 'error.main',
                             width: 48,
@@ -352,7 +418,7 @@ const UsersPage = () => {
                     }}
                 >
                     <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar sx={{ 
+                        <Avatar sx={{
                             bgcolor: alpha('#2e7d32', 0.1),
                             color: 'success.main',
                             width: 48,
@@ -386,7 +452,7 @@ const UsersPage = () => {
                     }}
                 >
                     <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar sx={{ 
+                        <Avatar sx={{
                             bgcolor: alpha('#0288d1', 0.1),
                             color: 'info.main',
                             width: 48,
@@ -420,7 +486,7 @@ const UsersPage = () => {
                     }}
                 >
                     <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar sx={{ 
+                        <Avatar sx={{
                             bgcolor: alpha('#d32f2f', 0.1),
                             color: 'error.main',
                             width: 48,
@@ -454,7 +520,7 @@ const UsersPage = () => {
                     }}
                 >
                     <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar sx={{ 
+                        <Avatar sx={{
                             bgcolor: alpha('#ed6c02', 0.1),
                             color: 'warning.main',
                             width: 48,
@@ -559,8 +625,8 @@ const UsersPage = () => {
             {filteredUsers.length === 0 ? (
                 <Paper
                     elevation={0}
-                    sx={{ 
-                        textAlign: 'center', 
+                    sx={{
+                        textAlign: 'center',
                         py: 8,
                         borderRadius: 2.5,
                         border: '2px dashed',
@@ -573,7 +639,7 @@ const UsersPage = () => {
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                         {searchTerm || roleFilter !== 'all'
-                            ? 'Try adjusting your filters' 
+                            ? 'Try adjusting your filters'
                             : 'Create your first user to get started'}
                     </Typography>
                 </Paper>
@@ -619,10 +685,10 @@ const UsersPage = () => {
                                         {(user.personalInfo?.fullName || user.username)?.charAt(0).toUpperCase()}
                                     </Avatar>
                                     <Box sx={{ textAlign: 'center', width: '100%' }}>
-                                        <Typography 
-                                            variant="h6" 
-                                            sx={{ 
-                                                fontWeight: 700, 
+                                        <Typography
+                                            variant="h6"
+                                            sx={{
+                                                fontWeight: 700,
                                                 fontSize: '1.1rem',
                                                 overflow: 'hidden',
                                                 textOverflow: 'ellipsis',
@@ -632,10 +698,10 @@ const UsersPage = () => {
                                         >
                                             {user.personalInfo?.fullName || user.username}
                                         </Typography>
-                                        <Typography 
-                                            variant="caption" 
+                                        <Typography
+                                            variant="caption"
                                             color="text.secondary"
-                                            sx={{ 
+                                            sx={{
                                                 display: 'block',
                                                 fontSize: '0.75rem',
                                                 fontWeight: 600
@@ -654,9 +720,9 @@ const UsersPage = () => {
                                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
                                                 DEPARTMENT
                                             </Typography>
-                                            <Typography 
-                                                variant="body2" 
-                                                sx={{ 
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
                                                     fontWeight: 600,
                                                     fontSize: '0.85rem',
                                                     overflow: 'hidden',
@@ -664,14 +730,14 @@ const UsersPage = () => {
                                                     whiteSpace: 'nowrap'
                                                 }}
                                             >
-                                                {user.department?.parentDepartment 
-                                                    ? user.department.parentDepartment.name 
+                                                {user.department?.parentDepartment
+                                                    ? user.department.parentDepartment.name
                                                     : (user.department?.name || 'Not assigned')
                                                 }
                                             </Typography>
                                         </Box>
                                     </Box>
-                                    
+
                                     {/* Sub-Department (if exists) */}
                                     {user.department?.parentDepartment && (
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -680,9 +746,9 @@ const UsersPage = () => {
                                                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
                                                     SUB-DEPARTMENT
                                                 </Typography>
-                                                <Typography 
-                                                    variant="body2" 
-                                                    sx={{ 
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
                                                         fontWeight: 600,
                                                         fontSize: '0.85rem',
                                                         overflow: 'hidden',
@@ -701,9 +767,9 @@ const UsersPage = () => {
                                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
                                                 POSITION
                                             </Typography>
-                                            <Typography 
-                                                variant="body2" 
-                                                sx={{ 
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
                                                     fontWeight: 600,
                                                     fontSize: '0.85rem',
                                                     overflow: 'hidden',
@@ -760,7 +826,7 @@ const UsersPage = () => {
                                                         showNotification('Failed to update status', 'error');
                                                     }
                                                 }}
-                                                sx={{ 
+                                                sx={{
                                                     mt: 0.5,
                                                     width: '100%',
                                                     '& .MuiOutlinedInput-root': {
@@ -772,28 +838,28 @@ const UsersPage = () => {
                                                     sx: {
                                                         height: 32,
                                                         borderRadius: 1.5,
-                                                        bgcolor: user.status === 'active' 
+                                                        bgcolor: user.status === 'active'
                                                             ? alpha('#2e7d32', 0.1)
                                                             : user.status === 'vacation'
-                                                            ? alpha('#0288d1', 0.1)
-                                                            : user.status === 'resigned'
-                                                            ? alpha('#d32f2f', 0.1)
-                                                            : alpha('#ed6c02', 0.1),
+                                                                ? alpha('#0288d1', 0.1)
+                                                                : user.status === 'resigned'
+                                                                    ? alpha('#d32f2f', 0.1)
+                                                                    : alpha('#ed6c02', 0.1),
                                                         color: user.status === 'active'
                                                             ? 'success.main'
                                                             : user.status === 'vacation'
-                                                            ? 'info.main'
-                                                            : user.status === 'resigned'
-                                                            ? 'error.main'
-                                                            : 'warning.main',
+                                                                ? 'info.main'
+                                                                : user.status === 'resigned'
+                                                                    ? 'error.main'
+                                                                    : 'warning.main',
                                                         '& .MuiOutlinedInput-notchedOutline': {
                                                             borderColor: user.status === 'active'
                                                                 ? alpha('#2e7d32', 0.3)
                                                                 : user.status === 'vacation'
-                                                                ? alpha('#0288d1', 0.3)
-                                                                : user.status === 'resigned'
-                                                                ? alpha('#d32f2f', 0.3)
-                                                                : alpha('#ed6c02', 0.3)
+                                                                    ? alpha('#0288d1', 0.3)
+                                                                    : user.status === 'resigned'
+                                                                        ? alpha('#d32f2f', 0.3)
+                                                                        : alpha('#ed6c02', 0.3)
                                                         }
                                                     }
                                                 }}
@@ -827,7 +893,7 @@ const UsersPage = () => {
                                     </Box>
                                 </CardContent>
                                 <Divider />
-                                <Box sx={{ 
+                                <Box sx={{
                                     p: 1.5,
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -843,7 +909,7 @@ const UsersPage = () => {
                                                     color: 'info.main',
                                                     borderRadius: 1.5,
                                                     transition: 'all 0.2s',
-                                                    '&:hover': { 
+                                                    '&:hover': {
                                                         bgcolor: 'info.main',
                                                         color: 'white',
                                                         transform: 'scale(1.1)'
@@ -859,7 +925,7 @@ const UsersPage = () => {
                                                 onClick={async () => {
                                                     setSelectedUser(user);
                                                     setTempPassword('');
-                                                    
+
                                                     // Try to fetch plain password from database
                                                     try {
                                                         const response = await userService.getPlainPassword(user._id);
@@ -878,7 +944,7 @@ const UsersPage = () => {
                                                         // Password not available, show dialog
                                                         console.log('Plain password not available, showing dialog');
                                                     }
-                                                    
+
                                                     // Show dialog if password not available
                                                     setOpenPasswordDialog(true);
                                                 }}
@@ -886,7 +952,7 @@ const UsersPage = () => {
                                                     color: 'warning.main',
                                                     borderRadius: 1.5,
                                                     transition: 'all 0.2s',
-                                                    '&:hover': { 
+                                                    '&:hover': {
                                                         bgcolor: 'warning.main',
                                                         color: 'white',
                                                         transform: 'scale(1.1)'
@@ -904,7 +970,7 @@ const UsersPage = () => {
                                                     color: 'secondary.main',
                                                     borderRadius: 1.5,
                                                     transition: 'all 0.2s',
-                                                    '&:hover': { 
+                                                    '&:hover': {
                                                         bgcolor: 'secondary.main',
                                                         color: 'white',
                                                         transform: 'scale(1.1)'
@@ -941,7 +1007,7 @@ const UsersPage = () => {
                                                     color: 'primary.main',
                                                     borderRadius: 1.5,
                                                     transition: 'all 0.2s',
-                                                    '&:hover': { 
+                                                    '&:hover': {
                                                         bgcolor: 'primary.main',
                                                         color: 'white',
                                                         transform: 'scale(1.1)'
@@ -962,7 +1028,7 @@ const UsersPage = () => {
                                                     color: 'error.main',
                                                     borderRadius: 1.5,
                                                     transition: 'all 0.2s',
-                                                    '&:hover': { 
+                                                    '&:hover': {
                                                         bgcolor: 'error.main',
                                                         color: 'white',
                                                         transform: 'scale(1.1)'
@@ -992,10 +1058,10 @@ const UsersPage = () => {
             />
 
             {/* Password Dialog for Credentials PDF */}
-            <Dialog 
-                open={openPasswordDialog} 
-                onClose={() => setOpenPasswordDialog(false)} 
-                maxWidth="sm" 
+            <Dialog
+                open={openPasswordDialog}
+                onClose={() => setOpenPasswordDialog(false)}
+                maxWidth="sm"
                 fullWidth
                 slots={{ transition: Fade }}
                 slotProps={{
@@ -1007,7 +1073,7 @@ const UsersPage = () => {
                     }
                 }}
             >
-                <DialogTitle sx={{ 
+                <DialogTitle sx={{
                     pb: 2,
                     display: 'flex',
                     alignItems: 'center',
@@ -1025,13 +1091,13 @@ const UsersPage = () => {
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                         Enter the password for <strong>{selectedUser?.personalInfo?.fullName || selectedUser?.username}</strong> to display on the credentials PDF.
                     </Typography>
-                    <Box sx={{ 
-                        p: 2, 
-                        bgcolor: 'info.lighter', 
-                        borderRadius: 2, 
+                    <Box sx={{
+                        p: 2,
+                        bgcolor: 'info.lighter',
+                        borderRadius: 2,
                         border: '1px solid',
                         borderColor: 'info.main',
-                        mb: 2 
+                        mb: 2
                     }}>
                         <Typography variant="body2" color="info.dark" sx={{ fontWeight: 600, mb: 1 }}>
                             ℹ Password Not Stored
@@ -1065,7 +1131,7 @@ const UsersPage = () => {
                 </DialogContent>
                 <Divider />
                 <DialogActions sx={{ p: 2.5 }}>
-                    <Button 
+                    <Button
                         onClick={() => {
                             setOpenPasswordDialog(false);
                             setTempPassword('');
@@ -1074,14 +1140,14 @@ const UsersPage = () => {
                     >
                         Cancel
                     </Button>
-                    <Button 
+                    <Button
                         onClick={async () => {
                             try {
                                 showNotification('Generating credentials PDF...', 'info');
                                 // Use manual password or auto-generate
                                 const passwordToUse = tempPassword || null;
                                 const success = await generateUserCredentialPDF(
-                                    selectedUser, 
+                                    selectedUser,
                                     passwordToUse
                                 );
                                 if (success) {
@@ -1097,7 +1163,7 @@ const UsersPage = () => {
                             }
                         }}
                         variant="contained"
-                        sx={{ 
+                        sx={{
                             textTransform: 'none',
                             borderRadius: 2,
                             px: 3,
@@ -1105,6 +1171,254 @@ const UsersPage = () => {
                         }}
                     >
                         Generate PDF
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Bulk Upload Dialog */}
+            <Dialog
+                open={openBulkUpload}
+                onClose={() => {
+                    setOpenBulkUpload(false);
+                    setUploadFile(null);
+                }}
+                maxWidth="md"
+                fullWidth
+                slots={{ transition: Fade }}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderRadius: 2.5,
+                            boxShadow: 8
+                        }
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    pb: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5
+                }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}>
+                        <CloudUploadIcon />
+                    </Avatar>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Bulk Upload Users
+                    </Typography>
+                </DialogTitle>
+                <Divider />
+                <DialogContent sx={{ pt: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            Upload an Excel file (.xlsx or .xls) containing user information to create multiple users at once.
+                        </Typography>
+                        <Button
+                            size="small"
+                            startIcon={<DownloadIcon />}
+                            onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = '/templates/bulk-users-template.xlsx';
+                                link.download = 'bulk-users-template.xlsx';
+                                link.click();
+                            }}
+                            sx={{
+                                textTransform: 'none',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            Download Template
+                        </Button>
+                    </Box>
+
+                    <Box sx={{
+                        p: 2,
+                        bgcolor: 'info.lighter',
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'info.main',
+                        mb: 3,
+                        maxHeight: 400,
+                        overflowY: 'auto'
+                    }}>
+                        <Typography variant="body2" color="info.dark" sx={{ fontWeight: 600, mb: 1 }}>
+                            📋 Excel Template Columns:
+                        </Typography>
+
+                        <Typography variant="body2" color="error.main" sx={{ fontWeight: 600, ml: 2, mt: 1, mb: 0.5 }}>
+                            Required Fields:
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>username</strong> - Unique username
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>email</strong> - Email address
+                        </Typography>
+
+                        <Typography variant="body2" color="primary.main" sx={{ fontWeight: 600, ml: 2, mt: 1, mb: 0.5 }}>
+                            Basic Information:
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>password</strong> - User password (defaults to "DefaultPassword123")
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>role</strong> - employee, admin, hr, manager, supervisor, head-of-department, dean
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>status</strong> - active, vacation, resigned, inactive
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>employeeId</strong> - Employee ID (auto-generated if not provided)
+                        </Typography>
+
+                        <Typography variant="body2" color="success.main" sx={{ fontWeight: 600, ml: 2, mt: 1, mb: 0.5 }}>
+                            Personal Information:
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>fullName</strong> - Full name
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>firstName</strong>, <strong>medName</strong>, <strong>lastName</strong> - Name parts
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>arabicName</strong> - Arabic name
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>dateOfBirth</strong> - Format: YYYY-MM-DD
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>gender</strong> - male, female
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>nationality</strong> - Nationality
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>nationalId</strong> - National ID number
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>phone</strong> - Phone number
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>address</strong> - Full address
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>maritalStatus</strong> - single, married, divorced, widowed
+                        </Typography>
+
+                        <Typography variant="body2" color="warning.main" sx={{ fontWeight: 600, ml: 2, mt: 1, mb: 0.5 }}>
+                            Employment Information:
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>hireDate</strong> - Hire date (YYYY-MM-DD)
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>contractType</strong> - full-time, part-time, contract, probation
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>employmentStatus</strong> - active, on-leave, vacation, inactive, terminated, resigned
+                        </Typography>
+
+                        <Typography variant="body2" color="secondary.main" sx={{ fontWeight: 600, ml: 2, mt: 1, mb: 0.5 }}>
+                            Vacation Balance:
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>annualTotal</strong>, <strong>annualUsed</strong> - Annual vacation days
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>casualTotal</strong>, <strong>casualUsed</strong> - Casual leave days
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', ml: 3, mb: 0.5 }}>
+                            • <strong>flexibleTotal</strong>, <strong>flexibleUsed</strong> - Flexible leave days
+                        </Typography>
+                    </Box>
+
+                    <Box
+                        sx={{
+                            border: '2px dashed',
+                            borderColor: uploadFile ? 'success.main' : 'divider',
+                            borderRadius: 2,
+                            p: 4,
+                            textAlign: 'center',
+                            bgcolor: uploadFile ? alpha('#2e7d32', 0.05) : 'background.default',
+                            transition: 'all 0.3s',
+                            cursor: 'pointer',
+                            '&:hover': {
+                                borderColor: 'primary.main',
+                                bgcolor: alpha('#1976d2', 0.05)
+                            }
+                        }}
+                        onClick={() => document.getElementById('bulk-upload-input').click()}
+                    >
+                        <input
+                            id="bulk-upload-input"
+                            type="file"
+                            accept=".xlsx,.xls"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                    setUploadFile(e.target.files[0]);
+                                }
+                            }}
+                        />
+                        {uploadFile ? (
+                            <>
+                                <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+                                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                                    {uploadFile.name}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {(uploadFile.size / 1024).toFixed(2)} KB
+                                </Typography>
+                                <Button
+                                    size="small"
+                                    startIcon={<ClearIcon />}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setUploadFile(null);
+                                    }}
+                                    sx={{ mt: 2, textTransform: 'none' }}
+                                >
+                                    Remove file
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <CloudUploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                                    Click to select Excel file
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    Supports .xlsx and .xls files (max 5MB)
+                                </Typography>
+                            </>
+                        )}
+                    </Box>
+                </DialogContent>
+                <Divider />
+                <DialogActions sx={{ p: 2.5 }}>
+                    <Button
+                        onClick={() => {
+                            setOpenBulkUpload(false);
+                            setUploadFile(null);
+                        }}
+                        disabled={uploading}
+                        sx={{ textTransform: 'none', borderRadius: 2 }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleBulkUpload}
+                        variant="contained"
+                        disabled={!uploadFile || uploading}
+                        startIcon={uploading ? <SyncIcon className="spin" /> : <UploadIcon />}
+                        sx={{
+                            textTransform: 'none',
+                            borderRadius: 2,
+                            px: 3,
+                            fontWeight: 600
+                        }}
+                    >
+                        {uploading ? 'Uploading...' : 'Upload & Create Users'}
                     </Button>
                 </DialogActions>
             </Dialog>

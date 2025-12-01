@@ -59,6 +59,17 @@ const userService = {
     bulkUpdateVacationBalances: async (updates) => {
         return await api.post('/users/bulk-update-vacation-balances', { updates });
     },
+
+    // Bulk create users from Excel file
+    bulkCreateFromExcel: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return await api.post('/users/bulk-create', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
 };
 
 export default userService;

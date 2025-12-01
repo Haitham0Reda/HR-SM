@@ -76,13 +76,56 @@ import MixedVacationPage from './pages/settings/MixedVacationPage';
 import EmployeeOfMonthPage from './pages/settings/EmployeeOfMonthPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import SettingsPage from './pages/settings/SettingsPage';
+import SeasonalEffectsManager from './components/seasonal/SeasonalEffectsManager';
+import './components/seasonal/SeasonalEffects.css';
 import './App.css';
 
 function App() {
+  const [seasonalSettings, setSeasonalSettings] = React.useState(() => {
+    const saved = localStorage.getItem('seasonalSettings');
+    return saved ? JSON.parse(saved) : {
+      enabled: true,
+      autoDetect: false,
+      manualSeason: 'christmas',
+      opacity: 0.8,
+      enableMobile: true,
+      christmas: { enabled: true, snow: true },
+      newyear: { enabled: true, fireworks: true },
+      eidFitr: { enabled: true, moon: true },
+      eidAdha: { enabled: true, lantern: true }
+    };
+  });
+
   useEffect(() => {
     // Setup global error handler
     logger.setupGlobalErrorHandler();
     logger.info('Application started');
+    console.log('🎄 Seasonal Effects Settings:', seasonalSettings);
+
+    // Listen for localStorage changes (from Settings page)
+    const handleStorageChange = (e) => {
+      if (e.key === 'seasonalSettings' && e.newValue) {
+        console.log('🔄 Seasonal settings updated from Settings page');
+        setSeasonalSettings(JSON.parse(e.newValue));
+      }
+    };
+
+    // Listen for custom event (for same-tab updates)
+    const handleSettingsUpdate = (e) => {
+      console.log('🔄 Seasonal settings updated (custom event)');
+      const saved = localStorage.getItem('seasonalSettings');
+      if (saved) {
+        setSeasonalSettings(JSON.parse(saved));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('seasonalSettingsUpdated', handleSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('seasonalSettingsUpdated', handleSettingsUpdate);
+    };
   }, []);
 
   return (
@@ -199,6 +242,12 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
+
+          {/* Seasonal Effects */}
+          <SeasonalEffectsManager
+            key={JSON.stringify(seasonalSettings)}
+            settings={seasonalSettings}
+          />
         </NotificationProvider>
       </AuthProvider>
     </ThemeConfigProvider>

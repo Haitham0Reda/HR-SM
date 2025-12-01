@@ -3,6 +3,7 @@ import User from '../models/user.model.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { logAuthEvent } from '../middleware/activityLogger.js';
+import xlsx from 'xlsx';
 
 // Helper: sanitize user object (remove sensitive fields)
 const sanitizeUser = (user) => {
@@ -389,6 +390,130 @@ export const bulkUpdateVacationBalances = async (req, res) => {
             success: true,
             message: `Updated ${results.length} vacation balance(s)`,
             updated: results.length,
+            failed: errors.length,
+            results,
+            errors
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Bulk create users from Excel file
+export const bulkCreateUsers = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // Parse Excel file
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(worksheet);
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ error: 'Excel file is empty' });
+        }
+
+        const results = [];
+        const errors = [];
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            try {
+                // Map Excel columns to user fields (support multiple column name formats)
+                const userData = {
+                    username: row.username || row.Username,
+                    email: row.email || row.Email,
+                    password: row.password || row.Password || 'DefaultPassword123',
+                    role: row.role || row.Role || 'employee',
+                    status: row.status || row.Status || 'active',
+                    employeeId: row.employeeId || row.EmployeeId || row['Employee ID'],
+
+                    // Personal Information
+                    personalInfo: {
+                        fullName: row.fullName || row.FullName || row['Full Name'],
+                        firstName: row.firstName || row.FirstName || row['First Name'],
+                        medName: row.medName || row.MedName || row['Middle Name'],
+                        lastName: row.lastName || row.LastName || row['Last Name'],
+                        arabicName: row.arabicName || row.ArabicName || row['Arabic Name'],
+                        dateOfBirth: row.dateOfBirth || row.DateOfBirth || row['Date of Birth'],
+                        gender: row.gender || row.Gender,
+                        nationality: row.nationality || row.Nationality,
+                        nationalId: row.nationalId || row.nationalID || row.NationalId || row.NationalID || row['National ID'],
+                        phone: row.phone || row.phoneNumber || row.Phone || row.PhoneNumber || row['Phone Number'],
+                        address: row.address || row.Address,
+                        maritalStatus: row.maritalStatus || row.MaritalStatus || row['Marital Status']
+                    },
+
+                    // Employment Information
+                    employment: {
+                        hireDate: row.hireDate || row.HireDate || row['Hire Date'],
+                        contractType: row.contractType || row.ContractType || row['Contract Type'],
+                        employmentStatus: row.employmentStatus || row.EmploymentStatus || row['Employment Status']
+                    },
+
+                    // Vacation Balance
+                    vacationBalance: {
+                        annualTotal: row.annualTotal || row.AnnualTotal || row['Annual Total'] || 0,
+                        annualUsed: row.annualUsed || row.AnnualUsed || row['Annual Used'] || 0,
+                        casualTotal: row.casualTotal || row.CasualTotal || row['Casual Total'] || 7,
+                        casualUsed: row.casualUsed || row.CasualUsed || row['Casual Used'] || 0,
+                        flexibleTotal: row.flexibleTotal || row.FlexibleTotal || row['Flexible Total'] || 0,
+                        flexibleUsed: row.flexibleUsed || row.FlexibleUsed || row['Flexible Used'] || 0
+                    }
+                };
+
+                // Validate required fields
+                if (!userData.username) {
+                    errors.push({ row: i + 2, error: 'Username is required' });
+                    continue;
+                }
+                if (!userData.email) {
+                    errors.push({ row: i + 2, error: 'Email is required' });
+                    continue;
+                }
+
+                // Check for duplicates
+                const existing = await User.findOne({
+                    $or: [
+                        { email: userData.email },
+                        { username: userData.username }
+                    ]
+                });
+
+                if (existing) {
+                    if (existing.email === userData.email) {
+                        errors.push({ row: i + 2, username: userData.username, error: 'Email already exists' });
+                    } else {
+                        errors.push({ row: i + 2, username: userData.username, error: 'Username already exists' });
+                    }
+                    continue;
+                }
+
+                // Create user
+                const user = new User(userData);
+                await user.save();
+                results.push({
+                    row: i + 2,
+                    username: userData.username,
+                    email: userData.email,
+                    success: true
+                });
+            } catch (err) {
+                errors.push({
+                    row: i + 2,
+                    username: row.username || row.Username,
+                    error: err.message
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Processed ${data.length} rows: ${results.length} created, ${errors.length} failed`,
+            created: results.length,
             failed: errors.length,
             results,
             errors
