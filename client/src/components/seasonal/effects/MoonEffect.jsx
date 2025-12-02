@@ -23,9 +23,9 @@ const MoonEffect = () => {
             // Varied sizes for depth
             const sizes = ['2.5em', '3em', '3.5em', '4em', '4.5em', '5em'];
             const fontSize = sizes[Math.floor(Math.random() * sizes.length)];
-            
-            // Varied opacity for depth
-            const opacity = 0.6 + Math.random() * 0.3;
+
+            // Varied opacity for depth (very subtle)
+            const opacity = 0.15 + Math.random() * 0.15;
 
             // Use cssText with !important
             moon.style.cssText = `
@@ -42,7 +42,7 @@ const MoonEffect = () => {
             `;
 
             container.appendChild(moon);
-            
+
             return {
                 element: moon,
                 posX: startX,

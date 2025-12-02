@@ -4,7 +4,7 @@ import { useMobileCheck } from '../../hooks/useMobileCheck';
 import SnowEffect from './effects/SnowEffect';
 import FireworksEffect from './effects/FireworksEffect';
 import MoonEffect from './effects/MoonEffect';
-import LanternEffect from './effects/LanternEffect';
+import SheepEffect from './effects/SheepEffect';
 import './SeasonalEffects.css';
 
 /**
@@ -86,8 +86,8 @@ const SeasonalEffectsManager = ({ settings }) => {
             {/* Eid al-Adha Effects */}
             {currentSeason === 'eid-adha' &&
                 settings.eidAdha?.enabled &&
-                settings.eidAdha?.lanternEffect && (
-                    <LanternEffect key="lantern-effect" />
+                settings.eidAdha?.sheepEffect && (
+                    <SheepEffect key="sheep-effect" />
                 )}
         </>
     );

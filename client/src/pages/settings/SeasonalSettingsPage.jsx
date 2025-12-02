@@ -83,7 +83,7 @@ function SeasonalSettingsPage() {
             enabled: true,
             messageEn: 'Eid al-Adha Mubarak! 🕌',
             messageAr: 'عيد الأضحى مبارك! 🕌',
-            lanternEffect: true
+            sheepEffect: true
         }
     });
 
@@ -175,7 +175,7 @@ function SeasonalSettingsPage() {
                 enabled: true,
                 messageEn: 'Eid al-Adha Mubarak! 🕌',
                 messageAr: 'عيد الأضحى مبارك! 🕌',
-                lanternEffect: true
+                sheepEffect: true
             }
         };
         setSettings(defaultSettings);
@@ -731,15 +731,15 @@ function SeasonalSettingsPage() {
                                 <FormControlLabel
                                     control={
                                         <Switch
-                                            checked={settings.eidAdha.lanternEffect}
-                                            onChange={(e) => handleChange('eidAdha.lanternEffect', e.target.checked)}
+                                            checked={settings.eidAdha.sheepEffect}
+                                            onChange={(e) => handleChange('eidAdha.sheepEffect', e.target.checked)}
                                             disabled={!settings.enabled || !settings.eidAdha.enabled}
                                         />
                                     }
                                     label={
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                             <LanternIcon fontSize="small" />
-                                            <span>Lantern Animation Effect</span>
+                                            <span>Sheep Animation Effect 🐑</span>
                                         </Box>
                                     }
                                 />
