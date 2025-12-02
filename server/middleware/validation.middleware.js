@@ -209,7 +209,7 @@ export const populateEmployeeFields = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error populating employee fields:', error);
+
         next();
     }
 };
@@ -249,7 +249,7 @@ export const validateVacationBalance = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating vacation balance:', error);
+
         return res.status(500).json({
             success: false,
             message: 'Error validating vacation balance'
@@ -322,7 +322,7 @@ export const validateOverlappingLeave = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking overlapping leave:', error);
+
         next();
     }
 };
@@ -359,7 +359,7 @@ export const validateIDCardData = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating ID card data:', error);
+
         return res.status(500).json({
             success: false,
             message: 'Error validating ID card data'

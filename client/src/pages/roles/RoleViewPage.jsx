@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Container,
     Paper,
     Typography,
     Button,
@@ -10,8 +9,6 @@ import {
     Link,
     Divider,
     Chip,
-    Card,
-    CardContent,
     Grid,
     Dialog,
     DialogTitle,
@@ -52,6 +49,31 @@ const RoleViewPage = () => {
     const [sampleUsers, setSampleUsers] = useState([]);
     const [checkingUsers, setCheckingUsers] = useState(false);
 
+    // Handle edit
+    const handleEdit = useCallback(() => {
+        navigate(`/app/roles/${id}/edit`);
+    }, [id, navigate]);
+
+    // Handle delete click - check for user assignments first
+    const handleDeleteClick = useCallback(async () => {
+        setDeleteDialogOpen(true);
+        setUserCount(0);
+        setSampleUsers([]);
+        
+        // Fetch user count for this role
+        try {
+            setCheckingUsers(true);
+            const data = await roleService.getUserCount(id);
+            setUserCount(data.userCount);
+            setSampleUsers(data.sampleUsers || []);
+        } catch (error) {
+
+            // Continue with deletion attempt - backend will handle validation
+        } finally {
+            setCheckingUsers(false);
+        }
+    }, [id]);
+
     // Keyboard shortcuts handler
     const handleKeyDown = useCallback((event) => {
         // E: Edit role
@@ -75,7 +97,7 @@ const RoleViewPage = () => {
             event.preventDefault();
             navigate('/app/roles');
         }
-    }, [role, navigate]);
+    }, [role, navigate, handleEdit, handleDeleteClick]);
 
     // Add keyboard event listener
     useEffect(() => {
@@ -100,7 +122,7 @@ const RoleViewPage = () => {
                 setAllPermissions(permissionsResponse.permissions || {});
                 setPermissionCategories(permissionsResponse.categories || {});
             } catch (error) {
-                console.error('Error loading role:', error);
+
                 showNotification('Failed to load role details', 'error');
                 navigate('/app/roles');
             } finally {
@@ -111,31 +133,6 @@ const RoleViewPage = () => {
         loadData();
     }, [id, navigate, showNotification]);
 
-    // Handle edit
-    const handleEdit = () => {
-        navigate(`/app/roles/${id}/edit`);
-    };
-
-    // Handle delete click - check for user assignments first
-    const handleDeleteClick = async () => {
-        setDeleteDialogOpen(true);
-        setUserCount(0);
-        setSampleUsers([]);
-        
-        // Fetch user count for this role
-        try {
-            setCheckingUsers(true);
-            const data = await roleService.getUserCount(id);
-            setUserCount(data.userCount);
-            setSampleUsers(data.sampleUsers || []);
-        } catch (error) {
-            console.error('Failed to fetch user count:', error);
-            // Continue with deletion attempt - backend will handle validation
-        } finally {
-            setCheckingUsers(false);
-        }
-    };
-
     // Handle delete
     const handleDelete = async () => {
         // If there are assigned users, just close the dialog
@@ -143,9 +140,6 @@ const RoleViewPage = () => {
             setDeleteDialogOpen(false);
             return;
         }
-
-        // Store role data for potential error display
-        const roleToDelete = { ...role };
 
         try {
             setDeleting(true);
@@ -165,8 +159,7 @@ const RoleViewPage = () => {
             // Show success notification after API confirms
             showNotification('Role deleted successfully', 'success');
         } catch (error) {
-            console.error('Error deleting role:', error);
-            
+
             // On error, navigate back to the role view page
             navigate(`/app/roles/${id}`);
             

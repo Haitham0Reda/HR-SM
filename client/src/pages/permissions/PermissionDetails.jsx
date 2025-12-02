@@ -54,7 +54,7 @@ const PermissionDetails = () => {
             const data = await permissionService.getById(id);
             setPermission(data);
         } catch (error) {
-            console.error('Error fetching permission:', error);
+
             showNotification('Failed to load permission', 'error');
             navigate('/app/permissions');
         } finally {
@@ -68,7 +68,7 @@ const PermissionDetails = () => {
             showNotification('Permission approved successfully', 'success');
             await fetchPermission();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -93,7 +93,7 @@ const PermissionDetails = () => {
             showNotification('Permission rejected successfully', 'success');
             await fetchPermission();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };

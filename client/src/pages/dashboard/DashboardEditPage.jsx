@@ -22,19 +22,16 @@ import {
     Card,
     CardContent,
     Divider,
-    MenuItem,
     Avatar,
     Chip,
-    IconButton,
     Autocomplete,
 } from '@mui/material';
 import {
     Save as SaveIcon,
     Cancel as CancelIcon,
     EmojiEvents as TrophyIcon,
-    Visibility as VisibilityIcon,
-    VisibilityOff as VisibilityOffIcon,
     Edit as EditIcon,
+    Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';
@@ -70,10 +67,6 @@ const DashboardEditPage = () => {
         },
     });
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -92,6 +85,11 @@ const DashboardEditPage = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleSave = async () => {
         try {

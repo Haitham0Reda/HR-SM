@@ -77,9 +77,8 @@ router.post('/', protect, async (req, res) => {
 
         // Create notifications for HR/Admin
         if (permission.status === 'pending') {
-            console.log('Creating permission notifications...');
+
             const hrAdminUsers = await User.find({ role: { $in: ['hr', 'admin'] } });
-            console.log('Found HR/Admin users:', hrAdminUsers.length);
 
             const employee = await User.findById(permission.employee);
             const employeeName = employee?.name || 'An employee';
@@ -96,11 +95,11 @@ router.post('/', protect, async (req, res) => {
             }));
 
             if (hrNotifications.length > 0) {
-                console.log('Inserting notifications:', hrNotifications.length);
+
                 await Notification.insertMany(hrNotifications);
-                console.log('Permission notifications created successfully');
+
             } else {
-                console.log('No HR/Admin users found to notify');
+
             }
         }
 

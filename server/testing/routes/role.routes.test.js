@@ -81,7 +81,7 @@ describe('Role Routes E2E Tests', () => {
                     name: 'project-manager',
                     displayName: 'Project Manager',
                     description: 'Manages projects and teams',
-                    permissions: ['users.view', 'documents.view', 'documents.create']
+                    permissions: ['users.view', 'documents.view', 'documents.edit']
                 })
                 .expect(201);
 
@@ -503,7 +503,7 @@ describe('Role Routes E2E Tests', () => {
             });
 
             // Add multiple permissions
-            const permissions = ['users.view', 'users.create', 'users.edit', 'documents.view', 'documents.create'];
+            const permissions = ['users.view', 'users.create', 'users.edit', 'documents.view', 'documents.edit'];
             
             const response = await request(app)
                 .put(`/api/roles/${role._id}`)

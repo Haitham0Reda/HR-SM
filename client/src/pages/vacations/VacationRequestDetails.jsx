@@ -47,7 +47,6 @@ const VacationRequestDetails = () => {
     const [loading, setLoading] = useState(true);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [openCancelDialog, setOpenCancelDialog] = useState(false);
-    const [actionType, setActionType] = useState('');
     const [cancellationReason, setCancellationReason] = useState('');
 
     const canManage = isHR || isAdmin;
@@ -63,7 +62,7 @@ const VacationRequestDetails = () => {
             const data = await vacationService.getById(id);
             setVacation(data);
         } catch (error) {
-            console.error('Error fetching vacation:', error);
+
             showNotification('Failed to load vacation', 'error');
             navigate('/app/vacation-requests');
         } finally {
@@ -77,7 +76,7 @@ const VacationRequestDetails = () => {
             showNotification('Vacation approved successfully', 'success');
             await fetchVacation();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -102,7 +101,7 @@ const VacationRequestDetails = () => {
             showNotification('Vacation rejected successfully', 'success');
             await fetchVacation();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };
@@ -125,7 +124,7 @@ const VacationRequestDetails = () => {
             setCancellationReason('');
             await fetchVacation();
         } catch (error) {
-            console.error('Cancel error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Cancellation failed', 'error');
         }
     };
@@ -261,7 +260,6 @@ const VacationRequestDetails = () => {
                             color="error"
                             startIcon={<DeleteIcon />}
                             onClick={() => {
-                                setActionType('delete');
                                 setOpenConfirm(true);
                             }}
                         >

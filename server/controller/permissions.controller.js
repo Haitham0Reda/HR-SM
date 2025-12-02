@@ -42,7 +42,7 @@ export const getAllPermissions = async (req, res) => {
 
         res.json(permissions);
     } catch (err) {
-        console.error('Get permissions error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -52,13 +52,11 @@ export const getAllPermissions = async (req, res) => {
  */
 export const createPermission = async (req, res) => {
     try {
-        console.log('=== CREATE PERMISSION REQUEST ===');
+
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
         const permission = new Permissions(req.body);
         const savedPermission = await permission.save();
-
-        console.log('Permission saved successfully:', savedPermission._id);
 
         // Create notification for supervisor/manager
         await createPermissionNotification(savedPermission, 'submitted');
@@ -68,8 +66,8 @@ export const createPermission = async (req, res) => {
 
         res.status(201).json(savedPermission);
     } catch (err) {
-        console.error('Create permission error:', err);
-        console.error('Error stack:', err.stack);
+
+
         res.status(400).json({
             error: err.message,
             details: err.errors ? Object.keys(err.errors).map(key => ({
@@ -97,7 +95,7 @@ export const getPermissionById = async (req, res) => {
 
         res.json(permission);
     } catch (err) {
-        console.error('Get permission by ID error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -127,7 +125,7 @@ export const updatePermission = async (req, res) => {
 
         res.json(permission);
     } catch (err) {
-        console.error('Update permission error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -152,7 +150,7 @@ export const deletePermission = async (req, res) => {
         await Permissions.findByIdAndDelete(req.params.id);
         res.json({ message: 'Permission deleted successfully' });
     } catch (err) {
-        console.error('Delete permission error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -198,7 +196,7 @@ export const approvePermission = async (req, res) => {
 
         res.json(permission);
     } catch (err) {
-        console.error('Approve permission error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -222,10 +220,6 @@ export const rejectPermission = async (req, res) => {
             });
         }
 
-        console.log('=== REJECT PERMISSION ===');
-        console.log('Permission ID:', req.params.id);
-        console.log('User role:', req.user.role);
-        console.log('Request body:', req.body);
 
         const { reason } = req.body;
         const userId = req.user._id;
@@ -240,7 +234,7 @@ export const rejectPermission = async (req, res) => {
 
         // Validate reason
         if (!reason || typeof reason !== 'string') {
-            console.error('Rejection reason validation failed: not a string or missing');
+
             return res.status(400).json({
                 error: 'Rejection reason is required and must be a string'
             });
@@ -248,25 +242,21 @@ export const rejectPermission = async (req, res) => {
 
         const trimmedReason = reason.trim();
         if (!trimmedReason) {
-            console.error('Rejection reason validation failed: empty after trim');
+
             return res.status(400).json({
                 error: 'Rejection reason is required and cannot be empty'
             });
         }
 
         if (trimmedReason.length < 10) {
-            console.error('Rejection reason validation failed: too short', trimmedReason.length);
+
             return res.status(400).json({
                 error: 'Rejection reason must be at least 10 characters long'
             });
         }
 
-        console.log('Calling reject with reason:', trimmedReason);
-
         // Reject the permission
         await permission.reject(userId, trimmedReason);
-
-        console.log('Permission rejected successfully');
 
         // Create notification for employee
         await createPermissionNotification(permission, 'rejected');
@@ -276,8 +266,8 @@ export const rejectPermission = async (req, res) => {
 
         res.json(permission);
     } catch (err) {
-        console.error('Reject permission error:', err);
-        console.error('Error stack:', err.stack);
+
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -329,7 +319,7 @@ async function createPermissionNotification(permission, type) {
             await permission.save();
         }
     } catch (error) {
-        console.error('Error creating permission notification:', error);
+
     }
 }
 
@@ -341,14 +331,14 @@ async function sendPermissionRequestNotification(permission) {
         // Get employee details
         const employee = await User.findById(permission.employee).select('username email personalInfo');
         if (!employee) {
-            console.error('Employee not found for permission request');
+
             return { success: false, error: 'Employee not found' };
         }
 
         // Get manager
         const manager = await getEmployeeManager(employee);
         if (!manager || !manager.email) {
-            console.log('⚠️  No manager found or manager has no email');
+
             return { success: false, error: 'Manager not found or has no email' };
         }
 
@@ -467,7 +457,7 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-        console.error('Error sending permission request notification:', error);
+
         return { success: false, error: error.message };
     }
 }
@@ -480,7 +470,7 @@ async function sendPermissionStatusUpdateNotification(permission) {
         // Get employee details
         const employee = await User.findById(permission.employee).select('username email personalInfo');
         if (!employee || !employee.email) {
-            console.error('Employee not found or has no email');
+
             return { success: false, error: 'Employee not found or has no email' };
         }
 
@@ -606,7 +596,7 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-        console.error('Error sending permission status update notification:', error);
+
         return { success: false, error: error.message };
     }
 }

@@ -11,4 +11,13 @@ module.exports = {
 
         return devServerConfig;
     },
+    jest: {
+        configure: (jestConfig) => {
+            // Transform fast-check, axios, and react-router-dom ES modules
+            jestConfig.transformIgnorePatterns = [
+                'node_modules/(?!(fast-check|axios|react-router-dom|react-router)/)',
+            ];
+            return jestConfig;
+        },
+    },
 };

@@ -209,7 +209,7 @@ export const validateSurveyResponse = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating survey response:', error);
+
         return res.status(500).json({
             success: false,
             error: 'Error validating survey response'
@@ -246,7 +246,7 @@ export const checkDuplicateResponse = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking duplicate response:', error);
+
         next();
     }
 };

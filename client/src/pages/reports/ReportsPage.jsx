@@ -108,8 +108,6 @@ const ReportsPage = () => {
         { month: 'Oct', present: 152, absent: 2, leave: 2, rate: 97.4 },
         { month: 'Nov', present: 142, absent: 6, leave: 8, rate: 91.0 }
     ];
-    
-    console.log('Attendance data for chart:', attendanceData);
 
     // Use real department data if available, otherwise use defaults
     const colors = [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.success.main, theme.palette.warning.main, theme.palette.error.main];
@@ -188,9 +186,7 @@ const ReportsPage = () => {
     const attendanceRate = analyticsData?.kpis?.attendanceRate || dashboardStats?.attendanceRate || 91;
     const avgPerformance = analyticsData?.kpis?.avgPerformance || analyticsData?.kpis?.performance || dashboardStats?.avgPerformance || 88;
     const openPositions = dashboardStats?.openPositions || analyticsData?.kpis?.openPositions || 12;
-    
-    console.log('KPI Values:', { totalEmployees, attendanceRate, avgPerformance, openPositions });
-    
+
     const kpiData = [
         { 
             label: 'Total Employees', 
@@ -238,29 +234,27 @@ const ReportsPage = () => {
                 const [usersResponse, stats, analytics, attendanceData, reports, departmentsResponse] = await Promise.all([
                     userService.getAll().catch(() => ({ users: [] })),
                     dashboardService.getStatistics().catch(err => {
-                        console.log('Dashboard stats not available:', err.message);
+
                         return null;
                     }),
                     analyticsService.getKPIs().catch(err => {
-                        console.log('Analytics KPIs not available:', err.message);
+
                         return null;
                     }),
                     analyticsService.getAttendance({ period: 'monthly', months: 11 }).catch(err => {
-                        console.log('Attendance data not available:', err.message);
+
                         return null;
                     }),
                     reportService.getAll({ limit: 4, sort: '-createdAt' }).catch(err => {
-                        console.log('Reports not available:', err.message);
+
                         return { reports: [] };
                     }),
                     departmentService.getAll().catch(err => {
-                        console.log('Departments not available:', err.message);
+
                         return { departments: [] };
                     })
                 ]);
-                
-                console.log('Fetched departments:', departmentsResponse);
-                
+
                 // Calculate total employees
                 let totalEmployees = 0;
                 if (usersResponse) {
@@ -276,9 +270,7 @@ const ReportsPage = () => {
                         totalEmployees = usersResponse.count;
                     }
                 }
-                
-                console.log('Total employees calculated:', totalEmployees);
-                
+
                 // Process departments data
                 let departmentsArray = [];
                 if (departmentsResponse) {
@@ -316,9 +308,7 @@ const ReportsPage = () => {
                     .filter(dept => dept.value > 0) // Only departments with employees
                     .sort((a, b) => b.value - a.value) // Sort by employee count
                     .slice(0, 5); // Top 5 departments
-                
-                console.log('Processed departments:', departmentsWithCounts);
-                
+
                 // Merge stats with user count and departments
                 const mergedStats = {
                     ...stats,
@@ -330,8 +320,7 @@ const ReportsPage = () => {
                 setAnalyticsData(analytics);
                 
                 // Process attendance data
-                console.log('Raw attendance data:', attendanceData);
-                
+
                 const defaultAttendanceData = [
                     { month: 'Jan', present: 142, absent: 8, leave: 6, rate: 91.0 },
                     { month: 'Feb', present: 145, absent: 6, leave: 5, rate: 93.0 },
@@ -347,19 +336,17 @@ const ReportsPage = () => {
                 ];
                 
                 if (attendanceData && attendanceData.data && Array.isArray(attendanceData.data) && attendanceData.data.length > 0) {
-                    console.log('Using API attendance data');
+
                     setAttendanceChartData(attendanceData.data);
                 } else if (attendanceData && Array.isArray(attendanceData) && attendanceData.length > 0) {
-                    console.log('Using direct array attendance data');
+
                     setAttendanceChartData(attendanceData);
                 } else {
-                    console.log('Using default attendance data');
+
                     setAttendanceChartData(defaultAttendanceData);
                 }
-                
-                console.log('Fetched data:', { mergedStats, analytics, attendanceData, reports });
-                console.log('Analytics KPIs:', analytics?.kpis);
-                
+
+
                 // Set recent reports
                 const reportsArray = reports?.reports || reports?.data || [];
                 if (Array.isArray(reportsArray) && reportsArray.length > 0) {
@@ -381,7 +368,7 @@ const ReportsPage = () => {
                     ]);
                 }
             } catch (error) {
-                console.error('Error fetching dashboard data:', error);
+
                 showNotification('Failed to load some dashboard data', 'warning');
             } finally {
                 setDataLoading(false);

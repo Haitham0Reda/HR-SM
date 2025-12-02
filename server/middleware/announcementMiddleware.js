@@ -95,7 +95,7 @@ export const createAnnouncementNotifications = async (announcement) => {
             await Notification.insertMany(notifications);
         }
     } catch (error) {
-        console.error('Error creating announcement notifications:', error);
+
     }
 };
 

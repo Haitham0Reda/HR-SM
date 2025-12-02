@@ -157,7 +157,7 @@ userSchema.pre('save', async function (next) {
             const nextId = maxId + 1;
             this.employeeId = `EMID-${nextId.toString().padStart(4, '0')}`;
         } catch (err) {
-            console.error('Error generating employeeId:', err);
+
             // If there's an error, generate a timestamp-based ID
             const timestamp = Date.now().toString().slice(-4);
             this.employeeId = `EMID-${timestamp}`;
@@ -196,7 +196,7 @@ userSchema.methods.getEffectivePermissions = async function () {
         }
     } catch (error) {
         // If database query fails, fallback to permission.system.js
-        console.error('Error fetching role from database, using fallback:', error);
+
         rolePerms = getRolePermissions(this.role);
     }
 

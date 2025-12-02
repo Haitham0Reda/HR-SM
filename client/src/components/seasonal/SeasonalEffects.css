@@ -167,12 +167,62 @@
 }
 
 /* ============================================
+   Sheep Effect
+   ============================================ */
+
+.sheep-effect-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.sheep {
+    position: absolute;
+    bottom: -100px;
+    font-size: 2em;
+    opacity: var(--decorations-opacity, 0.9);
+    animation: sheepRise linear forwards;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+    user-select: none;
+    pointer-events: none;
+}
+
+@keyframes sheepRise {
+    0% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: var(--decorations-opacity, 0.9);
+    }
+
+    50% {
+        transform: translateY(-50vh) translateX(var(--sway, 0px)) rotate(-5deg);
+    }
+
+    90% {
+        opacity: var(--decorations-opacity, 0.9);
+    }
+
+    100% {
+        transform: translateY(-110vh) translateX(calc(var(--sway, 0px) * 2)) rotate(5deg);
+        opacity: 0;
+    }
+}
+
+/* ============================================
    Performance Optimizations
    ============================================ */
 
 .snowflake,
 .crescent-moon,
-.lantern {
+.lantern,
+.sheep {
     will-change: transform, opacity;
     backface-visibility: hidden;
     -webkit-font-smoothing: antialiased;
@@ -194,6 +244,10 @@
     .lantern {
         font-size: 1.5em;
     }
+
+    .sheep {
+        font-size: 1.5em;
+    }
 }
 
 /* ============================================
@@ -204,7 +258,8 @@
 
     .snowflake,
     .crescent-moon,
-    .lantern {
+    .lantern,
+    .sheep {
         animation: none !important;
         opacity: 0 !important;
     }
@@ -224,7 +279,8 @@
     .snow-effect-container,
     .fireworks-canvas,
     .moon-effect-container,
-    .lantern-effect-container {
+    .lantern-effect-container,
+    .sheep-effect-container {
         display: none !important;
     }
 }

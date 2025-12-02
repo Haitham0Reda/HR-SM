@@ -25,7 +25,7 @@ export const validateEventDates = (req, res, next) => {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays > 30) {
-            console.warn(`Event duration is ${diffDays} days, which seems unusual`);
+
         }
     }
     next();
@@ -62,7 +62,7 @@ export const validateAttendees = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating attendees:', error);
+
         next();
     }
 };
@@ -87,7 +87,7 @@ export const createEventNotifications = async (event) => {
             await Notification.insertMany(notifications);
         }
     } catch (error) {
-        console.error('Error creating event notifications:', error);
+
     }
 };
 

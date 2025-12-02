@@ -1,5 +1,3 @@
-import React from 'react';
-
 // Generate Employee ID Card (Front and Back)
 export const generateUserIDCard = (user) => {
     try {
@@ -452,7 +450,7 @@ export const generateUserIDCard = (user) => {
 
         return true;
     } catch (error) {
-        console.error('Error generating ID card:', error);
+
         return false;
     }
 };

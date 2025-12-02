@@ -3,8 +3,7 @@ import Document from '../models/document.model.js';
 
 export const getAllDocuments = async (req, res) => {
     try {
-        console.log('getAllDocuments called');
-        console.log('User:', req.user?.username, 'Role:', req.user?.role);
+
 
         // Filter based on user role and access permissions
         let query = {};
@@ -20,7 +19,7 @@ export const getAllDocuments = async (req, res) => {
             };
             console.log('Employee query:', JSON.stringify(query));
         } else {
-            console.log('HR/Admin - showing all documents');
+
         }
 
         const documents = await Document.find(query)
@@ -29,10 +28,9 @@ export const getAllDocuments = async (req, res) => {
             .populate('department', 'name code')
             .sort({ createdAt: -1 });
 
-        console.log(`Found ${documents.length} documents`);
         res.json(documents);
     } catch (err) {
-        console.error('Error in getAllDocuments:', err);
+
         res.status(500).json({ error: err.message });
     }
 };

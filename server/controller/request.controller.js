@@ -118,7 +118,7 @@ async function sendRequestNotifications(request, action, previousStatus = null) 
             await sendPendingRequestReminder(request, employee);
         }
     } catch (error) {
-        console.error('Error sending request notifications:', error);
+
     }
 }
 
@@ -304,7 +304,7 @@ async function createRequestStatusNotification(request, employee) {
         
         await notification.save();
     } catch (error) {
-        console.error('Error creating request status notification:', error);
+
     }
 }
 

@@ -17,16 +17,13 @@ import {
     Card,
     CardContent,
     CardActions,
-    Grid,
-    Paper
+    Grid
 } from '@mui/material';
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
-    Download as DownloadIcon,
-    Lock as LockIcon,
-    LockOpen as LockOpenIcon
+    Download as DownloadIcon
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -76,7 +73,7 @@ const HardCopiesPage = () => {
             const data = await hardCopyService.getAll();
             setHardCopies(data);
         } catch (error) {
-            console.error('Error fetching hard copies:', error);
+
             showNotification('Failed to fetch hard copies', 'error');
             setHardCopies([]);
         } finally {
@@ -133,7 +130,7 @@ const HardCopiesPage = () => {
             handleCloseDialog();
             fetchHardCopies();
         } catch (error) {
-            console.error('Submit error:', error);
+
             showNotification('Operation failed', 'error');
         }
     };

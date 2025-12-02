@@ -3,18 +3,16 @@ import HardCopy from '../models/hardcopy.model.js';
 
 export const getAllHardCopies = async (req, res) => {
     try {
-        console.log('getAllHardCopies called');
-        console.log('User:', req.user?.username, 'Role:', req.user?.role);
+
 
         // All users can see all hard copies (no filtering)
         const hardCopies = await HardCopy.find({})
             .populate('uploadedBy', 'name username email profile')
             .sort({ createdAt: -1 });
 
-        console.log(`Found ${hardCopies.length} hard copies`);
         res.json(hardCopies);
     } catch (err) {
-        console.error('Error in getAllHardCopies:', err);
+
         res.status(500).json({ error: err.message });
     }
 };

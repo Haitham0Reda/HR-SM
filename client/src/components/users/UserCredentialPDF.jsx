@@ -1,5 +1,3 @@
-import React from 'react';
-
 // Generate a random temporary password
 const generateTempPassword = (userId) => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
@@ -410,7 +408,7 @@ export const generateUserCredentialPDF = (user, tempPassword = null) => {
 
         return true;
     } catch (error) {
-        console.error('Error generating credential:', error);
+
         return false;
     }
 };

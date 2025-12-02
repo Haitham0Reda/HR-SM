@@ -213,7 +213,6 @@ describe('ResignedEmployee Model', () => {
     };
 
     // Debug: Log the resignedEmployee to see its state
-    console.log('ResignedEmployee state:', resignedEmployee.isLocked);
 
     try {
       await resignedEmployee.addPenalty(penaltyData, hrUser._id);

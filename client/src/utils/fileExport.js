@@ -43,7 +43,7 @@ export const createZipFromFiles = async (files, zipName = 'download.zip') => {
         
         return { success: true };
     } catch (error) {
-        console.error('Error creating ZIP:', error);
+
         return { success: false, error: error.message };
     }
 };
@@ -78,7 +78,7 @@ export const exportReportsAsZip = async (reports, zipName = 'reports.zip') => {
         
         return { success: true };
     } catch (error) {
-        console.error('Error exporting reports:', error);
+
         return { success: false, error: error.message };
     }
 };
@@ -110,7 +110,7 @@ export const exportUserDataAsZip = async (users, zipName = 'users.zip') => {
         
         return { success: true };
     } catch (error) {
-        console.error('Error exporting user data:', error);
+
         return { success: false, error: error.message };
     }
 };
@@ -141,7 +141,7 @@ export const exportAttendanceAsZip = async (attendanceData, zipName = 'attendanc
         
         return { success: true };
     } catch (error) {
-        console.error('Error exporting attendance:', error);
+
         return { success: false, error: error.message };
     }
 };
@@ -155,7 +155,7 @@ export const downloadFile = (content, fileName, mimeType = 'text/plain') => {
         downloadBlob(blob, fileName);
         return { success: true };
     } catch (error) {
-        console.error('Error downloading file:', error);
+
         return { success: false, error: error.message };
     }
 };

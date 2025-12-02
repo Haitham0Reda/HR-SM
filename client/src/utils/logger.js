@@ -29,12 +29,12 @@ const sendLogToBackend = async (level, message, meta = {}) => {
         });
     } catch (error) {
         // Silently fail - don't want logging errors to break the app
-        console.error('Failed to send log to backend:', error);
+
     }
 };
 
 // Main logger function
-const logger = (level, message, meta = {}) => {
+const logMessage = (level, message, meta = {}) => {
     // Always log to console in development
     if (process.env.NODE_ENV === 'development') {
         console[level](message, meta);
@@ -48,20 +48,20 @@ const logger = (level, message, meta = {}) => {
 
 // Exported logging functions
 export const logInfo = (message, meta = {}) => {
-    logger(LOG_LEVELS.INFO, message, meta);
+    logMessage(LOG_LEVELS.INFO, message, meta);
 };
 
 export const logWarn = (message, meta = {}) => {
-    logger(LOG_LEVELS.WARN, message, meta);
+    logMessage(LOG_LEVELS.WARN, message, meta);
 };
 
 export const logError = (message, meta = {}) => {
-    logger(LOG_LEVELS.ERROR, message, meta);
+    logMessage(LOG_LEVELS.ERROR, message, meta);
 };
 
 export const logDebug = (message, meta = {}) => {
     if (process.env.NODE_ENV === 'development') {
-        logger(LOG_LEVELS.DEBUG, message, meta);
+        logMessage(LOG_LEVELS.DEBUG, message, meta);
     }
 };
 
@@ -100,7 +100,7 @@ export const setupGlobalErrorHandler = () => {
     });
 };
 
-export default {
+const logger = {
     info: logInfo,
     warn: logWarn,
     error: logError,
@@ -109,3 +109,5 @@ export default {
     apiCall: logApiCall,
     setupGlobalErrorHandler
 };
+
+export default logger;

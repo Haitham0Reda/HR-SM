@@ -67,7 +67,7 @@ const VacationsPage = () => {
             const data = await userService.getAll();
             setUsers(data);
         } catch (error) {
-            console.error('Failed to fetch users:', error);
+
         }
     };
 
@@ -158,64 +158,66 @@ const VacationsPage = () => {
 
     const columns = [
         {
-            field: 'user',
-            headerName: 'Employee',
-            width: 200,
-            renderCell: (params) => params.row.user?.personalInfo?.fullName || params.row.user?.username || 'N/A'
+            id: 'user',
+            label: 'Employee',
+            render: (row) => row.user?.personalInfo?.fullName || row.user?.username || 'N/A'
         },
-        { field: 'year', headerName: 'Year', width: 100 },
+        { 
+            id: 'year', 
+            label: 'Year',
+            render: (row) => row.year
+        },
         {
-            field: 'type',
-            headerName: 'Type',
-            width: 120,
-            renderCell: (params) => (
+            id: 'type',
+            label: 'Type',
+            render: (row) => (
                 <Chip 
-                    label={params.row.type || 'annual'} 
+                    label={row.type || 'annual'} 
                     size="small" 
                     variant="outlined" 
                 />
             )
         },
         {
-            field: 'totalDays',
-            headerName: 'Total Days',
-            width: 120,
-            renderCell: (params) => `${params.row.totalDays} days`
+            id: 'totalDays',
+            label: 'Total Days',
+            render: (row) => `${row.totalDays} days`
         },
         {
-            field: 'carryOverDays',
-            headerName: 'Carry Over',
-            width: 120,
-            renderCell: (params) => `${params.row.carryOverDays || 0} days`
+            id: 'carryOverDays',
+            label: 'Carry Over',
+            render: (row) => `${row.carryOverDays || 0} days`
         },
         {
-            field: 'usedDays',
-            headerName: 'Used Days',
-            width: 120,
-            renderCell: (params) => `${params.row.usedDays} days`
+            id: 'usedDays',
+            label: 'Used Days',
+            render: (row) => `${row.usedDays} days`
         },
         {
-            field: 'remainingDays',
-            headerName: 'Remaining',
-            width: 120,
-            renderCell: (params) => (
+            id: 'remainingDays',
+            label: 'Remaining',
+            render: (row) => (
                 <Chip
-                    label={`${params.row.remainingDays} days`}
-                    color={params.row.remainingDays > 5 ? 'success' : params.row.remainingDays > 0 ? 'warning' : 'error'}
+                    label={`${row.remainingDays} days`}
+                    color={row.remainingDays > 5 ? 'success' : row.remainingDays > 0 ? 'warning' : 'error'}
                     size="small"
                 />
             )
         },
-        { field: 'notes', headerName: 'Notes', width: 200 },
+        { 
+            id: 'notes', 
+            label: 'Notes',
+            render: (row) => row.notes || '-'
+        },
         {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 120,
-            renderCell: (params) => (
+            id: 'actions',
+            label: 'Actions',
+            align: 'center',
+            render: (row) => (
                 <Box>
                     <IconButton
                         size="small"
-                        onClick={() => handleOpenDialog(params.row)}
+                        onClick={() => handleOpenDialog(row)}
                         color="primary"
                     >
                         <EditIcon fontSize="small" />
@@ -223,7 +225,7 @@ const VacationsPage = () => {
                     <IconButton
                         size="small"
                         onClick={() => {
-                            setSelectedVacation(params.row);
+                            setSelectedVacation(row);
                             setOpenConfirm(true);
                         }}
                         color="error"

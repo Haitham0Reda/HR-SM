@@ -43,7 +43,7 @@ export const getAllSurveys = async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Error in getAllSurveys:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -56,17 +56,12 @@ export const getEmployeeSurveys = async (req, res) => {
         const surveys = await Survey.findActiveSurveysForUser(req.user._id);
 
         console.log(`[getEmployeeSurveys] User: ${req.user.username} (${req.user._id})`);
-        console.log(`[getEmployeeSurveys] Found ${surveys.length} active surveys`);
 
         // Map surveys with completion status
         const surveysWithStatus = surveys.map(survey => {
             const hasResponded = survey.hasUserResponded(req.user._id);
             const response = hasResponded ? survey.getUserResponse(req.user._id) : null;
 
-            console.log(`[getEmployeeSurveys] Survey: ${survey.title}`);
-            console.log(`  - hasResponded: ${hasResponded}`);
-            console.log(`  - isComplete: ${response?.isComplete || false}`);
-            console.log(`  - submittedAt: ${response?.submittedAt}`);
 
             return {
                 _id: survey._id,
@@ -235,11 +230,6 @@ export const deleteSurvey = async (req, res) => {
  */
 export const submitSurveyResponse = async (req, res) => {
     try {
-        console.log('Received survey submission request:', {
-            surveyId: req.params.id,
-            body: req.body,
-            userId: req.user._id
-        });
 
         const { responses, isAnonymous = false } = req.body;
 
@@ -267,15 +257,11 @@ export const submitSurveyResponse = async (req, res) => {
             return res.status(400).json({ error: 'Anonymous responses are not allowed for this survey' });
         }
 
-        console.log('Adding response with answers:', responses);
-
         // Add response with metadata - pass responses as the answers parameter
         await survey.addResponse(req.user._id, responses, isAnonymous, {
             ipAddress: req.ip,
             userAgent: req.get('user-agent')
         });
-
-        console.log('Response added successfully. Total responses:', survey.stats.totalResponses);
 
         res.status(201).json({
             success: true,
@@ -283,7 +269,7 @@ export const submitSurveyResponse = async (req, res) => {
             totalResponses: survey.stats.totalResponses
         });
     } catch (err) {
-        console.error('Survey submission error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -331,7 +317,7 @@ export const publishSurvey = async (req, res) => {
             try {
                 await sendSurveyAssignmentNotifications(survey._id);
             } catch (notifError) {
-                console.error('Error sending survey assignment notifications:', notifError);
+
                 // Continue even if notifications fail
             }
         }

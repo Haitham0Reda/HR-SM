@@ -58,7 +58,7 @@ export const checkDuplicatePayroll = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking duplicate payroll:', error);
+
         next();
     }
 };

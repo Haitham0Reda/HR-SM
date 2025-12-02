@@ -277,7 +277,7 @@ export const checkReportAccess = async (req, res, next) => {
         req.report = report;
         next();
     } catch (error) {
-        console.error('Error checking report access:', error);
+
         return res.status(500).json({
             success: false,
             message: 'Error checking report access'

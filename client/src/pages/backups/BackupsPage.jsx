@@ -16,7 +16,6 @@ import {
     DialogContent,
     DialogActions,
     Paper,
-    Divider,
     Tooltip,
     Alert,
     Stack,
@@ -25,8 +24,6 @@ import {
 } from '@mui/material';
 import {
     Backup,
-    CloudDownload,
-    Restore,
     Schedule,
     Storage,
     CheckCircle,
@@ -40,7 +37,6 @@ import {
     ToggleOff,
     Close
 } from '@mui/icons-material';
-import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import { useNotification } from '../../context/NotificationContext';
 import backupService from '../../services/backup.service';
@@ -79,17 +75,14 @@ const BackupsPage = () => {
             setLoading(true);
             const response = await backupService.getAll();
             
-            console.log('Fetch backups response:', response); // Debug log
-            console.log('Response type:', typeof response, 'Is array:', Array.isArray(response));
-            
             // Handle response structure from backend
             if (response && response.success && response.backups) {
-                console.log('Setting backups from response.backups:', response.backups);
+
                 // Filter out any invalid entries
                 const validBackups = Array.isArray(response.backups) 
                     ? response.backups.filter(b => b && typeof b === 'object' && b._id)
                     : [];
-                console.log('Valid backups after filtering:', validBackups);
+
                 setBackups(validBackups);
                 
                 // Calculate statistics from backups
@@ -113,17 +106,15 @@ const BackupsPage = () => {
                 setStatistics(stats);
             } else if (Array.isArray(response)) {
                 // Fallback for direct array response
-                console.log('Setting backups from array response:', response);
+
                 const validBackups = response.filter(b => b && typeof b === 'object' && b._id);
-                console.log('Valid backups after filtering:', validBackups);
+
                 setBackups(validBackups);
             } else {
-                console.warn('Unexpected response format:', response);
-                console.warn('Response keys:', response ? Object.keys(response) : 'null');
                 setBackups([]);
             }
         } catch (error) {
-            console.error('Fetch backups error:', error);
+
             showNotification(error.response?.data?.error || 'Failed to fetch backups', 'error');
         } finally {
             setLoading(false);
@@ -137,7 +128,7 @@ const BackupsPage = () => {
                 setExecutions(response.history);
             }
         } catch (error) {
-            console.error('Fetch execution history error:', error);
+
             showNotification('Failed to fetch execution history', 'error');
         }
     };
@@ -175,8 +166,6 @@ const BackupsPage = () => {
                 }
             });
             
-            console.log('Create backup response:', response); // Debug log
-            
             // Check if response has success field or if response exists (successful API call)
             if (response && (response.success || response.backup)) {
                 const backupId = response.backup?._id || response.backup?.id;
@@ -193,7 +182,7 @@ const BackupsPage = () => {
                             showNotification('Backup created but execution may have failed', 'warning');
                         }
                     } catch (execError) {
-                        console.error('Execute backup error:', execError);
+
                         showNotification('Backup created but failed to execute automatically', 'warning');
                     }
                     
@@ -205,15 +194,15 @@ const BackupsPage = () => {
                 }
             } else if (response) {
                 // Response exists but format is unexpected - still try to refresh
-                console.warn('Unexpected create response format:', response);
+
                 showNotification('Backup created but response format unexpected', 'warning');
                 await fetchBackups();
             } else {
                 throw new Error('No response received from server');
             }
         } catch (error) {
-            console.error('Create backup error:', error);
-            console.error('Error details:', error.response);
+
+
             showNotification(error.response?.data?.error || error.message || 'Failed to create backup', 'error');
         } finally {
             setLoading(false);
@@ -233,7 +222,7 @@ const BackupsPage = () => {
                 setTimeout(() => fetchBackups(), 2000);
             }
         } catch (error) {
-            console.error('Execute backup error:', error);
+
             showNotification(error.response?.data?.error || 'Failed to execute backup', 'error');
         } finally {
             setLoading(false);
@@ -264,7 +253,7 @@ const BackupsPage = () => {
                 await fetchBackups();
             }
         } catch (error) {
-            console.error('Toggle active error:', error);
+
             showNotification(error.response?.data?.error || 'Failed to toggle backup status', 'error');
         }
     };
@@ -290,7 +279,7 @@ const BackupsPage = () => {
                 await fetchBackups();
             }
         } catch (error) {
-            console.error('Update schedule error:', error);
+
             showNotification(error.response?.data?.error || 'Failed to update schedule', 'error');
         }
     };

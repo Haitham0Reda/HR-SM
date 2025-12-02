@@ -25,17 +25,16 @@ export function scheduleTask(name, task, interval) {
     // Schedule the task
     const intervalId = setInterval(async () => {
         try {
-            console.log(`⏰ Running scheduled task: ${name}`);
+
             await task();
         } catch (error) {
-            console.error(`Error in scheduled task ${name}:`, error);
+
         }
     }, interval);
     
     // Store the interval ID
     intervals.set(name, intervalId);
-    
-    console.log(`✅ Scheduled task "${name}" to run every ${interval / 1000} seconds`);
+
 }
 
 /**
@@ -46,7 +45,7 @@ export function stopTask(name) {
     if (intervals.has(name)) {
         clearInterval(intervals.get(name));
         intervals.delete(name);
-        console.log(`🛑 Stopped scheduled task: ${name}`);
+
     }
 }
 
@@ -56,7 +55,7 @@ export function stopTask(name) {
 export function stopAllTasks() {
     for (const [name, intervalId] of intervals) {
         clearInterval(intervalId);
-        console.log(`🛑 Stopped scheduled task: ${name}`);
+
     }
     intervals.clear();
 }
@@ -65,8 +64,7 @@ export function stopAllTasks() {
  * Start all scheduled tasks for the application
  */
 export function startAllScheduledTasks() {
-    console.log('🚀 Starting scheduled tasks...');
-    
+
     // Schedule pending request reminders to run every hour (3600000 ms)
     scheduleTask('pending-request-reminders', sendPendingRequestReminders, 3600000);
     

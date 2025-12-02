@@ -6,7 +6,6 @@ import {
     CardContent,
     TextField,
     Typography,
-    Grid,
     Alert,
     Chip,
     Divider
@@ -39,27 +38,15 @@ const VacationRequestPage = () => {
     const fetchMyRequests = async () => {
         try {
             setLoading(true);
-            console.log('=== FETCHING LEAVE REQUESTS ===');
-            console.log('User ID:', user._id);
-            console.log('User object:', user);
 
             const data = await vacationService.getAll({ user: user._id });
-            console.log('Raw data received:', data);
-            console.log('Data type:', typeof data);
-            console.log('Is array?', Array.isArray(data));
 
             // Data is already the array from the interceptor
             const requests = Array.isArray(data) ? data : (data.data || []);
-            console.log('Processed requests:', requests);
-            console.log('Number of requests:', requests.length);
 
             setMyRequests(requests);
         } catch (error) {
-            console.error('=== FETCH ERROR ===');
-            console.error('Error object:', error);
-            console.error('Error type:', typeof error);
             const errorMessage = error?.message || (typeof error === 'string' ? error : 'Failed to fetch vacation requests');
-            console.error('Error message:', errorMessage);
             showNotification(errorMessage, 'error');
         } finally {
             setLoading(false);
@@ -136,8 +123,8 @@ const VacationRequestPage = () => {
             setSelectedFile(null);
             fetchMyRequests();
         } catch (error) {
-            console.error('Submit error:', error);
-            console.error('Error response:', error.response);
+
+
             const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to submit request';
             const errorDetails = error.response?.data?.details;
 

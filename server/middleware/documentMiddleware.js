@@ -36,7 +36,7 @@ export const validateDocumentEmployee = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating employee:', error);
+
         next();
     }
 };
@@ -95,7 +95,7 @@ export const checkDocumentAccess = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking document access:', error);
+
         next();
     }
 };

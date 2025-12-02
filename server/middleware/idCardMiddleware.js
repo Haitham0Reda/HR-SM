@@ -58,7 +58,7 @@ export const checkActiveIDCard = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking active ID card:', error);
+
         next();
     }
 };
@@ -80,7 +80,7 @@ export const generateCardNumber = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error generating card number:', error);
+
         next();
     }
 };
@@ -122,7 +122,7 @@ export const validateBatchCards = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating batch cards:', error);
+
         return res.status(500).json({
             success: false,
             message: 'Error validating batch cards'

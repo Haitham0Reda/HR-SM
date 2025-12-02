@@ -8,7 +8,7 @@ const surveyService = {
     update: async (id, data) => await api.put(`/surveys/${id}`, data),
     delete: async (id) => await api.delete(`/surveys/${id}`),
     submit: async (id, responses, isAnonymous = false) => {
-        console.log('Submitting survey response:', { id, responses, isAnonymous });
+
         return await api.post(`/surveys/${id}/respond`, { responses, isAnonymous });
     },
     getResults: async (id) => await api.get(`/surveys/${id}/statistics`),

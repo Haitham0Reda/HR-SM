@@ -75,16 +75,12 @@ const DocumentsPage = () => {
     const fetchDocuments = async () => {
         try {
             setLoading(true);
-            console.log('Current user:', user);
-            console.log('User role:', user?.role);
-            console.log('Is HR/Admin:', canManage);
-            console.log('Fetching documents from API...');
+
+
             const data = await documentService.getAll();
-            console.log('API Response:', data);
-            console.log('Is Array?', Array.isArray(data));
-            console.log('Document count:', data?.length);
+
             if (data && data.length > 0) {
-                console.log('First document:', data[0]);
+
             }
 
             // Filter to show only current user's documents if not HR/Admin
@@ -100,9 +96,8 @@ const DocumentsPage = () => {
 
             setDocuments(filteredData);
         } catch (error) {
-            console.error('Error fetching documents:', error);
-            console.error('Error type:', typeof error);
-            console.error('Error message:', error?.message || error);
+
+
             showNotification(typeof error === 'string' ? error : 'Failed to fetch documents', 'error');
             setDocuments([]);
         } finally {
@@ -115,7 +110,7 @@ const DocumentsPage = () => {
             const data = await userService.getAll();
             setUsers(data);
         } catch (error) {
-            console.error('Failed to fetch users:', error);
+
         }
     };
 
@@ -162,7 +157,7 @@ const DocumentsPage = () => {
 
     const handleSubmit = async () => {
         try {
-            console.log('Submitting document:', formData);
+
             if (selectedDocument) {
                 await documentService.update(selectedDocument._id, formData);
                 showNotification('Document updated successfully', 'success');
@@ -173,7 +168,7 @@ const DocumentsPage = () => {
             handleCloseDialog();
             fetchDocuments();
         } catch (error) {
-            console.error('Submit error:', error);
+
             showNotification(typeof error === 'string' ? error : 'Operation failed', 'error');
         }
     };

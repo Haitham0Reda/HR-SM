@@ -44,7 +44,7 @@ export const getAllSickLeaves = async (req, res) => {
 
         res.json(sickLeaves);
     } catch (err) {
-        console.error('Get sick leaves error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -65,7 +65,7 @@ export const getPendingDoctorReview = async (req, res) => {
 
         res.json(sickLeaves);
     } catch (err) {
-        console.error('Get pending doctor review error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -75,7 +75,7 @@ export const getPendingDoctorReview = async (req, res) => {
  */
 export const createSickLeave = async (req, res) => {
     try {
-        console.log('=== CREATE SICK LEAVE REQUEST ===');
+
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
         // Handle file uploads for medical documents
@@ -95,8 +95,6 @@ export const createSickLeave = async (req, res) => {
         const sickLeave = new SickLeave(req.body);
         const savedSickLeave = await sickLeave.save();
 
-        console.log('Sick leave saved successfully:', savedSickLeave._id);
-
         // Create notification for supervisor
         await createSickLeaveNotification(savedSickLeave, 'submitted');
 
@@ -105,8 +103,8 @@ export const createSickLeave = async (req, res) => {
 
         res.status(201).json(savedSickLeave);
     } catch (err) {
-        console.error('Create sick leave error:', err);
-        console.error('Error stack:', err.stack);
+
+
         res.status(400).json({
             error: err.message,
             details: err.errors ? Object.keys(err.errors).map(key => ({
@@ -136,7 +134,7 @@ export const getSickLeaveById = async (req, res) => {
 
         res.json(sickLeave);
     } catch (err) {
-        console.error('Get sick leave by ID error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -166,7 +164,7 @@ export const updateSickLeave = async (req, res) => {
 
         res.json(sickLeave);
     } catch (err) {
-        console.error('Update sick leave error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -191,7 +189,7 @@ export const deleteSickLeave = async (req, res) => {
         await SickLeave.findByIdAndDelete(req.params.id);
         res.json({ message: 'Sick leave deleted successfully' });
     } catch (err) {
-        console.error('Delete sick leave error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -247,7 +245,7 @@ export const approveBySupervisor = async (req, res) => {
 
         res.json(sickLeave);
     } catch (err) {
-        console.error('Approve by supervisor error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -299,7 +297,7 @@ export const approveByDoctor = async (req, res) => {
 
         res.json(sickLeave);
     } catch (err) {
-        console.error('Approve by doctor error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -372,7 +370,7 @@ export const rejectBySupervisor = async (req, res) => {
 
         res.json(sickLeave);
     } catch (err) {
-        console.error('Reject by supervisor error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -444,7 +442,7 @@ export const rejectByDoctor = async (req, res) => {
 
         res.json(sickLeave);
     } catch (err) {
-        console.error('Reject by doctor error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -520,7 +518,7 @@ async function createSickLeaveNotification(sickLeave, type) {
             await sickLeave.save();
         }
     } catch (error) {
-        console.error('Error creating sick leave notification:', error);
+
     }
 }
 
@@ -531,13 +529,13 @@ async function sendSickLeaveRequestNotification(sickLeave) {
     try {
         const employee = await User.findById(sickLeave.employee).select('username email personalInfo');
         if (!employee) {
-            console.error('Employee not found for sick leave request');
+
             return { success: false, error: 'Employee not found' };
         }
 
         const manager = await getEmployeeManager(employee);
         if (!manager || !manager.email) {
-            console.log('⚠️  No manager found or manager has no email');
+
             return { success: false, error: 'Manager not found or has no email' };
         }
 
@@ -664,7 +662,7 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-        console.error('Error sending sick leave request notification:', error);
+
         return { success: false, error: error.message };
     }
 }
@@ -676,7 +674,7 @@ async function sendSickLeaveStatusUpdateNotification(sickLeave, statusType) {
     try {
         const employee = await User.findById(sickLeave.employee).select('username email personalInfo');
         if (!employee || !employee.email) {
-            console.error('Employee not found or has no email');
+
             return { success: false, error: 'Employee not found or has no email' };
         }
 
@@ -815,7 +813,7 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-        console.error('Error sending sick leave status update notification:', error);
+
         return { success: false, error: error.message };
     }
 }

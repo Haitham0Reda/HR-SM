@@ -23,7 +23,7 @@ const RequestDetailsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const [request, setRequest] = useState(null);
+    const [request] = useState(null);
     const [loading, setLoading] = useState(true);
     const { showNotification } = useNotification();
 
@@ -40,7 +40,7 @@ const RequestDetailsPage = () => {
             // setRequest(data);
             showNotification('This page needs refactoring after legacy leave removal', 'warning');
         } catch (error) {
-            console.error('Failed to fetch request details:', error);
+
             showNotification('Failed to fetch request details', 'error');
         } finally {
             setLoading(false);

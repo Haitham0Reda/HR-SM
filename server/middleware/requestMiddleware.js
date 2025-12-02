@@ -46,7 +46,7 @@ export const validateRequestEmployee = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating employee:', error);
+
         next();
     }
 };
@@ -86,7 +86,7 @@ export const validateReviewer = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating reviewer:', error);
+
         next();
     }
 };
@@ -142,7 +142,7 @@ export const createRequestNotification = async (request, previousStatus) => {
             await Notification.create(notificationData);
         }
     } catch (error) {
-        console.error('Error creating request notification:', error);
+
     }
 };
 

@@ -5,8 +5,6 @@ import {
     TextField,
     Typography,
     MenuItem,
-    Grid,
-    Paper,
     Alert
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
@@ -60,14 +58,13 @@ const CreateForgetCheckPage = () => {
                 reason: formData.reason.trim()
             };
 
-            console.log('Submitting forget check request:', submitData);
             await forgetCheckService.create(submitData);
             showNotification('Request created successfully', 'success');
 
             window.dispatchEvent(new CustomEvent('notificationUpdate'));
             navigate('/app/forget-checks');
         } catch (error) {
-            console.error('Error creating forget check:', error);
+
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }

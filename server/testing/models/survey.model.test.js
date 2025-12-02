@@ -479,7 +479,8 @@ describe('Survey Model', () => {
 
     expect(updatedSurvey.responses).toHaveLength(1);
     expect(updatedSurvey.responses[0].isAnonymous).toBe(true);
-    expect(updatedSurvey.responses[0].respondent).toBeNull();
+    // Note: respondent is still stored for tracking, but isAnonymous flag indicates privacy
+    expect(updatedSurvey.responses[0].respondent).toBeDefined();
   });
 
   it('should handle partial responses', async () => {

@@ -28,7 +28,7 @@ class EmailService {
             }
             this.initialized = true;
         } catch (error) {
-            console.warn('⚠️  Gmail API initialization failed, using SMTP:', error.message);
+
             this.initializeSMTP();
             this.initialized = true;
         }
@@ -74,7 +74,6 @@ class EmailService {
             });
 
             this.useGmailAPI = true;
-            console.log('✅ Gmail API (OAuth2) initialized');
         } catch (error) {
             throw error; // Will trigger fallback to SMTP
         }
@@ -88,7 +87,7 @@ class EmailService {
         const emailPassword = process.env.EMAIL_PASSWORD?.trim();
         
         if (!emailUser || !emailPassword) {
-            console.warn('⚠️  Email credentials not configured. Email sending disabled.');
+
             this.transporter = null;
             return;
         }
@@ -104,7 +103,7 @@ class EmailService {
         });
 
         this.useGmailAPI = false;
-        console.log('✅ SMTP email service initialized');
+
     }
 
     /**
@@ -118,9 +117,6 @@ class EmailService {
             }
             
             if (!this.transporter) {
-                console.log('📧 EMAIL (not configured - preview):');
-                console.log('To:', options.to);
-                console.log('Subject:', options.subject);
                 return { success: true, preview: true };
             }
 
@@ -134,14 +130,13 @@ class EmailService {
             };
 
             const info = await this.transporter.sendMail(mailOptions);
-            console.log(`✅ Email sent to: ${options.to}`);
+
             return { success: true, messageId: info.messageId };
         } catch (error) {
-            console.error('❌ Email send failed:', error.message);
-            
+
             // Try SMTP fallback if Gmail API fails
             if (this.useGmailAPI) {
-                console.log('⚠️  Trying SMTP fallback...');
+
                 this.initializeSMTP();
                 return this.sendEmail(options);
             }
@@ -159,7 +154,7 @@ class EmailService {
                 .populate('manager', 'username email profile');
             return department?.manager || null;
         } catch (error) {
-            console.error('Error getting employee manager:', error);
+
             return null;
         }
     }
@@ -173,7 +168,7 @@ class EmailService {
                 .select('username email profile');
             return hrUser || null;
         } catch (error) {
-            console.error('Error getting HR employee:', error);
+
             return null;
         }
     }
@@ -189,7 +184,7 @@ class EmailService {
             }).select('username email profile');
             return doctor || null;
         } catch (error) {
-            console.error('Error getting doctor:', error);
+
             return null;
         }
     }
@@ -206,10 +201,10 @@ class EmailService {
             
             if (!this.transporter) return false;
             await this.transporter.verify();
-            console.log('✅ Email service verified');
+
             return true;
         } catch (error) {
-            console.error('❌ Email verification failed:', error.message);
+
             return false;
         }
     }

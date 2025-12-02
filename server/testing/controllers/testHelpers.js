@@ -1,6 +1,7 @@
 import Department from '../../models/department.model.js';
 import Position from '../../models/position.model.js';
 import User from '../../models/user.model.js';
+import School from '../../models/school.model.js';
 
 export const createMockResponse = () => ({
     statusCode: 200,
@@ -53,7 +54,7 @@ export const createTestUser = async (departmentId, positionId, overrides = {}) =
         role: 'employee',
         department: departmentId,
         position: positionId,
-        profile: {
+        personalInfo: {
             firstName: 'Test',
             lastName: 'User',
             phoneNumber: '1234567890',
@@ -65,8 +66,36 @@ export const createTestUser = async (departmentId, positionId, overrides = {}) =
     });
 };
 
+export const createTestSchool = async (overrides = {}) => {
+    return await School.create({
+        name: 'Test School',
+        code: 'TESTSCH',
+        address: {
+            street: '123 Test St',
+            city: 'Test City',
+            state: 'Test State',
+            zipCode: '12345',
+            country: 'Test Country'
+        },
+        contact: {
+            phone: '555-0123',
+            email: 'test@testschool.edu',
+            website: 'https://testschool.edu'
+        },
+        establishedDate: new Date('2000-01-01'),
+        type: 'elementary',
+        capacity: {
+            students: 500,
+            staff: 50
+        },
+        status: 'active',
+        ...overrides
+    });
+};
+
 export const cleanupTestData = async () => {
     await User.deleteMany({});
     await Position.deleteMany({});
     await Department.deleteMany({});
+    await School.deleteMany({});
 };

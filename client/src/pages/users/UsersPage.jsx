@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import {
     Box,
     Button,
@@ -14,7 +13,6 @@ import {
     Chip,
     MenuItem,
     Card,
-    CardHeader,
     CardContent,
     InputAdornment,
     Fade,
@@ -33,9 +31,7 @@ import {
     Person as PersonIcon,
     FilterList as FilterListIcon,
     Clear as ClearIcon,
-    TrendingUp as TrendingUpIcon,
     Category as CategoryIcon,
-    Email as EmailIcon,
     AdminPanelSettings as AdminIcon,
     Visibility as VisibilityIcon,
     Key as KeyIcon,
@@ -46,7 +42,6 @@ import {
     Download as DownloadIcon,
     PhotoLibrary as PhotoLibraryIcon,
     CheckCircle as CheckCircleIcon,
-    Cancel as CancelIcon,
     BeachAccess as BeachAccessIcon,
     ExitToApp as ExitToAppIcon,
     Block as BlockIcon,
@@ -128,14 +123,14 @@ const UsersPage = () => {
 
             // Show detailed errors if any
             if (response.errors && response.errors.length > 0) {
-                console.log('Upload errors:', response.errors);
+
             }
 
             setOpenBulkUpload(false);
             setUploadFile(null);
             fetchUsers();
         } catch (error) {
-            console.error('Bulk upload error:', error);
+
             showNotification(error.response?.data?.error || 'Failed to upload file', 'error');
         } finally {
             setUploading(false);
@@ -164,8 +159,6 @@ const UsersPage = () => {
                 return;
             }
 
-            console.log('Downloading photos for', userIds.length, 'users with photos');
-
             // Create download URL with token in query parameter
             const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
             const url = `${apiBaseUrl}/users/bulk-download-photos?token=${encodeURIComponent(token)}&userIds=${encodeURIComponent(JSON.stringify(userIds))}`;
@@ -180,7 +173,7 @@ const UsersPage = () => {
             }, 1000);
 
         } catch (error) {
-            console.error('Bulk download error:', error);
+
             showNotification(error.message || 'Failed to download photos', 'error');
             setDownloadingPhotos(false);
         }
@@ -942,7 +935,7 @@ const UsersPage = () => {
                                                         }
                                                     } catch (error) {
                                                         // Password not available, show dialog
-                                                        console.log('Plain password not available, showing dialog');
+
                                                     }
 
                                                     // Show dialog if password not available
@@ -1158,7 +1151,7 @@ const UsersPage = () => {
                                     showNotification('Failed to generate credentials PDF', 'error');
                                 }
                             } catch (error) {
-                                console.error('PDF generation error:', error);
+
                                 showNotification('Error generating credentials PDF', 'error');
                             }
                         }}

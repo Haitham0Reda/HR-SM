@@ -51,7 +51,7 @@ const MissionForm = () => {
             const data = await departmentService.getAll();
             setDepartments(Array.isArray(data) ? data : []);
         } catch (error) {
-            console.error('Failed to fetch departments:', error);
+
         }
     };
 
@@ -70,7 +70,7 @@ const MissionForm = () => {
                 reason: mission.reason || '',
             });
         } catch (error) {
-            console.error('Error fetching mission:', error);
+
             showNotification('Failed to load mission', 'error');
             navigate('/app/missions');
         } finally {
@@ -127,11 +127,19 @@ const MissionForm = () => {
         }
 
         try {
+            // Calculate duration in days
+            const start = new Date(formData.startDate);
+            const end = new Date(formData.endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
+
             const submitData = {
+                employee: user._id, // Add the current user as the employee
                 location: formData.location.trim(),
                 purpose: formData.purpose.trim(),
                 startDate: formData.startDate,
                 endDate: formData.endDate,
+                duration: diffDays, // Add calculated duration
             };
 
             // Add optional fields if provided
@@ -151,7 +159,7 @@ const MissionForm = () => {
 
             navigate('/app/missions');
         } catch (error) {
-            console.error('Error submitting mission:', error);
+
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }

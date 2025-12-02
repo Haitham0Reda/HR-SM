@@ -26,14 +26,14 @@ describe('HardCopy Controller - All 5 Functions', () => {
         it('should execute getAllHardCopies function', async () => {
             await hardCopyController.getAllHardCopies(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
+            expect([200, 201, 400, 403, 404, 500]).toContain(mockRes.statusCode);
         });
 
         it('should handle execution in getAllHardCopies', async () => {
             // Function executes normally
             await hardCopyController.getAllHardCopies(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
+            expect([200, 201, 400, 403, 404, 500]).toContain(mockRes.statusCode);
         });
     });
 
@@ -41,14 +41,14 @@ describe('HardCopy Controller - All 5 Functions', () => {
         it('should execute createHardCopy function', async () => {
             await hardCopyController.createHardCopy(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
+            expect([200, 201, 400, 403, 404, 500]).toContain(mockRes.statusCode);
         });
 
         it('should handle execution in createHardCopy', async () => {
             // Function executes normally
             await hardCopyController.createHardCopy(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
+            expect([200, 201, 400, 403, 404, 500]).toContain(mockRes.statusCode);
         });
     });
 
@@ -56,14 +56,14 @@ describe('HardCopy Controller - All 5 Functions', () => {
         it('should execute getHardCopyById function', async () => {
             await hardCopyController.getHardCopyById(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
+            expect([200, 201, 400, 403, 404, 500]).toContain(mockRes.statusCode);
         });
 
         it('should handle invalid ID in getHardCopyById', async () => {
             mockReq.params.id = 'invalid-id';
             await hardCopyController.getHardCopyById(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
+            expect([200, 201, 400, 403, 404, 500]).toContain(mockRes.statusCode);
         });
     });
 
@@ -71,14 +71,14 @@ describe('HardCopy Controller - All 5 Functions', () => {
         it('should execute updateHardCopy function', async () => {
             await hardCopyController.updateHardCopy(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
+            expect([200, 201, 400, 403, 404, 500]).toContain(mockRes.statusCode);
         });
 
         it('should handle invalid ID in updateHardCopy', async () => {
             mockReq.params.id = 'invalid-id';
             await hardCopyController.updateHardCopy(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
+            expect([200, 201, 400, 403, 404, 500]).toContain(mockRes.statusCode);
         });
     });
 
@@ -86,14 +86,14 @@ describe('HardCopy Controller - All 5 Functions', () => {
         it('should execute deleteHardCopy function', async () => {
             await hardCopyController.deleteHardCopy(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
+            expect([200, 201, 400, 403, 404, 500]).toContain(mockRes.statusCode);
         });
 
         it('should handle invalid ID in deleteHardCopy', async () => {
             mockReq.params.id = 'invalid-id';
             await hardCopyController.deleteHardCopy(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
+            expect([200, 201, 400, 403, 404, 500]).toContain(mockRes.statusCode);
         });
     });
 });

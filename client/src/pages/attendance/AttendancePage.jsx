@@ -90,16 +90,42 @@ const AttendancePage = () => {
     const fetchAttendances = async () => {
         try {
             setLoading(true);
-            const data = await attendanceService.getAll();
+            console.log('Fetching attendance records...');
+            const response = await attendanceService.getAll();
+            console.log('Attendance API response:', response);
+
+            // The API interceptor should have already extracted the data
+            // Handle different response formats
+            let attendanceArray = [];
+            if (Array.isArray(response)) {
+                attendanceArray = response;
+            } else if (response?.data && Array.isArray(response.data)) {
+                attendanceArray = response.data;
+            } else if (response?.attendances && Array.isArray(response.attendances)) {
+                attendanceArray = response.attendances;
+            }
+
+            console.log('Processed attendance array:', attendanceArray);
+            console.log('Current user:', user);
+            console.log('Can manage:', canManage);
 
             // Filter to show only current user's attendance if not HR/Admin
             const filteredData = canManage
-                ? data
-                : data.filter(att => att.employee?._id === user?._id || att.employee === user?._id);
+                ? attendanceArray
+                : attendanceArray.filter(att => {
+                    const employeeId = att.employee?._id || att.employee;
+                    const userId = user?._id;
+                    console.log('Comparing:', employeeId, 'with', userId);
+                    return employeeId === userId;
+                });
 
+            console.log('Filtered attendance data:', filteredData);
             setAttendances(filteredData);
         } catch (error) {
-            showNotification('Failed to fetch attendance records', 'error');
+            console.error('Error fetching attendance:', error);
+            console.error('Error details:', error.response?.data);
+            showNotification(error.response?.data?.message || 'Failed to fetch attendance records', 'error');
+            setAttendances([]);
         } finally {
             setLoading(false);
         }
@@ -108,17 +134,23 @@ const AttendancePage = () => {
     const fetchUsers = async () => {
         try {
             const data = await userService.getAll();
-            setUsers(data);
+            const usersArray = Array.isArray(data) ? data : (data?.data || []);
+            setUsers(usersArray);
         } catch (error) {
-            console.error('Failed to fetch users:', error);
+            console.error('Error fetching users:', error);
+            setUsers([]);
         }
     };
 
     useEffect(() => {
-        fetchAttendances();
-        fetchUsers();
+        if (user) {
+            fetchAttendances();
+            if (canManage) {
+                fetchUsers();
+            }
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [user?._id, canManage]);
 
     const handleOpenDialog = (attendance = null) => {
         if (attendance) {
@@ -332,22 +364,19 @@ const AttendancePage = () => {
     const columns = [
         // Only show employee column if user can manage (HR/Admin)
         ...(canManage ? [{
-            field: 'employee',
-            headerName: 'Employee',
-            width: 200,
-            renderCell: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A'
+            id: 'employee',
+            label: 'Employee',
+            render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A'
         }] : []),
         {
-            field: 'date',
-            headerName: 'Date',
-            width: 150,
-            renderCell: (row) => new Date(row.date).toLocaleDateString()
+            id: 'date',
+            label: 'Date',
+            render: (row) => new Date(row.date).toLocaleDateString()
         },
         {
-            field: 'checkIn',
-            headerName: 'Check In',
-            width: 150,
-            renderCell: (row) => {
+            id: 'checkIn',
+            label: 'Check In',
+            render: (row) => {
                 if (row.checkIn?.time) {
                     return new Date(row.checkIn.time).toLocaleTimeString('en-US', {
                         hour: '2-digit',
@@ -361,10 +390,9 @@ const AttendancePage = () => {
             }
         },
         {
-            field: 'checkOut',
-            headerName: 'Check Out',
-            width: 150,
-            renderCell: (row) => {
+            id: 'checkOut',
+            label: 'Check Out',
+            render: (row) => {
                 if (row.checkOut?.time) {
                     return new Date(row.checkOut.time).toLocaleTimeString('en-US', {
                         hour: '2-digit',
@@ -378,10 +406,9 @@ const AttendancePage = () => {
             }
         },
         {
-            field: 'status',
-            headerName: 'Status',
-            width: 150,
-            renderCell: (row) => (
+            id: 'status',
+            label: 'Status',
+            render: (row) => (
                 <Chip
                     label={row.status}
                     color={getStatusColor(row.status)}
@@ -389,17 +416,21 @@ const AttendancePage = () => {
                 />
             )
         },
-        { field: 'notes', headerName: 'Notes', width: 200 },
+        { 
+            id: 'notes', 
+            label: 'Notes',
+            render: (row) => row.notes || '-'
+        },
         // Only show actions if user can manage (HR/Admin)
         ...(canManage ? [{
-            field: 'actions',
-            headerName: 'Actions',
-            width: 120,
-            renderCell: (params) => (
+            id: 'actions',
+            label: 'Actions',
+            align: 'center',
+            render: (row) => (
                 <Box>
                     <IconButton
                         size="small"
-                        onClick={() => handleOpenDialog(params.row)}
+                        onClick={() => handleOpenDialog(row)}
                         color="primary"
                     >
                         <EditIcon fontSize="small" />
@@ -407,7 +438,7 @@ const AttendancePage = () => {
                     <IconButton
                         size="small"
                         onClick={() => {
-                            setSelectedAttendance(params.row);
+                            setSelectedAttendance(row);
                             setOpenConfirm(true);
                         }}
                         color="error"
@@ -600,7 +631,6 @@ const AttendancePage = () => {
         const end = new Date(endDate);
         return attDate >= start && attDate <= end;
     });
-
 
 
     const stats = {
@@ -1086,10 +1116,15 @@ const AttendancePage = () => {
             {/* Tab Content */}
             {currentTab === 0 ? (
                 // My Attendance Tab
-                <DataTable
-                    data={attendances.filter(att => att.employee?._id === user?._id || att.employee === user?._id)}
-                    columns={columns}
-                />
+                <Box>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                        Total records: {attendances.filter(att => att.employee?._id === user?._id || att.employee === user?._id).length}
+                    </Typography>
+                    <DataTable
+                        data={attendances.filter(att => att.employee?._id === user?._id || att.employee === user?._id)}
+                        columns={columns}
+                    />
+                </Box>
             ) : (
                 // All Users Attendance Tab
                 <Box>

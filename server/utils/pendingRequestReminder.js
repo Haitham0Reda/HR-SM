@@ -16,8 +16,7 @@ import { reminderNotificationTemplate } from './requestEmailTemplates.js';
  */
 export async function sendPendingRequestReminders() {
     try {
-        console.log('🔍 Checking for pending requests to send reminders...');
-        
+
         // Find pending requests older than 2 days
         const twoDaysAgo = new Date();
         twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
@@ -26,9 +25,7 @@ export async function sendPendingRequestReminders() {
             status: 'pending',
             requestedAt: { $lt: twoDaysAgo }
         }).populate('employee', 'username email profile department');
-        
-        console.log(`📋 Found ${pendingRequests.length} pending requests older than 2 days`);
-        
+
         let remindersSent = 0;
         
         for (const request of pendingRequests) {
@@ -55,14 +52,13 @@ export async function sendPendingRequestReminders() {
                 
                 remindersSent++;
             } catch (error) {
-                console.error(`Error sending reminder for request ${request._id}:`, error);
+
             }
         }
-        
-        console.log(`✅ Sent reminders for ${remindersSent} pending requests`);
+
         return { success: true, remindersSent };
     } catch (error) {
-        console.error('Error in sendPendingRequestReminders:', error);
+
         return { success: false, error: error.message };
     }
 }
@@ -81,7 +77,7 @@ async function sendSickLeaveReminders(request, employee) {
             html: emailTemplate.html,
             text: emailTemplate.text
         });
-        console.log(`📧 Reminder sent to manager ${manager.email} for sick leave request ${request._id}`);
+
     }
     
     // Remind doctor
@@ -94,7 +90,7 @@ async function sendSickLeaveReminders(request, employee) {
             html: emailTemplate.html,
             text: emailTemplate.text
         });
-        console.log(`📧 Reminder sent to doctor ${doctor.email} for sick leave request ${request._id}`);
+
     }
 }
 
@@ -112,7 +108,7 @@ async function sendDaySwapReminders(request, employee) {
             html: emailTemplate.html,
             text: emailTemplate.text
         });
-        console.log(`📧 Reminder sent to manager ${manager.email} for day swap request ${request._id}`);
+
     }
     
     // Remind HR
@@ -125,7 +121,7 @@ async function sendDaySwapReminders(request, employee) {
             html: emailTemplate.html,
             text: emailTemplate.text
         });
-        console.log(`📧 Reminder sent to HR ${hrEmployee.email} for day swap request ${request._id}`);
+
     }
 }
 
@@ -143,7 +139,7 @@ async function sendGeneralRequestReminders(request, employee) {
             html: emailTemplate.html,
             text: emailTemplate.text
         });
-        console.log(`📧 Reminder sent to manager ${manager.email} for ${request.type} request ${request._id}`);
+
     }
 }
 

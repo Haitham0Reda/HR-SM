@@ -250,7 +250,6 @@ if (isMainModule) {
 
     const server = app.listen(PORT, () => {
         logger.info(`Server is running on port ${PORT}`);
-        console.log(`Server is running on port ${PORT}`);
 
         // Start scheduled tasks
         startAllScheduledTasks();
@@ -264,23 +263,23 @@ if (isMainModule) {
     // Handle graceful shutdown
     process.on('SIGINT', () => {
         logger.info('Shutting down gracefully...');
-        console.log('Shutting down gracefully...');
+
         stopAllTasks();
         backupScheduler.stopAll();
         server.close(() => {
             logger.info('Server closed');
-            console.log('Server closed');
+
             process.exit(0);
         });
     });
 
     process.on('SIGTERM', () => {
         logger.info('Shutting down gracefully...');
-        console.log('Shutting down gracefully...');
+
         stopAllTasks();
         server.close(() => {
             logger.info('Server closed');
-            console.log('Server closed');
+
             process.exit(0);
         });
     });

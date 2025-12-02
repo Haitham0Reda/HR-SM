@@ -31,12 +31,10 @@ beforeEach(async () => {
 describe('RequestControl Model', () => {
   it('should create a new request control with default values', async () => {
     const control = await RequestControl.create({
-      organization: 'test-org',
-      school: school._id
+      organization: 'test-org'
     });
 
     expect(control.organization).toBe('test-org');
-    expect(control.school.toString()).toBe(school._id.toString());
     expect(control.systemWide.enabled).toBe(true);
     expect(control.vacationRequests.enabled).toBe(true);
     expect(control.permissionRequests.enabled).toBe(true);

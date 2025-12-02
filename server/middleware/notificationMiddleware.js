@@ -31,7 +31,7 @@ export const validateNotificationRecipient = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating notification recipient:', error);
+
         next();
     }
 };
@@ -60,7 +60,7 @@ export const validateBulkNotification = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating bulk notification:', error);
+
         next();
     }
 };

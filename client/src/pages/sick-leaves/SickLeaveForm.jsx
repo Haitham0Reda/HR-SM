@@ -11,6 +11,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle, Cancel, CloudUpload } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import sickLeaveService from '../../services/sickLeave.service';
 import Loading from '../../components/common/Loading';
@@ -20,6 +21,7 @@ const SickLeaveForm = () => {
     const { id } = useParams();
     useDocumentTitle(id ? 'Edit Sick Leave' : 'Create Sick Leave');
     const { showNotification } = useNotification();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         startDate: new Date().toISOString().split('T')[0],
@@ -54,7 +56,7 @@ const SickLeaveForm = () => {
                 reason: sickLeave.reason || '',
             });
         } catch (error) {
-            console.error('Error fetching sick leave:', error);
+
             showNotification('Failed to load sick leave', 'error');
             navigate('/app/sick-leaves');
         } finally {
@@ -122,9 +124,17 @@ const SickLeaveForm = () => {
         }
 
         try {
+            // Calculate duration in days
+            const start = new Date(formData.startDate);
+            const end = new Date(formData.endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
+
             const submitData = new FormData();
+            submitData.append('employee', user._id); // Add the current user as the employee
             submitData.append('startDate', formData.startDate);
             submitData.append('endDate', formData.endDate);
+            submitData.append('duration', diffDays); // Add calculated duration
             
             if (formData.reason && formData.reason.trim()) {
                 submitData.append('reason', formData.reason.trim());
@@ -148,7 +158,7 @@ const SickLeaveForm = () => {
 
             navigate('/app/sick-leaves');
         } catch (error) {
-            console.error('Error submitting sick leave:', error);
+            console.error('Sick leave submission error:', error);
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }

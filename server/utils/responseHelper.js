@@ -140,8 +140,7 @@ export const sendValidationError = (res, errors) => {
  */
 export const sendServerError = (res, error) => {
     // Log error for debugging
-    console.error('Server Error:', error);
-    
+
     return sendError(
         res,
         process.env.NODE_ENV === 'production' 

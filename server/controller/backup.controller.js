@@ -237,7 +237,6 @@ async function performBackup(backup, execution) {
 
         // Ensure backup directory exists
         await fs.mkdir(backupDir, { recursive: true });
-        console.log('Backup directory created:', backupDir);
 
         let result = {};
 
@@ -281,7 +280,7 @@ async function performBackup(backup, execution) {
         }
 
     } catch (error) {
-        console.error('Backup execution failed:', error);
+
         await execution.markFailed(error);
 
         // Send failure notification
@@ -328,10 +327,10 @@ async function performDatabaseBackup(backup, backupDir, timestamp) {
         });
         
         if (stderr && !stderr.includes('done dumping')) {
-            console.warn('Mongodump stderr:', stderr);
+
         }
     } catch (error) {
-        console.error('Mongodump error:', error);
+
         throw new Error(`Database backup failed: ${error.message}`);
     }
 
@@ -521,12 +520,7 @@ async function calculateChecksum(filePath) {
  */
 async function sendBackupNotification(backup, execution, type) {
     // Placeholder for email notification
-    console.log(`Backup ${type} notification:`, {
-        backup: backup.name,
-        status: execution.status,
-        duration: execution.duration,
-        size: execution.backupSize
-    });
+
 }
 
 /**
@@ -540,7 +534,7 @@ async function cleanupOldBackups(backup) {
             try {
                 await fs.unlink(oldBackup.backupPath);
             } catch (err) {
-                console.error('Failed to delete old backup file:', err);
+
             }
         }
     }

@@ -38,7 +38,7 @@ export const validateSufficientBalance = (leaveType) => {
             }
             next();
         } catch (error) {
-            console.error('Error validating balance:', error);
+
             return res.status(500).json({
                 success: false,
                 message: 'Error validating vacation balance'
@@ -73,7 +73,7 @@ export const calculateTenure = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error calculating tenure:', error);
+
         next();
     }
 };

@@ -26,8 +26,7 @@ class BackupSchedulerService {
      */
     async initialize() {
         try {
-            console.log('🔄 Initializing backup scheduler...');
-            
+
             const scheduledBackups = await Backup.find({
                 'schedule.enabled': true,
                 isActive: true
@@ -37,9 +36,8 @@ class BackupSchedulerService {
                 this.scheduleBackup(backup);
             }
 
-            console.log(`✅ Scheduled ${scheduledBackups.length} automatic backups`);
         } catch (error) {
-            console.error('❌ Failed to initialize backup scheduler:', error);
+
         }
     }
 
@@ -53,17 +51,17 @@ class BackupSchedulerService {
         const cronExpression = this.getCronExpression(backup.schedule);
         
         if (!cronExpression) {
-            console.warn(`⚠️  Invalid schedule for backup: ${backup.name}`);
+
             return;
         }
 
         const job = cron.schedule(cronExpression, async () => {
-            console.log(`🔄 Running scheduled backup: ${backup.name}`);
+
             await this.executeBackup(backup);
         });
 
         this.scheduledJobs.set(backup._id.toString(), job);
-        console.log(`📅 Scheduled backup: ${backup.name} - ${cronExpression}`);
+
     }
 
     /**
@@ -74,7 +72,7 @@ class BackupSchedulerService {
         if (job) {
             job.stop();
             this.scheduledJobs.delete(backupId);
-            console.log(`🛑 Cancelled scheduled backup: ${backupId}`);
+
         }
     }
 
@@ -157,8 +155,6 @@ class BackupSchedulerService {
             backup.schedule.nextRun = backup.calculateNextRun();
             await backup.save();
 
-            console.log(`✅ Backup completed: ${backup.name}`);
-
             // Send backup via email if notification is enabled
             if (backup.settings?.notification?.enabled && backup.settings?.notification?.onSuccess) {
                 await this.sendBackupEmail(backup, execution);
@@ -170,7 +166,7 @@ class BackupSchedulerService {
             }
 
         } catch (error) {
-            console.error(`❌ Backup failed: ${backup.name}`, error);
+
             if (execution) {
                 await execution.markFailed(error);
             }
@@ -196,8 +192,6 @@ class BackupSchedulerService {
     async performFileBackup(backup, backupDir, timestamp) {
         const backupFile = `files-${timestamp}.zip`;
         const backupPath = path.join(backupDir, backupFile);
-
-        console.log('📦 Starting file backup...');
 
         // Create write stream
         const output = createWriteStream(backupPath);
@@ -230,19 +224,19 @@ class BackupSchedulerService {
             
             // Check if path exists
             if (!existsSync(fullPath)) {
-                console.log(`   ⚠️  Path not found, skipping: ${filePath}`);
+
                 continue;
             }
 
             const stats = await fs.stat(fullPath);
             
             if (stats.isDirectory()) {
-                console.log(`   Adding directory: ${filePath}`);
+
                 archive.directory(fullPath, path.basename(fullPath));
                 // Approximate size for directories
                 totalSize += await this.getDirectorySize(fullPath);
             } else {
-                console.log(`   Adding file: ${filePath}`);
+
                 archive.file(fullPath, { name: path.basename(fullPath) });
                 totalSize += stats.size;
             }
@@ -253,9 +247,6 @@ class BackupSchedulerService {
         await archivePromise;
 
         const stats = await fs.stat(backupPath);
-        console.log(`✅ File backup completed`);
-        console.log(`   Size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
-        console.log(`   Compressed: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
         return {
             backupFile,
@@ -287,7 +278,7 @@ class BackupSchedulerService {
                 }
             }
         } catch (error) {
-            console.error(`Error calculating size for ${dirPath}:`, error.message);
+
         }
         
         return totalSize;
@@ -365,19 +356,19 @@ class BackupSchedulerService {
                 if (execution.backupPath) {
                     try {
                         await fs.unlink(execution.backupPath);
-                        console.log(`🗑️  Deleted old backup: ${execution.backupFile}`);
+
                     } catch (err) {
-                        console.error('Failed to delete backup file:', err);
+
                     }
                 }
                 await execution.deleteOne();
             }
 
             if (oldExecutions.length > 0) {
-                console.log(`🗑️  Cleaned up ${oldExecutions.length} old backups`);
+
             }
         } catch (error) {
-            console.error('Failed to cleanup old backups:', error);
+
         }
     }
 
@@ -390,23 +381,21 @@ class BackupSchedulerService {
             const recipients = backup.settings?.notification?.recipients || [];
             
             if (recipients.length === 0) {
-                console.log('ℹ️  No email recipients configured for backup notifications');
+
                 return;
             }
-
-            console.log(`📧 Sending backup to ${recipients.length} recipient(s)...`);
 
             for (const recipientEmail of recipients) {
                 try {
                     await backupEmail.sendBackupEmail(backup, execution, recipientEmail);
                 } catch (error) {
                     // Log error but don't stop the backup process
-                    console.error(`⚠️  Failed to send backup email to ${recipientEmail}:`, error.message);
+
                 }
             }
         } catch (error) {
             // Log error but don't stop the backup process
-            console.error('⚠️  Error in email sending process:', error.message);
+
         }
     }
 
@@ -423,7 +412,7 @@ class BackupSchedulerService {
 
             // Check if email is configured
             if (!backupEmail.transporter) {
-                console.log('ℹ️  Email not configured. Skipping failure notification.');
+
                 return;
             }
 
@@ -443,13 +432,13 @@ class BackupSchedulerService {
                     };
 
                     await backupEmail.transporter.sendMail(mailOptions);
-                    console.log(`📧 Failure notification sent to: ${recipientEmail}`);
+
                 } catch (err) {
-                    console.error(`⚠️  Failed to send failure email to ${recipientEmail}:`, err.message);
+
                 }
             }
         } catch (error) {
-            console.error('⚠️  Error sending failure emails:', error.message);
+
         }
     }
 
@@ -461,7 +450,7 @@ class BackupSchedulerService {
             job.stop();
         }
         this.scheduledJobs.clear();
-        console.log('🛑 All backup schedules stopped');
+
     }
 }
 

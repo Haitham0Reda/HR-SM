@@ -55,9 +55,30 @@ const CreatePermissionPage = () => {
         }
 
         try {
-            console.log('Submitting permission request:', formData);
-            const response = await permissionService.create(formData);
-            console.log('Permission created successfully:', response);
+            // Calculate duration in hours between startTime and endTime
+            let duration = 0;
+            if (formData.startTime && formData.endTime) {
+                const [startHour, startMin] = formData.startTime.split(':').map(Number);
+                const [endHour, endMin] = formData.endTime.split(':').map(Number);
+                const startMinutes = startHour * 60 + startMin;
+                const endMinutes = endHour * 60 + endMin;
+                duration = Math.abs(endMinutes - startMinutes) / 60; // Convert to hours
+            }
+
+            // Map 'user' field to 'employee' for backend compatibility
+            const submitData = {
+                ...formData,
+                employee: formData.user,
+                permissionType: formData.type,
+                time: formData.startTime, // Use startTime as the main time field
+                duration: duration
+            };
+            // Remove the old field names
+            delete submitData.user;
+            delete submitData.type;
+
+            await permissionService.create(submitData);
+
             showNotification('Permission request created successfully', 'success');
 
             // Trigger notification refresh for HR/Admin (with small delay)
@@ -67,7 +88,7 @@ const CreatePermissionPage = () => {
 
             navigate('/app/permissions');
         } catch (error) {
-            console.error('Error creating permission:', error);
+
             const errorMessage = error?.message || error?.data?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }

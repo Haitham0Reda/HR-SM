@@ -102,13 +102,7 @@ const SurveysPage = () => {
             setLoading(true);
             // Everyone uses getMySurveys to get their personal completion status
             const data = (await surveyService.getMySurveys()).surveys;
-            console.log('Fetched surveys:', data);
-            console.log('Survey completion status:', data.map(s => ({
-                title: s.title,
-                hasResponded: s.hasResponded,
-                isComplete: s.isComplete,
-                submittedAt: s.submittedAt
-            })));
+
             setSurveys(data);
         } catch (error) {
             showNotification('Failed to fetch surveys', 'error');
@@ -227,12 +221,6 @@ const SurveysPage = () => {
                 createdBy: user._id
             };
 
-            console.log('Submitting survey:', {
-                isUpdate: !!selectedSurvey,
-                surveyId: selectedSurvey?._id,
-                hasResponses: selectedSurvey?.stats?.totalResponses || selectedSurvey?.responses?.length
-            });
-
             if (selectedSurvey) {
                 // Double-check before updating
                 if (selectedSurvey.stats?.totalResponses > 0 || selectedSurvey.responses?.length > 0) {
@@ -249,8 +237,8 @@ const SurveysPage = () => {
             handleCloseDialog();
             fetchSurveys();
         } catch (error) {
-            console.error('Survey submit error:', error);
-            console.error('Error response:', error.response?.data);
+
+
             // Provide more specific error messages
             let errorMessage = error.response?.data?.error || error.response?.data?.message || 'Operation failed';
 

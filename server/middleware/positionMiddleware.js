@@ -30,7 +30,7 @@ export const checkPositionCodeUnique = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking position code uniqueness:', error);
+
         next();
     }
 };
@@ -60,7 +60,7 @@ export const validatePositionDepartment = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating department:', error);
+
         next();
     }
 };
@@ -97,7 +97,7 @@ export const validatePositionDeletion = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error validating position deletion:', error);
+
         return res.status(500).json({
             success: false,
             message: 'Error validating position deletion'

@@ -21,7 +21,7 @@ export const setCookie = (name, value, options = {}) => {
         Cookies.set(name, value, { ...defaultOptions, ...options });
         return true;
     } catch (error) {
-        console.error('Error setting cookie:', error);
+
         return false;
     }
 };
@@ -33,7 +33,7 @@ export const getCookie = (name) => {
     try {
         return Cookies.get(name);
     } catch (error) {
-        console.error('Error getting cookie:', error);
+
         return null;
     }
 };
@@ -46,7 +46,7 @@ export const removeCookie = (name) => {
         Cookies.remove(name);
         return true;
     } catch (error) {
-        console.error('Error removing cookie:', error);
+
         return false;
     }
 };
@@ -58,7 +58,7 @@ export const getAllCookies = () => {
     try {
         return Cookies.get();
     } catch (error) {
-        console.error('Error getting all cookies:', error);
+
         return {};
     }
 };
@@ -100,7 +100,7 @@ export const getUserPreferences = () => {
     try {
         return prefs ? JSON.parse(prefs) : null;
     } catch (error) {
-        console.error('Error parsing user preferences:', error);
+
         return null;
     }
 };
@@ -144,7 +144,7 @@ export const clearAllAppCookies = () => {
         });
         return true;
     } catch (error) {
-        console.error('Error clearing cookies:', error);
+
         return false;
     }
 };

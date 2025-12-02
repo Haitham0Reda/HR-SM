@@ -313,7 +313,7 @@ vacationBalanceSchema.methods.recalculate = async function () {
 
         return await this.save();
     } catch (error) {
-        console.error('Error recalculating vacation balance:', error);
+
         throw error;
     }
 };

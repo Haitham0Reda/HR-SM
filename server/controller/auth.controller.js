@@ -67,7 +67,7 @@ export const forgotPassword = async (req, res) => {
 
             res.json({ message: 'If an account exists with this email, a password reset link has been sent.' });
         } catch (emailError) {
-            console.error('Email sending failed:', emailError);
+
             // Clear reset token if email fails
             user.resetPasswordToken = undefined;
             user.resetPasswordExpire = undefined;
@@ -84,7 +84,7 @@ export const forgotPassword = async (req, res) => {
             }
         }
     } catch (error) {
-        console.error('Forgot password error:', error);
+
         // Provide more detailed error information in development
         if (process.env.NODE_ENV === 'development') {
             return res.status(500).json({ 
@@ -132,7 +132,7 @@ export const resetPassword = async (req, res) => {
 
         res.json({ message: 'Password has been reset successfully. You can now login with your new password.' });
     } catch (error) {
-        console.error('Reset password error:', error);
+
         // Provide more detailed error information in development
         if (process.env.NODE_ENV === 'development') {
             return res.status(500).json({ 
@@ -163,7 +163,7 @@ export const verifyResetToken = async (req, res) => {
 
         res.json({ message: 'Token is valid', email: user.email });
     } catch (error) {
-        console.error('Verify token error:', error);
+
         // Provide more detailed error information in development
         if (process.env.NODE_ENV === 'development') {
             return res.status(500).json({ 

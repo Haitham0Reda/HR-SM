@@ -117,10 +117,7 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
             }));
             
             // Debug logging
-            console.log('Survey ID:', survey._id);
-            console.log('Answers state:', answers);
-            console.log('Formatted responses:', responses);
-            console.log('Anonymous flag:', anonymous);
+
 
             await surveyService.submit(survey._id, responses, anonymous);
             

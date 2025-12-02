@@ -14,7 +14,6 @@ import {
     ArrowBack as ArrowBackIcon,
     Save as SaveIcon,
     Person as PersonIcon,
-    Email as EmailIcon,
     Work as WorkIcon,
     AdminPanelSettings as AdminIcon,
     CameraAlt as CameraIcon
@@ -76,18 +75,16 @@ const EditUserPage = () => {
             
             // Fetch user data
             const response = await userService.getById(id);
-            console.log('Raw API response:', response);
+
             const userData = response.data || response;
-            console.log('User data:', userData);
-            
+
             // Fetch departments and positions
             let deptData = [];
             let posData = [];
             
             try {
                 deptData = await departmentService.getAll();
-                console.log('Departments:', deptData);
-                
+
                 // Sort departments hierarchically (main departments first, then sub-departments)
                 const sortedDepts = [];
                 const mainDepts = deptData.filter(d => !d.parentDepartment);
@@ -109,14 +106,14 @@ const EditUserPage = () => {
                 
                 deptData = sortedDepts;
             } catch (err) {
-                console.error('Failed to fetch departments:', err);
+
             }
             
             try {
                 posData = await positionService.getAll();
-                console.log('Positions:', posData);
+
             } catch (err) {
-                console.error('Failed to fetch positions:', err);
+
             }
             
             setDepartments(deptData);
@@ -174,7 +171,7 @@ const EditUserPage = () => {
                 }
             });
         } catch (error) {
-            console.error('Error fetching data:', error);
+
             showNotification(error.response?.data?.message || 'Failed to fetch user data', 'error');
             navigate('/app/users');
         } finally {

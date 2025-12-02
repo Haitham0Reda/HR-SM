@@ -71,10 +71,8 @@ export default function ProfilePage() {
                 },
             };
 
-            console.log('Update data being sent:', updateData);
-
             // Call API to update user profile in database
-            const response = await userService.updateProfile(updateData);
+            await userService.updateProfile(updateData);
 
             // Update local user state and localStorage
             const updatedUser = {
@@ -85,9 +83,8 @@ export default function ProfilePage() {
 
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
         } catch (error) {
-            console.error('Error updating profile:', error);
-            console.error('Error response:', error.response);
-            console.error('Error data:', error.response?.data);
+
+
             setMessage({
                 type: 'error',
                 text: error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update profile. Please try again.'
