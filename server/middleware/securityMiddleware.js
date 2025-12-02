@@ -40,7 +40,7 @@ export const checkIPWhitelist = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error checking IP whitelist:', error);
+
         next();
     }
 };
@@ -88,7 +88,7 @@ export const checkDevelopmentMode = async (req, res, next) => {
             message: settings.developmentMode.maintenanceMessage || 'System is currently under maintenance.'
         });
     } catch (error) {
-        console.error('Error checking development mode:', error);
+
         next();
     }
 };
@@ -116,7 +116,7 @@ export const checkAccountLocked = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error checking account lock:', error);
+
         next();
     }
 };
@@ -155,7 +155,7 @@ export const checkPasswordExpiration = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error checking password expiration:', error);
+
         next();
     }
 };
@@ -188,7 +188,7 @@ export const require2FA = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error checking 2FA requirement:', error);
+
         next();
     }
 };
@@ -213,7 +213,7 @@ export const validatePasswordStrength = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error validating password:', error);
+
         next();
     }
 };
@@ -245,7 +245,7 @@ export const checkPasswordHistory = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error checking password history:', error);
+
         next();
     }
 };
@@ -262,7 +262,7 @@ export const logSecurityEvent = (eventType, severity = 'info') => {
 
             next();
         } catch (error) {
-            console.error('Error logging security event:', error);
+
             next();
         }
     };

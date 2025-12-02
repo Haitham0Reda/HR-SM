@@ -722,7 +722,7 @@ requestControlSchema.statics.notifyUsers = async function (userIds, title, messa
             await Notification.insertMany(notifications);
         }
     } catch (error) {
-        console.error('Error sending request control notifications:', error);
+
     }
 };
 
@@ -757,7 +757,7 @@ requestControlSchema.statics.validateRequest = async function (requestType, empl
         const control = await this.getControl('default');
         return control.isRequestAllowed(requestType, subType);
     } catch (error) {
-        console.error('Error validating request:', error);
+
         // On error, allow the request to prevent blocking legitimate requests
         return { allowed: true, message: '' };
     }

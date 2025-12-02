@@ -20,8 +20,6 @@ class MongooseBackupService {
             const backupFile = `database-${timestamp}.json`;
             const backupPath = path.join(backupDir, backupFile);
 
-            console.log('📦 Starting database backup...');
-
             // Get all collections
             const collections = await mongoose.connection.db.listCollections().toArray();
             const backupData = {};
@@ -29,18 +27,15 @@ class MongooseBackupService {
             // Export each collection
             for (const collectionInfo of collections) {
                 const collectionName = collectionInfo.name;
-                console.log(`   Exporting collection: ${collectionName}`);
-                
+
                 const collection = mongoose.connection.db.collection(collectionName);
                 const documents = await collection.find({}).toArray();
                 backupData[collectionName] = documents;
-                
-                console.log(`   ✓ Exported ${documents.length} documents from ${collectionName}`);
+
             }
 
             // Write to file
             await fs.writeFile(backupPath, JSON.stringify(backupData, null, 2));
-            console.log(`   ✓ Backup data written to file`);
 
             const stats = await fs.stat(backupPath);
             const backupSize = stats.size;
@@ -49,7 +44,6 @@ class MongooseBackupService {
             const gzipPath = `${backupPath}.gz`;
             await this.compressFile(backupPath, gzipPath);
             await fs.unlink(backupPath); // Remove uncompressed file
-            console.log(`   ✓ Backup compressed`);
 
             let finalPath = gzipPath;
             let isEncrypted = false;
@@ -61,16 +55,11 @@ class MongooseBackupService {
                 await fs.unlink(gzipPath); // Remove unencrypted file
                 isEncrypted = true;
                 encryptionAlgorithm = backup.settings.encryption.algorithm;
-                console.log(`   ✓ Backup encrypted`);
+
             }
 
             const finalStats = await fs.stat(finalPath);
             const checksum = await this.calculateChecksum(finalPath);
-
-            console.log(`✅ Database backup completed`);
-            console.log(`   Size: ${(backupSize / 1024 / 1024).toFixed(2)} MB`);
-            console.log(`   Compressed: ${(finalStats.size / 1024 / 1024).toFixed(2)} MB`);
-            console.log(`   Collections: ${collections.length}`);
 
             return {
                 backupFile: path.basename(finalPath),
@@ -87,7 +76,7 @@ class MongooseBackupService {
                 checksum
             };
         } catch (error) {
-            console.error('❌ Database backup failed:', error);
+
             throw error;
         }
     }

@@ -11,7 +11,7 @@ import {
     Typography,
     Chip,
     MenuItem,
-    Grid
+    useTheme
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle, Cancel, Info } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +24,7 @@ import forgetCheckService from '../../services/forgetCheck.service';
 import userService from '../../services/user.service';
 
 const ForgetCheckPage = () => {
+    const theme = useTheme();
     const navigate = useNavigate();
     const { user, isHR, isAdmin } = useAuth();
     const [forgetChecks, setForgetChecks] = useState([]);
@@ -55,7 +56,7 @@ const ForgetCheckPage = () => {
             const requestsArray = Array.isArray(data) ? data : [];
             setForgetChecks(requestsArray);
         } catch (error) {
-            console.error('Error fetching forget check requests:', error);
+
             showNotification('Failed to fetch requests', 'error');
             setForgetChecks([]);
         } finally {
@@ -70,13 +71,14 @@ const ForgetCheckPage = () => {
                 setUsers(data);
             }
         } catch (error) {
-            console.error('Failed to fetch users:', error);
+
         }
     };
 
     useEffect(() => {
         fetchForgetChecks();
         fetchUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleOpenDialog = (request = null) => {
@@ -146,7 +148,7 @@ const ForgetCheckPage = () => {
             handleCloseDialog();
             fetchForgetChecks();
         } catch (error) {
-            console.error('Submit error:', error);
+
             showNotification(error.response?.data?.message || error.message || 'Operation failed', 'error');
         }
     };
@@ -170,7 +172,7 @@ const ForgetCheckPage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchForgetChecks();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -191,59 +193,58 @@ const ForgetCheckPage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchForgetChecks();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            pending: 'warning',
-            approved: 'success',
-            rejected: 'error'
+            pending: theme.palette.warning.main,
+            approved: theme.palette.success.main,
+            rejected: theme.palette.error.main
         };
-        return colors[status] || 'default';
+        return colors[status] || theme.palette.grey[500];
     };
 
     const getRequestTypeColor = (type) => {
-        return type === 'check-in' ? 'info' : 'secondary';
+        return type === 'check-in' ? theme.palette.info.main : theme.palette.secondary.main;
     };
 
     const columns = [
         {
-            field: 'employee',
-            headerName: 'Employee',
-            width: 180,
+            id: 'employee',
+            label: 'Employee',
             align: 'center',
-            renderCell: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A'
+            render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A'
         },
         {
-            field: 'date',
-            headerName: 'Date',
-            width: 120,
+            id: 'date',
+            label: 'Date',
             align: 'center',
-            renderCell: (row) => new Date(row.date).toLocaleDateString()
+            render: (row) => new Date(row.date).toLocaleDateString()
         },
         {
-            field: 'requestType',
-            headerName: 'Type',
-            width: 120,
+            id: 'requestType',
+            label: 'Type',
             align: 'center',
-            renderCell: (row) => (
+            render: (row) => (
                 <Chip
                     label={row.requestType === 'check-in' ? 'Check In' : 'Check Out'}
                     size="small"
-                    color={getRequestTypeColor(row.requestType)}
-                    variant="outlined"
+                    sx={{
+                        bgcolor: row.requestType === 'check-in' ? theme.palette.info.main : theme.palette.secondary.main,
+                        color: theme.palette.getContrastText(row.requestType === 'check-in' ? theme.palette.info.main : theme.palette.secondary.main),
+                        fontWeight: 600
+                    }}
                 />
             )
         },
         {
-            field: 'requestedTime',
-            headerName: 'Requested Time',
-            width: 120,
+            id: 'requestedTime',
+            label: 'Requested Time',
             align: 'center',
-            renderCell: (row) => {
+            render: (row) => {
                 if (!row.requestedTime) return 'N/A';
                 const [hours, minutes] = row.requestedTime.split(':');
                 const hour = parseInt(hours);
@@ -253,30 +254,35 @@ const ForgetCheckPage = () => {
             }
         },
         {
-            field: 'reason',
-            headerName: 'Reason',
-            width: 250,
-            align: 'center'
+            id: 'reason',
+            label: 'Reason',
+            align: 'center',
+            render: (row) => row.reason || '-'
         },
         {
-            field: 'status',
-            headerName: 'Status',
-            width: 120,
+            id: 'status',
+            label: 'Status',
             align: 'center',
-            renderCell: (row) => (
-                <Chip
-                    label={row.status.charAt(0).toUpperCase() + row.status.slice(1)}
-                    color={getStatusColor(row.status)}
-                    size="small"
-                />
-            )
+            render: (row) => {
+                const statusColor = getStatusColor(row.status);
+                return (
+                    <Chip
+                        label={row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                        size="small"
+                        sx={{
+                            bgcolor: statusColor,
+                            color: theme.palette.getContrastText(statusColor),
+                            fontWeight: 600
+                        }}
+                    />
+                );
+            }
         },
         {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 180,
+            id: 'actions',
+            label: 'Actions',
             align: 'center',
-            renderCell: (row) => {
+            render: (row) => {
                 const isPending = row.status === 'pending';
                 const showApproveReject = canManage && isPending;
 

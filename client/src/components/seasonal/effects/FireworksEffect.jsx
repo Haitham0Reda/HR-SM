@@ -10,13 +10,12 @@ const FireworksEffect = () => {
     const fireworksRef = useRef([]);
 
     useEffect(() => {
-        console.log('🎆 FireworksEffect: Mounting...');
+
         const canvas = canvasRef.current;
         if (!canvas) {
-            console.log('❌ FireworksEffect: Canvas not found!');
+
             return;
         }
-        console.log('✅ FireworksEffect: Canvas found', { width: canvas.width, height: canvas.height });
 
         const ctx = canvas.getContext('2d');
 
@@ -24,12 +23,7 @@ const FireworksEffect = () => {
         const resizeCanvas = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            console.log('🎆 Canvas resized:', {
-                width: canvas.width,
-                height: canvas.height,
-                windowWidth: window.innerWidth,
-                windowHeight: window.innerHeight
-            });
+
         };
 
         // Force initial size
@@ -201,11 +195,11 @@ const FireworksEffect = () => {
         }
 
         // Create initial fireworks with staggered timing
-        console.log('🎆 FireworksEffect: Creating initial fireworks...');
+
         for (let i = 0; i < 3; i++) {
             setTimeout(() => {
                 fireworksRef.current.push(new Firework());
-                console.log('🎆 Created firework', i + 1);
+
             }, i * 500);
         }
 
@@ -236,7 +230,6 @@ const FireworksEffect = () => {
             animationFrameRef.current = requestAnimationFrame(animate);
         };
 
-        console.log('🎆 FireworksEffect: Starting animation loop...');
         animate();
 
         return () => {

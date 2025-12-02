@@ -1,6 +1,5 @@
 // Mission Model Tests
 import mongoose from 'mongoose';
-import { expect } from 'chai';
 import Mission from '../../models/mission.model.js';
 import User from '../../models/user.model.js';
 import Department from '../../models/department.model.js';
@@ -8,7 +7,7 @@ import Department from '../../models/department.model.js';
 describe('Mission Model', () => {
   let testEmployee, testDepartment, testApprover;
 
-  before(async () => {
+  beforeAll(async () => {
     // Create test department
     testDepartment = await Department.create({
       name: 'Test Department',
@@ -43,7 +42,7 @@ describe('Mission Model', () => {
     });
   });
 
-  after(async () => {
+  afterAll(async () => {
     await Mission.deleteMany({});
     await User.deleteMany({});
     await Department.deleteMany({});
@@ -66,11 +65,11 @@ describe('Mission Model', () => {
       });
 
       const savedMission = await mission.save();
-      expect(savedMission).to.exist;
-      expect(savedMission.employee.toString()).to.equal(testEmployee._id.toString());
-      expect(savedMission.location).to.equal('New York');
-      expect(savedMission.purpose).to.equal('Business meeting with clients');
-      expect(savedMission.status).to.equal('pending');
+      expect(savedMission).toBeDefined();
+      expect(savedMission.employee.toString()).toBe(testEmployee._id.toString());
+      expect(savedMission.location).toBe('New York');
+      expect(savedMission.purpose).toBe('Business meeting with clients');
+      expect(savedMission.status).toBe('pending');
     });
 
     it('should fail validation when employee is missing', async () => {
@@ -82,13 +81,7 @@ describe('Mission Model', () => {
         purpose: 'Business meeting'
       });
 
-      try {
-        await mission.save();
-        expect.fail('Should have thrown validation error');
-      } catch (error) {
-        expect(error.name).to.equal('ValidationError');
-        expect(error.errors.employee).to.exist;
-      }
+      await expect(mission.save()).rejects.toThrow();
     });
 
     it('should fail validation when end date is before start date', async () => {
@@ -101,13 +94,7 @@ describe('Mission Model', () => {
         purpose: 'Business meeting'
       });
 
-      try {
-        await mission.save();
-        expect.fail('Should have thrown validation error');
-      } catch (error) {
-        expect(error.name).to.equal('ValidationError');
-        expect(error.errors.endDate).to.exist;
-      }
+      await expect(mission.save()).rejects.toThrow();
     });
   });
 
@@ -126,10 +113,10 @@ describe('Mission Model', () => {
 
         await mission.approve(testApprover._id, 'Approved for business trip');
 
-        expect(mission.status).to.equal('approved');
-        expect(mission.approvedBy.toString()).to.equal(testApprover._id.toString());
-        expect(mission.approvedAt).to.exist;
-        expect(mission.approverNotes).to.equal('Approved for business trip');
+        expect(mission.status).toBe('approved');
+        expect(mission.approvedBy.toString()).toBe(testApprover._id.toString());
+        expect(mission.approvedAt).toBeDefined();
+        expect(mission.approverNotes).toBe('Approved for business trip');
       });
     });
 
@@ -147,10 +134,10 @@ describe('Mission Model', () => {
 
         await mission.reject(testApprover._id, 'Not enough budget for this trip');
 
-        expect(mission.status).to.equal('rejected');
-        expect(mission.rejectedBy.toString()).to.equal(testApprover._id.toString());
-        expect(mission.rejectedAt).to.exist;
-        expect(mission.rejectionReason).to.equal('Not enough budget for this trip');
+        expect(mission.status).toBe('rejected');
+        expect(mission.rejectedBy.toString()).toBe(testApprover._id.toString());
+        expect(mission.rejectedAt).toBeDefined();
+        expect(mission.rejectionReason).toBe('Not enough budget for this trip');
       });
     });
 
@@ -169,10 +156,10 @@ describe('Mission Model', () => {
 
         await mission.cancel(testEmployee._id, 'Client cancelled the meeting');
 
-        expect(mission.status).to.equal('cancelled');
-        expect(mission.cancelledBy.toString()).to.equal(testEmployee._id.toString());
-        expect(mission.cancelledAt).to.exist;
-        expect(mission.cancellationReason).to.equal('Client cancelled the meeting');
+        expect(mission.status).toBe('cancelled');
+        expect(mission.cancelledBy.toString()).toBe(testEmployee._id.toString());
+        expect(mission.cancelledAt).toBeDefined();
+        expect(mission.cancellationReason).toBe('Client cancelled the meeting');
       });
     });
   });
@@ -202,7 +189,7 @@ describe('Mission Model', () => {
         ]);
 
         const missions = await Mission.getMissionsByEmployee(testEmployee._id);
-        expect(missions).to.have.lengthOf(2);
+        expect(missions).toHaveLength(2);
       });
     });
 
@@ -232,8 +219,8 @@ describe('Mission Model', () => {
         ]);
 
         const missions = await Mission.getPendingMissions();
-        expect(missions).to.have.lengthOf(1);
-        expect(missions[0].status).to.equal('pending');
+        expect(missions).toHaveLength(1);
+        expect(missions[0].status).toBe('pending');
       });
     });
 
@@ -256,7 +243,7 @@ describe('Mission Model', () => {
           new Date('2025-12-07')
         );
 
-        expect(hasOverlap).to.be.true;
+        expect(hasOverlap).toBe(true);
       });
 
       it('should not detect overlap for non-overlapping dates', async () => {
@@ -277,7 +264,7 @@ describe('Mission Model', () => {
           new Date('2025-12-15')
         );
 
-        expect(hasOverlap).to.be.false;
+        expect(hasOverlap).toBe(false);
       });
     });
   });

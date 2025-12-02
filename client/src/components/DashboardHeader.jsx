@@ -25,6 +25,7 @@ import Stack from '@mui/material/Stack';
 import { Link, useNavigate } from 'react-router-dom';
 import ThemeSwitcher from './ThemeSwitcher';
 import { useAuth } from '../context/AuthContext';
+import { designTokens } from '../theme/designTokens';
 // eslint-disable-next-line no-unused-vars
 import announcementService from '../services/announcement.service';
 // eslint-disable-next-line no-unused-vars
@@ -41,8 +42,9 @@ const AppBar = styled(MuiAppBar)(({ theme }) => ({
     borderBottomWidth: 1,
     borderStyle: 'solid',
     borderColor: (theme.vars ?? theme).palette.divider,
-    boxShadow: 'none',
+    boxShadow: designTokens.shadows.none,
     zIndex: theme.zIndex.drawer + 1,
+    transition: `all ${designTokens.transitions.duration.standard}ms ${designTokens.transitions.easing.easeInOut}`,
 }));
 
 const LogoContainer = styled('div')({
@@ -53,8 +55,32 @@ const LogoContainer = styled('div')({
     '& img': {
         maxHeight: 40,
     },
+    transition: `transform ${designTokens.transitions.duration.short}ms ${designTokens.transitions.easing.easeInOut}`,
+    '&:hover': {
+        transform: 'scale(1.02)',
+    },
 });
 
+/**
+ * DashboardHeader Component
+ * 
+ * Top navigation bar with branding, user profile, notifications, and theme toggle.
+ * Provides consistent header across all dashboard pages.
+ * 
+ * Features:
+ * - Collapsible menu toggle
+ * - Live clock display
+ * - Theme switcher (light/dark mode)
+ * - Notification center with real-time updates
+ * - User profile menu with logout
+ * 
+ * @param {Object} props
+ * @param {React.ReactNode} props.logo - Logo component to display
+ * @param {string} props.title - Application title
+ * @param {boolean} props.menuOpen - Whether the sidebar menu is open
+ * @param {Function} props.onToggleMenu - Callback to toggle menu state
+ * @param {Object} props.user - Current user object
+ */
 function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     const theme = useTheme();
     const navigate = useNavigate();
@@ -78,13 +104,10 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     // Define fetchNotifications before useEffect that uses it
     const fetchNotifications = React.useCallback(async () => {
         try {
-            console.log('Fetching notifications...');
             // Fetch notifications from the notification API
             const notificationData = await notificationService.getAll();
-            console.log('Notification data received:', notificationData);
 
             const notifications = Array.isArray(notificationData) ? notificationData : (notificationData.data || []);
-            console.log('Parsed notifications:', notifications.length);
 
             // Filter to show only unread notifications and sort by date
             const unreadNotifications = notifications
@@ -92,10 +115,9 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .slice(0, 10);
 
-            console.log('Unread notifications:', unreadNotifications.length);
             setNotifications(unreadNotifications);
         } catch (error) {
-            console.error('Failed to fetch notifications:', error);
+
             // Fallback to empty array if API fails
             setNotifications([]);
         }
@@ -490,7 +512,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                             await notificationService.markAsRead(notification._id);
                                         }
                                     } catch (error) {
-                                        console.error('Error marking notification as read:', error);
+
                                     }
 
                                     handleNotificationClose();

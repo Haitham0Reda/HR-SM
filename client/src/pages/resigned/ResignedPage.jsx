@@ -67,7 +67,7 @@ const ResignedPage = () => {
                 setResignedEmployees(data);
             }
         } catch (error) {
-            console.error('Failed to fetch resigned employees:', error);
+
             showNotification('Failed to fetch resigned employees', 'error');
         } finally {
             setLoading(false);
@@ -79,7 +79,7 @@ const ResignedPage = () => {
             const data = await userService.getAll();
             setUsers(data);
         } catch (error) {
-            console.error('Failed to fetch users:', error);
+
         }
     };
 

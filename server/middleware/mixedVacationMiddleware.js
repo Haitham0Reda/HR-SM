@@ -170,7 +170,7 @@ export const checkPolicyExists = async (req, res, next) => {
         req.policy = policy;
         next();
     } catch (error) {
-        console.error('Error checking policy:', error);
+
         return res.status(500).json({
             success: false,
             message: 'Error checking policy'
@@ -205,7 +205,7 @@ export const checkEmployeeExists = async (req, res, next) => {
         req.employee = employee;
         next();
     } catch (error) {
-        console.error('Error checking employee:', error);
+
         return res.status(500).json({
             success: false,
             message: 'Error checking employee'

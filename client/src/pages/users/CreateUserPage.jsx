@@ -9,7 +9,6 @@ import {
     Paper,
     Stack,
     Avatar,
-    Divider,
     IconButton,
     InputAdornment,
     Grid,
@@ -116,7 +115,7 @@ const CreateUserPage = () => {
             setDepartments(sortedDepts);
             setPositions(posData);
         } catch (error) {
-            console.error('Failed to fetch data:', error);
+
         }
     };
 

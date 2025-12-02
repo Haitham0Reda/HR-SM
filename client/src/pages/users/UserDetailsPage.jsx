@@ -47,17 +47,15 @@ const UserDetailsPage = () => {
     const fetchUser = async () => {
         try {
             setLoading(true);
-            console.log('Fetching user with ID:', id);
+
             const response = await userService.getById(id);
-            console.log('Raw API response:', response);
-            
+
             // Handle different response structures
             const userData = response.data || response;
-            console.log('User data:', userData);
-            
+
             setUser(userData);
         } catch (error) {
-            console.error('Error fetching user:', error);
+
             showNotification(error.message || 'Failed to fetch user details', 'error');
             navigate('/app/users');
         } finally {
@@ -66,12 +64,12 @@ const UserDetailsPage = () => {
     };
 
     if (loading) {
-        console.log('Loading user data...');
+
         return <Loading />;
     }
     
     if (!user) {
-        console.log('No user data available');
+
         return (
             <Box sx={{ p: 4, textAlign: 'center' }}>
                 <Typography>No user data found</Typography>
@@ -147,7 +145,7 @@ const UserDetailsPage = () => {
                                         showNotification('Failed to generate ID card', 'error');
                                     }
                                 } catch (error) {
-                                    console.error('Error generating ID card:', error);
+
                                     showNotification('Error generating ID card', 'error');
                                 }
                             }}

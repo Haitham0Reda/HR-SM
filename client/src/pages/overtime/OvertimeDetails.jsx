@@ -55,7 +55,7 @@ const OvertimeDetails = () => {
             const data = await overtimeService.getById(id);
             setOvertime(data);
         } catch (error) {
-            console.error('Error fetching overtime:', error);
+
             showNotification('Failed to load overtime', 'error');
             navigate('/app/overtime');
         } finally {
@@ -69,7 +69,7 @@ const OvertimeDetails = () => {
             showNotification('Overtime approved successfully', 'success');
             await fetchOvertime();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -94,7 +94,7 @@ const OvertimeDetails = () => {
             showNotification('Overtime rejected successfully', 'success');
             await fetchOvertime();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };

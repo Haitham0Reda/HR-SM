@@ -45,7 +45,7 @@ export const checkTemplateNameUnique = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking template name uniqueness:', error);
+
         next();
     }
 };

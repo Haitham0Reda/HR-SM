@@ -96,7 +96,7 @@ const RequestsPage = () => {
 
             setAllRequests(combined);
         } catch (error) {
-            console.error('Failed to fetch requests:', error);
+
             showNotification('Failed to fetch requests', 'error');
         } finally {
             setLoading(false);

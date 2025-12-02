@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Container,
     Paper,
     Typography,
     TextField,
@@ -12,8 +11,6 @@ import {
     Alert,
     CircularProgress,
     Divider,
-    Card,
-    CardContent,
     Stack,
     alpha,
     Avatar
@@ -153,7 +150,7 @@ const RoleEditPage = () => {
                     setIsSystemRole(role.isSystemRole || false);
                 }
             } catch (error) {
-                console.error('Error loading data:', error);
+
                 showNotification('Failed to load data', 'error');
             } finally {
                 setInitialLoading(false);
@@ -397,8 +394,7 @@ const RoleEditPage = () => {
             // Navigate after successful API call
             navigate('/app/roles');
         } catch (error) {
-            console.error('Error saving role:', error);
-            
+
             // Rollback to original data on error
             setRoleData(originalData);
             

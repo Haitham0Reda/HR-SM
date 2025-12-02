@@ -67,8 +67,9 @@ const SnowEffect = () => {
 
         return () => {
             clearInterval(interval);
-            if (animationFrameRef.current) {
-                cancelAnimationFrame(animationFrameRef.current);
+            const currentAnimationFrame = animationFrameRef.current;
+            if (currentAnimationFrame) {
+                cancelAnimationFrame(currentAnimationFrame);
             }
             // Clean up all snowflakes
             snowflakesRef.current.forEach(snowflake => {

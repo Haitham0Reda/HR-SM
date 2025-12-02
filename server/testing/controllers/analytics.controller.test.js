@@ -4,7 +4,7 @@
 import mongoose from 'mongoose';
 import User from '../../models/user.model.js';
 import Attendance from '../../models/attendance.model.js';
-import Leave from '../../models/leave.model.js';
+import Vacation from '../../models/vacation.model.js';
 import Payroll from '../../models/payroll.model.js';
 import * as analyticsController from '../../controller/analytics.controller.js';
 import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
@@ -22,7 +22,7 @@ describe('Analytics Controller - All 7 Functions', () => {
 
     afterEach(async () => {
         await Payroll.deleteMany({});
-        await Leave.deleteMany({});
+        await Vacation.deleteMany({});
         await Attendance.deleteMany({});
         await cleanupTestData();
     });

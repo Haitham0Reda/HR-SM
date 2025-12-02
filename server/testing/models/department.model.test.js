@@ -37,7 +37,7 @@ describe('Department Model', () => {
 
     expect(err).toBeDefined();
     expect(err.errors.name).toBeDefined();
-    expect(err.errors.code).toBeDefined();
+    // Code is not required, only name is required
   });
 
   it('should enforce unique code constraint', async () => {

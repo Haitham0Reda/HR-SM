@@ -74,7 +74,7 @@ const VacationRequestForm = () => {
                 reason: vacation.reason || '',
             });
         } catch (error) {
-            console.error('Error fetching vacation:', error);
+
             showNotification('Failed to load vacation', 'error');
             navigate('/app/vacation-requests');
         } finally {
@@ -98,7 +98,7 @@ const VacationRequestForm = () => {
                 remaining: 15 - duration,
             });
         } catch (error) {
-            console.error('Error checking balance:', error);
+
         } finally {
             setCheckingBalance(false);
         }
@@ -178,7 +178,7 @@ const VacationRequestForm = () => {
 
             navigate('/app/vacation-requests');
         } catch (error) {
-            console.error('Error submitting vacation:', error);
+
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }

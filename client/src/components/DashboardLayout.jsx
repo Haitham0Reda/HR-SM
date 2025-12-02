@@ -9,8 +9,31 @@ import DashboardSidebar from './DashboardSidebar';
 import SitemarkIcon from './SitemarkIcon';
 import { useAuth } from '../context/AuthContext';
 import SurveyRedirect from './SurveyRedirect';
+import { designTokens } from '../theme/designTokens';
 
-export default function DashboardLayout() {
+// Memoize SitemarkIcon to prevent unnecessary re-renders
+const MemoizedSitemarkIcon = React.memo(SitemarkIcon);
+
+/**
+ * DashboardLayout Component
+ * 
+ * Main layout component that provides consistent structure across all pages.
+ * Includes collapsible sidebar, header with navigation, and main content area.
+ * 
+ * @param {Object} props
+ * @param {React.ReactNode} [props.children] - Optional children to render instead of Outlet
+ * @param {boolean} [props.disableSidebar=false] - Hide the sidebar completely
+ * @param {boolean} [props.disableHeader=false] - Hide the header completely
+ * @param {boolean} [props.disablePadding=false] - Remove default padding from content area
+ * @param {Object} [props.sx] - Additional MUI sx prop for the main content area
+ */
+export default function DashboardLayout({ 
+    children, 
+    disableSidebar = false,
+    disableHeader = false,
+    disablePadding = false,
+    sx = {}
+}) {
     const theme = useTheme();
     const { user } = useAuth();
 
@@ -58,30 +81,44 @@ export default function DashboardLayout() {
                 overflow: 'hidden',
                 height: '100%',
                 width: '100%',
+                backgroundColor: 'background.default',
             }}
         >
-            <DashboardHeader
-                logo={<SitemarkIcon />}
-                title=""
-                menuOpen={isNavigationExpanded}
-                onToggleMenu={handleToggleHeaderMenu}
-                user={user}
-                notificationCount={0}
-            />
-            <DashboardSidebar
-                expanded={isNavigationExpanded}
-                setExpanded={setIsNavigationExpanded}
-                container={layoutRef?.current ?? undefined}
-            />
+            {/* Header */}
+            {!disableHeader && (
+                <DashboardHeader
+                    logo={<MemoizedSitemarkIcon />}
+                    title=""
+                    menuOpen={isNavigationExpanded}
+                    onToggleMenu={handleToggleHeaderMenu}
+                    user={user}
+                    notificationCount={0}
+                />
+            )}
+
+            {/* Sidebar */}
+            {!disableSidebar && (
+                <DashboardSidebar
+                    expanded={isNavigationExpanded}
+                    setExpanded={setIsNavigationExpanded}
+                    container={layoutRef?.current ?? undefined}
+                />
+            )}
+
+            {/* Main Content Area */}
             <Box
                 sx={{
                     display: 'flex',
                     flexDirection: 'column',
                     flex: 1,
                     minWidth: 0,
+                    transition: `margin ${designTokens.transitions.duration.standard}ms ${designTokens.transitions.easing.easeInOut}`,
                 }}
             >
-                <Toolbar sx={{ displayPrint: 'none' }} />
+                {/* Toolbar spacer (only if header is visible) */}
+                {!disableHeader && <Toolbar sx={{ displayPrint: 'none' }} />}
+
+                {/* Main scrollable content */}
                 <Box
                     component="main"
                     sx={{
@@ -89,10 +126,17 @@ export default function DashboardLayout() {
                         flexDirection: 'column',
                         flex: 1,
                         overflow: 'auto',
+                        padding: disablePadding ? 0 : {
+                            xs: designTokens.spacing.md,
+                            sm: designTokens.spacing.lg,
+                            md: designTokens.spacing.xl,
+                        },
+                        backgroundColor: 'background.default',
+                        ...sx
                     }}
                 >
                     <SurveyRedirect />
-                    <Outlet />
+                    {children || <Outlet />}
                 </Box>
             </Box>
         </Box>

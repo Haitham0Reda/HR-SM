@@ -471,7 +471,6 @@ describe('ReportExport Model', () => {
       filters: {
         department: department._id,
         employee: user._id,
-        school: school._id,
         position: position._id,
         status: ['present', 'absent'],
         leaveType: ['annual', 'casual'],
@@ -482,7 +481,6 @@ describe('ReportExport Model', () => {
 
     expect(reportExport.filters.department.toString()).toBe(department._id.toString());
     expect(reportExport.filters.employee.toString()).toBe(user._id.toString());
-    expect(reportExport.filters.school.toString()).toBe(school._id.toString());
     expect(reportExport.filters.position.toString()).toBe(position._id.toString());
     expect(reportExport.filters.status).toEqual(['present', 'absent']);
     expect(reportExport.filters.leaveType).toEqual(['annual', 'casual']);

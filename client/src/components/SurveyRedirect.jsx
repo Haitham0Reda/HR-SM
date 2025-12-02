@@ -22,14 +22,14 @@ const SurveyRedirect = () => {
                     if (pendingMandatorySurveys && pendingMandatorySurveys.length > 0) {
                         // Redirect to the first pending mandatory survey
                         const firstSurvey = pendingMandatorySurveys[0];
-                        console.log('Redirecting to pending mandatory survey:', firstSurvey._id);
+
                         navigate(`/app/surveys/${firstSurvey._id}`);
                     } else {
                         // No more pending surveys, update the flag
                         setHasPendingSurveys(false);
                     }
                 } catch (error) {
-                    console.error('Error checking for pending surveys:', error);
+
                     showNotification('Error checking for pending surveys', 'error');
                     setHasPendingSurveys(false);
                 }

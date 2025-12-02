@@ -120,7 +120,6 @@ const surveySchema = new mongoose.Schema({
         },
 
 
-
         // Specific Departments
         departments: [{
             type: mongoose.Schema.Types.ObjectId,
@@ -270,13 +269,6 @@ surveySchema.methods.addResponse = async function (userId, answers = [], isAnony
     // Ensure answers is an array
     const responses = Array.isArray(answers) ? answers : [];
 
-    console.log('addResponse called with:', {
-        userId,
-        answersCount: responses.length,
-        isAnonymous,
-        totalQuestions: this.questions.length
-    });
-
     // Calculate completion percentage
     const requiredQuestions = this.questions.filter(q => q.required).length;
     const answeredRequired = responses.filter(a => {
@@ -303,15 +295,6 @@ surveySchema.methods.addResponse = async function (userId, answers = [], isAnony
         ? completionPercentage === 100 
         : totalAnswered > 0;
 
-    console.log('Completion calculation:', {
-        requiredQuestions,
-        answeredRequired,
-        totalAnswered,
-        totalQuestions: this.questions.length,
-        completionPercentage,
-        isComplete
-    });
-
     // Add response
     // Always store userId for tracking, use isAnonymous flag for privacy
     this.responses.push({
@@ -331,11 +314,6 @@ surveySchema.methods.addResponse = async function (userId, answers = [], isAnony
         this.stats.lastResponseAt = new Date();
         this.calculateCompletionRate();
     }
-
-    console.log('Response added. Stats:', {
-        totalResponses: this.stats.totalResponses,
-        isComplete
-    });
 
     return await this.save();
 };
@@ -378,7 +356,6 @@ surveySchema.statics.findActiveSurveysForUser = async function (userId) {
         if (survey.assignedTo.specificEmployees.some(id => id.toString() === userId.toString())) {
             return true;
         }
-
 
 
         if (user.department && survey.assignedTo.departments.some(id => id.toString() === user.department.toString())) {

@@ -10,6 +10,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle, Cancel } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import overtimeService from '../../services/overtime.service';
 import Loading from '../../components/common/Loading';
@@ -18,6 +19,7 @@ const OvertimeForm = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     useDocumentTitle(id ? 'Edit Overtime' : 'Create Overtime');
+    const { user } = useAuth();
     const { showNotification } = useNotification();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -58,7 +60,7 @@ const OvertimeForm = () => {
                 compensationType: overtime.compensationType || '',
             });
         } catch (error) {
-            console.error('Error fetching overtime:', error);
+
             showNotification('Failed to load overtime', 'error');
             navigate('/app/overtime');
         } finally {
@@ -161,6 +163,7 @@ const OvertimeForm = () => {
 
         try {
             const submitData = {
+                employee: user._id, // Add the current user as the employee
                 date: formData.date,
                 startTime: formData.startTime.trim(),
                 endTime: formData.endTime.trim(),
@@ -184,7 +187,7 @@ const OvertimeForm = () => {
 
             navigate('/app/overtime');
         } catch (error) {
-            console.error('Error submitting overtime:', error);
+
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }
@@ -253,28 +256,30 @@ const OvertimeForm = () => {
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
+                                    type="time"
                                     label="Start Time *"
                                     name="startTime"
                                     value={formData.startTime}
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    placeholder="HH:MM (e.g., 18:00)"
+                                    InputLabelProps={{ shrink: true }}
                                     error={Boolean(errors.startTime)}
-                                    helperText={errors.startTime || 'Enter start time in HH:MM format'}
+                                    helperText={errors.startTime || 'Select overtime start time'}
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
+                                    type="time"
                                     label="End Time *"
                                     name="endTime"
                                     value={formData.endTime}
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    placeholder="HH:MM (e.g., 22:00)"
+                                    InputLabelProps={{ shrink: true }}
                                     error={Boolean(errors.endTime)}
-                                    helperText={errors.endTime || 'Enter end time in HH:MM format'}
+                                    helperText={errors.endTime || 'Select overtime end time'}
                                 />
                             </Grid>
                         </Grid>

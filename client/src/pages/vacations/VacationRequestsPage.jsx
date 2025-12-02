@@ -99,7 +99,7 @@ const VacationRequestsPage = () => {
 
             setVacations(filteredData);
         } catch (error) {
-            console.error('Error fetching vacations:', error);
+
             showNotification('Failed to fetch vacations', 'error');
             setVacations([]);
         } finally {
@@ -131,7 +131,7 @@ const VacationRequestsPage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchVacations();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -157,7 +157,7 @@ const VacationRequestsPage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchVacations();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };

@@ -38,7 +38,6 @@ import {
     Sync as SyncIcon,
     Home as HomeIcon
 } from '@mui/icons-material';
-import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import RolesTableSkeleton from '../../components/roles/RolesTableSkeleton';
 import RoleTypeBadge from '../../components/roles/RoleTypeBadge';
@@ -136,7 +135,7 @@ const RolesPage = () => {
             const data = await roleService.getStats();
             setStats(data);
         } catch (error) {
-            console.error('Failed to fetch stats:', error);
+
         }
     };
 
@@ -153,7 +152,7 @@ const RolesPage = () => {
             setUserCount(data.userCount);
             setSampleUsers(data.sampleUsers || []);
         } catch (error) {
-            console.error('Failed to fetch user count:', error);
+
             // Continue with deletion attempt - backend will handle validation
         } finally {
             setCheckingUsers(false);

@@ -38,7 +38,7 @@ export const getAllMissions = async (req, res) => {
 
         res.json(missions);
     } catch (err) {
-        console.error('Get missions error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -48,7 +48,7 @@ export const getAllMissions = async (req, res) => {
  */
 export const createMission = async (req, res) => {
     try {
-        console.log('=== CREATE MISSION REQUEST ===');
+
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
         // Handle file uploads for attachments
@@ -63,8 +63,6 @@ export const createMission = async (req, res) => {
         const mission = new Mission(req.body);
         const savedMission = await mission.save();
 
-        console.log('Mission saved successfully:', savedMission._id);
-
         // Create notification for supervisor/manager
         await createMissionNotification(savedMission, 'submitted');
 
@@ -73,8 +71,8 @@ export const createMission = async (req, res) => {
 
         res.status(201).json(savedMission);
     } catch (err) {
-        console.error('Create mission error:', err);
-        console.error('Error stack:', err.stack);
+
+
         res.status(400).json({
             error: err.message,
             details: err.errors ? Object.keys(err.errors).map(key => ({
@@ -103,7 +101,7 @@ export const getMissionById = async (req, res) => {
 
         res.json(mission);
     } catch (err) {
-        console.error('Get mission by ID error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -133,7 +131,7 @@ export const updateMission = async (req, res) => {
 
         res.json(mission);
     } catch (err) {
-        console.error('Update mission error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -158,7 +156,7 @@ export const deleteMission = async (req, res) => {
         await Mission.findByIdAndDelete(req.params.id);
         res.json({ message: 'Mission deleted successfully' });
     } catch (err) {
-        console.error('Delete mission error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -204,7 +202,7 @@ export const approveMission = async (req, res) => {
 
         res.json(mission);
     } catch (err) {
-        console.error('Approve mission error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -228,10 +226,6 @@ export const rejectMission = async (req, res) => {
             });
         }
 
-        console.log('=== REJECT MISSION ===');
-        console.log('Mission ID:', req.params.id);
-        console.log('User role:', req.user.role);
-        console.log('Request body:', req.body);
 
         const { reason } = req.body;
         const userId = req.user._id;
@@ -246,7 +240,7 @@ export const rejectMission = async (req, res) => {
 
         // Validate reason
         if (!reason || typeof reason !== 'string') {
-            console.error('Rejection reason validation failed: not a string or missing');
+
             return res.status(400).json({
                 error: 'Rejection reason is required and must be a string'
             });
@@ -254,25 +248,21 @@ export const rejectMission = async (req, res) => {
 
         const trimmedReason = reason.trim();
         if (!trimmedReason) {
-            console.error('Rejection reason validation failed: empty after trim');
+
             return res.status(400).json({
                 error: 'Rejection reason is required and cannot be empty'
             });
         }
 
         if (trimmedReason.length < 10) {
-            console.error('Rejection reason validation failed: too short', trimmedReason.length);
+
             return res.status(400).json({
                 error: 'Rejection reason must be at least 10 characters long'
             });
         }
 
-        console.log('Calling reject with reason:', trimmedReason);
-
         // Reject the mission
         await mission.reject(userId, trimmedReason);
-
-        console.log('Mission rejected successfully');
 
         // Create notification for employee
         await createMissionNotification(mission, 'rejected');
@@ -282,8 +272,8 @@ export const rejectMission = async (req, res) => {
 
         res.json(mission);
     } catch (err) {
-        console.error('Reject mission error:', err);
-        console.error('Error stack:', err.stack);
+
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -335,7 +325,7 @@ async function createMissionNotification(mission, type) {
             await mission.save();
         }
     } catch (error) {
-        console.error('Error creating mission notification:', error);
+
     }
 }
 
@@ -347,14 +337,14 @@ async function sendMissionRequestNotification(mission) {
         // Get employee details
         const employee = await User.findById(mission.employee).select('username email personalInfo');
         if (!employee) {
-            console.error('Employee not found for mission request');
+
             return { success: false, error: 'Employee not found' };
         }
 
         // Get manager
         const manager = await getEmployeeManager(employee);
         if (!manager || !manager.email) {
-            console.log('⚠️  No manager found or manager has no email');
+
             return { success: false, error: 'Manager not found or has no email' };
         }
 
@@ -476,7 +466,7 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-        console.error('Error sending mission request notification:', error);
+
         return { success: false, error: error.message };
     }
 }
@@ -489,7 +479,7 @@ async function sendMissionStatusUpdateNotification(mission) {
         // Get employee details
         const employee = await User.findById(mission.employee).select('username email personalInfo');
         if (!employee || !employee.email) {
-            console.error('Employee not found or has no email');
+
             return { success: false, error: 'Employee not found or has no email' };
         }
 
@@ -632,7 +622,7 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-        console.error('Error sending mission status update notification:', error);
+
         return { success: false, error: error.message };
     }
 }

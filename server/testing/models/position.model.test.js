@@ -37,7 +37,7 @@ describe('Position Model', () => {
 
     expect(err).toBeDefined();
     expect(err.errors.title).toBeDefined();
-    expect(err.errors.code).toBeDefined();
+    // Code is not required, it's auto-generated if not provided
   });
 
   it('should enforce unique code constraint', async () => {

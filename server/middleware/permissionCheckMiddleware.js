@@ -49,7 +49,7 @@ export const checkPermission = (requiredPermissions, options = {}) => {
 
             next();
         } catch (error) {
-            console.error('Permission check error:', error);
+
             return res.status(500).json({
                 success: false,
                 message: 'Error checking permissions'
@@ -123,7 +123,7 @@ export const attachUserPermissions = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error attaching permissions:', error);
+
         next();
     }
 };
@@ -151,7 +151,7 @@ export const checkOwnership = (resourceField = 'employee') => {
 
             next();
         } catch (error) {
-            console.error('Ownership check error:', error);
+
             return res.status(500).json({
                 success: false,
                 message: 'Error checking resource ownership'
@@ -200,7 +200,7 @@ export const resourcePermission = (resource, action, options = {}) => {
                 message: 'You do not have permission to perform this action'
             });
         } catch (error) {
-            console.error('Resource permission error:', error);
+
             return res.status(500).json({
                 success: false,
                 message: 'Error checking permissions'

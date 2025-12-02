@@ -89,7 +89,7 @@ export const checkCanModify = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error checking modification permission:', error);
+
         return res.status(500).json({
             success: false,
             message: 'Error checking modification permission'
@@ -126,7 +126,7 @@ export const validateEmployee = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating employee:', error);
+
         next();
     }
 };

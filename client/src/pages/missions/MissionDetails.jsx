@@ -41,7 +41,6 @@ const MissionDetails = () => {
     const [mission, setMission] = useState(null);
     const [loading, setLoading] = useState(true);
     const [openConfirm, setOpenConfirm] = useState(false);
-    const [actionType, setActionType] = useState('');
 
     const canManage = isHR || isAdmin;
 
@@ -56,7 +55,7 @@ const MissionDetails = () => {
             const data = await missionService.getById(id);
             setMission(data);
         } catch (error) {
-            console.error('Error fetching mission:', error);
+
             showNotification('Failed to load mission', 'error');
             navigate('/app/missions');
         } finally {
@@ -70,7 +69,7 @@ const MissionDetails = () => {
             showNotification('Mission approved successfully', 'success');
             await fetchMission();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -95,7 +94,7 @@ const MissionDetails = () => {
             showNotification('Mission rejected successfully', 'success');
             await fetchMission();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };
@@ -209,7 +208,6 @@ const MissionDetails = () => {
                             color="error"
                             startIcon={<DeleteIcon />}
                             onClick={() => {
-                                setActionType('delete');
                                 setOpenConfirm(true);
                             }}
                         >

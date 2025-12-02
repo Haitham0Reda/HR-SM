@@ -16,9 +16,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Stack,
-    Avatar,
-    alpha
+    Stack
 } from '@mui/material';
 
 const RolesTableSkeleton = ({ rows = 5 }) => {

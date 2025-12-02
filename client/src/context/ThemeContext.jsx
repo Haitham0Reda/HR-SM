@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { themeService } from '../services';
+import { designTokens, applyCSSVariables } from '../theme/designTokens';
+import { validateThemeConfig, validateAccessibility, sanitizeThemeConfig } from '../theme/themeValidation';
 
 const ThemeContext = createContext();
 
@@ -15,16 +17,35 @@ export const useThemeConfig = () => {
 export const ThemeConfigProvider = ({ children }) => {
     const [themeConfig, setThemeConfig] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [colorMode, setColorMode] = useState('light');
+    const [colorMode, setColorMode] = useState(() => {
+        // Load saved theme mode from localStorage
+        const savedMode = localStorage.getItem('themeMode');
+        return savedMode || 'light';
+    });
 
     // Fetch theme configuration from API
     useEffect(() => {
         const fetchTheme = async () => {
             try {
                 const config = await themeService.getTheme();
-                setThemeConfig(config);
+                
+                // Validate theme configuration
+                const validation = validateThemeConfig(config);
+                if (!validation.isValid) {
+
+                }
+                
+                // Check accessibility
+                const accessibility = validateAccessibility(config);
+                if (!accessibility.isAccessible) {
+
+                }
+                
+                // Sanitize theme to fill in any missing values
+                const sanitizedConfig = sanitizeThemeConfig(config, getDefaultTheme());
+                setThemeConfig(sanitizedConfig);
             } catch (error) {
-                console.error('Failed to fetch theme:', error);
+
                 // Use default theme if fetch fails
                 setThemeConfig(getDefaultTheme());
             } finally {
@@ -35,41 +56,34 @@ export const ThemeConfigProvider = ({ children }) => {
         fetchTheme();
     }, []);
 
+    // Apply CSS variables when color mode changes
+    useEffect(() => {
+        const isDark = colorMode === 'dark';
+        applyCSSVariables(isDark);
+        
+        // Save theme mode to localStorage
+        localStorage.setItem('themeMode', colorMode);
+    }, [colorMode]);
+
     // Create Material-UI theme from configuration
     const theme = useMemo(() => {
         if (!themeConfig) return createTheme();
 
+        const isDark = colorMode === 'dark';
+        const currentPalette = isDark ? themeConfig.dark : themeConfig.light;
+
         return createTheme({
-            cssVariables: {
-                colorSchemeSelector: 'data-mui-color-scheme',
-            },
-            colorSchemes: {
-                light: {
-                    palette: {
-                        primary: themeConfig.light.primary,
-                        secondary: themeConfig.light.secondary,
-                        success: themeConfig.light.success,
-                        error: themeConfig.light.error,
-                        warning: themeConfig.light.warning,
-                        info: themeConfig.light.info,
-                        background: themeConfig.light.background,
-                        text: themeConfig.light.text,
-                        divider: '#dee2e6',
-                    },
-                },
-                dark: {
-                    palette: {
-                        primary: themeConfig.dark.primary,
-                        secondary: themeConfig.dark.secondary,
-                        success: themeConfig.dark.success,
-                        error: themeConfig.dark.error,
-                        warning: themeConfig.dark.warning,
-                        info: themeConfig.dark.info,
-                        background: themeConfig.dark.background,
-                        text: themeConfig.dark.text,
-                        divider: '#495057',
-                    },
-                },
+            palette: {
+                mode: colorMode,
+                primary: currentPalette.primary,
+                secondary: currentPalette.secondary,
+                success: currentPalette.success,
+                error: currentPalette.error,
+                warning: currentPalette.warning,
+                info: currentPalette.info,
+                background: currentPalette.background,
+                text: currentPalette.text,
+                divider: isDark ? '#495057' : '#dee2e6',
             },
             typography: {
                 fontFamily: themeConfig.typography?.fontFamily || '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -204,19 +218,28 @@ export const ThemeConfigProvider = ({ children }) => {
                 },
             },
         });
-    }, [themeConfig]);
+    }, [themeConfig, colorMode]);
 
-    const updateThemeConfig = (newConfig) => {
+    // Memoize the update function to prevent unnecessary re-renders
+    const updateThemeConfig = useCallback((newConfig) => {
         setThemeConfig(newConfig);
-    };
+    }, []);
 
-    const value = {
+    // Memoize the toggle function to prevent unnecessary re-renders
+    const toggleColorMode = useCallback(() => {
+        setColorMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+    }, []);
+
+    // Memoize context value to prevent unnecessary re-renders
+    const value = useMemo(() => ({
         themeConfig,
         setThemeConfig: updateThemeConfig,
         colorMode,
         setColorMode,
+        toggleColorMode,
         loading,
-    };
+        designTokens, // Expose design tokens via context
+    }), [themeConfig, colorMode, loading, updateThemeConfig, toggleColorMode]);
 
     if (loading) {
         return null; // Or a loading spinner

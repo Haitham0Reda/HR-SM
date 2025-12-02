@@ -8,6 +8,7 @@ import {
     TextField,
     MenuItem,
     Grid,
+    useTheme,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -28,6 +29,7 @@ import permissionService from '../../services/permission.service';
 
 const PermissionsPage = () => {
     useDocumentTitle('Permissions');
+    const theme = useTheme();
     const navigate = useNavigate();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
@@ -76,8 +78,24 @@ const PermissionsPage = () => {
             if (filters.sortBy) params.sortBy = filters.sortBy;
             if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
-            const data = await permissionService.getAll(params);
-            const permissionsArray = Array.isArray(data) ? data : [];
+            console.log('Fetching permissions with params:', params);
+            const response = await permissionService.getAll(params);
+            console.log('Permissions API response:', response);
+
+            // Handle different response formats
+            let permissionsArray = [];
+            if (Array.isArray(response)) {
+                permissionsArray = response;
+            } else if (response?.data && Array.isArray(response.data)) {
+                permissionsArray = response.data;
+            } else if (response?.permissions && Array.isArray(response.permissions)) {
+                permissionsArray = response.permissions;
+            }
+
+            console.log('Processed permissions array:', permissionsArray);
+            if (permissionsArray.length > 0) {
+                console.log('First permission employee field:', permissionsArray[0].employee);
+            }
 
             // Filter based on role
             let filteredData;
@@ -93,9 +111,11 @@ const PermissionsPage = () => {
                 });
             }
 
+            console.log('Filtered permissions:', filteredData);
             setPermissions(filteredData);
         } catch (error) {
             console.error('Error fetching permissions:', error);
+
             showNotification('Failed to fetch permissions', 'error');
             setPermissions([]);
         } finally {
@@ -127,7 +147,7 @@ const PermissionsPage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchPermissions();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -153,18 +173,18 @@ const PermissionsPage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchPermissions();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            pending: 'warning',
-            approved: 'success',
-            rejected: 'error',
+            pending: theme.palette.warning.main,
+            approved: theme.palette.success.main,
+            rejected: theme.palette.error.main,
         };
-        return colors[status] || 'default';
+        return colors[status] || theme.palette.grey[500];
     };
 
     const getPermissionTypeLabel = (type) => {
@@ -177,52 +197,58 @@ const PermissionsPage = () => {
 
     const columns = [
         ...(canManage ? [{
-            field: 'employee',
-            headerName: 'Employee',
-            width: 180,
+            id: 'employee',
+            label: 'Employee',
             align: 'center',
-            renderCell: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
+            render: (row) => {
+                // Handle both populated and non-populated employee field
+                if (typeof row.employee === 'object' && row.employee !== null) {
+                    return row.employee.personalInfo?.fullName || row.employee.username || 'N/A';
+                }
+                // If employee is just an ID string, show the ID
+                return row.employee || 'N/A';
+            },
         }] : []),
         {
-            field: 'permissionType',
-            headerName: 'Type',
-            width: 150,
+            id: 'permissionType',
+            label: 'Type',
             align: 'center',
-            renderCell: (row) => (
+            render: (row) => (
                 <Chip
                     label={getPermissionTypeLabel(row.permissionType)}
                     size="small"
+                    sx={{
+                        borderColor: theme.palette.primary.main,
+                        color: theme.palette.primary.main,
+                        fontWeight: 600
+                    }}
                     variant="outlined"
-                    color="primary"
                 />
             ),
         },
         {
-            field: 'date',
-            headerName: 'Date',
-            width: 120,
+            id: 'date',
+            label: 'Date',
             align: 'center',
-            renderCell: (row) => new Date(row.date).toLocaleDateString(),
+            render: (row) => new Date(row.date).toLocaleDateString(),
         },
         {
-            field: 'time',
-            headerName: 'Time',
-            width: 100,
+            id: 'time',
+            label: 'Time',
             align: 'center',
+            render: (row) => row.time || '-',
         },
         {
-            field: 'duration',
-            headerName: 'Duration',
-            width: 100,
+            id: 'duration',
+            label: 'Duration',
             align: 'center',
-            renderCell: (row) => row.duration ? `${row.duration}h` : '-',
+            render: (row) => row.duration ? `${row.duration}h` : '-',
         },
         {
-            field: 'reason',
-            headerName: 'Reason',
-            width: 200,
+            id: 'reason',
+            label: 'Reason',
             align: 'center',
-            renderCell: (row) => (
+            render: (row) => (
                 <Box sx={{ 
                     overflow: 'hidden', 
                     textOverflow: 'ellipsis', 
@@ -234,24 +260,29 @@ const PermissionsPage = () => {
             ),
         },
         {
-            field: 'status',
-            headerName: 'Status',
-            width: 120,
+            id: 'status',
+            label: 'Status',
             align: 'center',
-            renderCell: (row) => (
-                <Chip
-                    label={row.status}
-                    color={getStatusColor(row.status)}
-                    size="small"
-                />
-            ),
+            render: (row) => {
+                const statusColor = getStatusColor(row.status);
+                return (
+                    <Chip
+                        label={row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                        size="small"
+                        sx={{
+                            bgcolor: statusColor,
+                            color: theme.palette.getContrastText(statusColor),
+                            fontWeight: 600
+                        }}
+                    />
+                );
+            },
         },
         {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 220,
+            id: 'actions',
+            label: 'Actions',
             align: 'center',
-            renderCell: (row) => {
+            render: (row) => {
                 const isPending = row.status === 'pending';
                 const isOwnRequest = row.employee?._id === user?._id || String(row.employee?._id) === String(user?._id);
 

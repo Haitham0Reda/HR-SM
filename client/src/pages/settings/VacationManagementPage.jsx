@@ -13,11 +13,8 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Paper,
     Chip,
-    IconButton,
     InputAdornment,
-    Grid,
     Switch,
     FormControlLabel,
     TablePagination,
@@ -30,7 +27,6 @@ import {
     Search as SearchIcon,
     Download as DownloadIcon,
     Info as InfoIcon,
-    Event as EventIcon,
     AccessTime as TimeIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
@@ -63,12 +59,14 @@ const VacationManagementPage = () => {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         if (autoSearch) {
             applyFilters();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchTerm, selectedDepartment, employees, autoSearch]);
 
     const fetchData = async () => {
@@ -81,11 +79,7 @@ const VacationManagementPage = () => {
             
             // Debug: Log first employee to check data structure
             if (usersData.length > 0) {
-                console.log('Sample employee data:', {
-                    employeeId: usersData[0].employeeId,
-                    employment: usersData[0].employment,
-                    hireDate: usersData[0].employment?.hireDate
-                });
+
             }
             
             setEmployees(usersData);
@@ -211,7 +205,7 @@ const VacationManagementPage = () => {
             // Refresh employee data to get updated values
             await fetchData();
         } catch (error) {
-            console.error('Error saving vacation balances:', error);
+
             showNotification('Failed to save vacation balances', 'error');
         } finally {
             setLoading(false);

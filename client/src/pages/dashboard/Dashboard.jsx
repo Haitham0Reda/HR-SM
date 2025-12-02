@@ -44,8 +44,7 @@ import {
     EventBusy as ForgotIcon,
     SickOutlined as SickIcon,
     Person as ProfileIcon,
-    Edit as EditIcon,
-    Info as InfoIcon
+    Edit as EditIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -122,7 +121,6 @@ const Dashboard = () => {
 
     // State for Employee of the Month
     const [employeeOfMonth, setEmployeeOfMonth] = useState(null);
-    const [loadingEmployeeOfMonth, setLoadingEmployeeOfMonth] = useState(true);
 
     // Update clock every second
     useEffect(() => {
@@ -134,13 +132,10 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchEmployeeOfMonth = async () => {
             try {
-                setLoadingEmployeeOfMonth(true);
                 const data = await dashboardService.getEmployeeOfTheMonth();
                 setEmployeeOfMonth(data);
             } catch (error) {
-                console.error('Failed to fetch employee of the month:', error);
-            } finally {
-                setLoadingEmployeeOfMonth(false);
+
             }
         };
 

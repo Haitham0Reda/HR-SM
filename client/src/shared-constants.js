@@ -57,7 +57,7 @@ export const PRIORITY_LEVELS = {
     URGENT: 'urgent',
 };
 
-export default {
+const sharedConstants = {
     ROLES,
     REQUEST_STATUS,
     LEAVE_TYPES,
@@ -65,3 +65,5 @@ export default {
     DATE_FORMATS,
     PRIORITY_LEVELS,
 };
+
+export default sharedConstants;

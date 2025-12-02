@@ -24,7 +24,7 @@ export const encryptData = (data, secret = process.env.REACT_APP_ENCRYPTION_KEY)
     try {
         return CryptoJS.AES.encrypt(JSON.stringify(data), secret).toString();
     } catch (error) {
-        console.error('Encryption error:', error);
+
         return null;
     }
 };
@@ -37,7 +37,7 @@ export const decryptData = (encryptedData, secret = process.env.REACT_APP_ENCRYP
         const bytes = CryptoJS.AES.decrypt(encryptedData, secret);
         return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
     } catch (error) {
-        console.error('Decryption error:', error);
+
         return null;
     }
 };
@@ -82,7 +82,7 @@ export const secureStorage = {
             ls.set(key, value);
             return true;
         } catch (error) {
-            console.error('Secure storage set error:', error);
+
             return false;
         }
     },
@@ -91,7 +91,7 @@ export const secureStorage = {
         try {
             return ls.get(key);
         } catch (error) {
-            console.error('Secure storage get error:', error);
+
             return null;
         }
     },
@@ -101,7 +101,7 @@ export const secureStorage = {
             ls.remove(key);
             return true;
         } catch (error) {
-            console.error('Secure storage remove error:', error);
+
             return false;
         }
     },
@@ -111,7 +111,7 @@ export const secureStorage = {
             ls.removeAll();
             return true;
         } catch (error) {
-            console.error('Secure storage clear error:', error);
+
             return false;
         }
     }

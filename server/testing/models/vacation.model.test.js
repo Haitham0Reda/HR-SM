@@ -451,8 +451,8 @@ describe('Vacation Model', () => {
           {
             employee: testEmployee._id,
             vacationType: 'casual',
-            startDate: new Date('2025-12-01'),
-            endDate: new Date('2025-12-05'),
+            startDate: new Date('2020-12-01'),
+            endDate: new Date('2020-12-05'),
             duration: 5,
             department: testDepartment._id,
             status: 'approved'

@@ -435,47 +435,43 @@ mixedVacationSchema.methods.applyToAll = async function (approvedBy) {
 
 // Static method to find active policies
 mixedVacationSchema.statics.findActivePolicies = async function () {
-    console.log('findActivePolicies called');
+
     const now = new Date();
-    console.log('Current date:', now);
 
     const query = {
         status: 'active',
         startDate: { $lte: now },
         endDate: { $gte: now }
     };
-    console.log('Query:', query);
 
     try {
         const result = await this.find(query).populate('createdBy', 'username email');
-        console.log('Query result count:', result.length);
+
         return result;
     } catch (err) {
-        console.error('Error in findActivePolicies:', err);
+
         throw err;
     }
 };
 
 // Static method to find upcoming policies
 mixedVacationSchema.statics.findUpcomingPolicies = async function (days = 30) {
-    console.log('findUpcomingPolicies called with days:', days);
+
     const now = new Date();
     const future = new Date();
     future.setDate(future.getDate() + days);
-    console.log('Date range:', now, 'to', future);
 
     const query = {
         status: 'active',
         startDate: { $gte: now, $lte: future }
     };
-    console.log('Query:', query);
 
     try {
         const result = await this.find(query).populate('createdBy', 'username email');
-        console.log('Query result count:', result.length);
+
         return result;
     } catch (err) {
-        console.error('Error in findUpcomingPolicies:', err);
+
         throw err;
     }
 };

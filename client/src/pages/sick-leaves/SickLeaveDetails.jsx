@@ -62,7 +62,7 @@ const SickLeaveDetails = () => {
             const data = await sickLeaveService.getById(id);
             setSickLeave(data);
         } catch (error) {
-            console.error('Error fetching sick leave:', error);
+
             showNotification('Failed to load sick leave', 'error');
             navigate('/app/sick-leaves');
         } finally {
@@ -76,7 +76,7 @@ const SickLeaveDetails = () => {
             showNotification('Sick leave approved by supervisor successfully', 'success');
             await fetchSickLeave();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -87,7 +87,7 @@ const SickLeaveDetails = () => {
             showNotification('Sick leave approved by doctor successfully', 'success');
             await fetchSickLeave();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -112,7 +112,7 @@ const SickLeaveDetails = () => {
             showNotification('Sick leave rejected by supervisor successfully', 'success');
             await fetchSickLeave();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };
@@ -137,7 +137,7 @@ const SickLeaveDetails = () => {
             showNotification('Sick leave rejected by doctor successfully', 'success');
             await fetchSickLeave();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };

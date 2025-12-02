@@ -55,7 +55,7 @@ const PermissionForm = () => {
                 reason: permission.reason || '',
             });
         } catch (error) {
-            console.error('Error fetching permission:', error);
+
             showNotification('Failed to load permission', 'error');
             navigate('/app/permissions');
         } finally {
@@ -135,7 +135,7 @@ const PermissionForm = () => {
 
             navigate('/app/permissions');
         } catch (error) {
-            console.error('Error submitting permission:', error);
+
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }

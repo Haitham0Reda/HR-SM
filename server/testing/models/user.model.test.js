@@ -9,7 +9,7 @@ describe('User Model', () => {
       email: 'test@example.com',
       password: 'Password123!',
       role: 'employee',
-      profile: {
+      personalInfo: {
         firstName: 'Test',
         lastName: 'User',
         phone: '1234567890'
@@ -23,9 +23,9 @@ describe('User Model', () => {
     expect(savedUser.username).toBe(userData.username);
     expect(savedUser.email).toBe(userData.email);
     expect(savedUser.role).toBe(userData.role);
-    expect(savedUser.profile.firstName).toBe(userData.profile.firstName);
-    expect(savedUser.profile.lastName).toBe(userData.profile.lastName);
-    expect(savedUser.profile.phone).toBe(userData.profile.phone);
+    expect(savedUser.personalInfo.firstName).toBe(userData.personalInfo.firstName);
+    expect(savedUser.personalInfo.lastName).toBe(userData.personalInfo.lastName);
+    expect(savedUser.personalInfo.phone).toBe(userData.personalInfo.phone);
     // Password should be hashed
     expect(savedUser.password).not.toBe(userData.password);
   });

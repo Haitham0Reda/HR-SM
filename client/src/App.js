@@ -100,19 +100,16 @@ function App() {
     // Setup global error handler
     logger.setupGlobalErrorHandler();
     logger.info('Application started');
-    console.log('🎄 Seasonal Effects Settings:', seasonalSettings);
 
     // Listen for localStorage changes (from Settings page)
     const handleStorageChange = (e) => {
       if (e.key === 'seasonalSettings' && e.newValue) {
-        console.log('🔄 Seasonal settings updated from Settings page');
         setSeasonalSettings(JSON.parse(e.newValue));
       }
     };
 
     // Listen for custom event (for same-tab updates)
     const handleSettingsUpdate = (e) => {
-      console.log('🔄 Seasonal settings updated (custom event)');
       const saved = localStorage.getItem('seasonalSettings');
       if (saved) {
         setSeasonalSettings(JSON.parse(saved));

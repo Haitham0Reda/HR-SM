@@ -60,7 +60,7 @@ describe('Permission Model', () => {
         scheduled: '09:00',
         requested: '10:30'
       },
-      reason: 'Short' // Too short, minimum 10 characters
+      reason: 'A'.repeat(501) // Too long, maximum 500 characters
     };
 
     const permission = new Permission(permissionData);

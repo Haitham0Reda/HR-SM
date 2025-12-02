@@ -67,7 +67,7 @@ export const createPermissionNotification = async (permission, previousStatus) =
             await Notification.create(notificationData);
         }
     } catch (error) {
-        console.error('Error creating permission notification:', error);
+
     }
 };
 

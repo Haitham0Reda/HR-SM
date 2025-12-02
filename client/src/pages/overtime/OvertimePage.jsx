@@ -104,7 +104,7 @@ const OvertimePage = () => {
             setOvertime(filteredData);
             calculateMonthlySummary(filteredData);
         } catch (error) {
-            console.error('Error fetching overtime:', error);
+
             showNotification('Failed to fetch overtime records', 'error');
             setOvertime([]);
         } finally {
@@ -169,7 +169,7 @@ const OvertimePage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchOvertime();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -195,7 +195,7 @@ const OvertimePage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchOvertime();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };
@@ -220,39 +220,34 @@ const OvertimePage = () => {
 
     const columns = [
         ...(canManage ? [{
-            field: 'employee',
-            headerName: 'Employee',
-            width: 180,
+            id: 'employee',
+            label: 'Employee',
             align: 'center',
-            renderCell: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
+            render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
         }] : []),
         {
-            field: 'date',
-            headerName: 'Date',
-            width: 120,
+            id: 'date',
+            label: 'Date',
             align: 'center',
-            renderCell: (row) => new Date(row.date).toLocaleDateString(),
+            render: (row) => new Date(row.date).toLocaleDateString(),
         },
         {
-            field: 'timeRange',
-            headerName: 'Time Range',
-            width: 150,
+            id: 'timeRange',
+            label: 'Time Range',
             align: 'center',
-            renderCell: (row) => `${row.startTime} - ${row.endTime}`,
+            render: (row) => `${row.startTime} - ${row.endTime}`,
         },
         {
-            field: 'duration',
-            headerName: 'Duration',
-            width: 100,
+            id: 'duration',
+            label: 'Duration',
             align: 'center',
-            renderCell: (row) => row.duration ? `${row.duration}h` : '-',
+            render: (row) => row.duration ? `${row.duration}h` : '-',
         },
         {
-            field: 'compensationType',
-            headerName: 'Compensation',
-            width: 130,
+            id: 'compensationType',
+            label: 'Compensation',
             align: 'center',
-            renderCell: (row) => (
+            render: (row) => (
                 <Chip
                     label={getCompensationTypeLabel(row.compensationType)}
                     size="small"
@@ -262,11 +257,10 @@ const OvertimePage = () => {
             ),
         },
         {
-            field: 'compensated',
-            headerName: 'Compensated',
-            width: 120,
+            id: 'compensated',
+            label: 'Compensated',
             align: 'center',
-            renderCell: (row) => (
+            render: (row) => (
                 <Chip
                     label={row.compensated ? 'Yes' : 'No'}
                     size="small"
@@ -275,11 +269,10 @@ const OvertimePage = () => {
             ),
         },
         {
-            field: 'reason',
-            headerName: 'Reason',
-            width: 200,
+            id: 'reason',
+            label: 'Reason',
             align: 'center',
-            renderCell: (row) => (
+            render: (row) => (
                 <Box sx={{ 
                     overflow: 'hidden', 
                     textOverflow: 'ellipsis', 
@@ -291,11 +284,10 @@ const OvertimePage = () => {
             ),
         },
         {
-            field: 'status',
-            headerName: 'Status',
-            width: 120,
+            id: 'status',
+            label: 'Status',
             align: 'center',
-            renderCell: (row) => (
+            render: (row) => (
                 <Chip
                     label={row.status}
                     color={getStatusColor(row.status)}
@@ -304,11 +296,10 @@ const OvertimePage = () => {
             ),
         },
         {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 220,
+            id: 'actions',
+            label: 'Actions',
             align: 'center',
-            renderCell: (row) => {
+            render: (row) => {
                 const isPending = row.status === 'pending';
                 const isOwnRequest = row.employee?._id === user?._id || String(row.employee?._id) === String(user?._id);
 

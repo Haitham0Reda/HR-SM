@@ -20,7 +20,6 @@ class BackupEmailService {
             });
 
             output.on('close', () => {
-                console.log(`   ✓ Zip file created: ${(archive.pointer() / 1024 / 1024).toFixed(2)} MB`);
                 resolve(outputPath);
             });
 
@@ -44,7 +43,6 @@ class BackupEmailService {
      */
     async sendBackupEmail(backup, execution, recipientEmail) {
         try {
-            console.log('📧 Preparing to send backup via email...');
 
             // Create a temporary zip file
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -63,7 +61,6 @@ class BackupEmailService {
 
             // Check if file is too large for email (most email servers limit to 25MB)
             if (stats.size > 25 * 1024 * 1024) {
-                console.log('⚠️  Backup file too large for email (>25MB), sending notification only');
                 await this.sendBackupNotification(backup, execution, recipientEmail, true);
                 await fs.unlink(zipFilePath); // Clean up
                 return;
@@ -82,14 +79,12 @@ class BackupEmailService {
                 ]
             });
 
-            console.log(`✅ Backup email sent to: ${recipientEmail}`);
-
             // Clean up temp file
             await fs.unlink(zipFilePath);
 
             return result;
         } catch (error) {
-            console.error('❌ Failed to send backup email:', error.message);
+
             return null;
         }
     }
@@ -105,10 +100,9 @@ class BackupEmailService {
                 html: this.generateNotificationHTML(backup, execution, tooLarge)
             });
 
-            console.log(`✅ Backup notification sent to: ${recipientEmail}`);
             return result;
         } catch (error) {
-            console.error('❌ Failed to send backup notification:', error.message);
+
             return null;
         }
     }

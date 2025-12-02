@@ -41,7 +41,7 @@ export const sendSurveyAssignmentNotifications = async (surveyId) => {
             notification
         };
     } catch (error) {
-        console.error('Error sending survey assignment notifications:', error);
+
         throw error;
     }
 };
@@ -89,7 +89,7 @@ export const sendSurveyReminders = async (surveyId) => {
             notification
         };
     } catch (error) {
-        console.error('Error sending survey reminders:', error);
+
         throw error;
     }
 };
@@ -121,12 +121,12 @@ async function sendNotifications(notification, users) {
                     recipient.emailSent = true;
                     recipient.emailSentAt = new Date();
                 } catch (emailError) {
-                    console.error(`Failed to send email to ${user.email}:`, emailError);
+
                     recipient.error = emailError.message;
                 }
             }
         } catch (error) {
-            console.error(`Failed to send notification to user ${user._id}:`, error);
+
             recipient.error = error.message;
         }
     }
@@ -245,13 +245,13 @@ export const sendScheduledReminders = async () => {
 
             if (shouldSendReminder) {
                 await sendSurveyReminders(survey._id);
-                console.log(`Sent reminder for survey: ${survey.title}`);
+
             }
         }
 
         return { success: true, message: 'Scheduled reminders sent' };
     } catch (error) {
-        console.error('Error sending scheduled reminders:', error);
+
         throw error;
     }
 };

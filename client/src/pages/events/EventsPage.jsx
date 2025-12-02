@@ -22,8 +22,7 @@ import {
     Delete as DeleteIcon,
     Visibility as VisibilityIcon,
     CalendarToday as CalendarIcon,
-    LocationOn as LocationIcon,
-    Category as CategoryIcon
+    LocationOn as LocationIcon
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -155,7 +154,7 @@ const EventsPage = () => {
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
         } catch (error) {
-            console.error('Error marking notification as read:', error);
+
         }
     };
 

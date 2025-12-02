@@ -210,7 +210,7 @@ TO WHOM IT MAY CONCERN
 
 Date: ${date}
 
-This is to certify that ${employee.profile.firstName} ${employee.profile.lastName}, 
+This is to certify that ${employee.personalInfo.firstName} ${employee.personalInfo.lastName}, 
 Employee ID: ${employee.employeeId}, was employed at our organization.
 
 Employment Period: ${new Date(employee.employment.hireDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - ${new Date(this.lastWorkingDay).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
@@ -245,7 +245,7 @@ TO WHOM IT MAY CONCERN
 
 Date: ${date}
 
-This is to certify that ${employee.profile.firstName} ${employee.profile.lastName},
+This is to certify that ${employee.personalInfo.firstName} ${employee.personalInfo.lastName},
         Employee ID: ${employee.employeeId}, was employed at our organization.
 
 Employment Period: ${new Date(employee.employment.hireDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - ${new Date(this.lastWorkingDay).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}

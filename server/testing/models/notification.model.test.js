@@ -42,7 +42,7 @@ describe('Notification Model', () => {
     }
 
     // Log the error for debugging
-    console.log('Error object:', err);
+
     if (err && err.errors) {
       console.log('Error keys:', Object.keys(err.errors));
     }

@@ -88,7 +88,7 @@ const PositionsPage = () => {
             const data = await departmentService.getAll();
             setDepartments(data);
         } catch (error) {
-            console.error('Failed to fetch departments:', error);
+
         }
     };
 

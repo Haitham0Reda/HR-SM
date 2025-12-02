@@ -61,10 +61,6 @@ const VacationPage = () => {
 
             const data = await vacationService.getAll();
 
-            console.log('Fetched all leaves:', data);
-            console.log('User role - isHR:', isHR, 'isAdmin:', isAdmin);
-            console.log('Current user ID:', user?._id);
-
             // Ensure data is an array
             const leavesArray = Array.isArray(data) ? data : [];
 
@@ -80,7 +76,6 @@ const VacationPage = () => {
             if (isHR || isAdmin) {
                 // HR/Admin see all vacation requests
                 filteredData = vacationRequests;
-                console.log('HR/Admin - showing all vacation requests:', filteredData.length);
             } else {
                 // Regular users see only their own vacation requests
                 filteredData = vacationRequests.filter(leave => {
@@ -88,12 +83,10 @@ const VacationPage = () => {
                     const currentUserId = user?._id;
                     return leaveUserId === currentUserId || String(leaveUserId) === String(currentUserId);
                 });
-                console.log('Regular user - showing own vacation requests:', filteredData.length);
             }
 
             setVacationHistory(filteredData);
         } catch (error) {
-            console.error('Error fetching vacation history:', error);
             showNotification('Failed to fetch vacation history', 'error');
         } finally {
             setLoading(false);
@@ -183,7 +176,6 @@ const VacationPage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchVacationHistory();
         } catch (error) {
-            console.error('Approve error:', error);
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -216,7 +208,6 @@ const VacationPage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchVacationHistory();
         } catch (error) {
-            console.error('Reject error:', error);
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };

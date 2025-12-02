@@ -25,9 +25,7 @@ import {
     Chip,
     Avatar,
     Alert,
-    Switch,
-    FormControlLabel,
-    Slider,
+    Slider
 } from '@mui/material';
 import {
     Save as SaveIcon,
@@ -36,7 +34,7 @@ import {
     Brightness4 as DarkModeIcon,
     Brightness7 as LightModeIcon,
     Refresh as ResetIcon,
-    Visibility as PreviewIcon,
+    Visibility as PreviewIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';

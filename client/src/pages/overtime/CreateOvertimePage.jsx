@@ -43,7 +43,6 @@ const CreateOvertimePage = () => {
             return;
         }
         try {
-            console.log('Submitting overtime request:', formData);
 
             // Create overtime request using permission service
             const overtimeData = {
@@ -56,7 +55,6 @@ const CreateOvertimePage = () => {
             };
 
             const response = await permissionService.create(overtimeData);
-            console.log('Overtime request created:', response);
 
             showNotification('Overtime request created successfully', 'success');
 
@@ -67,12 +65,11 @@ const CreateOvertimePage = () => {
 
             navigate('/app/overtime');
         } catch (error) {
-            console.error('Error creating overtime:', error);
+
             const errorMessage = error?.message || error?.response?.data?.message || 'Failed to create overtime request';
             showNotification(errorMessage, 'error');
         }
     };
-
 
 
     return (

@@ -318,7 +318,6 @@ export const PERMISSIONS = {
     'custom-reports.delete': 'Custom Reports Delete',
 
 
-
     // School Management
     'schools.view': 'View schools',
     'schools.create': 'Create schools',

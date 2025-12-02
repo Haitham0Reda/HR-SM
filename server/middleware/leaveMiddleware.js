@@ -29,7 +29,7 @@ export const populateDepartmentPosition = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error populating department/position:', error);
+
         next();
     }
 };
@@ -107,7 +107,7 @@ export const reserveVacationBalance = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error reserving vacation balance:', error);
+
         // Don't block save if balance reservation fails
         next();
     }
@@ -159,7 +159,7 @@ export const handleVacationBalanceUpdate = async (leave) => {
             }
         }
     } catch (error) {
-        console.error('Error in leave vacation balance update:', error);
+
     }
 };
 
@@ -171,17 +171,10 @@ export const createLeaveNotifications = async (leave, previousValues) => {
         const Notification = mongoose.model('Notification');
         const User = mongoose.model('User');
 
-        console.log('createLeaveNotifications called:', {
-            status: leave.status,
-            previousValues,
-            shouldCreateNotification: leave.status === 'pending' && !previousValues
-        });
-
         // If this is a new request (status is pending and no previous values), notify HR/Admin and employee
         if (leave.status === 'pending' && !previousValues) {
             // Get all HR and Admin users
             const hrAdminUsers = await User.find({ role: { $in: ['hr', 'admin'] } });
-            console.log('Found HR/Admin users:', hrAdminUsers.length);
 
             // Get employee details
             const employee = await User.findById(leave.employee);
@@ -212,11 +205,11 @@ export const createLeaveNotifications = async (leave, previousValues) => {
             const allNotifications = [...hrNotifications, employeeNotification];
 
             if (allNotifications.length > 0) {
-                console.log('Creating notifications:', allNotifications.length);
+
                 await Notification.insertMany(allNotifications);
-                console.log('Notifications created successfully');
+
             } else {
-                console.log('No users found to notify');
+
             }
         }
 
@@ -268,7 +261,7 @@ export const createLeaveNotifications = async (leave, previousValues) => {
             });
         }
     } catch (error) {
-        console.error('Error creating leave notification:', error);
+
     }
 };
 

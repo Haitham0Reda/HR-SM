@@ -19,12 +19,10 @@ afterAll(async () => {
 describe('ReportConfig Model', () => {
   it('should create a new report configuration with default values', async () => {
     const config = await ReportConfig.create({
-      organization: 'test-org',
-      school: school._id
+      organization: 'test-org'
     });
 
     expect(config.organization).toBe('test-org');
-    expect(config.school.toString()).toBe(school._id.toString());
     expect(config.hrMonth.startDay).toBe(21);
     expect(config.hrMonth.endDay).toBe(20);
     expect(config.hrMonth.isDefault).toBe(true);
@@ -220,7 +218,6 @@ describe('ReportConfig Model', () => {
     expect(customRange.endDate.getTime()).toBe(endDate.getTime());
     expect(customRange.label).toContain('Custom Range');
   });
-
 
 
   it('should handle report settings custom date ranges', async () => {

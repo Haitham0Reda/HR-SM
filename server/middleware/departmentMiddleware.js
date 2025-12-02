@@ -30,7 +30,7 @@ export const checkDepartmentCodeUnique = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking department code uniqueness:', error);
+
         next();
     }
 };
@@ -60,7 +60,7 @@ export const validateManager = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating manager:', error);
+
         next();
     }
 };
@@ -83,7 +83,7 @@ export const validateSchool = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error validating school:', error);
+
         next();
     }
 };

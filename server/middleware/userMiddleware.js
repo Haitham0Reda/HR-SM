@@ -31,7 +31,7 @@ export const checkEmailUnique = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking email uniqueness:', error);
+
         next();
     }
 };
@@ -62,7 +62,7 @@ export const checkUsernameUnique = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking username uniqueness:', error);
+
         next();
     }
 };

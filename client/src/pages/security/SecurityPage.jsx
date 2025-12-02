@@ -105,7 +105,7 @@ const SecurityPage = () => {
                     });
                 }
             } catch (error) {
-                console.error('Failed to fetch settings:', error);
+
                 showNotification('Failed to load security settings', 'error');
             } finally {
                 setLoading(false);

@@ -41,7 +41,7 @@ export const validateVacationRequest = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error validating vacation request:', error);
+
         // On error, allow the request to prevent blocking
         next();
     }
@@ -85,7 +85,7 @@ export const validatePermissionRequest = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error validating permission request:', error);
+
         // On error, allow the request to prevent blocking
         next();
     }
@@ -125,7 +125,7 @@ export const validateSickLeaveRequest = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error validating sick leave request:', error);
+
         // On error, allow the request to prevent blocking
         next();
     }
@@ -165,7 +165,7 @@ export const validateMissionRequest = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error validating mission request:', error);
+
         // On error, allow the request to prevent blocking
         next();
     }
@@ -201,7 +201,7 @@ export const validateForgotCheckRequest = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error validating forgot check request:', error);
+
         // On error, allow the request to prevent blocking
         next();
     }
@@ -248,7 +248,7 @@ export const validateLeaveRequest = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error validating leave request:', error);
+
         // On error, allow the request to prevent blocking
         next();
     }
@@ -282,7 +282,7 @@ export const checkRequestControlStatus = async (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error checking request control status:', error);
+
         next();
     }
 };
@@ -341,7 +341,7 @@ export const sendRequestControlNotifications = async (doc, previousChangeCount) 
             }
         }
     } catch (error) {
-        console.error('Error sending request control notifications:', error);
+
     }
 };
 

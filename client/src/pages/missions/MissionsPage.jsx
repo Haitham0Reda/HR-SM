@@ -8,6 +8,7 @@ import {
     TextField,
     MenuItem,
     Grid,
+    useTheme,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -28,6 +29,7 @@ import missionService from '../../services/mission.service';
 
 const MissionsPage = () => {
     useDocumentTitle('Missions');
+    const theme = useTheme();
     const navigate = useNavigate();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
@@ -70,8 +72,23 @@ const MissionsPage = () => {
             if (filters.sortBy) params.sortBy = filters.sortBy;
             if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
-            const data = await missionService.getAll(params);
-            const missionsArray = Array.isArray(data) ? data : [];
+            console.log('Fetching missions with params:', params);
+            const response = await missionService.getAll(params);
+            console.log('Missions API response:', response);
+
+            // Handle different response formats
+            let missionsArray = [];
+            if (Array.isArray(response)) {
+                missionsArray = response;
+            } else if (response?.data && Array.isArray(response.data)) {
+                missionsArray = response.data;
+            } else if (response?.missions && Array.isArray(response.missions)) {
+                missionsArray = response.missions;
+            }
+
+            console.log('Processed missions array:', missionsArray);
+            console.log('Can manage:', canManage);
+            console.log('Current user:', user);
 
             // Filter based on role
             let filteredData;
@@ -83,14 +100,17 @@ const MissionsPage = () => {
                 filteredData = missionsArray.filter(mission => {
                     const missionUserId = mission.employee?._id || mission.employee;
                     const currentUserId = user?._id;
+                    console.log('Comparing:', missionUserId, 'with', currentUserId);
                     return missionUserId === currentUserId || String(missionUserId) === String(currentUserId);
                 });
             }
 
+            console.log('Filtered missions:', filteredData);
             setMissions(filteredData);
         } catch (error) {
             console.error('Error fetching missions:', error);
-            showNotification('Failed to fetch missions', 'error');
+            console.error('Error details:', error.response?.data);
+            showNotification(error.response?.data?.message || 'Failed to fetch missions', 'error');
             setMissions([]);
         } finally {
             setLoading(false);
@@ -121,7 +141,7 @@ const MissionsPage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchMissions();
         } catch (error) {
-            console.error('Approve error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
     };
@@ -147,41 +167,39 @@ const MissionsPage = () => {
             await new Promise(resolve => setTimeout(resolve, 300));
             await fetchMissions();
         } catch (error) {
-            console.error('Reject error:', error);
+
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            pending: 'warning',
-            approved: 'success',
-            rejected: 'error',
-            cancelled: 'default',
+            pending: theme.palette.warning.main,
+            approved: theme.palette.success.main,
+            rejected: theme.palette.error.main,
+            cancelled: theme.palette.grey[500],
         };
-        return colors[status] || 'default';
+        return colors[status] || theme.palette.grey[500];
     };
 
     const columns = [
         ...(canManage ? [{
-            field: 'employee',
-            headerName: 'Employee',
-            width: 180,
+            id: 'employee',
+            label: 'Employee',
             align: 'center',
-            renderCell: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
+            render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
         }] : []),
         {
-            field: 'location',
-            headerName: 'Location',
-            width: 150,
+            id: 'location',
+            label: 'Location',
             align: 'center',
+            render: (row) => row.location || '-',
         },
         {
-            field: 'purpose',
-            headerName: 'Purpose',
-            width: 200,
+            id: 'purpose',
+            label: 'Purpose',
             align: 'center',
-            renderCell: (row) => (
+            render: (row) => (
                 <Box sx={{ 
                     overflow: 'hidden', 
                     textOverflow: 'ellipsis', 
@@ -193,44 +211,47 @@ const MissionsPage = () => {
             ),
         },
         {
-            field: 'startDate',
-            headerName: 'Start Date',
-            width: 120,
+            id: 'startDate',
+            label: 'Start Date',
             align: 'center',
-            renderCell: (row) => new Date(row.startDate).toLocaleDateString(),
+            render: (row) => new Date(row.startDate).toLocaleDateString(),
         },
         {
-            field: 'endDate',
-            headerName: 'End Date',
-            width: 120,
+            id: 'endDate',
+            label: 'End Date',
             align: 'center',
-            renderCell: (row) => new Date(row.endDate).toLocaleDateString(),
+            render: (row) => new Date(row.endDate).toLocaleDateString(),
         },
         {
-            field: 'duration',
-            headerName: 'Days',
-            width: 80,
+            id: 'duration',
+            label: 'Days',
             align: 'center',
+            render: (row) => row.duration || '-',
         },
         {
-            field: 'status',
-            headerName: 'Status',
-            width: 120,
+            id: 'status',
+            label: 'Status',
             align: 'center',
-            renderCell: (row) => (
-                <Chip
-                    label={row.status}
-                    color={getStatusColor(row.status)}
-                    size="small"
-                />
-            ),
+            render: (row) => {
+                const statusColor = getStatusColor(row.status);
+                return (
+                    <Chip
+                        label={row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                        size="small"
+                        sx={{
+                            bgcolor: statusColor,
+                            color: theme.palette.getContrastText(statusColor),
+                            fontWeight: 600
+                        }}
+                    />
+                );
+            },
         },
         {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 220,
+            id: 'actions',
+            label: 'Actions',
             align: 'center',
-            renderCell: (row) => {
+            render: (row) => {
                 const isPending = row.status === 'pending';
                 const isOwnRequest = row.employee?._id === user?._id || String(row.employee?._id) === String(user?._id);
 
@@ -369,6 +390,12 @@ const MissionsPage = () => {
                         </TextField>
                     </Grid>
                 </Grid>
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                    Total missions: {missions.length}
+                </Typography>
             </Box>
 
             <DataTable

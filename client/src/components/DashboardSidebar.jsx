@@ -6,14 +6,11 @@ import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import Toolbar from '@mui/material/Toolbar';
-
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PersonIcon from '@mui/icons-material/Person';
 import BusinessIcon from '@mui/icons-material/Business';
 import WorkIcon from '@mui/icons-material/Work';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
-import AssignmentIcon from '@mui/icons-material/Assignment';
 import RequestPageIcon from '@mui/icons-material/RequestPage';
 import PaymentIcon from '@mui/icons-material/Payment';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -61,6 +58,26 @@ import {
     getDrawerWidthTransitionMixin,
 } from '../mixins';
 
+/**
+ * DashboardSidebar Component
+ * 
+ * Collapsible navigation sidebar with hierarchical menu structure.
+ * Adapts to different viewport sizes with drawer behavior on mobile.
+ * 
+ * Features:
+ * - Collapsible/expandable behavior
+ * - Icon-only mode when collapsed
+ * - Nested navigation support
+ * - Active route highlighting
+ * - Role-based menu items
+ * - Responsive drawer on mobile
+ * 
+ * @param {Object} props
+ * @param {boolean} [props.expanded=true] - Whether the sidebar is expanded
+ * @param {Function} props.setExpanded - Callback to set expanded state
+ * @param {boolean} [props.disableCollapsibleSidebar=false] - Disable collapse functionality
+ * @param {HTMLElement} [props.container] - Container element for the drawer
+ */
 function DashboardSidebar({
     expanded = true,
     setExpanded,
@@ -79,7 +96,7 @@ function DashboardSidebar({
         if (pathname.startsWith('/app/system-settings') && !expandedItemIds.includes('settings')) {
             setExpandedItemIds((prev) => [...prev, 'settings']);
         }
-    }, [pathname]);
+    }, [pathname, expandedItemIds]);
 
     const isOverSmViewport = useMediaQuery(theme.breakpoints.up('sm'));
     const isOverMdViewport = useMediaQuery(theme.breakpoints.up('md'));
@@ -126,13 +143,11 @@ function DashboardSidebar({
 
     const handlePageItemClick = React.useCallback(
         (itemId, hasNestedNavigation) => {
-            console.log('🔵 Clicked:', itemId, 'hasNested:', hasNestedNavigation, 'mini:', mini);
             if (hasNestedNavigation && !mini) {
                 setExpandedItemIds((previousValue) => {
                     const newValue = previousValue.includes(itemId)
                         ? previousValue.filter((previousValueItemId) => previousValueItemId !== itemId)
                         : [...previousValue, itemId];
-                    console.log('🟢 Expanded items:', previousValue, '->', newValue);
                     return newValue;
                 });
             } else if (!isOverSmViewport && !hasNestedNavigation) {

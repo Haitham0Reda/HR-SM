@@ -127,7 +127,7 @@ export const checkDuplicateAttendance = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        console.error('Error checking duplicate attendance:', error);
+
         next();
     }
 };

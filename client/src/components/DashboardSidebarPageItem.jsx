@@ -45,7 +45,6 @@ function DashboardSidebarPageItem({
     const [isHovered, setIsHovered] = React.useState(false);
 
     const handleClick = React.useCallback((e) => {
-        console.log('🟡 Button clicked:', id, 'hasNested:', !!nestedNavigation);
         if (nestedNavigation) {
             e.preventDefault();
             e.stopPropagation();

@@ -17,7 +17,6 @@ import {
     Divider
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
-import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
@@ -56,24 +55,20 @@ const AnnouncementsPage = () => {
     const fetchAnnouncements = async () => {
         try {
             setLoading(true);
-            console.log('=== FETCHING ANNOUNCEMENTS ===');
 
             // Test direct axios call
             const token = localStorage.getItem('token');
-            console.log('Token from localStorage:', token);
 
             if (!token) {
-                console.log('No token found, cannot fetch announcements');
+
                 setAnnouncements([]);
                 setLoading(false);
                 return;
             }
 
             // Try the service call first (this should work better)
-            console.log('Calling announcementService.getAll()...');
             const serviceResponse = await announcementService.getAll();
-            console.log('Service response:', serviceResponse);
-            console.log('Service response type:', typeof serviceResponse);
+
 
             // Process the data
             let data = [];
@@ -87,22 +82,19 @@ const AnnouncementsPage = () => {
                 data = [];
             }
 
-            console.log('Final processed data:', data);
-            console.log('Data length:', data.length);
 
             // Log the first item to see its structure
             if (data.length > 0) {
-                console.log('First announcement:', data[0]);
-                console.log('First announcement priority:', data[0].priority);
+
+
             }
 
             setAnnouncements(data);
         } catch (error) {
-            console.error('=== ERROR FETCHING ANNOUNCEMENTS ===');
-            console.error('Error:', error);
-            console.error('Error message:', error.message);
+
+
             if (error.response) {
-                console.error('Error response:', error.response);
+
             }
             showNotification('Failed to fetch announcements: ' + error.message, 'error');
             setAnnouncements([]);
@@ -191,7 +183,7 @@ const AnnouncementsPage = () => {
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
         } catch (error) {
-            console.error('Error marking notification as read:', error);
+
         }
     };
 
@@ -282,8 +274,8 @@ const AnnouncementsPage = () => {
                         />
                     );
                 } catch (error) {
-                    console.error('Error rendering priority cell:', error);
-                    console.error('Row:', row);
+
+
                     return null;
                 }
             }
@@ -301,8 +293,8 @@ const AnnouncementsPage = () => {
                         <Chip label={audience} size="small" variant="outlined" />
                     );
                 } catch (error) {
-                    console.error('Error rendering targetAudience cell:', error);
-                    console.error('Row:', row);
+
+
                     return null;
                 }
             }
@@ -342,8 +334,8 @@ const AnnouncementsPage = () => {
                         />
                     );
                 } catch (error) {
-                    console.error('Error rendering isActive cell:', error);
-                    console.error('Row:', row);
+
+
                     return null;
                 }
             }
@@ -362,8 +354,8 @@ const AnnouncementsPage = () => {
                         return 'N/A';
                     }
                 } catch (error) {
-                    console.error('Error rendering createdAt cell:', error);
-                    console.error('Row:', row);
+
+
                     return 'N/A';
                 }
             }
@@ -407,8 +399,8 @@ const AnnouncementsPage = () => {
                         </Box>
                     );
                 } catch (error) {
-                    console.error('Error rendering actions cell:', error);
-                    console.error('Row:', row);
+
+
                     return null;
                 }
             }

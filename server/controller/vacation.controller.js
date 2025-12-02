@@ -43,7 +43,7 @@ export const getAllVacations = async (req, res) => {
 
         res.json(vacations);
     } catch (err) {
-        console.error('Get vacations error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -53,7 +53,7 @@ export const getAllVacations = async (req, res) => {
  */
 export const createVacation = async (req, res) => {
     try {
-        console.log('=== CREATE VACATION REQUEST ===');
+
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
         // Handle file uploads for attachments
@@ -81,8 +81,6 @@ export const createVacation = async (req, res) => {
         const vacation = new Vacation(req.body);
         const savedVacation = await vacation.save();
 
-        console.log('Vacation saved successfully:', savedVacation._id);
-
         // Create notification for supervisor/manager
         await createVacationNotification(savedVacation, 'submitted');
 
@@ -91,8 +89,8 @@ export const createVacation = async (req, res) => {
 
         res.status(201).json(savedVacation);
     } catch (err) {
-        console.error('Create vacation error:', err);
-        console.error('Error stack:', err.stack);
+
+
         res.status(400).json({
             error: err.message,
             details: err.errors ? Object.keys(err.errors).map(key => ({
@@ -121,7 +119,7 @@ export const getVacationById = async (req, res) => {
 
         res.json(vacation);
     } catch (err) {
-        console.error('Get vacation by ID error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -170,7 +168,7 @@ export const updateVacation = async (req, res) => {
 
         res.json(vacation);
     } catch (err) {
-        console.error('Update vacation error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -195,7 +193,7 @@ export const deleteVacation = async (req, res) => {
         await Vacation.findByIdAndDelete(req.params.id);
         res.json({ message: 'Vacation deleted successfully' });
     } catch (err) {
-        console.error('Delete vacation error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -241,7 +239,7 @@ export const approveVacation = async (req, res) => {
 
         res.json(vacation);
     } catch (err) {
-        console.error('Approve vacation error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -265,10 +263,6 @@ export const rejectVacation = async (req, res) => {
             });
         }
 
-        console.log('=== REJECT VACATION ===');
-        console.log('Vacation ID:', req.params.id);
-        console.log('User role:', req.user.role);
-        console.log('Request body:', req.body);
 
         const { reason } = req.body;
         const userId = req.user._id;
@@ -283,7 +277,7 @@ export const rejectVacation = async (req, res) => {
 
         // Validate reason
         if (!reason || typeof reason !== 'string') {
-            console.error('Rejection reason validation failed: not a string or missing');
+
             return res.status(400).json({
                 error: 'Rejection reason is required and must be a string'
             });
@@ -291,25 +285,21 @@ export const rejectVacation = async (req, res) => {
 
         const trimmedReason = reason.trim();
         if (!trimmedReason) {
-            console.error('Rejection reason validation failed: empty after trim');
+
             return res.status(400).json({
                 error: 'Rejection reason is required and cannot be empty'
             });
         }
 
         if (trimmedReason.length < 10) {
-            console.error('Rejection reason validation failed: too short', trimmedReason.length);
+
             return res.status(400).json({
                 error: 'Rejection reason must be at least 10 characters long'
             });
         }
 
-        console.log('Calling reject with reason:', trimmedReason);
-
         // Reject the vacation
         await vacation.reject(userId, trimmedReason);
-
-        console.log('Vacation rejected successfully');
 
         // Create notification for employee
         await createVacationNotification(vacation, 'rejected');
@@ -319,8 +309,8 @@ export const rejectVacation = async (req, res) => {
 
         res.json(vacation);
     } catch (err) {
-        console.error('Reject vacation error:', err);
-        console.error('Error stack:', err.stack);
+
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -381,7 +371,7 @@ export const cancelVacation = async (req, res) => {
 
         res.json(vacation);
     } catch (err) {
-        console.error('Cancel vacation error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -433,7 +423,7 @@ async function createVacationNotification(vacation, type) {
             await vacation.save();
         }
     } catch (error) {
-        console.error('Error creating vacation notification:', error);
+
     }
 }
 
@@ -445,14 +435,14 @@ async function sendVacationRequestNotification(vacation) {
         // Get employee details
         const employee = await User.findById(vacation.employee).select('username email personalInfo');
         if (!employee) {
-            console.error('Employee not found for vacation request');
+
             return { success: false, error: 'Employee not found' };
         }
 
         // Get manager
         const manager = await getEmployeeManager(employee);
         if (!manager || !manager.email) {
-            console.log('⚠️  No manager found or manager has no email');
+
             return { success: false, error: 'Manager not found or has no email' };
         }
 
@@ -583,7 +573,7 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-        console.error('Error sending vacation request notification:', error);
+
         return { success: false, error: error.message };
     }
 }
@@ -596,7 +586,7 @@ async function sendVacationStatusUpdateNotification(vacation) {
         // Get employee details
         const employee = await User.findById(vacation.employee).select('username email personalInfo');
         if (!employee || !employee.email) {
-            console.error('Employee not found or has no email');
+
             return { success: false, error: 'Employee not found or has no email' };
         }
 
@@ -740,7 +730,7 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-        console.error('Error sending vacation status update notification:', error);
+
         return { success: false, error: error.message };
     }
 }

@@ -80,7 +80,7 @@ function EmployeeForm(props) {
             const data = await departmentService.getAll();
             setDepartments(data.filter(d => d.isActive));
         } catch (error) {
-            console.error('Failed to fetch departments:', error);
+
         }
     };
 
@@ -89,7 +89,7 @@ function EmployeeForm(props) {
             const data = await positionService.getAll();
             setPositions(data.filter(p => p.isActive));
         } catch (error) {
-            console.error('Failed to fetch positions:', error);
+
         }
     };
 

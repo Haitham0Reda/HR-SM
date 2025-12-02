@@ -28,14 +28,14 @@ export const getAllForgetChecks = async (req, res) => {
 
         res.json(forgetChecks);
     } catch (err) {
-        console.error('Get forget checks error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
 
 export const createForgetCheck = async (req, res) => {
     try {
-        console.log('=== CREATE FORGET CHECK REQUEST ===');
+
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
         // Get employee details to populate department and position
@@ -55,11 +55,9 @@ export const createForgetCheck = async (req, res) => {
         const forgetCheck = new ForgetCheck(req.body);
         const savedForgetCheck = await forgetCheck.save();
 
-        console.log('Forget check saved successfully:', savedForgetCheck._id);
-
         res.status(201).json(savedForgetCheck);
     } catch (err) {
-        console.error('Create forget check error:', err);
+
         res.status(400).json({
             error: err.message,
             details: err.errors ? Object.keys(err.errors).map(key => ({
@@ -138,7 +136,7 @@ export const approveForgetCheck = async (req, res) => {
 
         res.json(forgetCheck);
     } catch (err) {
-        console.error('Approve forget check error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -168,7 +166,7 @@ export const rejectForgetCheck = async (req, res) => {
 
         res.json(forgetCheck);
     } catch (err) {
-        console.error('Reject forget check error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };

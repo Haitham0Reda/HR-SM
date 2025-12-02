@@ -11,7 +11,6 @@ import {
     Stack,
 } from '@mui/material';
 import { Save, Lock } from '@mui/icons-material';
-import { useAuth } from '../../context/AuthContext';
 
 export default function SettingsPage() {
     const [passwordData, setPasswordData] = useState({
@@ -36,7 +35,7 @@ export default function SettingsPage() {
         }
         try {
             // Add password change logic here
-            console.log('Changing password...');
+
             alert('Password changed successfully!');
             setPasswordData({
                 currentPassword: '',
@@ -44,7 +43,7 @@ export default function SettingsPage() {
                 confirmPassword: '',
             });
         } catch (error) {
-            console.error('Error changing password:', error);
+
             alert('Failed to change password');
         }
     };

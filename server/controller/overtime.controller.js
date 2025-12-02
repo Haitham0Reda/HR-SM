@@ -42,7 +42,7 @@ export const getAllOvertime = async (req, res) => {
 
         res.json(overtime);
     } catch (err) {
-        console.error('Get overtime error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -52,13 +52,11 @@ export const getAllOvertime = async (req, res) => {
  */
 export const createOvertime = async (req, res) => {
     try {
-        console.log('=== CREATE OVERTIME REQUEST ===');
+
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
         const overtime = new Overtime(req.body);
         const savedOvertime = await overtime.save();
-
-        console.log('Overtime saved successfully:', savedOvertime._id);
 
         // Create notification for supervisor/manager
         await createOvertimeNotification(savedOvertime, 'submitted');
@@ -68,8 +66,8 @@ export const createOvertime = async (req, res) => {
 
         res.status(201).json(savedOvertime);
     } catch (err) {
-        console.error('Create overtime error:', err);
-        console.error('Error stack:', err.stack);
+
+
         res.status(400).json({
             error: err.message,
             details: err.errors ? Object.keys(err.errors).map(key => ({
@@ -97,7 +95,7 @@ export const getOvertimeById = async (req, res) => {
 
         res.json(overtime);
     } catch (err) {
-        console.error('Get overtime by ID error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -127,7 +125,7 @@ export const updateOvertime = async (req, res) => {
 
         res.json(overtime);
     } catch (err) {
-        console.error('Update overtime error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -152,7 +150,7 @@ export const deleteOvertime = async (req, res) => {
         await Overtime.findByIdAndDelete(req.params.id);
         res.json({ message: 'Overtime deleted successfully' });
     } catch (err) {
-        console.error('Delete overtime error:', err);
+
         res.status(500).json({ error: err.message });
     }
 };
@@ -198,7 +196,7 @@ export const approveOvertime = async (req, res) => {
 
         res.json(overtime);
     } catch (err) {
-        console.error('Approve overtime error:', err);
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -222,10 +220,6 @@ export const rejectOvertime = async (req, res) => {
             });
         }
 
-        console.log('=== REJECT OVERTIME ===');
-        console.log('Overtime ID:', req.params.id);
-        console.log('User role:', req.user.role);
-        console.log('Request body:', req.body);
 
         const { reason } = req.body;
         const userId = req.user._id;
@@ -240,7 +234,7 @@ export const rejectOvertime = async (req, res) => {
 
         // Validate reason
         if (!reason || typeof reason !== 'string') {
-            console.error('Rejection reason validation failed: not a string or missing');
+
             return res.status(400).json({
                 error: 'Rejection reason is required and must be a string'
             });
@@ -248,25 +242,21 @@ export const rejectOvertime = async (req, res) => {
 
         const trimmedReason = reason.trim();
         if (!trimmedReason) {
-            console.error('Rejection reason validation failed: empty after trim');
+
             return res.status(400).json({
                 error: 'Rejection reason is required and cannot be empty'
             });
         }
 
         if (trimmedReason.length < 10) {
-            console.error('Rejection reason validation failed: too short', trimmedReason.length);
+
             return res.status(400).json({
                 error: 'Rejection reason must be at least 10 characters long'
             });
         }
 
-        console.log('Calling reject with reason:', trimmedReason);
-
         // Reject the overtime
         await overtime.reject(userId, trimmedReason);
-
-        console.log('Overtime rejected successfully');
 
         // Create notification for employee
         await createOvertimeNotification(overtime, 'rejected');
@@ -276,8 +266,8 @@ export const rejectOvertime = async (req, res) => {
 
         res.json(overtime);
     } catch (err) {
-        console.error('Reject overtime error:', err);
-        console.error('Error stack:', err.stack);
+
+
         res.status(400).json({ error: err.message });
     }
 };
@@ -329,7 +319,7 @@ async function createOvertimeNotification(overtime, type) {
             await overtime.save();
         }
     } catch (error) {
-        console.error('Error creating overtime notification:', error);
+
     }
 }
 
@@ -341,14 +331,14 @@ async function sendOvertimeRequestNotification(overtime) {
         // Get employee details
         const employee = await User.findById(overtime.employee).select('username email personalInfo');
         if (!employee) {
-            console.error('Employee not found for overtime request');
+
             return { success: false, error: 'Employee not found' };
         }
 
         // Get manager
         const manager = await getEmployeeManager(employee);
         if (!manager || !manager.email) {
-            console.log('⚠️  No manager found or manager has no email');
+
             return { success: false, error: 'Manager not found or has no email' };
         }
 
@@ -468,7 +458,7 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-        console.error('Error sending overtime request notification:', error);
+
         return { success: false, error: error.message };
     }
 }
@@ -481,7 +471,7 @@ async function sendOvertimeStatusUpdateNotification(overtime) {
         // Get employee details
         const employee = await User.findById(overtime.employee).select('username email personalInfo');
         if (!employee || !employee.email) {
-            console.error('Employee not found or has no email');
+
             return { success: false, error: 'Employee not found or has no email' };
         }
 
@@ -608,7 +598,7 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-        console.error('Error sending overtime status update notification:', error);
+
         return { success: false, error: error.message };
     }
 }
