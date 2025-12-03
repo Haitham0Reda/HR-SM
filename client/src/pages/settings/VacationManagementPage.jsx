@@ -43,16 +43,16 @@ const VacationManagementPage = () => {
     const [departments, setDepartments] = useState([]);
     const [filteredEmployees, setFilteredEmployees] = useState([]);
     const [balanceOverrides, setBalanceOverrides] = useState({});
-    
+
     // Filter states
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDepartment, setSelectedDepartment] = useState('');
     const [autoSearch, setAutoSearch] = useState(true);
-    
+
     // Pagination states
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-    
+
     // Sorting states
     const [orderBy, setOrderBy] = useState('employeeId');
     const [order, setOrder] = useState('asc');
@@ -76,12 +76,12 @@ const VacationManagementPage = () => {
                 userService.getAll(),
                 departmentService.getAll()
             ]);
-            
+
             // Debug: Log first employee to check data structure
             if (usersData.length > 0) {
 
             }
-            
+
             setEmployees(usersData);
             setDepartments(deptData);
             setFilteredEmployees(usersData);
@@ -102,7 +102,7 @@ const VacationManagementPage = () => {
 
     const getAnnualBalanceByPolicy = (yearsOfService) => {
         const monthsOfService = yearsOfService * 12;
-        
+
         if (monthsOfService < 3) {
             return 0;
         } else if (monthsOfService < 6) {
@@ -118,7 +118,7 @@ const VacationManagementPage = () => {
 
     const calculateVacationBalance = (employee) => {
         const yearsOfService = calculateYearsOfService(employee.employment?.hireDate);
-        
+
         // Auto-calculate annual balance based on policy
         const annualBalance = getAnnualBalanceByPolicy(yearsOfService);
         const casualBalance = 7; // Fixed for all
@@ -156,7 +156,7 @@ const VacationManagementPage = () => {
     const handleBalanceChange = (employeeId, field, value) => {
         // Don't allow changing annualTotal as it's auto-calculated
         if (field === 'annualTotal') return;
-        
+
         const numValue = parseInt(value) || 0;
         setBalanceOverrides(prev => ({
             ...prev,
@@ -186,22 +186,22 @@ const VacationManagementPage = () => {
 
             // Call bulk update API
             const response = await userService.bulkUpdateVacationBalances(updates);
-            
+
             if (response.errors && response.errors.length > 0) {
                 showNotification(
-                    `Updated ${response.updated} balance(s), ${response.failed} failed`, 
+                    `Updated ${response.updated} balance(s), ${response.failed} failed`,
                     'warning'
                 );
             } else {
                 showNotification(
-                    `Successfully updated vacation balances for ${response.updated} employee(s)`, 
+                    `Successfully updated vacation balances for ${response.updated} employee(s)`,
                     'success'
                 );
             }
 
             // Clear overrides after successful save
             setBalanceOverrides({});
-            
+
             // Refresh employee data to get updated values
             await fetchData();
         } catch (error) {
@@ -217,7 +217,7 @@ const VacationManagementPage = () => {
 
         // Search filter
         if (searchTerm) {
-            filtered = filtered.filter(emp => 
+            filtered = filtered.filter(emp =>
                 emp.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 emp.personalInfo?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 emp.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -227,7 +227,7 @@ const VacationManagementPage = () => {
 
         // Department filter
         if (selectedDepartment) {
-            filtered = filtered.filter(emp => 
+            filtered = filtered.filter(emp =>
                 emp.department?._id === selectedDepartment
             );
         }
@@ -390,7 +390,7 @@ const VacationManagementPage = () => {
                             </Card>
                         </Box>
                     </Box>
-                    <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 2 }}>
+                    <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <TimeIcon fontSize="small" color="action" />
                             <Typography variant="body2" color="text.secondary">
@@ -558,27 +558,27 @@ const VacationManagementPage = () => {
                                             <TableCell>{employee.employeeId || 'N/A'}</TableCell>
                                             <TableCell>{employee.personalInfo?.fullName || employee.username}</TableCell>
                                             <TableCell>{employee.department?.name || 'N/A'}</TableCell>
-                                            
+
                                             {/* Years of Service */}
                                             <TableCell align="center">
                                                 <Tooltip title={`Hire Date: ${employee.employment?.hireDate ? new Date(employee.employment.hireDate).toLocaleDateString() : 'N/A'}`}>
-                                                    <Chip 
-                                                        label={`${balance.yearsOfService} years`} 
-                                                        size="small" 
+                                                    <Chip
+                                                        label={`${balance.yearsOfService} years`}
+                                                        size="small"
                                                         color="info"
                                                         variant="outlined"
                                                     />
                                                 </Tooltip>
                                             </TableCell>
-                                            
+
                                             {/* Annual Balance - Auto-calculated (Read-only) */}
                                             <TableCell align="center">
                                                 <Tooltip title="Auto-calculated based on years of service">
-                                                    <Box sx={{ 
-                                                        display: 'inline-block', 
-                                                        px: 1.5, 
-                                                        py: 0.5, 
-                                                        bgcolor: 'primary.light', 
+                                                    <Box sx={{
+                                                        display: 'inline-block',
+                                                        px: 1.5,
+                                                        py: 0.5,
+                                                        bgcolor: 'primary.light',
                                                         color: 'primary.dark',
                                                         borderRadius: 1,
                                                         fontWeight: 600
@@ -591,13 +591,13 @@ const VacationManagementPage = () => {
                                                 <Typography variant="body2">{balance.annual.used}</Typography>
                                             </TableCell>
                                             <TableCell align="center">
-                                                <Chip 
-                                                    label={balance.annual.remaining} 
-                                                    size="small" 
+                                                <Chip
+                                                    label={balance.annual.remaining}
+                                                    size="small"
                                                     color={balance.annual.remaining > 0 ? 'success' : 'default'}
                                                 />
                                             </TableCell>
-                                            
+
                                             {/* Casual Balance - Editable */}
                                             <TableCell align="center">
                                                 <TextField
@@ -613,13 +613,13 @@ const VacationManagementPage = () => {
                                                 <Typography variant="body2">{balance.casual.used}</Typography>
                                             </TableCell>
                                             <TableCell align="center">
-                                                <Chip 
-                                                    label={balance.casual.remaining} 
-                                                    size="small" 
+                                                <Chip
+                                                    label={balance.casual.remaining}
+                                                    size="small"
                                                     color={balance.casual.remaining > 0 ? 'success' : 'default'}
                                                 />
                                             </TableCell>
-                                            
+
                                             {/* Flexible Hours - Editable */}
                                             <TableCell align="center">
                                                 <TextField

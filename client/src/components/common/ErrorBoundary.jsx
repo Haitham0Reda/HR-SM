@@ -93,7 +93,7 @@ class ErrorBoundary extends React.Component {
                                     mb: 3
                                 }}
                             />
-                            
+
                             <Typography
                                 variant="h4"
                                 sx={{
@@ -104,7 +104,7 @@ class ErrorBoundary extends React.Component {
                             >
                                 Oops! Something went wrong
                             </Typography>
-                            
+
                             <Typography
                                 variant="body1"
                                 color="text.secondary"
@@ -119,7 +119,7 @@ class ErrorBoundary extends React.Component {
                                     sx={{
                                         p: 2,
                                         mb: 3,
-                                        bgcolor: 'grey.100',
+                                        bgcolor: 'action.hover',
                                         textAlign: 'left',
                                         maxHeight: 200,
                                         overflow: 'auto'

@@ -28,17 +28,9 @@ const vacationSchema = new mongoose.Schema({
       message: 'End date must be after or equal to start date'
     }
   },
-  startTime: {
-    type: String,
-    required: false
-  },
-  endTime: {
-    type: String,
-    required: false
-  },
   duration: {
-    type: Number, // in days
-    required: true
+    type: Number, // in days (calculated automatically, excluding weekends)
+    required: false
   },
   reason: {
     type: String,
@@ -125,6 +117,39 @@ const vacationSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
+});
+
+// Static method to calculate working days excluding weekends (Friday and Saturday)
+vacationSchema.statics.calculateWorkingDays = function (startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  // Reset time to start of day for accurate comparison
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  let workingDays = 0;
+  const current = new Date(start);
+
+  while (current <= end) {
+    const dayOfWeek = current.getDay();
+    // 5 = Friday, 6 = Saturday (weekend in Egypt)
+    if (dayOfWeek !== 5 && dayOfWeek !== 6) {
+      workingDays++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return workingDays;
+};
+
+// Pre-validate hook to automatically calculate duration excluding weekends
+// This runs before validation, so duration will be set before the required check
+vacationSchema.pre('validate', function (next) {
+  if (this.startDate && this.endDate) {
+    this.duration = this.constructor.calculateWorkingDays(this.startDate, this.endDate);
+  }
+  next();
 });
 
 // Virtual to check if vacation is active

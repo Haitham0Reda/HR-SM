@@ -368,7 +368,7 @@ const DocumentsPage = () => {
                             width: 80,
                             height: 80,
                             borderRadius: '50%',
-                            bgcolor: 'grey.100',
+                            bgcolor: 'action.hover',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -532,7 +532,7 @@ const DocumentsPage = () => {
                     gap: 1.5,
                     borderTop: '2px solid',
                     borderColor: 'divider',
-                    bgcolor: 'grey.50'
+                    bgcolor: 'action.hover'
                 }}>
                     <Button
                         onClick={handleCloseDialog}

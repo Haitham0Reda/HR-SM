@@ -31,8 +31,6 @@ const VacationRequestForm = () => {
         vacationType: 'annual',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
-        startTime: '',
-        endTime: '',
         reason: '',
     });
     const [errors, setErrors] = useState({});
@@ -45,6 +43,30 @@ const VacationRequestForm = () => {
         { value: 'sick', label: 'Sick Leave', description: 'Medical leave (requires documentation)' },
         { value: 'unpaid', label: 'Unpaid Leave', description: 'Leave without pay' },
     ];
+
+    // Helper function to calculate working days excluding weekends (Friday and Saturday)
+    const calculateWorkingDays = (startDate, endDate) => {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Reset time to start of day
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+
+        let workingDays = 0;
+        const current = new Date(start);
+
+        while (current <= end) {
+            const dayOfWeek = current.getDay();
+            // 5 = Friday, 6 = Saturday (weekend in Egypt)
+            if (dayOfWeek !== 5 && dayOfWeek !== 6) {
+                workingDays++;
+            }
+            current.setDate(current.getDate() + 1);
+        }
+
+        return workingDays;
+    };
 
     useEffect(() => {
         if (isEditMode) {
@@ -69,8 +91,6 @@ const VacationRequestForm = () => {
                 vacationType: vacation.vacationType || 'annual',
                 startDate: vacation.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
                 endDate: vacation.endDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-                startTime: vacation.startTime || '',
-                endTime: vacation.endTime || '',
                 reason: vacation.reason || '',
             });
         } catch (error) {
@@ -85,9 +105,7 @@ const VacationRequestForm = () => {
     const checkVacationBalance = async () => {
         try {
             setCheckingBalance(true);
-            const startDate = new Date(formData.startDate);
-            const endDate = new Date(formData.endDate);
-            const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            const duration = calculateWorkingDays(formData.startDate, formData.endDate);
 
             // Mock balance check - in real implementation, this would call an API
             // For now, we'll simulate balance information
@@ -163,8 +181,6 @@ const VacationRequestForm = () => {
             };
 
             // Add optional fields if provided
-            if (formData.startTime) submitData.startTime = formData.startTime;
-            if (formData.endTime) submitData.endTime = formData.endTime;
             if (formData.reason && formData.reason.trim()) submitData.reason = formData.reason.trim();
 
             if (isEditMode) {
@@ -281,33 +297,6 @@ const VacationRequestForm = () => {
                                     InputLabelProps={{ shrink: true }}
                                     error={Boolean(errors.endDate)}
                                     helperText={errors.endDate || 'Select the last day of vacation'}
-                                />
-                            </Grid>
-                        </Grid>
-
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                    type="time"
-                                    label="Start Time"
-                                    name="startTime"
-                                    value={formData.startTime}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    InputLabelProps={{ shrink: true }}
-                                    helperText="Optional: Specify start time if needed"
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                    type="time"
-                                    label="End Time"
-                                    name="endTime"
-                                    value={formData.endTime}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    InputLabelProps={{ shrink: true }}
-                                    helperText="Optional: Specify end time if needed"
                                 />
                             </Grid>
                         </Grid>
