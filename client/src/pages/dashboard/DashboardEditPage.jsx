@@ -26,6 +26,9 @@ import {
     Chip,
     Autocomplete,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import {
     Save as SaveIcon,
     Cancel as CancelIcon,
@@ -51,6 +54,7 @@ const DashboardEditPage = () => {
             enabled: true,
             selectedEmployee: null,
             month: new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }),
+            monthDate: new Date(), // Store as Date object for DatePicker
         },
         widgets: {
             todayAttendance: true,
@@ -200,21 +204,31 @@ const DashboardEditPage = () => {
                             {config.employeeOfTheMonth.enabled && (
                                 <>
                                     <Grid size={{ xs: 12, md: 6 }}>
-                                        <TextField
-                                            fullWidth
-                                            label="Month & Year"
-                                            value={config.employeeOfTheMonth.month}
-                                            onChange={(e) =>
-                                                setConfig(prev => ({
-                                                    ...prev,
-                                                    employeeOfTheMonth: {
-                                                        ...prev.employeeOfTheMonth,
-                                                        month: e.target.value,
+                                        <LocalizationProvider dateAdapter={AdapterDateFns}>
+                                            <DatePicker
+                                                label="Month & Year"
+                                                views={['month', 'year']}
+                                                value={config.employeeOfTheMonth.monthDate}
+                                                onChange={(newValue) => {
+                                                    if (newValue) {
+                                                        setConfig(prev => ({
+                                                            ...prev,
+                                                            employeeOfTheMonth: {
+                                                                ...prev.employeeOfTheMonth,
+                                                                monthDate: newValue,
+                                                                month: newValue.toLocaleString('en-US', { month: 'long', year: 'numeric' }),
+                                                            },
+                                                        }));
+                                                    }
+                                                }}
+                                                slotProps={{
+                                                    textField: {
+                                                        fullWidth: true,
+                                                        helperText: 'Select month and year',
                                                     },
-                                                }))
-                                            }
-                                            helperText="e.g., November 2025"
-                                        />
+                                                }}
+                                            />
+                                        </LocalizationProvider>
                                     </Grid>
 
                                     <Grid size={{ xs: 12, md: 6 }}>

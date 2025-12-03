@@ -48,6 +48,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import CongratulationsEffect from '../../components/effects/CongratulationsEffect';
 import { dashboardService } from '../../services';
 
 // Action card configuration with staggered animation delays
@@ -122,25 +123,47 @@ const Dashboard = () => {
     // State for Employee of the Month
     const [employeeOfMonth, setEmployeeOfMonth] = useState(null);
 
+    // State for congratulations effect
+    const [showCongratulations, setShowCongratulations] = useState(false);
+
     // Update clock every second
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    // Fetch Employee of the Month
+    // Fetch Employee of the Month and check if current user is employee of the month
     useEffect(() => {
         const fetchEmployeeOfMonth = async () => {
             try {
                 const data = await dashboardService.getEmployeeOfTheMonth();
                 setEmployeeOfMonth(data);
+
+                // Check if current user is employee of the month
+                if (data && data.enabled && data.selectedEmployee) {
+                    const employeeId = data.selectedEmployee._id || data.selectedEmployee;
+                    const currentUserId = user?._id;
+
+                    if (employeeId === currentUserId || String(employeeId) === String(currentUserId)) {
+                        // Check if we've already shown the congratulations for this month
+                        const shownKey = `congratulations_shown_${employeeId}_${data.month}`;
+                        const hasShown = localStorage.getItem(shownKey);
+
+                        if (!hasShown) {
+                            setShowCongratulations(true);
+                            localStorage.setItem(shownKey, 'true');
+                        }
+                    }
+                }
             } catch (error) {
 
             }
         };
 
-        fetchEmployeeOfMonth();
-    }, []);
+        if (user?._id) {
+            fetchEmployeeOfMonth();
+        }
+    }, [user?._id]);
 
     /**
      * Format time in 12-hour format with AM/PM
@@ -166,133 +189,281 @@ const Dashboard = () => {
     };
 
     return (
-        <Box
-            sx={{
-                p: { xs: 2, sm: 3, md: 4 },
-                bgcolor: 'background.default',
-                minHeight: '100vh',
-            }}
-        >
-            {/* Header Section with Slide Animation */}
-            <Slide direction="down" in={true} timeout={600}>
-                <Paper
-                    sx={{
-                        p: 3,
-                        mb: 3,
-                        background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                        color: 'primary.contrastText',
-                        borderRadius: 3,
-                        boxShadow: 4,
-                    }}
-                >
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 3 }}>
-                        <Zoom in={true} timeout={800}>
-                            <Avatar
-                                src={user?.profile?.profilePicture || user?.profilePicture}
-                                alt={user?.name || user?.username}
+        <>
+            {/* Congratulations Effect */}
+            {showCongratulations && employeeOfMonth && (
+                <CongratulationsEffect
+                    employee={user}
+                    month={employeeOfMonth.month}
+                    onClose={() => setShowCongratulations(false)}
+                />
+            )}
+
+            <Box
+                sx={{
+                    p: { xs: 2, sm: 3, md: 4 },
+                    bgcolor: 'background.default',
+                    minHeight: '100vh',
+                }}
+            >
+                {/* Header Section with Slide Animation */}
+                <Slide direction="down" in={true} timeout={600}>
+                    <Paper
+                        sx={{
+                            p: 3,
+                            mb: 3,
+                            background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                            color: 'primary.contrastText',
+                            borderRadius: 3,
+                            boxShadow: 4,
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 3 }}>
+                            <Zoom in={true} timeout={800}>
+                                <Avatar
+                                    src={user?.profile?.profilePicture || user?.profilePicture}
+                                    alt={user?.name || user?.username}
+                                    sx={{
+                                        width: 72,
+                                        height: 72,
+                                        bgcolor: 'rgba(255,255,255,0.3)',
+                                        border: '3px solid',
+                                        borderColor: 'primary.contrastText',
+                                        fontSize: '1.75rem',
+                                        fontWeight: 700,
+                                        boxShadow: 4,
+                                    }}
+                                >
+                                    {!user?.profile?.profilePicture && !user?.profilePicture && (user?.name || user?.username)
+                                        ? (user?.name || user?.username).charAt(0).toUpperCase()
+                                        : !user?.profile?.profilePicture && !user?.profilePicture && <ProfileIcon sx={{ fontSize: 36 }} />}
+                                </Avatar>
+                            </Zoom>
+                            <Box sx={{ flex: '1 1 200px' }}>
+                                <Typography variant="h5" fontWeight="700" sx={{ mb: 0.5 }}>
+                                    Employee Dashboard
+                                </Typography>
+                                <Typography variant="body2" sx={{ opacity: 0.95 }}>
+                                    Welcome back, {user?.name || user?.username}
+                                </Typography>
+                            </Box>
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                bgcolor: 'rgba(255,255,255,0.15)',
+                                p: 1.5,
+                                borderRadius: 2,
+                                minWidth: 100
+                            }}>
+                                <CalendarIcon sx={{ fontSize: 20, mb: 0.5 }} />
+                                <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
+                                    CAMPUS
+                                </Typography>
+                                <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
+                                    Smart Campus
+                                </Typography>
+                            </Box>
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                bgcolor: 'rgba(255,255,255,0.15)',
+                                p: 1.5,
+                                borderRadius: 2,
+                                minWidth: 100
+                            }}>
+                                <CalendarIcon sx={{ fontSize: 20, mb: 0.5 }} />
+                                <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
+                                    DATE
+                                </Typography>
+                                <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
+                                    {currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </Typography>
+                            </Box>
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                bgcolor: 'rgba(255,255,255,0.15)',
+                                p: 1.5,
+                                borderRadius: 2,
+                                minWidth: 100
+                            }}>
+                                <WorkingHoursIcon sx={{ fontSize: 20, mb: 0.5 }} />
+                                <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
+                                    TIME
+                                </Typography>
+                                <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
+                                    {formatTime(currentTime)}
+                                </Typography>
+                            </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', mt: 2 }}>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<StatusIcon />}
+                                onClick={() => window.location.reload()}
                                 sx={{
-                                    width: 72,
-                                    height: 72,
-                                    bgcolor: 'rgba(255,255,255,0.3)',
-                                    border: '3px solid',
-                                    borderColor: 'primary.contrastText',
-                                    fontSize: '1.75rem',
-                                    fontWeight: 700,
-                                    boxShadow: 4,
+                                    bgcolor: 'rgba(255,255,255,0.25)',
+                                    color: 'inherit',
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(255,255,255,0.35)',
+                                        transform: 'scale(1.05)'
+                                    }
                                 }}
                             >
-                                {!user?.profile?.profilePicture && !user?.profilePicture && (user?.name || user?.username)
-                                    ? (user?.name || user?.username).charAt(0).toUpperCase()
-                                    : !user?.profile?.profilePicture && !user?.profilePicture && <ProfileIcon sx={{ fontSize: 36 }} />}
-                            </Avatar>
-                        </Zoom>
-                        <Box sx={{ flex: '1 1 200px' }}>
-                            <Typography variant="h5" fontWeight="700" sx={{ mb: 0.5 }}>
-                                Employee Dashboard
-                            </Typography>
-                            <Typography variant="body2" sx={{ opacity: 0.95 }}>
-                                Welcome back, {user?.name || user?.username}
-                            </Typography>
+                                Refresh
+                            </Button>
                         </Box>
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            p: 1.5,
-                            borderRadius: 2,
-                            minWidth: 100
-                        }}>
-                            <CalendarIcon sx={{ fontSize: 20, mb: 0.5 }} />
-                            <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
-                                CAMPUS
-                            </Typography>
-                            <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
-                                Smart Campus
-                            </Typography>
-                        </Box>
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            p: 1.5,
-                            borderRadius: 2,
-                            minWidth: 100
-                        }}>
-                            <CalendarIcon sx={{ fontSize: 20, mb: 0.5 }} />
-                            <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
-                                DATE
-                            </Typography>
-                            <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
-                                {currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </Typography>
-                        </Box>
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            p: 1.5,
-                            borderRadius: 2,
-                            minWidth: 100
-                        }}>
-                            <WorkingHoursIcon sx={{ fontSize: 20, mb: 0.5 }} />
-                            <Typography variant="caption" display="block" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
-                                TIME
-                            </Typography>
-                            <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
-                                {formatTime(currentTime)}
-                            </Typography>
-                        </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', mt: 2 }}>
-                        <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<StatusIcon />}
-                            onClick={() => window.location.reload()}
+                    </Paper>
+                </Slide>
+
+                {/* Employee of the Month Section with Fade Animation */}
+                {employeeOfMonth?.enabled && (
+                    <Fade in={true} timeout={800}>
+                        <Paper
                             sx={{
-                                bgcolor: 'rgba(255,255,255,0.25)',
-                                color: 'inherit',
-                                textTransform: 'none',
-                                fontWeight: 600,
+                                p: 3,
+                                mb: 3,
+                                bgcolor: 'background.paper',
+                                borderRadius: 3,
+                                boxShadow: 2,
+                                border: '1px solid',
+                                borderColor: 'divider',
                                 transition: 'all 0.3s ease',
                                 '&:hover': {
-                                    bgcolor: 'rgba(255,255,255,0.35)',
-                                    transform: 'scale(1.05)'
+                                    boxShadow: 4,
+                                    transform: 'translateY(-2px)'
                                 }
                             }}
                         >
-                            Refresh
-                        </Button>
-                    </Box>
-                </Paper>
-            </Slide>
+                            {employeeOfMonth?.selectedEmployee ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                    <Zoom in={true} timeout={1000}>
+                                        <Avatar
+                                            src={employeeOfMonth.selectedEmployee.personalInfo?.profilePicture}
+                                            alt={employeeOfMonth.selectedEmployee.personalInfo?.fullName}
+                                            sx={{
+                                                width: 80,
+                                                height: 80,
+                                                border: '3px solid',
+                                                borderColor: 'warning.main',
+                                                boxShadow: 3,
+                                                fontSize: '2rem',
+                                                fontWeight: 700,
+                                                bgcolor: 'warning.light',
+                                            }}
+                                        >
+                                            {employeeOfMonth.selectedEmployee.personalInfo?.fullName?.charAt(0) ||
+                                                employeeOfMonth.selectedEmployee.username?.charAt(0)}
+                                        </Avatar>
+                                    </Zoom>
 
-            {/* Employee of the Month Section with Fade Animation */}
-            {employeeOfMonth?.enabled && (
-                <Fade in={true} timeout={800}>
+                                    <Box sx={{ flex: 1 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                            <TrophyIcon sx={{ fontSize: 20, color: 'warning.main' }} />
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: 'warning.main',
+                                                    fontWeight: 700,
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: 1
+                                                }}
+                                            >
+                                                Employee of the Month
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="h5" fontWeight="700" sx={{ mb: 0.5 }}>
+                                            {employeeOfMonth.selectedEmployee.personalInfo?.fullName || employeeOfMonth.selectedEmployee.username}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {employeeOfMonth?.month || new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+                                        </Typography>
+                                    </Box>
+
+                                    {(user?.role === 'admin' || user?.role === 'hr') && (
+                                        <IconButton
+                                            onClick={() => navigate('/app/dashboard/edit')}
+                                            sx={{
+                                                bgcolor: 'action.hover',
+                                                transition: 'all 0.3s ease',
+                                                '&:hover': {
+                                                    bgcolor: 'action.selected',
+                                                    transform: 'rotate(90deg)'
+                                                }
+                                            }}
+                                        >
+                                            <EditIcon />
+                                        </IconButton>
+                                    )}
+                                </Box>
+                            ) : (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                    <Avatar
+                                        sx={{
+                                            width: 80,
+                                            height: 80,
+                                            bgcolor: 'action.hover',
+                                            border: '3px solid',
+                                            borderColor: 'divider',
+                                        }}
+                                    >
+                                        <TrophyIcon sx={{ fontSize: 40, color: 'text.secondary' }} />
+                                    </Avatar>
+
+                                    <Box sx={{ flex: 1 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                            <TrophyIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: 'text.secondary',
+                                                    fontWeight: 700,
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: 1
+                                                }}
+                                            >
+                                                Employee of the Month
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="h6" fontWeight="600" color="text.secondary" sx={{ mb: 0.5 }}>
+                                            No employee selected yet
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {employeeOfMonth?.month || new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+                                        </Typography>
+                                    </Box>
+
+                                    {(user?.role === 'admin' || user?.role === 'hr') && (
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<EditIcon />}
+                                            onClick={() => navigate('/app/dashboard/edit')}
+                                            sx={{
+                                                textTransform: 'none',
+                                                transition: 'all 0.3s ease',
+                                                '&:hover': {
+                                                    transform: 'scale(1.05)'
+                                                }
+                                            }}
+                                        >
+                                            Select Employee
+                                        </Button>
+                                    )}
+                                </Box>
+                            )}
+                        </Paper>
+                    </Fade>
+                )}
+
+                {/* Today's Attendance Section with Grow Animation */}
+                <Grow in={true} timeout={1000}>
                     <Paper
                         sx={{
                             p: 3,
@@ -302,262 +473,168 @@ const Dashboard = () => {
                             boxShadow: 2,
                             border: '1px solid',
                             borderColor: 'divider',
-                            transition: 'all 0.3s ease',
-                            '&:hover': {
-                                boxShadow: 4,
-                                transform: 'translateY(-2px)'
-                            }
                         }}
                     >
-                        {employeeOfMonth?.selectedEmployee ? (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                <Zoom in={true} timeout={1000}>
-                                    <Avatar
-                                        src={employeeOfMonth.selectedEmployee.personalInfo?.profilePicture}
-                                        alt={employeeOfMonth.selectedEmployee.personalInfo?.fullName}
-                                        sx={{
-                                            width: 80,
-                                            height: 80,
-                                            border: '3px solid',
-                                            borderColor: 'warning.main',
-                                            boxShadow: 3,
-                                            fontSize: '2rem',
-                                            fontWeight: 700,
-                                            bgcolor: 'warning.light',
-                                        }}
-                                    >
-                                        {employeeOfMonth.selectedEmployee.personalInfo?.fullName?.charAt(0) ||
-                                            employeeOfMonth.selectedEmployee.username?.charAt(0)}
-                                    </Avatar>
-                                </Zoom>
-
-                                <Box sx={{ flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                        <TrophyIcon sx={{ fontSize: 20, color: 'warning.main' }} />
-                                        <Typography
-                                            variant="caption"
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                            <Typography variant="h6" fontWeight="600" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <CalendarIcon />
+                                Today's Attendance - {formatDate(currentTime)}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                            {[
+                                { icon: CheckInIcon, label: 'Check In', value: '8:46 AM', color: 'info', delay: 100 },
+                                { icon: CheckOutIcon, label: 'Check Out', value: '3:59 PM', color: 'warning', delay: 200 },
+                                { icon: WorkingHoursIcon, label: 'Working Hours', value: '6h 52m 47s', color: 'success', delay: 300 },
+                                { icon: StatusIcon, label: 'Status', value: 'PRESENT', color: 'success', delay: 400, isChip: true }
+                            ].map((item, index) => {
+                                const Icon = item.icon;
+                                return (
+                                    <Zoom key={index} in={true} timeout={800} style={{ transitionDelay: `${item.delay}ms` }}>
+                                        <Box
                                             sx={{
-                                                color: 'warning.main',
-                                                fontWeight: 700,
-                                                textTransform: 'uppercase',
-                                                letterSpacing: 1
+                                                flex: '1 1 calc(25% - 12px)',
+                                                minWidth: '200px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                bgcolor: `${item.color}.main`,
+                                                color: `${item.color}.contrastText`,
+                                                p: 3,
+                                                borderRadius: 2,
+                                                boxShadow: 2,
+                                                transition: 'all 0.3s ease-in-out',
+                                                '&:hover': {
+                                                    transform: 'translateY(-8px) scale(1.05)',
+                                                    boxShadow: 6,
+                                                },
                                             }}
                                         >
-                                            Employee of the Month
-                                        </Typography>
-                                    </Box>
-                                    <Typography variant="h5" fontWeight="700" sx={{ mb: 0.5 }}>
-                                        {employeeOfMonth.selectedEmployee.personalInfo?.fullName || employeeOfMonth.selectedEmployee.username}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {employeeOfMonth?.month || new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}
-                                    </Typography>
-                                </Box>
-
-                                {(user?.role === 'admin' || user?.role === 'hr') && (
-                                    <IconButton
-                                        onClick={() => navigate('/app/dashboard/edit')}
-                                        sx={{
-                                            bgcolor: 'action.hover',
-                                            transition: 'all 0.3s ease',
-                                            '&:hover': {
-                                                bgcolor: 'action.selected',
-                                                transform: 'rotate(90deg)'
-                                            }
-                                        }}
-                                    >
-                                        <EditIcon />
-                                    </IconButton>
-                                )}
-                            </Box>
-                        ) : (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                <Avatar
-                                    sx={{
-                                        width: 80,
-                                        height: 80,
-                                        bgcolor: 'action.hover',
-                                        border: '3px solid',
-                                        borderColor: 'divider',
-                                    }}
-                                >
-                                    <TrophyIcon sx={{ fontSize: 40, color: 'text.secondary' }} />
-                                </Avatar>
-
-                                <Box sx={{ flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                        <TrophyIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                                color: 'text.secondary',
-                                                fontWeight: 700,
-                                                textTransform: 'uppercase',
-                                                letterSpacing: 1
-                                            }}
-                                        >
-                                            Employee of the Month
-                                        </Typography>
-                                    </Box>
-                                    <Typography variant="h6" fontWeight="600" color="text.secondary" sx={{ mb: 0.5 }}>
-                                        No employee selected yet
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {employeeOfMonth?.month || new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}
-                                    </Typography>
-                                </Box>
-
-                                {(user?.role === 'admin' || user?.role === 'hr') && (
-                                    <Button
-                                        variant="outlined"
-                                        startIcon={<EditIcon />}
-                                        onClick={() => navigate('/app/dashboard/edit')}
-                                        sx={{
-                                            textTransform: 'none',
-                                            transition: 'all 0.3s ease',
-                                            '&:hover': {
-                                                transform: 'scale(1.05)'
-                                            }
-                                        }}
-                                    >
-                                        Select Employee
-                                    </Button>
-                                )}
-                            </Box>
-                        )}
-                    </Paper>
-                </Fade>
-            )}
-
-            {/* Today's Attendance Section with Grow Animation */}
-            <Grow in={true} timeout={1000}>
-                <Paper
-                    sx={{
-                        p: 3,
-                        mb: 3,
-                        bgcolor: 'background.paper',
-                        borderRadius: 3,
-                        boxShadow: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                    }}
-                >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                        <Typography variant="h6" fontWeight="600" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <CalendarIcon />
-                            Today's Attendance - {formatDate(currentTime)}
-                        </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                        {[
-                            { icon: CheckInIcon, label: 'Check In', value: '8:46 AM', color: 'info', delay: 100 },
-                            { icon: CheckOutIcon, label: 'Check Out', value: '3:59 PM', color: 'warning', delay: 200 },
-                            { icon: WorkingHoursIcon, label: 'Working Hours', value: '6h 52m 47s', color: 'success', delay: 300 },
-                            { icon: StatusIcon, label: 'Status', value: 'PRESENT', color: 'success', delay: 400, isChip: true }
-                        ].map((item, index) => {
-                            const Icon = item.icon;
-                            return (
-                                <Zoom key={index} in={true} timeout={800} style={{ transitionDelay: `${item.delay}ms` }}>
-                                    <Box
-                                        sx={{
-                                            flex: '1 1 calc(25% - 12px)',
-                                            minWidth: '200px',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            bgcolor: `${item.color}.main`,
-                                            color: `${item.color}.contrastText`,
-                                            p: 3,
-                                            borderRadius: 2,
-                                            boxShadow: 2,
-                                            transition: 'all 0.3s ease-in-out',
-                                            '&:hover': {
-                                                transform: 'translateY(-8px) scale(1.05)',
-                                                boxShadow: 6,
-                                            },
-                                        }}
-                                    >
-                                        <Icon sx={{ fontSize: 40, mb: 1 }} />
-                                        <Typography variant="caption" display="block" sx={{ mb: 0.5, fontWeight: 600 }}>
-                                            {item.label}
-                                        </Typography>
-                                        {item.isChip ? (
-                                            <Chip
-                                                label={item.value}
-                                                sx={{
-                                                    bgcolor: 'rgba(255,255,255,0.25)',
-                                                    color: 'inherit',
-                                                    fontWeight: 700,
-                                                    fontSize: '0.75rem',
-                                                    border: '2px solid rgba(255,255,255,0.5)',
-                                                }}
-                                            />
-                                        ) : (
-                                            <Typography variant="h5" fontWeight="700">
-                                                {item.value}
+                                            <Icon sx={{ fontSize: 40, mb: 1 }} />
+                                            <Typography variant="caption" display="block" sx={{ mb: 0.5, fontWeight: 600 }}>
+                                                {item.label}
                                             </Typography>
-                                        )}
-                                    </Box>
-                                </Zoom>
-                            );
-                        })}
-                    </Box>
-                </Paper>
-            </Grow>
-
-            {/* Action Cards Grid with Staggered Zoom Animations */}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                {actionCards.map((card) => {
-                    const Icon = card.icon;
-                    return (
-                        <Zoom key={card.id} in={true} timeout={800} style={{ transitionDelay: card.delay }}>
-                            <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
-                                <Card sx={{
-                                    bgcolor: 'background.paper',
-                                    color: 'text.primary',
-                                    borderRadius: 3,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    width: '100%',
-                                    boxShadow: 4,
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    transition: 'all 0.3s ease-in-out',
-                                    '&:hover': {
-                                        transform: 'translateY(-8px) scale(1.02)',
-                                        boxShadow: 8,
-                                    }
-                                }}>
-                                    <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                            <Typography variant="h6" fontWeight="600" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <Icon />
-                                                {card.title}
-                                            </Typography>
-                                            {card.badge && (
+                                            {item.isChip ? (
                                                 <Chip
-                                                    label={card.badge}
-                                                    size="small"
+                                                    label={item.value}
                                                     sx={{
-                                                        bgcolor: 'warning.main',
-                                                        color: 'warning.contrastText',
+                                                        bgcolor: 'rgba(255,255,255,0.25)',
+                                                        color: 'inherit',
                                                         fontWeight: 700,
-                                                        fontSize: '0.7rem',
-                                                        animation: 'pulse 2s infinite'
+                                                        fontSize: '0.75rem',
+                                                        border: '2px solid rgba(255,255,255,0.5)',
                                                     }}
                                                 />
+                                            ) : (
+                                                <Typography variant="h5" fontWeight="700">
+                                                    {item.value}
+                                                </Typography>
                                             )}
                                         </Box>
-                                        <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6, flexGrow: 1 }}>
-                                            {card.description}
-                                        </Typography>
-                                        {card.hasTwoButtons ? (
-                                            <Box sx={{ display: 'flex', gap: 1.5 }}>
+                                    </Zoom>
+                                );
+                            })}
+                        </Box>
+                    </Paper>
+                </Grow>
+
+                {/* Action Cards Grid with Staggered Zoom Animations */}
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                    {actionCards.map((card) => {
+                        const Icon = card.icon;
+                        return (
+                            <Zoom key={card.id} in={true} timeout={800} style={{ transitionDelay: card.delay }}>
+                                <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
+                                    <Card sx={{
+                                        bgcolor: 'background.paper',
+                                        color: 'text.primary',
+                                        borderRadius: 3,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        width: '100%',
+                                        boxShadow: 4,
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        transition: 'all 0.3s ease-in-out',
+                                        '&:hover': {
+                                            transform: 'translateY(-8px) scale(1.02)',
+                                            boxShadow: 8,
+                                        }
+                                    }}>
+                                        <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                                <Typography variant="h6" fontWeight="600" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Icon />
+                                                    {card.title}
+                                                </Typography>
+                                                {card.badge && (
+                                                    <Chip
+                                                        label={card.badge}
+                                                        size="small"
+                                                        sx={{
+                                                            bgcolor: 'warning.main',
+                                                            color: 'warning.contrastText',
+                                                            fontWeight: 700,
+                                                            fontSize: '0.7rem',
+                                                            animation: 'pulse 2s infinite'
+                                                        }}
+                                                    />
+                                                )}
+                                            </Box>
+                                            <Typography variant="body2" sx={{ mb: 3, opacity: 0.85, lineHeight: 1.6, flexGrow: 1 }}>
+                                                {card.description}
+                                            </Typography>
+                                            {card.hasTwoButtons ? (
+                                                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                                                    <Button
+                                                        variant="contained"
+                                                        fullWidth
+                                                        onClick={() => navigate(card.route)}
+                                                        sx={{
+                                                            bgcolor: `${card.buttonColor}.main`,
+                                                            color: `${card.buttonColor}.contrastText`,
+                                                            textTransform: 'none',
+                                                            fontWeight: 600,
+                                                            py: 1.2,
+                                                            transition: 'all 0.3s ease',
+                                                            '&:hover': {
+                                                                bgcolor: `${card.buttonColor}.dark`,
+                                                                transform: 'scale(1.05)'
+                                                            }
+                                                        }}
+                                                    >
+                                                        {card.buttonText}
+                                                    </Button>
+                                                    <Button
+                                                        variant="outlined"
+                                                        fullWidth
+                                                        onClick={() => navigate(card.route)}
+                                                        sx={{
+                                                            borderColor: `${card.buttonColor}.main`,
+                                                            borderWidth: 2,
+                                                            color: `${card.buttonColor}.main`,
+                                                            textTransform: 'none',
+                                                            fontWeight: 600,
+                                                            py: 1.2,
+                                                            transition: 'all 0.3s ease',
+                                                            '&:hover': {
+                                                                borderColor: `${card.buttonColor}.dark`,
+                                                                borderWidth: 2,
+                                                                bgcolor: 'action.hover',
+                                                                transform: 'scale(1.05)'
+                                                            }
+                                                        }}
+                                                    >
+                                                        {card.buttonText2}
+                                                    </Button>
+                                                </Box>
+                                            ) : (
                                                 <Button
                                                     variant="contained"
                                                     fullWidth
                                                     onClick={() => navigate(card.route)}
+                                                    startIcon={<Icon />}
                                                     sx={{
                                                         bgcolor: `${card.buttonColor}.main`,
                                                         color: `${card.buttonColor}.contrastText`,
@@ -573,130 +650,86 @@ const Dashboard = () => {
                                                 >
                                                     {card.buttonText}
                                                 </Button>
-                                                <Button
-                                                    variant="outlined"
-                                                    fullWidth
-                                                    onClick={() => navigate(card.route)}
-                                                    sx={{
-                                                        borderColor: `${card.buttonColor}.main`,
-                                                        borderWidth: 2,
-                                                        color: `${card.buttonColor}.main`,
-                                                        textTransform: 'none',
-                                                        fontWeight: 600,
-                                                        py: 1.2,
-                                                        transition: 'all 0.3s ease',
-                                                        '&:hover': {
-                                                            borderColor: `${card.buttonColor}.dark`,
-                                                            borderWidth: 2,
-                                                            bgcolor: 'action.hover',
-                                                            transform: 'scale(1.05)'
-                                                        }
-                                                    }}
-                                                >
-                                                    {card.buttonText2}
-                                                </Button>
-                                            </Box>
-                                        ) : (
-                                            <Button
-                                                variant="contained"
-                                                fullWidth
-                                                onClick={() => navigate(card.route)}
-                                                startIcon={<Icon />}
-                                                sx={{
-                                                    bgcolor: `${card.buttonColor}.main`,
-                                                    color: `${card.buttonColor}.contrastText`,
-                                                    textTransform: 'none',
-                                                    fontWeight: 600,
-                                                    py: 1.2,
-                                                    transition: 'all 0.3s ease',
-                                                    '&:hover': {
-                                                        bgcolor: `${card.buttonColor}.dark`,
-                                                        transform: 'scale(1.05)'
-                                                    }
-                                                }}
-                                            >
-                                                {card.buttonText}
-                                            </Button>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </Box>
-                        </Zoom>
-                    );
-                })}
-
-                {/* Your Profile Card */}
-                <Zoom in={true} timeout={800} style={{ transitionDelay: '700ms' }}>
-                    <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
-                        <Card sx={{
-                            bgcolor: 'background.paper',
-                            color: 'text.primary',
-                            borderRadius: 3,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            width: '100%',
-                            boxShadow: 4,
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            transition: 'all 0.3s ease-in-out',
-                            '&:hover': {
-                                transform: 'translateY(-8px) scale(1.02)',
-                                boxShadow: 8,
-                            }
-                        }}>
-                            <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                                <Typography variant="h6" fontWeight="600" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                                    <ProfileIcon />
-                                    Your Profile
-                                </Typography>
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flexGrow: 1 }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Typography variant="body2" sx={{ opacity: 0.85 }}>Name:</Typography>
-                                        <Typography variant="body2" fontWeight="600">{user?.name || 'N/A'}</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Typography variant="body2" sx={{ opacity: 0.85 }}>Status:</Typography>
-                                        <Chip
-                                            label="Active"
-                                            size="small"
-                                            sx={{
-                                                bgcolor: 'info.main',
-                                                color: 'info.contrastText',
-                                                fontWeight: 600,
-                                                fontSize: '0.7rem'
-                                            }}
-                                        />
-                                    </Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Typography variant="body2" sx={{ opacity: 0.85 }}>Email:</Typography>
-                                        <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
-                                            {user?.email || 'N/A'}
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Typography variant="body2" sx={{ opacity: 0.85 }}>Account Type:</Typography>
-                                        <Chip
-                                            label={user?.role || 'Employee'}
-                                            size="small"
-                                            sx={{
-                                                bgcolor: 'secondary.main',
-                                                color: 'secondary.contrastText',
-                                                textTransform: 'uppercase',
-                                                fontWeight: 600,
-                                                fontSize: '0.7rem'
-                                            }}
-                                        />
-                                    </Box>
+                                            )}
+                                        </CardContent>
+                                    </Card>
                                 </Box>
-                            </CardContent>
-                        </Card>
-                    </Box>
-                </Zoom>
-            </Box>
+                            </Zoom>
+                        );
+                    })}
 
-            {/* Add keyframe animation for pulse effect */}
-            <style>
-                {`
+                    {/* Your Profile Card */}
+                    <Zoom in={true} timeout={800} style={{ transitionDelay: '700ms' }}>
+                        <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
+                            <Card sx={{
+                                bgcolor: 'background.paper',
+                                color: 'text.primary',
+                                borderRadius: 3,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                width: '100%',
+                                boxShadow: 4,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                transition: 'all 0.3s ease-in-out',
+                                '&:hover': {
+                                    transform: 'translateY(-8px) scale(1.02)',
+                                    boxShadow: 8,
+                                }
+                            }}>
+                                <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                                    <Typography variant="h6" fontWeight="600" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                                        <ProfileIcon />
+                                        Your Profile
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, flexGrow: 1 }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2" sx={{ opacity: 0.85 }}>Name:</Typography>
+                                            <Typography variant="body2" fontWeight="600">{user?.name || 'N/A'}</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2" sx={{ opacity: 0.85 }}>Status:</Typography>
+                                            <Chip
+                                                label="Active"
+                                                size="small"
+                                                sx={{
+                                                    bgcolor: 'info.main',
+                                                    color: 'info.contrastText',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.7rem'
+                                                }}
+                                            />
+                                        </Box>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2" sx={{ opacity: 0.85 }}>Email:</Typography>
+                                            <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.85rem' }}>
+                                                {user?.email || 'N/A'}
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2" sx={{ opacity: 0.85 }}>Account Type:</Typography>
+                                            <Chip
+                                                label={user?.role || 'Employee'}
+                                                size="small"
+                                                sx={{
+                                                    bgcolor: 'secondary.main',
+                                                    color: 'secondary.contrastText',
+                                                    textTransform: 'uppercase',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.7rem'
+                                                }}
+                                            />
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Box>
+                    </Zoom>
+                </Box>
+
+                {/* Add keyframe animation for pulse effect */}
+                <style>
+                    {`
                     @keyframes pulse {
                         0%, 100% {
                             opacity: 1;
@@ -708,8 +741,9 @@ const Dashboard = () => {
                         }
                     }
                 `}
-            </style>
-        </Box>
+                </style>
+            </Box>
+        </>
     );
 };
 
