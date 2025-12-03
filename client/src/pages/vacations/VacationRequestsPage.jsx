@@ -184,18 +184,18 @@ const VacationRequestsPage = () => {
 
     const columns = [
         ...(canManage ? [{
-            field: 'employee',
-            headerName: 'Employee',
+            id: 'employee',
+            label: 'Employee',
             width: 180,
             align: 'center',
-            renderCell: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
+            render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
         }] : []),
         {
-            field: 'vacationType',
-            headerName: 'Type',
+            id: 'vacationType',
+            label: 'Type',
             width: 100,
             align: 'center',
-            renderCell: (row) => (
+            render: (row) => (
                 <Chip
                     label={row.vacationType}
                     color={getVacationTypeColor(row.vacationType)}
@@ -204,34 +204,34 @@ const VacationRequestsPage = () => {
             ),
         },
         {
-            field: 'startDate',
-            headerName: 'Start Date',
+            id: 'startDate',
+            label: 'Start Date',
             width: 120,
             align: 'center',
-            renderCell: (row) => new Date(row.startDate).toLocaleDateString(),
+            render: (row) => new Date(row.startDate).toLocaleDateString(),
         },
         {
-            field: 'endDate',
-            headerName: 'End Date',
+            id: 'endDate',
+            label: 'End Date',
             width: 120,
             align: 'center',
-            renderCell: (row) => new Date(row.endDate).toLocaleDateString(),
+            render: (row) => new Date(row.endDate).toLocaleDateString(),
         },
         {
-            field: 'duration',
-            headerName: 'Days',
+            id: 'duration',
+            label: 'Days',
             width: 80,
             align: 'center',
         },
         {
-            field: 'reason',
-            headerName: 'Reason',
+            id: 'reason',
+            label: 'Reason',
             width: 200,
             align: 'center',
-            renderCell: (row) => (
-                <Box sx={{ 
-                    overflow: 'hidden', 
-                    textOverflow: 'ellipsis', 
+            render: (row) => (
+                <Box sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                     maxWidth: '200px',
                 }}>
@@ -240,11 +240,11 @@ const VacationRequestsPage = () => {
             ),
         },
         {
-            field: 'status',
-            headerName: 'Status',
+            id: 'status',
+            label: 'Status',
             width: 120,
             align: 'center',
-            renderCell: (row) => (
+            render: (row) => (
                 <Chip
                     label={row.status}
                     color={getStatusColor(row.status)}
@@ -253,11 +253,11 @@ const VacationRequestsPage = () => {
             ),
         },
         {
-            field: 'actions',
-            headerName: 'Actions',
+            id: 'actions',
+            label: 'Actions',
             width: 220,
             align: 'center',
-            renderCell: (row) => {
+            render: (row) => {
                 const isPending = row.status === 'pending';
                 const isOwnRequest = row.employee?._id === user?._id || String(row.employee?._id) === String(user?._id);
 

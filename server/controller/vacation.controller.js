@@ -56,6 +56,21 @@ export const createVacation = async (req, res) => {
 
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
+        // Set employee from authenticated user if not provided
+        if (!req.body.employee && req.user && req.user._id) {
+            req.body.employee = req.user._id;
+        }
+
+        // Set department and position from user if available
+        if (req.user) {
+            if (!req.body.department && req.user.department) {
+                req.body.department = req.user.department;
+            }
+            if (!req.body.position && req.user.position) {
+                req.body.position = req.user.position;
+            }
+        }
+
         // Handle file uploads for attachments
         if (req.files && req.files.length > 0) {
             req.body.attachments = req.files.map(file => ({

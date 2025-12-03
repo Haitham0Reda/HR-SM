@@ -195,7 +195,7 @@ const Dashboard = () => {
                                     height: 72,
                                     bgcolor: 'rgba(255,255,255,0.3)',
                                     border: '3px solid',
-                                    borderColor: 'common.white',
+                                    borderColor: 'primary.contrastText',
                                     fontSize: '1.75rem',
                                     fontWeight: 700,
                                     boxShadow: 4,
@@ -376,12 +376,12 @@ const Dashboard = () => {
                                     sx={{
                                         width: 80,
                                         height: 80,
-                                        bgcolor: 'grey.300',
+                                        bgcolor: 'action.hover',
                                         border: '3px solid',
-                                        borderColor: 'grey.400',
+                                        borderColor: 'divider',
                                     }}
                                 >
-                                    <TrophyIcon sx={{ fontSize: 40, color: 'grey.600' }} />
+                                    <TrophyIcon sx={{ fontSize: 40, color: 'text.secondary' }} />
                                 </Avatar>
 
                                 <Box sx={{ flex: 1 }}>
@@ -514,13 +514,15 @@ const Dashboard = () => {
                         <Zoom key={card.id} in={true} timeout={800} style={{ transitionDelay: card.delay }}>
                             <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
                                 <Card sx={{
-                                    bgcolor: 'grey.800',
-                                    color: 'common.white',
+                                    bgcolor: 'background.paper',
+                                    color: 'text.primary',
                                     borderRadius: 3,
                                     display: 'flex',
                                     flexDirection: 'column',
                                     width: '100%',
                                     boxShadow: 4,
+                                    border: '1px solid',
+                                    borderColor: 'divider',
                                     transition: 'all 0.3s ease-in-out',
                                     '&:hover': {
                                         transform: 'translateY(-8px) scale(1.02)',
@@ -627,13 +629,15 @@ const Dashboard = () => {
                 <Zoom in={true} timeout={800} style={{ transitionDelay: '700ms' }}>
                     <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px', display: 'flex', mb: 3 }}>
                         <Card sx={{
-                            bgcolor: 'grey.800',
-                            color: 'common.white',
+                            bgcolor: 'background.paper',
+                            color: 'text.primary',
                             borderRadius: 3,
                             display: 'flex',
                             flexDirection: 'column',
                             width: '100%',
                             boxShadow: 4,
+                            border: '1px solid',
+                            borderColor: 'divider',
                             transition: 'all 0.3s ease-in-out',
                             '&:hover': {
                                 transform: 'translateY(-8px) scale(1.02)',
@@ -675,8 +679,8 @@ const Dashboard = () => {
                                             label={user?.role || 'Employee'}
                                             size="small"
                                             sx={{
-                                                bgcolor: 'grey.600',
-                                                color: 'common.white',
+                                                bgcolor: 'secondary.main',
+                                                color: 'secondary.contrastText',
                                                 textTransform: 'uppercase',
                                                 fontWeight: 600,
                                                 fontSize: '0.7rem'

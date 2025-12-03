@@ -24,10 +24,10 @@ import {
     alpha,
     Avatar
 } from '@mui/material';
-import { 
-    Add as AddIcon, 
-    Search as SearchIcon, 
-    Edit as EditIcon, 
+import {
+    Add as AddIcon,
+    Search as SearchIcon,
+    Edit as EditIcon,
     Delete as DeleteIcon,
     Work as WorkIcon,
     FilterList as FilterListIcon,
@@ -147,7 +147,7 @@ const PositionsPage = () => {
             if (!selectedPosition) {
                 delete submitData.code;
             }
-            
+
             // Remove empty string values
             Object.keys(submitData).forEach(key => {
                 if (submitData[key] === '') {
@@ -185,18 +185,18 @@ const PositionsPage = () => {
 
     const filteredPositions = useMemo(() => {
         return positions.filter(pos => {
-            const matchesSearch = searchTerm === '' || 
+            const matchesSearch = searchTerm === '' ||
                 pos.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 pos.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (pos.arabicTitle && pos.arabicTitle.includes(searchTerm));
-            
-            const matchesStatus = statusFilter === 'all' || 
+
+            const matchesStatus = statusFilter === 'all' ||
                 (statusFilter === 'active' && pos.isActive) ||
                 (statusFilter === 'inactive' && !pos.isActive);
-            
+
             const matchesDepartment = departmentFilter === 'all' ||
                 (pos.department?._id === departmentFilter);
-            
+
             return matchesSearch && matchesStatus && matchesDepartment;
         });
     }, [positions, searchTerm, statusFilter, departmentFilter]);
@@ -210,15 +210,15 @@ const PositionsPage = () => {
     if (loading) return <Loading />;
 
     return (
-        <Box sx={{ 
+        <Box sx={{
             minHeight: '100vh',
             bgcolor: 'background.default',
             p: { xs: 2, sm: 3, md: 4 }
         }}>
             {/* Header Section */}
-            <Paper 
+            <Paper
                 elevation={0}
-                sx={{ 
+                sx={{
                     p: 3,
                     mb: 3,
                     borderRadius: 3,
@@ -226,17 +226,17 @@ const PositionsPage = () => {
                     color: 'white'
                 }}
             >
-                <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
                     flexWrap: 'wrap',
                     gap: 2
                 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ 
-                            bgcolor: 'rgba(255,255,255,0.2)', 
-                            width: 56, 
+                        <Avatar sx={{
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            width: 56,
                             height: 56,
                             backdropFilter: 'blur(10px)'
                         }}>
@@ -255,7 +255,7 @@ const PositionsPage = () => {
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => handleOpenDialog()}
-                        sx={{ 
+                        sx={{
                             bgcolor: 'white',
                             color: 'primary.main',
                             borderRadius: 2.5,
@@ -294,7 +294,7 @@ const PositionsPage = () => {
                         }}
                     >
                         <Stack direction="row" spacing={2} alignItems="center">
-                            <Avatar sx={{ 
+                            <Avatar sx={{
                                 bgcolor: alpha('#1976d2', 0.1),
                                 color: 'primary.main',
                                 width: 48,
@@ -329,7 +329,7 @@ const PositionsPage = () => {
                         }}
                     >
                         <Stack direction="row" spacing={2} alignItems="center">
-                            <Avatar sx={{ 
+                            <Avatar sx={{
                                 bgcolor: alpha('#2e7d32', 0.1),
                                 color: 'success.main',
                                 width: 48,
@@ -358,15 +358,15 @@ const PositionsPage = () => {
                             borderColor: 'divider',
                             transition: 'all 0.3s',
                             '&:hover': {
-                                borderColor: 'grey.400',
+                                borderColor: 'divider',
                                 boxShadow: 2
                             }
                         }}
                     >
                         <Stack direction="row" spacing={2} alignItems="center">
-                            <Avatar sx={{ 
-                                bgcolor: alpha('#757575', 0.1),
-                                color: 'grey.700',
+                            <Avatar sx={{
+                                bgcolor: 'action.hover',
+                                color: 'text.secondary',
                                 width: 48,
                                 height: 48
                             }}>
@@ -376,7 +376,7 @@ const PositionsPage = () => {
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                                     Inactive
                                 </Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 700, color: 'grey.700' }}>
+                                <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.secondary' }}>
                                     {stats.inactive}
                                 </Typography>
                             </Box>
@@ -506,8 +506,8 @@ const PositionsPage = () => {
             {filteredPositions.length === 0 ? (
                 <Paper
                     elevation={0}
-                    sx={{ 
-                        textAlign: 'center', 
+                    sx={{
+                        textAlign: 'center',
                         py: 8,
                         borderRadius: 2.5,
                         border: '2px dashed',
@@ -520,7 +520,7 @@ const PositionsPage = () => {
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                         {searchTerm || statusFilter !== 'all' || departmentFilter !== 'all'
-                            ? 'Try adjusting your filters' 
+                            ? 'Try adjusting your filters'
                             : 'Create your first position to get started'}
                     </Typography>
                 </Paper>
@@ -539,193 +539,193 @@ const PositionsPage = () => {
                                     borderColor: 'divider',
                                     transition: 'all 0.3s',
                                     '&:hover': {
-                                        borderColor: position.isActive ? 'success.main' : 'grey.400',
+                                        borderColor: position.isActive ? 'success.main' : 'divider',
                                         boxShadow: 3,
                                         transform: 'translateY(-4px)'
                                     }
                                 }}
                             >
-                                    <CardHeader
-                                        avatar={
-                                            <Avatar sx={{ 
-                                                bgcolor: position.isActive 
+                                <CardHeader
+                                    avatar={
+                                        <Avatar sx={{
+                                            bgcolor: position.isActive
+                                                ? alpha('#2e7d32', 0.1)
+                                                : 'action.hover',
+                                            color: position.isActive ? 'success.main' : 'text.secondary'
+                                        }}>
+                                            <WorkIcon />
+                                        </Avatar>
+                                    }
+                                    title={
+                                        <Typography
+                                            variant="h6"
+                                            sx={{
+                                                fontWeight: 600,
+                                                fontSize: '1rem',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: 'vertical',
+                                                minHeight: '2.5em',
+                                                lineHeight: 1.25
+                                            }}
+                                        >
+                                            {position.title}
+                                        </Typography>
+                                    }
+                                    subheader={
+                                        <Chip
+                                            label={position.isActive ? 'Active' : 'Inactive'}
+                                            size="small"
+                                            sx={{
+                                                mt: 0.5,
+                                                height: 20,
+                                                fontSize: '0.7rem',
+                                                fontWeight: 600,
+                                                bgcolor: position.isActive
                                                     ? alpha('#2e7d32', 0.1)
-                                                    : alpha('#757575', 0.1),
-                                                color: position.isActive ? 'success.main' : 'grey.600'
-                                            }}>
-                                                <WorkIcon />
-                                            </Avatar>
-                                        }
-                                        title={
-                                            <Typography 
-                                                variant="h6" 
-                                                sx={{ 
-                                                    fontWeight: 600, 
-                                                    fontSize: '1rem',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    display: '-webkit-box',
-                                                    WebkitLineClamp: 2,
-                                                    WebkitBoxOrient: 'vertical',
-                                                    minHeight: '2.5em',
-                                                    lineHeight: 1.25
-                                                }}
-                                            >
-                                                {position.title}
-                                            </Typography>
-                                        }
-                                        subheader={
-                                            <Chip
-                                                label={position.isActive ? 'Active' : 'Inactive'}
-                                                size="small"
-                                                sx={{
-                                                    mt: 0.5,
-                                                    height: 20,
-                                                    fontSize: '0.7rem',
-                                                    fontWeight: 600,
-                                                    bgcolor: position.isActive 
-                                                        ? alpha('#2e7d32', 0.1)
-                                                        : alpha('#757575', 0.1),
-                                                    color: position.isActive ? 'success.main' : 'grey.700',
-                                                    border: '1px solid',
-                                                    borderColor: position.isActive 
-                                                        ? alpha('#2e7d32', 0.3)
-                                                        : alpha('#757575', 0.3)
-                                                }}
-                                            />
-                                        }
-                                        sx={{ pb: 1.5, minHeight: 100 }}
-                                    />
-                                    <Divider />
-                                    <CardContent sx={{ pt: 2, pb: 1.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                                        <Box sx={{ 
-                                            p: 1.5,
-                                            borderRadius: 1.5,
-                                            bgcolor: 'background.default',
-                                            mb: 1.5,
-                                            minHeight: 56
-                                        }}>
-                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                CODE
-                                            </Typography>
-                                            <Typography 
-                                                variant="body1" 
-                                                sx={{ 
-                                                    fontWeight: 700,
-                                                    fontFamily: 'monospace',
-                                                    color: position.isActive ? 'success.main' : 'grey.700',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap'
-                                                }}
-                                            >
-                                                {position.code}
-                                            </Typography>
-                                        </Box>
-                                        <Box sx={{ 
-                                            p: 1.5,
-                                            borderRadius: 1.5,
-                                            bgcolor: 'background.default',
-                                            mb: 1.5,
-                                            minHeight: 56
-                                        }}>
-                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                DEPARTMENT
-                                            </Typography>
-                                            <Typography 
-                                                variant="body2" 
-                                                sx={{ 
-                                                    fontWeight: 500,
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap'
-                                                }}
-                                            >
-                                                {position.department?.name || '-'}
-                                            </Typography>
-                                        </Box>
-                                        <Box sx={{ 
-                                            p: 1.5,
-                                            borderRadius: 1.5,
-                                            bgcolor: 'background.default',
-                                            minHeight: 56
-                                        }}>
-                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                                                ARABIC NAME
-                                            </Typography>
-                                            <Typography 
-                                                variant="body2" 
-                                                dir="rtl"
-                                                sx={{ 
-                                                    fontWeight: 500,
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap'
-                                                }}
-                                            >
-                                                {position.arabicTitle || '-'}
-                                            </Typography>
-                                        </Box>
-                                    </CardContent>
-                                    <Divider />
-                                    <Box sx={{ 
+                                                    : 'action.hover',
+                                                color: position.isActive ? 'success.main' : 'text.secondary',
+                                                border: '1px solid',
+                                                borderColor: position.isActive
+                                                    ? alpha('#2e7d32', 0.3)
+                                                    : alpha('#757575', 0.3)
+                                            }}
+                                        />
+                                    }
+                                    sx={{ pb: 1.5, minHeight: 100 }}
+                                />
+                                <Divider />
+                                <CardContent sx={{ pt: 2, pb: 1.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                                    <Box sx={{
                                         p: 1.5,
-                                        display: 'flex',
-                                        justifyContent: 'flex-end',
-                                        gap: 1,
-                                        bgcolor: 'action.hover'
+                                        borderRadius: 1.5,
+                                        bgcolor: 'background.default',
+                                        mb: 1.5,
+                                        minHeight: 56
                                     }}>
-                                        <Tooltip title="Edit Position" arrow>
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => handleOpenDialog(position)}
-                                                sx={{
-                                                    color: 'primary.main',
-                                                    borderRadius: 1.5,
-                                                    transition: 'all 0.2s',
-                                                    '&:hover': { 
-                                                        bgcolor: 'primary.main',
-                                                        color: 'white',
-                                                        transform: 'scale(1.1)'
-                                                    }
-                                                }}
-                                            >
-                                                <EditIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Delete Position" arrow>
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => {
-                                                    setSelectedPosition(position);
-                                                    setOpenConfirm(true);
-                                                }}
-                                                sx={{
-                                                    color: 'error.main',
-                                                    borderRadius: 1.5,
-                                                    transition: 'all 0.2s',
-                                                    '&:hover': { 
-                                                        bgcolor: 'error.main',
-                                                        color: 'white',
-                                                        transform: 'scale(1.1)'
-                                                    }
-                                                }}
-                                            >
-                                                <DeleteIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                            CODE
+                                        </Typography>
+                                        <Typography
+                                            variant="body1"
+                                            sx={{
+                                                fontWeight: 700,
+                                                fontFamily: 'monospace',
+                                                color: position.isActive ? 'success.main' : 'text.secondary',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            {position.code}
+                                        </Typography>
                                     </Box>
-                                </Card>
+                                    <Box sx={{
+                                        p: 1.5,
+                                        borderRadius: 1.5,
+                                        bgcolor: 'background.default',
+                                        mb: 1.5,
+                                        minHeight: 56
+                                    }}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                            DEPARTMENT
+                                        </Typography>
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                fontWeight: 500,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            {position.department?.name || '-'}
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{
+                                        p: 1.5,
+                                        borderRadius: 1.5,
+                                        bgcolor: 'background.default',
+                                        minHeight: 56
+                                    }}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                            ARABIC NAME
+                                        </Typography>
+                                        <Typography
+                                            variant="body2"
+                                            dir="rtl"
+                                            sx={{
+                                                fontWeight: 500,
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            {position.arabicTitle || '-'}
+                                        </Typography>
+                                    </Box>
+                                </CardContent>
+                                <Divider />
+                                <Box sx={{
+                                    p: 1.5,
+                                    display: 'flex',
+                                    justifyContent: 'flex-end',
+                                    gap: 1,
+                                    bgcolor: 'action.hover'
+                                }}>
+                                    <Tooltip title="Edit Position" arrow>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleOpenDialog(position)}
+                                            sx={{
+                                                color: 'primary.main',
+                                                borderRadius: 1.5,
+                                                transition: 'all 0.2s',
+                                                '&:hover': {
+                                                    bgcolor: 'primary.main',
+                                                    color: 'white',
+                                                    transform: 'scale(1.1)'
+                                                }
+                                            }}
+                                        >
+                                            <EditIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Delete Position" arrow>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                setSelectedPosition(position);
+                                                setOpenConfirm(true);
+                                            }}
+                                            sx={{
+                                                color: 'error.main',
+                                                borderRadius: 1.5,
+                                                transition: 'all 0.2s',
+                                                '&:hover': {
+                                                    bgcolor: 'error.main',
+                                                    color: 'white',
+                                                    transform: 'scale(1.1)'
+                                                }
+                                            }}
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
+                            </Card>
                         </Fade>
                     ))}
                 </Box>
             )}
 
             {/* Dialog */}
-            <Dialog 
-                open={openDialog} 
-                onClose={handleCloseDialog} 
-                maxWidth="sm" 
+            <Dialog
+                open={openDialog}
+                onClose={handleCloseDialog}
+                maxWidth="sm"
                 fullWidth
                 slots={{ transition: Fade }}
                 slotProps={{
@@ -737,7 +737,7 @@ const PositionsPage = () => {
                     }
                 }}
             >
-                <DialogTitle sx={{ 
+                <DialogTitle sx={{
                     pb: 2,
                     display: 'flex',
                     alignItems: 'center',
@@ -844,7 +844,7 @@ const PositionsPage = () => {
                             </MenuItem>
                             <MenuItem value="false">
                                 <Stack direction="row" spacing={1} alignItems="center">
-                                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'grey.400' }} />
+                                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'action.disabled' }} />
                                     <span>Inactive</span>
                                 </Stack>
                             </MenuItem>
@@ -853,16 +853,16 @@ const PositionsPage = () => {
                 </DialogContent>
                 <Divider />
                 <DialogActions sx={{ p: 2.5 }}>
-                    <Button 
+                    <Button
                         onClick={handleCloseDialog}
                         sx={{ textTransform: 'none', borderRadius: 2 }}
                     >
                         Cancel
                     </Button>
-                    <Button 
-                        onClick={handleSubmit} 
+                    <Button
+                        onClick={handleSubmit}
                         variant="contained"
-                        sx={{ 
+                        sx={{
                             textTransform: 'none',
                             borderRadius: 2,
                             px: 3,

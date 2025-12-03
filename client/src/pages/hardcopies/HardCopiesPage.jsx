@@ -223,7 +223,7 @@ const HardCopiesPage = () => {
                         width: 80,
                         height: 80,
                         borderRadius: '50%',
-                        bgcolor: 'grey.100',
+                        bgcolor: 'action.hover',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -242,10 +242,10 @@ const HardCopiesPage = () => {
                 <Grid container spacing={3}>
                     {hardCopies.map((hardCopy) => (
                         <Grid size={{ xs: 12, sm: 4, md: 4 }} key={hardCopy._id}>
-                            <Card 
-                                sx={{ 
-                                    height: '100%', 
-                                    display: 'flex', 
+                            <Card
+                                sx={{
+                                    height: '100%',
+                                    display: 'flex',
                                     flexDirection: 'column',
                                     boxShadow: 4,
                                     borderRadius: 3,
@@ -262,15 +262,15 @@ const HardCopiesPage = () => {
                                     margin: '0 auto'
                                 }}
                             >
-                                <CardContent sx={{ 
+                                <CardContent sx={{
                                     flexGrow: 1,
                                     display: 'flex',
                                     flexDirection: 'column',
                                     p: 2.5
                                 }}>
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        justifyContent: 'space-between', 
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
                                         alignItems: 'flex-start',
                                         mb: 2
                                     }}>
@@ -278,11 +278,11 @@ const HardCopiesPage = () => {
                                             {hardCopy.title}
                                         </Typography>
                                     </Box>
-                                    
+
                                     {hardCopy.description && (
-                                        <Typography 
-                                            variant="body2" 
-                                            sx={{ 
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
                                                 color: 'text.secondary',
                                                 mb: 2,
                                                 overflow: 'hidden',
@@ -295,7 +295,7 @@ const HardCopiesPage = () => {
                                             {hardCopy.description}
                                         </Typography>
                                     )}
-                                    
+
                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                                         <Chip
                                             label={hardCopy.category ? hardCopy.category.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'N/A'}
@@ -311,10 +311,10 @@ const HardCopiesPage = () => {
                                             }}
                                         />
                                     </Box>
-                                    
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        justifyContent: 'space-between', 
+
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
                                         alignItems: 'center',
                                         mt: 2,
                                         pt: 1.5,
@@ -324,13 +324,13 @@ const HardCopiesPage = () => {
                                             Size: {formatFileSize(hardCopy.fileSize)}
                                         </Typography>
                                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                            By: {hardCopy.uploadedBy?.personalInfo?.fullName || 
+                                            By: {hardCopy.uploadedBy?.personalInfo?.fullName ||
                                                 hardCopy.uploadedBy?.username?.substring(0, 10) || 'N/A'}
                                         </Typography>
                                     </Box>
                                 </CardContent>
-                                
-                                <CardActions sx={{ 
+
+                                <CardActions sx={{
                                     justifyContent: 'flex-end',
                                     px: 2,
                                     pb: 2
@@ -397,7 +397,7 @@ const HardCopiesPage = () => {
                     }
                 }}
             >
-                <DialogTitle sx={{ 
+                <DialogTitle sx={{
                     pb: 1,
                     pt: 2,
                     fontWeight: 600,
@@ -466,7 +466,7 @@ const HardCopiesPage = () => {
                             }}
                         />
                         <FormControl fullWidth variant="outlined">
-                            <InputLabel sx={{ 
+                            <InputLabel sx={{
                                 color: 'text.secondary',
                                 '&.Mui-focused': {
                                     color: 'primary.main'
@@ -479,7 +479,7 @@ const HardCopiesPage = () => {
                                 value={formData.category}
                                 onChange={handleChange}
                                 label="Category"
-                                sx={{ 
+                                sx={{
                                     '& .MuiOutlinedInput-notchedOutline': {
                                         borderColor: 'var(--mui-palette-divider)'
                                     },

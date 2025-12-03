@@ -38,9 +38,9 @@ const StatusChip = ({ status, label, size = 'small' }) => {
             case 'draft':
             case 'disabled':
                 return {
-                    bgcolor: 'grey.300',
-                    color: 'grey.800',
-                    borderColor: 'grey.500',
+                    bgcolor: 'action.disabledBackground',
+                    color: 'text.secondary',
+                    borderColor: 'divider',
                 };
             default:
                 return {
