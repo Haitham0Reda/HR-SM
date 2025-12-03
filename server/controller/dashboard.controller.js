@@ -176,7 +176,7 @@ async function sendEmployeeOfMonthEmail(employee, month) {
 export const getEmployeeOfTheMonth = async (req, res) => {
     try {
         const config = await DashboardConfig.getConfig();
-        await config.populate('employeeOfTheMonth.selectedEmployee', 'username email employeeId profile');
+        await config.populate('employeeOfTheMonth.selectedEmployee', 'username email employeeId personalInfo');
 
         res.json(config.employeeOfTheMonth);
     } catch (error) {
@@ -212,7 +212,7 @@ export const setEmployeeOfTheMonth = async (req, res) => {
         config.updatedBy = req.user._id;
 
         await config.save();
-        await config.populate('employeeOfTheMonth.selectedEmployee', 'username email employeeId profile');
+        await config.populate('employeeOfTheMonth.selectedEmployee', 'username email employeeId personalInfo');
 
         logger.info(`Employee of the month set by ${req.user.username}`, {
             userId: req.user._id,

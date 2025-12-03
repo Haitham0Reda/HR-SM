@@ -14,6 +14,7 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
+  TablePagination,
   Paper,
   CircularProgress,
   Typography,
@@ -28,10 +29,15 @@ const DataTable = ({
   emptyMessage = 'No data available',
   sortable = true,
   onSort,
+  pagination = true,
+  rowsPerPageOptions = [5, 10, 25, 50],
+  defaultRowsPerPage = 5,
   sx = {},
 }) => {
   const [orderBy, setOrderBy] = useState('');
   const [order, setOrder] = useState('asc');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
 
   const handleSort = (columnId) => {
     if (!sortable) return;
@@ -46,6 +52,20 @@ const DataTable = ({
       onSort(columnId, newOrder);
     }
   };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Calculate paginated data
+  const paginatedData = pagination
+    ? data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+    : data;
 
   if (loading) {
     return (
@@ -109,7 +129,7 @@ const DataTable = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {data.map((row, index) => (
+          {paginatedData.map((row, index) => (
             <TableRow
               key={row.id || row._id || index}
               sx={{
@@ -130,6 +150,17 @@ const DataTable = ({
           ))}
         </TableBody>
       </Table>
+      {pagination && (
+        <TablePagination
+          rowsPerPageOptions={rowsPerPageOptions}
+          component="div"
+          count={data.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      )}
     </TableContainer>
   );
 };
@@ -160,6 +191,15 @@ DataTable.propTypes = {
   
   /** Sort handler */
   onSort: PropTypes.func,
+  
+  /** Enable pagination */
+  pagination: PropTypes.bool,
+  
+  /** Rows per page options */
+  rowsPerPageOptions: PropTypes.arrayOf(PropTypes.number),
+  
+  /** Default rows per page */
+  defaultRowsPerPage: PropTypes.number,
   
   /** Custom styles */
   sx: PropTypes.object,

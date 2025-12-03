@@ -221,8 +221,8 @@ const Dashboard = () => {
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 3 }}>
                             <Zoom in={true} timeout={800}>
                                 <Avatar
-                                    src={user?.profile?.profilePicture || user?.profilePicture}
-                                    alt={user?.name || user?.username}
+                                    src={user?.personalInfo?.profilePicture || user?.profilePicture || user?.profile?.profilePicture}
+                                    alt={user?.personalInfo?.fullName || user?.name || user?.username}
                                     sx={{
                                         width: 72,
                                         height: 72,
@@ -234,9 +234,9 @@ const Dashboard = () => {
                                         boxShadow: 4,
                                     }}
                                 >
-                                    {!user?.profile?.profilePicture && !user?.profilePicture && (user?.name || user?.username)
-                                        ? (user?.name || user?.username).charAt(0).toUpperCase()
-                                        : !user?.profile?.profilePicture && !user?.profilePicture && <ProfileIcon sx={{ fontSize: 36 }} />}
+                                    {!(user?.personalInfo?.profilePicture || user?.profilePicture || user?.profile?.profilePicture) && (user?.personalInfo?.fullName || user?.name || user?.username)
+                                        ? (user?.personalInfo?.fullName || user?.name || user?.username).charAt(0).toUpperCase()
+                                        : !(user?.personalInfo?.profilePicture || user?.profilePicture || user?.profile?.profilePicture) && <ProfileIcon sx={{ fontSize: 36 }} />}
                                 </Avatar>
                             </Zoom>
                             <Box sx={{ flex: '1 1 200px' }}>
@@ -244,7 +244,7 @@ const Dashboard = () => {
                                     Employee Dashboard
                                 </Typography>
                                 <Typography variant="body2" sx={{ opacity: 0.95 }}>
-                                    Welcome back, {user?.name || user?.username}
+                                    Welcome back, {user?.personalInfo?.fullName || user?.name || user?.username}
                                 </Typography>
                             </Box>
                             <Box sx={{
@@ -346,8 +346,12 @@ const Dashboard = () => {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                                     <Zoom in={true} timeout={1000}>
                                         <Avatar
-                                            src={employeeOfMonth.selectedEmployee.personalInfo?.profilePicture}
-                                            alt={employeeOfMonth.selectedEmployee.personalInfo?.fullName}
+                                            src={employeeOfMonth.selectedEmployee.profile?.profilePicture || 
+                                                 employeeOfMonth.selectedEmployee.profilePicture ||
+                                                 employeeOfMonth.selectedEmployee.personalInfo?.profilePicture}
+                                            alt={employeeOfMonth.selectedEmployee.personalInfo?.fullName || 
+                                                 employeeOfMonth.selectedEmployee.name ||
+                                                 employeeOfMonth.selectedEmployee.username}
                                             sx={{
                                                 width: 80,
                                                 height: 80,
@@ -359,8 +363,13 @@ const Dashboard = () => {
                                                 bgcolor: 'warning.light',
                                             }}
                                         >
-                                            {employeeOfMonth.selectedEmployee.personalInfo?.fullName?.charAt(0) ||
-                                                employeeOfMonth.selectedEmployee.username?.charAt(0)}
+                                            {!employeeOfMonth.selectedEmployee.profile?.profilePicture && 
+                                             !employeeOfMonth.selectedEmployee.profilePicture &&
+                                             !employeeOfMonth.selectedEmployee.personalInfo?.profilePicture && (
+                                                employeeOfMonth.selectedEmployee.personalInfo?.fullName?.charAt(0) ||
+                                                employeeOfMonth.selectedEmployee.name?.charAt(0) ||
+                                                employeeOfMonth.selectedEmployee.username?.charAt(0)
+                                            )}
                                         </Avatar>
                                     </Zoom>
 

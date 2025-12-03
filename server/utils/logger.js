@@ -19,7 +19,7 @@ const dailyRotateTransport = new DailyRotateFile({
     datePattern: 'YYYY-MM-DD',
     zippedArchive: true,
     maxSize: '20m',
-    maxFiles: '14d',
+    maxFiles: '10d',
     level: 'info',
     format: winston.format.combine(
         winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -33,7 +33,7 @@ const errorRotateTransport = new DailyRotateFile({
     datePattern: 'YYYY-MM-DD',
     zippedArchive: true,
     maxSize: '20m',
-    maxFiles: '30d',
+    maxFiles: '10d',
     level: 'error',
     format: winston.format.combine(
         winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),

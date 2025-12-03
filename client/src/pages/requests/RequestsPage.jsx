@@ -16,6 +16,8 @@ import vacationService from '../../services/vacation.service';
 import missionService from '../../services/mission.service';
 import sickLeaveService from '../../services/sickLeave.service';
 import permissionService from '../../services/permission.service';
+import overtimeService from '../../services/overtime.service';
+import forgetCheckService from '../../services/forgetCheck.service';
 
 const RequestsPage = () => {
     const navigate = useNavigate();
@@ -80,7 +82,7 @@ const RequestsPage = () => {
                 details: `${sickLeave.duration || 0} day${sickLeave.duration !== 1 ? 's' : ''}`
             }));
 
-            // Fetch permission requests (includes late-arrival, early-departure, overtime)
+            // Fetch permission requests (includes late-arrival, early-departure)
             const permissionData = await permissionService.getAll();
             const permissions = Array.isArray(permissionData) ? permissionData : [];
 
@@ -92,6 +94,34 @@ const RequestsPage = () => {
                 date: permission.date,
                 details: `${permission.time?.scheduled || 'N/A'} - ${permission.time?.requested || 'N/A'}`,
                 employeeName: permission.employee?.personalInfo?.fullName || permission.employee?.username || 'N/A'
+            }));
+
+            // Fetch overtime requests
+            const overtimeData = await overtimeService.getAll();
+            const overtimes = Array.isArray(overtimeData) ? overtimeData : (overtimeData.data || []);
+
+            // Transform overtime requests
+            const transformedOvertimes = overtimes.map(overtime => ({
+                ...overtime,
+                requestType: 'overtime',
+                displayType: 'Overtime',
+                date: overtime.date,
+                details: `${overtime.duration || 0} hour${overtime.duration !== 1 ? 's' : ''} - ${overtime.compensationType || 'N/A'}`,
+                employeeName: overtime.employee?.personalInfo?.fullName || overtime.employee?.username || 'N/A'
+            }));
+
+            // Fetch forget check requests
+            const forgetCheckData = await forgetCheckService.getAll();
+            const forgetChecks = Array.isArray(forgetCheckData) ? forgetCheckData : (forgetCheckData.data || []);
+
+            // Transform forget check requests
+            const transformedForgetChecks = forgetChecks.map(forgetCheck => ({
+                ...forgetCheck,
+                requestType: 'forget-check',
+                displayType: 'Forget Check',
+                date: forgetCheck.date,
+                details: forgetCheck.checkType ? `${forgetCheck.checkType.charAt(0).toUpperCase() + forgetCheck.checkType.slice(1)} Check` : 'N/A',
+                employeeName: forgetCheck.employee?.personalInfo?.fullName || forgetCheck.employee?.username || 'N/A'
             }));
 
             // Add employee names to all requests
@@ -106,7 +136,7 @@ const RequestsPage = () => {
             });
 
             // Combine all requests
-            const combined = [...transformedVacations, ...transformedMissions, ...transformedSickLeaves, ...transformedPermissions];
+            const combined = [...transformedVacations, ...transformedMissions, ...transformedSickLeaves, ...transformedPermissions, ...transformedOvertimes, ...transformedForgetChecks];
 
             // Filter user's own requests
             const userRequests = combined.filter(req => {

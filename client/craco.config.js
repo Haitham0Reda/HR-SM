@@ -1,4 +1,14 @@
 module.exports = {
+    webpack: {
+        configure: (webpackConfig) => {
+            // Fix date-fns v4 ESM resolution issues with @mui/x-date-pickers
+            webpackConfig.resolve.extensionAlias = {
+                '.js': ['.ts', '.tsx', '.js', '.jsx'],
+            };
+            
+            return webpackConfig;
+        },
+    },
     devServer: (devServerConfig) => {
         // Remove deprecated options
         delete devServerConfig.onBeforeSetupMiddleware;

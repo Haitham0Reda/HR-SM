@@ -1,270 +1,532 @@
-# HR-SM Server API
+# HR-SM Server API Documentation
 
 ## Overview
 
-This directory contains the server-side implementation of the HR-SM (Human Resources System Management) application. The server is built with Node.js, Express, and MongoDB, providing a comprehensive REST API for HR management functions.
+The HR-SM backend is built with Node.js, Express.js, and MongoDB, providing a comprehensive RESTful API for human resources management.
 
-## Features
+## Base URL
 
-### Core HR Management
-- User authentication and authorization
-- Employee management
-- Department and position management
-- School/branch management
-- Role-based access control
+```
+Development: http://localhost:5000/api
+Production: https://your-domain.com/api
+```
 
-### Attendance & Time Management
-- Check-in/check-out tracking
-- Attendance reporting
-- Work hour calculations
-- Remote work tracking
+## Authentication
 
-### Leave & Permission Management
-- Annual, casual, and sick leave tracking
-- Permission requests (late arrival, early departure)
-- Overtime requests
-- Mission requests
-- Leave balance management
+All protected endpoints require a JWT token in the Authorization header:
 
-### Payroll & Financial
-- Payroll processing
-- Deduction tracking
-- Salary calculations
+```
+Authorization: Bearer <your_jwt_token>
+```
 
-### Document Management
-- Employee document storage
-- Document templates
-- Confidential document handling
+### Authentication Endpoints
 
-### Communication & Notifications
-- Announcement system
-- Notification center
-- Event management
-- Survey system
+#### Login
 
-### Reporting & Analytics
-- Attendance reports
-- Payroll reports
-- Performance analytics
-- Custom report builder
+```http
+POST /api/users/login
+Content-Type: application/json
 
-### Security & Compliance
-- Audit logging
-- Permission tracking
-- Security settings
-- Backup management
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
 
-### Email Notification System
-- Automated email notifications for requests
-- Role-based notification routing
-- Pending request reminders
-- Approval/rejection notifications
+**Response:**
+```json
+{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "_id": "507f1f77bcf86cd799439011",
+    "name": "John Doe",
+    "email": "user@example.com",
+    "role": "employee"
+  }
+}
+```
 
-## Email Notification System
+#### Register
 
-### Overview
-The email notification system automatically sends emails based on request types and workflow stages. It ensures that the right people are notified at the right time.
+```http
+POST /api/users/register
+Content-Type: application/json
 
-### Notification Flow
-
-1. **General Requests** (Permission, Overtime, Mission):
-   - When created: Email sent to employee's manager
-   - When approved/rejected: Email sent to employee with result
-
-2. **Sick Leave Requests**:
-   - When created: Email sent to designated doctor
-   - When doctor approves: Emails sent to manager and HR
-   - When manager/HR makes final decision: Email sent to employee with result
-
-3. **Day Swap Requests**:
-   - When created: Emails sent to manager and HR
-   - When approved/rejected: Email sent to employee with result
-
-4. **Pending Request Reminders**:
-   - Runs daily to check for requests pending more than 2 days
-   - Sends reminder emails to appropriate recipients based on request type
-
-### Email Templates
-Professional HTML email templates are provided for all notification types:
-- New request notifications
-- Request approval/rejection notifications
-- Reminder notifications
-- Specialized templates for sick leave workflow
-
-### Configuration
-The email system is designed to work with any email service. Currently, it logs emails to the console for demonstration. To use a real email service, integrate with nodemailer or similar libraries.
+{
+  "name": "John Doe",
+  "email": "user@example.com",
+  "password": "password123",
+  "role": "employee"
+}
+```
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/users/login` - User login
-- `POST /api/users/register` - User registration
-- `GET /api/users/profile` - Get user profile
-- `PUT /api/users/profile` - Update user profile
-
 ### Users
-- `GET /api/users` - Get all users
-- `GET /api/users/:id` - Get user by ID
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
 
-### Schools
-- `GET /api/schools` - Get all schools
-- `POST /api/schools` - Create school
-- `GET /api/schools/:id` - Get school by ID
-- `PUT /api/schools/:id` - Update school
-- `DELETE /api/schools/:id` - Delete school
+#### Get All Users
+
+```http
+GET /api/users
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+- `page` (number): Page number for pagination
+- `limit` (number): Items per page
+- `search` (string): Search by name or email
+- `role` (string): Filter by role
+- `department` (string): Filter by department ID
+
+#### Get User by ID
+
+```http
+GET /api/users/:id
+Authorization: Bearer <token>
+```
+
+#### Create User
+
+```http
+POST /api/users
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Jane Smith",
+  "email": "jane@example.com",
+  "password": "password123",
+  "role": "employee",
+  "department": "507f1f77bcf86cd799439011",
+  "position": "507f1f77bcf86cd799439012"
+}
+```
+
+#### Update User
+
+```http
+PUT /api/users/:id
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Jane Smith Updated",
+  "department": "507f1f77bcf86cd799439013"
+}
+```
+
+#### Delete User
+
+```http
+DELETE /api/users/:id
+Authorization: Bearer <token>
+```
+
+#### Bulk Create Users
+
+```http
+POST /api/users/bulk-create
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+file: <excel_file>
+```
 
 ### Departments
-- `GET /api/departments` - Get all departments
-- `POST /api/departments` - Create department
-- `GET /api/departments/:id` - Get department by ID
-- `PUT /api/departments/:id` - Update department
-- `DELETE /api/departments/:id` - Delete department
+
+#### Get All Departments
+
+```http
+GET /api/departments
+Authorization: Bearer <token>
+```
+
+#### Create Department
+
+```http
+POST /api/departments
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Engineering",
+  "description": "Software development team",
+  "manager": "507f1f77bcf86cd799439011"
+}
+```
 
 ### Positions
-- `GET /api/positions` - Get all positions
-- `POST /api/positions` - Create position
-- `GET /api/positions/:id` - Get position by ID
-- `PUT /api/positions/:id` - Update position
-- `DELETE /api/positions/:id` - Delete position
 
-### Requests
-- `GET /api/requests` - Get all requests
-- `POST /api/requests` - Create request
-- `GET /api/requests/:id` - Get request by ID
-- `PUT /api/requests/:id` - Update request
-- `DELETE /api/requests/:id` - Delete request
+#### Get All Positions
 
-### Announcements
-- `GET /api/announcements` - Get all announcements
-- `POST /api/announcements` - Create announcement
-- `GET /api/announcements/:id` - Get announcement by ID
-- `PUT /api/announcements/:id` - Update announcement
-- `DELETE /api/announcements/:id` - Delete announcement
+```http
+GET /api/positions
+Authorization: Bearer <token>
+```
+
+#### Create Position
+
+```http
+POST /api/positions
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "Senior Developer",
+  "description": "Lead development projects",
+  "department": "507f1f77bcf86cd799439011"
+}
+```
 
 ### Attendance
-- `GET /api/attendance` - Get all attendance records
-- `POST /api/attendance` - Create attendance record
-- `GET /api/attendance/:id` - Get attendance record by ID
-- `PUT /api/attendance/:id` - Update attendance record
-- `DELETE /api/attendance/:id` - Delete attendance record
+
+#### Check In
+
+```http
+POST /api/attendance/check-in
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "location": "Office",
+  "notes": "On time"
+}
+```
+
+#### Check Out
+
+```http
+POST /api/attendance/check-out
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "notes": "Completed tasks"
+}
+```
+
+#### Get Attendance Records
+
+```http
+GET /api/attendance
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+- `userId` (string): Filter by user ID
+- `startDate` (date): Start date for range
+- `endDate` (date): End date for range
+- `status` (string): Filter by status
 
 ### Leave Management
-- `GET /api/leaves` - Get all leave records
-- `POST /api/leaves` - Create leave record
-- `GET /api/leaves/:id` - Get leave record by ID
-- `PUT /api/leaves/:id` - Update leave record
-- `DELETE /api/leaves/:id` - Delete leave record
+
+#### Create Leave Request
+
+```http
+POST /api/leaves
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "type": "annual",
+  "startDate": "2024-12-10",
+  "endDate": "2024-12-15",
+  "reason": "Family vacation",
+  "halfDay": false
+}
+```
+
+**Leave Types:**
+- `annual`: Annual leave
+- `casual`: Casual leave
+- `sick`: Sick leave
+
+#### Get Leave Requests
+
+```http
+GET /api/leaves
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+- `userId` (string): Filter by user ID
+- `status` (string): pending, approved, rejected
+- `type` (string): Leave type
+
+#### Approve/Reject Leave
+
+```http
+PUT /api/leaves/:id/status
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "status": "approved",
+  "comments": "Approved for vacation"
+}
+```
 
 ### Permissions
-- `GET /api/permissions` - Get all permissions
-- `POST /api/permissions` - Create permission
-- `GET /api/permissions/:id` - Get permission by ID
-- `PUT /api/permissions/:id` - Update permission
-- `DELETE /api/permissions/:id` - Delete permission
+
+#### Create Permission Request
+
+```http
+POST /api/permissions
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "type": "late_arrival",
+  "date": "2024-12-05",
+  "duration": 30,
+  "reason": "Doctor appointment"
+}
+```
+
+**Permission Types:**
+- `late_arrival`: Late arrival
+- `early_departure`: Early departure
+- `overtime`: Overtime work
+- `mission`: Business mission
+
+#### Get Permission Requests
+
+```http
+GET /api/permissions
+Authorization: Bearer <token>
+```
 
 ### Payroll
-- `GET /api/payrolls` - Get all payroll records
-- `POST /api/payrolls` - Create payroll record
-- `GET /api/payrolls/:id` - Get payroll record by ID
-- `PUT /api/payrolls/:id` - Update payroll record
-- `DELETE /api/payrolls/:id` - Delete payroll record
+
+#### Get Payroll Records
+
+```http
+GET /api/payroll
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+- `userId` (string): Filter by user ID
+- `month` (number): Month (1-12)
+- `year` (number): Year
+
+#### Process Payroll
+
+```http
+POST /api/payroll/process
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "month": 12,
+  "year": 2024,
+  "users": ["507f1f77bcf86cd799439011"]
+}
+```
 
 ### Documents
-- `GET /api/documents` - Get all documents
-- `POST /api/documents` - Create document
-- `GET /api/documents/:id` - Get document by ID
-- `PUT /api/documents/:id` - Update document
-- `DELETE /api/documents/:id` - Delete document
 
-### Document Templates
-- `GET /api/document-templates` - Get all document templates
-- `POST /api/document-templates` - Create document template
-- `GET /api/document-templates/:id` - Get document template by ID
-- `PUT /api/document-templates/:id` - Update document template
-- `DELETE /api/document-templates/:id` - Delete document template
+#### Upload Document
 
-### Events
-- `GET /api/events` - Get all events
-- `POST /api/events` - Create event
-- `GET /api/events/:id` - Get event by ID
-- `PUT /api/events/:id` - Update event
-- `DELETE /api/events/:id` - Delete event
+```http
+POST /api/documents
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
 
-### Holidays
-- `GET /api/holidays` - Get all holidays
-- `POST /api/holidays` - Create holiday
-- `GET /api/holidays/:id` - Get holiday by ID
-- `PUT /api/holidays/:id` - Update holiday
-- `DELETE /api/holidays/:id` - Delete holiday
+file: <document_file>
+category: "contract"
+confidential: true
+```
+
+#### Get Documents
+
+```http
+GET /api/documents
+Authorization: Bearer <token>
+```
+
+#### Download Document
+
+```http
+GET /api/documents/:id/download
+Authorization: Bearer <token>
+```
 
 ### Notifications
-- `GET /api/notifications` - Get all notifications
-- `POST /api/notifications` - Create notification
-- `GET /api/notifications/:id` - Get notification by ID
-- `PUT /api/notifications/:id` - Update notification
-- `DELETE /api/notifications/:id` - Delete notification
+
+#### Get Notifications
+
+```http
+GET /api/notifications
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+- `read` (boolean): Filter by read status
+- `type` (string): Filter by notification type
+
+#### Mark as Read
+
+```http
+PUT /api/notifications/:id/read
+Authorization: Bearer <token>
+```
 
 ### Reports
-- `GET /api/reports` - Get all reports
-- `POST /api/reports` - Create report
-- `GET /api/reports/:id` - Get report by ID
-- `PUT /api/reports/:id` - Update report
-- `DELETE /api/reports/:id` - Delete report
 
-### Backups
-- `GET /api/backups` - Get all backups
-- `POST /api/backups` - Create backup
-- `GET /api/backups/:id` - Get backup by ID
-- `PUT /api/backups/:id` - Update backup
-- `DELETE /api/backups/:id` - Delete backup
+#### Generate Attendance Report
 
-### Analytics
-- `GET /api/analytics/dashboard` - Get dashboard analytics
-- `GET /api/analytics/attendance` - Get attendance analytics
-- `GET /api/analytics/payroll` - Get payroll analytics
-- `GET /api/analytics/leave` - Get leave analytics
+```http
+POST /api/reports/attendance
+Authorization: Bearer <token>
+Content-Type: application/json
 
-### Mixed Vacations
-- `GET /api/mixed-vacations` - Get all mixed vacations
-- `POST /api/mixed-vacations` - Create mixed vacation
-- `GET /api/mixed-vacations/:id` - Get mixed vacation by ID
-- `PUT /api/mixed-vacations/:id` - Update mixed vacation
-- `DELETE /api/mixed-vacations/:id` - Delete mixed vacation
+{
+  "startDate": "2024-12-01",
+  "endDate": "2024-12-31",
+  "department": "507f1f77bcf86cd799439011"
+}
+```
 
-### Resigned Employees
-- `GET /api/resigned-employees` - Get all resigned employees
-- `POST /api/resigned-employees` - Create resigned employee record
-- `GET /api/resigned-employees/:id` - Get resigned employee by ID
-- `PUT /api/resigned-employees/:id` - Update resigned employee record
-- `DELETE /api/resigned-employees/:id` - Delete resigned employee record
+#### Generate Payroll Report
 
-### Security
-- `GET /api/security/settings` - Get security settings
-- `PUT /api/security/settings` - Update security settings
-- `GET /api/security/audit` - Get security audit logs
-- `POST /api/security/audit/cleanup` - Cleanup old audit logs
+```http
+POST /api/reports/payroll
+Authorization: Bearer <token>
+Content-Type: application/json
 
-### Surveys
-- `GET /api/surveys` - Get all surveys
-- `POST /api/surveys` - Create survey
-- `GET /api/surveys/:id` - Get survey by ID
-- `PUT /api/surveys/:id` - Update survey
-- `DELETE /api/surveys/:id` - Delete survey
+{
+  "month": 12,
+  "year": 2024
+}
+```
+
+## Response Format
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "data": { /* response data */ },
+  "message": "Operation successful"
+}
+```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "details": { /* additional error details */ }
+}
+```
+
+## Status Codes
+
+- `200 OK`: Successful GET request
+- `201 Created`: Successful POST request
+- `400 Bad Request`: Invalid request data
+- `401 Unauthorized`: Missing or invalid token
+- `403 Forbidden`: Insufficient permissions
+- `404 Not Found`: Resource not found
+- `500 Internal Server Error`: Server error
+
+## Rate Limiting
+
+API requests are limited to:
+- **100 requests per minute** for authenticated users
+- **20 requests per minute** for unauthenticated users
+
+## Pagination
+
+List endpoints support pagination:
+
+```http
+GET /api/users?page=1&limit=20
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [ /* items */ ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 150,
+    "pages": 8
+  }
+}
+```
+
+## Role-Based Access Control
+
+### Roles
+
+- **admin**: Full system access
+- **hr**: HR management functions
+- **manager**: Team management functions
+- **employee**: Basic employee functions
+
+### Permission Matrix
+
+| Endpoint | Admin | HR | Manager | Employee |
+|----------|-------|----|---------| ---------|
+| Users (CRUD) | ✅ | ✅ | ❌ | ❌ |
+| Departments | ✅ | ✅ | ✅ | ❌ |
+| Attendance | ✅ | ✅ | ✅ | ✅ |
+| Leave Approval | ✅ | ✅ | ✅ | ❌ |
+| Payroll | ✅ | ✅ | ❌ | ❌ |
+| Reports | ✅ | ✅ | ✅ | ❌ |
+
+## Webhooks
+
+Configure webhooks for real-time notifications:
+
+```http
+POST /api/webhooks
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "url": "https://your-app.com/webhook",
+  "events": ["leave.created", "attendance.checked_in"],
+  "secret": "your_webhook_secret"
+}
+```
 
 ## Testing
 
-For detailed information about testing, see [testing/README.md](file:///D:/work/HR-SM/server/testing/README.md).
+Use the provided Postman collection for API testing:
 
-## Contributing
+```bash
+# Import collection
+postman-collection.json
+```
 
-1. Fork the repository
-2. Create a new branch for your feature
-3. Commit your changes
-4. Push to the branch
-5. Create a pull request
+## Error Handling
 
-## License
+All errors follow a consistent format:
 
-This project is licensed under the MIT License.
+```json
+{
+  "success": false,
+  "error": "Validation error",
+  "details": {
+    "field": "email",
+    "message": "Email is required"
+  }
+}
+```
+
+## Support
+
+For API support:
+- GitHub Issues: [github.com/your-repo/issues](https://github.com/your-repo/issues)
+- Email: api-support@hr-sm.com
+- Documentation: [docs.hr-sm.com](https://docs.hr-sm.com)
+
+**Last Updated**: December 4, 2024

@@ -20,7 +20,7 @@ import EditUserPage from './pages/users/EditUserPage';
 
 import DepartmentsPage from './pages/departments/DepartmentsPage';
 import PositionsPage from './pages/positions/PositionsPage';
-import AttendancePage from './pages/attendance/AttendancePage';
+import AttendanceManagementPage from './pages/attendance/AttendanceManagementPage';
 import MissionsPage from './pages/missions/MissionsPage';
 import MissionForm from './pages/missions/MissionForm';
 import MissionDetails from './pages/missions/MissionDetails';
@@ -165,7 +165,7 @@ function App() {
                 <Route path="positions" element={<PositionsPage />} />
 
                 {/* HR Operations */}
-                <Route path="attendance" element={<AttendancePage />} />
+                <Route path="attendance" element={<AttendanceManagementPage />} />
                 <Route path="missions" element={<MissionsPage />} />
                 <Route path="missions/create" element={<MissionForm />} />
                 <Route path="missions/:id" element={<MissionDetails />} />

@@ -19,7 +19,9 @@
     "sync-roles": "node server/scripts/syncSystemRoles.js",
     "verify-roles": "node server/scripts/verifySystemRoles.js",
     "seed-attendance": "node server/scripts/seedAttendance.js",
-    "create-user-template": "node server/scripts/createBulkUserTemplate.js"
+    "create-user-template": "node server/scripts/createBulkUserTemplate.js",
+    "test-attendance-integration": "node server/scripts/testAttendanceIntegration.js",
+    "migrate-attendance": "node server/scripts/migrateAttendanceData.js"
   },
   "keywords": [],
   "author": "",
@@ -58,6 +60,7 @@
     "mongoose": "^8.19.2",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.10",
     "sanitize-html": "^2.17.0",
     "winston": "^3.18.3",

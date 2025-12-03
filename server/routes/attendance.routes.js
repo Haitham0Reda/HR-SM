@@ -4,14 +4,28 @@ import {
     createAttendance,
     getAttendanceById,
     updateAttendance,
-    deleteAttendance
+    deleteAttendance,
+    getTodayAttendance,
+    getMonthlyAttendance,
+    manualCheckIn,
+    manualCheckOut
 } from '../controller/attendance.controller.js';
-import { protect, checkActive } from '../middleware/index.js';
+import { protect, checkActive, checkRole } from '../middleware/index.js';
 
 const router = express.Router();
 
 // Get all attendance records - protected
 router.get('/', protect, getAllAttendance);
+
+// Get today's attendance
+router.get('/today', protect, getTodayAttendance);
+
+// Get monthly attendance
+router.get('/monthly', protect, getMonthlyAttendance);
+
+// Manual check-in/check-out
+router.post('/manual/checkin', protect, checkRole(['admin', 'hr']), manualCheckIn);
+router.post('/manual/checkout', protect, checkRole(['admin', 'hr']), manualCheckOut);
 
 // Create attendance record - protected, requires active employee
 router.post('/', protect, checkActive, createAttendance);
