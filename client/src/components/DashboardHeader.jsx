@@ -317,8 +317,8 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 }}
                             >
                                 <Avatar
-                                    src={user?.profile?.profilePicture || user?.profilePicture}
-                                    alt={user?.name || user?.username || 'User'}
+                                    src={user?.personalInfo?.profilePicture || user?.profilePicture || user?.profile?.profilePicture}
+                                    alt={user?.personalInfo?.fullName || user?.name || user?.username || 'User'}
                                     sx={{
                                         width: 36,
                                         height: 36,
@@ -332,9 +332,9 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                     }}
                                 >
                                     {
-                                        !user?.profile?.profilePicture && user?.name
-                                            ? user.name.charAt(0).toUpperCase()
-                                            : <PersonIcon />
+                                        !(user?.personalInfo?.profilePicture || user?.profilePicture || user?.profile?.profilePicture) && (user?.personalInfo?.fullName || user?.name || user?.username)
+                                            ? (user?.personalInfo?.fullName || user?.name || user?.username).charAt(0).toUpperCase()
+                                            : !user?.personalInfo?.profilePicture && !user?.profilePicture && !user?.profile?.profilePicture && <PersonIcon />
                                     }
                                 </Avatar >
                             </IconButton >
@@ -356,7 +356,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                     color: 'text.primary',
                                 }}
                             >
-                                {user?.profile?.firstName || user?.name?.split(' ')[0] || user?.username || 'User'}
+                                {user?.personalInfo?.firstName || user?.profile?.firstName || user?.name?.split(' ')[0] || user?.username || 'User'}
                             </Typography>
                             <Chip
                                 label={user?.role?.toUpperCase() || 'EMPLOYEE'}
@@ -411,7 +411,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             >
                 <Box sx={{ px: 2.5, py: 2 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        {user?.name || user?.username || 'User'}
+                        {user?.personalInfo?.fullName || user?.name || user?.username || 'User'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
                         {user?.email || ''}

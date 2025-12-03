@@ -59,6 +59,23 @@ const attendanceSchema = new mongoose.Schema({
             default: 0
         }
     },
+    // Attendance source tracking
+    source: {
+        type: String,
+        enum: ['biometric', 'cloud', 'mobile', 'qr', 'manual', 'csv', 'system'],
+        default: 'manual',
+        index: true
+    },
+    // Raw device data for audit trail
+    rawDeviceData: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
+    },
+    // Reference to the device that recorded this attendance
+    device: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AttendanceDevice'
+    },
     // Check-out information
     checkOut: {
         time: Date,

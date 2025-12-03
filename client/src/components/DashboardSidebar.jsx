@@ -46,6 +46,9 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import PolicyIcon from '@mui/icons-material/Policy';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+import DevicesIcon from '@mui/icons-material/Devices';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
@@ -364,7 +367,7 @@ function DashboardSidebar({
                                 <DashboardSidebarHeaderItem>HR Operations</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
                                     id="attendance"
-                                    title="Attendance"
+                                    title="Attendance Management"
                                     icon={<AccessTimeIcon />}
                                     href="/app/attendance"
                                     selected={!!matchPath('/app/attendance', pathname)}
@@ -417,13 +420,6 @@ function DashboardSidebar({
                                     icon={<RequestPageIcon />}
                                     href="/app/requests"
                                     selected={!!matchPath('/app/requests', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="vacation-management"
-                                    title="Vacation Balances"
-                                    icon={<BeachAccessOutlinedIcon />}
-                                    href="/app/vacations"
-                                    selected={!!matchPath('/app/vacations', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="payroll"
@@ -545,7 +541,7 @@ function DashboardSidebar({
                                 <DashboardSidebarHeaderItem>HR Operations</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
                                     id="attendance"
-                                    title="Attendance"
+                                    title="Attendance Management"
                                     icon={<AccessTimeIcon />}
                                     href="/app/attendance"
                                     selected={!!matchPath('/app/attendance', pathname)}
@@ -598,13 +594,6 @@ function DashboardSidebar({
                                     icon={<RequestPageIcon />}
                                     href="/app/requests"
                                     selected={!!matchPath('/app/requests', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="vacation-management"
-                                    title="Vacation Balances"
-                                    icon={<BeachAccessOutlinedIcon />}
-                                    href="/app/vacations"
-                                    selected={!!matchPath('/app/vacations', pathname)}
                                 />
                                 <DashboardSidebarPageItem
                                     id="payroll"
@@ -798,14 +787,6 @@ function DashboardSidebar({
                                                 icon={<BeachAccessOutlinedIcon />}
                                                 href="/app/system-settings/vacation-management"
                                                 selected={!!matchPath('/app/system-settings/vacation-management', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="vacation-balances"
-                                                title="Manage Vacation Balances"
-                                                icon={<AccountBalanceIcon />}
-                                                href="/app/system-settings/vacation-balances"
-                                                selected={!!matchPath('/app/system-settings/vacation-balances', pathname)}
                                                 isNested={true}
                                             />
                                             <DashboardSidebarPageItem

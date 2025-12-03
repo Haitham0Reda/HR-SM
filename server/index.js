@@ -24,6 +24,7 @@ import { logUserActivity } from './middleware/activityLogger.js';
 import { startAllScheduledTasks, stopAllTasks } from './utils/scheduler.js';
 import logger from './utils/logger.js';
 import backupScheduler from './services/backupScheduler.service.js';
+import attendanceCron from './utils/attendanceCron.js';
 
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
@@ -32,6 +33,7 @@ import themeRoutes from './routes/theme.routes.js';
 import announcementRoutes from './routes/announcement.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import attendanceRoutes from './routes/attendance.routes.js';
+import attendanceDeviceRoutes from './routes/attendanceDevice.routes.js';
 import backupRoutes from './routes/backup.routes.js';
 import backupExecutionRoutes from './routes/backupExecution.routes.js';
 import departmentRoutes from './routes/department.routes.js';
@@ -190,6 +192,7 @@ app.use('/api/theme', themeRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/attendance-devices', attendanceDeviceRoutes);
 app.use('/api/backups', backupRoutes);
 app.use('/api/backup-executions', backupExecutionRoutes);
 app.use('/api/departments', departmentRoutes);
@@ -258,6 +261,9 @@ if (isMainModule) {
         backupScheduler.initialize().catch(err => {
             logger.error('Failed to initialize backup scheduler:', err);
         });
+        
+        // Start attendance cron jobs
+        attendanceCron.startAllAttendanceTasks();
     });
 
     // Handle graceful shutdown
@@ -266,6 +272,7 @@ if (isMainModule) {
 
         stopAllTasks();
         backupScheduler.stopAll();
+        attendanceCron.stopAllAttendanceTasks();
         server.close(() => {
             logger.info('Server closed');
 
@@ -277,6 +284,8 @@ if (isMainModule) {
         logger.info('Shutting down gracefully...');
 
         stopAllTasks();
+        backupScheduler.stopAll();
+        attendanceCron.stopAllAttendanceTasks();
         server.close(() => {
             logger.info('Server closed');
 

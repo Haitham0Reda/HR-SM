@@ -23,14 +23,14 @@ import userService from '../../services/user.service';
 export default function ProfilePage() {
     const { user, updateUser } = useAuth();
     const [formData, setFormData] = useState({
-        name: user?.name || '',
+        name: user?.personalInfo?.fullName || user?.name || '',
         email: user?.email || '',
-        phone: user?.phone || '',
+        phone: user?.personalInfo?.phone || user?.phone || '',
         department: user?.department?.name || '',
         position: user?.position?.title || '',
     });
-    const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
-    const [previewUrl, setPreviewUrl] = useState(user?.profilePicture || '');
+    const [profilePicture, setProfilePicture] = useState(user?.personalInfo?.profilePicture || user?.profilePicture || '');
+    const [previewUrl, setPreviewUrl] = useState(user?.personalInfo?.profilePicture || user?.profilePicture || '');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [openPreview, setOpenPreview] = useState(false);
@@ -64,6 +64,11 @@ export default function ProfilePage() {
         try {
             // Prepare data for update - only send fields that can be updated
             const updateData = {
+                personalInfo: {
+                    ...user?.personalInfo,
+                    phone: formData.phone,
+                    profilePicture: profilePicture,
+                },
                 profile: {
                     ...user?.profile,
                     phone: formData.phone,
