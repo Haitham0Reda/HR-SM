@@ -16,7 +16,7 @@ const attendanceDeviceSchema = new mongoose.Schema({
         type: String,
         trim: true,
         validate: {
-            validator: function(v) {
+            validator: function (v) {
                 // Allow empty for non-network devices
                 if (!v) return true;
                 // Basic IP validation
@@ -49,8 +49,7 @@ const attendanceDeviceSchema = new mongoose.Schema({
         index: true
     },
     lastSync: {
-        type: Date,
-        index: true
+        type: Date
     },
     lastSyncStatus: {
         type: String,
@@ -118,12 +117,12 @@ attendanceDeviceSchema.index({ autoSync: 1, isActive: 1 });
 attendanceDeviceSchema.index({ lastSync: 1 });
 
 // Instance method to update sync status
-attendanceDeviceSchema.methods.updateSyncStatus = async function(success, recordCount = 0, error = null) {
+attendanceDeviceSchema.methods.updateSyncStatus = async function (success, recordCount = 0, error = null) {
     this.lastSync = new Date();
     this.lastSyncStatus = success ? 'success' : 'failed';
     this.lastSyncError = error;
     this.stats.totalSyncs += 1;
-    
+
     if (success) {
         this.stats.successfulSyncs += 1;
         this.stats.lastRecordCount = recordCount;
@@ -132,12 +131,12 @@ attendanceDeviceSchema.methods.updateSyncStatus = async function(success, record
         this.stats.failedSyncs += 1;
         this.status = 'error';
     }
-    
+
     return await this.save();
 };
 
 // Static method to get active devices for sync
-attendanceDeviceSchema.statics.getDevicesForSync = function() {
+attendanceDeviceSchema.statics.getDevicesForSync = function () {
     return this.find({
         isActive: true,
         autoSync: true,
@@ -146,7 +145,7 @@ attendanceDeviceSchema.statics.getDevicesForSync = function() {
 };
 
 // Static method to get device statistics
-attendanceDeviceSchema.statics.getDeviceStats = async function() {
+attendanceDeviceSchema.statics.getDeviceStats = async function () {
     const stats = await this.aggregate([
         {
             $group: {
@@ -164,7 +163,7 @@ attendanceDeviceSchema.statics.getDeviceStats = async function() {
             }
         }
     ]);
-    
+
     return stats;
 };
 
