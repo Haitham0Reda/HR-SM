@@ -3,8 +3,6 @@ import Document from '../models/document.model.js';
 
 export const getAllDocuments = async (req, res) => {
     try {
-
-
         // Filter based on user role and access permissions
         let query = {};
 
@@ -17,9 +15,6 @@ export const getAllDocuments = async (req, res) => {
                     { isConfidential: false }
                 ]
             };
-            console.log('Employee query:', JSON.stringify(query));
-        } else {
-
         }
 
         const documents = await Document.find(query)
@@ -30,7 +25,7 @@ export const getAllDocuments = async (req, res) => {
 
         res.json(documents);
     } catch (err) {
-
+        console.error('Error fetching documents:', err);
         res.status(500).json({ error: err.message });
     }
 };

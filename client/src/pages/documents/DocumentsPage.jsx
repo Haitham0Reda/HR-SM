@@ -10,7 +10,11 @@ import {
     IconButton,
     Typography,
     Chip,
-    MenuItem
+    MenuItem,
+    Card,
+    CardContent,
+    CardActions,
+    Grid
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -19,9 +23,9 @@ import {
     Download as DownloadIcon,
     Visibility as VisibilityIcon,
     Lock as LockIcon,
-    LockOpen as LockOpenIcon
+    LockOpen as LockOpenIcon,
+    Description as DescriptionIcon
 } from '@mui/icons-material';
-import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import DocumentViewer from '../../components/common/DocumentViewer';
@@ -75,29 +79,29 @@ const DocumentsPage = () => {
     const fetchDocuments = async () => {
         try {
             setLoading(true);
-
-
+            console.log('Fetching documents...');
             const data = await documentService.getAll();
-
-            if (data && data.length > 0) {
-
-            }
+            console.log('Documents received:', data);
+            console.log('Data is array:', Array.isArray(data));
+            console.log('Data length:', data?.length);
 
             // Filter to show only current user's documents if not HR/Admin
             let filteredData = Array.isArray(data) ? data : [];
             if (!canManage) {
+                console.log('Filtering for non-admin user:', user?._id);
                 filteredData = filteredData.filter(doc => {
                     const docUserId = doc.employee?._id || doc.employee;
                     const currentUserId = user?._id;
                     // Show documents assigned to user or public documents (no employee assigned)
                     return !docUserId || docUserId === currentUserId || String(docUserId) === String(currentUserId);
                 });
+                console.log('Filtered documents:', filteredData.length);
             }
 
+            console.log('Setting documents:', filteredData);
             setDocuments(filteredData);
         } catch (error) {
-
-
+            console.error('Error fetching documents:', error);
             showNotification(typeof error === 'string' ? error : 'Failed to fetch documents', 'error');
             setDocuments([]);
         } finally {
@@ -110,7 +114,7 @@ const DocumentsPage = () => {
             const data = await userService.getAll();
             setUsers(data);
         } catch (error) {
-
+            console.error('Error fetching users:', error);
         }
     };
 
@@ -157,7 +161,6 @@ const DocumentsPage = () => {
 
     const handleSubmit = async () => {
         try {
-
             if (selectedDocument) {
                 await documentService.update(selectedDocument._id, formData);
                 showNotification('Document updated successfully', 'success');
@@ -168,7 +171,7 @@ const DocumentsPage = () => {
             handleCloseDialog();
             fetchDocuments();
         } catch (error) {
-
+            console.error('Error submitting document:', error);
             showNotification(typeof error === 'string' ? error : 'Operation failed', 'error');
         }
     };
@@ -206,105 +209,9 @@ const DocumentsPage = () => {
         showNotification('Download started', 'success');
     };
 
-    const columns = [
-        {
-            field: 'title',
-            headerName: 'Document Title',
-            renderCell: (row) => (
-                <Box>
-                    <Typography variant="body2" fontWeight="600">
-                        {row.title}
-                    </Typography>
-                    {row.arabicTitle && (
-                        <Typography variant="caption" color="text.secondary">
-                            {row.arabicTitle}
-                        </Typography>
-                    )}
-                </Box>
-            )
-        },
-        {
-            field: 'type',
-            headerName: 'Type',
-            renderCell: (row) => (
-                <Chip
-                    label={row.type ? row.type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'N/A'}
-                    size="small"
-                    variant="outlined"
-                    color="primary"
-                />
-            )
-        },
-        {
-            field: 'fileSize',
-            headerName: 'Size',
-            renderCell: (row) => formatFileSize(row.fileSize)
-        },
-        {
-            field: 'isConfidential',
-            headerName: 'Access',
-            renderCell: (row) => (
-                <Chip
-                    icon={row.isConfidential ? <LockIcon /> : <LockOpenIcon />}
-                    label={row.isConfidential ? 'Confidential' : 'Public'}
-                    color={row.isConfidential ? 'error' : 'success'}
-                    size="small"
-                />
-            )
-        },
-        {
-            field: 'createdAt',
-            headerName: 'Uploaded',
-            renderCell: (row) => new Date(row.createdAt).toLocaleDateString()
-        },
-        {
-            field: 'actions',
-            headerName: 'Actions',
-            renderCell: (row) => (
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleViewDocument(row)}
-                        color="primary"
-                        title="View"
-                    >
-                        <VisibilityIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleDownload(row)}
-                        color="success"
-                        title="Download"
-                    >
-                        <DownloadIcon fontSize="small" />
-                    </IconButton>
-                    {canManage && (
-                        <>
-                            <IconButton
-                                size="small"
-                                onClick={() => handleOpenDialog(row)}
-                                color="primary"
-                                title="Edit"
-                            >
-                                <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                                size="small"
-                                onClick={() => {
-                                    setSelectedDocument(row);
-                                    setOpenConfirm(true);
-                                }}
-                                color="error"
-                                title="Delete"
-                            >
-                                <DeleteIcon fontSize="small" />
-                            </IconButton>
-                        </>
-                    )}
-                </Box>
-            )
-        }
-    ];
+    const getDocumentTypeLabel = (type) => {
+        return type ? type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'N/A';
+    };
 
     if (loading) return <Loading />;
 
@@ -314,7 +221,10 @@ const DocumentsPage = () => {
             minHeight: '100vh',
             display: 'flex',
             flexDirection: 'column',
-            gap: 3
+            gap: 3,
+            maxWidth: '1400px',
+            mx: 'auto',
+            width: '100%'
         }}>
             {/* Header Section */}
             <Box sx={{
@@ -330,15 +240,11 @@ const DocumentsPage = () => {
                 {canManage && (
                     <Button
                         variant="contained"
+                        color="primary"
                         startIcon={<AddIcon />}
                         onClick={() => handleOpenDialog()}
                         sx={{
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            fontWeight: 600,
-                            '&:hover': {
-                                background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
-                            }
+                            fontWeight: 600
                         }}
                     >
                         Upload Document
@@ -346,50 +252,235 @@ const DocumentsPage = () => {
                 )}
             </Box>
 
-            {/* Table Container */}
-            <Box sx={{
-                bgcolor: 'background.paper',
-                borderRadius: 2,
-                boxShadow: 2,
-                overflow: 'hidden',
-                border: '1px solid',
-                borderColor: 'divider'
-            }}>
-                {documents.length === 0 ? (
+            {/* Documents Grid */}
+            {documents.length === 0 ? (
+                <Box sx={{
+                    textAlign: 'center',
+                    py: 12,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 2,
+                    bgcolor: 'background.paper',
+                    borderRadius: 2,
+                    boxShadow: 2,
+                    border: '1px solid',
+                    borderColor: 'divider'
+                }}>
                     <Box sx={{
-                        textAlign: 'center',
-                        py: 12,
+                        width: 80,
+                        height: 80,
+                        borderRadius: '50%',
+                        bgcolor: 'action.hover',
                         display: 'flex',
-                        flexDirection: 'column',
                         alignItems: 'center',
-                        gap: 2
+                        justifyContent: 'center',
+                        mb: 2
                     }}>
-                        <Box sx={{
-                            width: 80,
-                            height: 80,
-                            borderRadius: '50%',
-                            bgcolor: 'action.hover',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            mb: 2
-                        }}>
-                            <Typography variant="h2">📄</Typography>
-                        </Box>
-                        <Typography variant="h6" color="text.secondary" fontWeight="600">
-                            No documents found
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            Your documents will appear here once uploaded
-                        </Typography>
+                        <Typography variant="h2">📄</Typography>
                     </Box>
-                ) : (
-                    <DataTable
-                        data={documents}
-                        columns={columns}
-                    />
-                )}
-            </Box>
+                    <Typography variant="h6" color="text.secondary" fontWeight="600">
+                        No documents found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Your documents will appear here once uploaded
+                    </Typography>
+                </Box>
+            ) : (
+                <Grid container spacing={3}>
+                    {documents.map((doc) => (
+                        <Grid item xs={12} sm={6} md={4} lg={3} key={doc._id}>
+                            <Card
+                                elevation={0}
+                                sx={{
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    borderRadius: 2.5,
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        boxShadow: 3,
+                                        borderColor: 'primary.main'
+                                    }
+                                }}
+                            >
+                                <CardContent sx={{ flexGrow: 1, pb: 1, p: 3 }}>
+                                    {/* Document Icon */}
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        mb: 2
+                                    }}>
+                                        <Box sx={{
+                                            width: 64,
+                                            height: 64,
+                                            borderRadius: 2,
+                                            bgcolor: (theme) => `${theme.palette.primary.main}15`,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'primary.main'
+                                        }}>
+                                            <DescriptionIcon sx={{ fontSize: 36 }} />
+                                        </Box>
+                                    </Box>
+
+                                    {/* Title */}
+                                    <Typography
+                                        variant="h6"
+                                        fontWeight="600"
+                                        gutterBottom
+                                        sx={{
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            minHeight: '3.6em',
+                                            textAlign: 'center'
+                                        }}
+                                    >
+                                        {doc.title}
+                                    </Typography>
+
+                                    {/* Arabic Title */}
+                                    {doc.arabicTitle && (
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            gutterBottom
+                                            sx={{
+                                                textAlign: 'center',
+                                                mb: 2
+                                            }}
+                                        >
+                                            {doc.arabicTitle}
+                                        </Typography>
+                                    )}
+
+                                    {/* Document Info */}
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 1.5,
+                                        mt: 2
+                                    }}>
+                                        {/* Type */}
+                                        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                            <Chip
+                                                label={getDocumentTypeLabel(doc.type)}
+                                                size="small"
+                                                color="primary"
+                                                variant="outlined"
+                                            />
+                                        </Box>
+
+                                        {/* Confidentiality */}
+                                        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                            <Chip
+                                                icon={doc.isConfidential ? <LockIcon /> : <LockOpenIcon />}
+                                                label={doc.isConfidential ? 'Confidential' : 'Public'}
+                                                color={doc.isConfidential ? 'error' : 'success'}
+                                                size="small"
+                                            />
+                                        </Box>
+
+                                        {/* File Size & Date */}
+                                        <Box sx={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            mt: 1,
+                                            pt: 1.5,
+                                            borderTop: '1px solid',
+                                            borderColor: 'divider'
+                                        }}>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {formatFileSize(doc.fileSize)}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {new Date(doc.createdAt).toLocaleDateString()}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+
+                                {/* Action Buttons */}
+                                <CardActions sx={{
+                                    justifyContent: 'center',
+                                    gap: 1,
+                                    p: 2,
+                                    pt: 1.5,
+                                    bgcolor: 'action.hover'
+                                }}>
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        onClick={() => handleViewDocument(doc)}
+                                        color="primary"
+                                        startIcon={<VisibilityIcon />}
+                                        sx={{ flex: 1 }}
+                                    >
+                                        View
+                                    </Button>
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        onClick={() => handleDownload(doc)}
+                                        color="success"
+                                        startIcon={<DownloadIcon />}
+                                        sx={{ flex: 1 }}
+                                    >
+                                        Download
+                                    </Button>
+                                    {canManage && (
+                                        <>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleOpenDialog(doc)}
+                                                color="primary"
+                                                title="Edit"
+                                                sx={{
+                                                    border: '1px solid',
+                                                    borderColor: 'primary.main',
+                                                    '&:hover': {
+                                                        bgcolor: 'primary.main',
+                                                        color: 'primary.contrastText'
+                                                    }
+                                                }}
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => {
+                                                    setSelectedDocument(doc);
+                                                    setOpenConfirm(true);
+                                                }}
+                                                color="error"
+                                                title="Delete"
+                                                sx={{
+                                                    border: '1px solid',
+                                                    borderColor: 'error.main',
+                                                    '&:hover': {
+                                                        bgcolor: 'error.main',
+                                                        color: 'error.contrastText'
+                                                    }
+                                                }}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </>
+                                    )}
+                                </CardActions>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            )}
 
             <Dialog
                 open={openDialog}
@@ -404,8 +495,8 @@ const DocumentsPage = () => {
                 }}
             >
                 <DialogTitle sx={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
                     fontWeight: 700,
                     fontSize: '1.3rem',
                     py: 2.5
@@ -552,15 +643,12 @@ const DocumentsPage = () => {
                     <Button
                         onClick={handleSubmit}
                         variant="contained"
+                        color="primary"
                         sx={{
                             minWidth: 120,
                             borderRadius: 2,
                             fontWeight: 700,
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
                             '&:hover': {
-                                background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
-                                boxShadow: '0 6px 16px rgba(102, 126, 234, 0.5)',
                                 transform: 'translateY(-1px)'
                             },
                             transition: 'all 0.3s ease'
