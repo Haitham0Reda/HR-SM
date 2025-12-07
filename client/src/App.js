@@ -56,6 +56,8 @@ import VacationRequestDetails from './pages/vacations/VacationRequestDetails';
 import ReportsPage from './pages/reports/ReportsPage';
 import AnalyticsPage from './pages/analytics/AnalyticsPage';
 import SecurityPage from './pages/security/SecurityPage';
+import TasksPage from './pages/tasks/TasksPage';
+import TaskDetailsPage from './pages/tasks/TaskDetailsPage';
 import BackupsPage from './pages/backups/BackupsPage';
 import ResignedPage from './pages/resigned/ResignedPage';
 import RolesPage from './pages/roles/RolesPage';
@@ -211,6 +213,10 @@ function App() {
                 <Route path="vacation-requests/:id/edit" element={<VacationRequestForm />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
+
+                {/* Task Management */}
+                <Route path="tasks" element={<TasksPage />} />
+                <Route path="tasks/:id" element={<TaskDetailsPage />} />
 
                 {/* Administration */}
                 <Route path="security" element={<SecurityPage />} />

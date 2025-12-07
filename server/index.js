@@ -62,6 +62,9 @@ import roleRoutes from './routes/role.routes.js';
 import securitySettingsRoutes from './routes/securitySettings.routes.js';
 import securityAuditRoutes from './routes/securityAudit.routes.js';
 import surveyRoutes from './routes/survey.routes.js';
+import taskRoutes from './routes/task.routes.js';
+import featureFlagRoutes from './routes/featureFlag.routes.js';
+import featureFlagService from './services/featureFlag.service.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -145,19 +148,19 @@ app.use((req, res, next) => {
 // Helper function to sanitize objects
 function sanitizeObject(obj) {
     if (typeof obj !== 'object' || obj === null) return obj;
-    
+
     const sanitized = Array.isArray(obj) ? [] : {};
-    
+
     for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
             const value = obj[key];
-            
+
             // Check for dangerous keys
             if (key.includes('$') || key.includes('.')) {
                 logger.warn(`Sanitized potentially malicious key: ${key}`);
                 continue; // Skip dangerous keys
             }
-            
+
             // Recursively sanitize nested objects
             if (typeof value === 'object' && value !== null) {
                 sanitized[key] = sanitizeObject(value);
@@ -166,7 +169,7 @@ function sanitizeObject(obj) {
             }
         }
     }
-    
+
     return sanitized;
 }
 
@@ -221,6 +224,8 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/security/settings', securitySettingsRoutes);
 app.use('/api/security/audit', securityAuditRoutes);
 app.use('/api/surveys', surveyRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/feature-flags', featureFlagRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');
@@ -248,48 +253,63 @@ export { app };
 const isMainModule = process.argv[1] && process.argv[1].endsWith('index.js');
 
 if (isMainModule) {
-    // Connect to MongoDB
-    connectDB();
+    // Wrap in async IIFE to use await
+    (async () => {
+        // Connect to MongoDB
+        connectDB();
 
-    const server = app.listen(PORT, () => {
-        logger.info(`Server is running on port ${PORT}`);
+        // Initialize feature flags
+        try {
+            featureFlagService.initFromEnv();
+            // Try to load license file (for On-Premise deployments)
+            await featureFlagService.loadLicense().catch(err => {
+                logger.warn('Failed to load license file:', err.message);
+            });
+            logger.info('Feature flags initialized', featureFlagService.getFeatureFlags());
+        } catch (err) {
+            logger.error('Failed to initialize feature flags:', err);
+        }
 
-        // Start scheduled tasks
-        startAllScheduledTasks();
-        
-        // Initialize backup scheduler
-        backupScheduler.initialize().catch(err => {
-            logger.error('Failed to initialize backup scheduler:', err);
+        const server = app.listen(PORT, () => {
+            logger.info(`Server is running on port ${PORT}`);
+
+            // Start scheduled tasks
+            startAllScheduledTasks();
+
+            // Initialize backup scheduler
+            backupScheduler.initialize().catch(err => {
+                logger.error('Failed to initialize backup scheduler:', err);
+            });
+
+            // Start attendance cron jobs
+            attendanceCron.startAllAttendanceTasks();
         });
-        
-        // Start attendance cron jobs
-        attendanceCron.startAllAttendanceTasks();
-    });
 
-    // Handle graceful shutdown
-    process.on('SIGINT', () => {
-        logger.info('Shutting down gracefully...');
+        // Handle graceful shutdown
+        process.on('SIGINT', () => {
+            logger.info('Shutting down gracefully...');
 
-        stopAllTasks();
-        backupScheduler.stopAll();
-        attendanceCron.stopAllAttendanceTasks();
-        server.close(() => {
-            logger.info('Server closed');
+            stopAllTasks();
+            backupScheduler.stopAll();
+            attendanceCron.stopAllAttendanceTasks();
+            server.close(() => {
+                logger.info('Server closed');
 
-            process.exit(0);
+                process.exit(0);
+            });
         });
-    });
 
-    process.on('SIGTERM', () => {
-        logger.info('Shutting down gracefully...');
+        process.on('SIGTERM', () => {
+            logger.info('Shutting down gracefully...');
 
-        stopAllTasks();
-        backupScheduler.stopAll();
-        attendanceCron.stopAllAttendanceTasks();
-        server.close(() => {
-            logger.info('Server closed');
+            stopAllTasks();
+            backupScheduler.stopAll();
+            attendanceCron.stopAllAttendanceTasks();
+            server.close(() => {
+                logger.info('Server closed');
 
-            process.exit(0);
+                process.exit(0);
+            });
         });
-    });
+    })();
 }

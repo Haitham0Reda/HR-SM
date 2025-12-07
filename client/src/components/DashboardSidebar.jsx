@@ -49,6 +49,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import DevicesIcon from '@mui/icons-material/Devices';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
@@ -282,6 +283,13 @@ function DashboardSidebar({
                                     href="/app/forget-checks"
                                     selected={!!matchPath('/app/forget-checks', pathname)}
                                 />
+                                <DashboardSidebarPageItem
+                                    id="tasks"
+                                    title="Tasks"
+                                    icon={<AssignmentIcon />}
+                                    href="/app/tasks"
+                                    selected={pathname.startsWith('/app/tasks')}
+                                />
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Information</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
@@ -427,6 +435,16 @@ function DashboardSidebar({
                                     icon={<PaymentIcon />}
                                     href="/app/payroll"
                                     selected={!!matchPath('/app/payroll', pathname)}
+                                />
+
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Task Management</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="tasks"
+                                    title="Tasks"
+                                    icon={<AssignmentIcon />}
+                                    href="/app/tasks"
+                                    selected={pathname.startsWith('/app/tasks')}
                                 />
 
                                 <DashboardSidebarDividerItem />
@@ -604,6 +622,16 @@ function DashboardSidebar({
                                 />
 
                                 <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Task Management</DashboardSidebarHeaderItem>
+                                <DashboardSidebarPageItem
+                                    id="tasks"
+                                    title="Tasks"
+                                    icon={<AssignmentIcon />}
+                                    href="/app/tasks"
+                                    selected={pathname.startsWith('/app/tasks')}
+                                />
+
+                                <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Documents</DashboardSidebarHeaderItem>
                                 <DashboardSidebarPageItem
                                     id="documents"
@@ -699,8 +727,8 @@ function DashboardSidebar({
                                     selected={pathname.startsWith('/app/system-settings')}
                                     expanded={expandedItemIds.includes('settings')}
                                     nestedNavigation={
-                                        <List dense sx={{ 
-                                            bgcolor: 'rgba(0, 0, 0, 0.08)', 
+                                        <List dense sx={{
+                                            bgcolor: 'rgba(0, 0, 0, 0.08)',
                                             py: 0.5,
                                             borderRadius: 1,
                                             mt: 0.5,
