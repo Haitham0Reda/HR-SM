@@ -23,6 +23,7 @@ A modern, accessible React application for HR management with a comprehensive de
 - **Department Management**: Organize users by departments and positions
 - **Attendance Tracking**: Check-in/check-out system with work hour calculations
 - **Leave Management**: Annual, casual, and sick leave tracking with approval workflows
+- **Task Management**: Create, assign, and track tasks with progress monitoring
 - **Permission Requests**: Late arrival, early departure, overtime, and mission requests
 - **Document Management**: Upload and manage employee documents
 - **Announcements**: System-wide announcements and notifications
@@ -128,6 +129,7 @@ client/
 │   │   ├── composite/          # Composite components (StatCard, ActionCard, etc.)
 │   │   ├── templates/          # Page templates (ListPage, FormPage, etc.)
 │   │   ├── seasonal/           # Seasonal effects components
+│   │   ├── tasks/              # Task management components
 │   │   ├── DashboardLayout.jsx # Main layout
 │   │   └── PageContainer.jsx   # Page wrapper
 │   ├── pages/                  # Application pages
@@ -137,11 +139,13 @@ client/
 │   │   ├── attendance/         # Attendance tracking
 │   │   ├── permissions/        # Permission requests
 │   │   ├── leaves/             # Leave management
+│   │   ├── tasks/              # Task management pages
 │   │   └── settings/           # Settings pages
 │   ├── context/                # React context providers
 │   ├── hooks/                  # Custom React hooks
 │   ├── theme/                  # Design tokens and theme configuration
 │   ├── utils/                  # Utility functions
+│   ├── services/               # API service layer
 │   ├── testing/                # Test utilities
 │   ├── App.js                  # Main application component
 │   └── index.js                # Application entry point
@@ -248,6 +252,7 @@ Create a `.env` file in the client directory:
 ```env
 REACT_APP_API_URL=http://localhost:5000/api
 REACT_APP_ENV=development
+REACT_APP_FEATURE_FLAGS={"tasks":true,"reports":true}
 ```
 
 ### Development Workflow

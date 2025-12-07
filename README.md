@@ -50,6 +50,13 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 - Leave balance management with automatic calculations
 - Day swap requests between employees
 
+#### Task Management
+- Create, assign, and track tasks across the organization
+- Task prioritization and categorization
+- Progress tracking and status updates
+- Task reporting and analytics
+- Integration with user and department management
+
 #### Payroll Management
 - Automated salary calculations
 - Deduction tracking and management
@@ -82,6 +89,13 @@ A comprehensive Human Resources Management System built with the MERN stack (Mon
 - Security settings and configurations
 - Automated backup management
 - Data encryption and protection
+
+#### Feature Flag System
+- Dynamic feature activation/deactivation without code changes
+- Environment-specific feature configuration
+- License-based module access control
+- On-premise and SaaS deployment support
+- Fine-grained control over system modules
 
 ### Advanced Features
 
@@ -272,7 +286,7 @@ Complete design system documentation is available in the client directory:
 
 ### Quick Example
 
-```jsx
+``jsx
 import { Button, TextField } from './components/common';
 import { StatCard, ActionCard } from './components/composite';
 import { designTokens } from './theme/designTokens';
@@ -607,6 +621,7 @@ HR-SM/
 │   ├── middleware/         # Express middleware
 │   ├── models/             # Mongoose models
 │   ├── routes/             # Express routes
+│   ├── services/           # Business logic services
 │   ├── testing/            # Comprehensive test suite
 │   │   ├── controllers/    # Controller tests (26 suites, 434 tests)
 │   │   ├── models/         # Model tests (32 suites, 255 tests)
@@ -630,17 +645,19 @@ The application requires several environment variables to be set. Here's a compl
 
 ### Server Environment Variables
 
-| Variable   | Description                          | Required |
-| ---------- | ------------------------------------ | -------- |
-| PORT       | Port for the server to listen on     | Yes      |
-| MONGO_URI  | MongoDB connection string            | Yes      |
-| JWT_SECRET | Secret key for JWT token signing     | Yes      |
-| NODE_ENV   | Environment (development/production) | Yes      |
-| EMAIL_HOST | SMTP host for email service          | No       |
-| EMAIL_PORT | SMTP port for email service          | No       |
-| EMAIL_USER | SMTP username for email service      | No       |
-| EMAIL_PASS | SMTP password for email service      | No       |
-| EMAIL_FROM | Sender email address                 | No       |
+| Variable        | Description                          | Required |
+| --------------- | ------------------------------------ | -------- |
+| PORT            | Port for the server to listen on     | Yes      |
+| MONGO_URI       | MongoDB connection string            | Yes      |
+| JWT_SECRET      | Secret key for JWT token signing     | Yes      |
+| NODE_ENV        | Environment (development/production) | Yes      |
+| FEATURE_FLAGS   | JSON string of feature flags         | No       |
+| LICENSE_KEY     | License key for module access        | No       |
+| EMAIL_HOST      | SMTP host for email service          | No       |
+| EMAIL_PORT      | SMTP port for email service          | No       |
+| EMAIL_USER      | SMTP username for email service      | No       |
+| EMAIL_PASS      | SMTP password for email service      | No       |
+| EMAIL_FROM      | Sender email address                 | No       |
 
 ## Database Schema
 
