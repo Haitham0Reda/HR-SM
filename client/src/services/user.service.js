@@ -3,7 +3,15 @@ import api from './api';
 const userService = {
     // Get all users
     getAll: async (params) => {
-        return await api.get('/users', { params });
+        console.log('UserService: Fetching all users with params:', params);
+        try {
+            const response = await api.get('/users', { params });
+            console.log('UserService: Received response:', response);
+            return response;
+        } catch (error) {
+            console.error('UserService: Error fetching users:', error);
+            throw error;
+        }
     },
 
     // Get user by ID
