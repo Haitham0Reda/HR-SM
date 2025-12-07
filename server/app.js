@@ -40,7 +40,13 @@ import {
     backupExecutionRoutes,
     departmentRoutes,
     permissionRoutes,
-    permissionAuditRoutes
+    permissionAuditRoutes,
+    vacationRoutes,
+    sickLeaveRoutes,
+    overtimeRoutes,
+    roleRoutes,
+    attendanceDeviceRoutes,
+    featureFlagRoutes
 } from './routes/index.js';
 
 const app = express();
@@ -117,12 +123,16 @@ export const initializeRoutes = async () => {
 
     // Attendance & Time
     app.use('/api/attendance', attendanceRoutes);
+    app.use('/api/attendance-devices', attendanceDeviceRoutes);
     app.use('/api/forget-check', forgetCheckRoutes);
 
     // Leave Management
     app.use('/api/missions', missionRoutes);
     app.use('/api/mixed-vacations', mixedVacationRoutes);
     app.use('/api/permission-requests', permissionRequestRoutes);
+    app.use('/api/vacations', vacationRoutes);
+    app.use('/api/sick-leaves', sickLeaveRoutes);
+    app.use('/api/overtime', overtimeRoutes);
 
     // Documents
     app.use('/api/documents', documentRoutes);
@@ -150,36 +160,38 @@ export const initializeRoutes = async () => {
     app.use('/api/permission-audits', permissionAuditRoutes);
     app.use('/api/security-audits', securityAuditRoutes);
     app.use('/api/security-settings', securitySettingsRoutes);
+    app.use('/api/roles', roleRoutes);
 
     // System Management
     app.use('/api/backups', backupRoutes);
     app.use('/api/backup-executions', backupExecutionRoutes);
     app.use('/api/theme', themeRoutes);
+    app.use('/api/feature-flags', featureFlagRoutes);
 
     // Resigned Employees
     app.use('/api/resigned-employees', resignedEmployeeRoutes);
 
     console.log('✓ Legacy routes loaded');
     console.log('✓ All routes initialized');
+
+    // 404 handler - must be added AFTER all routes
+    app.use((req, res) => {
+        res.status(404).json({
+            success: false,
+            message: 'Route not found'
+        });
+    });
+
+    // Global error handler - must be added LAST
+    app.use((err, req, res, next) => {
+        console.error('Error:', err);
+
+        res.status(err.statusCode || 500).json({
+            success: false,
+            message: err.message || 'Internal server error',
+            ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+        });
+    });
 };
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'Route not found'
-    });
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-
-    res.status(err.statusCode || 500).json({
-        success: false,
-        message: err.message || 'Internal server error',
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    });
-});
 
 export default app;
