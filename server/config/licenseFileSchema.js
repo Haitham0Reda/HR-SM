@@ -126,16 +126,26 @@ export function validateLicenseFileStructure(licenseData) {
 
     // Validate dates
     if (licenseData.issuedAt) {
-        const issuedDate = new Date(licenseData.issuedAt);
-        if (isNaN(issuedDate.getTime())) {
+        // Check if it's a non-empty string first
+        if (typeof licenseData.issuedAt !== 'string' || licenseData.issuedAt.trim().length === 0) {
             errors.push('Invalid issuedAt date format');
+        } else {
+            const issuedDate = new Date(licenseData.issuedAt);
+            if (isNaN(issuedDate.getTime())) {
+                errors.push('Invalid issuedAt date format');
+            }
         }
     }
 
     if (licenseData.expiresAt) {
-        const expiresDate = new Date(licenseData.expiresAt);
-        if (isNaN(expiresDate.getTime())) {
+        // Check if it's a non-empty string first
+        if (typeof licenseData.expiresAt !== 'string' || licenseData.expiresAt.trim().length === 0) {
             errors.push('Invalid expiresAt date format');
+        } else {
+            const expiresDate = new Date(licenseData.expiresAt);
+            if (isNaN(expiresDate.getTime())) {
+                errors.push('Invalid expiresAt date format');
+            }
         }
     }
 
@@ -159,7 +169,7 @@ export function validateLicenseFileStructure(licenseData) {
                 if (moduleConfig.limits) {
                     const limits = moduleConfig.limits;
                     // Allow null or undefined for unlimited, but validate if a number is provided
-                    if (limits.employees !== undefined && limits.employees !== null && (typeof limits.employees !== 'number' || limits.employees < 0)) {
+                    if (limits.employees !== undefined && limits.employees !== null && (typeof limits.employees !== 'number' || limits.employees <= 0)) {
                         errors.push(`Module ${moduleKey}: invalid employees limit`);
                     }
                     if (limits.storage !== undefined && limits.storage !== null && (typeof limits.storage !== 'number' || limits.storage < 0)) {

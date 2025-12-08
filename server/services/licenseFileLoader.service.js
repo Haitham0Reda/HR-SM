@@ -245,15 +245,15 @@ class LicenseFileLoader {
      * @returns {boolean} True if module is enabled
      */
     isModuleEnabled(moduleKey) {
+        // Core HR is always enabled, even without a license
+        if (moduleKey === 'hr-core') {
+            return true;
+        }
+
         const license = this.getLicense();
 
         if (!license) {
             return false;
-        }
-
-        // Core HR is always enabled
-        if (moduleKey === 'hr-core') {
-            return true;
         }
 
         const module = license.modules[moduleKey];

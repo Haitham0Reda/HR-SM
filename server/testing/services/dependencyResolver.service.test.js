@@ -47,6 +47,396 @@ describe('DependencyResolver', () => {
         });
     });
 
+    describe('detectCircularDependencies - Unit Tests', () => {
+        describe('simple circular dependencies', () => {
+            it('should detect a simple two-module circular dependency (A -> B -> A)', () => {
+                // Create a resolver with mock configs that have a circular dependency
+                const mockResolver = new DependencyResolver();
+                
+                // Mock the module configs with a simple circular dependency
+                mockResolver.moduleConfigs = {
+                    'module-a': {
+                        key: 'module-a',
+                        displayName: 'Module A',
+                        dependencies: {
+                            required: ['module-b'],
+                            optional: []
+                        }
+                    },
+                    'module-b': {
+                        key: 'module-b',
+                        displayName: 'Module B',
+                        dependencies: {
+                            required: ['module-a'],
+                            optional: []
+                        }
+                    }
+                };
+
+                const cycles = mockResolver.detectCircularDependencies();
+
+                expect(cycles.length).toBeGreaterThan(0);
+                expect(cycles[0]).toContain('module-a');
+                expect(cycles[0]).toContain('module-b');
+            });
+
+            it('should detect a three-module circular dependency (A -> B -> C -> A)', () => {
+                const mockResolver = new DependencyResolver();
+                
+                mockResolver.moduleConfigs = {
+                    'module-a': {
+                        key: 'module-a',
+                        displayName: 'Module A',
+                        dependencies: {
+                            required: ['module-b'],
+                            optional: []
+                        }
+                    },
+                    'module-b': {
+                        key: 'module-b',
+                        displayName: 'Module B',
+                        dependencies: {
+                            required: ['module-c'],
+                            optional: []
+                        }
+                    },
+                    'module-c': {
+                        key: 'module-c',
+                        displayName: 'Module C',
+                        dependencies: {
+                            required: ['module-a'],
+                            optional: []
+                        }
+                    }
+                };
+
+                const cycles = mockResolver.detectCircularDependencies();
+
+                expect(cycles.length).toBeGreaterThan(0);
+                const cycle = cycles[0];
+                expect(cycle).toContain('module-a');
+                expect(cycle).toContain('module-b');
+                expect(cycle).toContain('module-c');
+            });
+
+            it('should detect a self-referencing module (A -> A)', () => {
+                const mockResolver = new DependencyResolver();
+                
+                mockResolver.moduleConfigs = {
+                    'module-a': {
+                        key: 'module-a',
+                        displayName: 'Module A',
+                        dependencies: {
+                            required: ['module-a'],
+                            optional: []
+                        }
+                    }
+                };
+
+                const cycles = mockResolver.detectCircularDependencies();
+
+                expect(cycles.length).toBeGreaterThan(0);
+                expect(cycles[0]).toContain('module-a');
+            });
+        });
+
+        describe('complex dependency chains', () => {
+            it('should detect circular dependency in a complex graph with multiple paths', () => {
+                const mockResolver = new DependencyResolver();
+                
+                // Create a complex graph:
+                // A -> B -> D
+                // A -> C -> D
+                // D -> E -> A (circular)
+                mockResolver.moduleConfigs = {
+                    'module-a': {
+                        key: 'module-a',
+                        displayName: 'Module A',
+                        dependencies: {
+                            required: ['module-b', 'module-c'],
+                            optional: []
+                        }
+                    },
+                    'module-b': {
+                        key: 'module-b',
+                        displayName: 'Module B',
+                        dependencies: {
+                            required: ['module-d'],
+                            optional: []
+                        }
+                    },
+                    'module-c': {
+                        key: 'module-c',
+                        displayName: 'Module C',
+                        dependencies: {
+                            required: ['module-d'],
+                            optional: []
+                        }
+                    },
+                    'module-d': {
+                        key: 'module-d',
+                        displayName: 'Module D',
+                        dependencies: {
+                            required: ['module-e'],
+                            optional: []
+                        }
+                    },
+                    'module-e': {
+                        key: 'module-e',
+                        displayName: 'Module E',
+                        dependencies: {
+                            required: ['module-a'],
+                            optional: []
+                        }
+                    }
+                };
+
+                const cycles = mockResolver.detectCircularDependencies();
+
+                expect(cycles.length).toBeGreaterThan(0);
+                const cycle = cycles[0];
+                expect(cycle).toContain('module-a');
+                expect(cycle).toContain('module-e');
+            });
+
+            it('should detect multiple independent circular dependencies', () => {
+                const mockResolver = new DependencyResolver();
+                
+                // Create two independent circular dependencies:
+                // Cycle 1: A -> B -> A
+                // Cycle 2: C -> D -> C
+                mockResolver.moduleConfigs = {
+                    'module-a': {
+                        key: 'module-a',
+                        displayName: 'Module A',
+                        dependencies: {
+                            required: ['module-b'],
+                            optional: []
+                        }
+                    },
+                    'module-b': {
+                        key: 'module-b',
+                        displayName: 'Module B',
+                        dependencies: {
+                            required: ['module-a'],
+                            optional: []
+                        }
+                    },
+                    'module-c': {
+                        key: 'module-c',
+                        displayName: 'Module C',
+                        dependencies: {
+                            required: ['module-d'],
+                            optional: []
+                        }
+                    },
+                    'module-d': {
+                        key: 'module-d',
+                        displayName: 'Module D',
+                        dependencies: {
+                            required: ['module-c'],
+                            optional: []
+                        }
+                    }
+                };
+
+                const cycles = mockResolver.detectCircularDependencies();
+
+                expect(cycles.length).toBeGreaterThanOrEqual(2);
+                
+                // Check that both cycles are detected
+                const cycleStrings = cycles.map(c => c.join('->'));
+                const hasFirstCycle = cycleStrings.some(c => 
+                    c.includes('module-a') && c.includes('module-b')
+                );
+                const hasSecondCycle = cycleStrings.some(c => 
+                    c.includes('module-c') && c.includes('module-d')
+                );
+                
+                expect(hasFirstCycle).toBe(true);
+                expect(hasSecondCycle).toBe(true);
+            });
+
+            it('should handle a long circular chain (A -> B -> C -> D -> E -> A)', () => {
+                const mockResolver = new DependencyResolver();
+                
+                mockResolver.moduleConfigs = {
+                    'module-a': {
+                        key: 'module-a',
+                        displayName: 'Module A',
+                        dependencies: {
+                            required: ['module-b'],
+                            optional: []
+                        }
+                    },
+                    'module-b': {
+                        key: 'module-b',
+                        displayName: 'Module B',
+                        dependencies: {
+                            required: ['module-c'],
+                            optional: []
+                        }
+                    },
+                    'module-c': {
+                        key: 'module-c',
+                        displayName: 'Module C',
+                        dependencies: {
+                            required: ['module-d'],
+                            optional: []
+                        }
+                    },
+                    'module-d': {
+                        key: 'module-d',
+                        displayName: 'Module D',
+                        dependencies: {
+                            required: ['module-e'],
+                            optional: []
+                        }
+                    },
+                    'module-e': {
+                        key: 'module-e',
+                        displayName: 'Module E',
+                        dependencies: {
+                            required: ['module-a'],
+                            optional: []
+                        }
+                    }
+                };
+
+                const cycles = mockResolver.detectCircularDependencies();
+
+                expect(cycles.length).toBeGreaterThan(0);
+                const cycle = cycles[0];
+                
+                // All modules should be in the cycle
+                expect(cycle).toContain('module-a');
+                expect(cycle).toContain('module-b');
+                expect(cycle).toContain('module-c');
+                expect(cycle).toContain('module-d');
+                expect(cycle).toContain('module-e');
+            });
+
+            it('should not report false positives in a diamond dependency pattern', () => {
+                const mockResolver = new DependencyResolver();
+                
+                // Diamond pattern (not circular):
+                // A -> B -> D
+                // A -> C -> D
+                mockResolver.moduleConfigs = {
+                    'module-a': {
+                        key: 'module-a',
+                        displayName: 'Module A',
+                        dependencies: {
+                            required: ['module-b', 'module-c'],
+                            optional: []
+                        }
+                    },
+                    'module-b': {
+                        key: 'module-b',
+                        displayName: 'Module B',
+                        dependencies: {
+                            required: ['module-d'],
+                            optional: []
+                        }
+                    },
+                    'module-c': {
+                        key: 'module-c',
+                        displayName: 'Module C',
+                        dependencies: {
+                            required: ['module-d'],
+                            optional: []
+                        }
+                    },
+                    'module-d': {
+                        key: 'module-d',
+                        displayName: 'Module D',
+                        dependencies: {
+                            required: [],
+                            optional: []
+                        }
+                    }
+                };
+
+                const cycles = mockResolver.detectCircularDependencies();
+
+                expect(cycles.length).toBe(0);
+            });
+
+            it('should detect circular dependency with mixed linear and circular paths', () => {
+                const mockResolver = new DependencyResolver();
+                
+                // Mixed graph:
+                // A -> B -> C (linear)
+                // D -> E -> F -> D (circular)
+                mockResolver.moduleConfigs = {
+                    'module-a': {
+                        key: 'module-a',
+                        displayName: 'Module A',
+                        dependencies: {
+                            required: ['module-b'],
+                            optional: []
+                        }
+                    },
+                    'module-b': {
+                        key: 'module-b',
+                        displayName: 'Module B',
+                        dependencies: {
+                            required: ['module-c'],
+                            optional: []
+                        }
+                    },
+                    'module-c': {
+                        key: 'module-c',
+                        displayName: 'Module C',
+                        dependencies: {
+                            required: [],
+                            optional: []
+                        }
+                    },
+                    'module-d': {
+                        key: 'module-d',
+                        displayName: 'Module D',
+                        dependencies: {
+                            required: ['module-e'],
+                            optional: []
+                        }
+                    },
+                    'module-e': {
+                        key: 'module-e',
+                        displayName: 'Module E',
+                        dependencies: {
+                            required: ['module-f'],
+                            optional: []
+                        }
+                    },
+                    'module-f': {
+                        key: 'module-f',
+                        displayName: 'Module F',
+                        dependencies: {
+                            required: ['module-d'],
+                            optional: []
+                        }
+                    }
+                };
+
+                const cycles = mockResolver.detectCircularDependencies();
+
+                expect(cycles.length).toBeGreaterThan(0);
+                const cycle = cycles[0];
+                
+                // Only the circular modules should be in the cycle
+                expect(cycle).toContain('module-d');
+                expect(cycle).toContain('module-e');
+                expect(cycle).toContain('module-f');
+                
+                // Linear modules should not be in the cycle
+                expect(cycle).not.toContain('module-a');
+                expect(cycle).not.toContain('module-b');
+                expect(cycle).not.toContain('module-c');
+            });
+        });
+    });
+
     describe('resolveDependencies', () => {
         it('should resolve direct dependencies', () => {
             const deps = resolver.resolveDependencies('attendance', false);
