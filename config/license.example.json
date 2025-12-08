@@ -1,0 +1,79 @@
+{
+  "licenseKey": "HRMS-ABCD-1234-EFGH",
+  "companyId": "company-123",
+  "companyName": "Example Corporation",
+  "issuedAt": "2025-01-01",
+  "expiresAt": "2026-01-01",
+  "modules": {
+    "hr-core": {
+      "enabled": true,
+      "tier": "enterprise",
+      "limits": {}
+    },
+    "attendance": {
+      "enabled": true,
+      "tier": "business",
+      "limits": {
+        "employees": 200,
+        "devices": 10,
+        "storage": 10737418240,
+        "apiCalls": 50000
+      }
+    },
+    "leave": {
+      "enabled": true,
+      "tier": "business",
+      "limits": {
+        "employees": 200,
+        "apiCalls": 50000
+      }
+    },
+    "payroll": {
+      "enabled": false,
+      "tier": "starter",
+      "limits": {
+        "employees": 50,
+        "apiCalls": 10000
+      }
+    },
+    "documents": {
+      "enabled": false,
+      "tier": "starter",
+      "limits": {
+        "employees": 50,
+        "storage": 1073741824,
+        "apiCalls": 10000
+      }
+    },
+    "communication": {
+      "enabled": false,
+      "tier": "starter",
+      "limits": {
+        "employees": 50,
+        "apiCalls": 10000
+      }
+    },
+    "reporting": {
+      "enabled": false,
+      "tier": "starter",
+      "limits": {
+        "employees": 50,
+        "apiCalls": 10000
+      }
+    },
+    "tasks": {
+      "enabled": false,
+      "tier": "starter",
+      "limits": {
+        "employees": 50,
+        "apiCalls": 10000
+      }
+    }
+  },
+  "signature": "example-signature-replace-with-real-signature",
+  "metadata": {
+    "contactEmail": "admin@example.com",
+    "supportLevel": "premium",
+    "notes": "Example license file - replace with actual license"
+  }
+}

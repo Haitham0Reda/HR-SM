@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import app, { initializeRoutes } from './app.js';
 import connectDatabase from './config/database.js';
 import { ensureDirectoryExists } from './shared/utils/fileUtils.js';
+import licenseFileLoader from './services/licenseFileLoader.service.js';
 
 // Load environment variables
 dotenv.config();
@@ -25,6 +26,19 @@ const startServer = async () => {
         // Setup directories
         await setupDirectories();
 
+        // Initialize license file loader (On-Premise mode)
+        if (process.env.DEPLOYMENT_MODE === 'on-premise') {
+            console.log('🔐 Initializing On-Premise license file loader...');
+            const licenseInitialized = await licenseFileLoader.initialize();
+            if (!licenseInitialized) {
+                console.warn('⚠️  Warning: License file loader initialization failed');
+                console.warn('   Only Core HR will be available');
+            } else {
+                const status = licenseFileLoader.getStatus();
+                console.log(`✓ License file loaded: ${status.enabledModules.length} modules enabled`);
+            }
+        }
+
         // Initialize routes
         await initializeRoutes();
 
@@ -37,7 +51,7 @@ const startServer = async () => {
 ║                                                           ║
 ║   Port: ${PORT}                                           ║
 ║   Environment: ${process.env.NODE_ENV || 'development'}  ║
-║   Mode: Multi-tenant SaaS + On-Premise Support           ║
+║   Mode: ${process.env.DEPLOYMENT_MODE || 'saas'}         ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
       `);
@@ -47,6 +61,22 @@ const startServer = async () => {
         process.exit(1);
     }
 };
+
+// Graceful shutdown handler
+const gracefulShutdown = (signal) => {
+    console.log(`\n${signal} received. Starting graceful shutdown...`);
+
+    // Shutdown license file loader
+    if (process.env.DEPLOYMENT_MODE === 'on-premise') {
+        licenseFileLoader.shutdown();
+    }
+
+    process.exit(0);
+};
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {

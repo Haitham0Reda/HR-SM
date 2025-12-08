@@ -168,10 +168,18 @@
  * 
  * 31. ERROR HANDLING (errorMiddleware.js)
  *     - notFound, errorHandler
+ * 
+ * 32. LICENSE VALIDATION (licenseValidation.middleware.js)
+ *     - requireModuleLicense, checkUsageLimit
+ *     - requireMultipleModuleLicenses, attachLicenseInfo
+ *     - getRateLimitStats, clearRateLimitCache
  */
 
 // Authentication & Authorization
 export * from './authMiddleware.js';
+
+// License Validation
+export * from './licenseValidation.middleware.js';
 
 // Request Control
 export * from './requestControlMiddleware.js';
