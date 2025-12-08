@@ -21,7 +21,8 @@
     "seed-attendance": "node server/scripts/seedAttendance.js",
     "create-user-template": "node server/scripts/createBulkUserTemplate.js",
     "test-attendance-integration": "node server/scripts/testAttendanceIntegration.js",
-    "migrate-attendance": "node server/scripts/migrateAttendanceData.js"
+    "migrate-attendance": "node server/scripts/migrateAttendanceData.js",
+    "generate-license": "node server/scripts/generateLicenseFile.js"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +33,7 @@
     "@babel/preset-env": "^7.28.5",
     "babel-jest": "^30.2.0",
     "concurrently": "^9.2.1",
+    "fast-check": "^4.4.0",
     "jest": "^30.2.0",
     "mongodb-memory-server": "^10.3.0",
     "nodemon": "^3.1.10",

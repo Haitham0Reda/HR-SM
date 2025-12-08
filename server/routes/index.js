@@ -36,3 +36,4 @@ export { default as roleRoutes } from './role.routes.js';
 export { default as permissionsRoutes } from './permissions.routes.js';
 export { default as attendanceDeviceRoutes } from './attendanceDevice.routes.js';
 export { default as featureFlagRoutes } from './featureFlag.routes.js';
+export { default as licenseAuditRoutes } from './licenseAudit.routes.js';

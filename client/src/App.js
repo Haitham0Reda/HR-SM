@@ -4,6 +4,7 @@ import { CssBaseline } from '@mui/material';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ThemeConfigProvider } from './context/ThemeContext';
+import { LicenseProvider } from './context/LicenseContext';
 import PrivateRoute from './routes/PrivateRoute';
 import logger from './utils/logger';
 import Login from './pages/auth/Login';
@@ -131,127 +132,129 @@ function App() {
     <ThemeConfigProvider>
       <CssBaseline enableColorScheme />
       <AuthProvider>
-        <NotificationProvider>
-          <Router>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <LicenseProvider>
+          <NotificationProvider>
+            <Router>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-              {/* Protected Routes */}
-              <Route
-                path="/app"
-                element={
-                  <PrivateRoute>
-                    <DashboardLayout />
-                  </PrivateRoute>
-                }
-              >
-                <Route index element={<Navigate to="/app/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="dashboard/edit" element={<DashboardEditPage />} />
+                {/* Protected Routes */}
+                <Route
+                  path="/app"
+                  element={
+                    <PrivateRoute>
+                      <DashboardLayout />
+                    </PrivateRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="/app/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="dashboard/edit" element={<DashboardEditPage />} />
 
-                {/* User Management */}
-                <Route path="profile" element={<ProfilePage />} />
-                <Route path="profile/settings" element={<SettingsPage />} />
-                <Route path="theme" element={<ThemeEditorPage />} />
-                <Route path="users" element={<UsersPage />} />
-                <Route path="users/create" element={<CreateUserPage />} />
-                <Route path="users/:id" element={<UserDetailsPage />} />
-                <Route path="users/:id/edit" element={<EditUserPage />} />
+                  {/* User Management */}
+                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="profile/settings" element={<SettingsPage />} />
+                  <Route path="theme" element={<ThemeEditorPage />} />
+                  <Route path="users" element={<UsersPage />} />
+                  <Route path="users/create" element={<CreateUserPage />} />
+                  <Route path="users/:id" element={<UserDetailsPage />} />
+                  <Route path="users/:id/edit" element={<EditUserPage />} />
 
-                {/* Organization */}
+                  {/* Organization */}
 
-                <Route path="departments" element={<DepartmentsPage />} />
-                <Route path="positions" element={<PositionsPage />} />
+                  <Route path="departments" element={<DepartmentsPage />} />
+                  <Route path="positions" element={<PositionsPage />} />
 
-                {/* HR Operations */}
-                <Route path="attendance" element={<AttendanceManagementPage />} />
-                <Route path="missions" element={<MissionsPage />} />
-                <Route path="missions/create" element={<MissionForm />} />
-                <Route path="missions/:id" element={<MissionDetails />} />
-                <Route path="missions/:id/edit" element={<MissionForm />} />
-                <Route path="sick-leaves" element={<SickLeavesPage />} />
-                <Route path="sick-leaves/create" element={<SickLeaveForm />} />
-                <Route path="sick-leaves/doctor-queue" element={<DoctorReviewQueue />} />
-                <Route path="sick-leaves/:id" element={<SickLeaveDetails />} />
-                <Route path="sick-leaves/:id/edit" element={<SickLeaveForm />} />
-                <Route path="forget-checks" element={<ForgetCheckPage />} />
-                <Route path="forget-checks/create" element={<CreateForgetCheckPage />} />
-                <Route path="permissions" element={<PermissionsPage />} />
-                <Route path="permissions/create" element={<CreatePermissionPage />} />
-                <Route path="permissions/:id" element={<PermissionDetails />} />
-                <Route path="permissions/:id/edit" element={<PermissionForm />} />
-                <Route path="overtime" element={<OvertimePage />} />
-                <Route path="overtime/create" element={<OvertimeForm />} />
-                <Route path="overtime/:id" element={<OvertimeDetails />} />
-                <Route path="overtime/:id/edit" element={<OvertimeForm />} />
-                <Route path="requests" element={<RequestsPage />} />
-                <Route path="requests/:id" element={<RequestDetailsPage />} />
-                <Route path="vacation-request" element={<VacationRequestPage />} />
-                <Route path="vacation" element={<VacationPage />} />
-                <Route path="payroll" element={<PayrollPage />} />
+                  {/* HR Operations */}
+                  <Route path="attendance" element={<AttendanceManagementPage />} />
+                  <Route path="missions" element={<MissionsPage />} />
+                  <Route path="missions/create" element={<MissionForm />} />
+                  <Route path="missions/:id" element={<MissionDetails />} />
+                  <Route path="missions/:id/edit" element={<MissionForm />} />
+                  <Route path="sick-leaves" element={<SickLeavesPage />} />
+                  <Route path="sick-leaves/create" element={<SickLeaveForm />} />
+                  <Route path="sick-leaves/doctor-queue" element={<DoctorReviewQueue />} />
+                  <Route path="sick-leaves/:id" element={<SickLeaveDetails />} />
+                  <Route path="sick-leaves/:id/edit" element={<SickLeaveForm />} />
+                  <Route path="forget-checks" element={<ForgetCheckPage />} />
+                  <Route path="forget-checks/create" element={<CreateForgetCheckPage />} />
+                  <Route path="permissions" element={<PermissionsPage />} />
+                  <Route path="permissions/create" element={<CreatePermissionPage />} />
+                  <Route path="permissions/:id" element={<PermissionDetails />} />
+                  <Route path="permissions/:id/edit" element={<PermissionForm />} />
+                  <Route path="overtime" element={<OvertimePage />} />
+                  <Route path="overtime/create" element={<OvertimeForm />} />
+                  <Route path="overtime/:id" element={<OvertimeDetails />} />
+                  <Route path="overtime/:id/edit" element={<OvertimeForm />} />
+                  <Route path="requests" element={<RequestsPage />} />
+                  <Route path="requests/:id" element={<RequestDetailsPage />} />
+                  <Route path="vacation-request" element={<VacationRequestPage />} />
+                  <Route path="vacation" element={<VacationPage />} />
+                  <Route path="payroll" element={<PayrollPage />} />
 
-                {/* Documents */}
-                <Route path="documents" element={<DocumentsPage />} />
-                <Route path="templates" element={<TemplatesPage />} />
-                <Route path="hardcopies" element={<HardCopiesPage />} />
+                  {/* Documents */}
+                  <Route path="documents" element={<DocumentsPage />} />
+                  <Route path="templates" element={<TemplatesPage />} />
+                  <Route path="hardcopies" element={<HardCopiesPage />} />
 
-                {/* Communication */}
-                <Route path="announcements" element={<AnnouncementsPage />} />
-                <Route path="events" element={<EventsPage />} />
-                <Route path="surveys" element={<SurveysPage />} />
-                <Route path="surveys/:id" element={<SurveysPage />} />
+                  {/* Communication */}
+                  <Route path="announcements" element={<AnnouncementsPage />} />
+                  <Route path="events" element={<EventsPage />} />
+                  <Route path="surveys" element={<SurveysPage />} />
+                  <Route path="surveys/:id" element={<SurveysPage />} />
 
-                {/* Advanced */}
-                <Route path="holidays" element={<HolidaysPage />} />
-                <Route path="vacations" element={<VacationsPage />} />
-                <Route path="vacation-requests" element={<VacationRequestsPage />} />
-                <Route path="vacation-requests/create" element={<VacationRequestForm />} />
-                <Route path="vacation-requests/:id" element={<VacationRequestDetails />} />
-                <Route path="vacation-requests/:id/edit" element={<VacationRequestForm />} />
-                <Route path="reports" element={<ReportsPage />} />
-                <Route path="analytics" element={<AnalyticsPage />} />
+                  {/* Advanced */}
+                  <Route path="holidays" element={<HolidaysPage />} />
+                  <Route path="vacations" element={<VacationsPage />} />
+                  <Route path="vacation-requests" element={<VacationRequestsPage />} />
+                  <Route path="vacation-requests/create" element={<VacationRequestForm />} />
+                  <Route path="vacation-requests/:id" element={<VacationRequestDetails />} />
+                  <Route path="vacation-requests/:id/edit" element={<VacationRequestForm />} />
+                  <Route path="reports" element={<ReportsPage />} />
+                  <Route path="analytics" element={<AnalyticsPage />} />
 
-                {/* Task Management */}
-                <Route path="tasks" element={<TasksPage />} />
-                <Route path="tasks/:id" element={<TaskDetailsPage />} />
+                  {/* Task Management */}
+                  <Route path="tasks" element={<TasksPage />} />
+                  <Route path="tasks/:id" element={<TaskDetailsPage />} />
 
-                {/* Administration */}
-                <Route path="security" element={<SecurityPage />} />
-                <Route path="backups" element={<BackupsPage />} />
-                <Route path="resigned" element={<ResignedPage />} />
-                <Route path="roles" element={<PrivateRoute requiredRole="admin"><RolesPage /></PrivateRoute>} />
-                <Route path="roles/create" element={<PrivateRoute requiredRole="admin"><RoleEditPage /></PrivateRoute>} />
-                <Route path="roles/:id" element={<PrivateRoute requiredRole="admin"><RoleViewPage /></PrivateRoute>} />
-                <Route path="roles/:id/edit" element={<PrivateRoute requiredRole="admin"><RoleEditPage /></PrivateRoute>} />
-                <Route path="system-settings" element={<SystemSettingsPage />} />
-                <Route path="system-settings/seasonal" element={<SeasonalSettingsPage />} />
-                <Route path="system-settings/request-control" element={<RequestControlPage />} />
-                <Route path="system-settings/email-creation" element={<EmailCreationPage />} />
-                <Route path="system-settings/email-management" element={<EmailManagementPage />} />
-                <Route path="system-settings/maintenance" element={<MaintenancePage />} />
-                <Route path="system-settings/notifications" element={<NotificationsPage />} />
-                <Route path="system-settings/hr-management" element={<HRManagementPage />} />
-                <Route path="system-settings/work-schedules" element={<WorkSchedulesPage />} />
-                <Route path="system-settings/vacation-management" element={<VacationManagementPage />} />
-                <Route path="system-settings/vacation-balances" element={<VacationBalancesPage />} />
-                <Route path="system-settings/mixed-vacation" element={<MixedVacationPage />} />
-                <Route path="system-settings/employee-of-month" element={<EmployeeOfMonthPage />} />
-              </Route>
+                  {/* Administration */}
+                  <Route path="security" element={<SecurityPage />} />
+                  <Route path="backups" element={<BackupsPage />} />
+                  <Route path="resigned" element={<ResignedPage />} />
+                  <Route path="roles" element={<PrivateRoute requiredRole="admin"><RolesPage /></PrivateRoute>} />
+                  <Route path="roles/create" element={<PrivateRoute requiredRole="admin"><RoleEditPage /></PrivateRoute>} />
+                  <Route path="roles/:id" element={<PrivateRoute requiredRole="admin"><RoleViewPage /></PrivateRoute>} />
+                  <Route path="roles/:id/edit" element={<PrivateRoute requiredRole="admin"><RoleEditPage /></PrivateRoute>} />
+                  <Route path="system-settings" element={<SystemSettingsPage />} />
+                  <Route path="system-settings/seasonal" element={<SeasonalSettingsPage />} />
+                  <Route path="system-settings/request-control" element={<RequestControlPage />} />
+                  <Route path="system-settings/email-creation" element={<EmailCreationPage />} />
+                  <Route path="system-settings/email-management" element={<EmailManagementPage />} />
+                  <Route path="system-settings/maintenance" element={<MaintenancePage />} />
+                  <Route path="system-settings/notifications" element={<NotificationsPage />} />
+                  <Route path="system-settings/hr-management" element={<HRManagementPage />} />
+                  <Route path="system-settings/work-schedules" element={<WorkSchedulesPage />} />
+                  <Route path="system-settings/vacation-management" element={<VacationManagementPage />} />
+                  <Route path="system-settings/vacation-balances" element={<VacationBalancesPage />} />
+                  <Route path="system-settings/mixed-vacation" element={<MixedVacationPage />} />
+                  <Route path="system-settings/employee-of-month" element={<EmployeeOfMonthPage />} />
+                </Route>
 
-              {/* Catch all */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Router>
+                {/* Catch all */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Router>
 
-          {/* Seasonal Effects */}
-          <SeasonalEffectsManager
-            key={JSON.stringify(seasonalSettings)}
-            settings={seasonalSettings}
-          />
-        </NotificationProvider>
+            {/* Seasonal Effects */}
+            <SeasonalEffectsManager
+              key={JSON.stringify(seasonalSettings)}
+              settings={seasonalSettings}
+            />
+          </NotificationProvider>
+        </LicenseProvider>
       </AuthProvider>
     </ThemeConfigProvider>
   );

@@ -46,7 +46,8 @@ import {
     overtimeRoutes,
     roleRoutes,
     attendanceDeviceRoutes,
-    featureFlagRoutes
+    featureFlagRoutes,
+    licenseAuditRoutes
 } from './routes/index.js';
 
 const app = express();
@@ -167,6 +168,9 @@ export const initializeRoutes = async () => {
     app.use('/api/backup-executions', backupExecutionRoutes);
     app.use('/api/theme', themeRoutes);
     app.use('/api/feature-flags', featureFlagRoutes);
+
+    // License Management
+    app.use('/api/v1/licenses/audit', licenseAuditRoutes);
 
     // Resigned Employees
     app.use('/api/resigned-employees', resignedEmployeeRoutes);

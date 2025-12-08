@@ -61,7 +61,9 @@ describe('Vacation Model', () => {
       expect(savedVacation).toBeDefined();
       expect(savedVacation.employee.toString()).toBe(testEmployee._id.toString());
       expect(savedVacation.vacationType).toBe('annual');
-      expect(savedVacation.duration).toBe(5);
+      // Duration is calculated automatically excluding weekends (Friday & Saturday)
+      // Dec 1-5, 2025: Mon, Tue, Wed, Thu, Fri = 4 working days (Fri is weekend)
+      expect(savedVacation.duration).toBe(4);
       expect(savedVacation.status).toBe('pending');
     });
 
@@ -131,7 +133,7 @@ describe('Vacation Model', () => {
 
     it('should accept valid vacation types', async () => {
       const types = ['annual', 'casual', 'sick', 'unpaid'];
-      
+
       for (const type of types) {
         const vacation = await Vacation.create({
           employee: testEmployee._id,
@@ -141,7 +143,7 @@ describe('Vacation Model', () => {
           duration: 5,
           department: testDepartment._id
         });
-        
+
         expect(vacation.vacationType).toBe(type);
       }
     });

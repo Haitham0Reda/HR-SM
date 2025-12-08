@@ -19,8 +19,7 @@ const vacationBalanceSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        unique: true,  // One balance record per employee per year
-        index: true
+        index: true  // Indexed for queries, uniqueness enforced by compound index below
     },
     // Year for which this balance applies
     year: {
