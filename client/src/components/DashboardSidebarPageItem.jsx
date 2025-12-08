@@ -13,6 +13,7 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import LockIcon from '@mui/icons-material/Lock';
 import { Link } from 'react-router';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
 import { MINI_DRAWER_WIDTH } from '../constants';
@@ -27,6 +28,7 @@ function DashboardSidebarPageItem({
     expanded = defaultExpanded,
     selected = false,
     disabled = false,
+    locked = false,
     nestedNavigation,
     isNested = false,
     sx,
@@ -116,7 +118,7 @@ function DashboardSidebarPageItem({
             >
                 <ListItemButton
                     selected={selected}
-                    disabled={disabled}
+                    disabled={disabled || locked}
                     sx={{
                         height: mini ? 50 : 'auto',
                         borderRadius: 2,
@@ -130,6 +132,14 @@ function DashboardSidebarPageItem({
                         width: isNested ? 'calc(100% - 8px)' : '100%',
                         maxWidth: '100%',
                         overflow: 'hidden',
+                        ...(locked && {
+                            opacity: 0.6,
+                            cursor: 'not-allowed',
+                            '&:hover': {
+                                bgcolor: 'transparent',
+                                transform: 'none',
+                            },
+                        }),
                         '&.Mui-selected': {
                             bgcolor: 'primary.main',
                             color: 'primary.contrastText',
@@ -143,11 +153,11 @@ function DashboardSidebarPageItem({
                         },
                         '&:hover': {
                             bgcolor: isNested ? 'action.selected' : 'action.hover',
-                            transform: 'translateX(4px)',
+                            transform: locked ? 'none' : 'translateX(4px)',
                         },
                     }}
-                    onClick={handleClick}
-                    {...(nestedNavigation
+                    onClick={locked ? (e) => e.preventDefault() : handleClick}
+                    {...(nestedNavigation || locked
                         ? {
                             component: 'div',
                         }
@@ -238,7 +248,15 @@ function DashboardSidebarPageItem({
                             }}
                         />
                     ) : null}
-                    {action && !mini && fullyExpanded ? action : null}
+                    {locked && !mini && fullyExpanded ? (
+                        <LockIcon 
+                            sx={{ 
+                                fontSize: 18, 
+                                color: 'text.disabled',
+                                ml: 'auto'
+                            }} 
+                        />
+                    ) : action && !mini && fullyExpanded ? action : null}
                     {nestedNavigation ? (
                         <ExpandMoreIcon sx={nestedNavigationCollapseSx} />
                     ) : null}
@@ -283,6 +301,7 @@ DashboardSidebarPageItem.propTypes = {
     action: PropTypes.node,
     defaultExpanded: PropTypes.bool,
     disabled: PropTypes.bool,
+    locked: PropTypes.bool,
     expanded: PropTypes.bool,
     href: PropTypes.string.isRequired,
     icon: PropTypes.node,

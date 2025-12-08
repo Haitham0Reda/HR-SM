@@ -19,6 +19,8 @@ import {
     managerOrAbove
 } from '../middleware/index.js';
 import { requireFeature } from '../middleware/featureFlag.middleware.js';
+import { requireModuleLicense } from '../middleware/licenseValidation.middleware.js';
+import { MODULES } from '../models/license.model.js';
 
 const router = express.Router();
 
@@ -51,9 +53,9 @@ const upload = multer({
     }
 });
 
-// All routes require authentication and task module to be enabled
+// All routes require authentication and task module license
 router.use(protect);
-router.use(requireFeature('tasks'));
+router.use(requireModuleLicense(MODULES.TASKS));
 
 // Task management routes
 router.route('/')

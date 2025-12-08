@@ -3,15 +3,20 @@ import License, { MODULES } from '../models/license.model.js';
 import LicenseAudit from '../models/licenseAudit.model.js';
 import UsageTracking from '../models/usageTracking.model.js';
 import licenseFileLoader from './licenseFileLoader.service.js';
+import redisService from './redis.service.js';
 import logger from '../utils/logger.js';
+import licenseWebSocketService from './licenseWebSocket.service.js';
+import metricsService from './metrics.service.js';
+import alertManager from './alertManager.service.js';
 
 /**
- * Cache for license validation results
+ * In-memory cache for license validation results (fallback when Redis is unavailable)
  * Key: `${tenantId}:${moduleKey}`
  * Value: { valid, license, timestamp }
  */
 const validationCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+const REDIS_CACHE_TTL = 300; // 5 minutes in seconds
 
 /**
  * License Validator Service
@@ -34,11 +39,22 @@ class LicenseValidator {
      */
     async validateModuleAccess(tenantId, moduleKey, options = {}) {
         const { skipCache = false, requestInfo = {} } = options;
+        const startTime = Date.now();
 
         try {
             // Core HR always bypasses validation
             if (moduleKey === MODULES.CORE_HR) {
                 await this._logValidation(tenantId, moduleKey, true, 'Core HR bypass', requestInfo);
+                
+                const duration = (Date.now() - startTime) / 1000;
+                metricsService.recordLicenseValidation(
+                    tenantId,
+                    moduleKey,
+                    true,
+                    this.isOnPremiseMode ? 'on-premise' : 'saas',
+                    duration
+                );
+                
                 return {
                     valid: true,
                     bypassedValidation: true,
@@ -49,19 +65,43 @@ class LicenseValidator {
 
             // Check cache first (unless skipCache is true)
             if (!skipCache) {
-                const cached = this._getCachedValidation(tenantId, moduleKey);
+                const cached = await this._getCachedValidation(tenantId, moduleKey);
                 if (cached) {
-                    logger.debug('License validation cache hit', { tenantId, moduleKey });
+                    const duration = (Date.now() - startTime) / 1000;
+                    metricsService.recordLicenseValidation(
+                        tenantId,
+                        moduleKey,
+                        cached.valid,
+                        this.isOnPremiseMode ? 'on-premise' : 'saas',
+                        duration
+                    );
                     return cached;
                 }
             }
 
             // Route to appropriate validation method based on deployment mode
+            let result;
             if (this.isOnPremiseMode) {
-                return await this._validateOnPremiseLicense(tenantId, moduleKey, requestInfo);
+                result = await this._validateOnPremiseLicense(tenantId, moduleKey, requestInfo);
             } else {
-                return await this._validateSaaSLicense(tenantId, moduleKey, requestInfo);
+                result = await this._validateSaaSLicense(tenantId, moduleKey, requestInfo);
             }
+
+            // Record metrics
+            const duration = (Date.now() - startTime) / 1000;
+            metricsService.recordLicenseValidation(
+                tenantId,
+                moduleKey,
+                result.valid,
+                this.isOnPremiseMode ? 'on-premise' : 'saas',
+                duration
+            );
+
+            if (!result.valid && result.error) {
+                metricsService.recordLicenseValidationError(tenantId, moduleKey, result.error);
+            }
+
+            return result;
 
         } catch (error) {
             logger.error('License validation error', {
@@ -70,6 +110,17 @@ class LicenseValidator {
                 error: error.message,
                 stack: error.stack
             });
+
+            // Record error metrics
+            const duration = (Date.now() - startTime) / 1000;
+            metricsService.recordLicenseValidation(
+                tenantId,
+                moduleKey,
+                false,
+                this.isOnPremiseMode ? 'on-premise' : 'saas',
+                duration
+            );
+            metricsService.recordLicenseValidationError(tenantId, moduleKey, 'VALIDATION_ERROR');
 
             // Log validation failure
             await this._logValidation(
@@ -155,6 +206,10 @@ class LicenseValidator {
                 ...requestInfo,
                 licenseStatus: license.status
             });
+            
+            // Emit real-time notification
+            licenseWebSocketService.notifyLicenseExpired(tenantId, moduleKey);
+            
             return {
                 valid: false,
                 moduleKey,
@@ -170,6 +225,10 @@ class LicenseValidator {
                 ...requestInfo,
                 expiresAt: moduleLicense.expiresAt
             });
+            
+            // Emit real-time notification
+            licenseWebSocketService.notifyLicenseExpired(tenantId, moduleKey);
+            
             return {
                 valid: false,
                 moduleKey,
@@ -177,6 +236,23 @@ class LicenseValidator {
                 error: 'LICENSE_EXPIRED',
                 expiresAt: moduleLicense.expiresAt
             };
+        }
+        
+        // Check if license is expiring soon and emit warning
+        if (moduleLicense.expiresAt) {
+            const expiresAt = new Date(moduleLicense.expiresAt);
+            const now = new Date();
+            const daysUntilExpiration = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+            
+            // Notify if expiring within 30 days
+            if (daysUntilExpiration > 0 && daysUntilExpiration <= 30) {
+                licenseWebSocketService.notifyLicenseExpiring(
+                    tenantId,
+                    moduleKey,
+                    expiresAt,
+                    daysUntilExpiration
+                );
+            }
         }
 
         // Validation successful
@@ -192,7 +268,7 @@ class LicenseValidator {
         };
 
         // Cache the result
-        this._cacheValidation(tenantId, moduleKey, result);
+        await this._cacheValidation(tenantId, moduleKey, result);
 
         // Log successful validation
         await this._logValidation(tenantId, moduleKey, true, 'Validation successful', requestInfo);
@@ -231,6 +307,10 @@ class LicenseValidator {
                 expiresAt: licenseData.expiresAt,
                 source: 'license-file'
             });
+            
+            // Emit real-time notification
+            licenseWebSocketService.notifyLicenseExpired(tenantId, moduleKey);
+            
             return {
                 valid: false,
                 moduleKey,
@@ -238,6 +318,23 @@ class LicenseValidator {
                 error: 'LICENSE_EXPIRED',
                 expiresAt: licenseData.expiresAt
             };
+        }
+        
+        // Check if license is expiring soon and emit warning
+        if (licenseData.expiresAt) {
+            const expiresAt = new Date(licenseData.expiresAt);
+            const now = new Date();
+            const daysUntilExpiration = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+            
+            // Notify if expiring within 30 days
+            if (daysUntilExpiration > 0 && daysUntilExpiration <= 30) {
+                licenseWebSocketService.notifyLicenseExpiring(
+                    tenantId,
+                    moduleKey,
+                    expiresAt,
+                    daysUntilExpiration
+                );
+            }
         }
 
         // Check if module exists in license
@@ -291,7 +388,7 @@ class LicenseValidator {
         };
 
         // Cache the result
-        this._cacheValidation(tenantId, moduleKey, result);
+        await this._cacheValidation(tenantId, moduleKey, result);
 
         // Log successful validation
         await this._logValidation(tenantId, moduleKey, true, 'Validation successful (license file)', requestInfo);
@@ -403,6 +500,18 @@ class LicenseValidator {
                         requestedAmount
                     }
                 );
+                
+                // Record metrics
+                metricsService.recordUsageLimitExceeded(tenantId, moduleKey, limitType);
+                
+                // Emit real-time notification
+                licenseWebSocketService.notifyUsageLimitExceeded(
+                    tenantId,
+                    moduleKey,
+                    limitType,
+                    projectedUsage,
+                    limit
+                );
 
                 return {
                     allowed: false,
@@ -416,6 +525,9 @@ class LicenseValidator {
                     error: 'LIMIT_EXCEEDED'
                 };
             }
+
+            // Update usage metrics
+            metricsService.updateUsageLimitPercentage(tenantId, moduleKey, limitType, percentage);
 
             // Check if approaching limit (>= 80%)
             if (percentage >= 80) {
@@ -433,6 +545,29 @@ class LicenseValidator {
                         currentUsage,
                         limit,
                         { percentage }
+                    );
+                    
+                    // Record metrics
+                    metricsService.recordUsageLimitWarning(tenantId, moduleKey, limitType);
+                    
+                    // Send alert
+                    await alertManager.checkUsageLimitAlerts(
+                        tenantId,
+                        moduleKey,
+                        limitType,
+                        currentUsage,
+                        limit,
+                        percentage
+                    );
+                    
+                    // Emit real-time notification
+                    licenseWebSocketService.notifyUsageLimitWarning(
+                        tenantId,
+                        moduleKey,
+                        limitType,
+                        currentUsage,
+                        limit,
+                        percentage
                     );
                 }
             }
@@ -473,11 +608,33 @@ class LicenseValidator {
      * @param {string} tenantId - Tenant identifier
      * @param {string} moduleKey - Module key (optional, clears all if not provided)
      */
-    invalidateCache(tenantId, moduleKey = null) {
+    async invalidateCache(tenantId, moduleKey = null) {
+        // Invalidate Redis cache
+        if (redisService.isEnabled && redisService.isConnected) {
+            try {
+                if (moduleKey) {
+                    const cacheKey = `license:validation:${tenantId}:${moduleKey}`;
+                    await redisService.del(cacheKey);
+                } else {
+                    // Clear all cache entries for this tenant
+                    const pattern = `license:validation:${tenantId}:*`;
+                    const deletedCount = await redisService.delPattern(pattern);
+                    logger.debug('Redis cache invalidated for tenant', { tenantId, deletedCount });
+                }
+            } catch (error) {
+                logger.warn('Redis cache invalidation failed', {
+                    tenantId,
+                    moduleKey,
+                    error: error.message
+                });
+            }
+        }
+
+        // Invalidate in-memory cache
         if (moduleKey) {
             const cacheKey = `${tenantId}:${moduleKey}`;
             validationCache.delete(cacheKey);
-            logger.debug('Cache invalidated', { tenantId, moduleKey });
+            logger.debug('In-memory cache invalidated', { tenantId, moduleKey });
         } else {
             // Clear all cache entries for this tenant
             const keysToDelete = [];
@@ -487,38 +644,75 @@ class LicenseValidator {
                 }
             }
             keysToDelete.forEach(key => validationCache.delete(key));
-            logger.debug('All cache invalidated for tenant', { tenantId, count: keysToDelete.length });
+            logger.debug('All in-memory cache invalidated for tenant', { tenantId, count: keysToDelete.length });
         }
     }
 
     /**
      * Clear all cache entries
      */
-    clearCache() {
+    async clearCache() {
+        // Clear Redis cache
+        if (redisService.isEnabled && redisService.isConnected) {
+            try {
+                const pattern = 'license:validation:*';
+                const deletedCount = await redisService.delPattern(pattern);
+                logger.debug('All Redis cache cleared', { entriesCleared: deletedCount });
+            } catch (error) {
+                logger.warn('Redis cache clear failed', { error: error.message });
+            }
+        }
+
+        // Clear in-memory cache
         const size = validationCache.size;
         validationCache.clear();
-        logger.debug('All cache cleared', { entriesCleared: size });
+        logger.debug('All in-memory cache cleared', { entriesCleared: size });
     }
 
     /**
      * Get cached validation result
      * @private
      */
-    _getCachedValidation(tenantId, moduleKey) {
-        const cacheKey = `${tenantId}:${moduleKey}`;
-        const cached = validationCache.get(cacheKey);
+    async _getCachedValidation(tenantId, moduleKey) {
+        const cacheKey = `license:validation:${tenantId}:${moduleKey}`;
+
+        // Try Redis first
+        if (redisService.isEnabled && redisService.isConnected) {
+            try {
+                const cached = await redisService.get(cacheKey);
+                if (cached) {
+                    logger.debug('License validation Redis cache hit', { tenantId, moduleKey });
+                    metricsService.recordCacheHit('redis');
+                    return cached;
+                }
+            } catch (error) {
+                logger.warn('Redis cache get failed, falling back to in-memory', {
+                    tenantId,
+                    moduleKey,
+                    error: error.message
+                });
+            }
+        }
+
+        // Fallback to in-memory cache
+        const memCacheKey = `${tenantId}:${moduleKey}`;
+        const cached = validationCache.get(memCacheKey);
 
         if (!cached) {
+            metricsService.recordCacheMiss('memory');
             return null;
         }
 
         // Check if cache entry is still valid
         const now = Date.now();
         if (now - cached.timestamp > CACHE_TTL) {
-            validationCache.delete(cacheKey);
+            validationCache.delete(memCacheKey);
+            metricsService.recordCacheMiss('memory');
             return null;
         }
 
+        logger.debug('License validation in-memory cache hit', { tenantId, moduleKey });
+        metricsService.recordCacheHit('memory');
         return cached.result;
     }
 
@@ -526,12 +720,31 @@ class LicenseValidator {
      * Cache validation result
      * @private
      */
-    _cacheValidation(tenantId, moduleKey, result) {
-        const cacheKey = `${tenantId}:${moduleKey}`;
-        validationCache.set(cacheKey, {
+    async _cacheValidation(tenantId, moduleKey, result) {
+        const cacheKey = `license:validation:${tenantId}:${moduleKey}`;
+
+        // Try Redis first
+        if (redisService.isEnabled && redisService.isConnected) {
+            try {
+                await redisService.set(cacheKey, result, REDIS_CACHE_TTL);
+                logger.debug('License validation cached in Redis', { tenantId, moduleKey });
+                return;
+            } catch (error) {
+                logger.warn('Redis cache set failed, falling back to in-memory', {
+                    tenantId,
+                    moduleKey,
+                    error: error.message
+                });
+            }
+        }
+
+        // Fallback to in-memory cache
+        const memCacheKey = `${tenantId}:${moduleKey}`;
+        validationCache.set(memCacheKey, {
             result,
             timestamp: Date.now()
         });
+        logger.debug('License validation cached in-memory', { tenantId, moduleKey });
     }
 
     /**

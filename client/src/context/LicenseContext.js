@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
 
@@ -7,13 +7,19 @@ const LicenseContext = createContext(null);
 /**
  * LicenseProvider Component
  * Manages license state and provides hooks for checking module access and usage limits
+ * Includes real-time WebSocket updates for license changes
  */
 export const LicenseProvider = ({ children }) => {
     const [licenses, setLicenses] = useState({});
     const [usage, setUsage] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [notifications, setNotifications] = useState([]);
     const { isAuthenticated, user } = useAuth();
+    const wsRef = useRef(null);
+    const reconnectTimeoutRef = useRef(null);
+    const reconnectAttemptsRef = useRef(0);
+    const maxReconnectAttempts = 5;
 
     /**
      * Fetch license data from the backend
@@ -100,10 +106,258 @@ export const LicenseProvider = ({ children }) => {
         }
     }, [isAuthenticated, user]);
 
+    /**
+     * Connect to WebSocket for real-time license updates
+     */
+    const connectWebSocket = useCallback(() => {
+        if (!isAuthenticated || !user?.token) {
+            return;
+        }
+
+        // Close existing connection if any
+        if (wsRef.current) {
+            wsRef.current.close();
+        }
+
+        try {
+            // Determine WebSocket URL based on current location
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.hostname;
+            const port = process.env.REACT_APP_API_PORT || '5000';
+            const wsUrl = `${protocol}//${host}:${port}/ws/license?token=${user.token}`;
+
+            const ws = new WebSocket(wsUrl);
+            wsRef.current = ws;
+
+            ws.onopen = () => {
+                console.log('License WebSocket connected');
+                reconnectAttemptsRef.current = 0;
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleWebSocketMessage(message);
+                } catch (error) {
+                    console.error('Failed to parse WebSocket message:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('License WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('License WebSocket disconnected');
+                wsRef.current = null;
+
+                // Attempt to reconnect with exponential backoff
+                if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
+                    reconnectAttemptsRef.current++;
+                    
+                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+                    
+                    reconnectTimeoutRef.current = setTimeout(() => {
+                        connectWebSocket();
+                    }, delay);
+                }
+            };
+
+        } catch (error) {
+            console.error('Failed to connect to License WebSocket:', error);
+        }
+    }, [isAuthenticated, user]);
+
+    /**
+     * Handle incoming WebSocket messages
+     */
+    const handleWebSocketMessage = useCallback((message) => {
+        console.log('License WebSocket message:', message);
+
+        switch (message.type) {
+            case 'connected':
+                // Connection established
+                break;
+
+            case 'license_expiring':
+                // License is expiring soon
+                addNotification({
+                    id: `expiring-${message.moduleKey}-${Date.now()}`,
+                    type: 'license_expiring',
+                    severity: message.severity,
+                    moduleKey: message.moduleKey,
+                    message: `License for ${message.moduleKey} expires in ${message.daysUntilExpiration} days`,
+                    expiresAt: message.expiresAt,
+                    daysUntilExpiration: message.daysUntilExpiration,
+                    timestamp: message.timestamp
+                });
+                break;
+
+            case 'license_expired':
+                // License has expired
+                addNotification({
+                    id: `expired-${message.moduleKey}-${Date.now()}`,
+                    type: 'license_expired',
+                    severity: 'critical',
+                    moduleKey: message.moduleKey,
+                    message: `License for ${message.moduleKey} has expired`,
+                    timestamp: message.timestamp
+                });
+                
+                // Refresh license data to update UI
+                fetchLicenses();
+                break;
+
+            case 'usage_limit_warning':
+                // Usage approaching limit
+                addNotification({
+                    id: `warning-${message.moduleKey}-${message.limitType}-${Date.now()}`,
+                    type: 'usage_limit_warning',
+                    severity: message.severity,
+                    moduleKey: message.moduleKey,
+                    limitType: message.limitType,
+                    message: `${message.moduleKey} ${message.limitType} usage at ${message.percentage}%`,
+                    currentUsage: message.currentUsage,
+                    limit: message.limit,
+                    percentage: message.percentage,
+                    timestamp: message.timestamp
+                });
+                
+                // Update usage data
+                setUsage(prev => ({
+                    ...prev,
+                    [message.moduleKey]: {
+                        ...prev[message.moduleKey],
+                        [message.limitType]: {
+                            current: message.currentUsage,
+                            limit: message.limit,
+                            percentage: message.percentage
+                        }
+                    }
+                }));
+                break;
+
+            case 'usage_limit_exceeded':
+                // Usage limit exceeded
+                addNotification({
+                    id: `exceeded-${message.moduleKey}-${message.limitType}-${Date.now()}`,
+                    type: 'usage_limit_exceeded',
+                    severity: 'critical',
+                    moduleKey: message.moduleKey,
+                    limitType: message.limitType,
+                    message: `${message.moduleKey} ${message.limitType} limit exceeded`,
+                    currentUsage: message.currentUsage,
+                    limit: message.limit,
+                    timestamp: message.timestamp
+                });
+                
+                // Update usage data
+                setUsage(prev => ({
+                    ...prev,
+                    [message.moduleKey]: {
+                        ...prev[message.moduleKey],
+                        [message.limitType]: {
+                            current: message.currentUsage,
+                            limit: message.limit,
+                            percentage: 100
+                        }
+                    }
+                }));
+                break;
+
+            case 'module_activated':
+                // Module has been activated
+                addNotification({
+                    id: `activated-${message.moduleKey}-${Date.now()}`,
+                    type: 'module_activated',
+                    severity: 'info',
+                    moduleKey: message.moduleKey,
+                    message: `Module ${message.moduleKey} has been activated`,
+                    timestamp: message.timestamp
+                });
+                
+                // Refresh license data
+                fetchLicenses();
+                break;
+
+            case 'module_deactivated':
+                // Module has been deactivated
+                addNotification({
+                    id: `deactivated-${message.moduleKey}-${Date.now()}`,
+                    type: 'module_deactivated',
+                    severity: 'warning',
+                    moduleKey: message.moduleKey,
+                    message: `Module ${message.moduleKey} has been deactivated`,
+                    timestamp: message.timestamp
+                });
+                
+                // Refresh license data
+                fetchLicenses();
+                break;
+
+            case 'license_updated':
+                // License has been updated
+                addNotification({
+                    id: `updated-${Date.now()}`,
+                    type: 'license_updated',
+                    severity: 'info',
+                    message: 'License has been updated',
+                    changes: message.changes,
+                    timestamp: message.timestamp
+                });
+                
+                // Refresh license data
+                fetchLicenses();
+                break;
+
+            default:
+                console.warn('Unknown WebSocket message type:', message.type);
+        }
+    }, [fetchLicenses]);
+
+    /**
+     * Add a notification to the queue
+     */
+    const addNotification = useCallback((notification) => {
+        setNotifications(prev => [...prev, notification]);
+    }, []);
+
+    /**
+     * Remove a notification from the queue
+     */
+    const removeNotification = useCallback((notificationId) => {
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    }, []);
+
+    /**
+     * Clear all notifications
+     */
+    const clearNotifications = useCallback(() => {
+        setNotifications([]);
+    }, []);
+
     // Load licenses on mount and when authentication changes
     useEffect(() => {
         fetchLicenses();
     }, [fetchLicenses]);
+
+    // Connect to WebSocket when authenticated
+    useEffect(() => {
+        if (isAuthenticated && user?.token) {
+            connectWebSocket();
+        }
+
+        // Cleanup on unmount
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close();
+            }
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+            }
+        };
+    }, [isAuthenticated, user, connectWebSocket]);
 
     /**
      * Check if a module is enabled
@@ -266,6 +520,7 @@ export const LicenseProvider = ({ children }) => {
         usage,
         loading,
         error,
+        notifications,
 
         // Module access checks
         isModuleEnabled,
@@ -284,7 +539,11 @@ export const LicenseProvider = ({ children }) => {
         isExpiringSoon,
 
         // Actions
-        refreshLicenses
+        refreshLicenses,
+        
+        // Notification management
+        removeNotification,
+        clearNotifications
     };
 
     return (

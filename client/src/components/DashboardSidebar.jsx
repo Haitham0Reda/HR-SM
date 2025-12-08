@@ -50,13 +50,16 @@ import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import DevicesIcon from '@mui/icons-material/Devices';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
+import { useLicense } from '../context/LicenseContext';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
 import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
 import DashboardSidebarPageItem from './DashboardSidebarPageItem';
 import DashboardSidebarHeaderItem from './DashboardSidebarHeaderItem';
 import DashboardSidebarDividerItem from './DashboardSidebarDividerItem';
+import LockIcon from '@mui/icons-material/Lock';
 import {
     getDrawerSxTransitionMixin,
     getDrawerWidthTransitionMixin,
@@ -166,6 +169,91 @@ function DashboardSidebar({
 
     const { user } = useAuth();
     const userRole = user?.role || 'employee';
+    const { isModuleEnabled } = useLicense();
+
+    // Map menu item IDs to module keys
+    const getModuleKeyForMenuItem = React.useCallback((itemId) => {
+        const moduleMapping = {
+            // Attendance module
+            'attendance': 'attendance',
+            'my-attendance': 'attendance',
+            'forget-checks': 'attendance',
+            
+            // Leave module (missions, sick leaves, permissions, overtime, vacation)
+            'missions': 'leave',
+            'sick-leaves': 'leave',
+            'doctor-review-queue': 'leave',
+            'permissions': 'leave',
+            'overtime': 'leave',
+            'vacation-requests': 'leave',
+            
+            // Payroll module
+            'payroll': 'payroll',
+            
+            // Documents module
+            'documents': 'documents',
+            'hard-copies': 'documents',
+            'templates': 'documents',
+            
+            // Communication module
+            'announcements': 'communication',
+            'events': 'communication',
+            'surveys': 'communication',
+            
+            // Reporting module
+            'reports': 'reporting',
+            'analytics': 'reporting',
+            
+            // Tasks module
+            'tasks': 'tasks',
+            
+            // Core HR - always enabled (no module key needed)
+            'dashboard': null,
+            'departments': null,
+            'positions': null,
+            'users': null,
+            'my-requests': null,
+            'requests': null,
+            'holidays': null,
+            'dashboard-edit': null,
+            'roles': null,
+            'settings': null,
+            'theme-editor': null,
+            'security': null,
+            'backups': null,
+            'resigned': null,
+            'license-status': null,
+            'pricing': null,
+        };
+        
+        return moduleMapping[itemId] || null;
+    }, []);
+
+    // Check if a menu item should be shown based on license
+    const shouldShowMenuItem = React.useCallback((itemId) => {
+        const moduleKey = getModuleKeyForMenuItem(itemId);
+        
+        // If no module key, it's Core HR - always show
+        if (!moduleKey) {
+            return true;
+        }
+        
+        // Check if module is enabled
+        return isModuleEnabled(moduleKey);
+    }, [getModuleKeyForMenuItem, isModuleEnabled]);
+
+    // Check if a menu item should be locked (shown but disabled)
+    const isMenuItemLocked = React.useCallback((itemId) => {
+        const moduleKey = getModuleKeyForMenuItem(itemId);
+        
+        // If no module key, it's Core HR - never locked
+        if (!moduleKey) {
+            return false;
+        }
+        
+        // Item is locked if module is not enabled
+        return !isModuleEnabled(moduleKey);
+    }, [getModuleKeyForMenuItem, isModuleEnabled]);
 
     const getDrawerContent = React.useCallback(
         (viewport) => (
@@ -232,115 +320,158 @@ function DashboardSidebar({
                             <>
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>My Work</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="missions"
-                                    title="Missions"
-                                    icon={<FlightTakeoffIcon />}
-                                    href="/app/missions"
-                                    selected={pathname.startsWith('/app/missions')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="sick-leaves"
-                                    title="Sick Leaves"
-                                    icon={<LocalHospitalIcon />}
-                                    href="/app/sick-leaves"
-                                    selected={pathname.startsWith('/app/sick-leaves')}
-                                />
-                                {userRole === 'doctor' && (
+                                {shouldShowMenuItem('missions') && (
+                                    <DashboardSidebarPageItem
+                                        id="missions"
+                                        title="Missions"
+                                        icon={<FlightTakeoffIcon />}
+                                        href="/app/missions"
+                                        selected={pathname.startsWith('/app/missions')}
+                                        locked={isMenuItemLocked('missions')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('sick-leaves') && (
+                                    <DashboardSidebarPageItem
+                                        id="sick-leaves"
+                                        title="Sick Leaves"
+                                        icon={<LocalHospitalIcon />}
+                                        href="/app/sick-leaves"
+                                        selected={pathname.startsWith('/app/sick-leaves')}
+                                        locked={isMenuItemLocked('sick-leaves')}
+                                    />
+                                )}
+                                {userRole === 'doctor' && shouldShowMenuItem('doctor-review-queue') && (
                                     <DashboardSidebarPageItem
                                         id="doctor-review-queue"
                                         title="Doctor Review Queue"
                                         icon={<MedicalServicesIcon />}
                                         href="/app/sick-leaves/doctor-queue"
                                         selected={!!matchPath('/app/sick-leaves/doctor-queue', pathname)}
+                                        locked={isMenuItemLocked('doctor-review-queue')}
                                     />
                                 )}
-                                <DashboardSidebarPageItem
-                                    id="permissions"
-                                    title="Permissions"
-                                    icon={<AccessAlarmIcon />}
-                                    href="/app/permissions"
-                                    selected={pathname.startsWith('/app/permissions')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="overtime"
-                                    title="Overtime"
-                                    icon={<AccessTimeIcon />}
-                                    href="/app/overtime"
-                                    selected={pathname.startsWith('/app/overtime')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="vacation-requests"
-                                    title="Vacation Requests"
-                                    icon={<BeachAccessIcon />}
-                                    href="/app/vacation-requests"
-                                    selected={pathname.startsWith('/app/vacation-requests')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="forget-checks"
-                                    title="Forget Check"
-                                    icon={<ErrorOutlineIcon />}
-                                    href="/app/forget-checks"
-                                    selected={!!matchPath('/app/forget-checks', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="tasks"
-                                    title="Tasks"
-                                    icon={<AssignmentIcon />}
-                                    href="/app/tasks"
-                                    selected={pathname.startsWith('/app/tasks')}
-                                />
+                                {shouldShowMenuItem('permissions') && (
+                                    <DashboardSidebarPageItem
+                                        id="permissions"
+                                        title="Permissions"
+                                        icon={<AccessAlarmIcon />}
+                                        href="/app/permissions"
+                                        selected={pathname.startsWith('/app/permissions')}
+                                        locked={isMenuItemLocked('permissions')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('overtime') && (
+                                    <DashboardSidebarPageItem
+                                        id="overtime"
+                                        title="Overtime"
+                                        icon={<AccessTimeIcon />}
+                                        href="/app/overtime"
+                                        selected={pathname.startsWith('/app/overtime')}
+                                        locked={isMenuItemLocked('overtime')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('vacation-requests') && (
+                                    <DashboardSidebarPageItem
+                                        id="vacation-requests"
+                                        title="Vacation Requests"
+                                        icon={<BeachAccessIcon />}
+                                        href="/app/vacation-requests"
+                                        selected={pathname.startsWith('/app/vacation-requests')}
+                                        locked={isMenuItemLocked('vacation-requests')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('forget-checks') && (
+                                    <DashboardSidebarPageItem
+                                        id="forget-checks"
+                                        title="Forget Check"
+                                        icon={<ErrorOutlineIcon />}
+                                        href="/app/forget-checks"
+                                        selected={!!matchPath('/app/forget-checks', pathname)}
+                                        locked={isMenuItemLocked('forget-checks')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('tasks') && (
+                                    <DashboardSidebarPageItem
+                                        id="tasks"
+                                        title="Tasks"
+                                        icon={<AssignmentIcon />}
+                                        href="/app/tasks"
+                                        selected={pathname.startsWith('/app/tasks')}
+                                        locked={isMenuItemLocked('tasks')}
+                                    />
+                                )}
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Information</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="my-attendance"
-                                    title="My Attendance"
-                                    icon={<AccessTimeIcon />}
-                                    href="/app/attendance"
-                                    selected={!!matchPath('/app/attendance', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="my-requests"
-                                    title="My Requests"
-                                    icon={<RequestPageIcon />}
-                                    href="/app/requests"
-                                    selected={!!matchPath('/app/requests', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="documents"
-                                    title="Documents"
-                                    icon={<DescriptionIcon />}
-                                    href="/app/documents"
-                                    selected={!!matchPath('/app/documents', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="hard-copies"
-                                    title="Hard Copies"
-                                    icon={<DescriptionIcon />}
-                                    href="/app/hardcopies"
-                                    selected={!!matchPath('/app/hardcopies', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="announcements"
-                                    title="Announcements"
-                                    icon={<AnnouncementIcon />}
-                                    href="/app/announcements"
-                                    selected={!!matchPath('/app/announcements', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="events"
-                                    title="Events"
-                                    icon={<EventIcon />}
-                                    href="/app/events"
-                                    selected={!!matchPath('/app/events', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="surveys"
-                                    title="Surveys"
-                                    icon={<PollIcon />}
-                                    href="/app/surveys"
-                                    selected={!!matchPath('/app/surveys', pathname)}
-                                />
+                                {shouldShowMenuItem('my-attendance') && (
+                                    <DashboardSidebarPageItem
+                                        id="my-attendance"
+                                        title="My Attendance"
+                                        icon={<AccessTimeIcon />}
+                                        href="/app/attendance"
+                                        selected={!!matchPath('/app/attendance', pathname)}
+                                        locked={isMenuItemLocked('my-attendance')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('my-requests') && (
+                                    <DashboardSidebarPageItem
+                                        id="my-requests"
+                                        title="My Requests"
+                                        icon={<RequestPageIcon />}
+                                        href="/app/requests"
+                                        selected={!!matchPath('/app/requests', pathname)}
+                                        locked={isMenuItemLocked('my-requests')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('documents') && (
+                                    <DashboardSidebarPageItem
+                                        id="documents"
+                                        title="Documents"
+                                        icon={<DescriptionIcon />}
+                                        href="/app/documents"
+                                        selected={!!matchPath('/app/documents', pathname)}
+                                        locked={isMenuItemLocked('documents')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('hard-copies') && (
+                                    <DashboardSidebarPageItem
+                                        id="hard-copies"
+                                        title="Hard Copies"
+                                        icon={<DescriptionIcon />}
+                                        href="/app/hardcopies"
+                                        selected={!!matchPath('/app/hardcopies', pathname)}
+                                        locked={isMenuItemLocked('hard-copies')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('announcements') && (
+                                    <DashboardSidebarPageItem
+                                        id="announcements"
+                                        title="Announcements"
+                                        icon={<AnnouncementIcon />}
+                                        href="/app/announcements"
+                                        selected={!!matchPath('/app/announcements', pathname)}
+                                        locked={isMenuItemLocked('announcements')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('events') && (
+                                    <DashboardSidebarPageItem
+                                        id="events"
+                                        title="Events"
+                                        icon={<EventIcon />}
+                                        href="/app/events"
+                                        selected={!!matchPath('/app/events', pathname)}
+                                        locked={isMenuItemLocked('events')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('surveys') && (
+                                    <DashboardSidebarPageItem
+                                        id="surveys"
+                                        title="Surveys"
+                                        icon={<PollIcon />}
+                                        href="/app/surveys"
+                                        selected={!!matchPath('/app/surveys', pathname)}
+                                        locked={isMenuItemLocked('surveys')}
+                                    />
+                                )}
                             </>
                         )}
 
@@ -349,182 +480,251 @@ function DashboardSidebar({
                             <>
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Organization</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="departments"
-                                    title="Departments"
-                                    icon={<BusinessIcon />}
-                                    href="/app/departments"
-                                    selected={!!matchPath('/app/departments', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="positions"
-                                    title="Positions"
-                                    icon={<WorkIcon />}
-                                    href="/app/positions"
-                                    selected={!!matchPath('/app/positions', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="users"
-                                    title="Users"
-                                    icon={<PersonIcon />}
-                                    href="/app/users"
-                                    selected={!!matchPath('/app/users', pathname)}
-                                />
+                                {shouldShowMenuItem('departments') && (
+                                    <DashboardSidebarPageItem
+                                        id="departments"
+                                        title="Departments"
+                                        icon={<BusinessIcon />}
+                                        href="/app/departments"
+                                        selected={!!matchPath('/app/departments', pathname)}
+                                        locked={isMenuItemLocked('departments')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('positions') && (
+                                    <DashboardSidebarPageItem
+                                        id="positions"
+                                        title="Positions"
+                                        icon={<WorkIcon />}
+                                        href="/app/positions"
+                                        selected={!!matchPath('/app/positions', pathname)}
+                                        locked={isMenuItemLocked('positions')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('users') && (
+                                    <DashboardSidebarPageItem
+                                        id="users"
+                                        title="Users"
+                                        icon={<PersonIcon />}
+                                        href="/app/users"
+                                        selected={!!matchPath('/app/users', pathname)}
+                                        locked={isMenuItemLocked('users')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>HR Operations</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="attendance"
-                                    title="Attendance Management"
-                                    icon={<AccessTimeIcon />}
-                                    href="/app/attendance"
-                                    selected={!!matchPath('/app/attendance', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="forget-checks"
-                                    title="Forget Check"
-                                    icon={<ErrorOutlineIcon />}
-                                    href="/app/forget-checks"
-                                    selected={!!matchPath('/app/forget-checks', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="missions"
-                                    title="Missions"
-                                    icon={<FlightTakeoffIcon />}
-                                    href="/app/missions"
-                                    selected={pathname.startsWith('/app/missions')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="sick-leaves"
-                                    title="Sick Leaves"
-                                    icon={<LocalHospitalIcon />}
-                                    href="/app/sick-leaves"
-                                    selected={pathname.startsWith('/app/sick-leaves')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="permissions"
-                                    title="Permissions"
-                                    icon={<AccessAlarmIcon />}
-                                    href="/app/permissions"
-                                    selected={pathname.startsWith('/app/permissions')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="overtime"
-                                    title="Overtime"
-                                    icon={<AccessTimeIcon />}
-                                    href="/app/overtime"
-                                    selected={pathname.startsWith('/app/overtime')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="vacation-requests"
-                                    title="Vacation Requests"
-                                    icon={<BeachAccessIcon />}
-                                    href="/app/vacation-requests"
-                                    selected={pathname.startsWith('/app/vacation-requests')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="requests"
-                                    title="Requests"
-                                    icon={<RequestPageIcon />}
-                                    href="/app/requests"
-                                    selected={!!matchPath('/app/requests', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="payroll"
-                                    title="Payroll"
-                                    icon={<PaymentIcon />}
-                                    href="/app/payroll"
-                                    selected={!!matchPath('/app/payroll', pathname)}
-                                />
+                                {shouldShowMenuItem('attendance') && (
+                                    <DashboardSidebarPageItem
+                                        id="attendance"
+                                        title="Attendance Management"
+                                        icon={<AccessTimeIcon />}
+                                        href="/app/attendance"
+                                        selected={!!matchPath('/app/attendance', pathname)}
+                                        locked={isMenuItemLocked('attendance')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('forget-checks') && (
+                                    <DashboardSidebarPageItem
+                                        id="forget-checks"
+                                        title="Forget Check"
+                                        icon={<ErrorOutlineIcon />}
+                                        href="/app/forget-checks"
+                                        selected={!!matchPath('/app/forget-checks', pathname)}
+                                        locked={isMenuItemLocked('forget-checks')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('missions') && (
+                                    <DashboardSidebarPageItem
+                                        id="missions"
+                                        title="Missions"
+                                        icon={<FlightTakeoffIcon />}
+                                        href="/app/missions"
+                                        selected={pathname.startsWith('/app/missions')}
+                                        locked={isMenuItemLocked('missions')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('sick-leaves') && (
+                                    <DashboardSidebarPageItem
+                                        id="sick-leaves"
+                                        title="Sick Leaves"
+                                        icon={<LocalHospitalIcon />}
+                                        href="/app/sick-leaves"
+                                        selected={pathname.startsWith('/app/sick-leaves')}
+                                        locked={isMenuItemLocked('sick-leaves')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('permissions') && (
+                                    <DashboardSidebarPageItem
+                                        id="permissions"
+                                        title="Permissions"
+                                        icon={<AccessAlarmIcon />}
+                                        href="/app/permissions"
+                                        selected={pathname.startsWith('/app/permissions')}
+                                        locked={isMenuItemLocked('permissions')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('overtime') && (
+                                    <DashboardSidebarPageItem
+                                        id="overtime"
+                                        title="Overtime"
+                                        icon={<AccessTimeIcon />}
+                                        href="/app/overtime"
+                                        selected={pathname.startsWith('/app/overtime')}
+                                        locked={isMenuItemLocked('overtime')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('vacation-requests') && (
+                                    <DashboardSidebarPageItem
+                                        id="vacation-requests"
+                                        title="Vacation Requests"
+                                        icon={<BeachAccessIcon />}
+                                        href="/app/vacation-requests"
+                                        selected={pathname.startsWith('/app/vacation-requests')}
+                                        locked={isMenuItemLocked('vacation-requests')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('requests') && (
+                                    <DashboardSidebarPageItem
+                                        id="requests"
+                                        title="Requests"
+                                        icon={<RequestPageIcon />}
+                                        href="/app/requests"
+                                        selected={!!matchPath('/app/requests', pathname)}
+                                        locked={isMenuItemLocked('requests')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('payroll') && (
+                                    <DashboardSidebarPageItem
+                                        id="payroll"
+                                        title="Payroll"
+                                        icon={<PaymentIcon />}
+                                        href="/app/payroll"
+                                        selected={!!matchPath('/app/payroll', pathname)}
+                                        locked={isMenuItemLocked('payroll')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Task Management</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="tasks"
-                                    title="Tasks"
-                                    icon={<AssignmentIcon />}
-                                    href="/app/tasks"
-                                    selected={pathname.startsWith('/app/tasks')}
-                                />
+                                {shouldShowMenuItem('tasks') && (
+                                    <DashboardSidebarPageItem
+                                        id="tasks"
+                                        title="Tasks"
+                                        icon={<AssignmentIcon />}
+                                        href="/app/tasks"
+                                        selected={pathname.startsWith('/app/tasks')}
+                                        locked={isMenuItemLocked('tasks')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Documents</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="documents"
-                                    title="Documents"
-                                    icon={<DescriptionIcon />}
-                                    href="/app/documents"
-                                    selected={!!matchPath('/app/documents', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="hard-copies"
-                                    title="Hard Copies"
-                                    icon={<DescriptionIcon />}
-                                    href="/app/hardcopies"
-                                    selected={!!matchPath('/app/hardcopies', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="templates"
-                                    title="Templates"
-                                    icon={<ArticleIcon />}
-                                    href="/app/templates"
-                                    selected={!!matchPath('/app/templates', pathname)}
-                                />
+                                {shouldShowMenuItem('documents') && (
+                                    <DashboardSidebarPageItem
+                                        id="documents"
+                                        title="Documents"
+                                        icon={<DescriptionIcon />}
+                                        href="/app/documents"
+                                        selected={!!matchPath('/app/documents', pathname)}
+                                        locked={isMenuItemLocked('documents')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('hard-copies') && (
+                                    <DashboardSidebarPageItem
+                                        id="hard-copies"
+                                        title="Hard Copies"
+                                        icon={<DescriptionIcon />}
+                                        href="/app/hardcopies"
+                                        selected={!!matchPath('/app/hardcopies', pathname)}
+                                        locked={isMenuItemLocked('hard-copies')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('templates') && (
+                                    <DashboardSidebarPageItem
+                                        id="templates"
+                                        title="Templates"
+                                        icon={<ArticleIcon />}
+                                        href="/app/templates"
+                                        selected={!!matchPath('/app/templates', pathname)}
+                                        locked={isMenuItemLocked('templates')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Communication</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="announcements"
-                                    title="Announcements"
-                                    icon={<AnnouncementIcon />}
-                                    href="/app/announcements"
-                                    selected={!!matchPath('/app/announcements', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="events"
-                                    title="Events"
-                                    icon={<EventIcon />}
-                                    href="/app/events"
-                                    selected={!!matchPath('/app/events', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="surveys"
-                                    title="Surveys"
-                                    icon={<PollIcon />}
-                                    href="/app/surveys"
-                                    selected={!!matchPath('/app/surveys', pathname)}
-                                />
+                                {shouldShowMenuItem('announcements') && (
+                                    <DashboardSidebarPageItem
+                                        id="announcements"
+                                        title="Announcements"
+                                        icon={<AnnouncementIcon />}
+                                        href="/app/announcements"
+                                        selected={!!matchPath('/app/announcements', pathname)}
+                                        locked={isMenuItemLocked('announcements')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('events') && (
+                                    <DashboardSidebarPageItem
+                                        id="events"
+                                        title="Events"
+                                        icon={<EventIcon />}
+                                        href="/app/events"
+                                        selected={!!matchPath('/app/events', pathname)}
+                                        locked={isMenuItemLocked('events')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('surveys') && (
+                                    <DashboardSidebarPageItem
+                                        id="surveys"
+                                        title="Surveys"
+                                        icon={<PollIcon />}
+                                        href="/app/surveys"
+                                        selected={!!matchPath('/app/surveys', pathname)}
+                                        locked={isMenuItemLocked('surveys')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Advanced</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="dashboard-edit"
-                                    title="Dashboard Settings"
-                                    icon={<EditIcon />}
-                                    href="/app/dashboard/edit"
-                                    selected={!!matchPath('/app/dashboard/edit', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="holidays"
-                                    title="Holidays"
-                                    icon={<CalendarTodayIcon />}
-                                    href="/app/holidays"
-                                    selected={!!matchPath('/app/holidays', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="reports"
-                                    title="Reports"
-                                    icon={<BarChartIcon />}
-                                    href="/app/reports"
-                                    selected={!!matchPath('/app/reports', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="analytics"
-                                    title="Analytics"
-                                    icon={<AssessmentIcon />}
-                                    href="/app/analytics"
-                                    selected={!!matchPath('/app/analytics', pathname)}
-                                />
+                                {shouldShowMenuItem('dashboard-edit') && (
+                                    <DashboardSidebarPageItem
+                                        id="dashboard-edit"
+                                        title="Dashboard Settings"
+                                        icon={<EditIcon />}
+                                        href="/app/dashboard/edit"
+                                        selected={!!matchPath('/app/dashboard/edit', pathname)}
+                                        locked={isMenuItemLocked('dashboard-edit')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('holidays') && (
+                                    <DashboardSidebarPageItem
+                                        id="holidays"
+                                        title="Holidays"
+                                        icon={<CalendarTodayIcon />}
+                                        href="/app/holidays"
+                                        selected={!!matchPath('/app/holidays', pathname)}
+                                        locked={isMenuItemLocked('holidays')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('reports') && (
+                                    <DashboardSidebarPageItem
+                                        id="reports"
+                                        title="Reports"
+                                        icon={<BarChartIcon />}
+                                        href="/app/reports"
+                                        selected={!!matchPath('/app/reports', pathname)}
+                                        locked={isMenuItemLocked('reports')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('analytics') && (
+                                    <DashboardSidebarPageItem
+                                        id="analytics"
+                                        title="Analytics"
+                                        icon={<AssessmentIcon />}
+                                        href="/app/analytics"
+                                        selected={!!matchPath('/app/analytics', pathname)}
+                                        locked={isMenuItemLocked('analytics')}
+                                    />
+                                )}
                             </>
                         )}
 
@@ -533,337 +733,434 @@ function DashboardSidebar({
                             <>
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Organization</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="departments"
-                                    title="Departments"
-                                    icon={<BusinessIcon />}
-                                    href="/app/departments"
-                                    selected={!!matchPath('/app/departments', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="positions"
-                                    title="Positions"
-                                    icon={<WorkIcon />}
-                                    href="/app/positions"
-                                    selected={!!matchPath('/app/positions', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="users"
-                                    title="Users"
-                                    icon={<PersonIcon />}
-                                    href="/app/users"
-                                    selected={!!matchPath('/app/users', pathname)}
-                                />
+                                {shouldShowMenuItem('departments') && (
+                                    <DashboardSidebarPageItem
+                                        id="departments"
+                                        title="Departments"
+                                        icon={<BusinessIcon />}
+                                        href="/app/departments"
+                                        selected={!!matchPath('/app/departments', pathname)}
+                                        locked={isMenuItemLocked('departments')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('positions') && (
+                                    <DashboardSidebarPageItem
+                                        id="positions"
+                                        title="Positions"
+                                        icon={<WorkIcon />}
+                                        href="/app/positions"
+                                        selected={!!matchPath('/app/positions', pathname)}
+                                        locked={isMenuItemLocked('positions')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('users') && (
+                                    <DashboardSidebarPageItem
+                                        id="users"
+                                        title="Users"
+                                        icon={<PersonIcon />}
+                                        href="/app/users"
+                                        selected={!!matchPath('/app/users', pathname)}
+                                        locked={isMenuItemLocked('users')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>HR Operations</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="attendance"
-                                    title="Attendance Management"
-                                    icon={<AccessTimeIcon />}
-                                    href="/app/attendance"
-                                    selected={!!matchPath('/app/attendance', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="forget-checks"
-                                    title="Forget Check"
-                                    icon={<ErrorOutlineIcon />}
-                                    href="/app/forget-checks"
-                                    selected={!!matchPath('/app/forget-checks', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="missions"
-                                    title="Missions"
-                                    icon={<FlightTakeoffIcon />}
-                                    href="/app/missions"
-                                    selected={pathname.startsWith('/app/missions')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="sick-leaves"
-                                    title="Sick Leaves"
-                                    icon={<LocalHospitalIcon />}
-                                    href="/app/sick-leaves"
-                                    selected={pathname.startsWith('/app/sick-leaves')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="permissions"
-                                    title="Permissions"
-                                    icon={<AccessAlarmIcon />}
-                                    href="/app/permissions"
-                                    selected={pathname.startsWith('/app/permissions')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="overtime"
-                                    title="Overtime"
-                                    icon={<AccessTimeIcon />}
-                                    href="/app/overtime"
-                                    selected={pathname.startsWith('/app/overtime')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="vacation-requests"
-                                    title="Vacation Requests"
-                                    icon={<BeachAccessIcon />}
-                                    href="/app/vacation-requests"
-                                    selected={pathname.startsWith('/app/vacation-requests')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="requests"
-                                    title="Requests"
-                                    icon={<RequestPageIcon />}
-                                    href="/app/requests"
-                                    selected={!!matchPath('/app/requests', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="payroll"
-                                    title="Payroll"
-                                    icon={<PaymentIcon />}
-                                    href="/app/payroll"
-                                    selected={!!matchPath('/app/payroll', pathname)}
-                                />
+                                {shouldShowMenuItem('attendance') && (
+                                    <DashboardSidebarPageItem
+                                        id="attendance"
+                                        title="Attendance Management"
+                                        icon={<AccessTimeIcon />}
+                                        href="/app/attendance"
+                                        selected={!!matchPath('/app/attendance', pathname)}
+                                        locked={isMenuItemLocked('attendance')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('forget-checks') && (
+                                    <DashboardSidebarPageItem
+                                        id="forget-checks"
+                                        title="Forget Check"
+                                        icon={<ErrorOutlineIcon />}
+                                        href="/app/forget-checks"
+                                        selected={!!matchPath('/app/forget-checks', pathname)}
+                                        locked={isMenuItemLocked('forget-checks')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('missions') && (
+                                    <DashboardSidebarPageItem
+                                        id="missions"
+                                        title="Missions"
+                                        icon={<FlightTakeoffIcon />}
+                                        href="/app/missions"
+                                        selected={pathname.startsWith('/app/missions')}
+                                        locked={isMenuItemLocked('missions')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('sick-leaves') && (
+                                    <DashboardSidebarPageItem
+                                        id="sick-leaves"
+                                        title="Sick Leaves"
+                                        icon={<LocalHospitalIcon />}
+                                        href="/app/sick-leaves"
+                                        selected={pathname.startsWith('/app/sick-leaves')}
+                                        locked={isMenuItemLocked('sick-leaves')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('permissions') && (
+                                    <DashboardSidebarPageItem
+                                        id="permissions"
+                                        title="Permissions"
+                                        icon={<AccessAlarmIcon />}
+                                        href="/app/permissions"
+                                        selected={pathname.startsWith('/app/permissions')}
+                                        locked={isMenuItemLocked('permissions')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('overtime') && (
+                                    <DashboardSidebarPageItem
+                                        id="overtime"
+                                        title="Overtime"
+                                        icon={<AccessTimeIcon />}
+                                        href="/app/overtime"
+                                        selected={pathname.startsWith('/app/overtime')}
+                                        locked={isMenuItemLocked('overtime')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('vacation-requests') && (
+                                    <DashboardSidebarPageItem
+                                        id="vacation-requests"
+                                        title="Vacation Requests"
+                                        icon={<BeachAccessIcon />}
+                                        href="/app/vacation-requests"
+                                        selected={pathname.startsWith('/app/vacation-requests')}
+                                        locked={isMenuItemLocked('vacation-requests')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('requests') && (
+                                    <DashboardSidebarPageItem
+                                        id="requests"
+                                        title="Requests"
+                                        icon={<RequestPageIcon />}
+                                        href="/app/requests"
+                                        selected={!!matchPath('/app/requests', pathname)}
+                                        locked={isMenuItemLocked('requests')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('payroll') && (
+                                    <DashboardSidebarPageItem
+                                        id="payroll"
+                                        title="Payroll"
+                                        icon={<PaymentIcon />}
+                                        href="/app/payroll"
+                                        selected={!!matchPath('/app/payroll', pathname)}
+                                        locked={isMenuItemLocked('payroll')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('resigned') && (
+                                    <DashboardSidebarPageItem
+                                        id="resigned"
+                                        title="Resigned Employees"
+                                        icon={<PersonOffIcon />}
+                                        href="/app/resigned"
+                                        selected={!!matchPath('/app/resigned', pathname)}
+                                        locked={isMenuItemLocked('resigned')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Task Management</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="tasks"
-                                    title="Tasks"
-                                    icon={<AssignmentIcon />}
-                                    href="/app/tasks"
-                                    selected={pathname.startsWith('/app/tasks')}
-                                />
+                                {shouldShowMenuItem('tasks') && (
+                                    <DashboardSidebarPageItem
+                                        id="tasks"
+                                        title="Tasks"
+                                        icon={<AssignmentIcon />}
+                                        href="/app/tasks"
+                                        selected={pathname.startsWith('/app/tasks')}
+                                        locked={isMenuItemLocked('tasks')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Documents</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="documents"
-                                    title="Documents"
-                                    icon={<DescriptionIcon />}
-                                    href="/app/documents"
-                                    selected={!!matchPath('/app/documents', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="hard-copies"
-                                    title="Hard Copies"
-                                    icon={<DescriptionIcon />}
-                                    href="/app/hardcopies"
-                                    selected={!!matchPath('/app/hardcopies', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="templates"
-                                    title="Templates"
-                                    icon={<ArticleIcon />}
-                                    href="/app/templates"
-                                    selected={!!matchPath('/app/templates', pathname)}
-                                />
+                                {shouldShowMenuItem('documents') && (
+                                    <DashboardSidebarPageItem
+                                        id="documents"
+                                        title="Documents"
+                                        icon={<DescriptionIcon />}
+                                        href="/app/documents"
+                                        selected={!!matchPath('/app/documents', pathname)}
+                                        locked={isMenuItemLocked('documents')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('hard-copies') && (
+                                    <DashboardSidebarPageItem
+                                        id="hard-copies"
+                                        title="Hard Copies"
+                                        icon={<DescriptionIcon />}
+                                        href="/app/hardcopies"
+                                        selected={!!matchPath('/app/hardcopies', pathname)}
+                                        locked={isMenuItemLocked('hard-copies')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('templates') && (
+                                    <DashboardSidebarPageItem
+                                        id="templates"
+                                        title="Templates"
+                                        icon={<ArticleIcon />}
+                                        href="/app/templates"
+                                        selected={!!matchPath('/app/templates', pathname)}
+                                        locked={isMenuItemLocked('templates')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Communication</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="announcements"
-                                    title="Announcements"
-                                    icon={<AnnouncementIcon />}
-                                    href="/app/announcements"
-                                    selected={!!matchPath('/app/announcements', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="events"
-                                    title="Events"
-                                    icon={<EventIcon />}
-                                    href="/app/events"
-                                    selected={!!matchPath('/app/events', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="surveys"
-                                    title="Surveys"
-                                    icon={<PollIcon />}
-                                    href="/app/surveys"
-                                    selected={!!matchPath('/app/surveys', pathname)}
-                                />
+                                {shouldShowMenuItem('announcements') && (
+                                    <DashboardSidebarPageItem
+                                        id="announcements"
+                                        title="Announcements"
+                                        icon={<AnnouncementIcon />}
+                                        href="/app/announcements"
+                                        selected={!!matchPath('/app/announcements', pathname)}
+                                        locked={isMenuItemLocked('announcements')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('events') && (
+                                    <DashboardSidebarPageItem
+                                        id="events"
+                                        title="Events"
+                                        icon={<EventIcon />}
+                                        href="/app/events"
+                                        selected={!!matchPath('/app/events', pathname)}
+                                        locked={isMenuItemLocked('events')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('surveys') && (
+                                    <DashboardSidebarPageItem
+                                        id="surveys"
+                                        title="Surveys"
+                                        icon={<PollIcon />}
+                                        href="/app/surveys"
+                                        selected={!!matchPath('/app/surveys', pathname)}
+                                        locked={isMenuItemLocked('surveys')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Advanced</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="holidays"
-                                    title="Holidays"
-                                    icon={<CalendarTodayIcon />}
-                                    href="/app/holidays"
-                                    selected={!!matchPath('/app/holidays', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="reports"
-                                    title="Reports"
-                                    icon={<BarChartIcon />}
-                                    href="/app/reports"
-                                    selected={!!matchPath('/app/reports', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="analytics"
-                                    title="Analytics"
-                                    icon={<AssessmentIcon />}
-                                    href="/app/analytics"
-                                    selected={!!matchPath('/app/analytics', pathname)}
-                                />
+                                {shouldShowMenuItem('holidays') && (
+                                    <DashboardSidebarPageItem
+                                        id="holidays"
+                                        title="Holidays"
+                                        icon={<CalendarTodayIcon />}
+                                        href="/app/holidays"
+                                        selected={!!matchPath('/app/holidays', pathname)}
+                                        locked={isMenuItemLocked('holidays')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('reports') && (
+                                    <DashboardSidebarPageItem
+                                        id="reports"
+                                        title="Reports"
+                                        icon={<BarChartIcon />}
+                                        href="/app/reports"
+                                        selected={!!matchPath('/app/reports', pathname)}
+                                        locked={isMenuItemLocked('reports')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('analytics') && (
+                                    <DashboardSidebarPageItem
+                                        id="analytics"
+                                        title="Analytics"
+                                        icon={<AssessmentIcon />}
+                                        href="/app/analytics"
+                                        selected={!!matchPath('/app/analytics', pathname)}
+                                        locked={isMenuItemLocked('analytics')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Administration</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="dashboard-edit"
-                                    title="Dashboard Settings"
-                                    icon={<EditIcon />}
-                                    href="/app/dashboard/edit"
-                                    selected={!!matchPath('/app/dashboard/edit', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="roles"
-                                    title="Roles"
-                                    icon={<AdminPanelSettingsIcon />}
-                                    href="/app/roles"
-                                    selected={pathname.startsWith('/app/roles')}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="settings"
-                                    title="Settings"
-                                    icon={<SettingsIcon />}
-                                    href="#"
-                                    selected={pathname.startsWith('/app/system-settings')}
-                                    expanded={expandedItemIds.includes('settings')}
-                                    nestedNavigation={
-                                        <List dense sx={{
-                                            bgcolor: 'rgba(0, 0, 0, 0.08)',
-                                            py: 0.5,
-                                            borderRadius: 1,
-                                            mt: 0.5,
-                                            px: 0,
-                                            mx: 2,
-                                            width: 'calc(100% - 32px)',
-                                            overflow: 'hidden'
-                                        }}>
-                                            <DashboardSidebarPageItem
-                                                id="system-settings"
-                                                title="System Settings"
-                                                icon={<SettingsIcon />}
-                                                href="/app/system-settings"
-                                                selected={!!matchPath('/app/system-settings', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="seasonal-settings"
-                                                title="Seasonal Settings"
-                                                icon={<CelebrationIcon />}
-                                                href="/app/system-settings/seasonal"
-                                                selected={!!matchPath('/app/system-settings/seasonal', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="request-submission"
-                                                title="Request Submission Control"
-                                                icon={<ToggleOnIcon />}
-                                                href="/app/system-settings/request-control"
-                                                selected={!!matchPath('/app/system-settings/request-control', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="email-creation"
-                                                title="Employee Email Creation"
-                                                icon={<EmailIcon />}
-                                                href="/app/system-settings/email-creation"
-                                                selected={!!matchPath('/app/system-settings/email-creation', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="email-management"
-                                                title="Employee Email Management"
-                                                icon={<ManageAccountsIcon />}
-                                                href="/app/system-settings/email-management"
-                                                selected={!!matchPath('/app/system-settings/email-management', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="maintenance-settings"
-                                                title="Maintenance Settings"
-                                                icon={<BuildIcon />}
-                                                href="/app/system-settings/maintenance"
-                                                selected={!!matchPath('/app/system-settings/maintenance', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="system-notifications"
-                                                title="System Notifications"
-                                                icon={<NotificationsIcon />}
-                                                href="/app/system-settings/notifications"
-                                                selected={!!matchPath('/app/system-settings/notifications', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="hr-management-settings"
-                                                title="HR Management Settings"
-                                                icon={<GroupIcon />}
-                                                href="/app/system-settings/hr-management"
-                                                selected={!!matchPath('/app/system-settings/hr-management', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="work-schedules"
-                                                title="Work Schedules"
-                                                icon={<ScheduleIcon />}
-                                                href="/app/system-settings/work-schedules"
-                                                selected={!!matchPath('/app/system-settings/work-schedules', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="vacation-management-settings"
-                                                title="Vacation Management"
-                                                icon={<BeachAccessOutlinedIcon />}
-                                                href="/app/system-settings/vacation-management"
-                                                selected={!!matchPath('/app/system-settings/vacation-management', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="mixed-vacation-policies"
-                                                title="Mixed Vacation Policies"
-                                                icon={<PolicyIcon />}
-                                                href="/app/system-settings/mixed-vacation"
-                                                selected={!!matchPath('/app/system-settings/mixed-vacation', pathname)}
-                                                isNested={true}
-                                            />
-                                            <DashboardSidebarPageItem
-                                                id="employee-of-month"
-                                                title="Employee of the Month"
-                                                icon={<EmojiEventsIcon />}
-                                                href="/app/system-settings/employee-of-month"
-                                                selected={!!matchPath('/app/system-settings/employee-of-month', pathname)}
-                                                isNested={true}
-                                            />
-                                        </List>
-                                    }
-                                />
-                                <DashboardSidebarPageItem
-                                    id="theme-editor"
-                                    title="Theme & Colors"
-                                    icon={<PaletteIcon />}
-                                    href="/app/theme"
-                                    selected={!!matchPath('/app/theme', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="security"
-                                    title="Security"
-                                    icon={<SecurityIcon />}
-                                    href="/app/security"
-                                    selected={!!matchPath('/app/security', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="backups"
-                                    title="Backups"
-                                    icon={<BackupIcon />}
-                                    href="/app/backups"
-                                    selected={!!matchPath('/app/backups', pathname)}
-                                />
-                                <DashboardSidebarPageItem
-                                    id="resigned"
-                                    title="Resigned Employees"
-                                    icon={<PersonOffIcon />}
-                                    href="/app/resigned"
-                                    selected={!!matchPath('/app/resigned', pathname)}
-                                />
+                                {shouldShowMenuItem('dashboard-edit') && (
+                                    <DashboardSidebarPageItem
+                                        id="dashboard-edit"
+                                        title="Dashboard Settings"
+                                        icon={<EditIcon />}
+                                        href="/app/dashboard/edit"
+                                        selected={!!matchPath('/app/dashboard/edit', pathname)}
+                                        locked={isMenuItemLocked('dashboard-edit')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('roles') && (
+                                    <DashboardSidebarPageItem
+                                        id="roles"
+                                        title="Roles"
+                                        icon={<AdminPanelSettingsIcon />}
+                                        href="/app/roles"
+                                        selected={pathname.startsWith('/app/roles')}
+                                        locked={isMenuItemLocked('roles')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('settings') && (
+                                    <DashboardSidebarPageItem
+                                        id="settings"
+                                        title="Settings"
+                                        icon={<SettingsIcon />}
+                                        href="#"
+                                        selected={pathname.startsWith('/app/system-settings')}
+                                        expanded={expandedItemIds.includes('settings')}
+                                        locked={isMenuItemLocked('settings')}
+                                        nestedNavigation={
+                                            <List dense sx={{
+                                                bgcolor: 'rgba(0, 0, 0, 0.08)',
+                                                py: 0.5,
+                                                borderRadius: 1,
+                                                mt: 0.5,
+                                                px: 0,
+                                                mx: 2,
+                                                width: 'calc(100% - 32px)',
+                                                overflow: 'hidden'
+                                            }}>
+                                                <DashboardSidebarPageItem
+                                                    id="system-settings"
+                                                    title="System Settings"
+                                                    icon={<SettingsIcon />}
+                                                    href="/app/system-settings"
+                                                    selected={!!matchPath('/app/system-settings', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="seasonal-settings"
+                                                    title="Seasonal Settings"
+                                                    icon={<CelebrationIcon />}
+                                                    href="/app/system-settings/seasonal"
+                                                    selected={!!matchPath('/app/system-settings/seasonal', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="request-submission"
+                                                    title="Request Submission Control"
+                                                    icon={<ToggleOnIcon />}
+                                                    href="/app/system-settings/request-control"
+                                                    selected={!!matchPath('/app/system-settings/request-control', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="email-creation"
+                                                    title="Employee Email Creation"
+                                                    icon={<EmailIcon />}
+                                                    href="/app/system-settings/email-creation"
+                                                    selected={!!matchPath('/app/system-settings/email-creation', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="email-management"
+                                                    title="Employee Email Management"
+                                                    icon={<ManageAccountsIcon />}
+                                                    href="/app/system-settings/email-management"
+                                                    selected={!!matchPath('/app/system-settings/email-management', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="maintenance-settings"
+                                                    title="Maintenance Settings"
+                                                    icon={<BuildIcon />}
+                                                    href="/app/system-settings/maintenance"
+                                                    selected={!!matchPath('/app/system-settings/maintenance', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="system-notifications"
+                                                    title="System Notifications"
+                                                    icon={<NotificationsIcon />}
+                                                    href="/app/system-settings/notifications"
+                                                    selected={!!matchPath('/app/system-settings/notifications', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="hr-management-settings"
+                                                    title="HR Management Settings"
+                                                    icon={<GroupIcon />}
+                                                    href="/app/system-settings/hr-management"
+                                                    selected={!!matchPath('/app/system-settings/hr-management', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="work-schedules"
+                                                    title="Work Schedules"
+                                                    icon={<ScheduleIcon />}
+                                                    href="/app/system-settings/work-schedules"
+                                                    selected={!!matchPath('/app/system-settings/work-schedules', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="vacation-management-settings"
+                                                    title="Vacation Management"
+                                                    icon={<BeachAccessOutlinedIcon />}
+                                                    href="/app/system-settings/vacation-management"
+                                                    selected={!!matchPath('/app/system-settings/vacation-management', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="mixed-vacation-policies"
+                                                    title="Mixed Vacation Policies"
+                                                    icon={<PolicyIcon />}
+                                                    href="/app/system-settings/mixed-vacation"
+                                                    selected={!!matchPath('/app/system-settings/mixed-vacation', pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="employee-of-month"
+                                                    title="Employee of the Month"
+                                                    icon={<EmojiEventsIcon />}
+                                                    href="/app/system-settings/employee-of-month"
+                                                    selected={!!matchPath('/app/system-settings/employee-of-month', pathname)}
+                                                    isNested={true}
+                                                />
+                                            </List>
+                                        }
+                                    />
+                                )}
+                                {shouldShowMenuItem('theme-editor') && (
+                                    <DashboardSidebarPageItem
+                                        id="theme-editor"
+                                        title="Theme & Colors"
+                                        icon={<PaletteIcon />}
+                                        href="/app/theme"
+                                        selected={!!matchPath('/app/theme', pathname)}
+                                        locked={isMenuItemLocked('theme-editor')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('security') && (
+                                    <DashboardSidebarPageItem
+                                        id="security"
+                                        title="Security"
+                                        icon={<SecurityIcon />}
+                                        href="/app/security"
+                                        selected={!!matchPath('/app/security', pathname)}
+                                        locked={isMenuItemLocked('security')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('backups') && (
+                                    <DashboardSidebarPageItem
+                                        id="backups"
+                                        title="Backups"
+                                        icon={<BackupIcon />}
+                                        href="/app/backups"
+                                        selected={!!matchPath('/app/backups', pathname)}
+                                        locked={isMenuItemLocked('backups')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('license-status') && (
+                                    <DashboardSidebarPageItem
+                                        id="license-status"
+                                        title="License Status"
+                                        icon={<VerifiedUserIcon />}
+                                        href="/app/license-status"
+                                        selected={!!matchPath('/app/license-status', pathname)}
+                                        locked={isMenuItemLocked('license-status')}
+                                    />
+                                )}
                             </>
                         )}
 
@@ -872,13 +1169,16 @@ function DashboardSidebar({
                             <>
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>ID Card Management</DashboardSidebarHeaderItem>
-                                <DashboardSidebarPageItem
-                                    id="documents"
-                                    title="Documents"
-                                    icon={<DescriptionIcon />}
-                                    href="/app/documents"
-                                    selected={!!matchPath('/app/documents', pathname)}
-                                />
+                                {shouldShowMenuItem('documents') && (
+                                    <DashboardSidebarPageItem
+                                        id="documents"
+                                        title="Documents"
+                                        icon={<DescriptionIcon />}
+                                        href="/app/documents"
+                                        selected={!!matchPath('/app/documents', pathname)}
+                                        locked={isMenuItemLocked('documents')}
+                                    />
+                                )}
                             </>
                         )}
                     </List>

@@ -11,8 +11,13 @@ import {
 } from '../controller/vacation.controller.js';
 import { protect, checkActive } from '../middleware/index.js';
 import upload from '../config/multer.config.js';
+import { requireModuleLicense } from '../middleware/licenseValidation.middleware.js';
+import { MODULES } from '../models/license.model.js';
 
 const router = express.Router();
+
+// Apply license validation to all vacation routes
+router.use(requireModuleLicense(MODULES.LEAVE));
 
 // Get all vacations - protected route
 router.get('/', protect, getAllVacations);

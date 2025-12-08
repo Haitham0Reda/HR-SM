@@ -25,8 +25,13 @@ import {
     validateReportType,
     checkReportAccess
 } from '../middleware/index.js';
+import { requireModuleLicense } from '../middleware/licenseValidation.middleware.js';
+import { MODULES } from '../models/license.model.js';
 
 const router = express.Router();
+
+// Apply license validation to all report routes
+router.use(requireModuleLicense(MODULES.REPORTING));
 
 // Get all reports for user
 router.get('/',
