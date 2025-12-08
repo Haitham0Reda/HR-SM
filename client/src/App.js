@@ -60,7 +60,13 @@ import SecurityPage from './pages/security/SecurityPage';
 import TasksPage from './pages/tasks/TasksPage';
 import TaskDetailsPage from './pages/tasks/TaskDetailsPage';
 import BackupsPage from './pages/backups/BackupsPage';
+import PricingPage from './pages/pricing/PricingPage';
+import LicenseStatusPage from './pages/license/LicenseStatusPage';
 import ResignedPage from './pages/resigned/ResignedPage';
+import NotFound from './pages/errors/NotFound';
+import ServerError from './pages/errors/ServerError';
+import ErrorBoundary from './components/ErrorBoundary';
+import LicenseNotificationToast from './components/license/LicenseNotificationToast';
 import RolesPage from './pages/roles/RolesPage';
 import RoleEditPage from './pages/roles/RoleEditPage';
 import RoleViewPage from './pages/roles/RoleViewPage';
@@ -134,12 +140,18 @@ function App() {
       <AuthProvider>
         <LicenseProvider>
           <NotificationProvider>
-            <Router>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Login />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <ErrorBoundary>
+              <LicenseNotificationToast />
+              <Router>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Login />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password/:token" element={<ResetPassword />} />
+                  
+                  {/* Error Routes */}
+                  <Route path="/error" element={<ServerError />} />
+                  <Route path="/404" element={<NotFound />} />
 
                 {/* Protected Routes */}
                 <Route
@@ -220,6 +232,10 @@ function App() {
                   <Route path="tasks" element={<TasksPage />} />
                   <Route path="tasks/:id" element={<TaskDetailsPage />} />
 
+                  {/* Pricing */}
+                  <Route path="pricing" element={<PricingPage />} />
+                  <Route path="license-status" element={<LicenseStatusPage />} />
+
                   {/* Administration */}
                   <Route path="security" element={<SecurityPage />} />
                   <Route path="backups" element={<BackupsPage />} />
@@ -243,16 +259,17 @@ function App() {
                   <Route path="system-settings/employee-of-month" element={<EmployeeOfMonthPage />} />
                 </Route>
 
-                {/* Catch all */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                {/* Catch all - 404 */}
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Router>
 
-            {/* Seasonal Effects */}
-            <SeasonalEffectsManager
-              key={JSON.stringify(seasonalSettings)}
-              settings={seasonalSettings}
-            />
+              {/* Seasonal Effects */}
+              <SeasonalEffectsManager
+                key={JSON.stringify(seasonalSettings)}
+                settings={seasonalSettings}
+              />
+            </ErrorBoundary>
           </NotificationProvider>
         </LicenseProvider>
       </AuthProvider>

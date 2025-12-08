@@ -14,8 +14,13 @@ import {
     setTemplateCreatedBy,
     validateTemplateFile
 } from '../middleware/index.js';
+import { requireModuleLicense } from '../middleware/licenseValidation.middleware.js';
+import { MODULES } from '../models/license.model.js';
 
 const router = express.Router();
+
+// Apply license validation to all document template routes
+router.use(requireModuleLicense(MODULES.DOCUMENTS));
 
 // Get all document templates - All authenticated users can view
 router.get('/', protect, getAllDocumentTemplates);

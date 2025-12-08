@@ -26,7 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { designTokens } from '../../theme/designTokens';
 import { useLicense } from '../../context/LicenseContext';
 
-const UsageWarningBanner = ({
+const UsageWarningBanner = React.memo(({
     moduleKey,
     moduleName,
     limitType,
@@ -223,7 +223,7 @@ const UsageWarningBanner = ({
             </Box>
         </Alert>
     );
-};
+});
 
 UsageWarningBanner.propTypes = {
     /** Module key for routing and identification */
@@ -254,5 +254,7 @@ UsageWarningBanner.propTypes = {
     /** Custom styles */
     sx: PropTypes.object,
 };
+
+UsageWarningBanner.displayName = 'UsageWarningBanner';
 
 export default UsageWarningBanner;

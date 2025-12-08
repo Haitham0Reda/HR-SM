@@ -47,7 +47,10 @@ import {
     roleRoutes,
     attendanceDeviceRoutes,
     featureFlagRoutes,
-    licenseAuditRoutes
+    licenseAuditRoutes,
+    pricingRoutes,
+    licenseRoutes,
+    metricsRoutes
 } from './routes/index.js';
 
 const app = express();
@@ -170,7 +173,14 @@ export const initializeRoutes = async () => {
     app.use('/api/feature-flags', featureFlagRoutes);
 
     // License Management
+    app.use('/api/v1/licenses', licenseRoutes);
     app.use('/api/v1/licenses/audit', licenseAuditRoutes);
+
+    // Pricing & Quotes
+    app.use('/api/v1/pricing', pricingRoutes);
+
+    // Metrics & Monitoring
+    app.use('/api/v1/metrics', metricsRoutes);
 
     // Resigned Employees
     app.use('/api/resigned-employees', resignedEmployeeRoutes);

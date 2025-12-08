@@ -14,8 +14,13 @@ import {
     validateDocumentExpiry,
     checkDocumentAccess
 } from '../middleware/index.js';
+import { requireModuleLicense } from '../middleware/licenseValidation.middleware.js';
+import { MODULES } from '../models/license.model.js';
 
 const router = express.Router();
+
+// Apply license validation to all document routes
+router.use(requireModuleLicense(MODULES.DOCUMENTS));
 
 // Get all documents - All authenticated users (filtered by role in controller)
 router.get('/', protect, getAllDocuments);

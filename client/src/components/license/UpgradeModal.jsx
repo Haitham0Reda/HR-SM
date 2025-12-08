@@ -34,7 +34,7 @@ import { useNavigate } from 'react-router-dom';
 import { designTokens } from '../../theme/designTokens';
 import { useThemeConfig } from '../../context/ThemeContext';
 
-const UpgradeModal = ({
+const UpgradeModal = React.memo(({
     open,
     onClose,
     moduleKey,
@@ -341,6 +341,8 @@ const UpgradeModal = ({
     );
 };
 
+});
+
 UpgradeModal.propTypes = {
     /** Modal open state */
     open: PropTypes.bool.isRequired,
@@ -375,5 +377,7 @@ UpgradeModal.propTypes = {
     /** Custom upgrade click handler */
     onUpgradeClick: PropTypes.func,
 };
+
+UpgradeModal.displayName = 'UpgradeModal';
 
 export default UpgradeModal;

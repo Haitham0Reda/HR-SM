@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { designTokens } from '../../theme/designTokens';
 import { useThemeConfig } from '../../context/ThemeContext';
 
-const LockedFeature = ({
+const LockedFeature = React.memo(({
     moduleKey,
     featureName,
     description,
@@ -189,6 +189,8 @@ const LockedFeature = ({
     );
 };
 
+});
+
 LockedFeature.propTypes = {
     /** Module key for routing to pricing page */
     moduleKey: PropTypes.string.isRequired,
@@ -208,5 +210,7 @@ LockedFeature.propTypes = {
     /** Custom styles */
     sx: PropTypes.object,
 };
+
+LockedFeature.displayName = 'LockedFeature';
 
 export default LockedFeature;

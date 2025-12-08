@@ -13,8 +13,13 @@ import {
 } from '../controller/sickLeave.controller.js';
 import { protect, checkActive } from '../middleware/index.js';
 import upload from '../config/multer.config.js';
+import { requireModuleLicense } from '../middleware/licenseValidation.middleware.js';
+import { MODULES } from '../models/license.model.js';
 
 const router = express.Router();
+
+// Apply license validation to all sick leave routes
+router.use(requireModuleLicense(MODULES.LEAVE));
 
 // Get all sick leaves - protected route
 router.get('/', protect, getAllSickLeaves);

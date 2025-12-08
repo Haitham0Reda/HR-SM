@@ -22,7 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { designTokens } from '../../theme/designTokens';
 import { useThemeConfig } from '../../context/ThemeContext';
 
-const LockedPage = ({
+const LockedPage = React.memo(({
     moduleKey,
     moduleName,
     description,
@@ -254,6 +254,8 @@ const LockedPage = ({
     );
 };
 
+});
+
 LockedPage.propTypes = {
     /** Module key for routing to pricing page */
     moduleKey: PropTypes.string.isRequired,
@@ -273,5 +275,7 @@ LockedPage.propTypes = {
     /** Custom upgrade click handler */
     onUpgradeClick: PropTypes.func,
 };
+
+LockedPage.displayName = 'LockedPage';
 
 export default LockedPage;
