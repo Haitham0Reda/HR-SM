@@ -8,6 +8,8 @@ import cookieParser from 'cookie-parser';
 import { tenantContext } from './shared/middleware/tenantContext.js';
 import { loadCoreRoutes, loadModuleRoutes } from './config/moduleRegistry.js';
 import { MODULES } from './shared/constants/modules.js';
+import moduleInitializer from './core/registry/moduleInitializer.js';
+import { namespaceValidator, validateRouteNamespaces, logValidationResults } from './core/middleware/namespaceValidator.js';
 
 // Import existing routes
 import {
@@ -81,7 +83,12 @@ app.use(mongoSanitize());
 // Compression
 app.use(compression());
 
-// Tenant context middleware (applies to all routes)
+// Namespace validation middleware (development mode only)
+if (process.env.NODE_ENV === 'development') {
+    app.use(namespaceValidator({ strict: false }));
+}
+
+// Tenant context middleware (applies to tenant routes only, not platform routes)
 app.use(tenantContext);
 
 // Health check
@@ -93,14 +100,68 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Initialize module system
+export const initializeModuleSystem = async (options = {}) => {
+    console.log('🔧 Initializing module system...');
+
+    try {
+        // Initialize the module registry, loader, and feature flags
+        await moduleInitializer.initialize(app, options);
+
+        console.log('✓ Module system initialized');
+        
+        // Log module statistics
+        const stats = moduleInitializer.getStats();
+        console.log(`✓ Registered ${stats.registry.totalModules} modules`);
+        console.log(`✓ Modules: ${stats.registry.modules.join(', ')}`);
+    } catch (error) {
+        console.error('✗ Failed to initialize module system:', error);
+        throw error;
+    }
+};
+
 // Initialize routes
 export const initializeRoutes = async () => {
     console.log('🔧 Initializing routes...');
 
     // ========================================
-    // NEW MODULAR SYSTEM ROUTES (v1)
+    // PLATFORM LAYER ROUTES (/api/platform/*)
     // ========================================
+    // Platform administration routes - require Platform JWT
+    // These routes are for system administrators managing tenants, subscriptions, and modules
+    
+    try {
+        // Platform authentication
+        const platformAuthRoutes = await import('./platform/auth/routes/platformAuthRoutes.js');
+        app.use('/api/platform/auth', platformAuthRoutes.default);
+        
+        // Tenant management
+        const tenantRoutes = await import('./platform/tenants/routes/tenantRoutes.js');
+        app.use('/api/platform/tenants', tenantRoutes.default);
+        
+        // Subscription management
+        const subscriptionRoutes = await import('./platform/subscriptions/routes/subscriptionRoutes.js');
+        app.use('/api/platform/subscriptions', subscriptionRoutes.default);
+        
+        // Module management
+        const moduleRoutes = await import('./platform/modules/routes/moduleRoutes.js');
+        app.use('/api/platform/modules', moduleRoutes.default);
+        
+        // System health and metrics
+        const systemRoutes = await import('./platform/system/routes/systemRoutes.js');
+        app.use('/api/platform/system', systemRoutes.default);
+        
+        console.log('✓ Platform routes loaded (/api/platform/*)');
+    } catch (error) {
+        console.warn('⚠️  Platform routes not available:', error.message);
+    }
 
+    // ========================================
+    // TENANT APPLICATION ROUTES (/api/v1/*)
+    // ========================================
+    // Tenant-scoped routes - require Tenant JWT and automatic tenant filtering
+    
+    // NEW MODULAR SYSTEM ROUTES
     // Load core HR module (always enabled)
     await loadCoreRoutes(app);
 
@@ -109,68 +170,66 @@ export const initializeRoutes = async () => {
 
     console.log('✓ Modular routes loaded');
 
-    // ========================================
-    // EXISTING LEGACY ROUTES
-    // ========================================
+    // EXISTING LEGACY ROUTES (Tenant-scoped)
     // These routes maintain backward compatibility
     // TODO: Gradually migrate these to the modular system
 
     // Authentication & User Management
-    app.use('/api/auth', authRoutes); // Legacy auth (password reset, etc.)
-    app.use('/api/users', userRoutes); // Legacy user routes
+    app.use('/api/v1/auth', authRoutes); // Legacy auth (password reset, etc.)
+    app.use('/api/v1/users', userRoutes); // Legacy user routes
 
     // HR Core Features
-    app.use('/api/departments', departmentRoutes);
-    app.use('/api/positions', positionRoutes);
-    app.use('/api/dashboard', dashboardRoutes);
-    app.use('/api/analytics', analyticsRoutes);
+    app.use('/api/v1/departments', departmentRoutes);
+    app.use('/api/v1/positions', positionRoutes);
+    app.use('/api/v1/dashboard', dashboardRoutes);
+    app.use('/api/v1/analytics', analyticsRoutes);
 
     // Attendance & Time
-    app.use('/api/attendance', attendanceRoutes);
-    app.use('/api/attendance-devices', attendanceDeviceRoutes);
-    app.use('/api/forget-check', forgetCheckRoutes);
+    app.use('/api/v1/attendance', attendanceRoutes);
+    app.use('/api/v1/attendance-devices', attendanceDeviceRoutes);
+    app.use('/api/v1/forget-check', forgetCheckRoutes);
 
     // Leave Management
-    app.use('/api/missions', missionRoutes);
-    app.use('/api/mixed-vacations', mixedVacationRoutes);
-    app.use('/api/permission-requests', permissionRequestRoutes);
-    app.use('/api/vacations', vacationRoutes);
-    app.use('/api/sick-leaves', sickLeaveRoutes);
-    app.use('/api/overtime', overtimeRoutes);
+    app.use('/api/v1/missions', missionRoutes);
+    app.use('/api/v1/mixed-vacations', mixedVacationRoutes);
+    app.use('/api/v1/permission-requests', permissionRequestRoutes);
+    app.use('/api/v1/vacations', vacationRoutes);
+    app.use('/api/v1/sick-leaves', sickLeaveRoutes);
+    app.use('/api/v1/overtime', overtimeRoutes);
 
     // Documents
-    app.use('/api/documents', documentRoutes);
-    app.use('/api/document-templates', documentTemplateRoutes);
-    app.use('/api/hardcopies', hardcopyRoutes);
+    app.use('/api/v1/documents', documentRoutes);
+    app.use('/api/v1/document-templates', documentTemplateRoutes);
+    app.use('/api/v1/hardcopies', hardcopyRoutes);
 
     // Payroll
-    app.use('/api/payroll', payrollRoutes);
+    app.use('/api/v1/payroll', payrollRoutes);
 
     // Communication
-    app.use('/api/announcements', announcementRoutes);
-    app.use('/api/notifications', notificationRoutes);
-    app.use('/api/surveys', surveyRoutes);
+    app.use('/api/v1/announcements', announcementRoutes);
+    app.use('/api/v1/notifications', notificationRoutes);
+    app.use('/api/v1/surveys', surveyRoutes);
 
     // Events & Holidays
-    app.use('/api/events', eventRoutes);
-    app.use('/api/holidays', holidayRoutes);
+    app.use('/api/v1/events', eventRoutes);
+    app.use('/api/v1/holidays', holidayRoutes);
 
     // Reports & Requests
-    app.use('/api/reports', reportRoutes);
-    app.use('/api/requests', requestRoutes);
+    app.use('/api/v1/reports', reportRoutes);
+    app.use('/api/v1/requests', requestRoutes);
 
     // Security & Permissions
-    app.use('/api/permissions', permissionRoutes);
-    app.use('/api/permission-audits', permissionAuditRoutes);
-    app.use('/api/security-audits', securityAuditRoutes);
-    app.use('/api/security-settings', securitySettingsRoutes);
-    app.use('/api/roles', roleRoutes);
+    app.use('/api/v1/permissions', permissionRoutes);
+    app.use('/api/v1/permission-audits', permissionAuditRoutes);
+    app.use('/api/v1/security-audits', securityAuditRoutes);
+    app.use('/api/v1/security-settings', securitySettingsRoutes);
+    app.use('/api/v1/roles', roleRoutes);
 
     // System Management
-    app.use('/api/backups', backupRoutes);
-    app.use('/api/backup-executions', backupExecutionRoutes);
-    app.use('/api/theme', themeRoutes);
-    app.use('/api/feature-flags', featureFlagRoutes);
+    app.use('/api/v1/backups', backupRoutes);
+    app.use('/api/v1/backup-executions', backupExecutionRoutes);
+    app.use('/api/v1/theme', themeRoutes);
+    app.use('/api/v1/feature-flags', featureFlagRoutes);
 
     // License Management
     app.use('/api/v1/licenses', licenseRoutes);
@@ -183,10 +242,16 @@ export const initializeRoutes = async () => {
     app.use('/api/v1/metrics', metricsRoutes);
 
     // Resigned Employees
-    app.use('/api/resigned-employees', resignedEmployeeRoutes);
+    app.use('/api/v1/resigned-employees', resignedEmployeeRoutes);
 
-    console.log('✓ Legacy routes loaded');
+    console.log('✓ Tenant routes loaded (/api/v1/*)');
     console.log('✓ All routes initialized');
+
+    // Validate route namespaces (development mode only)
+    if (process.env.NODE_ENV === 'development') {
+        const validationResults = validateRouteNamespaces(app);
+        logValidationResults(validationResults);
+    }
 
     // 404 handler - must be added AFTER all routes
     app.use((req, res) => {
@@ -207,5 +272,8 @@ export const initializeRoutes = async () => {
         });
     });
 };
+
+// Export module initializer for use in other parts of the application
+export { moduleInitializer };
 
 export default app;

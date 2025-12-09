@@ -4,10 +4,29 @@ This directory contains migration scripts for various system upgrades and data t
 
 ## Available Migrations
 
-### 1. Leave System Migration
+### 1. Multi-Tenancy Migration (001_add_tenant_id.js)
+**NEW** - Adds tenantId field to all tenant-scoped collections and creates compound indexes for multi-tenancy support.
+
+**Purpose**: Enable multi-tenancy by adding tenant isolation at the database level
+
+**Usage**:
+```bash
+# Run migration
+node server/scripts/migrations/001_add_tenant_id.js
+
+# Rollback migration
+node server/scripts/migrations/001_add_tenant_id.js rollback
+
+# Test migration
+node server/scripts/migrations/test_001_migration.js
+```
+
+**Documentation**: See `001_add_tenant_id_README.md` for detailed information
+
+### 2. Leave System Migration
 Scripts to migrate data from the monolithic Leave model to specialized models (Mission, SickLeave, Vacation).
 
-### 2. Productization Migration
+### 3. Productization Migration
 Scripts to migrate existing deployments to the new license-based productization system.
 
 ## Overview

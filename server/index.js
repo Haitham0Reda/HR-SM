@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import http from 'http';
-import app, { initializeRoutes } from './app.js';
+import app, { initializeRoutes, initializeModuleSystem } from './app.js';
 import connectDatabase from './config/database.js';
 import { ensureDirectoryExists } from './shared/utils/fileUtils.js';
 import licenseFileLoader from './services/licenseFileLoader.service.js';
@@ -41,6 +41,13 @@ const startServer = async () => {
         // Setup directories
         await setupDirectories();
 
+        // Initialize module system (discover and register all modules)
+        const redisClient = redisStats.enabled && redisStats.connected ? redisService.getClient() : null;
+        await initializeModuleSystem({
+            redisClient,
+            cacheTTL: 300 // 5 minutes
+        });
+
         // Initialize license file loader (On-Premise mode)
         if (process.env.DEPLOYMENT_MODE === 'on-premise') {
             console.log('🔐 Initializing On-Premise license file loader...');
@@ -54,7 +61,7 @@ const startServer = async () => {
             }
         }
 
-        // Initialize routes
+        // Initialize routes (legacy and modular)
         await initializeRoutes();
 
         // Create HTTP server

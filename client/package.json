@@ -1,84 +1,35 @@
 {
-  "name": "client",
+  "name": "hrms-client",
   "version": "0.1.0",
   "private": true,
-  "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@fontsource/roboto": "^5.2.8",
-    "@mui/icons-material": "^7.3.4",
-    "@mui/material": "^7.3.4",
-    "@mui/styled-engine-sc": "^7.3.3",
-    "@mui/x-data-grid": "^8.16.0",
-    "@mui/x-date-pickers": "^8.16.0",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^13.5.0",
-    "axios": "^1.13.2",
-    "bad-words": "^4.0.0",
-    "canvas-confetti": "^1.9.4",
-    "crypto-js": "^4.2.0",
-    "date-fns": "^4.1.0",
-    "date-holidays": "^3.26.5",
-    "dayjs": "^1.11.18",
-    "dompurify": "^3.3.0",
-    "js-cookie": "^3.0.5",
-    "jszip": "^3.10.1",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.5",
-    "react-scripts": "5.0.1",
-    "recharts": "^3.4.1",
-    "secure-ls": "^2.0.0",
-    "styled-components": "^6.1.19",
-    "web-vitals": "^2.1.4",
-    "zod": "^4.1.13"
-  },
+  "workspaces": [
+    "hr-app",
+    "platform-admin",
+    "shared"
+  ],
   "scripts": {
-    "start": "craco start",
-    "build": "craco build",
-    "test": "craco test",
-    "eject": "react-scripts eject",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "start:hr": "cd hr-app && npm start",
+    "start:platform": "cd platform-admin && npm start",
+    "start:both": "concurrently --names \"HR-APP,PLATFORM\" --prefix-colors \"cyan,magenta\" \"npm run start:hr\" \"npm run start:platform\"",
+    "dev": "npm run start:both",
+    "build:hr": "cd hr-app && npm run build",
+    "build:platform": "cd platform-admin && npm run build",
+    "build:all": "npm run build:hr && npm run build:platform",
+    "build:production": "cross-env NODE_ENV=production npm run build:all",
+    "test:hr": "cd hr-app && npm test -- --run",
+    "test:platform": "cd platform-admin && npm test -- --run",
+    "test:all": "npm run test:hr && npm run test:platform",
+    "install:all": "npm install && cd hr-app && npm install && cd ../platform-admin && npm install && cd ../shared && npm install",
+    "clean": "npm run clean:hr && npm run clean:platform",
+    "clean:hr": "cd hr-app && rimraf build node_modules/.cache",
+    "clean:platform": "cd platform-admin && rimraf build node_modules/.cache",
+    "lint:hr": "cd hr-app && npm run lint",
+    "lint:platform": "cd platform-admin && npm run lint",
+    "lint:all": "npm run lint:hr && npm run lint:platform"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.28.5",
-    "@babel/preset-react": "^7.28.5",
-    "@craco/craco": "^7.1.0",
-    "@storybook/addon-essentials": "^8.6.14",
-    "@storybook/addon-interactions": "^8.6.14",
-    "@storybook/addon-links": "^8.6.14",
-    "@storybook/blocks": "^8.6.14",
-    "@storybook/react": "^8.6.14",
-    "@storybook/react-webpack5": "^8.6.14",
-    "@storybook/test": "^8.6.14",
-    "babel-loader": "^10.0.0",
-    "fast-check": "^4.3.0",
-    "prop-types": "^15.8.1",
-    "storybook": "^8.6.14",
-    "webpack": "^5.103.0"
-  },
-  "overrides": {
-    "glob": "^10.0.0"
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "rimraf": "^5.0.5"
   }
 }

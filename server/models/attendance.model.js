@@ -3,6 +3,12 @@ import mongoose from 'mongoose';
 import { isWeekend, isHoliday, getHolidayInfo } from '../utils/holidayChecker.js';
 
 const attendanceSchema = new mongoose.Schema({
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        index: true,
+        trim: true
+    },
     employee: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -571,17 +577,18 @@ attendanceSchema.statics.getCurrentlyPresent = function (departmentId = null) {
         .sort({ 'checkIn.time': -1 });
 };
 
-// Compound indexes for better performance
-attendanceSchema.index({ employee: 1, date: 1 }, { unique: true });
-attendanceSchema.index({ employee: 1, status: 1 });
-attendanceSchema.index({ department: 1, date: 1 });
-attendanceSchema.index({ department: 1, status: 1 });
-attendanceSchema.index({ date: 1 });
-attendanceSchema.index({ adjustedByPermission: 1 });
-attendanceSchema.index({ 'flags.isLate': 1 });
-attendanceSchema.index({ 'flags.isEarlyDeparture': 1 });
-attendanceSchema.index({ 'flags.needsApproval': 1 });
-attendanceSchema.index({ leave: 1 });
-attendanceSchema.index({ isWorkingDay: 1 });
+// Compound indexes for tenant isolation and performance
+attendanceSchema.index({ tenantId: 1, employee: 1, date: 1 }, { unique: true });
+attendanceSchema.index({ tenantId: 1, employee: 1, status: 1 });
+attendanceSchema.index({ tenantId: 1, department: 1, date: 1 });
+attendanceSchema.index({ tenantId: 1, department: 1, status: 1 });
+attendanceSchema.index({ tenantId: 1, date: 1 });
+attendanceSchema.index({ tenantId: 1, status: 1 });
+attendanceSchema.index({ tenantId: 1, adjustedByPermission: 1 });
+attendanceSchema.index({ tenantId: 1, 'flags.isLate': 1 });
+attendanceSchema.index({ tenantId: 1, 'flags.isEarlyDeparture': 1 });
+attendanceSchema.index({ tenantId: 1, 'flags.needsApproval': 1 });
+attendanceSchema.index({ tenantId: 1, leave: 1 });
+attendanceSchema.index({ tenantId: 1, isWorkingDay: 1 });
 
 export default mongoose.model('Attendance', attendanceSchema);
