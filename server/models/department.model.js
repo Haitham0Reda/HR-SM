@@ -6,6 +6,12 @@
 import mongoose from 'mongoose';
 
 const departmentSchema = new mongoose.Schema({
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        index: true,
+        trim: true
+    },
     // Basic Information
     name: {
         type: String,
@@ -22,7 +28,7 @@ const departmentSchema = new mongoose.Schema({
     // Department Code
     code: {
         type: String,
-        unique: true,
+        // unique constraint moved to compound index below
         sparse: true,
         trim: true,
         uppercase: true
@@ -112,11 +118,12 @@ const departmentSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Indexes
-departmentSchema.index({ name: 1 });
-departmentSchema.index({ parentDepartment: 1 });
-departmentSchema.index({ manager: 1 });
-departmentSchema.index({ isActive: 1, parentDepartment: 1 });
+// Compound indexes for tenant isolation and performance
+departmentSchema.index({ tenantId: 1, name: 1 }, { unique: true });
+departmentSchema.index({ tenantId: 1, code: 1 }, { unique: true, sparse: true });
+departmentSchema.index({ tenantId: 1, parentDepartment: 1 });
+departmentSchema.index({ tenantId: 1, manager: 1 });
+departmentSchema.index({ tenantId: 1, isActive: 1, parentDepartment: 1 });
 
 // Virtual for full name (with parent)
 departmentSchema.virtual('fullName').get(function () {

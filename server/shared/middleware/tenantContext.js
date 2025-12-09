@@ -1,5 +1,15 @@
 // Middleware to inject tenant context into requests
 export const tenantContext = (req, res, next) => {
+    // Skip tenant context for platform routes - they don't need tenant filtering
+    if (req.path.startsWith('/api/platform')) {
+        return next();
+    }
+    
+    // Skip tenant context for health check and non-API routes
+    if (req.path === '/health' || !req.path.startsWith('/api')) {
+        return next();
+    }
+    
     // Extract tenantId from authenticated user
     if (req.user && req.user.tenantId) {
         req.tenantId = req.user.tenantId;

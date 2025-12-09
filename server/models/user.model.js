@@ -5,20 +5,26 @@ import { getRolePermissions } from './permission.system.js';
 import Role from './role.model.js';
 
 const userSchema = new mongoose.Schema({
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        index: true,
+        trim: true
+    },
     employeeId: {
         type: String,
-        required: false,
-        unique: true
+        required: false
+        // unique constraint moved to compound index below
     },
     username: {
         type: String,
-        required: true,
-        unique: true
+        required: true
+        // unique constraint moved to compound index below
     },
     email: {
         type: String,
-        required: true,
-        unique: true
+        required: true
+        // unique constraint moved to compound index below
     },
     password: {
         type: String,
@@ -247,5 +253,13 @@ userSchema.virtual('name').get(function () {
 // Ensure virtuals are included in JSON
 userSchema.set('toJSON', { virtuals: true });
 userSchema.set('toObject', { virtuals: true });
+
+// Compound indexes for tenant isolation and performance
+userSchema.index({ tenantId: 1, email: 1 }, { unique: true });
+userSchema.index({ tenantId: 1, username: 1 }, { unique: true });
+userSchema.index({ tenantId: 1, employeeId: 1 }, { unique: true, sparse: true });
+userSchema.index({ tenantId: 1, role: 1 });
+userSchema.index({ tenantId: 1, department: 1 });
+userSchema.index({ tenantId: 1, status: 1 });
 
 export default mongoose.model('User', userSchema);

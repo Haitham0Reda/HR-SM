@@ -1,0 +1,58 @@
+name: HR-Core Boundary Check
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'server/modules/hr-core/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'server/modules/hr-core/**'
+
+jobs:
+  check-boundaries:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Check HR-Core boundaries
+      run: |
+        echo "🔍 Checking HR-Core module boundaries..."
+        npx eslint server/modules/hr-core/**/*.js --quiet
+        
+        if [ $? -ne 0 ]; then
+          echo "❌ HR-Core boundary violation detected!"
+          echo "🚨 CRITICAL: HR-Core CANNOT depend on ANY optional module!"
+          echo "HR-Core must work standalone. This is a sacred boundary."
+          exit 1
+        fi
+        
+        echo "✅ HR-Core boundaries are intact"
+        
+    - name: Verify no imports from optional modules
+      run: |
+        echo "🔍 Scanning for forbidden imports..."
+        
+        # Check for imports from optional modules
+        FORBIDDEN_IMPORTS=$(grep -r "from.*modules/\(tasks\|payroll\|documents\|reports\|notifications\|clinic\|email-service\)" server/modules/hr-core/ || true)
+        
+        if [ -n "$FORBIDDEN_IMPORTS" ]; then
+          echo "❌ Found forbidden imports in HR-Core:"
+          echo "$FORBIDDEN_IMPORTS"
+          echo ""
+          echo "🚨 CRITICAL: HR-Core CANNOT import from optional modules!"
+          echo "Allowed imports: core/, utils/, middleware/, models/ (shared)"
+          exit 1
+        fi
+        
+        echo "✅ No forbidden imports found"
