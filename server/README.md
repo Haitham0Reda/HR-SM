@@ -1,532 +1,822 @@
-# HR-SM Server API Documentation
+# HR-SM Server - Enterprise SaaS Backend
 
 ## Overview
 
-The HR-SM backend is built with Node.js, Express.js, and MongoDB, providing a comprehensive RESTful API for human resources management.
+The HR-SM backend is a modern, enterprise-grade multi-tenant SaaS platform built with Node.js, Express.js, and MongoDB. It features a modular plugin architecture, comprehensive tenant isolation, and dual-namespace API design for both tenant operations and platform administration.
 
-## Base URL
+## Architecture
+
+### Multi-Tenant SaaS Platform
+
+The server implements a complete multi-tenant architecture with:
+
+- **Tenant Isolation**: Automatic data separation at the database level
+- **Dual Namespace**: Separate API namespaces for tenants and platform admin
+- **Modular System**: Plugin-based architecture with dynamic module loading
+- **Platform Administration**: Complete tenant, subscription, and system management
+
+### API Namespaces
+
+#### Tenant API (`/api/*`)
+Used by tenant applications (HR users, employees, managers)
+- Authentication: Tenant JWT tokens
+- Scope: Single tenant data only
+- Automatic tenant context injection
+
+#### Platform API (`/platform/*`)
+Used by platform administrators
+- Authentication: Platform JWT tokens
+- Scope: Cross-tenant operations
+- System-wide management capabilities
+
+## Project Structure
 
 ```
-Development: http://localhost:5000/api
-Production: https://your-domain.com/api
+server/
+├── core/                          # Core infrastructure
+│   ├── auth/                      # Authentication systems
+│   │   ├── platformAuth.js        # Platform admin authentication
+│   │   └── tenantAuth.js          # Tenant authentication
+│   ├── config/                    # Configuration management
+│   ├── errors/                    # Error handling
+│   │   ├── AppError.js            # Custom error class
+│   │   ├── errorHandler.js        # Global error handler
+│   │   └── errorTypes.js          # Error type definitions
+│   ├── logging/                   # Centralized logging
+│   │   └── logger.js              # Winston logger configuration
+│   ├── middleware/                # Core middleware
+│   │   ├── tenantContext.js       # Tenant context injection
+│   │   ├── moduleGuard.js         # Module access control
+│   │   ├── namespaceValidator.js  # API namespace validation
+│   │   ├── platformAuth.js        # Platform authentication
+│   │   ├── platformAuthorization.js # Platform RBAC
+│   │   ├── requestLogger.js       # Request logging
+│   │   ├── alerting.js            # System alerting
+│   │   └── usageTracking.js       # Usage metrics
+│   └── registry/                  # Module registry
+│       ├── moduleRegistry.js      # Module registration
+│       ├── moduleLoader.js        # Dynamic module loading
+│       ├── dependencyResolver.js  # Module dependencies
+│       ├── featureFlagService.js  # Feature flags
+│       └── moduleInitializer.js   # Module initialization
+│
+├── modules/                       # Business modules
+│   ├── hr-core/                   # Core HR functionality
+│   │   ├── attendance/            # Attendance management
+│   │   ├── backup/                # Backup operations
+│   │   ├── holidays/              # Holiday management
+│   │   ├── missions/              # Mission tracking
+│   │   ├── overtime/              # Overtime management
+│   │   ├── requests/              # Request management
+│   │   ├── vacations/             # Vacation management
+│   │   ├── services/              # Shared services
+│   │   └── module.config.js       # Module configuration
+│   ├── clinic/                    # Medical clinic module
+│   │   ├── models/                # Medical data models
+│   │   ├── services/              # Clinic services
+│   │   ├── controllers/           # API controllers
+│   │   ├── routes/                # API routes
+│   │   └── module.config.js       # Module configuration
+│   ├── email-service/             # Email service module
+│   │   ├── providers/             # Email providers (SES, SMTP, SendGrid)
+│   │   ├── templates/             # Email templates
+│   │   ├── services/              # Email service
+│   │   └── module.config.js       # Module configuration
+│   └── tasks/                     # Task management module
+│       └── module.config.js       # Module configuration
+│
+├── platform/                      # Platform administration
+│   ├── auth/                      # Platform authentication
+│   │   ├── controllers/           # Auth controllers
+│   │   ├── routes/                # Auth routes
+│   │   └── services/              # Auth services
+│   ├── tenants/                   # Tenant management
+│   │   ├── models/                # Tenant models
+│   │   ├── controllers/           # Tenant controllers
+│   │   ├── routes/                # Tenant routes
+│   │   └── services/              # Tenant services
+│   ├── subscriptions/             # Subscription management
+│   │   ├── models/                # Subscription models
+│   │   ├── controllers/           # Subscription controllers
+│   │   ├── routes/                # Subscription routes
+│   │   └── services/              # Subscription services
+│   ├── modules/                   # Module management
+│   │   ├── controllers/           # Module controllers
+│   │   ├── routes/                # Module routes
+│   │   └── services/              # Module services
+│   └── system/                    # System management
+│       ├── controllers/           # System controllers
+│       ├── routes/                # System routes
+│       └── services/              # System services
+│
+├── testing/                       # Test suites
+│   ├── core/                      # Core tests
+│   │   ├── auth.test.js           # Authentication tests
+│   │   ├── moduleGuard.test.js    # Module guard tests
+│   │   ├── dependencyResolver.test.js # Dependency tests
+│   │   ├── tenantIsolation.property.test.js # Tenant isolation
+│   │   └── errorHandler.test.js   # Error handling tests
+│   └── middleware/                # Middleware tests
+│       └── namespaceValidator.test.js # Namespace tests
+│
+├── scripts/                       # Utility scripts
+│   └── migrations/                # Database migrations
+│
+├── app.js                         # Tenant application setup
+├── platformApp.js                 # Platform application setup
+├── tenantApp.js                   # Tenant routes configuration
+├── server.js                      # Main server entry point
+└── index.js                       # Application bootstrap
 ```
 
-## Authentication
+## Key Features
 
-All protected endpoints require a JWT token in the Authorization header:
+### 1. Multi-Tenancy
+
+Complete tenant isolation with automatic data scoping:
+
+```javascript
+// Automatic tenant filtering in all queries
+const users = await User.find({ tenantId: req.tenant.id });
+
+// Tenant context middleware
+app.use('/api', tenantContext);
+
+// All tenant data automatically scoped
+```
+
+### 2. Modular Architecture
+
+Plugin-based system with dynamic loading:
+
+```javascript
+// Module configuration
+export default {
+  name: 'hr-core',
+  version: '1.0.0',
+  dependencies: ['email-service'],
+  routes: './routes',
+  models: './models',
+  permissions: ['hr.read', 'hr.write']
+};
+
+// Dynamic module loading
+await moduleRegistry.loadModule('hr-core');
+```
+
+### 3. Dual Namespace API
+
+Separate namespaces for different user types:
 
 ```
-Authorization: Bearer <your_jwt_token>
+Tenant API:
+  /api/v1/hr-core/*        - HR operations
+  /api/v1/tasks/*          - Task management
+  /api/v1/clinic/*         - Medical services
+
+Platform API:
+  /platform/auth/*         - Platform authentication
+  /platform/tenants/*      - Tenant management
+  /platform/subscriptions/* - Subscription management
+  /platform/modules/*      - Module management
+  /platform/system/*       - System monitoring
 ```
 
-### Authentication Endpoints
+### 4. Centralized Logging
 
-#### Login
+Winston-based structured logging:
 
+```javascript
+logger.info('User logged in', {
+  userId: user.id,
+  tenantId: tenant.id,
+  correlationId: req.correlationId
+});
+
+logger.error('Database error', {
+  error: err.message,
+  stack: err.stack,
+  context: { operation: 'findUser' }
+});
+```
+
+### 5. Module Guards
+
+Runtime access control for modules:
+
+```javascript
+// Protect routes with module guard
+router.get('/tasks', 
+  authenticate,
+  moduleGuard('tasks'),
+  taskController.list
+);
+
+// Automatic module availability check
+```
+
+### 6. Feature Flags
+
+Per-tenant feature control:
+
+```javascript
+// Check feature availability
+const isEnabled = await featureFlagService.isEnabled(
+  tenantId,
+  'tasks.advanced-reporting'
+);
+
+// Enable/disable features dynamically
+await featureFlagService.enable(tenantId, 'clinic');
+```
+
+## Installation
+
+### Prerequisites
+
+- Node.js 18+ 
+- MongoDB 6.0+
+- Redis (optional, for caching)
+
+### Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+
+# Edit .env with your settings
+nano .env
+
+# Run database migrations
+npm run migrate
+
+# Start development server
+npm run dev
+
+# Start production server
+npm start
+```
+
+### Environment Variables
+
+```env
+# Server
+PORT=5000
+NODE_ENV=development
+
+# Database
+MONGODB_URI=mongodb://localhost:27017/hrms
+MONGODB_TEST_URI=mongodb://localhost:27017/hrms-test
+
+# JWT
+JWT_SECRET=your-super-secret-key-change-this
+JWT_EXPIRE=7d
+PLATFORM_JWT_SECRET=your-platform-secret-key
+
+# Redis (optional)
+REDIS_URL=redis://localhost:6379
+
+# Email
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-password
+
+# AWS SES (optional)
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-key
+AWS_SECRET_ACCESS_KEY=your-secret
+
+# Logging
+LOG_LEVEL=info
+LOG_DIR=./logs
+
+# File Upload
+MAX_FILE_SIZE=10485760
+UPLOAD_PATH=./uploads
+
+# Monitoring
+ENABLE_METRICS=true
+METRICS_PORT=9090
+```
+
+## API Documentation
+
+### Authentication
+
+#### Tenant Login
 ```http
-POST /api/users/login
+POST /api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "user@example.com",
-  "password": "password123"
+  "email": "user@company.com",
+  "password": "password123",
+  "tenantId": "company1"
 }
-```
 
-**Response:**
-```json
+Response:
 {
   "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token": "eyJhbGciOiJIUzI1NiIs...",
   "user": {
-    "_id": "507f1f77bcf86cd799439011",
-    "name": "John Doe",
-    "email": "user@example.com",
-    "role": "employee"
+    "id": "user123",
+    "email": "user@company.com",
+    "role": "employee",
+    "tenantId": "company1"
   }
 }
 ```
 
-#### Register
-
+#### Platform Login
 ```http
-POST /api/users/register
+POST /platform/auth/login
 Content-Type: application/json
 
 {
-  "name": "John Doe",
-  "email": "user@example.com",
-  "password": "password123",
-  "role": "employee"
+  "email": "admin@platform.com",
+  "password": "admin123"
 }
-```
 
-## API Endpoints
-
-### Users
-
-#### Get All Users
-
-```http
-GET /api/users
-Authorization: Bearer <token>
-```
-
-**Query Parameters:**
-- `page` (number): Page number for pagination
-- `limit` (number): Items per page
-- `search` (string): Search by name or email
-- `role` (string): Filter by role
-- `department` (string): Filter by department ID
-
-#### Get User by ID
-
-```http
-GET /api/users/:id
-Authorization: Bearer <token>
-```
-
-#### Create User
-
-```http
-POST /api/users
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "name": "Jane Smith",
-  "email": "jane@example.com",
-  "password": "password123",
-  "role": "employee",
-  "department": "507f1f77bcf86cd799439011",
-  "position": "507f1f77bcf86cd799439012"
-}
-```
-
-#### Update User
-
-```http
-PUT /api/users/:id
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "name": "Jane Smith Updated",
-  "department": "507f1f77bcf86cd799439013"
-}
-```
-
-#### Delete User
-
-```http
-DELETE /api/users/:id
-Authorization: Bearer <token>
-```
-
-#### Bulk Create Users
-
-```http
-POST /api/users/bulk-create
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
-
-file: <excel_file>
-```
-
-### Departments
-
-#### Get All Departments
-
-```http
-GET /api/departments
-Authorization: Bearer <token>
-```
-
-#### Create Department
-
-```http
-POST /api/departments
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "name": "Engineering",
-  "description": "Software development team",
-  "manager": "507f1f77bcf86cd799439011"
-}
-```
-
-### Positions
-
-#### Get All Positions
-
-```http
-GET /api/positions
-Authorization: Bearer <token>
-```
-
-#### Create Position
-
-```http
-POST /api/positions
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "title": "Senior Developer",
-  "description": "Lead development projects",
-  "department": "507f1f77bcf86cd799439011"
-}
-```
-
-### Attendance
-
-#### Check In
-
-```http
-POST /api/attendance/check-in
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "location": "Office",
-  "notes": "On time"
-}
-```
-
-#### Check Out
-
-```http
-POST /api/attendance/check-out
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "notes": "Completed tasks"
-}
-```
-
-#### Get Attendance Records
-
-```http
-GET /api/attendance
-Authorization: Bearer <token>
-```
-
-**Query Parameters:**
-- `userId` (string): Filter by user ID
-- `startDate` (date): Start date for range
-- `endDate` (date): End date for range
-- `status` (string): Filter by status
-
-### Leave Management
-
-#### Create Leave Request
-
-```http
-POST /api/leaves
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "type": "annual",
-  "startDate": "2024-12-10",
-  "endDate": "2024-12-15",
-  "reason": "Family vacation",
-  "halfDay": false
-}
-```
-
-**Leave Types:**
-- `annual`: Annual leave
-- `casual`: Casual leave
-- `sick`: Sick leave
-
-#### Get Leave Requests
-
-```http
-GET /api/leaves
-Authorization: Bearer <token>
-```
-
-**Query Parameters:**
-- `userId` (string): Filter by user ID
-- `status` (string): pending, approved, rejected
-- `type` (string): Leave type
-
-#### Approve/Reject Leave
-
-```http
-PUT /api/leaves/:id/status
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "status": "approved",
-  "comments": "Approved for vacation"
-}
-```
-
-### Permissions
-
-#### Create Permission Request
-
-```http
-POST /api/permissions
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "type": "late_arrival",
-  "date": "2024-12-05",
-  "duration": 30,
-  "reason": "Doctor appointment"
-}
-```
-
-**Permission Types:**
-- `late_arrival`: Late arrival
-- `early_departure`: Early departure
-- `overtime`: Overtime work
-- `mission`: Business mission
-
-#### Get Permission Requests
-
-```http
-GET /api/permissions
-Authorization: Bearer <token>
-```
-
-### Payroll
-
-#### Get Payroll Records
-
-```http
-GET /api/payroll
-Authorization: Bearer <token>
-```
-
-**Query Parameters:**
-- `userId` (string): Filter by user ID
-- `month` (number): Month (1-12)
-- `year` (number): Year
-
-#### Process Payroll
-
-```http
-POST /api/payroll/process
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "month": 12,
-  "year": 2024,
-  "users": ["507f1f77bcf86cd799439011"]
-}
-```
-
-### Documents
-
-#### Upload Document
-
-```http
-POST /api/documents
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
-
-file: <document_file>
-category: "contract"
-confidential: true
-```
-
-#### Get Documents
-
-```http
-GET /api/documents
-Authorization: Bearer <token>
-```
-
-#### Download Document
-
-```http
-GET /api/documents/:id/download
-Authorization: Bearer <token>
-```
-
-### Notifications
-
-#### Get Notifications
-
-```http
-GET /api/notifications
-Authorization: Bearer <token>
-```
-
-**Query Parameters:**
-- `read` (boolean): Filter by read status
-- `type` (string): Filter by notification type
-
-#### Mark as Read
-
-```http
-PUT /api/notifications/:id/read
-Authorization: Bearer <token>
-```
-
-### Reports
-
-#### Generate Attendance Report
-
-```http
-POST /api/reports/attendance
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "startDate": "2024-12-01",
-  "endDate": "2024-12-31",
-  "department": "507f1f77bcf86cd799439011"
-}
-```
-
-#### Generate Payroll Report
-
-```http
-POST /api/reports/payroll
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "month": 12,
-  "year": 2024
-}
-```
-
-## Response Format
-
-### Success Response
-
-```json
+Response:
 {
   "success": true,
-  "data": { /* response data */ },
-  "message": "Operation successful"
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {
+    "id": "admin123",
+    "email": "admin@platform.com",
+    "role": "super_admin"
+  }
 }
 ```
 
-### Error Response
+### Tenant Management (Platform API)
 
-```json
-{
-  "success": false,
-  "error": "Error message",
-  "details": { /* additional error details */ }
-}
-```
-
-## Status Codes
-
-- `200 OK`: Successful GET request
-- `201 Created`: Successful POST request
-- `400 Bad Request`: Invalid request data
-- `401 Unauthorized`: Missing or invalid token
-- `403 Forbidden`: Insufficient permissions
-- `404 Not Found`: Resource not found
-- `500 Internal Server Error`: Server error
-
-## Rate Limiting
-
-API requests are limited to:
-- **100 requests per minute** for authenticated users
-- **20 requests per minute** for unauthenticated users
-
-## Pagination
-
-List endpoints support pagination:
-
+#### Create Tenant
 ```http
-GET /api/users?page=1&limit=20
+POST /platform/tenants
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+
+{
+  "name": "Acme Corporation",
+  "subdomain": "acme",
+  "plan": "enterprise",
+  "adminEmail": "admin@acme.com",
+  "settings": {
+    "timezone": "America/New_York",
+    "currency": "USD"
+  }
+}
 ```
 
-**Response:**
-```json
+#### List Tenants
+```http
+GET /platform/tenants?page=1&limit=20
+Authorization: Bearer <platform_token>
+```
+
+#### Get Tenant Details
+```http
+GET /platform/tenants/:tenantId
+Authorization: Bearer <platform_token>
+```
+
+#### Update Tenant
+```http
+PATCH /platform/tenants/:tenantId
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+
 {
-  "success": true,
-  "data": [ /* items */ ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
+  "plan": "enterprise",
+  "status": "active"
+}
+```
+
+### Module Management (Platform API)
+
+#### List Available Modules
+```http
+GET /platform/modules
+Authorization: Bearer <platform_token>
+```
+
+#### Enable Module for Tenant
+```http
+POST /platform/modules/:tenantId/enable
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+
+{
+  "moduleId": "clinic",
+  "config": {
+    "maxAppointments": 100
+  }
+}
+```
+
+#### Disable Module
+```http
+POST /platform/modules/:tenantId/disable
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+
+{
+  "moduleId": "clinic"
+}
+```
+
+### System Monitoring (Platform API)
+
+#### Health Check
+```http
+GET /platform/system/health
+Authorization: Bearer <platform_token>
+
+Response:
+{
+  "status": "healthy",
+  "uptime": 86400,
+  "database": "connected",
+  "redis": "connected",
+  "memory": {
+    "used": "256MB",
+    "total": "512MB"
+  }
+}
+```
+
+#### Usage Metrics
+```http
+GET /platform/system/metrics
+Authorization: Bearer <platform_token>
+
+Response:
+{
+  "tenants": {
     "total": 150,
-    "pages": 8
+    "active": 142,
+    "trial": 8
+  },
+  "requests": {
+    "total": 1500000,
+    "perMinute": 250
+  },
+  "storage": {
+    "used": "50GB",
+    "limit": "100GB"
   }
 }
 ```
 
-## Role-Based Access Control
+### Tenant API Examples
 
-### Roles
-
-- **admin**: Full system access
-- **hr**: HR management functions
-- **manager**: Team management functions
-- **employee**: Basic employee functions
-
-### Permission Matrix
-
-| Endpoint | Admin | HR | Manager | Employee |
-|----------|-------|----|---------| ---------|
-| Users (CRUD) | ✅ | ✅ | ❌ | ❌ |
-| Departments | ✅ | ✅ | ✅ | ❌ |
-| Attendance | ✅ | ✅ | ✅ | ✅ |
-| Leave Approval | ✅ | ✅ | ✅ | ❌ |
-| Payroll | ✅ | ✅ | ❌ | ❌ |
-| Reports | ✅ | ✅ | ✅ | ❌ |
-
-## Webhooks
-
-Configure webhooks for real-time notifications:
-
+#### HR Core - Users
 ```http
-POST /api/webhooks
-Authorization: Bearer <token>
+GET /api/v1/hr-core/users
+Authorization: Bearer <tenant_token>
+
+POST /api/v1/hr-core/users
+Authorization: Bearer <tenant_token>
 Content-Type: application/json
 
 {
-  "url": "https://your-app.com/webhook",
-  "events": ["leave.created", "attendance.checked_in"],
-  "secret": "your_webhook_secret"
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@company.com",
+  "role": "employee",
+  "department": "engineering"
+}
+```
+
+#### Tasks Module
+```http
+GET /api/v1/tasks/tasks
+Authorization: Bearer <tenant_token>
+
+POST /api/v1/tasks/tasks
+Authorization: Bearer <tenant_token>
+Content-Type: application/json
+
+{
+  "title": "Complete project documentation",
+  "description": "Write comprehensive docs",
+  "assignedTo": "user123",
+  "dueDate": "2025-12-31",
+  "priority": "high"
+}
+```
+
+#### Clinic Module
+```http
+GET /api/v1/clinic/appointments
+Authorization: Bearer <tenant_token>
+
+POST /api/v1/clinic/appointments
+Authorization: Bearer <tenant_token>
+Content-Type: application/json
+
+{
+  "patientId": "emp123",
+  "doctorId": "doc456",
+  "date": "2025-12-15T10:00:00Z",
+  "type": "checkup"
 }
 ```
 
 ## Testing
 
-Use the provided Postman collection for API testing:
+### Run Tests
 
 ```bash
-# Import collection
-postman-collection.json
+# Run all tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+
+# Run specific test suite
+npm test -- server/testing/core/auth.test.js
+
+# Run in watch mode
+npm test -- --watch
 ```
 
-## Error Handling
+### Test Structure
 
-All errors follow a consistent format:
+```javascript
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import request from 'supertest';
+import app from '../app.js';
 
-```json
-{
-  "success": false,
-  "error": "Validation error",
-  "details": {
-    "field": "email",
-    "message": "Email is required"
-  }
-}
+describe('Tenant API', () => {
+  let token;
+  
+  beforeAll(async () => {
+    // Setup test database
+    await setupTestDB();
+    
+    // Login and get token
+    const response = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'test@test.com', password: 'test123' });
+    
+    token = response.body.token;
+  });
+  
+  test('should list users for tenant', async () => {
+    const response = await request(app)
+      .get('/api/v1/hr-core/users')
+      .set('Authorization', `Bearer ${token}`);
+    
+    expect(response.status).toBe(200);
+    expect(response.body.data).toBeInstanceOf(Array);
+  });
+  
+  afterAll(async () => {
+    await teardownTestDB();
+  });
+});
 ```
+
+## Deployment
+
+### Production Setup
+
+```bash
+# Install production dependencies
+npm install --production
+
+# Build if needed
+npm run build
+
+# Start with PM2
+pm2 start server/index.js --name hrms-api -i max
+
+# Save PM2 configuration
+pm2 save
+
+# Setup PM2 startup
+pm2 startup
+```
+
+### Docker Deployment
+
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --production
+
+COPY server/ ./server/
+COPY .env.production ./.env
+
+EXPOSE 5000
+
+CMD ["node", "server/index.js"]
+```
+
+```bash
+# Build image
+docker build -t hrms-server:latest .
+
+# Run container
+docker run -d \
+  -p 5000:5000 \
+  -e MONGODB_URI=mongodb://mongo:27017/hrms \
+  --name hrms-api \
+  hrms-server:latest
+```
+
+### Environment-Specific Configuration
+
+**Development**
+- Detailed error messages
+- Debug logging
+- Hot reload with nodemon
+- CORS enabled for localhost
+
+**Production**
+- Error logging only
+- Optimized performance
+- Rate limiting enforced
+- Security headers enabled
+- HTTPS required
+
+## Monitoring & Logging
+
+### Application Logs
+
+Logs are stored in `logs/` directory with daily rotation:
+
+```bash
+# View application logs
+tail -f logs/application-2025-12-10.log
+
+# View error logs
+tail -f logs/error-2025-12-10.log
+
+# Search logs
+grep "ERROR" logs/*.log
+```
+
+### Metrics
+
+Prometheus metrics available at `/metrics`:
+
+```bash
+# View metrics
+curl http://localhost:9090/metrics
+```
+
+Available metrics:
+- HTTP request duration
+- Request count by endpoint
+- Active connections
+- Database query time
+- Memory usage
+- CPU usage
+
+### Health Checks
+
+```bash
+# Basic health check
+curl http://localhost:5000/health
+
+# Detailed health check (platform)
+curl -H "Authorization: Bearer <token>" \
+  http://localhost:5000/platform/system/health
+```
+
+## Security
+
+### Authentication & Authorization
+
+- **JWT Tokens**: Secure token-based authentication
+- **Dual Auth Systems**: Separate auth for tenants and platform
+- **Role-Based Access Control**: Fine-grained permissions
+- **Module Guards**: Runtime module access control
+
+### Data Security
+
+- **Tenant Isolation**: Automatic data separation
+- **Encryption**: Passwords hashed with bcrypt
+- **Input Validation**: All inputs validated and sanitized
+- **SQL Injection Protection**: Mongoose parameterized queries
+- **XSS Protection**: Input sanitization and output encoding
+
+### Network Security
+
+- **Rate Limiting**: 100 requests per 15 minutes
+- **CORS**: Configurable cross-origin policies
+- **Security Headers**: Helmet.js for HTTP security
+- **HTTPS**: TLS/SSL in production
+
+## Performance Optimization
+
+### Database
+
+- Indexes on frequently queried fields
+- Connection pooling
+- Query optimization
+- Aggregation pipelines for complex queries
+
+### Caching
+
+- Redis for feature flags (90% query reduction)
+- In-memory caching for static data
+- HTTP caching headers
+
+### API
+
+- Response compression
+- Pagination on list endpoints
+- Lazy loading for modules
+- Efficient serialization
+
+## Troubleshooting
+
+### Common Issues
+
+**Server won't start**
+```bash
+# Check MongoDB connection
+mongo --eval "db.version()"
+
+# Verify environment variables
+cat .env
+
+# Check port availability
+netstat -an | grep 5000
+```
+
+**Module not loading**
+```bash
+# Check module configuration
+cat server/modules/[module-name]/module.config.js
+
+# Verify module is registered
+npm run cli -- list-modules
+```
+
+**Authentication errors**
+```bash
+# Verify JWT secret is set
+echo $JWT_SECRET
+
+# Check token expiry
+# Tokens expire after 7 days by default
+```
+
+### Debug Mode
+
+```bash
+# Enable debug logging
+export LOG_LEVEL=debug
+export NODE_ENV=development
+
+# Start server
+npm run dev
+```
+
+## Contributing
+
+See the main [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
+
+### Adding New Modules
+
+1. Create module structure in `server/modules/[module-name]/`
+2. Add `module.config.js` with module metadata
+3. Implement models, controllers, routes, services
+4. Register module in module registry
+5. Write tests
+6. Update documentation
+
+### Code Standards
+
+- Use ES modules (import/export)
+- Follow existing code structure
+- Add JSDoc comments
+- Write comprehensive tests
+- Use async/await for async operations
+- Handle errors properly
 
 ## Support
 
-For API support:
-- GitHub Issues: [github.com/your-repo/issues](https://github.com/your-repo/issues)
-- Email: api-support@hr-sm.com
-- Documentation: [docs.hr-sm.com](https://docs.hr-sm.com)
+- **Documentation**: See `/docs` folder
+- **Issues**: GitHub Issues
+- **Email**: support@hrms.com
 
-**Last Updated**: December 4, 2024
+## License
+
+MIT License - see [LICENSE](../LICENSE) file
+
+---
+
+**Built with ❤️ for enterprise HR management**
