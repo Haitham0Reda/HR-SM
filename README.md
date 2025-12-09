@@ -1,14 +1,15 @@
-# HR Management System (HRMS)
+# HR Management System (HRMS) - Enterprise SaaS Platform
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-production%20ready-green.svg)
-![Architecture](https://img.shields.io/badge/architecture%20alignment-98%25-brightgreen.svg)
+![Architecture](https://img.shields.io/badge/multi--tenant-SaaS-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![MongoDB](https://img.shields.io/badge/mongodb-%3E%3D6.0.0-green.svg)
+![React](https://img.shields.io/badge/react-18%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Test Coverage](https://img.shields.io/badge/coverage-85%25-yellowgreen.svg)
 
-A comprehensive, production-ready Human Resources Management System built with the MERN stack (MongoDB, Express.js, React, Node.js). Designed with a modular architecture supporting both SaaS (multi-tenant) and On-Premise (single-tenant) deployments from a single codebase.
+A comprehensive, enterprise-grade multi-tenant SaaS platform for Human Resources Management built with the MERN stack (MongoDB, Express.js, React, Node.js). Features a modular plugin architecture, complete tenant isolation, dual-namespace API design, and independent frontend applications for tenant users and platform administrators.
 
 ---
 
@@ -96,22 +97,32 @@ All documentation is located in the [`docs/`](./docs/) folder:
 
 ## ✨ Key Features
 
-### 🏗️ Modular Architecture
+### 🏗️ Enterprise SaaS Architecture
 
-- **8+ Modules**: HR Core, Tasks, Attendance, Leave, Payroll, Documents, Communication, Reporting
-- **Feature Flags**: Per-tenant module control with dynamic enable/disable
-- **Dynamic Loading**: Modules loaded on-demand for optimal performance
-- **Extensible Design**: Easy to add new modules without affecting existing functionality
+- **Multi-Tenant Platform**: Complete tenant isolation with automatic data scoping
+- **Dual Namespace API**: Separate `/api/*` for tenants and `/platform/*` for admin
+- **Modular Plugin System**: Dynamic module loading with dependency resolution
+- **Independent Applications**: Separate React apps for HR users and platform admins
+- **Scalable Design**: Built to support 1000+ tenants with optimal performance
+- **Platform Administration**: Complete tenant, subscription, and system management
+
+### 🔌 Modular Plugin Architecture
+
+- **8+ Business Modules**: HR Core, Tasks, Clinic, Email Service, Attendance, Leave, Payroll, Documents
+- **Dynamic Loading**: Modules loaded on-demand with dependency resolution
+- **Feature Flags**: Per-tenant module control with runtime enable/disable
+- **Module Guards**: Automatic access control based on tenant subscriptions
+- **Extensible Design**: Add new modules without affecting existing functionality
 - **Shared Infrastructure**: Common middleware, models, and utilities across modules
 
-### 🏢 Multi-Tenant Support
+### 🏢 Complete Multi-Tenancy
 
-- **SaaS Mode**: Multiple companies in one database with complete data isolation
-- **On-Premise Mode**: Single-tenant deployment with license validation
-- **Automatic Tenant Filtering**: All queries automatically scoped to tenant
-- **Scalable Architecture**: Designed for 1000+ tenants
-- **Flexible Deployment**: Same codebase for both deployment modes
-- **Tenant Configuration**: Per-tenant settings, modules, and subscriptions
+- **Tenant Isolation**: Automatic data separation at database level
+- **Tenant Context**: Middleware-based tenant identification and scoping
+- **Subscription Management**: Flexible plans with module-based pricing
+- **Tenant Provisioning**: Automated tenant creation and configuration
+- **Usage Tracking**: Per-tenant metrics and resource monitoring
+- **Tenant Configuration**: Customizable settings, branding, and modules
 
 ### 🔐 Enterprise-Grade Security
 
@@ -181,38 +192,63 @@ All documentation is located in the [`docs/`](./docs/) folder:
 
 ## 🛠️ Technology Stack
 
-### Backend
+### Backend (Multi-Tenant SaaS)
 
 - **Runtime**: Node.js 18+ with ES Modules
-- **Framework**: Express.js 4.x
-- **Database**: MongoDB 6.0+ with Mongoose ODM
-- **Authentication**: JWT (jsonwebtoken)
+- **Framework**: Express.js 4.x with dual-namespace routing
+- **Database**: MongoDB 6.0+ with Mongoose ODM and tenant scoping
+- **Authentication**: 
+  - Dual JWT systems (tenant + platform)
+  - Role-based access control (RBAC)
+  - Module-based permissions
+- **Multi-Tenancy**:
+  - Tenant context middleware
+  - Automatic data isolation
+  - Tenant-scoped queries
+- **Module System**:
+  - Dynamic module loading
+  - Dependency resolution
+  - Feature flag service
+  - Module registry
 - **Security**:
   - Helmet.js (HTTP headers)
   - Express Rate Limit
   - Express Mongo Sanitize
   - HPP (HTTP Parameter Pollution)
-  - CORS
-- **File Handling**: Multer 2.x
-- **Logging**: Winston with daily rotate
-- **Validation**: Express Validator
-- **Scheduling**: Node-cron
-- **Email**: Nodemailer
-- **Monitoring**: Prometheus client
-- **Caching**: Redis (optional)
-- **Compression**: Compression middleware
+  - CORS with namespace-aware configuration
+- **Logging**: Winston with structured logging and correlation IDs
+- **Monitoring**: 
+  - Prometheus metrics
+  - Health checks
+  - Usage tracking
+  - Alert system
+- **File Handling**: Multer 2.x with tenant-scoped storage
+- **Email**: Nodemailer with multiple provider support (SES, SMTP, SendGrid)
+- **Caching**: Redis for feature flags and session storage
+- **Validation**: Express Validator with custom rules
 
-### Frontend
+### Frontend (Multi-App Architecture)
 
-- **Framework**: React 18+
-- **Routing**: React Router v6
-- **State Management**: Context API
-- **HTTP Client**: Axios
-- **Styling**: Tailwind CSS
-- **UI Components**: Custom component library
-- **Forms**: React Hook Form (planned)
-- **Charts**: Chart.js / Recharts (planned)
-- **Date Handling**: date-fns
+- **Framework**: React 18+ with independent applications
+- **Applications**:
+  - **HR App**: Tenant-facing application (port 3000)
+  - **Platform Admin**: Platform administration (port 3001)
+  - **Shared Library**: Common components and utilities
+- **Build System**: CRACO for custom webpack configuration
+- **Routing**: React Router v6 with protected routes
+- **State Management**: 
+  - Context API for global state
+  - Custom hooks for business logic
+  - Separate auth contexts per app
+- **HTTP Client**: Axios with interceptors and namespace routing
+- **UI Framework**: Material-UI (MUI) with custom theme
+- **Styling**: CSS-in-JS with MUI styling solution
+- **Components**: 
+  - Shared UI kit (Button, Modal, DataTable, TextField)
+  - Module guards for feature access
+  - Layout components
+- **Forms**: Formik with Yup validation
+- **Date Handling**: date-fns for date manipulation
 
 ### Testing & Quality
 
@@ -241,9 +277,9 @@ All documentation is located in the [`docs/`](./docs/) folder:
 - **MongoDB**: 6.0 or higher (running locally or remote)
 - **npm**: 9.x or higher (comes with Node.js)
 - **Git**: For version control
-- **Redis**: Optional, for caching (recommended for production)
+- **Redis**: Recommended for production (feature flags, caching)
 
-### Quick Setup (5 Minutes)
+### Quick Setup (10 Minutes)
 
 1. **Clone the repository**
 
@@ -252,128 +288,234 @@ git clone <repository-url>
 cd HR-SM
 ```
 
-2. **Install dependencies**
+2. **Install all dependencies**
 
 ```bash
 # Install server dependencies
 npm install
 
-# Install client dependencies
+# Install all client applications
 cd client
-npm install
+npm run install:all
 cd ..
 ```
 
 3. **Configure environment**
 
 ```bash
-# Copy example environment file
+# Server configuration
 cp .env.example .env
-
 # Edit .env with your configuration
-# Required variables:
-# - MONGODB_URI
-# - JWT_SECRET
-# - PORT
-# - NODE_ENV
+
+# HR App configuration
+cp client/hr-app/.env.example client/hr-app/.env
+
+# Platform Admin configuration
+cp client/platform-admin/.env.example client/platform-admin/.env
 ```
 
-4. **Setup database (optional)**
+**Required Environment Variables:**
 
-```bash
-# Sync system roles
-npm run sync-roles
-
-# Seed sample data (optional)
-npm run seed-attendance
-```
-
-5. **Run integration script**
-
-```bash
-# Windows
-integrate-modular-system.bat
-
-# Linux/Mac
-chmod +x integrate-modular-system.sh
-./integrate-modular-system.sh
-```
-
-6. **Start the application**
-
-```bash
-# Development mode (both server and client)
-npm run dev
-
-# Server only
-npm run server
-
-# Client only
-npm run client
-
-# Production mode
-npm start
-```
-
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
+Server (`.env`):
 ```env
-# Server Configuration
+# Server
 PORT=5000
 NODE_ENV=development
 
 # Database
 MONGODB_URI=mongodb://localhost:27017/hrms
 
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-change-this
+# JWT (Tenant)
+JWT_SECRET=your-tenant-jwt-secret-change-this
 JWT_EXPIRE=7d
+
+# JWT (Platform)
+PLATFORM_JWT_SECRET=your-platform-jwt-secret-change-this
+PLATFORM_JWT_EXPIRE=30d
+
+# Redis (optional but recommended)
+REDIS_URL=redis://localhost:6379
+```
+
+HR App (`client/hr-app/.env`):
+```env
+REACT_APP_API_URL=http://localhost:5000/api/v1
+```
+
+Platform Admin (`client/platform-admin/.env`):
+```env
+REACT_APP_API_URL=http://localhost:5000/platform
+```
+
+4. **Initialize the database**
+
+```bash
+# Run database migrations
+npm run migrate
+
+# Create default platform admin (optional)
+npm run cli -- create-platform-admin \
+  --email admin@platform.com \
+  --password SecurePass123!
+```
+
+5. **Start the applications**
+
+```bash
+# Development mode - all applications
+npm run dev
+
+# Or start individually:
+npm run server              # Backend only (port 5000)
+npm run client:hr           # HR App only (port 3000)
+npm run client:platform     # Platform Admin only (port 3001)
+
+# Production mode
+npm start
+```
+
+6. **Access the applications**
+
+- **HR App**: http://localhost:3000
+- **Platform Admin**: http://localhost:3001
+- **API Documentation**: http://localhost:5000/api-docs (if enabled)
+
+### Environment Variables
+
+#### Server Configuration (`.env`)
+
+```env
+# Server
+PORT=5000
+NODE_ENV=development
+
+# Database
+MONGODB_URI=mongodb://localhost:27017/hrms
+MONGODB_TEST_URI=mongodb://localhost:27017/hrms-test
+
+# JWT - Tenant Authentication
+JWT_SECRET=your-super-secret-tenant-jwt-key-change-this
+JWT_EXPIRE=7d
+
+# JWT - Platform Authentication
+PLATFORM_JWT_SECRET=your-super-secret-platform-jwt-key-change-this
+PLATFORM_JWT_EXPIRE=30d
+
+# Redis (recommended for production)
+REDIS_URL=redis://localhost:6379
+REDIS_ENABLED=true
 
 # File Upload
 MAX_FILE_SIZE=10485760
 UPLOAD_PATH=./uploads
 
-# Email (optional)
+# Email Service
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 
-# Redis (optional)
-REDIS_URL=redis://localhost:6379
+# AWS SES (optional)
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-aws-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret
 
-# Monitoring (optional)
+# Logging
+LOG_LEVEL=info
+LOG_DIR=./logs
+
+# Monitoring
 ENABLE_METRICS=true
 METRICS_PORT=9090
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+```
+
+#### HR App Configuration (`client/hr-app/.env`)
+
+```env
+REACT_APP_API_URL=http://localhost:5000/api/v1
+REACT_APP_WS_URL=ws://localhost:5000
+REACT_APP_NAME=HRMS
+REACT_APP_VERSION=2.0.0
+GENERATE_SOURCEMAP=false
+```
+
+#### Platform Admin Configuration (`client/platform-admin/.env`)
+
+```env
+REACT_APP_API_URL=http://localhost:5000/platform
+REACT_APP_TENANT_API_URL=http://localhost:5000/api/v1
+REACT_APP_NAME=HRMS Platform Admin
+REACT_APP_VERSION=2.0.0
+GENERATE_SOURCEMAP=false
 ```
 
 ### First Time Setup
 
-After installation, create your first admin user:
+#### 1. Create Platform Administrator
 
 ```bash
 # Using the CLI
-npm run cli -- create-user \
-  --email admin@company.com \
+npm run cli -- create-platform-admin \
+  --email admin@platform.com \
   --password SecurePass123! \
-  --firstName Admin \
-  --lastName User \
-  --role Admin \
-  --tenantId company1
+  --firstName Platform \
+  --lastName Admin \
+  --role super_admin
 
 # Or use the API
-curl -X POST http://localhost:5000/api/v1/hr-core/auth/register \
+curl -X POST http://localhost:5000/platform/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@company.com",
+    "email": "admin@platform.com",
     "password": "SecurePass123!",
-    "firstName": "Admin",
-    "lastName": "User",
-    "role": "Admin",
-    "tenantId": "company1",
-    "companyName": "My Company"
+    "firstName": "Platform",
+    "lastName": "Admin",
+    "role": "super_admin"
+  }'
+```
+
+#### 2. Create First Tenant
+
+```bash
+# Using Platform Admin UI (recommended)
+# Navigate to http://localhost:3001
+# Login with platform admin credentials
+# Go to Tenants > Create New Tenant
+
+# Or use the API
+curl -X POST http://localhost:5000/platform/tenants \
+  -H "Authorization: Bearer <platform_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Corporation",
+    "subdomain": "acme",
+    "plan": "enterprise",
+    "adminEmail": "admin@acme.com",
+    "adminPassword": "SecurePass123!",
+    "settings": {
+      "timezone": "America/New_York",
+      "currency": "USD"
+    }
+  }'
+```
+
+#### 3. Enable Modules for Tenant
+
+```bash
+# Using Platform Admin UI
+# Navigate to Modules > Enable for Tenant
+
+# Or use the API
+curl -X POST http://localhost:5000/platform/modules/acme/enable \
+  -H "Authorization: Bearer <platform_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "moduleId": "hr-core",
+    "config": {}
   }'
 ```
 
@@ -471,33 +613,101 @@ See [ARCHITECTURE_ALIGNMENT.md](./docs/ARCHITECTURE_ALIGNMENT.md) for detailed v
 
 ## 🎯 API Endpoints
 
-### Authentication
+### Dual Namespace Architecture
 
+The API is organized into two distinct namespaces:
+
+#### Tenant API (`/api/v1/*`)
+Used by tenant applications (HR users, employees, managers)
+
+**Authentication**
 ```
-POST   /api/v1/hr-core/auth/register
-POST   /api/v1/hr-core/auth/login
-GET    /api/v1/hr-core/auth/me
-POST   /api/v1/hr-core/auth/logout
+POST   /api/v1/auth/login
+POST   /api/v1/auth/register
+GET    /api/v1/auth/me
+POST   /api/v1/auth/logout
+POST   /api/v1/auth/refresh
 ```
 
-### Tasks
-
+**HR Core Module**
 ```
-POST   /api/v1/tasks/tasks
+GET    /api/v1/hr-core/users
+POST   /api/v1/hr-core/users
+GET    /api/v1/hr-core/users/:id
+PATCH  /api/v1/hr-core/users/:id
+DELETE /api/v1/hr-core/users/:id
+```
+
+**Tasks Module**
+```
 GET    /api/v1/tasks/tasks
+POST   /api/v1/tasks/tasks
 GET    /api/v1/tasks/tasks/:id
 PATCH  /api/v1/tasks/tasks/:id/status
-```
-
-### Task Reports
-
-```
 POST   /api/v1/tasks/reports/task/:taskId
 GET    /api/v1/tasks/reports/task/:taskId
 PATCH  /api/v1/tasks/reports/:id/review
 ```
 
-See [API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md) for complete API reference.
+**Clinic Module**
+```
+GET    /api/v1/clinic/appointments
+POST   /api/v1/clinic/appointments
+GET    /api/v1/clinic/visits
+POST   /api/v1/clinic/prescriptions
+```
+
+#### Platform API (`/platform/*`)
+Used by platform administrators
+
+**Platform Authentication**
+```
+POST   /platform/auth/login
+POST   /platform/auth/register
+GET    /platform/auth/me
+POST   /platform/auth/logout
+```
+
+**Tenant Management**
+```
+GET    /platform/tenants
+POST   /platform/tenants
+GET    /platform/tenants/:id
+PATCH  /platform/tenants/:id
+DELETE /platform/tenants/:id
+POST   /platform/tenants/:id/suspend
+POST   /platform/tenants/:id/activate
+```
+
+**Subscription Management**
+```
+GET    /platform/subscriptions
+POST   /platform/subscriptions
+GET    /platform/subscriptions/:id
+PATCH  /platform/subscriptions/:id
+GET    /platform/subscriptions/plans
+POST   /platform/subscriptions/:id/upgrade
+```
+
+**Module Management**
+```
+GET    /platform/modules
+GET    /platform/modules/:tenantId
+POST   /platform/modules/:tenantId/enable
+POST   /platform/modules/:tenantId/disable
+PATCH  /platform/modules/:tenantId/:moduleId/config
+```
+
+**System Monitoring**
+```
+GET    /platform/system/health
+GET    /platform/system/metrics
+GET    /platform/system/usage
+GET    /platform/system/alerts
+POST   /platform/system/alerts/:id/acknowledge
+```
+
+See [server/README.md](./server/README.md) for complete API reference.
 
 ## 🧪 Testing
 
@@ -592,15 +802,20 @@ describe("Task API", () => {
 ### Development
 
 ```bash
-npm run dev                          # Start both server and client in development mode
-npm run server                       # Start server only with nodemon (auto-reload)
-npm run client                       # Start client only (React dev server)
+npm run dev                          # Start server + both client apps
+npm run server                       # Start server only (port 5000)
+npm run client:hr                    # Start HR app only (port 3000)
+npm run client:platform              # Start platform admin only (port 3001)
+npm run client:all                   # Start both client apps
 ```
 
 ### Production
 
 ```bash
 npm start                            # Start production server
+npm run build:all                    # Build all client applications
+npm run build:hr                     # Build HR app only
+npm run build:platform               # Build platform admin only
 ```
 
 ### Testing
