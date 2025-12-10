@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import * as tenantController from '../controllers/tenantController.js';
+import { authenticatePlatform } from '../../../core/middleware/platformAuthentication.js';
+import { platformGuard } from '../../../core/middleware/platformAuthorization.js';
+
 const router = express.Router();
-const tenantController = require('../controllers/tenantController');
-const { authenticatePlatform } = require('../../../core/middleware/platformAuthentication');
-const { platformGuard } = require('../../../core/middleware/platformAuthorization');
 
 /**
  * Tenant Management Routes
@@ -81,4 +82,4 @@ router.patch('/:id/usage',
   tenantController.updateTenantUsage
 );
 
-module.exports = router;
+export default router;

@@ -2,41 +2,54 @@
 import mongoose from 'mongoose';
 
 const requestSchema = new mongoose.Schema({
-    employee: {
+    tenantId: {
+        type: String,
+        required: true,
+        index: true
+    },
+    requestType: {
+        type: String,
+        enum: ['overtime', 'vacation', 'mission', 'forget-check', 'permission'],
+        required: true
+    },
+    requestedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    type: {
-        type: String,
-        enum: ['permission', 'overtime', 'sick-leave', 'mission', 'day-swap'],
-        required: true
-    },
-    details: {
-        // Flexible object for request-specific fields
-        type: Object,
-        default: {}
-    },
     status: {
         type: String,
-        enum: ['pending', 'approved', 'rejected'],
+        enum: ['pending', 'approved', 'rejected', 'cancelled'],
         default: 'pending'
     },
-    requestedAt: {
+    requestData: {
+        type: mongoose.Schema.Types.Mixed,
+        required: true
+    },
+    approvalChain: [{
+        approver: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'approved', 'rejected', 'cancelled']
+        },
+        comments: String,
+        timestamp: Date
+    }],
+    createdAt: {
         type: Date,
         default: Date.now
     },
-    reviewedAt: Date,
-    reviewer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    comments: String
-}, {
-    timestamps: true
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    }
 });
 
-// Add isActive for soft delete
-requestSchema.add({ isActive: { type: Boolean, default: true } });
+// Compound index for tenant isolation and performance
+requestSchema.index({ tenantId: 1, requestType: 1, status: 1 });
+requestSchema.index({ tenantId: 1, requestedBy: 1 });
 
 export default mongoose.model('Request', requestSchema);

@@ -20,7 +20,7 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as V
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import announcementService from '../../services/announcement.service';
 import notificationService from '../../services/notification.service';
 

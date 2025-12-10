@@ -31,7 +31,7 @@ const PlanList = ({ onEdit }) => {
       setLoading(true);
       setError('');
       const response = await subscriptionService.getAllPlans();
-      setPlans(response.data || []);
+      setPlans(response.data?.plans || []);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to load plans');
     } finally {

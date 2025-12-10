@@ -18,8 +18,8 @@ const PlatformDashboard = () => {
         Welcome to the HRMS Platform Administration Dashboard
       </Typography>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
           <Card>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>
@@ -30,8 +30,8 @@ const PlatformDashboard = () => {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        </Box>
+        <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
           <Card>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>
@@ -42,8 +42,8 @@ const PlatformDashboard = () => {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        </Box>
+        <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
           <Card>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>
@@ -54,8 +54,8 @@ const PlatformDashboard = () => {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        </Box>
+        <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
           <Card>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>
@@ -66,8 +66,8 @@ const PlatformDashboard = () => {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       <Box sx={{ mt: 4 }}>
         <Paper sx={{ p: 3 }}>

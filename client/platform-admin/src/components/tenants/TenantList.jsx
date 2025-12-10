@@ -36,7 +36,7 @@ const TenantList = ({ onEdit, onView, onSuspend, onReactivate }) => {
       setLoading(true);
       setError('');
       const response = await tenantService.getAllTenants();
-      setTenants(response.data || []);
+      setTenants(response.data?.tenants || []);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to load tenants');
     } finally {

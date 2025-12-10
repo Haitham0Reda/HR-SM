@@ -1,5 +1,5 @@
-const healthCheckService = require('../services/healthCheckService');
-const asyncHandler = require('../../../utils/asyncHandler');
+import healthCheckService from '../services/healthCheckService.js';
+import asyncHandler from '../../../utils/asyncHandler.js';
 
 /**
  * Health Controller
@@ -10,7 +10,7 @@ const asyncHandler = require('../../../utils/asyncHandler');
  * Get overall system health
  * GET /api/platform/system/health
  */
-exports.getHealth = asyncHandler(async (req, res) => {
+export const getHealth = asyncHandler(async (req, res) => {
   const health = await healthCheckService.checkHealth();
 
   // Set appropriate status code based on health
@@ -31,7 +31,7 @@ exports.getHealth = asyncHandler(async (req, res) => {
  * Get database health
  * GET /api/platform/system/health/database
  */
-exports.getDatabaseHealth = asyncHandler(async (req, res) => {
+export const getDatabaseHealth = asyncHandler(async (req, res) => {
   const dbHealth = await healthCheckService.checkDatabase();
 
   const statusCode = dbHealth.status === 'healthy' ? 200 : 503;
@@ -52,7 +52,7 @@ exports.getDatabaseHealth = asyncHandler(async (req, res) => {
  * Get memory health
  * GET /api/platform/system/health/memory
  */
-exports.getMemoryHealth = asyncHandler(async (req, res) => {
+export const getMemoryHealth = asyncHandler(async (req, res) => {
   const memoryHealth = healthCheckService.checkMemory();
 
   res.status(200).json({
@@ -71,7 +71,7 @@ exports.getMemoryHealth = asyncHandler(async (req, res) => {
  * Get system information
  * GET /api/platform/system/info
  */
-exports.getSystemInfo = asyncHandler(async (req, res) => {
+export const getSystemInfo = asyncHandler(async (req, res) => {
   const info = healthCheckService.getSystemInfo();
 
   res.status(200).json({
@@ -90,7 +90,7 @@ exports.getSystemInfo = asyncHandler(async (req, res) => {
  * Get API response time statistics
  * GET /api/platform/system/metrics/response-time
  */
-exports.getResponseTimeStats = asyncHandler(async (req, res) => {
+export const getResponseTimeStats = asyncHandler(async (req, res) => {
   const stats = healthCheckService.getResponseTimeStats();
 
   res.status(200).json({
@@ -109,7 +109,7 @@ exports.getResponseTimeStats = asyncHandler(async (req, res) => {
  * Get error rate statistics
  * GET /api/platform/system/metrics/error-rate
  */
-exports.getErrorRateStats = asyncHandler(async (req, res) => {
+export const getErrorRateStats = asyncHandler(async (req, res) => {
   const stats = healthCheckService.getErrorRateStats();
 
   res.status(200).json({

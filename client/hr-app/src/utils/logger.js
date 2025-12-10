@@ -1,4 +1,4 @@
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
 
 // Log levels
 const LOG_LEVELS = {
@@ -10,6 +10,10 @@ const LOG_LEVELS = {
 
 // Send log to backend
 const sendLogToBackend = async (level, message, meta = {}) => {
+    // TODO: Implement backend logging endpoint
+    // For now, only log to console to avoid 404 errors
+    return;
+    
     try {
         await fetch(`${API_URL}/logs`, {
             method: 'POST',

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 /**
  * Subscription Plan Schema
@@ -210,4 +210,4 @@ planSchema.statics.findByTier = function(tier) {
 
 const Plan = mongoose.model('Plan', planSchema);
 
-module.exports = Plan;
+export default Plan;

@@ -17,7 +17,7 @@ import {
     IconButton,
 } from '@mui/material';
 import { PhotoCamera, Save, Close } from '@mui/icons-material';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import userService from '../../services/user.service';
 
 export default function ProfilePage() {

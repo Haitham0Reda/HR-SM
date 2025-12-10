@@ -1,6 +1,6 @@
-const subscriptionService = require('../services/subscriptionService');
-const Plan = require('../models/Plan');
-const asyncHandler = require('../../../utils/asyncHandler');
+import subscriptionService from '../services/subscriptionService.js';
+import Plan from '../models/Plan.js';
+import asyncHandler from '../../../utils/asyncHandler.js';
 
 /**
  * Subscription Controller
@@ -15,7 +15,7 @@ const asyncHandler = require('../../../utils/asyncHandler');
  * - active: Filter by active status (true/false)
  * - public: Filter by public status (true/false)
  */
-exports.listPlans = asyncHandler(async (req, res) => {
+export const listPlans = asyncHandler(async (req, res) => {
   const { active, public: isPublic } = req.query;
 
   let plans;
@@ -51,7 +51,7 @@ exports.listPlans = asyncHandler(async (req, res) => {
  * Get plan by ID
  * GET /api/platform/subscriptions/plans/:id
  */
-exports.getPlan = asyncHandler(async (req, res) => {
+export const getPlan = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const plan = await Plan.findById(id);
@@ -88,7 +88,7 @@ exports.getPlan = asyncHandler(async (req, res) => {
  * 
  * Body: Plan data
  */
-exports.createPlan = asyncHandler(async (req, res) => {
+export const createPlan = asyncHandler(async (req, res) => {
   const planData = req.body;
 
   const plan = new Plan(planData);
@@ -112,7 +112,7 @@ exports.createPlan = asyncHandler(async (req, res) => {
  * 
  * Body: Fields to update
  */
-exports.updatePlan = asyncHandler(async (req, res) => {
+export const updatePlan = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const updateData = req.body;
 
@@ -152,7 +152,7 @@ exports.updatePlan = asyncHandler(async (req, res) => {
  * Delete plan
  * DELETE /api/platform/subscriptions/plans/:id
  */
-exports.deletePlan = asyncHandler(async (req, res) => {
+export const deletePlan = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   // Soft delete by setting isActive to false
@@ -197,7 +197,7 @@ exports.deletePlan = asyncHandler(async (req, res) => {
  * - planId: Plan ID (required)
  * - billingCycle: monthly or yearly (default: monthly)
  */
-exports.assignPlanToTenant = asyncHandler(async (req, res) => {
+export const assignPlanToTenant = asyncHandler(async (req, res) => {
   const { id: tenantId } = req.params;
   const { planId, billingCycle } = req.body;
 
@@ -234,7 +234,7 @@ exports.assignPlanToTenant = asyncHandler(async (req, res) => {
  * Get tenant subscription
  * GET /api/platform/subscriptions/tenants/:id/subscription
  */
-exports.getTenantSubscription = asyncHandler(async (req, res) => {
+export const getTenantSubscription = asyncHandler(async (req, res) => {
   const { id: tenantId } = req.params;
 
   const subscription = await subscriptionService.getSubscription(tenantId);
@@ -256,7 +256,7 @@ exports.getTenantSubscription = asyncHandler(async (req, res) => {
  * Body:
  * - planId: New plan ID (required)
  */
-exports.upgradeTenantPlan = asyncHandler(async (req, res) => {
+export const upgradeTenantPlan = asyncHandler(async (req, res) => {
   const { id: tenantId } = req.params;
   const { planId } = req.body;
 
@@ -296,7 +296,7 @@ exports.upgradeTenantPlan = asyncHandler(async (req, res) => {
  * Body:
  * - planId: New plan ID (required)
  */
-exports.downgradeTenantPlan = asyncHandler(async (req, res) => {
+export const downgradeTenantPlan = asyncHandler(async (req, res) => {
   const { id: tenantId } = req.params;
   const { planId } = req.body;
 
@@ -336,7 +336,7 @@ exports.downgradeTenantPlan = asyncHandler(async (req, res) => {
  * Body:
  * - immediate: Cancel immediately (default: false)
  */
-exports.cancelTenantSubscription = asyncHandler(async (req, res) => {
+export const cancelTenantSubscription = asyncHandler(async (req, res) => {
   const { id: tenantId } = req.params;
   const { immediate = false } = req.body;
 
@@ -361,7 +361,7 @@ exports.cancelTenantSubscription = asyncHandler(async (req, res) => {
  * Renew tenant subscription
  * POST /api/platform/subscriptions/tenants/:id/renew
  */
-exports.renewTenantSubscription = asyncHandler(async (req, res) => {
+export const renewTenantSubscription = asyncHandler(async (req, res) => {
   const { id: tenantId } = req.params;
 
   const tenant = await subscriptionService.renewSubscription(tenantId);

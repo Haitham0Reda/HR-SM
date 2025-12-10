@@ -25,7 +25,7 @@ import {
     Security as SecurityIcon,
     CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 
 const Login = () => {
@@ -60,9 +60,18 @@ const Login = () => {
         try {
             setLoading(true);
             setError('');
-            await login(formData);
-            showSuccess('Login successful!');
-            navigate('/app/dashboard');
+            
+            // For now, use a default tenant ID since the login form doesn't have tenant selection
+            // TODO: Add tenant selection to login form if needed
+            const result = await login(formData.email, formData.password, 'default');
+            
+            if (result.success) {
+                showSuccess('Login successful!');
+                navigate('/app/dashboard');
+            } else {
+                setError(result.message || 'Login failed. Please check your credentials.');
+                showError(result.message || 'Login failed. Please check your credentials.');
+            }
         } catch (err) {
             // Ensure we're setting a string value for the error
             const errorMessage = err?.message || err?.response?.data?.error || (typeof err === 'string' ? err : 'Login failed. Please check your credentials.');

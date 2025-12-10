@@ -1,5 +1,5 @@
-const usageTrackingService = require('../services/usageTrackingService');
-const asyncHandler = require('../../../utils/asyncHandler');
+import usageTrackingService from '../services/usageTrackingService.js';
+import asyncHandler from '../../../utils/asyncHandler.js';
 
 /**
  * Metrics Controller
@@ -10,7 +10,7 @@ const asyncHandler = require('../../../utils/asyncHandler');
  * Get usage metrics for specific tenant
  * GET /api/platform/system/metrics/tenants/:tenantId
  */
-exports.getTenantUsage = asyncHandler(async (req, res) => {
+export const getTenantUsage = asyncHandler(async (req, res) => {
   const { tenantId } = req.params;
 
   const usage = await usageTrackingService.getTenantUsage(tenantId);
@@ -29,7 +29,7 @@ exports.getTenantUsage = asyncHandler(async (req, res) => {
  * Get usage metrics for all tenants
  * GET /api/platform/system/metrics/tenants
  */
-exports.getAllTenantsUsage = asyncHandler(async (req, res) => {
+export const getAllTenantsUsage = asyncHandler(async (req, res) => {
   const usage = await usageTrackingService.getAllTenantsUsage();
 
   res.status(200).json({
@@ -49,7 +49,7 @@ exports.getAllTenantsUsage = asyncHandler(async (req, res) => {
  * Get aggregated usage statistics
  * GET /api/platform/system/metrics/aggregated
  */
-exports.getAggregatedStats = asyncHandler(async (req, res) => {
+export const getAggregatedStats = asyncHandler(async (req, res) => {
   const stats = await usageTrackingService.getAggregatedStats();
 
   res.status(200).json({
@@ -68,7 +68,7 @@ exports.getAggregatedStats = asyncHandler(async (req, res) => {
  * Get tenants exceeding limits
  * GET /api/platform/system/metrics/exceeding-limits
  */
-exports.getTenantsExceedingLimits = asyncHandler(async (req, res) => {
+export const getTenantsExceedingLimits = asyncHandler(async (req, res) => {
   const tenants = await usageTrackingService.getTenantsExceedingLimits();
 
   res.status(200).json({
@@ -91,7 +91,7 @@ exports.getTenantsExceedingLimits = asyncHandler(async (req, res) => {
  * Query params:
  * - days: Number of days to look back (default: 30)
  */
-exports.getUsageTrends = asyncHandler(async (req, res) => {
+export const getUsageTrends = asyncHandler(async (req, res) => {
   const { tenantId } = req.params;
   const { days = 30 } = req.query;
 
@@ -115,7 +115,7 @@ exports.getUsageTrends = asyncHandler(async (req, res) => {
  * - metric: Metric to sort by (users, storage, apiCalls) - default: users
  * - limit: Number of tenants to return (default: 10)
  */
-exports.getTopTenants = asyncHandler(async (req, res) => {
+export const getTopTenants = asyncHandler(async (req, res) => {
   const { metric = 'users', limit = 10 } = req.query;
 
   const tenants = await usageTrackingService.getTopTenants(metric, parseInt(limit));
@@ -138,7 +138,7 @@ exports.getTopTenants = asyncHandler(async (req, res) => {
  * Reset monthly usage counters
  * POST /api/platform/system/metrics/reset-monthly
  */
-exports.resetMonthlyUsage = asyncHandler(async (req, res) => {
+export const resetMonthlyUsage = asyncHandler(async (req, res) => {
   const count = await usageTrackingService.resetMonthlyUsage();
 
   res.status(200).json({
@@ -161,7 +161,7 @@ exports.resetMonthlyUsage = asyncHandler(async (req, res) => {
  * Body:
  * - bytes: Storage used in bytes
  */
-exports.updateStorageUsage = asyncHandler(async (req, res) => {
+export const updateStorageUsage = asyncHandler(async (req, res) => {
   const { tenantId } = req.params;
   const { bytes } = req.body;
 
@@ -197,7 +197,7 @@ exports.updateStorageUsage = asyncHandler(async (req, res) => {
  * Update user count for tenant
  * POST /api/platform/system/metrics/tenants/:tenantId/update-user-count
  */
-exports.updateUserCount = asyncHandler(async (req, res) => {
+export const updateUserCount = asyncHandler(async (req, res) => {
   const { tenantId } = req.params;
 
   await usageTrackingService.updateUserCount(tenantId);

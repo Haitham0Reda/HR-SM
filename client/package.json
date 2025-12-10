@@ -8,6 +8,7 @@
     "shared"
   ],
   "scripts": {
+    "start": "npm run start:both",
     "start:hr": "cd hr-app && npm start",
     "start:platform": "cd platform-admin && npm start",
     "start:both": "concurrently --names \"HR-APP,PLATFORM\" --prefix-colors \"cyan,magenta\" \"npm run start:hr\" \"npm run start:platform\"",

@@ -24,7 +24,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import surveyService from '../../services/survey.service';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
     const { id } = useParams();

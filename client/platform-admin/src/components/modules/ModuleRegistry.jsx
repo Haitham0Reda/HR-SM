@@ -36,7 +36,7 @@ const ModuleRegistry = () => {
       setLoading(true);
       setError('');
       const response = await moduleService.getAllModules();
-      setModules(response.data || []);
+      setModules(response.data.modules || []);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to load modules');
     } finally {

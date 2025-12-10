@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
-const AppError = require('../../../core/errors/AppError');
-const { ERROR_TYPES } = require('../../../core/errors/errorTypes');
+import mongoose from 'mongoose';
+import AppError from '../../../core/errors/AppError.js';
+import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
 
 /**
  * Health Check Service
@@ -181,4 +181,4 @@ class HealthCheckService {
   }
 }
 
-module.exports = new HealthCheckService();
+export default new HealthCheckService();

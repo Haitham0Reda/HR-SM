@@ -40,7 +40,7 @@ const SubscriptionManager = ({ open, onClose, tenant, onSuccess }) => {
 
       // Load plans
       const plansResponse = await subscriptionService.getAllPlans();
-      setPlans(plansResponse.data || []);
+      setPlans(plansResponse.data?.plans || []);
 
       // Load current tenant data
       const tenantResponse = await tenantService.getTenantById(tenant.tenantId);
