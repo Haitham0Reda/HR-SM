@@ -1,6 +1,6 @@
-const Tenant = require('../models/Tenant');
-const AppError = require('../../../core/errors/AppError');
-const { ERROR_TYPES } = require('../../../core/errors/errorTypes');
+import Tenant from '../models/Tenant.js';
+import AppError from '../../../core/errors/AppError.js';
+import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
 
 /**
  * Tenant Service
@@ -337,4 +337,4 @@ class TenantService {
   }
 }
 
-module.exports = new TenantService();
+export default new TenantService();

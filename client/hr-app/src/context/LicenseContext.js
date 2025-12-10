@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const LicenseContext = createContext(null);
 

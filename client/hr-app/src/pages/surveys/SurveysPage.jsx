@@ -30,7 +30,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import surveyService from '../../services/survey.service';
 import SurveyForm from '../../components/surveys/SurveyForm';
 

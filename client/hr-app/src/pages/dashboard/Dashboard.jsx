@@ -46,7 +46,7 @@ import {
     Person as ProfileIcon,
     Edit as EditIcon
 } from '@mui/icons-material';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CongratulationsEffect from '../../components/effects/CongratulationsEffect';
 import { dashboardService } from '../../services';

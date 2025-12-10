@@ -11,7 +11,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle, Cancel, CloudUpload } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import sickLeaveService from '../../services/sickLeave.service';
 import Loading from '../../components/common/Loading';

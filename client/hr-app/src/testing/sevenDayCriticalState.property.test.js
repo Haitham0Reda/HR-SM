@@ -32,7 +32,7 @@ jest.mock('../services/survey.service', () => ({
 }));
 
 // Mock AuthContext
-jest.mock('../context/AuthContext', () => {
+jest.mock('../contexts/AuthContext', () => {
     const React = require('react');
     return {
         useAuth: jest.fn(),

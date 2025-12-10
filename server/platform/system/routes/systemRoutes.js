@@ -1,10 +1,11 @@
-const express = require('express');
+import express from 'express';
+import * as healthController from '../controllers/healthController.js';
+import * as metricsController from '../controllers/metricsController.js';
+import * as alertController from '../controllers/alertController.js';
+import { authenticatePlatform } from '../../../core/middleware/platformAuthentication.js';
+import { platformGuard } from '../../../core/middleware/platformAuthorization.js';
+
 const router = express.Router();
-const healthController = require('../controllers/healthController');
-const metricsController = require('../controllers/metricsController');
-const alertController = require('../controllers/alertController');
-const { authenticatePlatform } = require('../../../core/middleware/platformAuthentication');
-const { platformGuard } = require('../../../core/middleware/platformAuthorization');
 
 /**
  * System Routes
@@ -118,4 +119,4 @@ router.delete('/alerts',
   alertController.clearAlertHistory
 );
 
-module.exports = router;
+export default router;

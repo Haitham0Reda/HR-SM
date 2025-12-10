@@ -10,7 +10,7 @@ import {
     Alert,
     Grid
 } from '@mui/material';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { taskService } from '../../services/task.service';
 import TaskList from '../../components/tasks/TaskList';
 import TaskForm from '../../components/tasks/TaskForm';

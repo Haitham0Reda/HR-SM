@@ -1,6 +1,6 @@
-const tenantService = require('../services/tenantService');
-const tenantProvisioningService = require('../services/tenantProvisioningService');
-const asyncHandler = require('../../../utils/asyncHandler');
+import tenantService from '../services/tenantService.js';
+import tenantProvisioningService from '../services/tenantProvisioningService.js';
+import asyncHandler from '../../../utils/asyncHandler.js';
 
 /**
  * Tenant Controller
@@ -17,7 +17,7 @@ const asyncHandler = require('../../../utils/asyncHandler');
  * - page: Page number
  * - limit: Items per page
  */
-exports.listTenants = asyncHandler(async (req, res) => {
+export const listTenants = asyncHandler(async (req, res) => {
   const { status, deploymentMode, page, limit } = req.query;
 
   const result = await tenantService.listTenants({
@@ -41,7 +41,7 @@ exports.listTenants = asyncHandler(async (req, res) => {
  * Get tenant by ID
  * GET /api/platform/tenants/:id
  */
-exports.getTenant = asyncHandler(async (req, res) => {
+export const getTenant = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   // Try to get by tenantId first, then by MongoDB _id
@@ -81,7 +81,7 @@ exports.getTenant = asyncHandler(async (req, res) => {
  *   - lastName: Admin last name (required)
  * - metadata: Additional metadata
  */
-exports.createTenant = asyncHandler(async (req, res) => {
+export const createTenant = asyncHandler(async (req, res) => {
   const tenantData = req.body;
 
   const result = await tenantProvisioningService.createTenant(tenantData);
@@ -102,7 +102,7 @@ exports.createTenant = asyncHandler(async (req, res) => {
  * 
  * Body: Fields to update
  */
-exports.updateTenant = asyncHandler(async (req, res) => {
+export const updateTenant = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const updateData = req.body;
 
@@ -127,7 +127,7 @@ exports.updateTenant = asyncHandler(async (req, res) => {
  * Body:
  * - reason: Reason for suspension (optional)
  */
-exports.suspendTenant = asyncHandler(async (req, res) => {
+export const suspendTenant = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
 
@@ -150,7 +150,7 @@ exports.suspendTenant = asyncHandler(async (req, res) => {
  * Reactivate tenant
  * POST /api/platform/tenants/:id/reactivate
  */
-exports.reactivateTenant = asyncHandler(async (req, res) => {
+export const reactivateTenant = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const tenant = await tenantService.reactivateTenant(id);
@@ -172,7 +172,7 @@ exports.reactivateTenant = asyncHandler(async (req, res) => {
  * Delete tenant (archive)
  * DELETE /api/platform/tenants/:id
  */
-exports.deleteTenant = asyncHandler(async (req, res) => {
+export const deleteTenant = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const tenant = await tenantService.deleteTenant(id);
@@ -194,7 +194,7 @@ exports.deleteTenant = asyncHandler(async (req, res) => {
  * Get tenant statistics
  * GET /api/platform/tenants/stats
  */
-exports.getTenantStats = asyncHandler(async (req, res) => {
+export const getTenantStats = asyncHandler(async (req, res) => {
   const stats = await tenantService.getStatistics();
 
   res.status(200).json({
@@ -213,7 +213,7 @@ exports.getTenantStats = asyncHandler(async (req, res) => {
  * Check tenant limits
  * GET /api/platform/tenants/:id/limits
  */
-exports.checkTenantLimits = asyncHandler(async (req, res) => {
+export const checkTenantLimits = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const exceeded = await tenantService.checkLimits(id);
@@ -240,7 +240,7 @@ exports.checkTenantLimits = asyncHandler(async (req, res) => {
  * - storageUsed: Storage used in bytes
  * - apiCallsThisMonth: API calls this month
  */
-exports.updateTenantUsage = asyncHandler(async (req, res) => {
+export const updateTenantUsage = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const usageData = req.body;
 

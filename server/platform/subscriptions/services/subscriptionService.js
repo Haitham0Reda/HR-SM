@@ -1,7 +1,7 @@
-const Tenant = require('../../tenants/models/Tenant');
-const Plan = require('../models/Plan');
-const AppError = require('../../../core/errors/AppError');
-const { ERROR_TYPES } = require('../../../core/errors/errorTypes');
+import Tenant from '../../tenants/models/Tenant.js';
+import Plan from '../models/Plan.js';
+import AppError from '../../../core/errors/AppError.js';
+import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
 
 /**
  * Subscription Management Service
@@ -426,4 +426,4 @@ class SubscriptionService {
   }
 }
 
-module.exports = new SubscriptionService();
+export default new SubscriptionService();

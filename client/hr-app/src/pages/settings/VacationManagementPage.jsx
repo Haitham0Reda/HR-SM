@@ -29,7 +29,7 @@ import {
     Info as InfoIcon,
     AccessTime as TimeIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import userService from '../../services/user.service';
 import departmentService from '../../services/department.service';

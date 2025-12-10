@@ -291,7 +291,8 @@
   - Implement approval workflow (pending → approved/rejected/cancelled)
   - _Requirements: 2.1, 10.1, 10.2_
 
-- [ ]\* 7.3 Write unit tests for request system
+- [x] 7.3 Write unit tests for request system
+
 
   - Test all request types are supported
   - Test valid status transitions work
@@ -318,7 +319,9 @@
   - Implement restore with tenant isolation
   - _Requirements: 2.5, 11.1, 11.3_
 
-- [ ]\* 7.6 Write critical property test for backup isolation
+- [x] 7.6 Write critical property test for backup isolation
+
+
 
   - Test backup contains only specified tenant's data (CRITICAL for security)
   - Test backup contains ONLY HR-Core collections (never optional module data)
@@ -351,7 +354,10 @@
   - Add architecture decision record (ADR) for HR-Core boundaries
   - _Requirements: 2.2_
 
-- [ ]\* 7.10 Write integration test for HR-Core independence
+- [x] 7.10 Write integration test for HR-Core independence
+
+
+
 
   - Test HR-Core works with all optional modules disabled
   - Test all HR-Core endpoints are accessible
@@ -379,7 +385,13 @@
   - Create EmailLog model for tracking sent emails
   - _Requirements: 4.1, 4.4_
 
-- [ ]\* 8.3 Write unit tests for email templates
+- [x] 8.3 Write unit tests for email templates
+
+
+
+
+
+
 
   - Test template variables are substituted correctly
   - Test missing variables are handled gracefully

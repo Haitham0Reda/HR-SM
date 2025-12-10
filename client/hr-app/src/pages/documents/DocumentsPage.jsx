@@ -30,7 +30,7 @@ import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import DocumentViewer from '../../components/common/DocumentViewer';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import documentService from '../../services/document.service';
 import userService from '../../services/user.service';
 

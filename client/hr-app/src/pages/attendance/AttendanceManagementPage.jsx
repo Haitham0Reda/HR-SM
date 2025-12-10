@@ -17,7 +17,7 @@ import AttendanceDashboard from './AttendanceDashboard';
 import DeviceManagement from './DeviceManagement';
 import AttendanceImport from './AttendanceImport';
 import AttendancePage from './AttendancePage';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 function TabPanel({ children, value, index, ...other }) {
     return (

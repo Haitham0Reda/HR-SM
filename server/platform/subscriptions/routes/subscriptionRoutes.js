@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import * as subscriptionController from '../controllers/subscriptionController.js';
+import { authenticatePlatform } from '../../../core/middleware/platformAuthentication.js';
+import { platformGuard } from '../../../core/middleware/platformAuthorization.js';
+
 const router = express.Router();
-const subscriptionController = require('../controllers/subscriptionController');
-const { authenticatePlatform } = require('../../../core/middleware/platformAuthentication');
-const { platformGuard } = require('../../../core/middleware/platformAuthorization');
 
 /**
  * Subscription Management Routes
@@ -79,4 +80,4 @@ router.post('/tenants/:id/renew',
   subscriptionController.renewTenantSubscription
 );
 
-module.exports = router;
+export default router;

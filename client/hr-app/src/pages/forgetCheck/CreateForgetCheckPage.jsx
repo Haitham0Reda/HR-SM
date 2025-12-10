@@ -10,7 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Cancel, AccessTime, EventNote, Info } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import forgetCheckService from '../../services/forgetCheck.service';
 
 const CreateForgetCheckPage = () => {

@@ -24,7 +24,7 @@ export const PlatformAuthProvider = ({ children }) => {
           
           // Verify token and get platform user info
           const response = await platformApi.get('/auth/me');
-          setPlatformUser(response.data.data);
+          setPlatformUser(response.data.data.user);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -41,11 +41,13 @@ export const PlatformAuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('Attempting login with:', email);
       const response = await platformApi.post('/auth/login', {
         email,
         password,
       });
 
+      console.log('Login response:', response.data);
       const { token, user } = response.data.data;
 
       // Store token securely
@@ -57,12 +59,13 @@ export const PlatformAuthProvider = ({ children }) => {
       // Set platform user
       setPlatformUser(user);
 
+      console.log('Login successful for user:', user.email);
       return { success: true };
     } catch (error) {
       console.error('Login failed:', error);
       return {
         success: false,
-        error: error.response?.data?.error?.message || 'Login failed',
+        error: error.response?.data?.error?.message || error.response?.data?.message || 'Login failed',
       };
     }
   };

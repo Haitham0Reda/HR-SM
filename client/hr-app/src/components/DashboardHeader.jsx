@@ -24,7 +24,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import Stack from '@mui/material/Stack';
 import { Link, useNavigate } from 'react-router-dom';
 import ThemeSwitcher from './ThemeSwitcher';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { designTokens } from '../theme/designTokens';
 // eslint-disable-next-line no-unused-vars
 import announcementService from '../services/announcement.service';

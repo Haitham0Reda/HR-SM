@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import sickLeaveService from '../../services/sickLeave.service';
 

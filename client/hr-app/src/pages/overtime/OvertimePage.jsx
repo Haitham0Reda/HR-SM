@@ -23,7 +23,7 @@ import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import overtimeService from '../../services/overtime.service';
 

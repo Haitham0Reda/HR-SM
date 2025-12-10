@@ -10,7 +10,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle, Cancel } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import missionService from '../../services/mission.service';
 import departmentService from '../../services/department.service';
