@@ -9,6 +9,7 @@ describe('Vacation Model', () => {
   beforeAll(async () => {
     // Create test department
     testDepartment = await Department.create({
+      tenantId: 'test_tenant_123',
       name: 'Test Department',
       code: 'TEST-DEPT',
       description: 'Test department for vacation tests'
@@ -16,6 +17,7 @@ describe('Vacation Model', () => {
 
     // Create test employee
     testEmployee = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'testvacationemployee',
       email: 'testvacationemployee@test.com',
       password: 'Test123!@#',
@@ -29,6 +31,7 @@ describe('Vacation Model', () => {
 
     // Create test approver
     testApprover = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'testvacationapprover',
       email: 'testvacationapprover@test.com',
       password: 'Test123!@#',
@@ -398,6 +401,7 @@ describe('Vacation Model', () => {
 
       it('should filter pending vacations by department', async () => {
         const otherDepartment = await Department.create({
+      tenantId: 'test_tenant_123',
           name: 'Other Department',
           code: 'OTHER-DEPT',
           description: 'Other department'

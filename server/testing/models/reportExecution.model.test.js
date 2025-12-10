@@ -21,6 +21,7 @@ beforeEach(async () => {
 
   // Create user for testing
   user = await User.create({
+      tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',

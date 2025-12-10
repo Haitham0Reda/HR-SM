@@ -8,6 +8,7 @@ process.env.JWT_SECRET = 'test-jwt-secret-for-testing-only-min-32-characters-lon
 process.env.TENANT_JWT_SECRET = 'test-tenant-jwt-secret-for-testing-only-min-32-characters-long';
 process.env.PLATFORM_JWT_SECRET = 'test-platform-jwt-secret-for-testing-only-min-32-characters-long';
 process.env.NODE_ENV = 'test';
+process.env.REDIS_ENABLED = 'false'; // Disable Redis for testing
 
 // Connect to a MongoDB memory server before running tests
 beforeAll(async () => {

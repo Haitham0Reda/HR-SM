@@ -4,6 +4,7 @@ import Department from '../../models/department.model.js';
 describe('Department Model', () => {
   it('should create and save a department successfully', async () => {
     const departmentData = {
+      tenantId: 'test_tenant_123',
       name: 'Engineering',
       code: 'ENG',
       school: new mongoose.Types.ObjectId(),
@@ -27,7 +28,7 @@ describe('Department Model', () => {
     };
 
     const department = new Department(departmentData);
-    
+
     let err;
     try {
       await department.save();
@@ -36,37 +37,59 @@ describe('Department Model', () => {
     }
 
     expect(err).toBeDefined();
+    expect(err.errors.tenantId).toBeDefined();
     expect(err.errors.name).toBeDefined();
-    // Code is not required, only name is required
+    // Code is not required, only name and tenantId are required
   });
 
-  it('should enforce unique code constraint', async () => {
-    const code = 'UNIQUE';
+  it('should auto-generate unique codes when not provided', async () => {
     const departmentData1 = {
-      name: 'Department 1',
-      code: code,
-      school: new mongoose.Types.ObjectId()
+      tenantId: 'test_tenant_123',
+      name: 'Department 1'
+      // No code provided
     };
 
     const departmentData2 = {
-      name: 'Department 2',
-      code: code,
-      school: new mongoose.Types.ObjectId()
+      tenantId: 'test_tenant_123',
+      name: 'Department 2'
+      // No code provided
     };
 
     const department1 = new Department(departmentData1);
-    await department1.save();
+    const saved1 = await department1.save();
+    expect(saved1.code).toBeDefined();
 
     const department2 = new Department(departmentData2);
-    
-    let err;
-    try {
-      await department2.save();
-    } catch (error) {
-      err = error;
-    }
+    const saved2 = await department2.save();
+    expect(saved2.code).toBeDefined();
 
-    expect(err).toBeDefined();
-    expect(err.code).toBe(11000); // MongoDB duplicate key error code
+    // Codes should be different
+    expect(saved1.code).not.toBe(saved2.code);
+  });
+
+  it('should allow same code in different tenants', async () => {
+    const code = 'SHARED';
+    const departmentData1 = {
+      tenantId: 'test_tenant_123',
+      name: 'Department 1',
+      code: code
+    };
+
+    const departmentData2 = {
+      tenantId: 'test_tenant_456',
+      name: 'Department 2',
+      code: code
+    };
+
+    const department1 = new Department(departmentData1);
+    const savedDept1 = await department1.save();
+
+    const department2 = new Department(departmentData2);
+    const savedDept2 = await department2.save();
+
+    expect(savedDept1._id).toBeDefined();
+    expect(savedDept2._id).toBeDefined();
+    expect(savedDept1.code).toBe(code);
+    expect(savedDept2.code).toBe(code);
   });
 });

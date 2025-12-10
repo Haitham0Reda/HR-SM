@@ -9,6 +9,7 @@ describe('SickLeave Model', () => {
   beforeAll(async () => {
     // Create test department
     testDepartment = await Department.create({
+      tenantId: 'test_tenant_123',
       name: 'Test Department',
       code: 'TEST-DEPT',
       description: 'Test department for sick leave tests'
@@ -16,6 +17,7 @@ describe('SickLeave Model', () => {
 
     // Create test employee
     testEmployee = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'testemployee',
       email: 'testemployee@test.com',
       password: 'Test123!@#',
@@ -29,6 +31,7 @@ describe('SickLeave Model', () => {
 
     // Create test supervisor
     testSupervisor = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'testsupervisor',
       email: 'testsupervisor@test.com',
       password: 'Test123!@#',
@@ -42,6 +45,7 @@ describe('SickLeave Model', () => {
 
     // Create test doctor
     testDoctor = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'testdoctor',
       email: 'testdoctor@test.com',
       password: 'Test123!@#',

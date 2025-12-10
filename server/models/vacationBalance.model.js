@@ -14,6 +14,13 @@
 import mongoose from 'mongoose';
 
 const vacationBalanceSchema = new mongoose.Schema({
+    // Multi-tenant support
+    tenantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tenant',
+        required: true,
+        index: true
+    },
     // Reference to the employee (User)
     employee: {
         type: mongoose.Schema.Types.ObjectId,
@@ -520,6 +527,6 @@ vacationBalanceSchema.statics.carryOverToNextYear = async function (employeeId, 
 };
 
 // Compound indexes for query optimization
-vacationBalanceSchema.index({ employee: 1, year: 1 }, { unique: true }); // Ensure one balance per employee per year
+vacationBalanceSchema.index({ tenantId: 1, employee: 1, year: 1 }, { unique: true }); // Ensure one balance per employee per year per tenant
 
 export default mongoose.model('VacationBalance', vacationBalanceSchema);

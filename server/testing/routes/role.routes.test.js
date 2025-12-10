@@ -51,6 +51,7 @@ describe('Role Routes E2E Tests', () => {
 
         // Create admin user and token
         adminUser = await User.create({
+      tenantId: 'test_tenant_123',
             username: 'admin',
             email: 'admin@test.com',
             password: 'password123',
@@ -375,6 +376,7 @@ describe('Role Routes E2E Tests', () => {
 
         it('should prevent deleting role with assigned users', async () => {
             await User.create({
+      tenantId: 'test_tenant_123',
                 username: 'roleuser',
                 email: 'roleuser@test.com',
                 password: 'password123',
