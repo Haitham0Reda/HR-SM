@@ -19,6 +19,7 @@ beforeAll(async () => {
   });
 
   department = await Department.create({
+      tenantId: 'test_tenant_123',
     name: 'Test Department',
     code: 'TEST',
     school: school._id
@@ -31,6 +32,7 @@ beforeAll(async () => {
   });
 
   user = await User.create({
+      tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',

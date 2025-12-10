@@ -13,6 +13,7 @@ describe('User Controller - All 7 Functions', () => {
 
   beforeEach(async () => {
     testDepartment = await Department.create({
+      tenantId: 'test_tenant_123',
       name: 'IT Department',
       arabicName: 'قسم تكنولوجيا المعلومات',
       code: 'IT001'
@@ -26,6 +27,7 @@ describe('User Controller - All 7 Functions', () => {
     });
 
     testUser = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'testuser',
       email: 'test@test.com',
       password: 'password123',
@@ -107,6 +109,7 @@ describe('User Controller - All 7 Functions', () => {
   describe('3. createUser', () => {
     it('should create a new user successfully', async () => {
       mockReq.body = {
+        tenantId: 'test_tenant_123',
         username: 'newuser',
         email: 'new@test.com',
         password: 'password123',
@@ -234,6 +237,7 @@ describe('User Controller - All 7 Functions', () => {
 
     it('should reject duplicate email on update', async () => {
       const anotherUser = await User.create({
+        tenantId: 'test_tenant_123',
         username: 'another',
         email: 'another@test.com',
         password: 'password123',

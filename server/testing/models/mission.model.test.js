@@ -10,6 +10,7 @@ describe('Mission Model', () => {
   beforeAll(async () => {
     // Create test department
     testDepartment = await Department.create({
+      tenantId: 'test_tenant_123',
       name: 'Test Department',
       code: 'TEST-DEPT',
       description: 'Test department for mission tests'
@@ -17,6 +18,7 @@ describe('Mission Model', () => {
 
     // Create test employee
     testEmployee = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'testemployee',
       email: 'testemployee@test.com',
       password: 'Test123!@#',
@@ -30,6 +32,7 @@ describe('Mission Model', () => {
 
     // Create test approver
     testApprover = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'testapprover',
       email: 'testapprover@test.com',
       password: 'Test123!@#',

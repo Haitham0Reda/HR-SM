@@ -10,6 +10,7 @@ let survey;
 beforeAll(async () => {
   // Create users for testing
   user = await User.create({
+    tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
@@ -18,6 +19,7 @@ beforeAll(async () => {
   });
 
   manager = await User.create({
+    tenantId: 'test_tenant_123',
     username: 'testmanager',
     email: 'manager@example.com',
     password: 'password123',

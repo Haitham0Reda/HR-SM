@@ -24,7 +24,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
         await UsageTracking.deleteMany({});
         await LicenseAudit.deleteMany({});
         testTenantIds = [];
-        
+
         // Clear batch queue
         usageTracker.batchQueue.clear();
     });
@@ -34,7 +34,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
         await License.deleteMany({});
         await UsageTracking.deleteMany({});
         await LicenseAudit.deleteMany({});
-        
+
         // Clear batch queue
         usageTracker.batchQueue.clear();
     });
@@ -106,7 +106,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
 
                     // Verify tracking result based on whether limit would be exceeded
                     const wouldExceedLimit = limit !== null && amount > limit;
-                    
+
                     if (wouldExceedLimit) {
                         // Should be blocked
                         expect(trackResult.success).toBe(false);
@@ -136,7 +136,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                         // Verify limit comparison
                         if (limit !== null) {
                             expect(usageReport.usage[usageType].limit).toBe(limit);
-                            
+
                             // Verify percentage calculation
                             const expectedPercentage = Math.round((amount / limit) * 100);
                             expect(usageReport.usage[usageType].percentage).toBe(expectedPercentage);
@@ -153,7 +153,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                             // Verify warning detection (80% threshold)
                             if (amount >= limit * 0.8) {
                                 expect(usageReport.usage[usageType].isApproachingLimit).toBe(true);
-                                
+
                                 // Should have a warning
                                 if (usageReport.warnings.length > 0) {
                                     const warning = usageReport.warnings.find(w => w.limitType === usageType);
@@ -178,7 +178,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
 
                         expect(usageDoc).not.toBeNull();
                         expect(usageDoc.usage[usageType]).toBeDefined();
-                        
+
                         // Verify limits are stored in the tracking document
                         if (limit !== null) {
                             expect(usageDoc.limits[usageType]).toBe(limit);
@@ -191,9 +191,9 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                             tenantObjectId.toString(),
                             moduleKey
                         );
-                        
+
                         expect(usageReport.success).toBe(true);
-                        
+
                         // Usage should be 0 or not recorded since it was blocked
                         expect(usageReport.usage[usageType].current).toBe(0);
                     }
@@ -514,16 +514,16 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                     // Set up event listener to capture warning event
                     let warningEmitted = false;
                     let warningData = null;
-                    
+
                     const warningListener = (data) => {
-                        if (data.tenantId === tenantObjectId.toString() && 
-                            data.moduleKey === moduleKey && 
+                        if (data.tenantId === tenantObjectId.toString() &&
+                            data.moduleKey === moduleKey &&
                             data.limitType === usageType) {
                             warningEmitted = true;
                             warningData = data;
                         }
                     };
-                    
+
                     usageTracker.on('limitWarning', warningListener);
 
                     try {
@@ -559,15 +559,15 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                         });
 
                         expect(auditLogs.length).toBeGreaterThan(0);
-                        
-                        const warningLog = auditLogs.find(log => 
+
+                        const warningLog = auditLogs.find(log =>
                             log.details.limitType === usageType
                         );
-                        
+
                         expect(warningLog).toBeDefined();
                         expect(warningLog.details.currentValue).toBe(warningThresholdAmount);
                         expect(warningLog.details.limitValue).toBe(limit);
-                        
+
                         // Percentage should be in details if provided
                         if (warningLog.details.percentage !== undefined) {
                             expect(warningLog.details.percentage).toBeGreaterThanOrEqual(80);
@@ -582,7 +582,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                         });
 
                         expect(usageDoc).not.toBeNull();
-                        
+
                         // Check if warning was recorded in the document
                         const warning = usageDoc.warnings.find(w => w.limitType === usageType);
                         expect(warning).toBeDefined();
@@ -647,13 +647,13 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                     // Set up event listener
                     let warningEmitted = false;
                     const warningListener = (data) => {
-                        if (data.tenantId === tenantObjectId.toString() && 
-                            data.moduleKey === moduleKey && 
+                        if (data.tenantId === tenantObjectId.toString() &&
+                            data.moduleKey === moduleKey &&
                             data.limitType === usageType) {
                             warningEmitted = true;
                         }
                     };
-                    
+
                     usageTracker.on('limitWarning', warningListener);
 
                     try {
@@ -740,13 +740,13 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                     // Track warning events
                     let warningCount = 0;
                     const warningListener = (data) => {
-                        if (data.tenantId === tenantObjectId.toString() && 
-                            data.moduleKey === moduleKey && 
+                        if (data.tenantId === tenantObjectId.toString() &&
+                            data.moduleKey === moduleKey &&
                             data.limitType === usageType) {
                             warningCount++;
                         }
                     };
-                    
+
                     usageTracker.on('limitWarning', warningListener);
 
                     try {
@@ -840,16 +840,16 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                     // Set up event listener to capture limit exceeded event
                     let limitExceededEmitted = false;
                     let limitExceededData = null;
-                    
+
                     const limitExceededListener = (data) => {
-                        if (data.tenantId === tenantObjectId.toString() && 
-                            data.moduleKey === moduleKey && 
+                        if (data.tenantId === tenantObjectId.toString() &&
+                            data.moduleKey === moduleKey &&
                             data.limitType === usageType) {
                             limitExceededEmitted = true;
                             limitExceededData = data;
                         }
                     };
-                    
+
                     usageTracker.on('limitExceeded', limitExceededListener);
 
                     try {
@@ -894,11 +894,11 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                         });
 
                         expect(auditLogs.length).toBeGreaterThan(0);
-                        
-                        const violationLog = auditLogs.find(log => 
+
+                        const violationLog = auditLogs.find(log =>
                             log.details.limitType === usageType
                         );
-                        
+
                         expect(violationLog).toBeDefined();
                         expect(violationLog.details.currentValue).toBe(exceedingAmount);
                         expect(violationLog.details.limitValue).toBe(limit);
@@ -1067,7 +1067,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                     let blockedCount = 0;
                     for (const amount of attempts) {
                         const exceedingAmount = limit + amount;
-                        
+
                         const result = await usageTracker.trackUsage(
                             tenantObjectId.toString(),
                             moduleKey,
@@ -1139,7 +1139,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                                 MODULES.TASKS
                             ),
                             tier: fc.constantFrom('starter', 'business', 'enterprise')
-                        }).chain(base => 
+                        }).chain(base =>
                             fc.record({
                                 employees: fc.integer({ min: 50, max: 500 }),
                                 storage: fc.integer({ min: 1000, max: 10000 }),
@@ -1226,7 +1226,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                     // Assertion 5: All tracked modules should be in the report
                     for (const moduleKey of trackedModules) {
                         expect(report.modules[moduleKey]).toBeDefined();
-                        
+
                         const moduleReport = report.modules[moduleKey];
 
                         // Assertion 6: Each module report should have usage summary
@@ -1244,7 +1244,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
                             expect(usageData).toBeDefined();
                             expect(typeof usageData.current).toBe('number');
                             expect(usageData.current).toBeGreaterThanOrEqual(0);
-                            
+
                             // Limit should be defined (number or null)
                             expect(usageData.limit === null || typeof usageData.limit === 'number').toBe(true);
                         }
@@ -1274,7 +1274,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
 
                         // Assertion 12: Individual report should have detailed usage
                         expect(individualReport.usage).toBeDefined();
-                        
+
                         for (const usageType of ['employees', 'storage', 'apiCalls']) {
                             expect(individualReport.usage[usageType]).toBeDefined();
                             expect(individualReport.usage[usageType].current).toBeDefined();
@@ -1286,7 +1286,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
 
                         // Assertion 13: Individual report should have warnings array
                         expect(Array.isArray(individualReport.warnings)).toBe(true);
-                        
+
                         // Assertion 14: Individual report should have violations array
                         expect(Array.isArray(individualReport.violations)).toBe(true);
 
@@ -1303,7 +1303,7 @@ describe('Usage Metric Tracking - Property-Based Tests', () => {
             ),
             { numRuns: 100 } // Run 100 iterations as specified in design
         );
-    });
+    }, 60000); // 60 second timeout for property-based test
 
     /**
      * Additional property: Usage report should handle empty usage correctly

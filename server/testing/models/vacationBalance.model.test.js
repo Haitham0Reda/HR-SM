@@ -4,6 +4,7 @@ import VacationBalance from '../../models/vacationBalance.model.js';
 describe('VacationBalance Model', () => {
   it('should create and save a vacation balance record successfully', async () => {
     const vacationBalanceData = {
+      tenantId: new mongoose.Types.ObjectId(),
       employee: new mongoose.Types.ObjectId(),
       year: 2023,
       annual: {
@@ -74,10 +75,15 @@ describe('VacationBalance Model', () => {
   });
 
   it('should enforce unique employee-year combination', async () => {
+    // Ensure indexes are created before testing uniqueness
+    await VacationBalance.createIndexes();
+
+    const tenantId = new mongoose.Types.ObjectId();
     const employeeId = new mongoose.Types.ObjectId();
     const year = 2023;
 
     const vacationBalanceData1 = {
+      tenantId: tenantId,
       employee: employeeId,
       year: year,
       annual: {
@@ -101,6 +107,7 @@ describe('VacationBalance Model', () => {
     };
 
     const vacationBalanceData2 = {
+      tenantId: tenantId,
       employee: employeeId,
       year: year,
       annual: {
@@ -141,6 +148,7 @@ describe('VacationBalance Model', () => {
 
   it('should calculate total available days', async () => {
     const vacationBalanceData = {
+      tenantId: new mongoose.Types.ObjectId(),
       employee: new mongoose.Types.ObjectId(),
       year: 2023,
       annual: {
@@ -171,6 +179,7 @@ describe('VacationBalance Model', () => {
 
   it('should check sufficient balance', async () => {
     const vacationBalanceData = {
+      tenantId: new mongoose.Types.ObjectId(),
       employee: new mongoose.Types.ObjectId(),
       year: 2023,
       annual: {
@@ -206,6 +215,7 @@ describe('VacationBalance Model', () => {
 
   it('should use vacation days', async () => {
     const vacationBalanceData = {
+      tenantId: new mongoose.Types.ObjectId(),
       employee: new mongoose.Types.ObjectId(),
       year: 2023,
       annual: {
@@ -247,6 +257,7 @@ describe('VacationBalance Model', () => {
 
   it('should return vacation days', async () => {
     const vacationBalanceData = {
+      tenantId: new mongoose.Types.ObjectId(),
       employee: new mongoose.Types.ObjectId(),
       year: 2023,
       annual: {

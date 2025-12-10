@@ -5,7 +5,7 @@
  */
 import MixedVacation from '../models/mixedVacation.model.js';
 import Holiday from '../models/holiday.model.js';
-import VacationBalance from '../models/vacationBalance.model.js';
+import VacationBalance from '../../../../models/vacationBalance.model.js';
 import User from '../models/user.model.js';
 
 /**

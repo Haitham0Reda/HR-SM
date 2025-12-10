@@ -1,8 +1,8 @@
-const Tenant = require('../../tenants/models/Tenant');
-const moduleRegistry = require('../../../core/registry/moduleRegistry');
-const dependencyResolver = require('../../../core/registry/dependencyResolver');
-const AppError = require('../../../core/errors/AppError');
-const { ERROR_TYPES } = require('../../../core/errors/errorTypes');
+import Tenant from '../../tenants/models/Tenant.js';
+import moduleRegistry from '../../../core/registry/moduleRegistry.js';
+import dependencyResolver from '../../../core/registry/dependencyResolver.js';
+import AppError from '../../../core/errors/AppError.js';
+import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
 
 /**
  * Module Management Service
@@ -15,7 +15,7 @@ class ModuleManagementService {
    * @returns {Array<Object>} Array of module configurations
    */
   getAllModules() {
-    return moduleRegistry.default.getAllModules();
+    return moduleRegistry.getAllModules();
   }
 
   /**
@@ -26,8 +26,8 @@ class ModuleManagementService {
    * @throws {AppError} If module not found
    */
   getModule(moduleName) {
-    const module = moduleRegistry.default.getModule(moduleName);
-    
+    const module = moduleRegistry.getModule(moduleName);
+
     if (!module) {
       throw new AppError(
         `Module ${moduleName} not found in registry`,
@@ -47,7 +47,7 @@ class ModuleManagementService {
    */
   async getEnabledModules(tenantId) {
     const tenant = await Tenant.findOne({ tenantId });
-    
+
     if (!tenant) {
       throw new AppError(
         `Tenant with ID ${tenantId} not found`,
@@ -58,7 +58,7 @@ class ModuleManagementService {
 
     // Get full module details for enabled modules
     const enabledModules = tenant.enabledModules.map(em => {
-      const moduleConfig = moduleRegistry.default.getModule(em.moduleId);
+      const moduleConfig = moduleRegistry.getModule(em.moduleId);
       return {
         ...em.toObject(),
         config: moduleConfig
@@ -79,7 +79,7 @@ class ModuleManagementService {
    */
   async enableModule(tenantId, moduleId, enabledBy = 'platform-admin') {
     // Check if module exists in registry
-    if (!moduleRegistry.default.hasModule(moduleId)) {
+    if (!moduleRegistry.hasModule(moduleId)) {
       throw new AppError(
         `Module ${moduleId} not found in registry`,
         404,
@@ -89,7 +89,7 @@ class ModuleManagementService {
 
     // Get tenant
     const tenant = await Tenant.findOne({ tenantId });
-    
+
     if (!tenant) {
       throw new AppError(
         `Tenant with ID ${tenantId} not found`,
@@ -104,7 +104,7 @@ class ModuleManagementService {
     }
 
     // Check dependencies
-    const dependencies = moduleRegistry.default.getModuleDependencies(moduleId);
+    const dependencies = moduleRegistry.getModuleDependencies(moduleId);
     const missingDependencies = [];
 
     for (const dep of dependencies.dependencies) {
@@ -149,7 +149,7 @@ class ModuleManagementService {
 
     // Get tenant
     const tenant = await Tenant.findOne({ tenantId });
-    
+
     if (!tenant) {
       throw new AppError(
         `Tenant with ID ${tenantId} not found`,
@@ -165,11 +165,11 @@ class ModuleManagementService {
 
     // Check if other enabled modules depend on this module
     const dependentModules = [];
-    
+
     for (const enabledModule of tenant.enabledModules) {
       if (enabledModule.moduleId === moduleId) continue;
-      
-      const deps = moduleRegistry.default.getModuleDependencies(enabledModule.moduleId);
+
+      const deps = moduleRegistry.getModuleDependencies(enabledModule.moduleId);
       if (deps.dependencies.includes(moduleId)) {
         dependentModules.push(enabledModule.moduleId);
       }
@@ -203,7 +203,7 @@ class ModuleManagementService {
   async enableModules(tenantId, moduleIds, enabledBy = 'platform-admin') {
     // Validate all modules exist
     for (const moduleId of moduleIds) {
-      if (!moduleRegistry.default.hasModule(moduleId)) {
+      if (!moduleRegistry.hasModule(moduleId)) {
         throw new AppError(
           `Module ${moduleId} not found in registry`,
           404,
@@ -214,7 +214,7 @@ class ModuleManagementService {
 
     // Get tenant
     const tenant = await Tenant.findOne({ tenantId });
-    
+
     if (!tenant) {
       throw new AppError(
         `Tenant with ID ${tenantId} not found`,
@@ -232,7 +232,7 @@ class ModuleManagementService {
     }
 
     // Use dependency resolver to get correct order
-    const orderedModules = dependencyResolver.default.resolveLoadOrder(
+    const orderedModules = dependencyResolver.getLoadOrder(
       [...currentlyEnabled, ...toEnable]
     );
 
@@ -255,7 +255,7 @@ class ModuleManagementService {
    * @returns {Object} Dependencies information
    */
   getModuleDependencies(moduleId) {
-    if (!moduleRegistry.default.hasModule(moduleId)) {
+    if (!moduleRegistry.hasModule(moduleId)) {
       throw new AppError(
         `Module ${moduleId} not found in registry`,
         404,
@@ -263,8 +263,8 @@ class ModuleManagementService {
       );
     }
 
-    const dependencies = moduleRegistry.default.getModuleDependencies(moduleId);
-    const dependents = moduleRegistry.default.getDependentModules(moduleId);
+    const dependencies = moduleRegistry.getModuleDependencies(moduleId);
+    const dependents = moduleRegistry.getDependentModules(moduleId);
 
     return {
       moduleId,
@@ -282,7 +282,7 @@ class ModuleManagementService {
    * @returns {Promise<Object>} Check result
    */
   async canEnableModule(tenantId, moduleId) {
-    if (!moduleRegistry.default.hasModule(moduleId)) {
+    if (!moduleRegistry.hasModule(moduleId)) {
       return {
         canEnable: false,
         reason: 'Module not found in registry'
@@ -290,7 +290,7 @@ class ModuleManagementService {
     }
 
     const tenant = await Tenant.findOne({ tenantId });
-    
+
     if (!tenant) {
       return {
         canEnable: false,
@@ -306,7 +306,7 @@ class ModuleManagementService {
     }
 
     // Check dependencies
-    const dependencies = moduleRegistry.default.getModuleDependencies(moduleId);
+    const dependencies = moduleRegistry.getModuleDependencies(moduleId);
     const missingDependencies = [];
 
     for (const dep of dependencies.dependencies) {
@@ -335,8 +335,8 @@ class ModuleManagementService {
    * @returns {Object} Registry statistics
    */
   getRegistryStats() {
-    return moduleRegistry.default.getStats();
+    return moduleRegistry.getStats();
   }
 }
 
-module.exports = new ModuleManagementService();
+export default new ModuleManagementService();

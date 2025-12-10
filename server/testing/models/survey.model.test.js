@@ -12,11 +12,13 @@ beforeEach(async () => {
   await Survey.deleteMany({});
 
   department = await Department.create({
+      tenantId: 'test_tenant_123',
     name: 'Test Department',
     code: 'TEST'
   });
 
   user = await User.create({
+      tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
@@ -26,6 +28,7 @@ beforeEach(async () => {
   });
 
   manager = await User.create({
+      tenantId: 'test_tenant_123',
     username: 'testmanager',
     email: 'manager@example.com',
     password: 'password123',

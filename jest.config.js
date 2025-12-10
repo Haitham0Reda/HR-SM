@@ -23,6 +23,6 @@ export default {
   testTimeout: 30000, // 30 second timeout per test
   // Disable slow features
   errorOnDeprecated: false,
-  detectOpenHandles: false,
+  detectOpenHandles: true, // Enable to help identify async issues
   forceExit: true // Force exit after tests complete
 };

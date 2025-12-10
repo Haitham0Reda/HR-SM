@@ -21,7 +21,7 @@ export const createMockRequest = (overrides = {}) => ({
     params: {},
     query: {},
     user: {},
-    get: function(header) {
+    get: function (header) {
         return this.headers?.[header.toLowerCase()] || null;
     },
     headers: {},
@@ -31,6 +31,7 @@ export const createMockRequest = (overrides = {}) => ({
 
 export const createTestDepartment = async () => {
     return await Department.create({
+        tenantId: 'test_tenant_123',
         name: 'IT Department',
         arabicName: 'قسم تكنولوجيا المعلومات',
         code: 'IT001'
@@ -39,6 +40,7 @@ export const createTestDepartment = async () => {
 
 export const createTestPosition = async (departmentId) => {
     return await Position.create({
+        tenantId: 'test_tenant_123',
         title: 'Developer',
         arabicTitle: 'مطور',
         code: 'DEV001',
@@ -48,6 +50,7 @@ export const createTestPosition = async (departmentId) => {
 
 export const createTestUser = async (departmentId, positionId, overrides = {}) => {
     return await User.create({
+        tenantId: 'test_tenant_123',
         username: 'testuser',
         email: 'test@test.com',
         password: 'password123',
@@ -68,6 +71,7 @@ export const createTestUser = async (departmentId, positionId, overrides = {}) =
 
 export const createTestSchool = async (overrides = {}) => {
     return await School.create({
+        tenantId: 'test_tenant_123',
         name: 'Test School',
         code: 'TESTSCH',
         address: {

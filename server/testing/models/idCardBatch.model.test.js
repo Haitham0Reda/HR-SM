@@ -18,12 +18,14 @@ beforeAll(async () => {
 
   // Create required references
   department = await Department.create({
+      tenantId: 'test_tenant_123',
     name: 'Test Department',
     code: 'TEST',
     school: school._id
   });
 
   user = await User.create({
+      tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
@@ -165,6 +167,7 @@ describe('IDCardBatch Model', () => {
     });
 
     const employee = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'employee1',
       email: 'employee1@example.com',
       password: 'password123',

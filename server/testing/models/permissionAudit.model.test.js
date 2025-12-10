@@ -21,6 +21,7 @@ beforeEach(async () => {
 
   // Create users for testing (in beforeEach because the global afterEach clears all data)
   user = await User.create({
+      tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
@@ -30,6 +31,7 @@ beforeEach(async () => {
   });
 
   adminUser = await User.create({
+      tenantId: 'test_tenant_123',
     username: 'adminuser',
     email: 'admin@example.com',
     password: 'password123',

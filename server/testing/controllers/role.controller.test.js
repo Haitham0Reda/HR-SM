@@ -348,6 +348,7 @@ describe('Role Controller', () => {
 
         it('should prevent deleting role with assigned users', async () => {
             await User.create({
+      tenantId: 'test_tenant_123',
                 username: 'testuser',
                 email: 'test@test.com',
                 password: 'password123',

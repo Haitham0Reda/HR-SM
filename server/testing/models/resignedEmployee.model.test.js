@@ -23,6 +23,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   // Create fresh employee and related data for each test
   department = await Department.create({
+      tenantId: 'test_tenant_123',
     name: 'Test Department',
     code: 'TEST',
     school: school._id
@@ -35,6 +36,7 @@ beforeEach(async () => {
   });
 
   employee = await User.create({
+      tenantId: 'test_tenant_123',
     username: 'testemployee',
     email: 'employee@example.com',
     password: 'password123',
@@ -54,6 +56,7 @@ beforeEach(async () => {
   });
 
   hrUser = await User.create({
+      tenantId: 'test_tenant_123',
     username: 'hruser',
     email: 'hr@example.com',
     password: 'password123',
@@ -302,6 +305,7 @@ describe('ResignedEmployee Model', () => {
   it('should find all resigned employees', async () => {
     // Create a second employee for the second record
     const employee2 = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'testemployee2',
       email: 'employee2@example.com',
       password: 'password123',

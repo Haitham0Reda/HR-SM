@@ -1,5 +1,5 @@
-const moduleManagementService = require('../services/moduleManagementService');
-const asyncHandler = require('../../../utils/asyncHandler');
+import moduleManagementService from '../services/moduleManagementService.js';
+import asyncHandler from '../../../utils/asyncHandler.js';
 
 /**
  * Module Controller
@@ -10,7 +10,7 @@ const asyncHandler = require('../../../utils/asyncHandler');
  * List all available modules
  * GET /api/platform/modules
  */
-exports.listModules = asyncHandler(async (req, res) => {
+export const listModules = asyncHandler(async (req, res) => {
   const modules = moduleManagementService.getAllModules();
 
   res.status(200).json({
@@ -30,7 +30,7 @@ exports.listModules = asyncHandler(async (req, res) => {
  * Get module by name
  * GET /api/platform/modules/:moduleId
  */
-exports.getModule = asyncHandler(async (req, res) => {
+export const getModule = asyncHandler(async (req, res) => {
   const { moduleId } = req.params;
 
   const module = moduleManagementService.getModule(moduleId);
@@ -51,7 +51,7 @@ exports.getModule = asyncHandler(async (req, res) => {
  * Get module dependencies
  * GET /api/platform/modules/:moduleId/dependencies
  */
-exports.getModuleDependencies = asyncHandler(async (req, res) => {
+export const getModuleDependencies = asyncHandler(async (req, res) => {
   const { moduleId } = req.params;
 
   const dependencies = moduleManagementService.getModuleDependencies(moduleId);
@@ -70,7 +70,7 @@ exports.getModuleDependencies = asyncHandler(async (req, res) => {
  * Get enabled modules for tenant
  * GET /api/platform/modules/tenants/:tenantId/modules
  */
-exports.getTenantModules = asyncHandler(async (req, res) => {
+export const getTenantModules = asyncHandler(async (req, res) => {
   const { tenantId } = req.params;
 
   const modules = await moduleManagementService.getEnabledModules(tenantId);
@@ -93,7 +93,7 @@ exports.getTenantModules = asyncHandler(async (req, res) => {
  * Enable module for tenant
  * POST /api/platform/modules/tenants/:tenantId/modules/:moduleId/enable
  */
-exports.enableModule = asyncHandler(async (req, res) => {
+export const enableModule = asyncHandler(async (req, res) => {
   const { tenantId, moduleId } = req.params;
   const enabledBy = req.platformUser?.userId || 'platform-admin';
 
@@ -116,7 +116,7 @@ exports.enableModule = asyncHandler(async (req, res) => {
  * Disable module for tenant
  * DELETE /api/platform/modules/tenants/:tenantId/modules/:moduleId/disable
  */
-exports.disableModule = asyncHandler(async (req, res) => {
+export const disableModule = asyncHandler(async (req, res) => {
   const { tenantId, moduleId } = req.params;
 
   const tenant = await moduleManagementService.disableModule(tenantId, moduleId);
@@ -141,7 +141,7 @@ exports.disableModule = asyncHandler(async (req, res) => {
  * Body:
  * - moduleIds: Array of module IDs to enable
  */
-exports.enableModules = asyncHandler(async (req, res) => {
+export const enableModules = asyncHandler(async (req, res) => {
   const { tenantId } = req.params;
   const { moduleIds } = req.body;
   const enabledBy = req.platformUser?.userId || 'platform-admin';
@@ -179,7 +179,7 @@ exports.enableModules = asyncHandler(async (req, res) => {
  * Check if module can be enabled for tenant
  * GET /api/platform/modules/tenants/:tenantId/modules/:moduleId/can-enable
  */
-exports.canEnableModule = asyncHandler(async (req, res) => {
+export const canEnableModule = asyncHandler(async (req, res) => {
   const { tenantId, moduleId } = req.params;
 
   const result = await moduleManagementService.canEnableModule(tenantId, moduleId);
@@ -198,7 +198,7 @@ exports.canEnableModule = asyncHandler(async (req, res) => {
  * Get module registry statistics
  * GET /api/platform/modules/stats
  */
-exports.getModuleStats = asyncHandler(async (req, res) => {
+export const getModuleStats = asyncHandler(async (req, res) => {
   const stats = moduleManagementService.getRegistryStats();
 
   res.status(200).json({

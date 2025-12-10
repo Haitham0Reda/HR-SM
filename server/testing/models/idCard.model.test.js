@@ -18,6 +18,7 @@ beforeAll(async () => {
   });
 
   department = await Department.create({
+      tenantId: 'test_tenant_123',
     name: 'Test Department',
     code: 'TEST',
     school: school._id
@@ -33,6 +34,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   // Create user for testing (in beforeEach because the global afterEach clears all data)
   user = await User.create({
+      tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',

@@ -4,6 +4,7 @@ import Attendance from '../../models/attendance.model.js';
 describe('Attendance Model', () => {
   it('should create and save an attendance record successfully', async () => {
     const attendanceData = {
+      tenantId: 'test_tenant_123',
       employee: new mongoose.Types.ObjectId(),
       date: new Date(),
       status: 'present',
@@ -33,6 +34,7 @@ describe('Attendance Model', () => {
 
   it('should calculate total working hours correctly', async () => {
     const attendanceData = {
+      tenantId: 'test_tenant_123',
       employee: new mongoose.Types.ObjectId(),
       date: new Date(),
       status: 'present',

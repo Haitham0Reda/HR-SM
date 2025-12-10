@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 describe('User Model', () => {
   it('should create and save a user successfully', async () => {
     const userData = {
+      tenantId: 'test_tenant_123',
       username: 'testuser',
       email: 'test@example.com',
       password: 'Password123!',
@@ -47,6 +48,7 @@ describe('User Model', () => {
     }
 
     expect(err).toBeDefined();
+    expect(err.errors.tenantId).toBeDefined();
     expect(err.errors.username).toBeDefined();
     expect(err.errors.email).toBeDefined();
     expect(err.errors.password).toBeDefined();
@@ -54,6 +56,7 @@ describe('User Model', () => {
 
   it('should hash user password before saving', async () => {
     const userData = {
+      tenantId: 'test_tenant_123',
       username: 'testuser2',
       email: 'test2@example.com',
       password: 'Password123!'
@@ -70,6 +73,7 @@ describe('User Model', () => {
 
   it('should generate employeeId for new users', async () => {
     const userData = {
+      tenantId: 'test_tenant_123',
       username: 'testuser3',
       email: 'test3@example.com',
       password: 'Password123!'
@@ -84,6 +88,7 @@ describe('User Model', () => {
 
   it('should compare password correctly', async () => {
     const userData = {
+      tenantId: 'test_tenant_123',
       username: 'testuser4',
       email: 'test4@example.com',
       password: 'Password123!'
@@ -105,11 +110,12 @@ describe('User Model Methods', () => {
 
   beforeEach(async () => {
     testUser = await User.create({
+      tenantId: 'test_tenant_123',
       username: 'methodtest',
       email: 'methodtest@example.com',
       password: 'Password123!',
       role: 'employee',
-      profile: {
+      personalInfo: {
         firstName: 'Method',
         lastName: 'Test'
       }
@@ -117,7 +123,9 @@ describe('User Model Methods', () => {
   });
 
   afterEach(async () => {
-    await User.deleteOne({ _id: testUser._id });
+    if (testUser && testUser._id) {
+      await User.deleteOne({ _id: testUser._id });
+    }
   });
 
   it('should have matchPassword method', () => {
