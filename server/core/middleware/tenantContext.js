@@ -70,18 +70,34 @@ export const tenantContext = async (req, res, next) => {
             );
         }
 
-        // TODO: Load tenant from database when Tenant model is implemented
-        // For now, we'll create a minimal tenant object from the token
-        // This will be replaced with actual database lookup in Phase 2
-        const tenant = {
-            id: tenantId,
-            tenantId: tenantId,
-            status: 'active', // Will be validated against database
-            enabledModules: [], // Will be loaded from database
-            config: {}
-        };
+        // Load tenant from database
+        let tenant;
+        try {
+            // Dynamically import Tenant model to avoid circular dependencies
+            const { default: Tenant } = await import('../../platform/tenants/models/Tenant.js');
+            tenant = await Tenant.findOne({ tenantId }).lean();
+        } catch (error) {
+            // If Tenant model doesn't exist yet, create minimal tenant object
+            tenant = {
+                id: tenantId,
+                tenantId: tenantId,
+                status: 'active',
+                enabledModules: [],
+                config: {}
+            };
+        }
 
-        // Validate tenant status (will check database in Phase 2)
+        // If tenant not found in database, reject
+        if (!tenant) {
+            throw new AppError(
+                'Tenant not found',
+                404,
+                ERROR_TYPES.TENANT_NOT_FOUND,
+                { tenantId }
+            );
+        }
+
+        // Validate tenant status - CRITICAL for security
         if (tenant.status === 'suspended') {
             throw new AppError(
                 'Tenant account is suspended',
@@ -91,14 +107,23 @@ export const tenantContext = async (req, res, next) => {
             );
         }
 
-        if (tenant.status === 'inactive') {
+        if (tenant.status === 'cancelled') {
             throw new AppError(
-                'Tenant account is inactive',
+                'Tenant account is cancelled',
                 403,
-                ERROR_TYPES.TENANT_INACTIVE,
+                ERROR_TYPES.TENANT_CANCELLED,
                 { tenantId }
             );
         }
+
+        // Normalize tenant object structure
+        tenant = {
+            id: tenant.tenantId || tenantId,
+            tenantId: tenant.tenantId || tenantId,
+            status: tenant.status,
+            enabledModules: tenant.enabledModules || [],
+            config: tenant.config || {}
+        };
 
         // Inject tenant into request
         req.tenant = tenant;

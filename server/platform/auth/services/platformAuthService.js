@@ -1,7 +1,7 @@
-const PlatformUser = require('../../models/PlatformUser');
-const { generatePlatformToken } = require('../../../core/auth/platformAuth');
-const AppError = require('../../../core/errors/AppError');
-const { ERROR_TYPES } = require('../../../core/errors/errorTypes');
+import PlatformUser from '../../models/PlatformUser.js';
+import { generatePlatformToken } from '../../../core/auth/platformAuth.js';
+import AppError from '../../../core/errors/AppError.js';
+import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
 
 /**
  * Platform Authentication Service
@@ -244,4 +244,4 @@ class PlatformAuthService {
   }
 }
 
-module.exports = new PlatformAuthService();
+export default new PlatformAuthService();

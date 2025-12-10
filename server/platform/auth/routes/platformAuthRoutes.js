@@ -1,9 +1,8 @@
-const express = require('express');
-const router = express.Router();
-const platformAuthController = require('../controllers/platformAuthController');
+import express from 'express';
+import * as platformAuthController from '../controllers/platformAuthController.js';
+import { authenticatePlatform } from '../../../core/middleware/platformAuthentication.js';
 
-// Import authentication middleware
-const { authenticatePlatform } = require('../../../core/middleware/platformAuthentication');
+const router = express.Router();
 
 /**
  * Platform Authentication Routes
@@ -18,4 +17,4 @@ router.post('/logout', authenticatePlatform, platformAuthController.logout);
 router.get('/me', authenticatePlatform, platformAuthController.me);
 router.post('/change-password', authenticatePlatform, platformAuthController.changePassword);
 
-module.exports = router;
+export default router;

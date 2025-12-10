@@ -149,7 +149,12 @@
   - Use Platform JWT for authentication
   - _Requirements: 5.1, 16.1, 16.2_
 
-- [ ] 3.3 Write unit tests for platform authentication
+- [x] 3.3 Write unit tests for platform authentication
+
+
+
+
+
 
   - Test platform login uses platform_users collection
   - Test platform JWT is issued correctly
@@ -173,13 +178,26 @@
   - Implement tenant deletion with archival
   - _Requirements: 5.3, 18.1, 18.2, 18.3, 18.4_
 
-- [ ]* 3.6 Write unit tests for tenant provisioning
+
+- [x] 3.6 Write unit tests for tenant provisioning
+
+
+
+
+
   - Test tenant creation generates unique tenantId
   - Test default admin user is created
   - Test HR-Core is enabled by default
   - _Requirements: 5.3, 18.1_
 
-- [ ]* 3.7 Write critical property test for tenant suspension
+- [x] 3.7 Write critical property test for tenant suspension
+
+
+
+
+
+
+
   - Test suspended tenant cannot access ANY API endpoint (CRITICAL for security)
   - Use fast-check to test various API endpoints
   - _Requirements: 6.5, 18.2_
@@ -210,7 +228,11 @@
   - Implement upgrade/downgrade logic
   - _Requirements: 9.2, 9.3, 9.4, 9.5_
 
-- [ ]* 3.11 Write unit tests for subscription management
+
+- [ ] 3.11 Write unit tests for subscription management
+
+
+
   - Test plan assignment enables correct modules
   - Test subscription expiration disables modules
   - Test upgrade enables new modules
@@ -231,10 +253,14 @@
   - Create moduleController.js
   - Create moduleRoutes.js under /api/platform/modules
   - Endpoints: GET /modules, POST /tenants/:id/modules/:moduleId/enable, DELETE /tenants/:id/modules/:moduleId/disable
+
   - Implement runtime module enablement/disablement
   - _Requirements: 5.4, 7.4, 17.2_
 
+
+
 - [ ]* 3.14 Write unit tests for module enablement
+
   - Test module becomes accessible immediately after enablement
   - Test no server restart required
   - _Requirements: 3.4, 5.4, 7.4, 17.2_
@@ -246,9 +272,12 @@
   - Create metricsController.js for usage metrics
   - Create systemRoutes.js under /api/platform/system
   - Implement usage tracking service
+
   - _Requirements: 19.1, 19.3_
 
+
 - [ ] 4. Checkpoint - Ensure all tests pass
+
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Phase 3: Data Migration
@@ -860,53 +889,163 @@
 - [ ] 20. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-## Phase 8: Testing and Documentation
+## Phase 8: Physical File Restructuring
 
-- [ ] 21. Write critical security property-based tests
+This phase focuses on moving files from the current structure to match the clean modular architecture. This is surgical refactoring - moving files to correct ownership without rewriting logic.
+
+
+- [x] 21. Restructure server/controllers into modules
+
+
+
+
+  - Move attendance controllers to server/modules/hr-core/attendance/controllers/
+  - Move vacation/leave controllers to server/modules/hr-core/vacations/controllers/
+  - Move mission controllers to server/modules/hr-core/missions/controllers/
+  - Move overtime controllers to server/modules/hr-core/overtime/controllers/
+  - Move holiday controllers to server/modules/hr-core/holidays/controllers/
+  - Move request controllers to server/modules/hr-core/requests/controllers/
+  - Move user controllers to server/modules/hr-core/users/controllers/
+  - Move department/position controllers to server/modules/hr-core/users/controllers/
+  - Update import paths in routes
+  - _Requirements: 3.1_
+
+- [x] 21.1 Restructure server/services into modules
+
+
+  - Move attendance services to server/modules/hr-core/attendance/services/
+  - Move vacation/leave services to server/modules/hr-core/vacations/services/
+  - Move mission services to server/modules/hr-core/missions/services/
+  - Move overtime services to server/modules/hr-core/overtime/services/
+  - Move holiday services to server/modules/hr-core/holidays/services/
+  - Move request services to server/modules/hr-core/requests/services/
+  - Move user services to server/modules/hr-core/users/services/
+  - Move department/position services to server/modules/hr-core/users/services/
+  - Update import paths in controllers
+  - _Requirements: 3.1_
+
+- [x] 21.2 Restructure server/models into modules
+
+
+  - Move attendance models to server/modules/hr-core/attendance/models/
+  - Move vacation/leave models to server/modules/hr-core/vacations/models/
+  - Move mission models to server/modules/hr-core/missions/models/
+  - Move overtime models to server/modules/hr-core/overtime/models/
+  - Move holiday models to server/modules/hr-core/holidays/models/
+  - Move request models to server/modules/hr-core/requests/models/
+  - Move user models to server/modules/hr-core/users/models/
+  - Move department/position models to server/modules/hr-core/users/models/
+  - Update import paths throughout codebase
+  - _Requirements: 3.1_
+
+- [x] 21.3 Restructure server/routes into modules
+
+
+  - Move attendance routes to server/modules/hr-core/attendance/routes.js
+  - Move vacation/leave routes to server/modules/hr-core/vacations/routes.js
+  - Move mission routes to server/modules/hr-core/missions/routes.js
+  - Move overtime routes to server/modules/hr-core/overtime/routes.js
+  - Move holiday routes to server/modules/hr-core/holidays/routes.js
+  - Move request routes to server/modules/hr-core/requests/routes.js
+  - Move user routes to server/modules/hr-core/users/routes.js
+  - Move department/position routes to server/modules/hr-core/users/routes.js
+  - Update route registration in app.js
+  - _Requirements: 3.1_
+
+- [x] 21.4 Move optional module files (tasks, payroll, documents, reports)
+
+  - Ensure server/modules/tasks/ has complete structure (controllers/, services/, models/, routes/)
+  - Move any task-related files from server/controllers, server/services, server/models to tasks module
+  - Create server/modules/payroll/ if payroll features exist
+  - Create server/modules/documents/ if document features exist
+  - Create server/modules/reports/ if reporting features exist
+  - Update import paths
+  - _Requirements: 3.1_
+
+- [x] 21.5 Consolidate duplicate utilities into core
+
+
+  - Identify duplicate date utilities across modules → move to server/core/utils/date.js
+  - Identify duplicate pagination utilities → move to server/core/utils/pagination.js
+  - Identify duplicate validation utilities → move to server/core/utils/validation.js
+  - Identify duplicate response formatting → move to server/core/utils/response.js
+  - Remove duplicates from modules
+  - Update imports to use core utilities
+  - _Requirements: 15.1_
+
+- [x] 21.6 Consolidate duplicate middleware into core
+
+
+  - Identify multiple auth middleware implementations → consolidate to server/core/middleware/auth.middleware.js
+  - Identify duplicate error handling → ensure using server/core/errors/errorHandler.js
+  - Identify duplicate rate limiting → consolidate to server/core/middleware/rate-limit.middleware.js
+  - Remove duplicates from modules
+  - Update imports to use core middleware
+  - _Requirements: 15.1_
+
+- [x] 21.7 Clean up global server/ directories
+
+
+  - After moving files, remove empty directories: server/controllers/, server/services/, server/models/, server/routes/
+  - Keep server/middleware/ only for legacy compatibility (mark as deprecated)
+  - Keep server/config/ only for legacy compatibility (mark as deprecated)
+  - Update documentation to reflect new structure
+  - _Requirements: 3.1_
+
+- [ ] 22. Checkpoint - Verify restructuring
+  - Ensure all tests still pass after file moves
+  - Verify no broken imports
+  - Verify application starts successfully
+  - Run smoke tests on key endpoints
+  - Ask user if questions arise
+
+## Phase 9: Testing and Documentation
+
+- [ ] 23. Write critical security property-based tests
   - Focus on security-critical properties only (tenant isolation, authentication, authorization)
   - Use fast-check for these critical tests only
   - _Requirements: 6.2, 6.4, 6.5, 16.1, 16.4_
 
-- [ ]* 21.1 Write property test for tenant data isolation (CRITICAL)
+- [ ]* 23.1 Write property test for tenant data isolation (CRITICAL)
   - Test that no query can access data from another tenant
   - Generate random tenantIds and verify complete isolation
   - This is the most important test for multi-tenancy security
   - _Requirements: 6.2, 6.4_
 
-- [ ]* 21.2 Write property test for suspended tenant blocking (CRITICAL)
+- [ ]* 23.2 Write property test for suspended tenant blocking (CRITICAL)
   - Test that suspended tenants cannot access any endpoint
   - Generate random API endpoints and verify all return 403
   - _Requirements: 6.5, 18.2_
 
-- [ ]* 21.3 Write property test for backup isolation (CRITICAL)
+- [ ]* 23.3 Write property test for backup isolation (CRITICAL)
   - Test that backups never contain data from other tenants
   - Generate random tenant data and verify backup isolation
   - _Requirements: 2.5, 11.1, 11.3_
 
-- [ ] 22. Write integration tests for key flows
+- [ ] 24. Write integration tests for key flows
   - Test complete user journeys through the system
   - Focus on happy paths and critical error paths
   - _Requirements: All requirements_
 
-- [ ]* 22.1 Write platform API integration tests
+- [ ]* 24.1 Write platform API integration tests
   - Test tenant creation flow (create → configure → enable modules)
   - Test subscription management flow (assign plan → verify modules enabled)
   - Test module management flow (enable → verify accessible, disable → verify blocked)
   - _Requirements: 5.3, 9.2, 5.4_
 
-- [ ]* 22.2 Write tenant API integration tests
+- [ ]* 24.2 Write tenant API integration tests
   - Test user authentication flow (login → get token → access protected endpoint)
   - Test request workflow (create → approve → verify side effects)
   - Test module access (enabled module works, disabled module returns 403)
   - _Requirements: 1.3, 10.1, 10.2, 10.3, 3.2_
 
-- [ ]* 22.3 Write module system integration tests
+- [ ]* 24.3 Write module system integration tests
   - Test module loading on tenant login
   - Test dependency resolution (enable module with dependencies)
   - Test graceful degradation (optional dependency disabled)
   - _Requirements: 17.1, 12.2, 12.5_
 
-- [ ] 23. Update documentation
+- [ ] 25. Update documentation
   - Update README.md with new architecture overview
   - Add prominent section: "HR-Core: The Sacred Foundation"
   - Document HR-Core boundaries: CANNOT depend on optional modules
@@ -919,7 +1058,7 @@
   - Create deployment guides for SaaS and On-Premise modes
   - _Requirements: All requirements, especially 2.1, 2.2_
 
-- [ ] 24. Final checkpoint - Ensure all tests pass
+- [ ] 26. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
   - Verify test coverage > 80%
   - Verify all critical property-based tests pass (tenant isolation, suspension, backup)
@@ -927,6 +1066,7 @@
   - Verify no regressions in existing functionality
   - Run manual smoke tests on key user flows
   - **Verify: Optional modules can only REQUEST changes, never directly modify HR-Core data**
+  - **Verify: All files are in correct module ownership (no global controllers/services/models)**
 
 ---
 

@@ -4,6 +4,7 @@ import { logAuthEvent, logAccessControl } from './activityLogger.js';
 
 /**
  * Protect middleware - Verify JWT token and attach user to request
+ * Also checks tenant status for multi-tenancy support
  */
 export const protect = async (req, res, next) => {
     let token;
@@ -13,13 +14,74 @@ export const protect = async (req, res, next) => {
     ) {
         try {
             token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = await User.findById(decoded.id).select('-password').populate('department position');
+            
+            // Try tenant JWT first (for multi-tenant architecture)
+            let decoded;
+            let isTenantToken = false;
+            try {
+                decoded = jwt.verify(token, process.env.TENANT_JWT_SECRET || process.env.JWT_SECRET);
+                isTenantToken = true;
+            } catch (err) {
+                // Fall back to regular JWT
+                decoded = jwt.verify(token, process.env.JWT_SECRET);
+            }
+
+            // If it's a tenant token, check tenant status
+            if (isTenantToken && decoded.tenantId) {
+                try {
+                    const { default: Tenant } = await import('../platform/tenants/models/Tenant.js');
+                    const tenant = await Tenant.findOne({ tenantId: decoded.tenantId }).lean();
+                    
+                    if (tenant) {
+                        // Check if tenant is suspended or cancelled
+                        if (tenant.status === 'suspended') {
+                            logAuthEvent('TENANT_SUSPENDED', null, req, {
+                                tenantId: decoded.tenantId,
+                                reason: 'Tenant account is suspended'
+                            });
+                            return res.status(403).json({ 
+                                success: false,
+                                error: {
+                                    code: 'TENANT_SUSPENDED',
+                                    message: 'Tenant account is suspended'
+                                }
+                            });
+                        }
+                        
+                        if (tenant.status === 'cancelled') {
+                            logAuthEvent('TENANT_CANCELLED', null, req, {
+                                tenantId: decoded.tenantId,
+                                reason: 'Tenant account is cancelled'
+                            });
+                            return res.status(403).json({ 
+                                success: false,
+                                error: {
+                                    code: 'TENANT_CANCELLED',
+                                    message: 'Tenant account is cancelled'
+                                }
+                            });
+                        }
+                        
+                        // Inject tenant into request
+                        req.tenant = {
+                            id: tenant.tenantId,
+                            tenantId: tenant.tenantId,
+                            status: tenant.status,
+                            enabledModules: tenant.enabledModules || [],
+                            config: tenant.config || {}
+                        };
+                    }
+                } catch (error) {
+                    // Tenant model might not exist yet, continue without tenant check
+                }
+            }
+
+            req.user = await User.findById(decoded.id || decoded.userId).select('-password').populate('department position');
 
             if (!req.user) {
                 logAuthEvent('UNAUTHORIZED_ACCESS', null, req, {
                     reason: 'User not found',
-                    userId: decoded.id
+                    userId: decoded.id || decoded.userId
                 });
                 return res.status(401).json({ message: 'User not found' });
             }
