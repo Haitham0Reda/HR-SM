@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 /**
  * Tenant Schema
@@ -311,4 +311,4 @@ tenantSchema.statics.findExpiredSubscriptions = function() {
 
 const Tenant = mongoose.model('Tenant', tenantSchema);
 
-module.exports = Tenant;
+export default Tenant;

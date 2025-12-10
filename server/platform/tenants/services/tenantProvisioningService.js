@@ -1,8 +1,8 @@
-const Tenant = require('../models/Tenant');
-const User = require('../../../models/user.model');
-const AppError = require('../../../core/errors/AppError');
-const { ERROR_TYPES } = require('../../../core/errors/errorTypes');
-const crypto = require('crypto');
+import Tenant from '../models/Tenant.js';
+import User from '../../../models/user.model.js';
+import AppError from '../../../core/errors/AppError.js';
+import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
+import crypto from 'crypto';
 
 /**
  * Tenant Provisioning Service
@@ -199,10 +199,14 @@ class TenantProvisioningService {
     // Create admin user
     const user = new User({
       tenantId,
+      username: email, // Use email as username
       email,
       password,
-      firstName,
-      lastName,
+      personalInfo: {
+        firstName,
+        lastName,
+        fullName: `${firstName} ${lastName}`
+      },
       role: 'Admin',
       status: 'active',
       permissions: []
@@ -213,6 +217,12 @@ class TenantProvisioningService {
     // Return user without password
     const userObj = user.toObject();
     delete userObj.password;
+    
+    // Flatten personalInfo for easier access
+    if (userObj.personalInfo) {
+      userObj.firstName = userObj.personalInfo.firstName;
+      userObj.lastName = userObj.personalInfo.lastName;
+    }
 
     return userObj;
   }
@@ -296,4 +306,4 @@ class TenantProvisioningService {
   }
 }
 
-module.exports = new TenantProvisioningService();
+export default new TenantProvisioningService();

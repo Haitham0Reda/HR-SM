@@ -1,6 +1,6 @@
-const platformAuthService = require('../services/platformAuthService');
-const { setPlatformTokenCookie, clearPlatformTokenCookie } = require('../../../core/auth/platformAuth');
-const asyncHandler = require('../../../utils/asyncHandler');
+import platformAuthService from '../services/platformAuthService.js';
+import { setPlatformTokenCookie, clearPlatformTokenCookie } from '../../../core/auth/platformAuth.js';
+import asyncHandler from '../../../utils/asyncHandler.js';
 
 /**
  * Platform Authentication Controller
@@ -14,7 +14,7 @@ const asyncHandler = require('../../../utils/asyncHandler');
  * @param {Object} req.body.email - User email
  * @param {Object} req.body.password - User password
  */
-exports.login = asyncHandler(async (req, res) => {
+export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   const { user, token } = await platformAuthService.login(email, password);
@@ -39,7 +39,7 @@ exports.login = asyncHandler(async (req, res) => {
  * Logout platform user
  * POST /api/platform/auth/logout
  */
-exports.logout = asyncHandler(async (req, res) => {
+export const logout = asyncHandler(async (req, res) => {
   // Clear token cookie
   clearPlatformTokenCookie(res);
 
@@ -61,7 +61,7 @@ exports.logout = asyncHandler(async (req, res) => {
  * 
  * Requires authentication middleware
  */
-exports.me = asyncHandler(async (req, res) => {
+export const me = asyncHandler(async (req, res) => {
   // User ID is set by authentication middleware
   const user = await platformAuthService.getUserById(req.platformUser.userId);
 
@@ -84,7 +84,7 @@ exports.me = asyncHandler(async (req, res) => {
  * @param {Object} req.body.currentPassword - Current password
  * @param {Object} req.body.newPassword - New password
  */
-exports.changePassword = asyncHandler(async (req, res) => {
+export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   const userId = req.platformUser.userId;
 

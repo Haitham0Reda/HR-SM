@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 /**
  * Platform User Schema
@@ -150,4 +150,4 @@ platformUserSchema.statics.findActiveByRole = function(role) {
 
 const PlatformUser = mongoose.model('PlatformUser', platformUserSchema);
 
-module.exports = PlatformUser;
+export default PlatformUser;
