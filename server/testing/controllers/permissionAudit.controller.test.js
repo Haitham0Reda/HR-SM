@@ -2,16 +2,16 @@
  * @jest-environment node
  */
 import mongoose from 'mongoose';
-import PermissionAudit from '../../models/permissionAudit.model.js';
-import * as permissionAuditController from '../../controller/permissionAudit.controller.js';
-import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
+import PermissionAudit from '../../platform/system/models/permissionAudit.model.js';
+import * as permissionAuditController from '../../platform/system/controllers/permissionAudit.controller.js';
+import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('PermissionAudit Controller - All 9 Functions', () => {
-    let mockReq, mockRes, testSchool, testUser;
+    let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testSchool = await createTestSchool();
-        testUser = await createTestUser(testSchool._id, null, null);
+        testorganization = await createTestorganization();
+        testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

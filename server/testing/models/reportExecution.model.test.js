@@ -1,21 +1,20 @@
 import mongoose from 'mongoose';
-import ReportExecution from '../../models/reportExecution.model.js';
-import Report from '../../models/report.model.js';
-import User from '../../models/user.model.js';
-import School from '../../models/school.model.js';
+import ReportExecution from '../../modules/reports/models/reportExecution.model.js';
+import Report from '../../modules/reports/models/report.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+// organization model removed - not needed for general HR system
 
 let report;
 let user;
-let school;
-
+// organization variable removed
 beforeEach(async () => {
   // Clear report executions collection
   await ReportExecution.deleteMany({});
 
-  // Create school first
-  school = await School.create({
-    schoolCode: 'ENG',
-    name: 'School of Engineering',
+  // Create organization first
+  organization = await organization.create({
+    organizationCode: 'ENG',
+    name: 'organization of Engineering',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
 
@@ -26,8 +25,7 @@ beforeEach(async () => {
     email: 'test@example.com',
     password: 'password123',
     role: 'hr',
-    employeeId: 'EMP001',
-    school: school._id
+    employeeId: 'EMP001': organization._id
   });
 
   // Create report for testing

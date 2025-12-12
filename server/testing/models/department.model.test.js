@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Department from '../../models/department.model.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
 
 describe('Department Model', () => {
   it('should create and save a department successfully', async () => {
@@ -7,8 +7,8 @@ describe('Department Model', () => {
       tenantId: 'test_tenant_123',
       name: 'Engineering',
       code: 'ENG',
-      school: new mongoose.Types.ObjectId(),
-      description: 'Engineering Department',
+      organization: new mongoose.Types.ObjectId(),
+      description: 'Information Technology Department',
       isActive: true
     };
 

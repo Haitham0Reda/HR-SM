@@ -2,16 +2,16 @@
  * @jest-environment node
  */
 import mongoose from 'mongoose';
-import Department from '../../models/department.model.js';
-import * as departmentController from '../../controller/department.controller.js';
-import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
+import * as departmentController from '../../modules/hr-core/users/controllers/department.controller.js';
+import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('Department Controller - All 5 Functions', () => {
-    let mockReq, mockRes, testSchool, testUser;
+    let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testSchool = await createTestSchool();
-        testUser = await createTestUser(testSchool._id, null, null);
+        testorganization = await createTestorganization();
+        testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

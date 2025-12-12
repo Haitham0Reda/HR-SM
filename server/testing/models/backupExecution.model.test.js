@@ -1,18 +1,17 @@
 import mongoose from 'mongoose';
-import BackupExecution from '../../models/backupExecution.model.js';
-import Backup from '../../models/backup.model.js';
-import User from '../../models/user.model.js';
-import School from '../../models/school.model.js';
+import BackupExecution from '../../modules/hr-core/backup/models/backupExecution.model.js';
+import Backup from '../../modules/hr-core/backup/models/backup.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+// organization model removed - not needed for general HR system
 
 let backup;
 let user;
-let school;
-
+// organization variable removed
 beforeAll(async () => {
-  // Create a school first
-  school = await School.create({
-    schoolCode: 'ENG',
-    name: 'School of Engineering',
+  // Create a organization first
+  organization = await organization.create({
+    organizationCode: 'ENG',
+    name: 'organization of Engineering',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
 });
@@ -25,8 +24,7 @@ beforeEach(async () => {
     email: 'test@example.com',
     password: 'password123',
     role: 'admin',
-    employeeId: 'EMP001',
-    school: school._id
+    employeeId: 'EMP001': organization._id
   });
 
   // Create a backup for reference

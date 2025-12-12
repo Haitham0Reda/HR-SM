@@ -4,7 +4,7 @@
 
 **Overall Coverage: 98.8%** (83/84 files tested)
 
-The HR-SM project maintains excellent test coverage across all major components with 1,102 passing tests organized in 83 test suites.
+The HR-SM project maintains excellent test coverage across all specialization components with 1,102 passing tests organized in 83 test suites.
 
 ## Coverage by Component Type
 

@@ -1,7 +1,7 @@
 // models/User.js
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { getRolePermissions } from './permission.system.js';
+import { getRolePermissions } from '../../../../platform/system/models/permission.system.js';
 import Role from './role.model.js';
 
 const userSchema = new mongoose.Schema({
@@ -248,6 +248,21 @@ userSchema.virtual('name').get(function () {
         return `${this.personalInfo.firstName} ${this.personalInfo.lastName}`;
     }
     return this.username;
+});
+
+// Password comparison method
+userSchema.methods.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+    // Only hash the password if it has been modified (or is new)
+    if (!this.isModified('password')) return next();
+    
+    // Hash password with cost of 12
+    this.password = await bcrypt.hash(this.password, 12);
+    next();
 });
 
 // Ensure virtuals are included in JSON

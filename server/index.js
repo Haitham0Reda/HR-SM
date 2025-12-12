@@ -2,10 +2,11 @@ import dotenv from 'dotenv';
 import http from 'http';
 import app, { initializeRoutes, initializeModuleSystem } from './app.js';
 import connectDatabase from './config/database.js';
+import databaseMonitor from './services/databaseMonitor.js';
 import { ensureDirectoryExists } from './shared/utils/fileUtils.js';
-import licenseFileLoader from './services/licenseFileLoader.service.js';
-import licenseWebSocketService from './services/licenseWebSocket.service.js';
-import redisService from './services/redis.service.js';
+import licenseFileLoader from './platform/system/services/licenseFileLoader.service.js';
+import licenseWebSocketService from './platform/system/services/licenseWebSocket.service.js';
+import redisService from './core/services/redis.service.js';
 import licenseMonitoringJob from './jobs/licenseMonitoring.job.js';
 
 // Load environment variables
@@ -136,3 +137,7 @@ process.on('uncaughtException', (err) => {
 
 // Start the server
 startServer();
+
+
+
+

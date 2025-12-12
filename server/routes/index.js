@@ -1,42 +1,58 @@
-export { default as documentRoutes } from './document.routes.js';
-export { default as documentTemplateRoutes } from './documentTemplate.routes.js';
-export { default as eventRoutes } from './event.routes.js';
-export { default as hardcopyRoutes } from './hardcopy.routes.js';
-export { default as holidayRoutes } from './holiday.routes.js';
-export { default as missionRoutes } from './mission.routes.js';
-export { default as mixedVacationRoutes } from './mixedVacation.routes.js';
-export { default as forgetCheckRoutes } from './forgetCheck.routes.js';
-export { default as notificationRoutes } from './notification.routes.js';
-export { default as payrollRoutes } from './payroll.routes.js';
-export { default as permissionRequestRoutes } from './permissionRequest.routes.js';
-export { default as positionRoutes } from './position.routes.js';
-export { default as reportRoutes } from './report.routes.js';
-export { default as requestRoutes } from './request.routes.js';
-export { default as resignedEmployeeRoutes } from './resignedEmployee.routes.js';
-export { default as securityAuditRoutes } from './securityAudit.routes.js';
-export { default as securitySettingsRoutes } from './securitySettings.routes.js';
-export { default as surveyRoutes } from './survey.routes.js';
-export { default as userRoutes } from './user.routes.js';
-export { default as analyticsRoutes } from './analytics.routes.js';
-export { default as announcementRoutes } from './announcement.routes.js';
-export { default as attendanceRoutes } from './attendance.routes.js';
-export { default as authRoutes } from './auth.routes.js';
-export { default as dashboardRoutes } from './dashboard.routes.js';
-export { default as themeRoutes } from './theme.routes.js';
-export { default as backupRoutes } from './backup.routes.js';
-export { default as backupExecutionRoutes } from './backupExecution.routes.js';
-export { default as departmentRoutes } from './department.routes.js';
-export { default as permissionRoutes } from './permission.routes.js';
-export { default as permissionAuditRoutes } from './permissionAudit.routes.js';
-export { default as vacationRoutes } from './vacation.routes.js';
-export { default as sickLeaveRoutes } from './sickLeave.routes.js';
-export { default as overtimeRoutes } from './overtime.routes.js';
-export { default as taskRoutes } from './task.routes.js';
-export { default as roleRoutes } from './role.routes.js';
-export { default as permissionsRoutes } from './permissions.routes.js';
-export { default as attendanceDeviceRoutes } from './attendanceDevice.routes.js';
-export { default as featureFlagRoutes } from './featureFlag.routes.js';
-export { default as licenseAuditRoutes } from './licenseAudit.routes.js';
-export { default as pricingRoutes } from './pricing.routes.js';
-export { default as licenseRoutes } from './license.routes.js';
-export { default as metricsRoutes } from './metrics.routes.js';
+/**
+ * Central route exports
+ * This file exports all routes from their module locations
+ */
+
+// Import platform system routes
+import licenseRoutesImport from '../platform/system/routes/license.routes.js';
+import licenseAuditRoutesImport from '../platform/system/routes/licenseAudit.routes.js';
+import metricsRoutesImport from '../platform/system/routes/metrics.routes.js';
+import permissionRoutesImport from '../platform/system/routes/permissions.routes.js';
+import permissionAuditRoutesImport from '../platform/system/routes/permissionAudit.routes.js';
+import securityAuditRoutesImport from '../platform/system/routes/securityAudit.routes.js';
+import securitySettingsRoutesImport from '../platform/system/routes/securitySettings.routes.js';
+
+// Import subscription routes
+import subscriptionRoutesImport from '../platform/subscriptions/routes/subscription.routes.js';
+import pricingRoutesImport from '../platform/subscriptions/routes/pricing.routes.js';
+
+// Export platform routes
+export const licenseRoutes = licenseRoutesImport;
+export const licenseAuditRoutes = licenseAuditRoutesImport;
+export const metricsRoutes = metricsRoutesImport;
+export const pricingRoutes = pricingRoutesImport;
+export const permissionRoutes = permissionRoutesImport;
+export const permissionAuditRoutes = permissionAuditRoutesImport;
+export const securityAuditRoutes = securityAuditRoutesImport;
+export const securitySettingsRoutes = securitySettingsRoutesImport;
+
+// Create placeholder routes for legacy routes that don't exist yet
+import express from 'express';
+
+const createPlaceholderRouter = (routeName) => {
+    const router = express.Router();
+    router.get('*', (req, res) => {
+        res.status(404).json({
+            success: false,
+            message: `${routeName} routes are not yet implemented`,
+            code: 'ROUTE_NOT_IMPLEMENTED'
+        });
+    });
+    return router;
+};
+
+// Legacy routes that don't exist yet - use placeholder routers
+export const featureFlagRoutes = createPlaceholderRouter('Feature Flag');
+export const documentRoutes = createPlaceholderRouter('Document');
+export const documentTemplateRoutes = createPlaceholderRouter('Document Template');
+export const eventRoutes = createPlaceholderRouter('Event');
+export const notificationRoutes = createPlaceholderRouter('Notification');
+export const payrollRoutes = createPlaceholderRouter('Payroll');
+export const reportRoutes = createPlaceholderRouter('Report');
+export const surveyRoutes = createPlaceholderRouter('Survey');
+// Import theme routes from the theme module
+import themeRoutesImport from '../modules/theme/routes/theme.routes.js';
+export const themeRoutes = themeRoutesImport;
+export const analyticsRoutes = createPlaceholderRouter('Analytics');
+export const announcementRoutes = createPlaceholderRouter('Announcement');
+export const dashboardRoutes = createPlaceholderRouter('Dashboard');

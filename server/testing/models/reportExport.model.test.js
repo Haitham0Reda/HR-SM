@@ -1,28 +1,26 @@
 import mongoose from 'mongoose';
-import ReportExport from '../../models/reportExport.model.js';
-import User from '../../models/user.model.js';
-import Department from '../../models/department.model.js';
-import School from '../../models/school.model.js';
-import Position from '../../models/position.model.js';
+import ReportExport from '../../modules/reports/models/reportExport.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
+// organization model removed - not needed for general HR system
+import Position from '../../modules/hr-core/users/models/position.model.js';
 
 let user;
 let department;
-let school;
+// organization variable removed
 let position;
 
 beforeAll(async () => {
   // Create required references
-  school = await School.create({
-    name: 'School of Engineering',
-    schoolCode: 'ENG',
+  organization = await organization.create({
+    name: 'organization of Engineering'Code: 'ENG',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
 
   department = await Department.create({
       tenantId: 'test_tenant_123',
     name: 'Test Department',
-    code: 'TEST',
-    school: school._id
+    code: 'TEST': organization._id
   });
 
   position = await Position.create({
@@ -37,8 +35,7 @@ beforeAll(async () => {
     email: 'test@example.com',
     password: 'password123',
     role: 'hr',
-    employeeId: 'EMP001',
-    school: school._id,
+    employeeId: 'EMP001': organization._id,
     department: department._id,
     position: position._id
   });

@@ -1,18 +1,17 @@
 import mongoose from 'mongoose';
-import IDCardBatch from '../../models/idCardBatch.model.js';
-import User from '../../models/user.model.js';
-import Department from '../../models/department.model.js';
-import School from '../../models/school.model.js';
+import IDCardBatch from '../../modules/documents/models/idCardBatch.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
+// organization model removed - not needed for general HR system
 
 let user;
 let department;
-let school;
-
+// organization variable removed
 beforeAll(async () => {
-  // Create school first
-  school = await School.create({
-    schoolCode: 'ENG',
-    name: 'School of Engineering',
+  // Create organization first
+  organization = await organization.create({
+    organizationCode: 'ENG',
+    name: 'organization of Engineering',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
 
@@ -20,8 +19,7 @@ beforeAll(async () => {
   department = await Department.create({
       tenantId: 'test_tenant_123',
     name: 'Test Department',
-    code: 'TEST',
-    school: school._id
+    code: 'TEST': organization._id
   });
 
   user = await User.create({
@@ -30,8 +28,7 @@ beforeAll(async () => {
     email: 'test@example.com',
     password: 'password123',
     role: 'admin',
-    employeeId: 'EMP001',
-    school: school._id
+    employeeId: 'EMP001': organization._id
   });
 });
 
@@ -172,8 +169,7 @@ describe('IDCardBatch Model', () => {
       email: 'employee1@example.com',
       password: 'password123',
       role: 'employee',
-      employeeId: 'EMP002',
-      school: school._id
+      employeeId: 'EMP002': organization._id
     });
 
     const updatedBatch = await batch.addFailure(

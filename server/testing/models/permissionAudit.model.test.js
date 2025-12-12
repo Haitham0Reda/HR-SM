@@ -1,17 +1,16 @@
 import mongoose from 'mongoose';
-import PermissionAudit from '../../models/permissionAudit.model.js';
-import User from '../../models/user.model.js';
-import School from '../../models/school.model.js';
+import PermissionAudit from '../../platform/system/models/permissionAudit.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+// organization model removed - not needed for general HR system
 
 let user;
 let adminUser;
-let school;
-
+// organization variable removed
 beforeAll(async () => {
-  // Create a school for testing with valid enum values
-  school = await School.create({
-    schoolCode: 'ENG',
-    name: 'School of Engineering',
+  // Create a organization for testing with valid enum values
+  organization = await organization.create({
+    organizationCode: 'ENG',
+    name: 'organization of Engineering',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
 });
@@ -26,8 +25,7 @@ beforeEach(async () => {
     email: 'test@example.com',
     password: 'password123',
     role: 'employee',
-    employeeId: 'EMP001',
-    school: school._id
+    employeeId: 'EMP001': organization._id
   });
 
   adminUser = await User.create({
@@ -36,8 +34,7 @@ beforeEach(async () => {
     email: 'admin@example.com',
     password: 'password123',
     role: 'admin',
-    employeeId: 'EMP002',
-    school: school._id
+    employeeId: 'EMP002': organization._id
   });
 });
 

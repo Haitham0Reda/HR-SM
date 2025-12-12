@@ -225,5 +225,5 @@ The HR-SM application has been thoroughly verified and all tests are passing. Th
 
 ---
 
-**Next Verification**: Scheduled for next major release  
+**Next Verification**: Scheduled for next specialization release  
 **Contact**: Development Team for questions or concerns

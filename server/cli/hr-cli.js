@@ -15,12 +15,12 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-import User from '../models/user.model.js';
-import Department from '../models/department.model.js';
-import Attendance from '../models/attendance.model.js';
-import Vacation from '../models/vacation.model.js';
-import Mission from '../models/mission.model.js';
-import SickLeave from '../models/sickLeave.model.js';
+import User from '../modules/hr-core/users/models/user.model.js';
+import Department from '../modules/hr-core/users/models/department.model.js';
+import Attendance from '../modules/hr-core/attendance/models/attendance.model.js';
+import Vacation from '../modules/hr-core/vacations/models/vacation.model.js';
+import Mission from '../modules/hr-core/missions/models/mission.model.js';
+import SickLeave from '../modules/hr-core/vacations/models/sickLeave.model.js';
 
 const program = new Command();
 

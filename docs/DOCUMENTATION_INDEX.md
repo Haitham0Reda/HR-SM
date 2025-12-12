@@ -1,8 +1,15 @@
-# 📚 Complete Documentation Index
+# 📚 Complete Documentation Index (Legacy)
 
-## Quick Reference Guide
+**⚠️ NOTICE: Documentation has been restructured!**
 
-This is a comprehensive index of all documentation files with descriptions and recommended reading order.
+This is the legacy documentation index. For the most up-to-date and comprehensive documentation structure, please refer to:
+
+- **[README.md](README.md)** - Main documentation entry point
+- **[COMPLETE_DOCUMENTATION_INDEX.md](COMPLETE_DOCUMENTATION_INDEX.md)** - New comprehensive index
+
+## Quick Reference Guide (Legacy)
+
+This is the original index of documentation files with descriptions and recommended reading order.
 
 ---
 

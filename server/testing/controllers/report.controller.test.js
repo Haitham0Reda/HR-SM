@@ -2,16 +2,16 @@
  * @jest-environment node
  */
 import mongoose from 'mongoose';
-import Report from '../../models/report.model.js';
-import * as reportController from '../../controller/report.controller.js';
-import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
+import Report from '../../modules/reports/models/report.model.js';
+import * as reportController from '../../modules/reports/controllers/report.controller.js';
+import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('Report Controller - All 12 Functions', () => {
-    let mockReq, mockRes, testSchool, testUser;
+    let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testSchool = await createTestSchool();
-        testUser = await createTestUser(testSchool._id, null, null);
+        testorganization = await createTestorganization();
+        testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

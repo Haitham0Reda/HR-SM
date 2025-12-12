@@ -17,27 +17,55 @@ import mongoose from 'mongoose';
 import BackupService from '../../../modules/hr-core/backup/services/backupService.js';
 
 // HR-Core models (allowed in backup)
-import User from '../../../models/user.model.js';
-import Attendance from '../../../models/attendance.model.js';
-import Department from '../../../models/department.model.js';
-import Position from '../../../models/position.model.js';
-import Request from '../../../models/request.model.js';
-import Holiday from '../../../models/holiday.model.js';
-import Mission from '../../../models/mission.model.js';
-import Vacation from '../../../models/vacation.model.js';
-import MixedVacation from '../../../models/mixedVacation.model.js';
-import VacationBalance from '../../../models/vacationBalance.model.js';
-import Overtime from '../../../models/overtime.model.js';
-import ForgetCheck from '../../../models/forgetCheck.model.js';
+import User from '../../../modules/hr-core/users/models/user.model.js';
+import Attendance from '../../../modules/hr-core/attendance/models/attendance.model.js';
+import Department from '../../../modules/hr-core/users/models/department.model.js';
+import Position from '../../../modules/hr-core/users/models/position.model.js';
+import Request from '../../../modules/hr-core/requests/models/request.model.js';
+import Holiday from '../../../modules/hr-core/holidays/models/holiday.model.js';
+import Mission from '../../../modules/hr-core/missions/models/mission.model.js';
+import Vacation from '../../../modules/hr-core/vacations/models/vacation.model.js';
+import MixedVacation from '../../../modules/hr-core/vacations/models/mixedVacation.model.js';
+import VacationBalance from '../../../modules/hr-core/vacations/models/vacationBalance.model.js';
+import Overtime from '../../../modules/hr-core/overtime/models/overtime.model.js';
+import ForgetCheck from '../../../modules/hr-core/attendance/models/forgetCheck.model.js';
 
 // Optional module models (NOT allowed in backup)
-import Task from '../../../models/task.model.js';
-import Payroll from '../../../models/payroll.model.js';
-import Document from '../../../models/document.model.js';
-import Report from '../../../models/report.model.js';
-import Notification from '../../../models/notification.model.js';
+import Task from '../../../modules/tasks/models/task.model.js';
+import Payroll from '../../../modules/payroll/models/payroll.model.js';
+import Document from '../../../modules/documents/models/document.model.js';
+import Report from '../../../modules/reports/models/report.model.js';
+import Notification from '../../../modules/notifications/models/notification.model.js';
 
 describe('Backup Isolation - Property-Based Tests', () => {
+    // Clean up before each test to ensure isolation
+    beforeEach(async () => {
+        // Clean HR-Core collections
+        await User.deleteMany({});
+        await Attendance.deleteMany({});
+        await Department.deleteMany({});
+        await Position.deleteMany({});
+        await Request.deleteMany({});
+        await Holiday.deleteMany({});
+        await Mission.deleteMany({});
+        await Vacation.deleteMany({});
+        await MixedVacation.deleteMany({});
+        await VacationBalance.deleteMany({});
+        await Overtime.deleteMany({});
+        await ForgetCheck.deleteMany({});
+        
+        // Clean optional module collections
+        try {
+            await Task.deleteMany({});
+            await Payroll.deleteMany({});
+            await Document.deleteMany({});
+            await Report.deleteMany({});
+            await Notification.deleteMany({});
+        } catch (error) {
+            // Ignore if models don't exist
+        }
+    });
+
     /**
      * Feature: enterprise-saas-architecture, Property 6: Backup Isolation
      * 
@@ -460,11 +488,15 @@ describe('Backup Isolation - Property-Based Tests', () => {
             fc.asyncProperty(
                 fc.record({
                     tenantId: fc.string({ minLength: 5, maxLength: 20 })
-                        .map(s => `tenant_${s.replace(/[^a-zA-Z0-9]/g, '')}`),
+                        .map(s => `tenant_${s.replace(/[^a-zA-Z0-9]/g, '')}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`),
                     userCount: fc.integer({ min: 1, max: 3 }),
                     taskCount: fc.integer({ min: 1, max: 3 })
                 }),
                 async ({ tenantId, userCount, taskCount }) => {
+                    // Ensure clean state for this specific tenant
+                    await User.deleteMany({ tenantId });
+                    await Task.deleteMany({ tenantId }).catch(() => {}); // Ignore if model doesn't exist
+                    
                     // Create HR-Core data (should be counted)
                     const users = [];
                     for (let i = 0; i < userCount; i++) {
@@ -523,6 +555,10 @@ describe('Backup Isolation - Property-Based Tests', () => {
                     // Verify total count only includes HR-Core data
                     const expectedTotal = Object.values(stats.collections).reduce((sum, count) => sum + count, 0);
                     expect(stats.totalDocuments).toBe(expectedTotal);
+
+                    // Clean up after test
+                    await User.deleteMany({ tenantId });
+                    await Task.deleteMany({ tenantId }).catch(() => {}); // Ignore if model doesn't exist
 
                     return true;
                 }

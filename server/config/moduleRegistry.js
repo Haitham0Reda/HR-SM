@@ -5,10 +5,15 @@ export const moduleRegistry = {
     [MODULES.HR_CORE]: {
         routes: {
             auth: () => import('../modules/hr-core/routes/authRoutes.js'),
-            users: () => import('../modules/hr-core/routes/userRoutes.js'),
-            tenant: () => import('../modules/hr-core/routes/tenantRoutes.js')
+            users: () => import('../modules/hr-core/users/routes.js'),
+            attendance: () => import('../modules/hr-core/attendance/routes.js'),
+            holidays: () => import('../modules/hr-core/holidays/routes.js'),
+            missions: () => import('../modules/hr-core/missions/routes.js'),
+            overtime: () => import('../modules/hr-core/overtime/routes.js'),
+            requests: () => import('../modules/hr-core/requests/routes.js'),
+            vacations: () => import('../modules/hr-core/vacations/routes.js')
         },
-        basePath: '/api/v1/hr-core'
+        basePath: '/api/v1'
     },
     [MODULES.TASKS]: {
         routes: {

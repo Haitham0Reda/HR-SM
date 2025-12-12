@@ -5,7 +5,7 @@ console.log('\n🔍 Checking Bulk Upload Implementation...\n');
 
 const files = [
     { path: 'server/controller/user.controller.js', desc: 'Controller updated' },
-    { path: 'server/routes/user.routes.js', desc: 'Routes updated' },
+    { path: 'server/modules/hr-core/users/routes.js', desc: 'Routes updated' },
     { path: 'client/src/services/user.service.js', desc: 'Service updated' },
     { path: 'client/src/pages/users/UsersPage.jsx', desc: 'UI component updated' },
     { path: 'client/public/templates/bulk-users-template.xlsx', desc: 'Template file created' },

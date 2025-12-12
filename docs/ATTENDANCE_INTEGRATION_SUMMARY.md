@@ -331,7 +331,7 @@ For detailed documentation:
 
 ## 🎉 Summary
 
-Your HR system now has **enterprise-grade attendance device integration** that:
+Your HR system now has **enterprise-level attendance device integration** that:
 - ✅ Supports multiple device types
 - ✅ Auto-syncs every 5 minutes
 - ✅ Normalizes all data sources

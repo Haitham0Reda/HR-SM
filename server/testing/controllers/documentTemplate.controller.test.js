@@ -2,16 +2,16 @@
  * @jest-environment node
  */
 import mongoose from 'mongoose';
-import DocumentTemplate from '../../models/documentTemplate.model.js';
-import * as documentTemplateController from '../../controller/documentTemplate.controller.js';
-import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
+import DocumentTemplate from '../../modules/documents/models/documentTemplate.model.js';
+import * as documentTemplateController from '../../modules/documents/controllers/documentTemplate.controller.js';
+import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('DocumentTemplate Controller - All 5 Functions', () => {
-    let mockReq, mockRes, testSchool, testUser;
+    let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testSchool = await createTestSchool();
-        testUser = await createTestUser(testSchool._id, null, null);
+        testorganization = await createTestorganization();
+        testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

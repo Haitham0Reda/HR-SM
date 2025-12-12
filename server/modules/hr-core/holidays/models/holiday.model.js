@@ -6,11 +6,11 @@
 import mongoose from 'mongoose';
 
 const holidaySchema = new mongoose.Schema({
-    // Organization identifier (campus concept removed, using default org)
-    campus: {
+    // Tenant identifier for multi-tenant support
+    tenantId: {
         type: String,
-        default: 'default-organization',
-        required: true
+        required: true,
+        index: true
     },
 
     // Official Holidays
@@ -73,7 +73,7 @@ const holidaySchema = new mongoose.Schema({
 });
 
 // Indexes
-holidaySchema.index({ campus: 1 });
+holidaySchema.index({ tenantId: 1 });
 holidaySchema.index({ 'officialHolidays.date': 1 });
 holidaySchema.index({ 'weekendWorkDays.date': 1 });
 
@@ -234,13 +234,13 @@ holidaySchema.methods.isWorkingDay = function (date) {
     return !this.constructor.isWeekend(checkDate, this.weekendDays);
 };
 
-// Static method to get or create holiday settings for campus
-holidaySchema.statics.getOrCreateForCampus = async function (campusId) {
-    let settings = await this.findOne({ campus: campusId });
+// Static method to get or create holiday settings for tenant
+holidaySchema.statics.getOrCreateForTenant = async function (tenantId) {
+    let settings = await this.findOne({ tenantId: tenantId });
 
     if (!settings) {
         settings = await this.create({
-            campus: campusId,
+            tenantId: tenantId,
             officialHolidays: [],
             weekendWorkDays: [],
             earlyLeaveDates: [],

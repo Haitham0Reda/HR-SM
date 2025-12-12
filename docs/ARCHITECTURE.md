@@ -72,30 +72,37 @@ Manager assigns task → Employee receives notification
 
 ```
 /server
-  /config          # DB, env, license config
-  /shared          # Middleware, utils, base models
-  /modules
-    /hr-core       # Always enabled
-    /attendance
-    /leave
-    /payroll
-    /documents
-    /communication
-    /reporting
+  /core            # Core infrastructure (auth, errors, logging, middleware, registry)
+  /modules         # Business modules (complete)
+    /hr-core       # Always enabled (attendance, auth, users, vacations, etc.)
     /tasks         # Task & Work Reporting
+    /clinic        # Medical services
+    /email-service # Email functionality
+    /payroll       # Payroll processing
+    /reports       # Reporting
+    /documents     # Document management
+    /announcements # Company announcements
+    /surveys       # Employee surveys
+    /notifications # System notifications
+    /events        # Event management
+    /analytics     # Data analytics
+    /dashboard     # Dashboard functionality
+    /theme         # UI theming
+  /platform        # Platform administration (tenants, subscriptions, system)
+  /shared          # Shared utilities (middleware, models, constants)
+  /config          # Configuration (DB, modules, license)
   /uploads         # File storage
+  /middleware      # Legacy middleware (maintained for compatibility)
+  /services        # Core services
+  /utils           # Utilities
+  /scripts         # Utility scripts
+  /testing         # Test suites
   server.js
 
 /client
-  /src
-    /shared        # Common components, hooks
-    /modules
-      /hr-core
-      /attendance
-      /tasks
-    /layouts
-    /routes
-    App.js
+  /hr-app          # Tenant-facing HR application
+  /platform-admin  # Platform administration application
+  /shared          # Shared components and utilities
 
 /shared-constants.js  # Shared between client/server
 ```

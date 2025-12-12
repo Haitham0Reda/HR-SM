@@ -2,7 +2,7 @@
 
 ## 📦 What You Got
 
-Your MERN HR system has been successfully enhanced with **enterprise-grade attendance device integration** without touching any existing functionality.
+Your MERN HR system has been successfully enhanced with **enterprise-level attendance device integration** without touching any existing functionality.
 
 ## 🚀 Quick Start (3 Steps)
 
@@ -348,7 +348,7 @@ For detailed help, see:
 
 ## 🎊 You're All Set!
 
-Your HR system now has **enterprise-grade attendance device integration**:
+Your HR system now has **enterprise-level attendance device integration**:
 
 ✅ **7 Device Types** - ZKTeco, Cloud, Mobile, QR, CSV, Generic, Manual  
 ✅ **15+ API Endpoints** - Complete REST API  

@@ -8,7 +8,7 @@ This document describes the modular architecture of the HR Management System, de
 
 ### 1. Modular Monolith Architecture
 
-The system follows a modular monolith architecture where each major feature is implemented as an independent module that can be enabled or disabled per client via feature flags.
+The system follows a modular monolith architecture where each specialization feature is implemented as an independent module that can be enabled or disabled per client via feature flags.
 
 ### 2. Single Codebase, Multiple Deployment Models
 

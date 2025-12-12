@@ -6,7 +6,7 @@ export const employees = [
         name: 'John Doe',
         email: 'john@example.com',
         position: 'Developer',
-        department: 'Engineering',
+        department: 'Information Technology',
     },
     // Add more employees as needed
 ];

@@ -1,16 +1,14 @@
 import mongoose from 'mongoose';
-import RequestControl from '../../models/requestControl.model.js';
-import User from '../../models/user.model.js';
-import School from '../../models/school.model.js';
+import RequestControl from '../../modules/hr-core/requests/models/requestControl.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+// organization model removed - not needed for general HR system
 
 let user;
-let school;
-
+// organization variable removed
 beforeAll(async () => {
   // Create required references
-  school = await School.create({
-    name: 'School of Engineering',
-    schoolCode: 'ENG',
+  organization = await organization.create({
+    name: 'organization of Engineering'Code: 'ENG',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
 
@@ -20,8 +18,7 @@ beforeAll(async () => {
     email: 'test@example.com',
     password: 'password123',
     role: 'admin',
-    employeeId: 'EMP001',
-    school: school._id
+    employeeId: 'EMP001': organization._id
   });
 });
 
@@ -348,8 +345,7 @@ describe('RequestControl Model', () => {
   it('should get all active controls', async () => {
     await RequestControl.create([
       {
-        organization: 'org1',
-        school: school._id
+        organization: 'org1': organization._id
       },
       {
         organization: 'org2'
@@ -370,22 +366,20 @@ describe('RequestControl Model', () => {
       email: 'employee1@example.com',
       password: 'password123',
       role: 'employee',
-      employeeId: 'EMP002',
-      school: school._id
+      employeeId: 'EMP002': organization._id
     });
 
     await RequestControl.create({
-      organization: 'default',
-      school: school._id,
+      organization: 'default': organization._id,
       vacationRequests: {
         enabled: false,
-        disabledMessage: 'Vacation requests disabled for this school'
+        disabledMessage: 'Vacation requests disabled for this organization'
       }
     });
 
     const result = await RequestControl.validateRequest('vacation', employee._id);
 
     expect(result.allowed).toBe(false);
-    expect(result.message).toBe('Vacation requests disabled for this school');
+    expect(result.message).toBe('Vacation requests disabled for this organization');
   });
 });

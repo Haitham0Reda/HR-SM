@@ -7,16 +7,16 @@ import {
     deleteAnnouncement,
     getActiveAnnouncements,
     getAnnouncementsByStatus
-} from '../controller/announcement.controller.js';
+} from '../controllers/announcement.controller.js';
 import {
     protect,
     hrOrAdmin,
     validateAnnouncementDates,
     validateTargetAudience,
     setCreatedBy
-} from '../middleware/index.js';
-import { requireModuleLicense } from '../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../models/license.model.js';
+} from '../../../middleware/index.js';
+import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
+import { MODULES } from '../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 

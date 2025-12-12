@@ -12,7 +12,7 @@ import {
     getReportStatistics,
     shareReport,
     unshareReport
-} from '../controller/report.controller.js';
+} from '../controllers/report.controller.js';
 import {
     protect,
     hrOrAdmin,
@@ -24,9 +24,9 @@ import {
     validateExportSettings,
     validateReportType,
     checkReportAccess
-} from '../middleware/index.js';
-import { requireModuleLicense } from '../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../models/license.model.js';
+} from '../../../middleware/index.js';
+import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
+import { MODULES } from '../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 

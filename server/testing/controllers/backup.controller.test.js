@@ -2,16 +2,16 @@
  * @jest-environment node
  */
 import mongoose from 'mongoose';
-import Backup from '../../models/backup.model.js';
-import * as backupController from '../../controller/backup.controller.js';
-import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
+import Backup from '../../modules/hr-core/backup/models/backup.model.js';
+import * as backupController from '../../modules/hr-core/backup/controllers/backup.controller.js';
+import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('Backup Controller - All 9 Functions', () => {
-    let mockReq, mockRes, testSchool, testUser;
+    let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testSchool = await createTestSchool();
-        testUser = await createTestUser(testSchool._id, null, null);
+        testorganization = await createTestorganization();
+        testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();
