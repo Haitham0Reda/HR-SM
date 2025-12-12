@@ -74,12 +74,7 @@ export const ALL_PERMISSIONS = [
     'sections.list',
     'sections.manage',
     
-    // Academic Management (Majors)
-    'majors.view',
-    'majors.create',
-    'majors.edit',
-    'majors.delete',
-    'majors.list',
+    // Removed business management - not needed for general HR system
     
     // Leave Management
     'leaves.view',
@@ -269,11 +264,7 @@ export const ALL_PERMISSIONS = [
     'custom-reports.edit',
     'custom-reports.delete',
     
-    // School Management
-    'schools.view',
-    'schools.create',
-    'schools.edit',
-    'schools.delete',
+    // Removed organization management - not needed for general HR system
     
     // Request Controls
     'request-controls.view',
@@ -657,17 +648,7 @@ export const PERMISSION_CATEGORIES = {
             'sections.manage'
         ]
     },
-    MAJORS: {
-        label: 'Academic Management',
-        description: 'Academic major and program management',
-        permissions: [
-            'majors.view',
-            'majors.create',
-            'majors.edit',
-            'majors.delete',
-            'majors.list'
-        ]
-    },
+    // MAJORS section removed - not needed for general HR system
     LEAVES: {
         label: 'Leave Management',
         description: 'Employee leave requests and approvals',
@@ -929,16 +910,7 @@ export const PERMISSION_CATEGORIES = {
         ]
     },
 
-    SCHOOLS: {
-        label: 'School Management',
-        description: 'School and institution management',
-        permissions: [
-            'schools.view',
-            'schools.create',
-            'schools.edit',
-            'schools.delete'
-        ]
-    },
+    // organizationS section removed - not needed for general HR system
     REQUEST_CONTROLS: {
         label: 'Request Controls',
         description: 'Request workflow and approval settings',

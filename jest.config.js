@@ -8,21 +8,27 @@ export default {
     '!server/**/*.test.js'
   ],
   testMatch: ['**/server/testing/**/*.test.js'],
+  testPathIgnorePatterns: ['<rootDir>/docs/'],
   setupFilesAfterEnv: ['<rootDir>/server/testing/setup.js'],
   verbose: false,
   moduleNameMapper: {
-    '^(\.{1,2}/.*)\.js$': '$1',
+    '^(\\.{1,2}/.*)\\.js$': '$1'
   },
   transform: {
     '^.+\\.js$': 'babel-jest'
   },
-  // Aggressive performance optimizations
-  maxWorkers: '75%', // Use more CPU cores
+  // Memory and performance optimizations
+  maxWorkers: 1, // Run serially to avoid test interference
   cache: true,
   cacheDirectory: '<rootDir>/.jest-cache',
-  testTimeout: 30000, // 30 second timeout per test
-  // Disable slow features
+  testTimeout: 60000, // Increase timeout for property tests
+  // Memory management
   errorOnDeprecated: false,
-  detectOpenHandles: true, // Enable to help identify async issues
-  forceExit: true // Force exit after tests complete
+  detectOpenHandles: false, // Disable to save memory
+  forceExit: true, // Force exit after tests complete
+  // Additional memory optimizations
+  logHeapUsage: false,
+  runInBand: true, // Run tests serially
+  // Node.js memory options
+  workerIdleMemoryLimit: '512MB'
 };

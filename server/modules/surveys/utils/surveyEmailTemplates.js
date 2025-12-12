@@ -284,7 +284,7 @@ function formatSurveyType(type) {
         'training': 'Training & Development',
         'performance': 'Performance Assessment',
         'policy': 'Policy Feedback',
-        '360-feedback': '360-Degree Feedback',
+        '360-feedback': '360-certification Feedback',
         'exit-interview': 'Exit Interview',
         'custom': 'Custom Survey'
     };

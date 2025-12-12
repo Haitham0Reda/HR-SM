@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
         const loadUser = async () => {
             if (tenantToken && tenantId) {
                 try {
-                    const response = await axios.get(`${TENANT_API_BASE}/hr-core/auth/me`);
+                    const response = await axios.get(`${TENANT_API_BASE}/auth/me`);
                     setUser(response.data.data);
                 } catch (error) {
                     console.error('Failed to load user:', error);
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password, tenantIdInput) => {
         try {
-            const response = await axios.post(`${TENANT_API_BASE}/hr-core/auth/login`, {
+            const response = await axios.post(`${TENANT_API_BASE}/auth/login`, {
                 email,
                 password,
                 tenantId: tenantIdInput
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await axios.post(`${TENANT_API_BASE}/hr-core/auth/logout`);
+            await axios.post(`${TENANT_API_BASE}/auth/logout`);
         } catch (error) {
             console.error('Logout error:', error);
         } finally {

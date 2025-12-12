@@ -1,27 +1,26 @@
 import mongoose from 'mongoose';
-import IDCard from '../../models/idCard.model.js';
-import User from '../../models/user.model.js';
-import Department from '../../models/department.model.js';
-import School from '../../models/school.model.js';
-import Position from '../../models/position.model.js';
+import IDCard from '../../modules/documents/models/idCard.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
+// organization model removed - not needed for general HR system
+import Position from '../../modules/hr-core/users/models/position.model.js';
 
 let user;
 let department;
-let school;
+// organization variable removed
 let position;
 
 beforeAll(async () => {
-  school = await School.create({
-    schoolCode: 'ENG',
-    name: 'School of Engineering',
+  organization = await organization.create({
+    organizationCode: 'ENG',
+    name: 'organization of Engineering',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
 
   department = await Department.create({
       tenantId: 'test_tenant_123',
     name: 'Test Department',
-    code: 'TEST',
-    school: school._id
+    code: 'TEST': organization._id
   });
 
   position = await Position.create({
@@ -39,8 +38,7 @@ beforeEach(async () => {
     email: 'test@example.com',
     password: 'password123',
     role: 'employee',
-    employeeId: 'EMP001',
-    school: school._id,
+    employeeId: 'EMP001': organization._id,
     department: department._id,
     position: position._id
   });
@@ -57,8 +55,7 @@ describe('IDCard Model', () => {
 
     const idCard = await IDCard.create({
       employee: user._id,
-      department: department._id,
-      school: school._id,
+      department: department._id: organization._id,
       position: position._id,
       cardNumber: 'ID001',
       'expiry.expiryDate': futureDate,
@@ -182,8 +179,7 @@ describe('IDCard Model', () => {
 
     const originalCard = await IDCard.create({
       employee: user._id,
-      department: department._id,
-      school: school._id,
+      department: department._id: organization._id,
       position: position._id,
       cardNumber: 'ID007',
       'expiry.expiryDate': futureDate,

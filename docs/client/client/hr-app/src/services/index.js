@@ -1,0 +1,33 @@
+// Export all services from a single file for easy imports
+export { default as api } from './api';
+export { default as authService } from './auth.service';
+export { default as dashboardService } from './dashboard.service';
+export { default as themeService } from './theme.service';
+export { default as userService } from './user.service';
+
+export { default as departmentService } from './department.service';
+export { default as positionService } from './position.service';
+export { default as attendanceService } from './attendance.service';
+export { default as missionService } from './mission.service';
+export { default as forgetCheckService } from './forgetCheck.service';
+export { default as permissionService } from './permission.service';
+export { default as requestService } from './request.service';
+export { default as payrollService } from './payroll.service';
+export { default as documentService } from './document.service';
+export { default as templateService } from './template.service';
+export { default as announcementService } from './announcement.service';
+export { default as notificationService } from './notification.service';
+export { default as eventService } from './event.service';
+export { default as surveyService } from './survey.service';
+export { default as holidayService } from './holiday.service';
+export { default as vacationService } from './vacation.service';
+export { default as reportService } from './report.service';
+export { default as analyticsService } from './analytics.service';
+export { default as securityService } from './security.service';
+export { default as backupService } from './backup.service';
+export { default as resignedService } from './resigned.service';
+export { default as mixedVacationService } from './mixedVacation.service';
+export { default as permissionAuditService } from './permissionAudit.service';
+export { default as backupExecutionService } from './backupExecution.service';
+export { default as systemPermissionService } from './systemPermission.service';
+export { default as roleService } from './role.service';

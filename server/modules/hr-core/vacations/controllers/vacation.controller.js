@@ -1,8 +1,8 @@
 // Vacation Controller
 import Vacation from '../models/vacation.model.js';
-import Notification from '../models/notification.model.js';
-import { sendEmail, getEmployeeManager } from '../services/email.service.js';
-import User from '../models/user.model.js';
+import Notification from '../../../notifications/models/notification.model.js';
+import { sendEmail, getEmployeeManager } from '../../../email-service/services/email.service.js';
+import User from '../../users/models/user.model.js';
 
 /**
  * Get all vacations with optional filtering

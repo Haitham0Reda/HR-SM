@@ -1,7 +1,7 @@
-import Department from '../../models/department.model.js';
-import Position from '../../models/position.model.js';
-import User from '../../models/user.model.js';
-import School from '../../models/school.model.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
+import Position from '../../modules/hr-core/users/models/position.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+// organization model removed - not needed for general HR system
 
 export const createMockResponse = () => ({
     statusCode: 200,
@@ -49,10 +49,11 @@ export const createTestPosition = async (departmentId) => {
 };
 
 export const createTestUser = async (departmentId, positionId, overrides = {}) => {
+    const uniqueId = Math.random().toString(36).substring(7);
     return await User.create({
         tenantId: 'test_tenant_123',
-        username: 'testuser',
-        email: 'test@test.com',
+        username: `testuser_${uniqueId}`,
+        email: `test_${uniqueId}@test.com`,
         password: 'password123',
         role: 'employee',
         department: departmentId,
@@ -61,7 +62,7 @@ export const createTestUser = async (departmentId, positionId, overrides = {}) =
             firstName: 'Test',
             lastName: 'User',
             phoneNumber: '1234567890',
-            nationalID: '12345678901234',
+            nationalID: `12345678901${uniqueId}`,
             dateOfBirth: new Date('1990-01-01'),
             hireDate: new Date()
         },
@@ -69,37 +70,11 @@ export const createTestUser = async (departmentId, positionId, overrides = {}) =
     });
 };
 
-export const createTestSchool = async (overrides = {}) => {
-    return await School.create({
-        tenantId: 'test_tenant_123',
-        name: 'Test School',
-        code: 'TESTSCH',
-        address: {
-            street: '123 Test St',
-            city: 'Test City',
-            state: 'Test State',
-            zipCode: '12345',
-            country: 'Test Country'
-        },
-        contact: {
-            phone: '555-0123',
-            email: 'test@testschool.edu',
-            website: 'https://testschool.edu'
-        },
-        establishedDate: new Date('2000-01-01'),
-        type: 'elementary',
-        capacity: {
-            students: 500,
-            staff: 50
-        },
-        status: 'active',
-        ...overrides
-    });
-};
+// createTestorganization function removed - not needed for general HR system
 
 export const cleanupTestData = async () => {
     await User.deleteMany({});
     await Position.deleteMany({});
     await Department.deleteMany({});
-    await School.deleteMany({});
+    // organization cleanup removed - not needed for general HR system
 };

@@ -2,18 +2,18 @@
  * @jest-environment node
  */
 import mongoose from 'mongoose';
-import Request from '../../models/request.model.js';
-import User from '../../models/user.model.js';
-import * as requestController from '../../controller/request.controller.js';
-import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
+import Request from '../../modules/hr-core/requests/models/request.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+import * as requestController from '../../modules/hr-core/requests/controllers/request.controller.js';
+import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('Request System Unit Tests', () => {
-    let mockReq, mockRes, testSchool, testUser, testManager;
+    let mockReq, mockRes, testorganization, testUser, testManager;
 
     beforeEach(async () => {
-        testSchool = await createTestSchool();
-        testUser = await createTestUser(testSchool._id, null, null);
-        testManager = await createTestUser(testSchool._id, null, null);
+        testorganization = await createTestorganization();
+        testUser = await createTestUser(testorganization._id, null, null);
+        testManager = await createTestUser(testorganization._id, null, null);
 
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();
@@ -25,14 +25,15 @@ describe('Request System Unit Tests', () => {
     });
 
     describe('Request Types Support', () => {
-        const requestTypes = ['permission', 'overtime', 'sick-leave', 'mission', 'day-swap'];
+        const requestTypes = ['permission', 'overtime', 'vacation', 'mission', 'forget-check'];
 
         it('should support all request types', async () => {
             for (const type of requestTypes) {
                 const requestData = {
-                    employee: testUser._id,
-                    type: type,
-                    details: {
+                    tenantId: 'test_tenant_123',
+                    requestedBy: testUser._id,
+                    requestType: type,
+                    requestData: {
                         date: new Date(),
                         reason: `Test ${type} request`
                     }
@@ -41,16 +42,17 @@ describe('Request System Unit Tests', () => {
                 mockReq.body = requestData;
                 await requestController.createRequest(mockReq, mockRes);
 
-                // Should not return error status codes for valid request types
-                expect([200, 201]).toContain(mockRes.statusCode);
+                // Should return success status codes for valid request types
+                expect(mockRes.statusCode).toBe(201);
             }
         });
 
         it('should reject invalid request types', async () => {
             const invalidRequestData = {
-                employee: testUser._id,
-                type: 'invalid-type',
-                details: {
+                tenantId: 'test_tenant_123',
+                requestedBy: testUser._id,
+                requestType: 'invalid-type',
+                requestData: {
                     date: new Date(),
                     reason: 'Invalid request type'
                 }
@@ -70,9 +72,10 @@ describe('Request System Unit Tests', () => {
         beforeEach(async () => {
             // Create a test request
             testRequest = await Request.create({
-                employee: testUser._id,
-                type: 'permission',
-                details: {
+                tenantId: 'test_tenant_123',
+                requestedBy: testUser._id,
+                requestType: 'permission',
+                requestData: {
                     date: new Date(),
                     reason: 'Test permission request'
                 },
@@ -101,7 +104,7 @@ describe('Request System Unit Tests', () => {
                 await requestController.updateRequest(mockReq, mockRes);
 
                 // Should successfully update status
-                expect([200, 201]).toContain(mockRes.statusCode);
+                expect(mockRes.statusCode).toBe(200);
 
                 // Verify status was updated
                 const updatedRequest = await Request.findById(testRequest._id);
@@ -144,9 +147,10 @@ describe('Request System Unit Tests', () => {
 
         beforeEach(async () => {
             testRequest = await Request.create({
-                employee: testUser._id,
-                type: 'permission',
-                details: {
+                tenantId: 'test_tenant_123',
+                requestedBy: testUser._id,
+                requestType: 'permission',
+                requestData: {
                     date: new Date(),
                     reason: 'Test permission request'
                 },
@@ -165,7 +169,7 @@ describe('Request System Unit Tests', () => {
 
             await requestController.updateRequest(mockReq, mockRes);
 
-            expect([200, 201]).toContain(mockRes.statusCode);
+            expect(mockRes.statusCode).toBe(200);
 
             // Verify approval fields are set
             const approvedRequest = await Request.findById(testRequest._id);
@@ -186,7 +190,7 @@ describe('Request System Unit Tests', () => {
 
             await requestController.updateRequest(mockReq, mockRes);
 
-            expect([200, 201]).toContain(mockRes.statusCode);
+            expect(mockRes.statusCode).toBe(200);
 
             // Verify rejection fields are set
             const rejectedRequest = await Request.findById(testRequest._id);
@@ -201,26 +205,26 @@ describe('Request System Unit Tests', () => {
         let tenant1User, tenant2User, tenant1Request, tenant2Request;
 
         beforeEach(async () => {
-            // Create users for different tenants (simulated with different schools)
-            const tenant1School = await createTestSchool();
-            const tenant2School = await createTestSchool();
+            // Create users for different tenants (simulated with different organizations)
+            const tenant1organization = await createTestorganization();
+            const tenant2organization = await createTestorganization();
 
-            tenant1User = await createTestUser(tenant1School._id, null, null);
-            tenant2User = await createTestUser(tenant2School._id, null, null);
+            tenant1User = await createTestUser(tenant1organization._id, null, null);
+            tenant2User = await createTestUser(tenant2organization._id, null, null);
 
             // Create requests for different tenants
             tenant1Request = await Request.create({
-                employee: tenant1User._id,
-                type: 'permission',
-                details: { reason: 'Tenant 1 request' },
-                tenantId: 'tenant1' // In real implementation, this would be set by middleware
+                tenantId: 'tenant1',
+                requestedBy: tenant1User._id,
+                requestType: 'permission',
+                requestData: { reason: 'Tenant 1 request' }
             });
 
             tenant2Request = await Request.create({
-                employee: tenant2User._id,
-                type: 'permission',
-                details: { reason: 'Tenant 2 request' },
-                tenantId: 'tenant2' // In real implementation, this would be set by middleware
+                tenantId: 'tenant2',
+                requestedBy: tenant2User._id,
+                requestType: 'permission',
+                requestData: { reason: 'Tenant 2 request' }
             });
         });
 
@@ -233,7 +237,7 @@ describe('Request System Unit Tests', () => {
 
             // In a real implementation with tenant filtering,
             // this should only return tenant1 requests
-            expect([200, 201]).toContain(mockRes.statusCode);
+            expect(mockRes.statusCode).toBe(200);
 
             // Note: Current implementation doesn't have tenant filtering,
             // but this test demonstrates what should be tested
@@ -260,28 +264,32 @@ describe('Request System Unit Tests', () => {
                 // Create test requests
                 await Request.create([
                     {
-                        employee: testUser._id,
-                        type: 'permission',
-                        details: { reason: 'Test request 1' }
+                        tenantId: 'test_tenant_123',
+                        requestedBy: testUser._id,
+                        requestType: 'permission',
+                        requestData: { reason: 'Test request 1' }
                     },
                     {
-                        employee: testUser._id,
-                        type: 'overtime',
-                        details: { reason: 'Test request 2' }
+                        tenantId: 'test_tenant_123',
+                        requestedBy: testUser._id,
+                        requestType: 'overtime',
+                        requestData: { reason: 'Test request 2' }
                     }
                 ]);
 
                 await requestController.getAllRequests(mockReq, mockRes);
-                expect([200, 201]).toContain(mockRes.statusCode);
+                expect(mockRes.statusCode).toBe(200);
             });
 
             it('should handle database errors gracefully', async () => {
                 // Mock database error by using invalid query
                 const originalFind = Request.find;
-                Request.find = jest.fn().mockRejectedValue(new Error('Database error'));
+                Request.find = () => {
+                    throw new Error('Database error');
+                };
 
                 await requestController.getAllRequests(mockReq, mockRes);
-                expect([500]).toContain(mockRes.statusCode);
+                expect(mockRes.statusCode).toBe(500);
 
                 // Restore original method
                 Request.find = originalFind;
@@ -291,9 +299,10 @@ describe('Request System Unit Tests', () => {
         describe('createRequest', () => {
             it('should create request with valid data', async () => {
                 const requestData = {
-                    employee: testUser._id,
-                    type: 'permission',
-                    details: {
+                    tenantId: 'test_tenant_123',
+                    requestedBy: testUser._id,
+                    requestType: 'permission',
+                    requestData: {
                         date: new Date(),
                         reason: 'Doctor appointment'
                     }
@@ -302,13 +311,13 @@ describe('Request System Unit Tests', () => {
                 mockReq.body = requestData;
                 await requestController.createRequest(mockReq, mockRes);
 
-                expect([200, 201]).toContain(mockRes.statusCode);
+                expect(mockRes.statusCode).toBe(201);
             });
 
             it('should reject request with invalid data', async () => {
                 const invalidRequestData = {
                     // Missing required fields
-                    details: { reason: 'Invalid request' }
+                    requestData: { reason: 'Invalid request' }
                 };
 
                 mockReq.body = invalidRequestData;
@@ -321,15 +330,16 @@ describe('Request System Unit Tests', () => {
         describe('getRequestById', () => {
             it('should return request when found', async () => {
                 const testRequest = await Request.create({
-                    employee: testUser._id,
-                    type: 'permission',
-                    details: { reason: 'Test request' }
+                    tenantId: 'test_tenant_123',
+                    requestedBy: testUser._id,
+                    requestType: 'permission',
+                    requestData: { reason: 'Test request' }
                 });
 
                 mockReq.params = { id: testRequest._id.toString() };
                 await requestController.getRequestById(mockReq, mockRes);
 
-                expect([200, 201]).toContain(mockRes.statusCode);
+                expect(mockRes.statusCode).toBe(200);
             });
 
             it('should return 404 when request not found', async () => {
@@ -337,16 +347,17 @@ describe('Request System Unit Tests', () => {
                 mockReq.params = { id: nonExistentId.toString() };
 
                 await requestController.getRequestById(mockReq, mockRes);
-                expect([404]).toContain(mockRes.statusCode);
+                expect(mockRes.statusCode).toBe(404);
             });
         });
 
         describe('updateRequest', () => {
             it('should update request successfully', async () => {
                 const testRequest = await Request.create({
-                    employee: testUser._id,
-                    type: 'permission',
-                    details: { reason: 'Test request' },
+                    tenantId: 'test_tenant_123',
+                    requestedBy: testUser._id,
+                    requestType: 'permission',
+                    requestData: { reason: 'Test request' },
                     status: 'pending'
                 });
 
@@ -357,7 +368,7 @@ describe('Request System Unit Tests', () => {
                 };
 
                 await requestController.updateRequest(mockReq, mockRes);
-                expect([200, 201]).toContain(mockRes.statusCode);
+                expect(mockRes.statusCode).toBe(200);
             });
 
             it('should return 404 when updating non-existent request', async () => {
@@ -366,22 +377,23 @@ describe('Request System Unit Tests', () => {
                 mockReq.body = { status: 'approved' };
 
                 await requestController.updateRequest(mockReq, mockRes);
-                expect([404]).toContain(mockRes.statusCode);
+                expect(mockRes.statusCode).toBe(404);
             });
         });
 
         describe('deleteRequest', () => {
             it('should delete request successfully', async () => {
                 const testRequest = await Request.create({
-                    employee: testUser._id,
-                    type: 'permission',
-                    details: { reason: 'Test request' }
+                    tenantId: 'test_tenant_123',
+                    requestedBy: testUser._id,
+                    requestType: 'permission',
+                    requestData: { reason: 'Test request' }
                 });
 
                 mockReq.params = { id: testRequest._id.toString() };
                 await requestController.deleteRequest(mockReq, mockRes);
 
-                expect([200, 201]).toContain(mockRes.statusCode);
+                expect(mockRes.statusCode).toBe(200);
             });
 
             it('should return 404 when deleting non-existent request', async () => {
@@ -389,7 +401,7 @@ describe('Request System Unit Tests', () => {
                 mockReq.params = { id: nonExistentId.toString() };
 
                 await requestController.deleteRequest(mockReq, mockRes);
-                expect([404]).toContain(mockRes.statusCode);
+                expect(mockRes.statusCode).toBe(404);
             });
         });
     });

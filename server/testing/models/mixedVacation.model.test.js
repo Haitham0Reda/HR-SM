@@ -1,27 +1,25 @@
 import mongoose from 'mongoose';
-import MixedVacation from '../../models/mixedVacation.model.js';
-import User from '../../models/user.model.js';
-import School from '../../models/school.model.js';
-import Department from '../../models/department.model.js';
-import VacationBalance from '../../models/vacationBalance.model.js';
-import Holiday from '../../models/holiday.model.js';
+import MixedVacation from '../../modules/hr-core/vacations/models/mixedVacation.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+// organization model removed - not needed for general HR system
+import Department from '../../modules/hr-core/users/models/department.model.js';
+import VacationBalance from '../../modules/hr-core/vacations/models/vacationBalance.model.js';
+import Holiday from '../../modules/hr-core/holidays/models/holiday.model.js';
 
 let user;
-let school;
+// organization variable removed
 let department;
 
 beforeAll(async () => {
-  school = await School.create({
-    name: 'School of Engineering',
-    schoolCode: 'ENG',
+  organization = await organization.create({
+    name: 'organization of Engineering'Code: 'ENG',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
 
   department = await Department.create({
       tenantId: 'test_tenant_123',
     name: 'Test Department',
-    code: 'TEST',
-    school: school._id
+    code: 'TEST': organization._id
   });
 
   user = await User.create({
@@ -30,8 +28,7 @@ beforeAll(async () => {
     email: 'test@example.com',
     password: 'password123',
     role: 'employee',
-    employeeId: 'EMP001',
-    school: school._id,
+    employeeId: 'EMP001': organization._id,
     department: department._id
   });
 }, 60000);
@@ -163,7 +160,7 @@ describe('MixedVacation Model', () => {
   it('should detect official holidays in date range', async () => {
     // Create holiday settings
     const holiday = await Holiday.create({
-      campus: school._id,
+      location: organization._id,
       officialHolidays: [
         {
           date: new Date('2024-01-05'),
@@ -183,7 +180,7 @@ describe('MixedVacation Model', () => {
       createdBy: user._id
     });
 
-    const updatedPolicy = await mixedVacation.detectOfficialHolidays(school._id);
+    const updatedPolicy = await mixedVacation.detectOfficialHolidays(organization._id);
 
     expect(updatedPolicy.officialHolidays).toHaveLength(1);
     expect(updatedPolicy.officialHolidays[0].name).toBe('Test Holiday');

@@ -1,6 +1,6 @@
 # Modular HRMS - Human Resources Management System
 
-A comprehensive, enterprise-grade Human Resources Management System built with the MERN stack, designed to support both SaaS (multi-tenant) and On-Premise (single-tenant) deployments from a single codebase.
+A comprehensive, enterprise-level Human Resources Management System built with the MERN stack, designed to support both SaaS (multi-tenant) and On-Premise (single-tenant) deployments from a single codebase.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)

@@ -5,10 +5,10 @@ import {
     getPayrollById,
     updatePayroll,
     deletePayroll
-} from '../controller/payroll.controller.js';
-import { protect, hrOrAdmin } from '../middleware/index.js';
-import { requireModuleLicense } from '../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../models/license.model.js';
+} from '../controllers/payroll.controller.js';
+import { protect, hrOrAdmin } from '../../../middleware/index.js';
+import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
+import { MODULES } from '../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 

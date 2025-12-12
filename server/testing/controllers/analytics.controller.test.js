@@ -2,19 +2,19 @@
  * @jest-environment node
  */
 import mongoose from 'mongoose';
-import User from '../../models/user.model.js';
-import Attendance from '../../models/attendance.model.js';
-import Vacation from '../../models/vacation.model.js';
-import Payroll from '../../models/payroll.model.js';
-import * as analyticsController from '../../controller/analytics.controller.js';
-import { createMockResponse, createMockRequest, createTestSchool, createTestUser, cleanupTestData } from './testHelpers.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+import Attendance from '../../modules/hr-core/attendance/models/attendance.model.js';
+import Vacation from '../../modules/hr-core/vacations/models/vacation.model.js';
+import Payroll from '../../modules/payroll/models/payroll.model.js';
+import * as analyticsController from '../../modules/analytics/controllers/analytics.controller.js';
+import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('Analytics Controller - All 7 Functions', () => {
-    let mockReq, mockRes, testSchool, testUser;
+    let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testSchool = await createTestSchool();
-        testUser = await createTestUser(testSchool._id, null, null);
+        testorganization = await createTestorganization();
+        testUser = await createTestUser(testorganization._id, null, null);
 
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

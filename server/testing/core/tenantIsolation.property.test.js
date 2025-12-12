@@ -12,13 +12,21 @@
 
 import fc from 'fast-check';
 import mongoose from 'mongoose';
-import User from '../../models/user.model.js';
-import Attendance from '../../models/attendance.model.js';
-import Department from '../../models/department.model.js';
-import Task from '../../models/task.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+import Attendance from '../../modules/hr-core/attendance/models/attendance.model.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
+import Task from '../../modules/tasks/models/task.model.js';
 import { generateTenantToken } from '../../core/auth/tenantAuth.js';
 
 describe('Tenant Isolation - Property-Based Tests', () => {
+    // Clean up before each test to ensure isolation
+    beforeEach(async () => {
+        await User.deleteMany({});
+        await Department.deleteMany({});
+        await Attendance.deleteMany({});
+        await Task.deleteMany({});
+    });
+
     /**
      * Feature: enterprise-saas-architecture, Property 1: Tenant Data Isolation
      * 

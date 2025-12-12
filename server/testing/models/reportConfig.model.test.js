@@ -1,13 +1,11 @@
 import mongoose from 'mongoose';
-import ReportConfig from '../../models/reportConfig.model.js';
-import School from '../../models/school.model.js';
+import ReportConfig from '../../modules/reports/models/reportConfig.model.js';
+// organization model removed - not needed for general HR system
 
-let school;
-
+// organization variable removed
 beforeAll(async () => {
-  school = await School.create({
-    name: 'School of Engineering',
-    schoolCode: 'ENG',
+  organization = await organization.create({
+    name: 'organization of Engineering'Code: 'ENG',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
 });

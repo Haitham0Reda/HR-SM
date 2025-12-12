@@ -98,8 +98,8 @@ export const importEgyptHolidays = async (req, res) => {
             return res.status(404).json({ error: `No holidays found for year ${year}` });
         }
 
-        // Get or create holiday settings for default organization
-        const holidaySettings = await Holiday.getOrCreateForCampus('default-organization');
+        // Get or create holiday settings for tenant
+        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
 
         // Track import results
         let imported = 0;
@@ -174,8 +174,8 @@ export const importEgyptHolidays = async (req, res) => {
  */
 export const getHolidaySettings = async (req, res) => {
     try {
-        // Get or create holiday settings for default organization
-        const holidaySettings = await Holiday.getOrCreateForCampus('default-organization');
+        // Get or create holiday settings for tenant
+        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
 
         res.json({ settings: holidaySettings });
     } catch (err) {
@@ -190,8 +190,8 @@ export const updateHolidaySettings = async (req, res) => {
     try {
         const updates = req.body;
 
-        // Get or create holiday settings for default organization
-        const holidaySettings = await Holiday.getOrCreateForCampus('default-organization');
+        // Get or create holiday settings for tenant
+        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
 
         // Update fields if provided
         if (updates.weekendDays !== undefined) {

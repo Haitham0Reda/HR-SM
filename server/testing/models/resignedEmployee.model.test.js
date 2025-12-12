@@ -1,21 +1,19 @@
 import mongoose from 'mongoose';
-import ResignedEmployee from '../../models/resignedEmployee.model.js';
-import User from '../../models/user.model.js';
-import Department from '../../models/department.model.js';
-import Position from '../../models/position.model.js';
-import School from '../../models/school.model.js';  // Add this import
+import ResignedEmployee from '../../modules/hr-core/users/models/resignedEmployee.model.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
+import Position from '../../modules/hr-core/users/models/position.model.js';
+// organization model removed - not needed for general HR system  // Add this import
 
 let employee;
 let department;
 let position;
 let hrUser;
-let school;
-
+// organization variable removed
 beforeAll(async () => {
   // Create required references that don't change between tests
-  school = await School.create({
-    name: 'School of Engineering',
-    schoolCode: 'ENG',
+  organization = await organization.create({
+    name: 'organization of Engineering'Code: 'ENG',
     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
   });
 });
@@ -25,8 +23,7 @@ beforeEach(async () => {
   department = await Department.create({
       tenantId: 'test_tenant_123',
     name: 'Test Department',
-    code: 'TEST',
-    school: school._id
+    code: 'TEST': organization._id
   });
 
   position = await Position.create({
@@ -41,8 +38,7 @@ beforeEach(async () => {
     email: 'employee@example.com',
     password: 'password123',
     role: 'employee',
-    employeeId: 'EMP001',
-    school: school._id,
+    employeeId: 'EMP001': organization._id,
     department: department._id,
     position: position._id,
     profile: {
@@ -61,8 +57,7 @@ beforeEach(async () => {
     email: 'hr@example.com',
     password: 'password123',
     role: 'hr',
-    employeeId: 'HR001',
-    school: school._id
+    employeeId: 'HR001': organization._id
   });
 
   await ResignedEmployee.deleteMany({});
@@ -310,8 +305,7 @@ describe('ResignedEmployee Model', () => {
       email: 'employee2@example.com',
       password: 'password123',
       role: 'employee',
-      employeeId: 'EMP002',
-      school: school._id,
+      employeeId: 'EMP002': organization._id,
       department: department._id,
       position: position._id,
       profile: {

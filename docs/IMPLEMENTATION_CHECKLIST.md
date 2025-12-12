@@ -605,7 +605,7 @@ Implement remaining modules following the same pattern:
 
 ### Quarterly Tasks
 
-- [ ] Major version updates
+- [ ] specialization version updates
 - [ ] Infrastructure review
 - [ ] Disaster recovery drill
 - [ ] Security penetration test
