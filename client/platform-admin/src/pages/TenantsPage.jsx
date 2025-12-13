@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -10,6 +10,10 @@ import {
   DialogActions,
   Alert,
   Snackbar,
+  Grid,
+  Card,
+  CardContent,
+  Chip,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import TenantList from '../components/tenants/TenantList';
@@ -26,6 +30,8 @@ const TenantsPage = () => {
   const [confirmAction, setConfirmAction] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   const handleCreateSuccess = () => {
     setRefreshKey((prev) => prev + 1);
@@ -91,6 +97,22 @@ const TenantsPage = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  useEffect(() => {
+    loadStats();
+  }, [refreshKey]);
+
+  const loadStats = async () => {
+    try {
+      setStatsLoading(true);
+      const response = await tenantService.getTenantStats();
+      setStats(response.data.statistics);
+    } catch (error) {
+      console.error('Failed to load tenant statistics:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -106,8 +128,78 @@ const TenantsPage = () => {
         </Button>
       </Box>
 
+      {/* Statistics Cards */}
+      {stats && (
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card>
+              <CardContent>
+                <Typography color="text.secondary" gutterBottom variant="body2">
+                  Total Tenants
+                </Typography>
+                <Typography variant="h4" component="div">
+                  {stats.total}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card>
+              <CardContent>
+                <Typography color="text.secondary" gutterBottom variant="body2">
+                  Active
+                </Typography>
+                <Typography variant="h4" component="div" color="success.main">
+                  {stats.active}
+                </Typography>
+                <Chip label="Active" color="success" size="small" sx={{ mt: 1 }} />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card>
+              <CardContent>
+                <Typography color="text.secondary" gutterBottom variant="body2">
+                  Trial
+                </Typography>
+                <Typography variant="h4" component="div" color="warning.main">
+                  {stats.trial}
+                </Typography>
+                <Chip label="Trial" color="warning" size="small" sx={{ mt: 1 }} />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card>
+              <CardContent>
+                <Typography color="text.secondary" gutterBottom variant="body2">
+                  Suspended
+                </Typography>
+                <Typography variant="h4" component="div" color="error.main">
+                  {stats.suspended}
+                </Typography>
+                <Chip label="Suspended" color="error" size="small" sx={{ mt: 1 }} />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card>
+              <CardContent>
+                <Typography color="text.secondary" gutterBottom variant="body2">
+                  Cancelled
+                </Typography>
+                <Typography variant="h4" component="div" color="text.secondary">
+                  {stats.cancelled}
+                </Typography>
+                <Chip label="Cancelled" color="default" size="small" sx={{ mt: 1 }} />
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
       <TenantList
-        key={refreshKey}
+        refreshKey={refreshKey}
         onView={handleView}
         onEdit={handleEdit}
         onSuspend={handleSuspend}
