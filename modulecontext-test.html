@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ModuleContext Test - TechCorp Solutions</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        .module { margin: 5px 0; padding: 10px; background: #f5f5f5; border-radius: 4px; }
+        .enabled { border-left: 4px solid green; }
+        .disabled { border-left: 4px solid red; }
+        .loading { color: #666; }
+    </style>
+</head>
+<body>
+    <h1>ModuleContext Test - TechCorp Solutions</h1>
+    <div id="status" class="loading">Loading modules...</div>
+    <div id="modules"></div>
+    <div id="tests"></div>
+    
+    <script>
+        async function testModuleContext() {
+            const statusDiv = document.getElementById('status');
+            const modulesDiv = document.getElementById('modules');
+            const testsDiv = document.getElementById('tests');
+            
+            try {
+                statusDiv.innerHTML = 'Fetching modules...';
+                
+                // Simulate the ModuleContext API call
+                const response = await fetch('http://localhost:5000/api/platform/companies/techcorp_solutions/modules');
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.innerHTML = '<span class="success">✅ ModuleContext API Working</span>';
+                    
+                    const modules = data.data.availableModules;
+                    const enabledModules = Object.entries(modules)
+                        .filter(([key, module]) => module.enabled)
+                        .map(([key]) => key);
+                    
+                    // Display modules
+                    modulesDiv.innerHTML = `
+                        <h2>Module Status (${enabledModules.length} enabled)</h2>
+                        ${Object.entries(modules).map(([key, module]) => `
+                            <div class="module ${module.enabled ? 'enabled' : 'disabled'}">
+                                <strong>${key}</strong>: ${module.name}<br>
+                                <small>Status: ${module.enabled ? '✅ Enabled' : '❌ Disabled'} | Tier: ${module.tier || 'N/A'}</small>
+                            </div>
+                        `).join('')}
+                    `;
+                    
+                    // Test module functions
+                    const isModuleEnabled = (moduleId) => {
+                        return moduleId === 'hr-core' || enabledModules.includes(moduleId);
+                    };
+                    
+                    const areModulesEnabled = (moduleIds) => {
+                        return moduleIds.every(id => isModuleEnabled(id));
+                    };
+                    
+                    const isAnyModuleEnabled = (moduleIds) => {
+                        return moduleIds.some(id => isModuleEnabled(id));
+                    };
+                    
+                    // Run tests
+                    const testResults = [
+                        { name: 'HR Core enabled', result: isModuleEnabled('hr-core') },
+                        { name: 'Attendance enabled', result: isModuleEnabled('attendance') },
+                        { name: 'All core modules', result: areModulesEnabled(['hr-core', 'attendance']) },
+                        { name: 'Any reporting module', result: isAnyModuleEnabled(['reports', 'analytics']) },
+                        { name: 'Nonexistent module', result: isModuleEnabled('nonexistent'), expected: false }
+                    ];
+                    
+                    testsDiv.innerHTML = `
+                        <h2>Function Tests</h2>
+                        ${testResults.map(test => {
+                            const passed = test.expected !== undefined ? test.result === test.expected : test.result;
+                            return `
+                                <div class="module ${passed ? 'enabled' : 'disabled'}">
+                                    <strong>${test.name}</strong>: ${passed ? '✅ PASS' : '❌ FAIL'}<br>
+                                    <small>Result: ${test.result}</small>
+                                </div>
+                            `;
+                        }).join('')}
+                    `;
+                    
+                } else {
+                    statusDiv.innerHTML = '<span class="error">❌ API Failed: ' + data.message + '</span>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+        
+        testModuleContext();
+    </script>
+</body>
+</html>

@@ -27,6 +27,7 @@ import {
     Poll as PollIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
@@ -38,6 +39,7 @@ const SurveysPage = () => {
     const { user, isHR, isAdmin, setHasPendingSurveys } = useAuth();
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const [surveys, setSurveys] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
@@ -304,7 +306,7 @@ const SurveysPage = () => {
             <Box sx={{ p: 3 }}>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/app/surveys')}
+                    onClick={() => navigate(getCompanyRoute('/surveys'))}
                     sx={{ mb: 2 }}
                 >
                     ← Back to Surveys
@@ -312,7 +314,7 @@ const SurveysPage = () => {
                 <SurveyForm onSurveyComplete={() => {
                     // Reset the pending surveys flag when survey is completed
                     setHasPendingSurveys(false);
-                    navigate('/app/surveys');
+                    navigate(getCompanyRoute('/surveys'));
                 }} />
             </Box>
         );
@@ -414,7 +416,7 @@ const SurveysPage = () => {
                                                 <Button
                                                     size="small"
                                                     variant="contained"
-                                                    onClick={() => navigate(`/app/surveys/${survey._id}`)}
+                                                    onClick={() => navigate(getCompanyRoute(`/surveys/${survey._id}`))}
                                                 >
                                                     Take Survey
                                                 </Button>

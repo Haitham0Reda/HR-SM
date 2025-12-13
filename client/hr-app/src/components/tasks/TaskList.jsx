@@ -21,9 +21,11 @@ import {
     Cancel
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 
 const TaskList = ({ title, tasks, onEdit, onDelete, onReport, user }) => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -136,10 +138,10 @@ const TaskList = ({ title, tasks, onEdit, onDelete, onReport, user }) => {
                                                 // This would require an API call to update status
                                                 console.log('Re-work task', task._id);
                                             } else {
-                                                navigate(`/app/tasks/${task._id}`);
+                                                navigate(getCompanyRoute(`/tasks/${task._id}`));
                                             }
                                         } else {
-                                            navigate(`/app/tasks/${task._id}`);
+                                            navigate(getCompanyRoute(`/tasks/${task._id}`));
                                         }
                                     }}
                                 >

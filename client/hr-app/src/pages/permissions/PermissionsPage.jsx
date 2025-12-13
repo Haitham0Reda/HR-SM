@@ -19,6 +19,7 @@ import {
     Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -31,6 +32,7 @@ const PermissionsPage = () => {
     useDocumentTitle('Permissions');
     const theme = useTheme();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
     const [permissions, setPermissions] = useState([]);
@@ -314,7 +316,7 @@ const PermissionsPage = () => {
                         )}
                         <IconButton
                             size="small"
-                            onClick={() => navigate(`/app/permissions/${row._id}`)}
+                            onClick={() => navigate(getCompanyRoute(`/permissions/${row._id}`))}
                             color="info"
                             title="View Details"
                         >
@@ -323,7 +325,7 @@ const PermissionsPage = () => {
                         {canEdit && (
                             <IconButton
                                 size="small"
-                                onClick={() => navigate(`/app/permissions/${row._id}/edit`)}
+                                onClick={() => navigate(getCompanyRoute(`/permissions/${row._id}/edit`))}
                                 color="primary"
                                 title="Edit"
                             >
@@ -363,7 +365,7 @@ const PermissionsPage = () => {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate('/app/permissions/create')}
+                    onClick={() => navigate(getCompanyRoute('/permissions/create'))}
                 >
                     New Permission
                 </Button>

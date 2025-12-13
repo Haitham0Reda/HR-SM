@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Box,
     Typography,
@@ -34,6 +35,7 @@ import permissionService from '../../services/permission.service';
 const RequestDetailsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const [request, setRequest] = useState(null);
     const [requestType, setRequestType] = useState(null);
@@ -115,11 +117,11 @@ const RequestDetailsPage = () => {
                 setRequestType(type);
             } else {
                 showNotification('Request not found', 'error');
-                navigate('/app/requests');
+                navigate(getCompanyRoute('/requests'));
             }
         } catch (error) {
             showNotification('Failed to fetch request details', 'error');
-            navigate('/app/requests');
+            navigate(getCompanyRoute('/requests'));
         } finally {
             setLoading(false);
         }
@@ -228,7 +230,7 @@ const RequestDetailsPage = () => {
             }
             await service.delete(id);
             showNotification('Request deleted successfully', 'success');
-            navigate('/app/requests');
+            navigate(getCompanyRoute('/requests'));
         } catch (error) {
             showNotification(error.response?.data?.error || 'Failed to delete request', 'error');
         } finally {
@@ -288,7 +290,7 @@ const RequestDetailsPage = () => {
                         <Button
                             variant="outlined"
                             startIcon={<ArrowBackIcon />}
-                            onClick={() => navigate('/app/requests')}
+                            onClick={() => navigate(getCompanyRoute('/requests'))}
                         >
                             Back to List
                         </Button>

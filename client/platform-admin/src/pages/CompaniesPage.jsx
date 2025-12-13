@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
   Card,
   CardContent,
-  Grid,
   Chip,
   Button,
   Dialog,
@@ -19,7 +18,7 @@ import {
   Switch,
   FormControlLabel,
   Alert,
-  CircularProgress,
+
   List,
   ListItem,
   ListItemText,
@@ -50,7 +49,6 @@ import {
   Error as ErrorIcon
 } from '@mui/icons-material';
 import companyService from '../services/companyService';
-import { useTheme } from '../contexts/ThemeContext';
 
 // Add keyframes for animations
 const pulseKeyframes = `
@@ -78,7 +76,6 @@ if (typeof document !== 'undefined') {
 }
 
 const CompaniesPage = () => {
-  const { theme } = useTheme();
   const [companies, setCompanies] = useState([]);
   const [, setAvailableModules] = useState({});
   const [loading, setLoading] = useState(true);
@@ -197,22 +194,23 @@ const CompaniesPage = () => {
 
   const handleEditCompany = (company) => {
     setEditCompanyData({
-      name: company.metadata.name || '',
-      industry: company.metadata.industry || '',
-      adminEmail: company.metadata.adminEmail || '',
-      phone: company.metadata.phone || '',
-      address: company.metadata.address || '',
+      // Handle both old format (metadata.*) and new format (direct properties)
+      name: company.metadata?.name || company.name || '',
+      industry: company.metadata?.industry || '',
+      adminEmail: company.metadata?.adminEmail || company.adminEmail || '',
+      phone: company.metadata?.phone || company.phone || '',
+      address: company.metadata?.address || company.address || '',
       settings: {
-        timezone: company.metadata.settings?.timezone || 'UTC',
-        currency: company.metadata.settings?.currency || 'USD',
-        language: company.metadata.settings?.language || 'en',
+        timezone: company.metadata?.settings?.timezone || company.settings?.timezone || 'UTC',
+        currency: company.metadata?.settings?.currency || company.settings?.currency || 'USD',
+        language: company.metadata?.settings?.language || company.settings?.language || 'en',
         workingHours: {
-          start: company.metadata.settings?.workingHours?.start || '09:00',
-          end: company.metadata.settings?.workingHours?.end || '17:00'
+          start: company.metadata?.settings?.workingHours?.start || company.settings?.workingHours?.start || '09:00',
+          end: company.metadata?.settings?.workingHours?.end || company.settings?.workingHours?.end || '17:00'
         }
       }
     });
-    setSelectedCompany(company.sanitizedName);
+    setSelectedCompany(company.sanitizedName || company.slug);
     setEditDialogOpen(true);
   };
 
@@ -228,14 +226,18 @@ const CompaniesPage = () => {
   };
 
   const getStatusColor = (company) => {
-    if (company.metadata.isActive === false) return 'error';
-    if (company.statistics.error) return 'warning';
+    // Handle both old format (metadata.isActive) and new format (status)
+    if (company.metadata && company.metadata.isActive === false) return 'error';
+    if (company.status === 'inactive' || company.status === 'suspended') return 'error';
+    if (company.statistics && company.statistics.error) return 'warning';
     return 'success';
   };
 
   const getStatusText = (company) => {
-    if (company.metadata.isActive === false) return 'Inactive';
-    if (company.statistics.error) return 'Error';
+    // Handle both old format (metadata.isActive) and new format (status)
+    if (company.metadata && company.metadata.isActive === false) return 'Inactive';
+    if (company.status === 'inactive' || company.status === 'suspended') return 'Inactive';
+    if (company.statistics && company.statistics.error) return 'Error';
     return 'Active';
   };
 
@@ -278,11 +280,27 @@ const CompaniesPage = () => {
   }
 
   return (
-    <Box sx={{ p: 4 }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: 4,
+      p: 4,
+      minHeight: '100vh'
+    }}>
       {/* Header Section */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Box>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        gap: 3
+      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 2
+        }}>
+          <Box sx={{ flex: '1 1 auto' }}>
             <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
               Company Management
             </Typography>
@@ -294,50 +312,84 @@ const CompaniesPage = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setCreateDialogOpen(true)}
+            sx={{ flex: '0 0 auto' }}
           >
             Create Company
           </Button>
         </Box>
         
         {/* Stats Overview */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" fontWeight="bold" color="primary">
-                  {companies.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Companies
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" fontWeight="bold" color="success.main">
-                  {companies.filter(c => c.metadata.isActive !== false).length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Active Companies
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" fontWeight="bold" color="info.main">
-                  {companies.reduce((sum, c) => sum + (c.statistics.users || 0), 0)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Users
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <Box sx={{ 
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 3,
+          '& > *': {
+            flex: '1 1 250px',
+            minWidth: '250px',
+          }
+        }}>
+          <Card sx={{ flex: '1 1 250px' }}>
+            <CardContent sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              textAlign: 'center',
+              p: 3
+            }}>
+              <Typography variant="h4" fontWeight="bold" color="primary">
+                {companies.length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total Companies
+              </Typography>
+            </CardContent>
+          </Card>
+          
+          <Card sx={{ flex: '1 1 250px' }}>
+            <CardContent sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              textAlign: 'center',
+              p: 3
+            }}>
+              <Typography variant="h4" fontWeight="bold" color="success.main">
+                {companies.filter(c => {
+                  // Handle both old format (metadata.isActive) and new format (status)
+                  if (c.metadata && c.metadata.isActive !== undefined) {
+                    return c.metadata.isActive !== false;
+                  }
+                  // New format: check status field
+                  return c.status === 'active';
+                }).length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Active Companies
+              </Typography>
+            </CardContent>
+          </Card>
+          
+          <Card sx={{ flex: '1 1 250px' }}>
+            <CardContent sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              textAlign: 'center',
+              p: 3
+            }}>
+              <Typography variant="h4" fontWeight="bold" color="info.main">
+                {companies.reduce((sum, c) => {
+                  // Handle both old format (statistics.users) and new format (usage.employees)
+                  const users = c.statistics?.users || c.usage?.employees || 0;
+                  return sum + users;
+                }, 0)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total Users
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
 
       {error && (
@@ -350,13 +402,22 @@ const CompaniesPage = () => {
         </Alert>
       )}
 
-      <Grid container spacing={4}>
+      <Box sx={{ 
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 4,
+        '& > *': {
+          flex: '1 1 350px',
+          minWidth: '350px',
+          maxWidth: '450px',
+        }
+      }}>
         {companies.map((company, index) => {
           const colors = ['primary', 'success', 'info', 'warning', 'secondary'];
           const cardColor = colors[index % colors.length];
           
           return (
-            <Grid item xs={12} md={6} lg={4} key={company.sanitizedName}>
+            <Box key={company.sanitizedName || company.slug || company._id} sx={{ flex: '1 1 350px' }}>
               <Card 
                 sx={{ 
                   height: '100%',
@@ -380,10 +441,10 @@ const CompaniesPage = () => {
                       </Avatar>
                       <Box>
                         <Typography variant="h6" component="h2" fontWeight="bold">
-                          {company.metadata.name || company.sanitizedName}
+                          {company.metadata?.name || company.name || company.sanitizedName || company.slug}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {company.metadata.industry || 'Not specified'}
+                          {company.metadata?.industry || 'Not specified'}
                         </Typography>
                       </Box>
                     </Box>
@@ -396,49 +457,55 @@ const CompaniesPage = () => {
                     />
                   </Box>
 
-                  {/* Stats Grid */}
-                  <Grid container spacing={2} sx={{ mb: 3 }}>
-                    <Grid item xs={6}>
-                      <Box sx={{ 
-                        textAlign: 'center', 
-                        p: 2, 
-                        bgcolor: 'action.hover',
-                        borderRadius: 1,
-                        border: '1px solid',
-                        borderColor: 'divider'
-                      }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-                          <PeopleIcon fontSize="small" color="primary" />
-                          <Typography variant="h6" fontWeight="bold">
-                            {company.statistics.users || 0}
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Users
+                  {/* Stats Flex */}
+                  <Box sx={{ 
+                    display: 'flex',
+                    gap: 2,
+                    mb: 3,
+                    '& > *': {
+                      flex: '1 1 0',
+                    }
+                  }}>
+                    <Box sx={{ 
+                      textAlign: 'center', 
+                      p: 2, 
+                      bgcolor: 'action.hover',
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      flex: '1 1 0'
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
+                        <PeopleIcon fontSize="small" color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {company.statistics?.users || company.usage?.employees || 0}
                         </Typography>
                       </Box>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Box sx={{ 
-                        textAlign: 'center', 
-                        p: 2, 
-                        bgcolor: 'action.hover',
-                        borderRadius: 1,
-                        border: '1px solid',
-                        borderColor: 'divider'
-                      }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-                          <StorageIcon fontSize="small" color="secondary" />
-                          <Typography variant="h6" fontWeight="bold">
-                            {company.statistics.departments || 0}
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Departments
+                      <Typography variant="body2" color="text.secondary">
+                        Users
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ 
+                      textAlign: 'center', 
+                      p: 2, 
+                      bgcolor: 'action.hover',
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      flex: '1 1 0'
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
+                        <StorageIcon fontSize="small" color="secondary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          {company.statistics?.departments || 0}
                         </Typography>
                       </Box>
-                    </Grid>
-                  </Grid>
+                      <Typography variant="body2" color="text.secondary">
+                        Departments
+                      </Typography>
+                    </Box>
+                  </Box>
 
                   {/* Database Info */}
                   <Box sx={{ 
@@ -453,7 +520,7 @@ const CompaniesPage = () => {
                       Database
                     </Typography>
                     <Typography variant="body1" fontWeight="600">
-                      {company.database}
+                      {company.database || company.databaseName || 'Not specified'}
                     </Typography>
                   </Box>
 
@@ -462,26 +529,62 @@ const CompaniesPage = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                       <ExtensionIcon fontSize="small" color="success" />
                       <Typography variant="body2" fontWeight="600">
-                        {company.metadata.modules?.length || 0} Modules Active
+                        {(() => {
+                          // Handle both old format (metadata.modules) and new format (modules Map)
+                          if (company.metadata?.modules) {
+                            return company.metadata.modules.length;
+                          }
+                          if (company.modules) {
+                            // Count enabled modules in new format
+                            if (company.modules instanceof Map) {
+                              return Array.from(company.modules.values()).filter(m => m.enabled).length;
+                            } else if (typeof company.modules === 'object') {
+                              return Object.values(company.modules).filter(m => m && m.enabled).length;
+                            }
+                          }
+                          return 0;
+                        })()} Modules Active
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      {company.metadata.modules?.slice(0, 3).map((module) => (
-                        <Chip 
-                          key={module} 
-                          label={module} 
-                          size="small" 
-                          variant="outlined"
-                          color="primary"
-                        />
-                      ))}
-                      {company.metadata.modules?.length > 3 && (
-                        <Chip 
-                          label={`+${company.metadata.modules.length - 3} more`} 
-                          size="small"
-                          color={cardColor}
-                        />
-                      )}
+                      {(() => {
+                        // Handle both old format (metadata.modules) and new format (modules Map)
+                        let moduleList = [];
+                        if (company.metadata?.modules) {
+                          moduleList = company.metadata.modules;
+                        } else if (company.modules) {
+                          if (company.modules instanceof Map) {
+                            moduleList = Array.from(company.modules.entries())
+                              .filter(([key, config]) => config.enabled)
+                              .map(([key]) => key);
+                          } else if (typeof company.modules === 'object') {
+                            moduleList = Object.entries(company.modules)
+                              .filter(([key, config]) => config && config.enabled)
+                              .map(([key]) => key);
+                          }
+                        }
+                        
+                        return (
+                          <>
+                            {moduleList.slice(0, 3).map((module) => (
+                              <Chip 
+                                key={module} 
+                                label={module} 
+                                size="small" 
+                                variant="outlined"
+                                color="primary"
+                              />
+                            ))}
+                            {moduleList.length > 3 && (
+                              <Chip 
+                                label={`+${moduleList.length - 3} more`} 
+                                size="small"
+                                color={cardColor}
+                              />
+                            )}
+                          </>
+                        );
+                      })()}
                     </Box>
                   </Box>
 
@@ -490,7 +593,7 @@ const CompaniesPage = () => {
                     <Tooltip title="View Details">
                       <IconButton 
                         size="small"
-                        onClick={() => handleViewDetails(company.sanitizedName)}
+                        onClick={() => handleViewDetails(company.sanitizedName || company.slug)}
                         color="info"
                       >
                         <VisibilityIcon fontSize="small" />
@@ -499,7 +602,7 @@ const CompaniesPage = () => {
                     <Tooltip title="Manage Modules">
                       <IconButton 
                         size="small" 
-                        onClick={() => loadCompanyModules(company.sanitizedName)}
+                        onClick={() => loadCompanyModules(company.sanitizedName || company.slug)}
                         color="success"
                       >
                         <ExtensionIcon fontSize="small" />
@@ -517,10 +620,10 @@ const CompaniesPage = () => {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           );
         })}
-      </Grid>
+      </Box>
 
       {/* Create Company Dialog */}
       <Dialog 
@@ -529,48 +632,73 @@ const CompaniesPage = () => {
         maxWidth="md" 
         fullWidth
       >
-        <DialogTitle>
+        <DialogTitle sx={{ 
+          bgcolor: 'success.main',
+          color: 'success.contrastText',
+          fontWeight: 'bold',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          py: 3
+        }}>
+          <Avatar sx={{ 
+            bgcolor: 'success.light',
+            color: 'success.contrastText'
+          }}>
+            <AddIcon />
+          </Avatar>
           Create New Company
         </DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
+          <Box sx={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3,
+            mt: 2
+          }}>
+            <Box sx={{ 
+              display: 'flex',
+              gap: 2,
+              flexWrap: 'wrap',
+              '& > *': { flex: '1 1 250px', minWidth: '250px' }
+            }}>
               <TextField
-                fullWidth
                 label="Company Name"
                 value={newCompany.name}
                 onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
                 required
+                sx={{ flex: '1 1 250px' }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
                 label="Industry"
                 value={newCompany.industry}
                 onChange={(e) => setNewCompany({ ...newCompany, industry: e.target.value })}
+                sx={{ flex: '1 1 250px' }}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </Box>
+            
+            <TextField
+              fullWidth
+              label="Admin Email"
+              type="email"
+              value={newCompany.adminEmail}
+              onChange={(e) => setNewCompany({ ...newCompany, adminEmail: e.target.value })}
+              required
+            />
+            
+            <Box sx={{ 
+              display: 'flex',
+              gap: 2,
+              flexWrap: 'wrap',
+              '& > *': { flex: '1 1 250px', minWidth: '250px' }
+            }}>
               <TextField
-                fullWidth
-                label="Admin Email"
-                type="email"
-                value={newCompany.adminEmail}
-                onChange={(e) => setNewCompany({ ...newCompany, adminEmail: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
                 label="Phone"
                 value={newCompany.phone}
                 onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
+                sx={{ flex: '1 1 250px' }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
+              <FormControl sx={{ flex: '1 1 250px' }}>
                 <InputLabel>Timezone</InputLabel>
                 <Select
                   value={newCompany.settings.timezone}
@@ -589,24 +717,33 @@ const CompaniesPage = () => {
                   <MenuItem value="Asia/Dubai">Dubai</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Address"
-                multiline
-                rows={2}
-                value={newCompany.address}
-                onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })}
-              />
-            </Grid>
-          </Grid>
+            </Box>
+            
+            <TextField
+              fullWidth
+              label="Address"
+              multiline
+              rows={2}
+              value={newCompany.address}
+              onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })}
+            />
+          </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>
+        <DialogActions sx={{ p: 3, gap: 2, bgcolor: 'background.default' }}>
+          <Button 
+            onClick={() => setCreateDialogOpen(false)}
+            variant="outlined"
+            color="secondary"
+            size="large"
+          >
             Cancel
           </Button>
-          <Button onClick={handleCreateCompany} variant="contained">
+          <Button 
+            onClick={handleCreateCompany} 
+            variant="contained"
+            color="success"
+            size="large"
+          >
             Create Company
           </Button>
         </DialogActions>
@@ -619,7 +756,21 @@ const CompaniesPage = () => {
         maxWidth="md" 
         fullWidth
       >
-        <DialogTitle>
+        <DialogTitle sx={{ 
+          bgcolor: 'info.main',
+          color: 'info.contrastText',
+          fontWeight: 'bold',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          py: 3
+        }}>
+          <Avatar sx={{ 
+            bgcolor: 'info.light',
+            color: 'info.contrastText'
+          }}>
+            <ExtensionIcon />
+          </Avatar>
           Manage Modules - {selectedCompany}
         </DialogTitle>
         <DialogContent>
@@ -646,8 +797,13 @@ const CompaniesPage = () => {
             ))}
           </List>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setModuleDialogOpen(false)}>
+        <DialogActions sx={{ p: 3, bgcolor: 'background.default' }}>
+          <Button 
+            onClick={() => setModuleDialogOpen(false)}
+            variant="contained"
+            color="info"
+            size="large"
+          >
             Close
           </Button>
         </DialogActions>
@@ -662,35 +818,46 @@ const CompaniesPage = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
-            backdropFilter: 'blur(20px)',
           }
         }}
       >
         <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #0891b2 0%, #22d3ee 100%)',
-          color: 'white',
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
           fontWeight: 'bold',
           display: 'flex',
           alignItems: 'center',
-          gap: 2
+          gap: 2,
+          py: 3
         }}>
-          <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
+          <Avatar sx={{ 
+            bgcolor: 'primary.light',
+            color: 'primary.contrastText'
+          }}>
             <VisibilityIcon />
           </Avatar>
           Company Details - {selectedCompanyData?.company?.name}
         </DialogTitle>
         <DialogContent>
           {selectedCompanyData && (
-            <Grid container spacing={3}>
+            <Box sx={{ 
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 3,
+              mt: 3,
+              '& > *': {
+                flex: '1 1 400px',
+                minWidth: '400px',
+              }
+            }}>
               {/* Basic Information */}
-              <Grid item xs={12} md={6}>
+              <Box sx={{ flex: '1 1 400px' }}>
                 <Card sx={{ 
                   borderTop: '4px solid',
                   borderColor: 'primary.main',
                   '&:hover': {
                     transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 25px -8px rgba(255, 107, 107, 0.25)'
+                    boxShadow: 4
                   }
                 }}>
                   <CardContent>
@@ -726,16 +893,16 @@ const CompaniesPage = () => {
                     </Stack>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
               {/* Settings */}
-              <Grid item xs={12} md={6}>
+              <Box sx={{ flex: '1 1 400px' }}>
                 <Card sx={{ 
                   borderTop: '4px solid',
                   borderColor: 'secondary.main',
                   '&:hover': {
                     transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 25px -8px rgba(78, 205, 196, 0.25)'
+                    boxShadow: 4
                   }
                 }}>
                   <CardContent>
@@ -769,16 +936,16 @@ const CompaniesPage = () => {
                     </Stack>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
               {/* Statistics */}
-              <Grid item xs={12} md={6}>
+              <Box sx={{ flex: '1 1 400px' }}>
                 <Card sx={{ 
                   borderTop: '4px solid',
                   borderColor: 'info.main',
                   '&:hover': {
                     transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 25px -8px rgba(51, 154, 240, 0.25)'
+                    boxShadow: 4
                   }
                 }}>
                   <CardContent>
@@ -806,16 +973,16 @@ const CompaniesPage = () => {
                     </TableContainer>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
               {/* Collections */}
-              <Grid item xs={12} md={6}>
+              <Box sx={{ flex: '1 1 400px' }}>
                 <Card sx={{ 
                   borderTop: '4px solid',
                   borderColor: 'success.main',
                   '&:hover': {
                     transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 25px -8px rgba(81, 207, 102, 0.25)'
+                    boxShadow: 4
                   }
                 }}>
                   <CardContent>
@@ -851,21 +1018,21 @@ const CompaniesPage = () => {
                     </TableContainer>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
               {/* Enabled Modules */}
-              <Grid item xs={12}>
+              <Box sx={{ flex: '1 1 100%', width: '100%' }}>
                 <Card sx={{ 
                   borderTop: '4px solid',
                   borderColor: 'warning.main',
                   '&:hover': {
                     transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 25px -8px rgba(255, 217, 61, 0.25)'
+                    boxShadow: 4
                   }
                 }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                      <Avatar sx={{ bgcolor: 'warning.main', color: 'black' }}>
+                      <Avatar sx={{ bgcolor: 'warning.main', color: 'warning.contrastText' }}>
                         <ExtensionIcon />
                       </Avatar>
                       <Typography variant="h6" fontWeight="bold">
@@ -879,22 +1046,16 @@ const CompaniesPage = () => {
                     </Box>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
+        <DialogActions sx={{ p: 3, bgcolor: 'background.default' }}>
           <Button 
             onClick={() => setDetailDialogOpen(false)}
             variant="contained"
-            sx={{
-              background: 'linear-gradient(135deg, #0891b2 0%, #22d3ee 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #0e7490 0%, #0891b2 100%)',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 8px 25px -8px rgba(8, 145, 178, 0.5)'
-              }
-            }}
+            color="primary"
+            size="large"
           >
             Close
           </Button>
@@ -910,61 +1071,74 @@ const CompaniesPage = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
-            backdropFilter: 'blur(20px)',
           }
         }}
       >
         <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #ffd93d 0%, #ff8a65 100%)',
-          color: 'white',
+          bgcolor: 'warning.main',
+          color: 'warning.contrastText',
           fontWeight: 'bold',
           display: 'flex',
           alignItems: 'center',
-          gap: 2
+          gap: 2,
+          py: 3
         }}>
-          <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
+          <Avatar sx={{ 
+            bgcolor: 'warning.light',
+            color: 'warning.contrastText'
+          }}>
             <EditIcon />
           </Avatar>
           Edit Company - {selectedCompany}
         </DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
+          <Box sx={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3,
+            mt: 2
+          }}>
+            <Box sx={{ 
+              display: 'flex',
+              gap: 2,
+              flexWrap: 'wrap',
+              '& > *': { flex: '1 1 250px', minWidth: '250px' }
+            }}>
               <TextField
-                fullWidth
                 label="Company Name"
                 value={editCompanyData.name || ''}
                 onChange={(e) => setEditCompanyData({ ...editCompanyData, name: e.target.value })}
+                sx={{ flex: '1 1 250px' }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
                 label="Industry"
                 value={editCompanyData.industry || ''}
                 onChange={(e) => setEditCompanyData({ ...editCompanyData, industry: e.target.value })}
+                sx={{ flex: '1 1 250px' }}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </Box>
+            
+            <TextField
+              fullWidth
+              label="Admin Email"
+              type="email"
+              value={editCompanyData.adminEmail || ''}
+              onChange={(e) => setEditCompanyData({ ...editCompanyData, adminEmail: e.target.value })}
+            />
+            
+            <Box sx={{ 
+              display: 'flex',
+              gap: 2,
+              flexWrap: 'wrap',
+              '& > *': { flex: '1 1 250px', minWidth: '250px' }
+            }}>
               <TextField
-                fullWidth
-                label="Admin Email"
-                type="email"
-                value={editCompanyData.adminEmail || ''}
-                onChange={(e) => setEditCompanyData({ ...editCompanyData, adminEmail: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
                 label="Phone"
                 value={editCompanyData.phone || ''}
                 onChange={(e) => setEditCompanyData({ ...editCompanyData, phone: e.target.value })}
+                sx={{ flex: '1 1 250px' }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
+              <FormControl sx={{ flex: '1 1 250px' }}>
                 <InputLabel>Timezone</InputLabel>
                 <Select
                   value={editCompanyData.settings?.timezone || 'UTC'}
@@ -983,9 +1157,15 @@ const CompaniesPage = () => {
                   <MenuItem value="Asia/Dubai">Dubai</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
+            </Box>
+            
+            <Box sx={{ 
+              display: 'flex',
+              gap: 2,
+              flexWrap: 'wrap',
+              '& > *': { flex: '1 1 250px', minWidth: '250px' }
+            }}>
+              <FormControl sx={{ flex: '1 1 250px' }}>
                 <InputLabel>Currency</InputLabel>
                 <Select
                   value={editCompanyData.settings?.currency || 'USD'}
@@ -1001,10 +1181,7 @@ const CompaniesPage = () => {
                   <MenuItem value="SAR">SAR - Saudi Riyal</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
                 label="Working Hours Start"
                 type="time"
                 value={editCompanyData.settings?.workingHours?.start || '09:00'}
@@ -1019,11 +1196,17 @@ const CompaniesPage = () => {
                   }
                 })}
                 InputLabelProps={{ shrink: true }}
+                sx={{ flex: '1 1 250px' }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            
+            <Box sx={{ 
+              display: 'flex',
+              gap: 2,
+              flexWrap: 'wrap',
+              '& > *': { flex: '1 1 250px', minWidth: '250px' }
+            }}>
               <TextField
-                fullWidth
                 label="Working Hours End"
                 type="time"
                 value={editCompanyData.settings?.workingHours?.end || '17:00'}
@@ -1038,46 +1221,34 @@ const CompaniesPage = () => {
                   }
                 })}
                 InputLabelProps={{ shrink: true }}
+                sx={{ flex: '1 1 250px' }}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Address"
-                multiline
-                rows={2}
-                value={editCompanyData.address || ''}
-                onChange={(e) => setEditCompanyData({ ...editCompanyData, address: e.target.value })}
-              />
-            </Grid>
-          </Grid>
+            </Box>
+            
+            <TextField
+              fullWidth
+              label="Address"
+              multiline
+              rows={2}
+              value={editCompanyData.address || ''}
+              onChange={(e) => setEditCompanyData({ ...editCompanyData, address: e.target.value })}
+            />
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3, gap: 2 }}>
+        <DialogActions sx={{ p: 3, gap: 2, bgcolor: 'background.default' }}>
           <Button 
             onClick={() => setEditDialogOpen(false)}
             variant="outlined"
-            sx={{ 
-              borderColor: 'divider',
-              color: 'text.secondary',
-              '&:hover': {
-                borderColor: 'warning.main',
-                bgcolor: 'rgba(255, 217, 61, 0.1)'
-              }
-            }}
+            color="secondary"
+            size="large"
           >
             Cancel
           </Button>
           <Button 
             onClick={handleUpdateCompany} 
             variant="contained"
-            sx={{
-              background: 'linear-gradient(135deg, #ffd93d 0%, #ff8a65 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #f9c74f 0%, #ff5722 100%)',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 8px 25px -8px rgba(255, 217, 61, 0.5)'
-              }
-            }}
+            color="warning"
+            size="large"
           >
             Update Company
           </Button>

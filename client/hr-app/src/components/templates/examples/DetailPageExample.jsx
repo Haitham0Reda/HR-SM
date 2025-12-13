@@ -59,8 +59,8 @@ const DetailPageExample = () => {
 
   // Define breadcrumbs
   const breadcrumbs = [
-    { label: 'Dashboard', path: '/app/dashboard' },
-    { label: 'Users', path: '/app/users' },
+    { label: 'Dashboard', path: '/company/techcorp-solutions/dashboard' },
+    { label: 'Users', path: '/company/techcorp-solutions/users' },
     { label: user.name },
   ];
 

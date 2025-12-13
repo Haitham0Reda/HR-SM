@@ -24,6 +24,7 @@ import {
     Cancel
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useAuth } from '../../contexts/AuthContext';
 import { taskService } from '../../services/task.service';
 import TaskReportForm from '../../components/tasks/TaskReportForm';
@@ -32,6 +33,7 @@ import TaskReviewForm from '../../components/tasks/TaskReviewForm';
 const TaskDetailsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user } = useAuth();
     const [task, setTask] = useState(null);
     const [reports, setReports] = useState([]);
@@ -141,7 +143,7 @@ const TaskDetailsPage = () => {
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4">Task Details</Typography>
-                <Button variant="outlined" onClick={() => navigate('/app/tasks')}>
+                <Button variant="outlined" onClick={() => navigate(getCompanyRoute('/tasks'))}>
                     Back to Tasks
                 </Button>
             </Box>

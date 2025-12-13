@@ -30,6 +30,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import SecurityIcon from '@mui/icons-material/Security';
 import BackupIcon from '@mui/icons-material/Backup';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
+import MonitorIcon from '@mui/icons-material/Monitor';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import PaletteIcon from '@mui/icons-material/Palette';
@@ -53,7 +54,8 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
-import { useLicense } from '../context/LicenseContext';
+import { useModules } from '../contexts/ModuleContext';
+import { useCompanyRouting } from '../hooks/useCompanyRouting';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
 import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
 import DashboardSidebarPageItem from './DashboardSidebarPageItem';
@@ -100,7 +102,7 @@ function DashboardSidebar({
 
     // Auto-expand Settings dropdown if on a settings page
     React.useEffect(() => {
-        if (pathname.startsWith('/app/system-settings') && !expandedItemIds.includes('settings')) {
+        if (pathname.startsWith(getCompanyRoute('/system-settings')) && !expandedItemIds.includes('settings')) {
             setExpandedItemIds((prev) => [...prev, 'settings']);
         }
     }, [pathname, expandedItemIds]);
@@ -169,7 +171,8 @@ function DashboardSidebar({
 
     const { user } = useAuth();
     const userRole = user?.role || 'employee';
-    const { isModuleEnabled } = useLicense();
+    const { isModuleEnabled } = useModules();
+    const { getCompanyRoute } = useCompanyRouting();
 
     // Map menu item IDs to module keys
     const getModuleKeyForMenuItem = React.useCallback((itemId) => {
@@ -195,14 +198,14 @@ function DashboardSidebar({
             'hard-copies': 'documents',
             'templates': 'documents',
             
-            // Communication module
-            'announcements': 'communication',
-            'events': 'communication',
-            'surveys': 'communication',
+            // Communication module (announcements, events, surveys)
+            'announcements': 'announcements',
+            'events': 'events',
+            'surveys': 'surveys',
             
             // Reporting module
-            'reports': 'reporting',
-            'analytics': 'reporting',
+            'reports': 'reports',
+            'analytics': 'reports',
             
             // Tasks module
             'tasks': 'tasks',
@@ -308,8 +311,8 @@ function DashboardSidebar({
                             id="dashboard"
                             title="Dashboard"
                             icon={<DashboardIcon />}
-                            href="/app/dashboard"
-                            selected={!!matchPath('/app/dashboard', pathname)}
+                            href={getCompanyRoute('/dashboard')}
+                            selected={!!matchPath(getCompanyRoute('/dashboard'), pathname)}
                             sx={{
                                 marginTop: 3,
                             }}
@@ -325,8 +328,8 @@ function DashboardSidebar({
                                         id="missions"
                                         title="Missions"
                                         icon={<FlightTakeoffIcon />}
-                                        href="/app/missions"
-                                        selected={pathname.startsWith('/app/missions')}
+                                        href={getCompanyRoute("/missions")}
+                                        selected={pathname.startsWith(getCompanyRoute('/missions'))}
                                         locked={isMenuItemLocked('missions')}
                                     />
                                 )}
@@ -335,8 +338,8 @@ function DashboardSidebar({
                                         id="sick-leaves"
                                         title="Sick Leaves"
                                         icon={<LocalHospitalIcon />}
-                                        href="/app/sick-leaves"
-                                        selected={pathname.startsWith('/app/sick-leaves')}
+                                        href={getCompanyRoute("/sick-leaves")}
+                                        selected={pathname.startsWith(getCompanyRoute('/sick-leaves'))}
                                         locked={isMenuItemLocked('sick-leaves')}
                                     />
                                 )}
@@ -345,8 +348,8 @@ function DashboardSidebar({
                                         id="doctor-review-queue"
                                         title="Doctor Review Queue"
                                         icon={<MedicalServicesIcon />}
-                                        href="/app/sick-leaves/doctor-queue"
-                                        selected={!!matchPath('/app/sick-leaves/doctor-queue', pathname)}
+                                        href={getCompanyRoute("/sick-leaves/doctor-queue")}
+                                        selected={!!matchPath(getCompanyRoute('/sick-leaves/doctor-queue'), pathname)}
                                         locked={isMenuItemLocked('doctor-review-queue')}
                                     />
                                 )}
@@ -355,8 +358,8 @@ function DashboardSidebar({
                                         id="permissions"
                                         title="Permissions"
                                         icon={<AccessAlarmIcon />}
-                                        href="/app/permissions"
-                                        selected={pathname.startsWith('/app/permissions')}
+                                        href={getCompanyRoute("/permissions")}
+                                        selected={pathname.startsWith(getCompanyRoute('/permissions'))}
                                         locked={isMenuItemLocked('permissions')}
                                     />
                                 )}
@@ -365,8 +368,8 @@ function DashboardSidebar({
                                         id="overtime"
                                         title="Overtime"
                                         icon={<AccessTimeIcon />}
-                                        href="/app/overtime"
-                                        selected={pathname.startsWith('/app/overtime')}
+                                        href={getCompanyRoute("/overtime")}
+                                        selected={pathname.startsWith(getCompanyRoute('/overtime'))}
                                         locked={isMenuItemLocked('overtime')}
                                     />
                                 )}
@@ -375,8 +378,8 @@ function DashboardSidebar({
                                         id="vacation-requests"
                                         title="Vacation Requests"
                                         icon={<BeachAccessIcon />}
-                                        href="/app/vacation-requests"
-                                        selected={pathname.startsWith('/app/vacation-requests')}
+                                        href={getCompanyRoute("/vacation-requests")}
+                                        selected={pathname.startsWith(getCompanyRoute('/vacation-requests'))}
                                         locked={isMenuItemLocked('vacation-requests')}
                                     />
                                 )}
@@ -385,8 +388,8 @@ function DashboardSidebar({
                                         id="forget-checks"
                                         title="Forget Check"
                                         icon={<ErrorOutlineIcon />}
-                                        href="/app/forget-checks"
-                                        selected={!!matchPath('/app/forget-checks', pathname)}
+                                        href={getCompanyRoute("/forget-checks")}
+                                        selected={!!matchPath(getCompanyRoute('/forget-checks'), pathname)}
                                         locked={isMenuItemLocked('forget-checks')}
                                     />
                                 )}
@@ -395,8 +398,8 @@ function DashboardSidebar({
                                         id="tasks"
                                         title="Tasks"
                                         icon={<AssignmentIcon />}
-                                        href="/app/tasks"
-                                        selected={pathname.startsWith('/app/tasks')}
+                                        href={getCompanyRoute("/tasks")}
+                                        selected={pathname.startsWith(getCompanyRoute('/tasks'))}
                                         locked={isMenuItemLocked('tasks')}
                                     />
                                 )}
@@ -407,8 +410,8 @@ function DashboardSidebar({
                                         id="my-attendance"
                                         title="My Attendance"
                                         icon={<AccessTimeIcon />}
-                                        href="/app/attendance"
-                                        selected={!!matchPath('/app/attendance', pathname)}
+                                        href={getCompanyRoute("/attendance")}
+                                        selected={!!matchPath(getCompanyRoute('/attendance'), pathname)}
                                         locked={isMenuItemLocked('my-attendance')}
                                     />
                                 )}
@@ -417,8 +420,8 @@ function DashboardSidebar({
                                         id="my-requests"
                                         title="My Requests"
                                         icon={<RequestPageIcon />}
-                                        href="/app/requests"
-                                        selected={!!matchPath('/app/requests', pathname)}
+                                        href={getCompanyRoute("/requests")}
+                                        selected={!!matchPath(getCompanyRoute('/requests'), pathname)}
                                         locked={isMenuItemLocked('my-requests')}
                                     />
                                 )}
@@ -427,8 +430,8 @@ function DashboardSidebar({
                                         id="documents"
                                         title="Documents"
                                         icon={<DescriptionIcon />}
-                                        href="/app/documents"
-                                        selected={!!matchPath('/app/documents', pathname)}
+                                        href={getCompanyRoute("/documents")}
+                                        selected={!!matchPath(getCompanyRoute('/documents'), pathname)}
                                         locked={isMenuItemLocked('documents')}
                                     />
                                 )}
@@ -437,8 +440,8 @@ function DashboardSidebar({
                                         id="hard-copies"
                                         title="Hard Copies"
                                         icon={<DescriptionIcon />}
-                                        href="/app/hardcopies"
-                                        selected={!!matchPath('/app/hardcopies', pathname)}
+                                        href={getCompanyRoute("/hardcopies")}
+                                        selected={!!matchPath(getCompanyRoute('/hardcopies'), pathname)}
                                         locked={isMenuItemLocked('hard-copies')}
                                     />
                                 )}
@@ -447,8 +450,8 @@ function DashboardSidebar({
                                         id="announcements"
                                         title="Announcements"
                                         icon={<AnnouncementIcon />}
-                                        href="/app/announcements"
-                                        selected={!!matchPath('/app/announcements', pathname)}
+                                        href={getCompanyRoute("/announcements")}
+                                        selected={!!matchPath(getCompanyRoute('/announcements'), pathname)}
                                         locked={isMenuItemLocked('announcements')}
                                     />
                                 )}
@@ -457,8 +460,8 @@ function DashboardSidebar({
                                         id="events"
                                         title="Events"
                                         icon={<EventIcon />}
-                                        href="/app/events"
-                                        selected={!!matchPath('/app/events', pathname)}
+                                        href={getCompanyRoute("/events")}
+                                        selected={!!matchPath(getCompanyRoute('/events'), pathname)}
                                         locked={isMenuItemLocked('events')}
                                     />
                                 )}
@@ -467,8 +470,8 @@ function DashboardSidebar({
                                         id="surveys"
                                         title="Surveys"
                                         icon={<PollIcon />}
-                                        href="/app/surveys"
-                                        selected={!!matchPath('/app/surveys', pathname)}
+                                        href={getCompanyRoute("/surveys")}
+                                        selected={!!matchPath(getCompanyRoute('/surveys'), pathname)}
                                         locked={isMenuItemLocked('surveys')}
                                     />
                                 )}
@@ -485,8 +488,8 @@ function DashboardSidebar({
                                         id="departments"
                                         title="Departments"
                                         icon={<BusinessIcon />}
-                                        href="/app/departments"
-                                        selected={!!matchPath('/app/departments', pathname)}
+                                        href={getCompanyRoute("/departments")}
+                                        selected={!!matchPath(getCompanyRoute('/departments'), pathname)}
                                         locked={isMenuItemLocked('departments')}
                                     />
                                 )}
@@ -495,8 +498,8 @@ function DashboardSidebar({
                                         id="positions"
                                         title="Positions"
                                         icon={<WorkIcon />}
-                                        href="/app/positions"
-                                        selected={!!matchPath('/app/positions', pathname)}
+                                        href={getCompanyRoute("/positions")}
+                                        selected={!!matchPath(getCompanyRoute('/positions'), pathname)}
                                         locked={isMenuItemLocked('positions')}
                                     />
                                 )}
@@ -505,8 +508,8 @@ function DashboardSidebar({
                                         id="users"
                                         title="Users"
                                         icon={<PersonIcon />}
-                                        href="/app/users"
-                                        selected={!!matchPath('/app/users', pathname)}
+                                        href={getCompanyRoute("/users")}
+                                        selected={!!matchPath(getCompanyRoute('/users'), pathname)}
                                         locked={isMenuItemLocked('users')}
                                     />
                                 )}
@@ -518,8 +521,8 @@ function DashboardSidebar({
                                         id="attendance"
                                         title="Attendance Management"
                                         icon={<AccessTimeIcon />}
-                                        href="/app/attendance"
-                                        selected={!!matchPath('/app/attendance', pathname)}
+                                        href={getCompanyRoute("/attendance")}
+                                        selected={!!matchPath(getCompanyRoute('/attendance'), pathname)}
                                         locked={isMenuItemLocked('attendance')}
                                     />
                                 )}
@@ -528,8 +531,8 @@ function DashboardSidebar({
                                         id="forget-checks"
                                         title="Forget Check"
                                         icon={<ErrorOutlineIcon />}
-                                        href="/app/forget-checks"
-                                        selected={!!matchPath('/app/forget-checks', pathname)}
+                                        href={getCompanyRoute("/forget-checks")}
+                                        selected={!!matchPath(getCompanyRoute('/forget-checks'), pathname)}
                                         locked={isMenuItemLocked('forget-checks')}
                                     />
                                 )}
@@ -538,8 +541,8 @@ function DashboardSidebar({
                                         id="missions"
                                         title="Missions"
                                         icon={<FlightTakeoffIcon />}
-                                        href="/app/missions"
-                                        selected={pathname.startsWith('/app/missions')}
+                                        href={getCompanyRoute("/missions")}
+                                        selected={pathname.startsWith(getCompanyRoute('/missions'))}
                                         locked={isMenuItemLocked('missions')}
                                     />
                                 )}
@@ -548,8 +551,8 @@ function DashboardSidebar({
                                         id="sick-leaves"
                                         title="Sick Leaves"
                                         icon={<LocalHospitalIcon />}
-                                        href="/app/sick-leaves"
-                                        selected={pathname.startsWith('/app/sick-leaves')}
+                                        href={getCompanyRoute("/sick-leaves")}
+                                        selected={pathname.startsWith(getCompanyRoute('/sick-leaves'))}
                                         locked={isMenuItemLocked('sick-leaves')}
                                     />
                                 )}
@@ -558,8 +561,8 @@ function DashboardSidebar({
                                         id="permissions"
                                         title="Permissions"
                                         icon={<AccessAlarmIcon />}
-                                        href="/app/permissions"
-                                        selected={pathname.startsWith('/app/permissions')}
+                                        href={getCompanyRoute("/permissions")}
+                                        selected={pathname.startsWith(getCompanyRoute('/permissions'))}
                                         locked={isMenuItemLocked('permissions')}
                                     />
                                 )}
@@ -568,8 +571,8 @@ function DashboardSidebar({
                                         id="overtime"
                                         title="Overtime"
                                         icon={<AccessTimeIcon />}
-                                        href="/app/overtime"
-                                        selected={pathname.startsWith('/app/overtime')}
+                                        href={getCompanyRoute("/overtime")}
+                                        selected={pathname.startsWith(getCompanyRoute('/overtime'))}
                                         locked={isMenuItemLocked('overtime')}
                                     />
                                 )}
@@ -578,8 +581,8 @@ function DashboardSidebar({
                                         id="vacation-requests"
                                         title="Vacation Requests"
                                         icon={<BeachAccessIcon />}
-                                        href="/app/vacation-requests"
-                                        selected={pathname.startsWith('/app/vacation-requests')}
+                                        href={getCompanyRoute("/vacation-requests")}
+                                        selected={pathname.startsWith(getCompanyRoute('/vacation-requests'))}
                                         locked={isMenuItemLocked('vacation-requests')}
                                     />
                                 )}
@@ -588,8 +591,8 @@ function DashboardSidebar({
                                         id="requests"
                                         title="Requests"
                                         icon={<RequestPageIcon />}
-                                        href="/app/requests"
-                                        selected={!!matchPath('/app/requests', pathname)}
+                                        href={getCompanyRoute("/requests")}
+                                        selected={!!matchPath(getCompanyRoute('/requests'), pathname)}
                                         locked={isMenuItemLocked('requests')}
                                     />
                                 )}
@@ -598,8 +601,8 @@ function DashboardSidebar({
                                         id="payroll"
                                         title="Payroll"
                                         icon={<PaymentIcon />}
-                                        href="/app/payroll"
-                                        selected={!!matchPath('/app/payroll', pathname)}
+                                        href={getCompanyRoute("/payroll")}
+                                        selected={!!matchPath(getCompanyRoute('/payroll'), pathname)}
                                         locked={isMenuItemLocked('payroll')}
                                     />
                                 )}
@@ -611,8 +614,8 @@ function DashboardSidebar({
                                         id="tasks"
                                         title="Tasks"
                                         icon={<AssignmentIcon />}
-                                        href="/app/tasks"
-                                        selected={pathname.startsWith('/app/tasks')}
+                                        href={getCompanyRoute("/tasks")}
+                                        selected={pathname.startsWith(getCompanyRoute('/tasks'))}
                                         locked={isMenuItemLocked('tasks')}
                                     />
                                 )}
@@ -624,8 +627,8 @@ function DashboardSidebar({
                                         id="documents"
                                         title="Documents"
                                         icon={<DescriptionIcon />}
-                                        href="/app/documents"
-                                        selected={!!matchPath('/app/documents', pathname)}
+                                        href={getCompanyRoute("/documents")}
+                                        selected={!!matchPath(getCompanyRoute('/documents'), pathname)}
                                         locked={isMenuItemLocked('documents')}
                                     />
                                 )}
@@ -634,8 +637,8 @@ function DashboardSidebar({
                                         id="hard-copies"
                                         title="Hard Copies"
                                         icon={<DescriptionIcon />}
-                                        href="/app/hardcopies"
-                                        selected={!!matchPath('/app/hardcopies', pathname)}
+                                        href={getCompanyRoute("/hardcopies")}
+                                        selected={!!matchPath(getCompanyRoute('/hardcopies'), pathname)}
                                         locked={isMenuItemLocked('hard-copies')}
                                     />
                                 )}
@@ -644,8 +647,8 @@ function DashboardSidebar({
                                         id="templates"
                                         title="Templates"
                                         icon={<ArticleIcon />}
-                                        href="/app/templates"
-                                        selected={!!matchPath('/app/templates', pathname)}
+                                        href={getCompanyRoute("/templates")}
+                                        selected={!!matchPath(getCompanyRoute('/templates'), pathname)}
                                         locked={isMenuItemLocked('templates')}
                                     />
                                 )}
@@ -657,8 +660,8 @@ function DashboardSidebar({
                                         id="announcements"
                                         title="Announcements"
                                         icon={<AnnouncementIcon />}
-                                        href="/app/announcements"
-                                        selected={!!matchPath('/app/announcements', pathname)}
+                                        href={getCompanyRoute("/announcements")}
+                                        selected={!!matchPath(getCompanyRoute('/announcements'), pathname)}
                                         locked={isMenuItemLocked('announcements')}
                                     />
                                 )}
@@ -667,8 +670,8 @@ function DashboardSidebar({
                                         id="events"
                                         title="Events"
                                         icon={<EventIcon />}
-                                        href="/app/events"
-                                        selected={!!matchPath('/app/events', pathname)}
+                                        href={getCompanyRoute("/events")}
+                                        selected={!!matchPath(getCompanyRoute('/events'), pathname)}
                                         locked={isMenuItemLocked('events')}
                                     />
                                 )}
@@ -677,8 +680,8 @@ function DashboardSidebar({
                                         id="surveys"
                                         title="Surveys"
                                         icon={<PollIcon />}
-                                        href="/app/surveys"
-                                        selected={!!matchPath('/app/surveys', pathname)}
+                                        href={getCompanyRoute("/surveys")}
+                                        selected={!!matchPath(getCompanyRoute('/surveys'), pathname)}
                                         locked={isMenuItemLocked('surveys')}
                                     />
                                 )}
@@ -690,8 +693,8 @@ function DashboardSidebar({
                                         id="dashboard-edit"
                                         title="Dashboard Settings"
                                         icon={<EditIcon />}
-                                        href="/app/dashboard/edit"
-                                        selected={!!matchPath('/app/dashboard/edit', pathname)}
+                                        href={getCompanyRoute("/dashboard/edit")}
+                                        selected={!!matchPath(getCompanyRoute('/dashboard/edit'), pathname)}
                                         locked={isMenuItemLocked('dashboard-edit')}
                                     />
                                 )}
@@ -700,8 +703,8 @@ function DashboardSidebar({
                                         id="holidays"
                                         title="Holidays"
                                         icon={<CalendarTodayIcon />}
-                                        href="/app/holidays"
-                                        selected={!!matchPath('/app/holidays', pathname)}
+                                        href={getCompanyRoute("/holidays")}
+                                        selected={!!matchPath(getCompanyRoute('/holidays'), pathname)}
                                         locked={isMenuItemLocked('holidays')}
                                     />
                                 )}
@@ -710,8 +713,8 @@ function DashboardSidebar({
                                         id="reports"
                                         title="Reports"
                                         icon={<BarChartIcon />}
-                                        href="/app/reports"
-                                        selected={!!matchPath('/app/reports', pathname)}
+                                        href={getCompanyRoute("/reports")}
+                                        selected={!!matchPath(getCompanyRoute('/reports'), pathname)}
                                         locked={isMenuItemLocked('reports')}
                                     />
                                 )}
@@ -720,8 +723,8 @@ function DashboardSidebar({
                                         id="analytics"
                                         title="Analytics"
                                         icon={<AssessmentIcon />}
-                                        href="/app/analytics"
-                                        selected={!!matchPath('/app/analytics', pathname)}
+                                        href={getCompanyRoute("/analytics")}
+                                        selected={!!matchPath(getCompanyRoute('/analytics'), pathname)}
                                         locked={isMenuItemLocked('analytics')}
                                     />
                                 )}
@@ -738,8 +741,8 @@ function DashboardSidebar({
                                         id="departments"
                                         title="Departments"
                                         icon={<BusinessIcon />}
-                                        href="/app/departments"
-                                        selected={!!matchPath('/app/departments', pathname)}
+                                        href={getCompanyRoute("/departments")}
+                                        selected={!!matchPath(getCompanyRoute('/departments'), pathname)}
                                         locked={isMenuItemLocked('departments')}
                                     />
                                 )}
@@ -748,8 +751,8 @@ function DashboardSidebar({
                                         id="positions"
                                         title="Positions"
                                         icon={<WorkIcon />}
-                                        href="/app/positions"
-                                        selected={!!matchPath('/app/positions', pathname)}
+                                        href={getCompanyRoute("/positions")}
+                                        selected={!!matchPath(getCompanyRoute('/positions'), pathname)}
                                         locked={isMenuItemLocked('positions')}
                                     />
                                 )}
@@ -758,8 +761,8 @@ function DashboardSidebar({
                                         id="users"
                                         title="Users"
                                         icon={<PersonIcon />}
-                                        href="/app/users"
-                                        selected={!!matchPath('/app/users', pathname)}
+                                        href={getCompanyRoute("/users")}
+                                        selected={!!matchPath(getCompanyRoute('/users'), pathname)}
                                         locked={isMenuItemLocked('users')}
                                     />
                                 )}
@@ -771,8 +774,8 @@ function DashboardSidebar({
                                         id="attendance"
                                         title="Attendance Management"
                                         icon={<AccessTimeIcon />}
-                                        href="/app/attendance"
-                                        selected={!!matchPath('/app/attendance', pathname)}
+                                        href={getCompanyRoute("/attendance")}
+                                        selected={!!matchPath(getCompanyRoute('/attendance'), pathname)}
                                         locked={isMenuItemLocked('attendance')}
                                     />
                                 )}
@@ -781,8 +784,8 @@ function DashboardSidebar({
                                         id="forget-checks"
                                         title="Forget Check"
                                         icon={<ErrorOutlineIcon />}
-                                        href="/app/forget-checks"
-                                        selected={!!matchPath('/app/forget-checks', pathname)}
+                                        href={getCompanyRoute("/forget-checks")}
+                                        selected={!!matchPath(getCompanyRoute('/forget-checks'), pathname)}
                                         locked={isMenuItemLocked('forget-checks')}
                                     />
                                 )}
@@ -791,8 +794,8 @@ function DashboardSidebar({
                                         id="missions"
                                         title="Missions"
                                         icon={<FlightTakeoffIcon />}
-                                        href="/app/missions"
-                                        selected={pathname.startsWith('/app/missions')}
+                                        href={getCompanyRoute("/missions")}
+                                        selected={pathname.startsWith(getCompanyRoute('/missions'))}
                                         locked={isMenuItemLocked('missions')}
                                     />
                                 )}
@@ -801,8 +804,8 @@ function DashboardSidebar({
                                         id="sick-leaves"
                                         title="Sick Leaves"
                                         icon={<LocalHospitalIcon />}
-                                        href="/app/sick-leaves"
-                                        selected={pathname.startsWith('/app/sick-leaves')}
+                                        href={getCompanyRoute("/sick-leaves")}
+                                        selected={pathname.startsWith(getCompanyRoute('/sick-leaves'))}
                                         locked={isMenuItemLocked('sick-leaves')}
                                     />
                                 )}
@@ -811,8 +814,8 @@ function DashboardSidebar({
                                         id="permissions"
                                         title="Permissions"
                                         icon={<AccessAlarmIcon />}
-                                        href="/app/permissions"
-                                        selected={pathname.startsWith('/app/permissions')}
+                                        href={getCompanyRoute("/permissions")}
+                                        selected={pathname.startsWith(getCompanyRoute('/permissions'))}
                                         locked={isMenuItemLocked('permissions')}
                                     />
                                 )}
@@ -821,8 +824,8 @@ function DashboardSidebar({
                                         id="overtime"
                                         title="Overtime"
                                         icon={<AccessTimeIcon />}
-                                        href="/app/overtime"
-                                        selected={pathname.startsWith('/app/overtime')}
+                                        href={getCompanyRoute("/overtime")}
+                                        selected={pathname.startsWith(getCompanyRoute('/overtime'))}
                                         locked={isMenuItemLocked('overtime')}
                                     />
                                 )}
@@ -831,8 +834,8 @@ function DashboardSidebar({
                                         id="vacation-requests"
                                         title="Vacation Requests"
                                         icon={<BeachAccessIcon />}
-                                        href="/app/vacation-requests"
-                                        selected={pathname.startsWith('/app/vacation-requests')}
+                                        href={getCompanyRoute("/vacation-requests")}
+                                        selected={pathname.startsWith(getCompanyRoute('/vacation-requests'))}
                                         locked={isMenuItemLocked('vacation-requests')}
                                     />
                                 )}
@@ -841,8 +844,8 @@ function DashboardSidebar({
                                         id="requests"
                                         title="Requests"
                                         icon={<RequestPageIcon />}
-                                        href="/app/requests"
-                                        selected={!!matchPath('/app/requests', pathname)}
+                                        href={getCompanyRoute("/requests")}
+                                        selected={!!matchPath(getCompanyRoute('/requests'), pathname)}
                                         locked={isMenuItemLocked('requests')}
                                     />
                                 )}
@@ -851,8 +854,8 @@ function DashboardSidebar({
                                         id="payroll"
                                         title="Payroll"
                                         icon={<PaymentIcon />}
-                                        href="/app/payroll"
-                                        selected={!!matchPath('/app/payroll', pathname)}
+                                        href={getCompanyRoute("/payroll")}
+                                        selected={!!matchPath(getCompanyRoute('/payroll'), pathname)}
                                         locked={isMenuItemLocked('payroll')}
                                     />
                                 )}
@@ -861,8 +864,8 @@ function DashboardSidebar({
                                         id="resigned"
                                         title="Resigned Employees"
                                         icon={<PersonOffIcon />}
-                                        href="/app/resigned"
-                                        selected={!!matchPath('/app/resigned', pathname)}
+                                        href={getCompanyRoute("/resigned")}
+                                        selected={!!matchPath(getCompanyRoute('/resigned'), pathname)}
                                         locked={isMenuItemLocked('resigned')}
                                     />
                                 )}
@@ -874,8 +877,8 @@ function DashboardSidebar({
                                         id="tasks"
                                         title="Tasks"
                                         icon={<AssignmentIcon />}
-                                        href="/app/tasks"
-                                        selected={pathname.startsWith('/app/tasks')}
+                                        href={getCompanyRoute("/tasks")}
+                                        selected={pathname.startsWith(getCompanyRoute('/tasks'))}
                                         locked={isMenuItemLocked('tasks')}
                                     />
                                 )}
@@ -887,8 +890,8 @@ function DashboardSidebar({
                                         id="documents"
                                         title="Documents"
                                         icon={<DescriptionIcon />}
-                                        href="/app/documents"
-                                        selected={!!matchPath('/app/documents', pathname)}
+                                        href={getCompanyRoute("/documents")}
+                                        selected={!!matchPath(getCompanyRoute('/documents'), pathname)}
                                         locked={isMenuItemLocked('documents')}
                                     />
                                 )}
@@ -897,8 +900,8 @@ function DashboardSidebar({
                                         id="hard-copies"
                                         title="Hard Copies"
                                         icon={<DescriptionIcon />}
-                                        href="/app/hardcopies"
-                                        selected={!!matchPath('/app/hardcopies', pathname)}
+                                        href={getCompanyRoute("/hardcopies")}
+                                        selected={!!matchPath(getCompanyRoute('/hardcopies'), pathname)}
                                         locked={isMenuItemLocked('hard-copies')}
                                     />
                                 )}
@@ -907,8 +910,8 @@ function DashboardSidebar({
                                         id="templates"
                                         title="Templates"
                                         icon={<ArticleIcon />}
-                                        href="/app/templates"
-                                        selected={!!matchPath('/app/templates', pathname)}
+                                        href={getCompanyRoute("/templates")}
+                                        selected={!!matchPath(getCompanyRoute('/templates'), pathname)}
                                         locked={isMenuItemLocked('templates')}
                                     />
                                 )}
@@ -920,8 +923,8 @@ function DashboardSidebar({
                                         id="announcements"
                                         title="Announcements"
                                         icon={<AnnouncementIcon />}
-                                        href="/app/announcements"
-                                        selected={!!matchPath('/app/announcements', pathname)}
+                                        href={getCompanyRoute("/announcements")}
+                                        selected={!!matchPath(getCompanyRoute('/announcements'), pathname)}
                                         locked={isMenuItemLocked('announcements')}
                                     />
                                 )}
@@ -930,8 +933,8 @@ function DashboardSidebar({
                                         id="events"
                                         title="Events"
                                         icon={<EventIcon />}
-                                        href="/app/events"
-                                        selected={!!matchPath('/app/events', pathname)}
+                                        href={getCompanyRoute("/events")}
+                                        selected={!!matchPath(getCompanyRoute('/events'), pathname)}
                                         locked={isMenuItemLocked('events')}
                                     />
                                 )}
@@ -940,8 +943,8 @@ function DashboardSidebar({
                                         id="surveys"
                                         title="Surveys"
                                         icon={<PollIcon />}
-                                        href="/app/surveys"
-                                        selected={!!matchPath('/app/surveys', pathname)}
+                                        href={getCompanyRoute("/surveys")}
+                                        selected={!!matchPath(getCompanyRoute('/surveys'), pathname)}
                                         locked={isMenuItemLocked('surveys')}
                                     />
                                 )}
@@ -953,8 +956,8 @@ function DashboardSidebar({
                                         id="holidays"
                                         title="Holidays"
                                         icon={<CalendarTodayIcon />}
-                                        href="/app/holidays"
-                                        selected={!!matchPath('/app/holidays', pathname)}
+                                        href={getCompanyRoute("/holidays")}
+                                        selected={!!matchPath(getCompanyRoute('/holidays'), pathname)}
                                         locked={isMenuItemLocked('holidays')}
                                     />
                                 )}
@@ -963,8 +966,8 @@ function DashboardSidebar({
                                         id="reports"
                                         title="Reports"
                                         icon={<BarChartIcon />}
-                                        href="/app/reports"
-                                        selected={!!matchPath('/app/reports', pathname)}
+                                        href={getCompanyRoute("/reports")}
+                                        selected={!!matchPath(getCompanyRoute('/reports'), pathname)}
                                         locked={isMenuItemLocked('reports')}
                                     />
                                 )}
@@ -973,8 +976,8 @@ function DashboardSidebar({
                                         id="analytics"
                                         title="Analytics"
                                         icon={<AssessmentIcon />}
-                                        href="/app/analytics"
-                                        selected={!!matchPath('/app/analytics', pathname)}
+                                        href={getCompanyRoute("/analytics")}
+                                        selected={!!matchPath(getCompanyRoute('/analytics'), pathname)}
                                         locked={isMenuItemLocked('analytics')}
                                     />
                                 )}
@@ -986,8 +989,8 @@ function DashboardSidebar({
                                         id="dashboard-edit"
                                         title="Dashboard Settings"
                                         icon={<EditIcon />}
-                                        href="/app/dashboard/edit"
-                                        selected={!!matchPath('/app/dashboard/edit', pathname)}
+                                        href={getCompanyRoute("/dashboard/edit")}
+                                        selected={!!matchPath(getCompanyRoute('/dashboard/edit'), pathname)}
                                         locked={isMenuItemLocked('dashboard-edit')}
                                     />
                                 )}
@@ -996,8 +999,8 @@ function DashboardSidebar({
                                         id="roles"
                                         title="Roles"
                                         icon={<AdminPanelSettingsIcon />}
-                                        href="/app/roles"
-                                        selected={pathname.startsWith('/app/roles')}
+                                        href={getCompanyRoute("/roles")}
+                                        selected={pathname.startsWith(getCompanyRoute('/roles'))}
                                         locked={isMenuItemLocked('roles')}
                                     />
                                 )}
@@ -1007,7 +1010,7 @@ function DashboardSidebar({
                                         title="Settings"
                                         icon={<SettingsIcon />}
                                         href="#"
-                                        selected={pathname.startsWith('/app/system-settings')}
+                                        selected={pathname.startsWith(getCompanyRoute('/system-settings'))}
                                         expanded={expandedItemIds.includes('settings')}
                                         locked={isMenuItemLocked('settings')}
                                         nestedNavigation={
@@ -1025,96 +1028,96 @@ function DashboardSidebar({
                                                     id="system-settings"
                                                     title="System Settings"
                                                     icon={<SettingsIcon />}
-                                                    href="/app/system-settings"
-                                                    selected={!!matchPath('/app/system-settings', pathname)}
+                                                    href={getCompanyRoute("/system-settings")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="seasonal-settings"
                                                     title="Seasonal Settings"
                                                     icon={<CelebrationIcon />}
-                                                    href="/app/system-settings/seasonal"
-                                                    selected={!!matchPath('/app/system-settings/seasonal', pathname)}
+                                                    href={getCompanyRoute("/system-settings/seasonal")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/seasonal'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="request-submission"
                                                     title="Request Submission Control"
                                                     icon={<ToggleOnIcon />}
-                                                    href="/app/system-settings/request-control"
-                                                    selected={!!matchPath('/app/system-settings/request-control', pathname)}
+                                                    href={getCompanyRoute("/system-settings/request-control")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/request-control'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="email-creation"
                                                     title="Employee Email Creation"
                                                     icon={<EmailIcon />}
-                                                    href="/app/system-settings/email-creation"
-                                                    selected={!!matchPath('/app/system-settings/email-creation', pathname)}
+                                                    href={getCompanyRoute("/system-settings/email-creation")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/email-creation'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="email-management"
                                                     title="Employee Email Management"
                                                     icon={<ManageAccountsIcon />}
-                                                    href="/app/system-settings/email-management"
-                                                    selected={!!matchPath('/app/system-settings/email-management', pathname)}
+                                                    href={getCompanyRoute("/system-settings/email-management")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/email-management'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="maintenance-settings"
                                                     title="Maintenance Settings"
                                                     icon={<BuildIcon />}
-                                                    href="/app/system-settings/maintenance"
-                                                    selected={!!matchPath('/app/system-settings/maintenance', pathname)}
+                                                    href={getCompanyRoute("/system-settings/maintenance")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/maintenance'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="system-notifications"
                                                     title="System Notifications"
                                                     icon={<NotificationsIcon />}
-                                                    href="/app/system-settings/notifications"
-                                                    selected={!!matchPath('/app/system-settings/notifications', pathname)}
+                                                    href={getCompanyRoute("/system-settings/notifications")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/notifications'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="hr-management-settings"
                                                     title="HR Management Settings"
                                                     icon={<GroupIcon />}
-                                                    href="/app/system-settings/hr-management"
-                                                    selected={!!matchPath('/app/system-settings/hr-management', pathname)}
+                                                    href={getCompanyRoute("/system-settings/hr-management")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/hr-management'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="work-schedules"
                                                     title="Work Schedules"
                                                     icon={<ScheduleIcon />}
-                                                    href="/app/system-settings/work-schedules"
-                                                    selected={!!matchPath('/app/system-settings/work-schedules', pathname)}
+                                                    href={getCompanyRoute("/system-settings/work-schedules")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/work-schedules'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="vacation-management-settings"
                                                     title="Vacation Management"
                                                     icon={<BeachAccessOutlinedIcon />}
-                                                    href="/app/system-settings/vacation-management"
-                                                    selected={!!matchPath('/app/system-settings/vacation-management', pathname)}
+                                                    href={getCompanyRoute("/system-settings/vacation-management")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/vacation-management'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="mixed-vacation-policies"
                                                     title="Mixed Vacation Policies"
                                                     icon={<PolicyIcon />}
-                                                    href="/app/system-settings/mixed-vacation"
-                                                    selected={!!matchPath('/app/system-settings/mixed-vacation', pathname)}
+                                                    href={getCompanyRoute("/system-settings/mixed-vacation")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/mixed-vacation'), pathname)}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
                                                     id="employee-of-month"
                                                     title="Employee of the Month"
                                                     icon={<EmojiEventsIcon />}
-                                                    href="/app/system-settings/employee-of-month"
-                                                    selected={!!matchPath('/app/system-settings/employee-of-month', pathname)}
+                                                    href={getCompanyRoute("/system-settings/employee-of-month")}
+                                                    selected={!!matchPath(getCompanyRoute('/system-settings/employee-of-month'), pathname)}
                                                     isNested={true}
                                                 />
                                             </List>
@@ -1126,8 +1129,8 @@ function DashboardSidebar({
                                         id="theme-editor"
                                         title="Theme & Colors"
                                         icon={<PaletteIcon />}
-                                        href="/app/theme"
-                                        selected={!!matchPath('/app/theme', pathname)}
+                                        href={getCompanyRoute("/theme")}
+                                        selected={!!matchPath(getCompanyRoute('/theme'), pathname)}
                                         locked={isMenuItemLocked('theme-editor')}
                                     />
                                 )}
@@ -1136,18 +1139,25 @@ function DashboardSidebar({
                                         id="security"
                                         title="Security"
                                         icon={<SecurityIcon />}
-                                        href="/app/security"
-                                        selected={!!matchPath('/app/security', pathname)}
+                                        href={getCompanyRoute("/security")}
+                                        selected={!!matchPath(getCompanyRoute('/security'), pathname)}
                                         locked={isMenuItemLocked('security')}
                                     />
                                 )}
+                                <DashboardSidebarPageItem
+                                    id="user-activity-tracker"
+                                    title="User Activity Tracker"
+                                    icon={<MonitorIcon />}
+                                    href={getCompanyRoute('/user-activity-tracker')}
+                                    selected={pathname.includes('/user-activity-tracker')}
+                                />
                                 {shouldShowMenuItem('backups') && (
                                     <DashboardSidebarPageItem
                                         id="backups"
                                         title="Backups"
                                         icon={<BackupIcon />}
-                                        href="/app/backups"
-                                        selected={!!matchPath('/app/backups', pathname)}
+                                        href={getCompanyRoute("/backups")}
+                                        selected={!!matchPath(getCompanyRoute('/backups'), pathname)}
                                         locked={isMenuItemLocked('backups')}
                                     />
                                 )}
@@ -1156,8 +1166,8 @@ function DashboardSidebar({
                                         id="license-status"
                                         title="License Status"
                                         icon={<VerifiedUserIcon />}
-                                        href="/app/license-status"
-                                        selected={!!matchPath('/app/license-status', pathname)}
+                                        href={getCompanyRoute("/license-status")}
+                                        selected={!!matchPath(getCompanyRoute('/license-status'), pathname)}
                                         locked={isMenuItemLocked('license-status')}
                                     />
                                 )}
@@ -1174,8 +1184,8 @@ function DashboardSidebar({
                                         id="documents"
                                         title="Documents"
                                         icon={<DescriptionIcon />}
-                                        href="/app/documents"
-                                        selected={!!matchPath('/app/documents', pathname)}
+                                        href={getCompanyRoute("/documents")}
+                                        selected={!!matchPath(getCompanyRoute('/documents'), pathname)}
                                         locked={isMenuItemLocked('documents')}
                                     />
                                 )}

@@ -25,6 +25,7 @@ import {
     NavigateNext as NavigateNextIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -35,6 +36,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 const OvertimeDetails = () => {
     useDocumentTitle('Overtime Details');
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { id } = useParams();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
@@ -57,7 +59,7 @@ const OvertimeDetails = () => {
         } catch (error) {
 
             showNotification('Failed to load overtime', 'error');
-            navigate('/app/overtime');
+            navigate(getCompanyRoute('/overtime'));
         } finally {
             setLoading(false);
         }
@@ -103,7 +105,7 @@ const OvertimeDetails = () => {
         try {
             await overtimeService.delete(id);
             showNotification('Overtime deleted successfully', 'success');
-            navigate('/app/overtime');
+            navigate(getCompanyRoute('/overtime'));
         } catch (error) {
             showNotification(error.response?.data?.message || 'Delete failed', 'error');
         }
@@ -160,7 +162,7 @@ const OvertimeDetails = () => {
                 <Link
                     underline="hover"
                     color="inherit"
-                    onClick={() => navigate('/app/dashboard')}
+                    onClick={() => navigate(getCompanyRoute('/dashboard'))}
                     sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
                     Dashboard
@@ -168,7 +170,7 @@ const OvertimeDetails = () => {
                 <Link
                     underline="hover"
                     color="inherit"
-                    onClick={() => navigate('/app/overtime')}
+                    onClick={() => navigate(getCompanyRoute('/overtime'))}
                     sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
                     Overtime
@@ -179,7 +181,7 @@ const OvertimeDetails = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <IconButton onClick={() => navigate('/app/overtime')} color="primary">
+                    <IconButton onClick={() => navigate(getCompanyRoute('/overtime'))} color="primary">
                         <ArrowBack />
                     </IconButton>
                     <Box>
@@ -214,7 +216,7 @@ const OvertimeDetails = () => {
                         <Button
                             variant="outlined"
                             startIcon={<EditIcon />}
-                            onClick={() => navigate(`/app/overtime/${id}/edit`)}
+                            onClick={() => navigate(getCompanyRoute(`/overtime/${id}/edit`))}
                         >
                             Edit
                         </Button>

@@ -4,7 +4,7 @@ import { logger } from './core/logging/logger.js';
 import app from './app.js';
 import platformApp from './platformApp.js';
 import tenantApp from './tenantApp.js';
-import { initializeModuleSystem } from './app.js';
+import { initializeModuleSystem, initializeRoutes } from './app.js';
 
 const PORT = process.env.PORT || 5000;
 const PLATFORM_PORT = process.env.PLATFORM_PORT || 5001;
@@ -19,6 +19,10 @@ const startServer = async () => {
         // Initialize module system
         await initializeModuleSystem();
         logger.info('✅ Module system initialized');
+
+        // Initialize routes
+        await initializeRoutes();
+        logger.info('✅ Routes initialized');
 
         // Create HTTP servers
         const server = http.createServer(app);

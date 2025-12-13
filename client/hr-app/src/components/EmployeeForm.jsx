@@ -146,7 +146,8 @@ function EmployeeForm(props) {
     };
 
     const handleBack = () => {
-        navigate(backButtonPath ?? '/app/users');
+    const { getCompanyRoute } = useCompanyRouting();
+        navigate(backButtonPath ?? getCompanyRoute('/users'));
     };
 
     const handleProfilePictureChange = (event) => {

@@ -7,6 +7,7 @@ import {
     MenuItem,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,6 +15,7 @@ import permissionService from '../../services/permission.service';
 
 const CreatePermissionPage = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user } = useAuth();
     const { showNotification } = useNotification();
     const [formData, setFormData] = useState({
@@ -86,7 +88,7 @@ const CreatePermissionPage = () => {
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }, 500);
 
-            navigate('/app/permissions');
+            navigate(getCompanyRoute('/permissions'));
         } catch (error) {
 
             const errorMessage = error?.message || error?.data?.message || 'Operation failed';
@@ -95,7 +97,7 @@ const CreatePermissionPage = () => {
     };
 
     const handleCancel = () => {
-        navigate('/app/permissions');
+        navigate(getCompanyRoute('/permissions'));
     };
 
     return (
@@ -118,7 +120,7 @@ const CreatePermissionPage = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/app/permissions')}
+                    onClick={() => navigate(getCompanyRoute('/permissions'))}
                     startIcon={<Cancel />}
                     sx={{
                         textTransform: 'none',
@@ -233,7 +235,7 @@ const CreatePermissionPage = () => {
                                 Submit Request
                             </Button>
                             <Button
-                                onClick={() => navigate('/app/permissions')}
+                                onClick={() => navigate(getCompanyRoute('/permissions'))}
                                 variant="outlined"
                                 size="large"
                                 sx={{

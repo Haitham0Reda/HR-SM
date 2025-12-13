@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import { verifyTenantToken } from '../../core/auth/tenantAuth.js';
 import { ROLES, ROLE_HIERARCHY } from '../constants/modules.js';
 
 export const requireAuth = async (req, res, next) => {
@@ -12,8 +12,12 @@ export const requireAuth = async (req, res, next) => {
             });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
+        const decoded = verifyTenantToken(token);
+        req.user = {
+            id: decoded.userId,
+            role: decoded.role,
+            tenantId: decoded.tenantId
+        };
         req.tenantId = decoded.tenantId; // Set tenantId for tenant-scoped operations
 
         next();

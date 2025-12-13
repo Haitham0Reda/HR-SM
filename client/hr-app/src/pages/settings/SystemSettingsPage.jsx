@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography, Grid, Card, CardContent, Breadcrumbs, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import SettingsIcon from '@mui/icons-material/Settings';
 import BusinessIcon from '@mui/icons-material/Business';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -17,73 +18,74 @@ import HomeIcon from '@mui/icons-material/Home';
 
 function SystemSettingsPage() {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
 
     const settingsCards = [
         {
             title: 'System Settings',
             icon: <SettingsIcon sx={{ fontSize: 24 }} />,
             color: '#2196f3',
-            path: '/app/system-settings',
+            path: getCompanyRoute('/system-settings'),
         },
         {
             title: 'HR Settings',
             icon: <BusinessIcon sx={{ fontSize: 24 }} />,
             color: '#4caf50',
-            path: '/app/system-settings/hr-management',
+            path: getCompanyRoute('/system-settings/hr-management'),
         },
         {
             title: 'Flexible Hours',
             icon: <AccessTimeIcon sx={{ fontSize: 24 }} />,
             color: '#00bcd4',
-            path: '/app/system-settings/work-schedules',
+            path: getCompanyRoute('/system-settings/work-schedules'),
         },
         {
             title: 'Custom Reports',
             icon: <AssessmentIcon sx={{ fontSize: 24 }} />,
             color: '#ff9800',
-            path: '/app/reports',
+            path: getCompanyRoute('/reports'),
         },
         {
             title: 'Maintenance Mode',
             icon: <BuildIcon sx={{ fontSize: 24 }} />,
             color: '#f44336',
-            path: '/app/system-settings/maintenance',
+            path: getCompanyRoute('/system-settings/maintenance'),
         },
         {
             title: 'business System Integration',
             icon: <IntegrationInstructionsIcon sx={{ fontSize: 24 }} />,
             color: '#2196f3',
-            path: '/app/system-settings',
+            path: getCompanyRoute('/system-settings'),
         },
         {
             title: 'Seasonal Decorations',
             icon: <CelebrationIcon sx={{ fontSize: 24 }} />,
             color: '#e0e0e0',
-            path: '/app/system-settings/seasonal',
+            path: getCompanyRoute('/system-settings/seasonal'),
         },
         {
             title: 'Console Warning',
             icon: <WarningIcon sx={{ fontSize: 24 }} />,
             color: '#e0e0e0',
-            path: '/app/system-settings',
+            path: getCompanyRoute('/system-settings'),
         },
         {
             title: 'UI Settings',
             icon: <SettingsSuggestIcon sx={{ fontSize: 24 }} />,
             color: '#e0e0e0',
-            path: '/app/system-settings',
+            path: getCompanyRoute('/system-settings'),
         },
         {
             title: 'Employee Email Creation',
             icon: <EmailIcon sx={{ fontSize: 24 }} />,
             color: '#e0e0e0',
-            path: '/app/system-settings/email-creation',
+            path: getCompanyRoute('/system-settings/email-creation'),
         },
         {
             title: 'Mobile App Settings',
             icon: <PhoneAndroidIcon sx={{ fontSize: 24 }} />,
             color: '#e0e0e0',
-            path: '/app/system-settings',
+            path: getCompanyRoute('/system-settings'),
         },
     ];
 
@@ -103,7 +105,7 @@ function SystemSettingsPage() {
                         underline="hover"
                         sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                         color="inherit"
-                        onClick={() => navigate('/app/dashboard')}
+                        onClick={() => navigate(getCompanyRoute('/dashboard'))}
                     >
                         <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
                         Home

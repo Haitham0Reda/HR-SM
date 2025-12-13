@@ -25,12 +25,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import surveyService from '../../services/survey.service';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 
 const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { showNotification } = useNotification();
     const { setHasPendingSurveys } = useAuth();
+    const { getCompanyRoute } = useCompanyRouting();
     const [survey, setSurvey] = useState(propSurvey || null);
     const [loading, setLoading] = useState(!propSurvey);
     const [answers, setAnswers] = useState({});
@@ -58,7 +60,7 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
             setAnswers(initialAnswers);
         } catch (error) {
             showNotification('Failed to load survey', 'error');
-            navigate('/app/surveys');
+            navigate(getCompanyRoute('/surveys'));
         } finally {
             setLoading(false);
         }
@@ -129,7 +131,7 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
             if (onSurveyComplete) {
                 onSurveyComplete();
             } else {
-                navigate('/app/surveys');
+                navigate(getCompanyRoute('/surveys'));
             }
         } catch (error) {
             // Provide more specific error messages
@@ -392,7 +394,7 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
                 <Box display="flex" justifyContent="flex-end" gap={2}>
                     <Button
                         variant="outlined"
-                        onClick={() => navigate('/app/surveys')}
+                        onClick={() => navigate(getCompanyRoute('/surveys'))}
                         disabled={submitting}
                     >
                         Cancel

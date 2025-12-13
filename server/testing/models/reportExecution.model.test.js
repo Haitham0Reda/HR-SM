@@ -2,21 +2,33 @@ import mongoose from 'mongoose';
 import ReportExecution from '../../modules/reports/models/reportExecution.model.js';
 import Report from '../../modules/reports/models/report.model.js';
 import User from '../../modules/hr-core/users/models/user.model.js';
+// organization model removed - not needed for general HR system
 
 let report;
 let user;
+// organization variable removed
 beforeEach(async () => {
+  // Clear report executions collection
   await ReportExecution.deleteMany({});
 
+  // Create organization first
+  organization = await organization.create({
+    organizationCode: 'ENG',
+    name: 'organization of Engineering',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  });
+
+  // Create user for testing
   user = await User.create({
-    tenantId: 'test_tenant_123',
+      tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'hr',
-    employeeId: 'EMP001'
+    employeeId: 'EMP001': organization._id
   });
 
+  // Create report for testing
   report = await Report.create({
     name: 'Test Report',
     reportType: 'attendance',

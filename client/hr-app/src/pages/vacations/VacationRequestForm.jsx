@@ -11,6 +11,7 @@ import {
     Chip,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel, EventAvailable } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,6 +21,7 @@ import Loading from '../../components/common/Loading';
 
 const VacationRequestForm = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { id } = useParams();
     useDocumentTitle(id ? 'Edit Vacation Request' : 'Create Vacation Request');
     const { user } = useAuth();
@@ -96,7 +98,7 @@ const VacationRequestForm = () => {
         } catch (error) {
 
             showNotification('Failed to load vacation', 'error');
-            navigate('/app/vacation-requests');
+            navigate(getCompanyRoute('/vacation-requests'));
         } finally {
             setLoading(false);
         }
@@ -192,7 +194,7 @@ const VacationRequestForm = () => {
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
 
-            navigate('/app/vacation-requests');
+            navigate(getCompanyRoute('/vacation-requests'));
         } catch (error) {
 
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
@@ -222,7 +224,7 @@ const VacationRequestForm = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/app/vacation-requests')}
+                    onClick={() => navigate(getCompanyRoute('/vacation-requests'))}
                     startIcon={<Cancel />}
                     sx={{ textTransform: 'none' }}
                 >
@@ -379,7 +381,7 @@ const VacationRequestForm = () => {
                                 {isEditMode ? 'Update Request' : 'Submit Request'}
                             </Button>
                             <Button
-                                onClick={() => navigate('/app/vacation-requests')}
+                                onClick={() => navigate(getCompanyRoute('/vacation-requests'))}
                                 variant="outlined"
                                 size="large"
                                 sx={{ textTransform: 'none', fontWeight: 600 }}

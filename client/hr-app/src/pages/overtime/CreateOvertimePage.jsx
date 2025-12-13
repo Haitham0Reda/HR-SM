@@ -6,6 +6,7 @@ import {
     Typography,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,6 +14,7 @@ import permissionService from '../../services/permission.service';
 
 const CreateOvertimePage = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user } = useAuth();
     const { showNotification } = useNotification();
     const [formData, setFormData] = useState({
@@ -63,7 +65,7 @@ const CreateOvertimePage = () => {
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }, 500);
 
-            navigate('/app/overtime');
+            navigate(getCompanyRoute('/overtime'));
         } catch (error) {
 
             const errorMessage = error?.message || error?.response?.data?.message || 'Failed to create overtime request';
@@ -93,7 +95,7 @@ const CreateOvertimePage = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/app/overtime')}
+                    onClick={() => navigate(getCompanyRoute('/overtime'))}
                     startIcon={<Cancel />}
                     sx={{
                         textTransform: 'none',
@@ -201,7 +203,7 @@ const CreateOvertimePage = () => {
                                 Submit Request
                             </Button>
                             <Button
-                                onClick={() => navigate('/app/overtime')}
+                                onClick={() => navigate(getCompanyRoute('/overtime'))}
                                 variant="outlined"
                                 size="large"
                                 sx={{

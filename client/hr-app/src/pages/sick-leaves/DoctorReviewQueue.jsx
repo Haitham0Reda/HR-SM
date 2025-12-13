@@ -14,6 +14,7 @@ import {
     ArrowBack,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import { useNotification } from '../../context/NotificationContext';
@@ -24,6 +25,7 @@ import sickLeaveService from '../../services/sickLeave.service';
 const DoctorReviewQueue = () => {
     useDocumentTitle('Doctor Review Queue');
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user } = useAuth();
     const { showNotification } = useNotification();
     const [sickLeaves, setSickLeaves] = useState([]);
@@ -34,7 +36,7 @@ const DoctorReviewQueue = () => {
     useEffect(() => {
         if (!isDoctor) {
             showNotification('Access denied. Doctor role required.', 'error');
-            navigate('/app/sick-leaves');
+            navigate(getCompanyRoute('/sick-leaves'));
             return;
         }
         fetchPendingReviews();
@@ -174,7 +176,7 @@ const DoctorReviewQueue = () => {
                     </IconButton>
                     <IconButton
                         size="small"
-                        onClick={() => navigate(`/app/sick-leaves/${row._id}`)}
+                        onClick={() => navigate(getCompanyRoute(`/sick-leaves/${row._id}`))}
                         color="info"
                         title="View Details"
                     >
@@ -199,7 +201,7 @@ const DoctorReviewQueue = () => {
                 <Button
                     variant="outlined"
                     startIcon={<ArrowBack />}
-                    onClick={() => navigate('/app/sick-leaves')}
+                    onClick={() => navigate(getCompanyRoute('/sick-leaves'))}
                 >
                     Back to Sick Leaves
                 </Button>

@@ -250,10 +250,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Backward-compatible alias for tests expecting matchPassword
-userSchema.methods.matchPassword = async function(candidatePassword) {
-    return this.comparePassword(candidatePassword);
-};
+
 
 // Ensure virtuals are included in JSON
 userSchema.set('toJSON', { virtuals: true });

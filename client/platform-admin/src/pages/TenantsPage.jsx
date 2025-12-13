@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -10,7 +10,6 @@ import {
   DialogActions,
   Alert,
   Snackbar,
-  Grid,
   Card,
   CardContent,
   Chip,
@@ -31,7 +30,6 @@ const TenantsPage = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [stats, setStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(true);
 
   const handleCreateSuccess = () => {
     setRefreshKey((prev) => prev + 1);
@@ -103,26 +101,36 @@ const TenantsPage = () => {
 
   const loadStats = async () => {
     try {
-      setStatsLoading(true);
       const response = await tenantService.getTenantStats();
       setStats(response.data.statistics);
     } catch (error) {
       console.error('Failed to load tenant statistics:', error);
-    } finally {
-      setStatsLoading(false);
     }
   };
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: 3,
+      p: 3,
+      minHeight: '100vh'
+    }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 2
+      }}>
+        <Typography variant="h4" sx={{ flex: '1 1 auto' }}>
           Tenant Management
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setCreateDialogOpen(true)}
+          sx={{ flex: '0 0 auto' }}
         >
           Create Tenant
         </Button>
@@ -130,72 +138,77 @@ const TenantsPage = () => {
 
       {/* Statistics Cards */}
       {stats && (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={2.4}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom variant="body2">
-                  Total Tenants
-                </Typography>
-                <Typography variant="h4" component="div">
-                  {stats.total}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={2.4}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom variant="body2">
-                  Active
-                </Typography>
-                <Typography variant="h4" component="div" color="success.main">
-                  {stats.active}
-                </Typography>
-                <Chip label="Active" color="success" size="small" sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={2.4}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom variant="body2">
-                  Trial
-                </Typography>
-                <Typography variant="h4" component="div" color="warning.main">
-                  {stats.trial}
-                </Typography>
-                <Chip label="Trial" color="warning" size="small" sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={2.4}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom variant="body2">
-                  Suspended
-                </Typography>
-                <Typography variant="h4" component="div" color="error.main">
-                  {stats.suspended}
-                </Typography>
-                <Chip label="Suspended" color="error" size="small" sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={2.4}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom variant="body2">
-                  Cancelled
-                </Typography>
-                <Typography variant="h4" component="div" color="text.secondary">
-                  {stats.cancelled}
-                </Typography>
-                <Chip label="Cancelled" color="default" size="small" sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <Box 
+          sx={{ 
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 3,
+            mb: 4,
+            '& > *': {
+              flex: '1 1 200px',
+              minWidth: '200px',
+            }
+          }}
+        >
+          <Card sx={{ flex: '1 1 200px' }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <Typography color="text.secondary" gutterBottom variant="body2">
+                Total Tenants
+              </Typography>
+              <Typography variant="h4" component="div">
+                {stats.total}
+              </Typography>
+            </CardContent>
+          </Card>
+          
+          <Card sx={{ flex: '1 1 200px' }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <Typography color="text.secondary" gutterBottom variant="body2">
+                Active
+              </Typography>
+              <Typography variant="h4" component="div" color="success.main">
+                {stats.active}
+              </Typography>
+              <Chip label="Active" color="success" size="small" sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+          
+          <Card sx={{ flex: '1 1 200px' }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <Typography color="text.secondary" gutterBottom variant="body2">
+                Trial
+              </Typography>
+              <Typography variant="h4" component="div" color="warning.main">
+                {stats.trial}
+              </Typography>
+              <Chip label="Trial" color="warning" size="small" sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+          
+          <Card sx={{ flex: '1 1 200px' }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <Typography color="text.secondary" gutterBottom variant="body2">
+                Suspended
+              </Typography>
+              <Typography variant="h4" component="div" color="error.main">
+                {stats.suspended}
+              </Typography>
+              <Chip label="Suspended" color="error" size="small" sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+          
+          <Card sx={{ flex: '1 1 200px' }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <Typography color="text.secondary" gutterBottom variant="body2">
+                Cancelled
+              </Typography>
+              <Typography variant="h4" component="div" color="text.secondary">
+                {stats.cancelled}
+              </Typography>
+              <Chip label="Cancelled" color="default" size="small" sx={{ mt: 1 }} />
+            </CardContent>
+          </Card>
+        </Box>
       )}
 
       <TenantList

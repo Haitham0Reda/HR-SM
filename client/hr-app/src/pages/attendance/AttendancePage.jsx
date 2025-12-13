@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Box,
     Button,
@@ -47,6 +48,7 @@ import { getHolidayInfo } from '../../utils/holidayChecker';
 
 const AttendancePage = ({ viewMode = 'my' }) => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const [attendances, setAttendances] = useState([]);
     const [users, setUsers] = useState([]);

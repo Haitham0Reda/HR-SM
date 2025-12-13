@@ -79,7 +79,7 @@ function EmployeeEditForm({ initialValues, onSubmit, isEditMode }) {
                 autoHideDuration: 3000,
             });
 
-            navigate('/app/users');
+            navigate(getCompanyRoute('/users'));
         } catch (editError) {
             notifications.show(`Failed to edit employee. Reason: ${editError.message}`, {
                 severity: 'error',
@@ -90,7 +90,8 @@ function EmployeeEditForm({ initialValues, onSubmit, isEditMode }) {
     }, [formValues, navigate, notifications, onSubmit, setFormErrors]);
 
     const handleCancel = () => {
-        navigate('/app/users');
+    const { getCompanyRoute } = useCompanyRouting();
+        navigate(getCompanyRoute('/users'));
     };
 
     return (
@@ -100,7 +101,7 @@ function EmployeeEditForm({ initialValues, onSubmit, isEditMode }) {
             onSubmit={handleFormSubmit}
             onReset={handleFormReset}
             submitButtonLabel="Save"
-            backButtonPath={`/app/users/${employeeId}`}
+            backButtonPath={getCompanyRoute(`/users/${employeeId}`)}
             isEditMode={isEditMode}
         />
     );
@@ -182,8 +183,8 @@ export default function EmployeeEdit() {
         <PageContainer
             title={`Edit Employee ${employeeId}`}
             breadcrumbs={[
-                { title: 'Employees', path: '/app/users' },
-                { title: `Employee ${employeeId}`, path: `/app/users/${employeeId}` },
+                { title: 'Employees', path: getCompanyRoute('/users') },
+                { title: `Employee ${employeeId}`, path: getCompanyRoute(`/users/${employeeId}`) },
                 { title: 'Edit' },
             ]}
         >

@@ -8,6 +8,7 @@ import {
     MenuItem,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -18,6 +19,7 @@ import Loading from '../../components/common/Loading';
 
 const MissionForm = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { id } = useParams();
     useDocumentTitle(id ? 'Edit Mission' : 'Create Mission');
     const { user } = useAuth();
@@ -72,7 +74,7 @@ const MissionForm = () => {
         } catch (error) {
 
             showNotification('Failed to load mission', 'error');
-            navigate('/app/missions');
+            navigate(getCompanyRoute('/missions'));
         } finally {
             setLoading(false);
         }
@@ -157,7 +159,7 @@ const MissionForm = () => {
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
 
-            navigate('/app/missions');
+            navigate(getCompanyRoute('/missions'));
         } catch (error) {
 
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
@@ -187,7 +189,7 @@ const MissionForm = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/app/missions')}
+                    onClick={() => navigate(getCompanyRoute('/missions'))}
                     startIcon={<Cancel />}
                     sx={{ textTransform: 'none' }}
                 >
@@ -336,7 +338,7 @@ const MissionForm = () => {
                                 {isEditMode ? 'Update Mission' : 'Submit Mission'}
                             </Button>
                             <Button
-                                onClick={() => navigate('/app/missions')}
+                                onClick={() => navigate(getCompanyRoute('/missions'))}
                                 variant="outlined"
                                 size="large"
                                 sx={{ textTransform: 'none', fontWeight: 600 }}

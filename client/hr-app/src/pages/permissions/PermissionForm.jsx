@@ -8,6 +8,7 @@ import {
     MenuItem,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -16,6 +17,7 @@ import Loading from '../../components/common/Loading';
 
 const PermissionForm = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { id } = useParams();
     useDocumentTitle(id ? 'Edit Permission' : 'Create Permission');
     const { showNotification } = useNotification();
@@ -57,7 +59,7 @@ const PermissionForm = () => {
         } catch (error) {
 
             showNotification('Failed to load permission', 'error');
-            navigate('/app/permissions');
+            navigate(getCompanyRoute('/permissions'));
         } finally {
             setLoading(false);
         }
@@ -133,7 +135,7 @@ const PermissionForm = () => {
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
 
-            navigate('/app/permissions');
+            navigate(getCompanyRoute('/permissions'));
         } catch (error) {
 
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
@@ -163,7 +165,7 @@ const PermissionForm = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/app/permissions')}
+                    onClick={() => navigate(getCompanyRoute('/permissions'))}
                     startIcon={<Cancel />}
                     sx={{ textTransform: 'none' }}
                 >
@@ -278,7 +280,7 @@ const PermissionForm = () => {
                                 {isEditMode ? 'Update Permission' : 'Submit Permission'}
                             </Button>
                             <Button
-                                onClick={() => navigate('/app/permissions')}
+                                onClick={() => navigate(getCompanyRoute('/permissions'))}
                                 variant="outlined"
                                 size="large"
                                 sx={{ textTransform: 'none', fontWeight: 600 }}

@@ -37,12 +37,14 @@ import {
     Visibility as PreviewIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useNotification } from '../../context/NotificationContext';
 import { useThemeConfig } from '../../context/ThemeContext';
 import { themeService } from '../../services';
 
 const ThemeEditorPage = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { showSuccess, showError } = useNotification();
     const { themeConfig: globalThemeConfig, setThemeConfig: setGlobalThemeConfig } = useThemeConfig();
     const [activeTab, setActiveTab] = useState(0);
@@ -107,7 +109,7 @@ const ThemeEditorPage = () => {
             // Save theme configuration to API
             await themeService.updateTheme(themeConfig);
             showSuccess('Theme configuration saved successfully');
-            navigate('/app/dashboard');
+            navigate(getCompanyRoute('/dashboard'));
         } catch (error) {
             showError('Failed to save theme configuration');
         } finally {
@@ -544,7 +546,7 @@ const ThemeEditorPage = () => {
                     <Button
                         variant="outlined"
                         startIcon={<CancelIcon />}
-                        onClick={() => navigate('/app/dashboard')}
+                        onClick={() => navigate(getCompanyRoute('/dashboard'))}
                     >
                         Cancel
                     </Button>

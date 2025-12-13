@@ -36,7 +36,19 @@ const validateUserInput = (data, isUpdate = false) => {
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find()
+        // Build query with tenant filtering
+        const query = {};
+        
+        // Apply tenant filtering if tenantId is available
+        if (req.tenantId) {
+            query.tenantId = req.tenantId;
+        } else if (req.user?.tenantId) {
+            query.tenantId = req.user.tenantId;
+        }
+        
+        console.log('🔍 Fetching users with query:', query);
+        
+        const users = await User.find(query)
             .populate({
                 path: 'department',
                 populate: {
@@ -45,15 +57,30 @@ export const getAllUsers = async (req, res) => {
                 }
             })
             .populate('position');
+            
+        console.log(`✓ Found ${users.length} users for tenant ${query.tenantId || 'unknown'}`);
         res.json(users.map(sanitizeUser));
     } catch (err) {
+        console.error('❌ Error fetching users:', err);
         res.status(500).json({ error: err.message });
     }
 };
 
 export const getUserById = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id)
+        // Build query with tenant filtering
+        const query = { _id: req.params.id };
+        
+        // Apply tenant filtering if tenantId is available
+        if (req.tenantId) {
+            query.tenantId = req.tenantId;
+        } else if (req.user?.tenantId) {
+            query.tenantId = req.user.tenantId;
+        }
+        
+        console.log('🔍 Fetching user by ID with query:', query);
+        
+        const user = await User.findOne(query)
             .populate({
                 path: 'department',
                 populate: {
@@ -62,9 +89,16 @@ export const getUserById = async (req, res) => {
                 }
             })
             .populate('position');
-        if (!user) return res.status(404).json({ error: 'User not found' });
+            
+        if (!user) {
+            console.log(`❌ User not found with ID ${req.params.id} for tenant ${query.tenantId || 'unknown'}`);
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        console.log(`✓ Found user ${user.email} for tenant ${query.tenantId || 'unknown'}`);
         res.json(sanitizeUser(user));
     } catch (err) {
+        console.error('❌ Error fetching user by ID:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -77,10 +111,11 @@ export const createUser = async (req, res) => {
         // Remove employeeId from request body if provided (it will be auto-generated)
         delete req.body.employeeId;
 
-        // Check for duplicate username/email
+        // Check for duplicate username/email within the same tenant
+        const tenantId = req.tenantId || req.user?.tenantId;
         const conditions = [
-            { email: req.body.email },
-            { username: req.body.username }
+            { email: req.body.email, tenantId },
+            { username: req.body.username, tenantId }
         ];
 
         const existing = await User.findOne({ $or: conditions });
@@ -94,7 +129,17 @@ export const createUser = async (req, res) => {
             }
         }
 
-        const user = new User(req.body);
+        // Ensure tenantId is set from the authenticated user context
+        const userData = { ...req.body };
+        if (req.tenantId) {
+            userData.tenantId = req.tenantId;
+        } else if (req.user?.tenantId) {
+            userData.tenantId = req.user.tenantId;
+        }
+        
+        console.log('👤 Creating user with tenant context:', { email: userData.email, tenantId: userData.tenantId });
+
+        const user = new User(userData);
         await user.save();
         await user.populate({
             path: 'department',
@@ -125,12 +170,15 @@ export const updateUser = async (req, res) => {
         const error = validateUserInput(req.body, true);
         if (error) return res.status(400).json({ error });
 
-        // Prevent updating unique fields to existing values
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
+        
+        // Prevent updating unique fields to existing values within the same tenant
         if (req.body.email || req.body.username || req.body.employeeId) {
             const conditions = [];
-            if (req.body.email) conditions.push({ email: req.body.email });
-            if (req.body.username) conditions.push({ username: req.body.username });
-            if (req.body.employeeId) conditions.push({ employeeId: req.body.employeeId });
+            if (req.body.email) conditions.push({ email: req.body.email, tenantId });
+            if (req.body.username) conditions.push({ username: req.body.username, tenantId });
+            if (req.body.employeeId) conditions.push({ employeeId: req.body.employeeId, tenantId });
 
             const conflict = await User.findOne({
                 $or: conditions,
@@ -150,7 +198,15 @@ export const updateUser = async (req, res) => {
             }
         }
 
-        const user = await User.findByIdAndUpdate(userId, req.body, { new: true })
+        // Build query with tenant filtering for update
+        const query = { _id: userId };
+        if (tenantId) {
+            query.tenantId = tenantId;
+        }
+        
+        console.log('✏️ Updating user with query:', query);
+        
+        const user = await User.findOneAndUpdate(query, req.body, { new: true })
             .populate({
                 path: 'department',
                 populate: {
@@ -159,7 +215,13 @@ export const updateUser = async (req, res) => {
                 }
             })
             .populate('position');
-        if (!user) return res.status(404).json({ error: 'User not found' });
+            
+        if (!user) {
+            console.log(`❌ User not found for update with ID ${userId} for tenant ${tenantId || 'unknown'}`);
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        console.log(`✓ Updated user ${user.email} for tenant ${tenantId || 'unknown'}`);
         res.json(sanitizeUser(user));
     } catch (err) {
         // Handle MongoDB duplicate key errors
@@ -175,10 +237,28 @@ export const updateUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
     try {
-        const user = await User.findByIdAndDelete(req.params.id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        // Build query with tenant filtering
+        const query = { _id: req.params.id };
+        
+        // Apply tenant filtering if tenantId is available
+        if (req.tenantId) {
+            query.tenantId = req.tenantId;
+        } else if (req.user?.tenantId) {
+            query.tenantId = req.user.tenantId;
+        }
+        
+        console.log('🗑️ Deleting user with query:', query);
+        
+        const user = await User.findOneAndDelete(query);
+        if (!user) {
+            console.log(`❌ User not found for deletion with ID ${req.params.id} for tenant ${query.tenantId || 'unknown'}`);
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        console.log(`✓ Deleted user ${user.email} for tenant ${query.tenantId || 'unknown'}`);
         res.json({ message: 'User deleted' });
     } catch (err) {
+        console.error('❌ Error deleting user:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -329,17 +409,35 @@ export const uploadProfilePicture = async (req, res) => {
 // Get user plain password (for credential generation - Admin only)
 export const getUserPlainPassword = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id).select('+plainPassword');
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        // Build query with tenant filtering
+        const query = { _id: req.params.id };
+        
+        // Apply tenant filtering if tenantId is available
+        if (req.tenantId) {
+            query.tenantId = req.tenantId;
+        } else if (req.user?.tenantId) {
+            query.tenantId = req.user.tenantId;
+        }
+        
+        console.log('🔑 Fetching plain password with query:', query);
+        
+        const user = await User.findOne(query).select('+plainPassword');
+        if (!user) {
+            console.log(`❌ User not found for plain password with ID ${req.params.id} for tenant ${query.tenantId || 'unknown'}`);
+            return res.status(404).json({ error: 'User not found' });
+        }
 
         if (!user.plainPassword) {
+            console.log(`⚠️ Plain password not available for user ${user.email}`);
             return res.status(404).json({
                 error: 'Plain password not available. Password was set before this feature was implemented.'
             });
         }
 
+        console.log(`✓ Retrieved plain password for user ${user.email} for tenant ${query.tenantId || 'unknown'}`);
         res.json({ plainPassword: user.plainPassword });
     } catch (err) {
+        console.error('❌ Error fetching plain password:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -351,8 +449,21 @@ export const updateVacationBalance = async (req, res) => {
         const { userId } = req.params;
         const { annualTotal, casualTotal, flexibleTotal } = req.body;
 
-        const user = await User.findById(userId);
+        // Build query with tenant filtering
+        const query = { _id: userId };
+        
+        // Apply tenant filtering if tenantId is available
+        if (req.tenantId) {
+            query.tenantId = req.tenantId;
+        } else if (req.user?.tenantId) {
+            query.tenantId = req.user.tenantId;
+        }
+        
+        console.log('📊 Updating vacation balance with query:', query);
+
+        const user = await User.findOne(query);
         if (!user) {
+            console.log(`❌ User not found for vacation balance update with ID ${userId} for tenant ${query.tenantId || 'unknown'}`);
             return res.status(404).json({ error: 'User not found' });
         }
 
@@ -374,12 +485,14 @@ export const updateVacationBalance = async (req, res) => {
 
         await user.save();
 
+        console.log(`✓ Updated vacation balance for user ${user.email} for tenant ${query.tenantId || 'unknown'}`);
         res.json({
             success: true,
             message: 'Vacation balance updated successfully',
             vacationBalance: user.vacationBalance
         });
     } catch (err) {
+        console.error('❌ Error updating vacation balance:', err);
         res.status(500).json({ error: err.message });
     }
 };

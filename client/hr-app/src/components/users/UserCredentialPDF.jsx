@@ -368,7 +368,7 @@ export const generateUserCredentialPDF = (user, tempPassword = null) => {
                         <div class="links-section">
                             <div class="link-item">
                                 <div class="link-label">Employee Portal:</div>
-                                <div class="link-url">${window.location.origin}/app/dashboard</div>
+                                <div class="link-url">${window.location.origin}/company/techcorp-solutions/dashboard</div>
                             </div>
                             <div class="link-item">
                                 <div class="link-label">HR System:</div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Box,
     Paper,
@@ -36,6 +37,7 @@ import { generateUserIDCard } from '../../components/users/UserIDCard';
 const UserDetailsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const { showNotification } = useNotification();
@@ -58,7 +60,7 @@ const UserDetailsPage = () => {
         } catch (error) {
 
             showNotification(error.message || 'Failed to fetch user details', 'error');
-            navigate('/app/users');
+            navigate(getCompanyRoute('/users'));
         } finally {
             setLoading(false);
         }
@@ -74,7 +76,7 @@ const UserDetailsPage = () => {
         return (
             <Box sx={{ p: 4, textAlign: 'center' }}>
                 <Typography>No user data found</Typography>
-                <Button onClick={() => navigate('/app/users')} sx={{ mt: 2 }}>
+                <Button onClick={() => navigate(getCompanyRoute('/users'))} sx={{ mt: 2 }}>
                     Back to Users
                 </Button>
             </Box>
@@ -98,7 +100,7 @@ const UserDetailsPage = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Button
                             startIcon={<ArrowBackIcon />}
-                            onClick={() => navigate('/app/users')}
+                            onClick={() => navigate(getCompanyRoute('/users'))}
                             sx={{ 
                                 textTransform: 'none', 
                                 fontWeight: 600,
@@ -121,7 +123,7 @@ const UserDetailsPage = () => {
                         <Button
                             variant="contained"
                             startIcon={<EditIcon />}
-                            onClick={() => navigate(`/app/users/${id}/edit`)}
+                            onClick={() => navigate(getCompanyRoute(`/users/${id}/edit`))}
                             sx={{ 
                                 textTransform: 'none', 
                                 fontWeight: 600, 

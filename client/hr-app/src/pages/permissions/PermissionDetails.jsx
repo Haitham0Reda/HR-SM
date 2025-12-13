@@ -24,6 +24,7 @@ import {
     NavigateNext as NavigateNextIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -34,6 +35,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 const PermissionDetails = () => {
     useDocumentTitle('Permission Details');
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { id } = useParams();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
@@ -56,7 +58,7 @@ const PermissionDetails = () => {
         } catch (error) {
 
             showNotification('Failed to load permission', 'error');
-            navigate('/app/permissions');
+            navigate(getCompanyRoute('/permissions'));
         } finally {
             setLoading(false);
         }
@@ -102,7 +104,7 @@ const PermissionDetails = () => {
         try {
             await permissionService.delete(id);
             showNotification('Permission deleted successfully', 'success');
-            navigate('/app/permissions');
+            navigate(getCompanyRoute('/permissions'));
         } catch (error) {
             showNotification(error.response?.data?.message || 'Delete failed', 'error');
         }
@@ -149,7 +151,7 @@ const PermissionDetails = () => {
                 <Link
                     underline="hover"
                     color="inherit"
-                    onClick={() => navigate('/app/dashboard')}
+                    onClick={() => navigate(getCompanyRoute('/dashboard'))}
                     sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
                     Dashboard
@@ -157,7 +159,7 @@ const PermissionDetails = () => {
                 <Link
                     underline="hover"
                     color="inherit"
-                    onClick={() => navigate('/app/permissions')}
+                    onClick={() => navigate(getCompanyRoute('/permissions'))}
                     sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
                     Permissions
@@ -168,7 +170,7 @@ const PermissionDetails = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <IconButton onClick={() => navigate('/app/permissions')} color="primary">
+                    <IconButton onClick={() => navigate(getCompanyRoute('/permissions'))} color="primary">
                         <ArrowBack />
                     </IconButton>
                     <Box>
@@ -203,7 +205,7 @@ const PermissionDetails = () => {
                         <Button
                             variant="outlined"
                             startIcon={<EditIcon />}
-                            onClick={() => navigate(`/app/permissions/${id}/edit`)}
+                            onClick={() => navigate(getCompanyRoute(`/permissions/${id}/edit`))}
                         >
                             Edit
                         </Button>

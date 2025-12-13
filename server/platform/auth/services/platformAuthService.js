@@ -1,7 +1,6 @@
 import PlatformUser from '../../models/PlatformUser.js';
-import { generatePlatformToken } from '../../../core/auth/platformAuth.js';
-import AppError from '../../../core/errors/AppError.js';
-import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
+import { generatePlatformToken } from '../../middleware/platformAuth.js';
+import logger from '../../../utils/logger.js';
 
 /**
  * Platform Authentication Service
@@ -19,42 +18,26 @@ class PlatformAuthService {
   async login(email, password) {
     // Validate input
     if (!email || !password) {
-      throw new AppError(
-        'Email and password are required',
-        400,
-        ERROR_TYPES.INVALID_INPUT
-      );
+      throw new Error('Email and password are required');
     }
 
     // Find user by email (include password field)
     const user = await PlatformUser.findOne({ email }).select('+password');
 
     if (!user) {
-      throw new AppError(
-        'Invalid email or password',
-        401,
-        ERROR_TYPES.INVALID_CREDENTIALS
-      );
+      throw new Error('Invalid email or password');
     }
 
     // Check if user is active
     if (user.status !== 'active') {
-      throw new AppError(
-        `Account is ${user.status}. Please contact system administrator.`,
-        403,
-        ERROR_TYPES.ACCOUNT_INACTIVE
-      );
+      throw new Error(`Account is ${user.status}. Please contact system administrator.`);
     }
 
     // Verify password
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
-      throw new AppError(
-        'Invalid email or password',
-        401,
-        ERROR_TYPES.INVALID_CREDENTIALS
-      );
+      throw new Error('Invalid email or password');
     }
 
     // Update last login
@@ -62,7 +45,7 @@ class PlatformAuthService {
     await user.save();
 
     // Generate JWT token
-    const token = generatePlatformToken(user._id.toString(), user.role);
+    const token = generatePlatformToken(user);
 
     // Return user (without password) and token
     return {
@@ -76,25 +59,16 @@ class PlatformAuthService {
    * 
    * @param {string} userId - User ID
    * @returns {Promise<Object>} User object
-   * @throws {AppError} If user not found
    */
   async getUserById(userId) {
     const user = await PlatformUser.findById(userId);
 
     if (!user) {
-      throw new AppError(
-        'Platform user not found',
-        404,
-        ERROR_TYPES.USER_NOT_FOUND
-      );
+      throw new Error('Platform user not found');
     }
 
     if (user.status !== 'active') {
-      throw new AppError(
-        'User account is not active',
-        403,
-        ERROR_TYPES.ACCOUNT_INACTIVE
-      );
+      throw new Error('User account is not active');
     }
 
     return user.toSafeObject();
@@ -102,16 +76,6 @@ class PlatformAuthService {
 
   /**
    * Create new platform user
-   * 
-   * @param {Object} userData - User data
-   * @param {string} userData.email - User email
-   * @param {string} userData.password - User password
-   * @param {string} userData.firstName - First name
-   * @param {string} userData.lastName - Last name
-   * @param {string} userData.role - User role
-   * @param {Array<string>} userData.permissions - User permissions
-   * @returns {Promise<Object>} Created user object
-   * @throws {AppError} If creation fails
    */
   async createUser(userData) {
     try {
@@ -120,11 +84,7 @@ class PlatformAuthService {
       return user.toSafeObject();
     } catch (error) {
       if (error.code === 11000) {
-        throw new AppError(
-          'Email already exists',
-          400,
-          ERROR_TYPES.DUPLICATE_EMAIL
-        );
+        throw new Error('Email already exists');
       }
       throw error;
     }
@@ -132,11 +92,6 @@ class PlatformAuthService {
 
   /**
    * Update platform user
-   * 
-   * @param {string} userId - User ID
-   * @param {Object} updateData - Data to update
-   * @returns {Promise<Object>} Updated user object
-   * @throws {AppError} If update fails
    */
   async updateUser(userId, updateData) {
     // Don't allow updating password through this method
@@ -149,11 +104,7 @@ class PlatformAuthService {
     );
 
     if (!user) {
-      throw new AppError(
-        'Platform user not found',
-        404,
-        ERROR_TYPES.USER_NOT_FOUND
-      );
+      throw new Error('Platform user not found');
     }
 
     return user.toSafeObject();
@@ -161,33 +112,19 @@ class PlatformAuthService {
 
   /**
    * Change user password
-   * 
-   * @param {string} userId - User ID
-   * @param {string} currentPassword - Current password
-   * @param {string} newPassword - New password
-   * @returns {Promise<void>}
-   * @throws {AppError} If password change fails
    */
   async changePassword(userId, currentPassword, newPassword) {
     const user = await PlatformUser.findById(userId).select('+password');
 
     if (!user) {
-      throw new AppError(
-        'Platform user not found',
-        404,
-        ERROR_TYPES.USER_NOT_FOUND
-      );
+      throw new Error('Platform user not found');
     }
 
     // Verify current password
     const isPasswordValid = await user.comparePassword(currentPassword);
 
     if (!isPasswordValid) {
-      throw new AppError(
-        'Current password is incorrect',
-        401,
-        ERROR_TYPES.INVALID_CREDENTIALS
-      );
+      throw new Error('Current password is incorrect');
     }
 
     // Update password (will be hashed by pre-save hook)
@@ -197,10 +134,6 @@ class PlatformAuthService {
 
   /**
    * Deactivate platform user
-   * 
-   * @param {string} userId - User ID
-   * @returns {Promise<Object>} Updated user object
-   * @throws {AppError} If deactivation fails
    */
   async deactivateUser(userId) {
     const user = await PlatformUser.findByIdAndUpdate(
@@ -210,11 +143,7 @@ class PlatformAuthService {
     );
 
     if (!user) {
-      throw new AppError(
-        'Platform user not found',
-        404,
-        ERROR_TYPES.USER_NOT_FOUND
-      );
+      throw new Error('Platform user not found');
     }
 
     return user.toSafeObject();
@@ -222,11 +151,6 @@ class PlatformAuthService {
 
   /**
    * List all platform users
-   * 
-   * @param {Object} filters - Filter options
-   * @param {string} filters.role - Filter by role
-   * @param {string} filters.status - Filter by status
-   * @returns {Promise<Array>} Array of users
    */
   async listUsers(filters = {}) {
     const query = {};

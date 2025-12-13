@@ -7,6 +7,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
+import axios from 'axios';
 import { useAuth } from './AuthContext';
 
 const ModuleContext = createContext(null);
@@ -20,16 +21,18 @@ export const useModules = () => {
 };
 
 export const ModuleProvider = ({ children }) => {
-    const { isAuthenticated, tenantId } = useAuth();
+    const { isAuthenticated, companySlug, user } = useAuth();
     const [enabledModules, setEnabledModules] = useState([]);
+    const [moduleDetails, setModuleDetails] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     // Fetch enabled modules when user logs in
     useEffect(() => {
         const fetchEnabledModules = async () => {
-            if (!isAuthenticated || !tenantId) {
+            if (!companySlug) {
                 setEnabledModules([]);
+                setModuleDetails({});
                 setLoading(false);
                 return;
             }
@@ -38,32 +41,34 @@ export const ModuleProvider = ({ children }) => {
                 setLoading(true);
                 setError(null);
 
-                // Fetch tenant configuration to get enabled modules
-                const response = await api.get('/tenant/config');
+                console.log('Fetching modules for company:', companySlug);
+
+                // Use the platform API to get company modules
+                const baseURL = process.env.REACT_APP_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+                const response = await axios.get(`${baseURL}/api/platform/companies/${companySlug}/modules`);
                 
-                // Extract enabled modules from the config
-                const config = response.data || response;
-                const enabledModulesList = [];
-                
-                if (config.modules) {
-                    // Handle Map format from MongoDB
-                    if (typeof config.modules === 'object') {
-                        Object.entries(config.modules).forEach(([moduleId, moduleConfig]) => {
-                            if (moduleConfig.enabled) {
-                                enabledModulesList.push(moduleId);
-                            }
-                        });
-                    }
+                if (response.data.success) {
+                    const modules = response.data.data.availableModules || {};
+                    
+                    // Extract enabled module names
+                    const enabledModulesList = Object.entries(modules)
+                        .filter(([key, module]) => module.enabled)
+                        .map(([key]) => key);
+                    
+                    console.log('Enabled modules loaded:', enabledModulesList);
+                    
+                    setEnabledModules(enabledModulesList);
+                    setModuleDetails(modules);
+                } else {
+                    throw new Error(response.data.message || 'Failed to load modules');
                 }
-                
-                setEnabledModules(enabledModulesList);
             } catch (err) {
                 console.error('Failed to fetch enabled modules:', err);
                 
                 // In development, provide default enabled modules
                 if (process.env.NODE_ENV === 'development') {
                     console.warn('Using default module configuration for development');
-                    setEnabledModules(['hr-core', 'tasks']);
+                    setEnabledModules(['hr-core', 'attendance', 'leave', 'documents', 'reports', 'tasks']);
                 } else {
                     setError(err.message || 'Failed to load modules');
                     setEnabledModules(['hr-core']);
@@ -74,7 +79,7 @@ export const ModuleProvider = ({ children }) => {
         };
 
         fetchEnabledModules();
-    }, [isAuthenticated, tenantId]);
+    }, [companySlug]);
 
     /**
      * Check if a module is enabled for the current tenant
@@ -82,7 +87,12 @@ export const ModuleProvider = ({ children }) => {
      * @returns {boolean} - Whether the module is enabled
      */
     const isModuleEnabled = (moduleId) => {
-        // HR-Core is always enabled
+        // Admin users have access to all modules
+        if (user && user.role === 'admin') {
+            return true;
+        }
+        
+        // HR-Core is always enabled for all users
         if (moduleId === 'hr-core') {
             return true;
         }
@@ -113,11 +123,18 @@ export const ModuleProvider = ({ children }) => {
      * @returns {string[]} - Array of enabled module IDs
      */
     const getEnabledModules = () => {
+        // Admin users get all available modules
+        if (user && user.role === 'admin') {
+            const allModules = Object.keys(moduleDetails);
+            return allModules.length > 0 ? allModules : ['hr-core', 'attendance', 'leave', 'payroll', 'documents', 'reports', 'tasks', 'surveys', 'announcements', 'events'];
+        }
+        
         return ['hr-core', ...enabledModules];
     };
 
     const value = {
         enabledModules: getEnabledModules(),
+        moduleDetails,
         loading,
         error,
         isModuleEnabled,

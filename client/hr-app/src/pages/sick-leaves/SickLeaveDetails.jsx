@@ -31,6 +31,7 @@ import {
     NavigateNext as NavigateNextIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -41,6 +42,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 const SickLeaveDetails = () => {
     useDocumentTitle('Sick Leave Details');
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { id } = useParams();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
@@ -64,7 +66,7 @@ const SickLeaveDetails = () => {
         } catch (error) {
 
             showNotification('Failed to load sick leave', 'error');
-            navigate('/app/sick-leaves');
+            navigate(getCompanyRoute('/sick-leaves'));
         } finally {
             setLoading(false);
         }
@@ -146,7 +148,7 @@ const SickLeaveDetails = () => {
         try {
             await sickLeaveService.delete(id);
             showNotification('Sick leave deleted successfully', 'success');
-            navigate('/app/sick-leaves');
+            navigate(getCompanyRoute('/sick-leaves'));
         } catch (error) {
             showNotification(error.response?.data?.message || 'Delete failed', 'error');
         }
@@ -197,7 +199,7 @@ const SickLeaveDetails = () => {
                 <Link
                     underline="hover"
                     color="inherit"
-                    onClick={() => navigate('/app/dashboard')}
+                    onClick={() => navigate(getCompanyRoute('/dashboard'))}
                     sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
                     Dashboard
@@ -205,7 +207,7 @@ const SickLeaveDetails = () => {
                 <Link
                     underline="hover"
                     color="inherit"
-                    onClick={() => navigate('/app/sick-leaves')}
+                    onClick={() => navigate(getCompanyRoute('/sick-leaves'))}
                     sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
                     Sick Leaves
@@ -216,7 +218,7 @@ const SickLeaveDetails = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <IconButton onClick={() => navigate('/app/sick-leaves')}>
+                    <IconButton onClick={() => navigate(getCompanyRoute('/sick-leaves'))}>
                         <ArrowBack />
                     </IconButton>
                     <Box>
@@ -231,7 +233,7 @@ const SickLeaveDetails = () => {
                         <Button
                             variant="outlined"
                             startIcon={<EditIcon />}
-                            onClick={() => navigate(`/app/sick-leaves/${id}/edit`)}
+                            onClick={() => navigate(getCompanyRoute(`/sick-leaves/${id}/edit`))}
                         >
                             Edit
                         </Button>

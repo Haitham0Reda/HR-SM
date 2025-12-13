@@ -1,18 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   IconButton,
   Chip,
   Tooltip,
   CircularProgress,
   Alert,
+  Typography,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -78,133 +73,208 @@ const TenantList = ({ onEdit, onView, onSuspend, onReactivate, refreshKey }) => 
   }
 
   return (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Tenant ID</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell>Domain</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Subscription</TableCell>
-            <TableCell>Users</TableCell>
-            <TableCell>Industry</TableCell>
-            <TableCell>Created</TableCell>
-            <TableCell align="right">Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {tenants.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={9} align="center">
-                No tenants found
-              </TableCell>
-            </TableRow>
-          ) : (
-            tenants.map((tenant) => (
-              <TableRow key={tenant.tenantId}>
-                <TableCell>
-                  <Box sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                    {tenant.tenantId}
-                  </Box>
-                </TableCell>
-                <TableCell>
+    <Box>
+      {tenants.length === 0 ? (
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <Alert severity="info">
+            No tenants found
+          </Alert>
+        </Paper>
+      ) : (
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2
+        }}>
+          {tenants.map((tenant) => (
+            <Paper 
+              key={tenant.tenantId} 
+              sx={{ 
+                p: 3,
+                display: 'flex',
+                flexDirection: { xs: 'column', md: 'row' },
+                alignItems: { xs: 'stretch', md: 'center' },
+                gap: 2,
+                '&:hover': {
+                  boxShadow: 2,
+                  transform: 'translateY(-1px)',
+                  transition: 'all 0.2s ease-in-out'
+                }
+              }}
+            >
+              {/* Main Info Section */}
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                flex: '1 1 auto',
+                gap: 1
+              }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  gap: 2,
+                  mb: 1
+                }}>
                   <Box>
-                    <Box sx={{ fontWeight: 'medium' }}>{tenant.name}</Box>
-                    {tenant.contactInfo?.adminEmail && (
-                      <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-                        {tenant.contactInfo.adminEmail}
-                      </Box>
-                    )}
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      {tenant.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                      ID: {tenant.tenantId}
+                    </Typography>
                   </Box>
-                </TableCell>
-                <TableCell>{tenant.domain || '-'}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={tenant.status}
-                    color={getStatusColor(tenant.status)}
-                    size="small"
-                    sx={{ textTransform: 'capitalize' }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box>
+                  
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip
+                      label={tenant.status}
+                      color={getStatusColor(tenant.status)}
+                      size="small"
+                      sx={{ textTransform: 'capitalize' }}
+                    />
                     <Chip
                       label={tenant.subscription?.status || 'trial'}
                       color={tenant.subscription?.status === 'active' ? 'success' : 'warning'}
                       size="small"
                       sx={{ textTransform: 'capitalize' }}
                     />
-                    {tenant.subscription?.expiresAt && (
-                      <Box sx={{ fontSize: '0.75rem', color: 'text.secondary', mt: 0.5 }}>
-                        Expires: {new Date(tenant.subscription.expiresAt).toLocaleDateString()}
-                      </Box>
-                    )}
                   </Box>
-                </TableCell>
-                <TableCell>
-                  <Box>
-                    <Box sx={{ fontWeight: 'medium' }}>
+                </Box>
+
+                {/* Details Grid */}
+                <Box sx={{ 
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 3,
+                  mt: 1
+                }}>
+                  <Box sx={{ minWidth: '120px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Domain
+                    </Typography>
+                    <Typography variant="body2">
+                      {tenant.domain || '-'}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ minWidth: '120px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Users
+                    </Typography>
+                    <Typography variant="body2">
                       {tenant.usage?.userCount || 0} / {tenant.limits?.maxUsers || 100}
-                    </Box>
-                    <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-                      users
-                    </Box>
+                    </Typography>
                   </Box>
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ textTransform: 'capitalize' }}>
-                    {tenant.metadata?.industry || '-'}
+                  
+                  <Box sx={{ minWidth: '120px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Industry
+                    </Typography>
+                    <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                      {tenant.metadata?.industry || '-'}
+                    </Typography>
                   </Box>
-                </TableCell>
-                <TableCell>
-                  {new Date(tenant.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell align="right">
-                  <Tooltip title="View Details">
+                  
+                  <Box sx={{ minWidth: '120px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Created
+                    </Typography>
+                    <Typography variant="body2">
+                      {new Date(tenant.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                  
+                  {tenant.contactInfo?.adminEmail && (
+                    <Box sx={{ minWidth: '200px' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Admin Email
+                      </Typography>
+                      <Typography variant="body2">
+                        {tenant.contactInfo.adminEmail}
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {tenant.subscription?.expiresAt && (
+                    <Box sx={{ minWidth: '120px' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Expires
+                      </Typography>
+                      <Typography variant="body2">
+                        {new Date(tenant.subscription.expiresAt).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+
+              {/* Actions Section */}
+              <Box sx={{ 
+                display: 'flex',
+                flexDirection: { xs: 'row', md: 'column' },
+                gap: 1,
+                flex: '0 0 auto',
+                justifyContent: { xs: 'flex-end', md: 'center' }
+              }}>
+                <Tooltip title="View Details">
+                  <IconButton
+                    size="small"
+                    onClick={() => onView(tenant)}
+                    sx={{ 
+                      bgcolor: 'action.hover',
+                      '&:hover': { bgcolor: 'primary.light', color: 'primary.contrastText' }
+                    }}
+                  >
+                    <VisibilityIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                <Tooltip title="Edit">
+                  <IconButton
+                    size="small"
+                    onClick={() => onEdit(tenant)}
+                    sx={{ 
+                      bgcolor: 'action.hover',
+                      '&:hover': { bgcolor: 'info.light', color: 'info.contrastText' }
+                    }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                {tenant.status === 'active' ? (
+                  <Tooltip title="Suspend">
                     <IconButton
                       size="small"
-                      onClick={() => onView(tenant)}
+                      onClick={() => onSuspend(tenant)}
+                      sx={{ 
+                        bgcolor: 'action.hover',
+                        '&:hover': { bgcolor: 'error.light', color: 'error.contrastText' }
+                      }}
                     >
-                      <VisibilityIcon />
+                      <BlockIcon />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Edit">
+                ) : tenant.status === 'suspended' ? (
+                  <Tooltip title="Reactivate">
                     <IconButton
                       size="small"
-                      onClick={() => onEdit(tenant)}
+                      onClick={() => onReactivate(tenant)}
+                      sx={{ 
+                        bgcolor: 'action.hover',
+                        '&:hover': { bgcolor: 'success.light', color: 'success.contrastText' }
+                      }}
                     >
-                      <EditIcon />
+                      <CheckCircleIcon />
                     </IconButton>
                   </Tooltip>
-                  {tenant.status === 'active' ? (
-                    <Tooltip title="Suspend">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => onSuspend(tenant)}
-                      >
-                        <BlockIcon />
-                      </IconButton>
-                    </Tooltip>
-                  ) : tenant.status === 'suspended' ? (
-                    <Tooltip title="Reactivate">
-                      <IconButton
-                        size="small"
-                        color="success"
-                        onClick={() => onReactivate(tenant)}
-                      >
-                        <CheckCircleIcon />
-                      </IconButton>
-                    </Tooltip>
-                  ) : null}
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+                ) : null}
+              </Box>
+            </Paper>
+          ))}
+        </Box>
+      )}
+    </Box>
   );
 };
 

@@ -1,47 +1,79 @@
 /**
- * Check Departments Script
- * 
- * Utility script to list all departments in the database
- * Useful for debugging and verification
- * 
- * Usage: node server/scripts/checkDepartments.js
+ * Script to check department data for TechCorp Solutions
  */
 
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import connectDB from '../config/db.js';
-import Department from '../modules/hr-core/users/models/department.model.js';
 
 dotenv.config();
 
-/**
- * Check and display all departments
- */
-const checkDepartments = async () => {
+// Import models
+async function checkDepartments() {
     try {
-        await connectDB();
-        console.log('✅ Connected to MongoDB\n');
-
-        const departments = await Department.find().populate('manager', 'username email');
-        console.log(`📊 Total departments: ${departments.length}\n`);
-
-        if (departments.length > 0) {
-            console.log('Departments:');
-            console.log('─'.repeat(60));
-            departments.forEach((dept, index) => {
-                const manager = dept.manager ? `${dept.manager.username}` : 'No manager';
-                console.log(`${index + 1}. ${dept.name} (${dept.code || 'N/A'}) - Manager: ${manager}`);
-            });
-            console.log('─'.repeat(60));
-        } else {
-            console.log('⚠️  No departments found in database!');
+        console.log('Connecting to database...');
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('✓ Connected to database\n');
+        
+        // Check if Department model exists
+        const collections = await mongoose.connection.db.listCollections().toArray();
+        const departmentCollection = collections.find(col => 
+            col.name === 'departments' || col.name === 'Department'
+        );
+        
+        console.log('Available collections:');
+        collections.forEach(col => {
+            console.log(`- ${col.name}`);
+        });
+        
+        if (!departmentCollection) {
+            console.log('\n❌ No departments collection found');
+            return;
         }
-
-        process.exit(0);
+        
+        console.log(`\n✓ Found departments collection: ${departmentCollection.name}`);
+        
+        // Get all departments
+        const Department = mongoose.model('Department', new mongoose.Schema({}, { strict: false }));
+        const departments = await Department.find({});
+        
+        console.log(`\nTotal departments in database: ${departments.length}`);
+        
+        if (departments.length === 0) {
+            console.log('❌ No departments found in database');
+        } else {
+            console.log('\nDepartments:');
+            departments.forEach((dept, index) => {
+                console.log(`${index + 1}. ${dept.name || 'Unnamed'}`);
+                console.log(`   - ID: ${dept._id}`);
+                console.log(`   - Tenant ID: ${dept.tenantId || 'Not set'}`);
+                console.log(`   - Status: ${dept.status || 'Not set'}`);
+                console.log(`   - Created: ${dept.createdAt || 'Not set'}`);
+                console.log('');
+            });
+        }
+        
+        // Check specifically for TechCorp departments
+        const techCorpTenantId = 'techcorp-solutions-d8f0689c';
+        const techCorpDepartments = await Department.find({ tenantId: techCorpTenantId });
+        
+        console.log(`\nTechCorp Solutions departments (${techCorpTenantId}): ${techCorpDepartments.length}`);
+        
+        if (techCorpDepartments.length === 0) {
+            console.log('❌ No departments found for TechCorp Solutions');
+            console.log('This explains why department data is not showing');
+        } else {
+            console.log('✓ TechCorp departments:');
+            techCorpDepartments.forEach((dept, index) => {
+                console.log(`${index + 1}. ${dept.name}`);
+            });
+        }
+        
     } catch (error) {
         console.error('❌ Error:', error.message);
-        process.exit(1);
+    } finally {
+        await mongoose.disconnect();
+        console.log('\n✓ Disconnected from database');
     }
-};
+}
 
 checkDepartments();

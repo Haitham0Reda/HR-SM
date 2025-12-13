@@ -18,29 +18,64 @@ export const getAllRoles = async (req, res) => {
     try {
         const { type, search } = req.query;
         
-        // Build query
-        let query = {};
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
+        
+        console.log('🔍 Fetching roles for tenant:', tenantId);
+        
+        // Build query with tenant filtering
+        let query = {
+            $or: [
+                { isSystemRole: true }, // System roles are available to all tenants
+                { tenantId: tenantId, isSystemRole: false } // Custom roles for this tenant only
+            ]
+        };
         
         // Filter by type (system/custom)
         if (type === 'system') {
-            query.isSystemRole = true;
+            query = { isSystemRole: true };
         } else if (type === 'custom') {
-            query.isSystemRole = false;
+            query = { tenantId: tenantId, isSystemRole: false };
         }
         
         // Search by name or description
         if (search) {
-            query.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { displayName: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } }
-            ];
+            const searchQuery = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { displayName: { $regex: search, $options: 'i' } },
+                    { description: { $regex: search, $options: 'i' } }
+                ]
+            };
+            
+            // Combine tenant filtering with search
+            if (type === 'system') {
+                query = { isSystemRole: true, ...searchQuery };
+            } else if (type === 'custom') {
+                query = { tenantId: tenantId, isSystemRole: false, ...searchQuery };
+            } else {
+                query = {
+                    $and: [
+                        {
+                            $or: [
+                                { isSystemRole: true },
+                                { tenantId: tenantId, isSystemRole: false }
+                            ]
+                        },
+                        searchQuery
+                    ]
+                };
+            }
         }
+        
+        console.log('📋 Role query:', JSON.stringify(query, null, 2));
         
         const roles = await Role.find(query)
             .populate('createdBy', 'username email')
             .populate('updatedBy', 'username email')
             .sort({ isSystemRole: -1, name: 1 });
+        
+        console.log(`✓ Found ${roles.length} roles for tenant ${tenantId}`);
         
         // Add permission count to each role
         const rolesWithCount = roles.map(role => ({
@@ -50,6 +85,7 @@ export const getAllRoles = async (req, res) => {
         
         res.status(200).json(rolesWithCount);
     } catch (err) {
+        console.error('❌ Error fetching roles:', err);
         logger.error('Error fetching roles:', err);
         res.status(500).json({ error: err.message });
     }
@@ -58,13 +94,30 @@ export const getAllRoles = async (req, res) => {
 // Get role by ID with full permission details
 export const getRoleById = async (req, res) => {
     try {
-        const role = await Role.findById(req.params.id)
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
+        
+        console.log('🔍 Fetching role by ID for tenant:', tenantId);
+        
+        // Build query with tenant filtering
+        const query = {
+            _id: req.params.id,
+            $or: [
+                { isSystemRole: true }, // System roles are available to all tenants
+                { tenantId: tenantId, isSystemRole: false } // Custom roles for this tenant only
+            ]
+        };
+        
+        const role = await Role.findOne(query)
             .populate('createdBy', 'username email')
             .populate('updatedBy', 'username email');
         
         if (!role) {
+            console.log(`❌ Role not found with ID ${req.params.id} for tenant ${tenantId}`);
             return res.status(404).json({ error: 'Role not found' });
         }
+        
+        console.log(`✓ Found role ${role.name} for tenant ${tenantId}`);
         
         // Log role view for audit trail
         await logRoleView(role, req.user, req);
@@ -77,6 +130,7 @@ export const getRoleById = async (req, res) => {
         
         res.status(200).json(roleData);
     } catch (err) {
+        console.error('❌ Error fetching role by ID:', err);
         logger.error('Error fetching role by ID:', err);
         res.status(500).json({ error: err.message });
     }
@@ -94,8 +148,13 @@ export const createRole = async (req, res) => {
             });
         }
         
-        // Check for duplicate name
-        const existingRole = await Role.findByName(name);
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
+        
+        console.log('👤 Creating role for tenant:', tenantId);
+        
+        // Check for duplicate name within tenant scope
+        const existingRole = await Role.findByName(name, tenantId);
         if (existingRole) {
             return res.status(409).json({ 
                 error: 'A role with this name already exists' 
@@ -118,16 +177,19 @@ export const createRole = async (req, res) => {
             }
         }
         
-        // Create role
+        // Create role with tenant context
         const role = new Role({
             name,
             displayName,
             description,
             permissions: permissions || [],
             isSystemRole: false,
+            tenantId: tenantId,
             createdBy: req.user._id,
             updatedBy: req.user._id
         });
+        
+        console.log('✓ Creating role with tenant ID:', tenantId);
         
         await role.save();
         
@@ -153,11 +215,28 @@ export const updateRole = async (req, res) => {
     try {
         const { displayName, description, permissions } = req.body;
         
-        const role = await Role.findById(req.params.id);
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
+        
+        console.log('✏️ Updating role for tenant:', tenantId);
+        
+        // Build query with tenant filtering
+        const query = {
+            _id: req.params.id,
+            $or: [
+                { isSystemRole: true }, // System roles are available to all tenants
+                { tenantId: tenantId, isSystemRole: false } // Custom roles for this tenant only
+            ]
+        };
+        
+        const role = await Role.findOne(query);
         
         if (!role) {
+            console.log(`❌ Role not found for update with ID ${req.params.id} for tenant ${tenantId}`);
             return res.status(404).json({ error: 'Role not found' });
         }
+        
+        console.log(`✓ Found role ${role.name} for update for tenant ${tenantId}`);
         
         // Prevent modification of system role core properties
         if (role.isSystemRole && req.body.name) {
@@ -227,11 +306,28 @@ export const updateRole = async (req, res) => {
 // Delete role with user assignment checking and system role protection
 export const deleteRole = async (req, res) => {
     try {
-        const role = await Role.findById(req.params.id);
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
+        
+        console.log('🗑️ Deleting role for tenant:', tenantId);
+        
+        // Build query with tenant filtering
+        const query = {
+            _id: req.params.id,
+            $or: [
+                { isSystemRole: true }, // System roles are available to all tenants
+                { tenantId: tenantId, isSystemRole: false } // Custom roles for this tenant only
+            ]
+        };
+        
+        const role = await Role.findOne(query);
         
         if (!role) {
+            console.log(`❌ Role not found for deletion with ID ${req.params.id} for tenant ${tenantId}`);
             return res.status(404).json({ error: 'Role not found' });
         }
+        
+        console.log(`✓ Found role ${role.name} for deletion for tenant ${tenantId}`);
         
         // Prevent deletion of system roles
         if (role.isSystemRole) {
@@ -240,8 +336,11 @@ export const deleteRole = async (req, res) => {
             });
         }
         
-        // Check if any users are assigned to this role
-        const usersWithRole = await User.countDocuments({ role: role.name });
+        // Check if any users are assigned to this role within the same tenant
+        const usersWithRole = await User.countDocuments({ 
+            role: role.name, 
+            tenantId: tenantId 
+        });
         
         if (usersWithRole > 0) {
             return res.status(400).json({ 
@@ -282,23 +381,42 @@ export const deleteRole = async (req, res) => {
 // Get role statistics for dashboard
 export const getRoleStats = async (req, res) => {
     try {
-        const totalRoles = await Role.countDocuments();
-        const systemRoles = await Role.countDocuments({ isSystemRole: true });
-        const customRoles = await Role.countDocuments({ isSystemRole: false });
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
         
-        // Get user counts per role
-        const roles = await Role.find({}, 'name displayName');
+        console.log('📊 Getting role stats for tenant:', tenantId);
+        
+        // Build tenant-aware queries
+        const tenantRoleQuery = {
+            $or: [
+                { isSystemRole: true }, // System roles are available to all tenants
+                { tenantId: tenantId, isSystemRole: false } // Custom roles for this tenant only
+            ]
+        };
+        
+        const totalRoles = await Role.countDocuments(tenantRoleQuery);
+        const systemRoles = await Role.countDocuments({ isSystemRole: true });
+        const customRoles = await Role.countDocuments({ tenantId: tenantId, isSystemRole: false });
+        
+        // Get user counts per role (tenant-scoped)
+        const roles = await Role.find(tenantRoleQuery, 'name displayName tenantId isSystemRole');
         const roleUserCounts = await Promise.all(
             roles.map(async (role) => {
-                const count = await User.countDocuments({ role: role.name });
+                const count = await User.countDocuments({ 
+                    role: role.name, 
+                    tenantId: tenantId 
+                });
                 return {
                     roleId: role._id,
                     roleName: role.name,
                     displayName: role.displayName,
-                    userCount: count
+                    userCount: count,
+                    isSystemRole: role.isSystemRole
                 };
             })
         );
+        
+        console.log(`✓ Role stats for tenant ${tenantId}: ${totalRoles} total, ${systemRoles} system, ${customRoles} custom`);
         
         res.status(200).json({
             totalRoles,
@@ -449,17 +567,40 @@ export const getRoleAuditStats = async (req, res) => {
 // Get user count for a specific role
 export const getRoleUserCount = async (req, res) => {
     try {
-        const role = await Role.findById(req.params.id);
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
+        
+        console.log('👥 Getting user count for role for tenant:', tenantId);
+        
+        // Build query with tenant filtering
+        const query = {
+            _id: req.params.id,
+            $or: [
+                { isSystemRole: true }, // System roles are available to all tenants
+                { tenantId: tenantId, isSystemRole: false } // Custom roles for this tenant only
+            ]
+        };
+        
+        const role = await Role.findOne(query);
         
         if (!role) {
+            console.log(`❌ Role not found for user count with ID ${req.params.id} for tenant ${tenantId}`);
             return res.status(404).json({ error: 'Role not found' });
         }
         
-        // Count users assigned to this role
-        const userCount = await User.countDocuments({ role: role.name });
+        console.log(`✓ Found role ${role.name} for user count for tenant ${tenantId}`);
         
-        // Get sample users (up to 5) for display
-        const sampleUsers = await User.find({ role: role.name })
+        // Count users assigned to this role within the same tenant
+        const userCount = await User.countDocuments({ 
+            role: role.name, 
+            tenantId: tenantId 
+        });
+        
+        // Get sample users (up to 5) for display within the same tenant
+        const sampleUsers = await User.find({ 
+            role: role.name, 
+            tenantId: tenantId 
+        })
             .select('username email personalInfo.fullName')
             .limit(5);
         

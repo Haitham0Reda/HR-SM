@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Box,
     Typography,
@@ -21,6 +22,7 @@ import forgetCheckService from '../../services/forgetCheck.service';
 
 const RequestsPage = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const [myRequests, setMyRequests] = useState([]);
     const [allRequests, setAllRequests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -291,7 +293,7 @@ const RequestsPage = () => {
                     <Button
                         variant="contained"
                         size="small"
-                        onClick={() => navigate(`/app/requests/${row._id}`)}
+                        onClick={() => navigate(getCompanyRoute(`/requests/${row._id}`))}
                     >
                         View
                     </Button>

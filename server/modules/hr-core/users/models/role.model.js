@@ -3,10 +3,18 @@ import mongoose from 'mongoose';
 import { validatePermissions } from '../../../../utils/permissionValidator.js';
 
 const roleSchema = new mongoose.Schema({
+    tenantId: {
+        type: String,
+        required: function() {
+            // tenantId is required for custom roles, but not for system roles
+            return !this.isSystemRole;
+        },
+        index: true,
+        trim: true
+    },
     name: {
         type: String,
         required: true,
-        unique: true,
         lowercase: true,
         trim: true,
         // System identifier (e.g., 'custom-manager', 'project-lead')
@@ -53,6 +61,17 @@ const roleSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+// Compound indexes for tenant isolation and performance
+roleSchema.index({ name: 1 }, { 
+    unique: true, 
+    partialFilterExpression: { isSystemRole: true } 
+}); // System roles are globally unique
+roleSchema.index({ tenantId: 1, name: 1 }, { 
+    unique: true, 
+    partialFilterExpression: { isSystemRole: false } 
+}); // Custom roles are unique per tenant
+roleSchema.index({ tenantId: 1, isSystemRole: 1 });
 
 // Instance Methods
 
@@ -102,9 +121,22 @@ roleSchema.methods.removePermissions = function(permissions) {
 
 // Static Methods
 
-// Find role by name
-roleSchema.statics.findByName = function(name) {
-    return this.findOne({ name: name.toLowerCase() });
+// Find role by name (tenant-aware)
+roleSchema.statics.findByName = function(name, tenantId = null) {
+    const query = { name: name.toLowerCase() };
+    
+    if (tenantId) {
+        // For tenant-specific search, look for both system roles and tenant roles
+        return this.findOne({
+            $or: [
+                { name: name.toLowerCase(), isSystemRole: true },
+                { name: name.toLowerCase(), tenantId: tenantId, isSystemRole: false }
+            ]
+        });
+    } else {
+        // For global search (backward compatibility)
+        return this.findOne(query);
+    }
 };
 
 // Get all system-defined roles

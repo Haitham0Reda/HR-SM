@@ -25,6 +25,7 @@ import Stack from '@mui/material/Stack';
 import { Link, useNavigate } from 'react-router-dom';
 import ThemeSwitcher from './ThemeSwitcher';
 import { useAuth } from '../contexts/AuthContext';
+import { useCompanyRouting } from '../hooks/useCompanyRouting';
 import { designTokens } from '../theme/designTokens';
 import { getUserProfilePicture, getUserInitials } from '../utils/profilePicture';
 // eslint-disable-next-line no-unused-vars
@@ -85,6 +86,7 @@ const LogoContainer = styled('div')({
 function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     const theme = useTheme();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { logout } = useAuth();
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
@@ -415,13 +417,13 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                     </Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
-                <MenuItem onClick={handleProfileClose} component={Link} to="/app/profile">
+                <MenuItem onClick={handleProfileClose} component={Link} to={getCompanyRoute("/profile")}>
                     <ListItemIcon>
                         <PersonIcon fontSize="small" />
                     </ListItemIcon>
                     <Typography variant="body2">Profile</Typography>
                 </MenuItem>
-                <MenuItem onClick={handleProfileClose} component={Link} to="/app/settings">
+                <MenuItem onClick={handleProfileClose} component={Link} to={getCompanyRoute("/settings")}>
                     <ListItemIcon>
                         <SettingsIcon fontSize="small" />
                     </ListItemIcon>
@@ -516,26 +518,26 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
 
                                     // Navigate to appropriate page based on type
                                     if (notifType === 'leave') {
-                                        navigate('/app/leaves');
+                                        navigate(getCompanyRoute('/leaves'));
                                     } else if (notifType === 'permission') {
-                                        navigate('/app/permissions');
+                                        navigate(getCompanyRoute('/permissions'));
                                     } else if (notifType === 'announcement') {
-                                        navigate('/app/announcements');
+                                        navigate(getCompanyRoute('/announcements'));
                                     } else if (notifType === 'event') {
-                                        navigate('/app/events');
+                                        navigate(getCompanyRoute('/events'));
                                     } else if (notifType === 'request' || notifType === 'request-control') {
                                         if (notification.relatedId) {
-                                            navigate(`/app/requests/${notification.relatedId}`);
+                                            navigate(getCompanyRoute(`/requests/${notification.relatedId}`));
                                         } else {
-                                            navigate('/app/requests');
+                                            navigate(getCompanyRoute('/requests'));
                                         }
                                     } else if (notifType === 'attendance') {
-                                        navigate('/app/attendance');
+                                        navigate(getCompanyRoute('/attendance'));
                                     } else if (notifType === 'payroll') {
-                                        navigate('/app/payroll');
+                                        navigate(getCompanyRoute('/payroll'));
                                     } else {
                                         // Default: navigate to requests list
-                                        navigate('/app/requests');
+                                        navigate(getCompanyRoute('/requests'));
                                     }
 
                                     // Refresh notifications after marking as read
@@ -606,7 +608,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                             size="small"
                             onClick={() => {
                                 handleNotificationClose();
-                                navigate('/app/requests');
+                                navigate(getCompanyRoute('/requests'));
                             }}
                             sx={{ fontSize: '0.8rem' }}
                         >

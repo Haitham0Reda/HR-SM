@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Box,
     TextField,
@@ -21,6 +22,7 @@ import api from '../../services/api';
 const ResetPassword = () => {
     const { token } = useParams();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
 
     const [formData, setFormData] = useState({
         password: '',

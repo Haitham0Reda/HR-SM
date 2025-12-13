@@ -13,6 +13,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [tenant, setTenant] = useState(null);
     const [loading, setLoading] = useState(true);
     const [tenantToken, setTenantToken] = useState(localStorage.getItem('tenant_token'));
     const [tenantId, setTenantId] = useState(localStorage.getItem('tenant_id'));
@@ -23,23 +24,55 @@ export const AuthProvider = ({ children }) => {
         // No need to manually set headers
     }, [tenantToken]);
 
-    // Load user on mount
+    // Load user and tenant info on mount
     useEffect(() => {
-        const loadUser = async () => {
+        const loadUserAndTenant = async () => {
             if (tenantToken && tenantId) {
                 try {
-                    const response = await api.get('/auth/me');
-                    setUser(response.data);
+                    // Load user info
+                    const userResponse = await api.get('/auth/me');
+                    setUser(userResponse.data);
+
+                    // Load tenant info for company name
+                    try {
+                        const tenantResponse = await api.get('/tenant/info');
+                        // Handle different response formats
+                        const tenantData = tenantResponse.data?.tenant || tenantResponse.data || tenantResponse;
+                        if (tenantData) {
+                            setTenant(tenantData);
+                        } else {
+                            throw new Error('No tenant data in response');
+                        }
+                    } catch (tenantError) {
+                        console.warn('Failed to load tenant info:', tenantError);
+                        // Set basic tenant info from user data
+                        setTenant({
+                            tenantId: tenantId,
+                            name: userResponse.data.company?.name || 'TechCorp Solutions'
+                        });
+                    }
                 } catch (error) {
                     console.error('Failed to load user:', error);
-                    // Clear local state without making API call
-                    clearAuthState();
+                    console.error('Error details:', {
+                        message: error.message,
+                        status: error.status,
+                        tenantToken: !!tenantToken,
+                        tenantId
+                    });
+                    // Clear auth state for authentication errors (401) or user not found (404)
+                    if (error.status === 401 || error.status === 404) {
+                        console.log(`${error.status} error - clearing auth state (invalid token or user not found)`);
+                        clearAuthState();
+                    } else {
+                        console.log('Non-auth error - keeping auth state but stopping loading');
+                        setLoading(false);
+                    }
                 }
             }
             setLoading(false);
         };
 
-        loadUser();
+        loadUserAndTenant();
     }, [tenantToken, tenantId]);
 
     const login = async (email, password, tenantIdInput) => {
@@ -50,15 +83,17 @@ export const AuthProvider = ({ children }) => {
                 tenantId: tenantIdInput
             });
 
-            const { user, token } = response.data;
+            // Handle backend response structure: { success: true, data: { user, token } }
+            const responseData = response.data || response;
+            const { user, token } = responseData.data || responseData;
 
             setUser(user);
             setTenantToken(token);
-            setTenantId(user.tenantId || tenantIdInput);
+            setTenantId(user?.tenantId || tenantIdInput);
             
             // Store Tenant JWT and tenant ID
             localStorage.setItem('tenant_token', token);
-            localStorage.setItem('tenant_id', user.tenantId || tenantIdInput);
+            localStorage.setItem('tenant_id', user?.tenantId || tenantIdInput);
             
             // Remove old token if exists
             localStorage.removeItem('token');
@@ -74,6 +109,7 @@ export const AuthProvider = ({ children }) => {
 
     const clearAuthState = () => {
         setUser(null);
+        setTenant(null);
         setTenantToken(null);
         setTenantId(null);
         localStorage.removeItem('tenant_token');
@@ -104,8 +140,15 @@ export const AuthProvider = ({ children }) => {
         setUser(updatedUserData);
     };
 
+    // Generate company slug from tenant info
+    const companySlug = tenant?.slug || 
+                       (tenant?.name ? tenant.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') : null) ||
+                       'techcorp_solutions'; // Default fallback
+
     const value = {
         user,
+        tenant,
+        companySlug,
         token: tenantToken, // Expose as 'token' for backward compatibility
         tenantToken,
         tenantId,

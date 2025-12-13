@@ -37,8 +37,12 @@ import {
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Security middleware with relaxed policies for development
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false, // Disable for development
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false // Disable CSP in development
+}));
 app.use(cors({
     origin: [
         process.env.CLIENT_URL || 'http://localhost:3000',
@@ -82,14 +86,57 @@ app.use(mongoSanitize());
 // Compression
 app.use(compression());
 
-// Static file serving for uploads with CORS headers
-app.use('/uploads', (req, res, next) => {
-    // Set CORS headers for static files
-    res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
-    res.header('Access-Control-Allow-Methods', 'GET');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+// CORS is now properly configured - test endpoint removed
+
+// Specific route for profile pictures with enhanced CORS
+app.get('/uploads/profile-pictures/*', (req, res, next) => {
+    // Set comprehensive CORS headers specifically for profile pictures
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+    res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    
+    // Log the request for debugging
+    console.log(`Profile picture request: ${req.path}, Origin: ${req.headers.origin || 'none'}`);
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+    
     next();
-}, express.static('uploads'));
+});
+
+// General static file serving for uploads with CORS headers
+app.use('/uploads', (req, res, next) => {
+    // Set comprehensive CORS headers for static files
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+    res.header('Access-Control-Allow-Credentials', 'false'); // Set to false when using wildcard origin
+    res.header('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
+    
+    // Additional headers to prevent caching issues
+    res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+    
+    next();
+}, express.static('uploads', {
+    // Additional express.static options
+    setHeaders: (res, path) => {
+        // Set additional headers for all static files
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.set('Access-Control-Allow-Origin', '*');
+    }
+}));
 
 // Namespace validation middleware (development mode only)
 if (process.env.NODE_ENV === 'development') {
@@ -98,6 +145,20 @@ if (process.env.NODE_ENV === 'development') {
 
 // Tenant context middleware (applies to tenant routes only, not platform routes)
 app.use(tenantContext);
+
+// Company logging middleware (basic setup)
+try {
+    const { setupCompanyLogging, logResponseCompletion, trackUserActivity } = await import('./middleware/companyLogging.js');
+    app.use(setupCompanyLogging);
+    app.use(logResponseCompletion);
+    
+    // Apply user activity tracking to all API routes (it will check for authentication internally)
+    app.use('/api', trackUserActivity);
+    
+    console.log('✓ Company logging middleware loaded');
+} catch (error) {
+    console.warn('⚠️  Company logging middleware not available:', error.message);
+}
 
 // Health check
 app.get('/health', (req, res) => {
@@ -152,7 +213,7 @@ export const initializeRoutes = async () => {
         app.use('/api/platform/subscriptions', subscriptionRoutes.default);
         
         // Module management
-        const moduleRoutes = await import('./platform/modules/routes/moduleRoutes.js');
+        const moduleRoutes = await import('./platform/routes/moduleRoutes.js');
         app.use('/api/platform/modules', moduleRoutes.default);
         
         // System health and metrics
@@ -225,6 +286,24 @@ export const initializeRoutes = async () => {
     // Tenant configuration routes
     const tenantRoutes = await import('./modules/hr-core/routes/tenantRoutes.js');
     app.use('/api/v1/tenant', tenantRoutes.default);
+
+    // Company logs routes (user activity tracking)
+    try {
+        const companyLogsRoutes = await import('./routes/companyLogs.js');
+        app.use('/api/company-logs', companyLogsRoutes.default);
+        console.log('✓ Company logs routes loaded (/api/company-logs/*)');
+    } catch (error) {
+        console.warn('⚠️  Company logs routes not available:', error.message);
+    }
+
+    // Company module routes (for HR applications to check module access)
+    try {
+        const companyModuleRoutes = await import('./routes/companyModuleRoutes.js');
+        app.use('/api/company', companyModuleRoutes.default);
+        console.log('✓ Company module routes loaded (/api/company/*)');
+    } catch (error) {
+        console.warn('⚠️  Company module routes not available:', error.message);
+    }
 
     // License Management (legacy - not yet moved)
     app.use('/api/v1/licenses', licenseRoutes);
