@@ -26,9 +26,11 @@ export const requireModuleLicense = (moduleKey) => {
             }
 
             // Extract tenant ID from various possible sources
-            const tenantId = req.tenant?.id ||
+            const tenantId = req.tenantId ||
+                req.tenant?.id ||
                 req.tenant?._id?.toString() ||
                 req.user?.tenant?.toString() ||
+                req.user?.tenantId ||
                 req.headers['x-tenant-id'] ||
                 req.query?.tenantId;
 

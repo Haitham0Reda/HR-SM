@@ -51,6 +51,7 @@ import {
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import userService from '../../services/user.service';
+import { getUserProfilePicture, getUserInitials } from '../../utils/profilePicture';
 import { useNotification } from '../../context/NotificationContext';
 import { generateUserCredentialPDF } from '../../components/users/UserCredentialPDF';
 
@@ -659,7 +660,7 @@ const UsersPage = () => {
                             >
                                 <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
                                     <Avatar
-                                        src={user.personalInfo?.profilePicture || user.profilePicture || user.avatar || user.photo}
+                                        src={getUserProfilePicture(user)}
                                         alt={user.personalInfo?.fullName || user.username}
                                         sx={{
                                             width: 80,

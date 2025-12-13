@@ -58,6 +58,7 @@ describe('Mission Model', () => {
   describe('Schema Validation', () => {
     it('should create a valid mission with required fields', async () => {
       const mission = new Mission({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         startDate: new Date('2025-12-01'),
         endDate: new Date('2025-12-05'),
@@ -105,6 +106,7 @@ describe('Mission Model', () => {
     describe('approve()', () => {
       it('should approve a mission', async () => {
         const mission = await Mission.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-05'),
@@ -126,6 +128,7 @@ describe('Mission Model', () => {
     describe('reject()', () => {
       it('should reject a mission with reason', async () => {
         const mission = await Mission.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-05'),
@@ -147,6 +150,7 @@ describe('Mission Model', () => {
     describe('cancel()', () => {
       it('should cancel a mission with reason', async () => {
         const mission = await Mission.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-05'),
@@ -172,6 +176,7 @@ describe('Mission Model', () => {
       it('should get all missions for an employee', async () => {
         await Mission.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             startDate: new Date('2025-12-01'),
             endDate: new Date('2025-12-05'),
@@ -181,6 +186,7 @@ describe('Mission Model', () => {
             department: testDepartment._id
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             startDate: new Date('2025-11-01'),
             endDate: new Date('2025-11-03'),
@@ -200,6 +206,7 @@ describe('Mission Model', () => {
       it('should get all pending missions', async () => {
         await Mission.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             startDate: new Date('2025-12-01'),
             endDate: new Date('2025-12-05'),
@@ -210,6 +217,7 @@ describe('Mission Model', () => {
             status: 'pending'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             startDate: new Date('2025-11-01'),
             endDate: new Date('2025-11-03'),
@@ -230,6 +238,7 @@ describe('Mission Model', () => {
     describe('hasOverlappingMission()', () => {
       it('should detect overlapping missions', async () => {
         await Mission.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-05'),
@@ -251,6 +260,7 @@ describe('Mission Model', () => {
 
       it('should not detect overlap for non-overlapping dates', async () => {
         await Mission.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-05'),

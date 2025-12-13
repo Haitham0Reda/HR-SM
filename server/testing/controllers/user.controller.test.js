@@ -20,6 +20,7 @@ describe('User Controller - All 7 Functions', () => {
     });
 
     testPosition = await Position.create({
+      tenantId: 'test_tenant_123',
       title: 'Developer',
       arabicTitle: 'مطور',
       code: 'DEV001',

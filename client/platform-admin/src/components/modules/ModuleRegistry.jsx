@@ -74,14 +74,14 @@ const ModuleRegistry = () => {
   return (
     <Grid container spacing={3}>
       {modules.length === 0 ? (
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Alert severity="info">
             No modules found in the registry.
           </Alert>
         </Grid>
       ) : (
         modules.map((module) => (
-          <Grid item xs={12} md={6} key={module.name}>
+          <Grid size={{ xs: 12, md: 6 }} key={module.name}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>

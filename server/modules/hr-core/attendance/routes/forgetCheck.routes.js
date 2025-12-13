@@ -8,29 +8,33 @@ import {
     approveForgetCheck,
     rejectForgetCheck
 } from '../controllers/forgetCheck.controller.js';
-import { protect, checkActive } from '../middleware/index.js';
+import { requireAuth, requireRole } from '../../../../shared/middleware/auth.js';
+import { ROLES } from '../../../../shared/constants/modules.js';
 
 const router = express.Router();
 
-// Get all forget check requests
-router.get('/', protect, getAllForgetChecks);
+// Apply authentication to all routes
+router.use(requireAuth);
 
-// Create forget check request
-router.post('/', protect, checkActive, createForgetCheck);
+// Get all forget check requests - All authenticated users can view
+router.get('/', getAllForgetChecks);
 
-// Approve forget check request
-router.post('/:id/approve', protect, approveForgetCheck);
+// Create forget check request - All authenticated users can create
+router.post('/', createForgetCheck);
 
-// Reject forget check request
-router.post('/:id/reject', protect, rejectForgetCheck);
+// Approve forget check request - HR/Admin only
+router.post('/:id/approve', requireRole([ROLES.ADMIN, ROLES.HR]), approveForgetCheck);
 
-// Get forget check by ID
-router.get('/:id', protect, getForgetCheckById);
+// Reject forget check request - HR/Admin only
+router.post('/:id/reject', requireRole([ROLES.ADMIN, ROLES.HR]), rejectForgetCheck);
 
-// Update forget check
-router.put('/:id', protect, updateForgetCheck);
+// Get forget check by ID - All authenticated users
+router.get('/:id', getForgetCheckById);
 
-// Delete forget check
-router.delete('/:id', protect, deleteForgetCheck);
+// Update forget check - All authenticated users can update their own
+router.put('/:id', updateForgetCheck);
+
+// Delete forget check - All authenticated users can delete their own
+router.delete('/:id', deleteForgetCheck);
 
 export default router;

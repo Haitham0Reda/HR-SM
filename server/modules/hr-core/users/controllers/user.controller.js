@@ -255,19 +255,19 @@ export const updateUserProfile = async (req, res) => {
 
         const userId = req.user._id;
 
-        // Build the update object - profilePicture should be inside profile
+        // Build the update object - profilePicture should be inside personalInfo
         const allowedUpdates = {};
 
-        if (req.body.profile) {
-            allowedUpdates.profile = req.body.profile;
+        if (req.body.personalInfo) {
+            allowedUpdates.personalInfo = req.body.personalInfo;
         }
 
-        // If profilePicture is sent separately, add it to profile
+        // If profilePicture is sent separately, add it to personalInfo
         if (req.body.profilePicture) {
-            if (!allowedUpdates.profile) {
-                allowedUpdates.profile = {};
+            if (!allowedUpdates.personalInfo) {
+                allowedUpdates.personalInfo = {};
             }
-            allowedUpdates.profile.profilePicture = req.body.profilePicture;
+            allowedUpdates.personalInfo.profilePicture = req.body.profilePicture;
         }
 
         const user = await User.findByIdAndUpdate(userId, allowedUpdates, { new: true, runValidators: true })
@@ -275,11 +275,54 @@ export const updateUserProfile = async (req, res) => {
 
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        console.log('Profile updated successfully:', user.profile?.profilePicture);
+        console.log('Profile updated successfully:', user.personalInfo?.profilePicture);
         res.json(sanitizeUser(user));
     } catch (err) {
         console.error('Error in updateUserProfile:', err);
         res.status(400).json({ error: err.message });
+    }
+};
+
+// Upload profile picture
+export const uploadProfilePicture = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const currentUserId = req.user._id.toString();
+        
+        // Check if user can upload (own profile or admin)
+        if (userId !== currentUserId && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Not authorized to upload profile picture for this user' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // Create the profile picture URL
+        const profilePictureUrl = `/uploads/profile-pictures/${req.file.filename}`;
+
+        // Update user's profile picture
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { 
+                'personalInfo.profilePicture': profilePictureUrl 
+            },
+            { new: true, runValidators: true }
+        ).populate('department position');
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        console.log('Profile picture uploaded successfully:', profilePictureUrl);
+        res.json({
+            message: 'Profile picture uploaded successfully',
+            profilePicture: profilePictureUrl,
+            user: sanitizeUser(user)
+        });
+    } catch (err) {
+        console.error('Error uploading profile picture:', err);
+        res.status(500).json({ error: 'Failed to upload profile picture' });
     }
 };
 

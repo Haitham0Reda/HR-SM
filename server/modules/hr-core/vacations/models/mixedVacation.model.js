@@ -204,10 +204,10 @@ mixedVacationSchema.methods.calculatePersonalDays = function () {
 };
 
 // Method to detect official holidays in date range
-mixedVacationSchema.methods.detectOfficialHolidays = async function (locationId) {
+mixedVacationSchema.methods.detectOfficialHolidays = async function (tenantId) {
     const Holiday = mongoose.model('Holiday');
 
-    const holidaySettings = await Holiday.getOrCreateForlocation(locationId);
+    const holidaySettings = await Holiday.getOrCreateForTenant(tenantId);
 
     const holidays = holidaySettings.officialHolidays.filter(h => {
         const holidayDate = new Date(h.date);

@@ -6,38 +6,24 @@ import {
     updateDepartment,
     deleteDepartment
 } from '../controllers/department.controller.js';
-import {
-    protect,
-    admin,
-    checkDepartmentCodeUnique,
-    validateManager
-} from '../../../../middleware/index.js';
+import { requireAuth, requireRole } from '../../../../shared/middleware/auth.js';
+import { ROLES } from '../../../../shared/constants/modules.js';
 
 const router = express.Router();
 
 // Get all departments - All authenticated users can view
-router.get('/', protect, getAllDepartments);
+router.get('/', requireAuth, getAllDepartments);
 
-// Create department - Admin only with validation
-router.post('/',
-    protect,
-    admin,
-    validateManager,
-    createDepartment
-);
+// Create department - Admin only
+router.post('/', requireAuth, requireRole(ROLES.ADMIN), createDepartment);
 
 // Get department by ID - All authenticated users
-router.get('/:id', protect, getDepartmentById);
+router.get('/:id', requireAuth, getDepartmentById);
 
-// Update department - Admin only with validation
-router.put('/:id',
-    protect,
-    admin,
-    validateManager,
-    updateDepartment
-);
+// Update department - Admin only
+router.put('/:id', requireAuth, requireRole(ROLES.ADMIN), updateDepartment);
 
 // Delete department - Admin only
-router.delete('/:id', protect, admin, deleteDepartment);
+router.delete('/:id', requireAuth, requireRole(ROLES.ADMIN), deleteDepartment);
 
 export default router;

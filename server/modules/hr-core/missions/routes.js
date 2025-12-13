@@ -8,40 +8,33 @@ import {
     approveMission,
     rejectMission
 } from './controllers/mission.controller.js';
-import { protect, checkActive } from '../../../middleware/index.js';
-import upload from '../../../config/multer.config.js';
-import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../../../platform/system/models/license.model.js';
+import { requireAuth, requireRole } from '../../../shared/middleware/auth.js';
+import { ROLES } from '../../../shared/constants/modules.js';
 
 const router = express.Router();
 
-// Apply license validation to all mission routes
-router.use(requireModuleLicense(MODULES.LEAVE));
+// Apply authentication to all routes
+router.use(requireAuth);
 
-// Get all missions - protected route
-router.get('/', protect, getAllMissions);
+// Get all missions - All authenticated users can view
+router.get('/', getAllMissions);
 
-// Create mission - with authentication and file upload support
-router.post('/',
-    protect,
-    checkActive,
-    upload.array('attachments', 5), // Allow up to 5 attachments
-    createMission
-);
+// Create mission - All authenticated users can create
+router.post('/', createMission);
 
-// Approve mission
-router.post('/:id/approve', protect, approveMission);
+// Approve mission - HR/Admin only
+router.post('/:id/approve', requireRole([ROLES.ADMIN, ROLES.HR]), approveMission);
 
-// Reject mission
-router.post('/:id/reject', protect, rejectMission);
+// Reject mission - HR/Admin only
+router.post('/:id/reject', requireRole([ROLES.ADMIN, ROLES.HR]), rejectMission);
 
-// Get mission by ID
-router.get('/:id', protect, getMissionById);
+// Get mission by ID - All authenticated users
+router.get('/:id', getMissionById);
 
-// Update mission
-router.put('/:id', protect, updateMission);
+// Update mission - All authenticated users can update their own
+router.put('/:id', updateMission);
 
-// Delete mission
-router.delete('/:id', protect, deleteMission);
+// Delete mission - All authenticated users can delete their own
+router.delete('/:id', deleteMission);
 
 export default router;

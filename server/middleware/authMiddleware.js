@@ -70,6 +70,9 @@ export const protect = async (req, res, next) => {
                             enabledModules: tenant.enabledModules || [],
                             config: tenant.config || {}
                         };
+                        
+                        // Also set tenantId directly for backward compatibility
+                        req.tenantId = tenant.tenantId;
                     }
                 } catch (error) {
                     // Tenant model might not exist yet, continue without tenant check
@@ -85,6 +88,15 @@ export const protect = async (req, res, next) => {
                 });
                 return res.status(401).json({ message: 'User not found' });
             }
+
+            // Ensure tenantId is always set for license validation
+            if (!req.tenantId && decoded.tenantId) {
+                req.tenantId = decoded.tenantId;
+            }
+            if (!req.tenantId && req.user.tenantId) {
+                req.tenantId = req.user.tenantId;
+            }
+
             next();
         } catch (error) {
             if (error.name === 'TokenExpiredError') {

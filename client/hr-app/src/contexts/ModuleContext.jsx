@@ -6,13 +6,10 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from './AuthContext';
 
 const ModuleContext = createContext(null);
-
-// API Base URL - Tenant API namespace
-const TENANT_API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
 
 export const useModules = () => {
     const context = useContext(ModuleContext);
@@ -23,7 +20,7 @@ export const useModules = () => {
 };
 
 export const ModuleProvider = ({ children }) => {
-    const { user, isAuthenticated, tenantId } = useAuth();
+    const { isAuthenticated, tenantId } = useAuth();
     const [enabledModules, setEnabledModules] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -42,16 +39,35 @@ export const ModuleProvider = ({ children }) => {
                 setError(null);
 
                 // Fetch tenant configuration to get enabled modules
-                const response = await axios.get(`${TENANT_API_BASE}/tenant/config`);
+                const response = await api.get('/tenant/config');
                 
-                const modules = response.data?.data?.enabledModules || [];
-                setEnabledModules(modules);
+                // Extract enabled modules from the config
+                const config = response.data || response;
+                const enabledModulesList = [];
+                
+                if (config.modules) {
+                    // Handle Map format from MongoDB
+                    if (typeof config.modules === 'object') {
+                        Object.entries(config.modules).forEach(([moduleId, moduleConfig]) => {
+                            if (moduleConfig.enabled) {
+                                enabledModulesList.push(moduleId);
+                            }
+                        });
+                    }
+                }
+                
+                setEnabledModules(enabledModulesList);
             } catch (err) {
                 console.error('Failed to fetch enabled modules:', err);
-                setError(err.message || 'Failed to load modules');
                 
-                // Default to HR-Core only if fetch fails
-                setEnabledModules(['hr-core']);
+                // In development, provide default enabled modules
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('Using default module configuration for development');
+                    setEnabledModules(['hr-core', 'tasks']);
+                } else {
+                    setError(err.message || 'Failed to load modules');
+                    setEnabledModules(['hr-core']);
+                }
             } finally {
                 setLoading(false);
             }

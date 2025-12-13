@@ -7,11 +7,10 @@ import * as mixedVacationController from '../../modules/hr-core/vacations/contro
 import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('MixedVacation Controller - All 14 Functions', () => {
-    let mockReq, mockRes, testorganization, testUser;
+    let mockReq, mockRes, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
-        testUser = await createTestUser(testorganization._id, null, null);
+        testUser = await createTestUser(null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

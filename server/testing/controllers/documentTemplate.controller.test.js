@@ -6,12 +6,11 @@ import DocumentTemplate from '../../modules/documents/models/documentTemplate.mo
 import * as documentTemplateController from '../../modules/documents/controllers/documentTemplate.controller.js';
 import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
-describe('DocumentTemplate Controller - All 5 Functions', () => {
-    let mockReq, mockRes, testorganization, testUser;
+describe('DocumentTemplate Controller - All 6 Functions', () => {
+    let mockReq, mockRes, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
-        testUser = await createTestUser(testorganization._id, null, null);
+        testUser = await createTestUser(null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

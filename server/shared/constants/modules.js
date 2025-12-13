@@ -62,10 +62,10 @@ export const MODULE_METADATA = {
 };
 
 export const ROLES = {
-    ADMIN: 'Admin',
-    HR: 'HR',
-    MANAGER: 'Manager',
-    EMPLOYEE: 'Employee'
+    ADMIN: 'admin',
+    HR: 'hr',
+    MANAGER: 'manager',
+    EMPLOYEE: 'employee'
 };
 
 export const ROLE_HIERARCHY = {

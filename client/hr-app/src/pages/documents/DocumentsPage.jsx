@@ -289,7 +289,7 @@ const DocumentsPage = () => {
             ) : (
                 <Grid container spacing={3}>
                     {documents.map((doc) => (
-                        <Grid item xs={12} sm={6} md={4} lg={3} key={doc._id}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={doc._id}>
                             <Card
                                 elevation={0}
                                 sx={{

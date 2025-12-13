@@ -155,7 +155,7 @@ const FormPageExample = () => {
       description: 'Basic information about the user',
       content: (
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="First Name"
@@ -166,7 +166,7 @@ const FormPageExample = () => {
               required
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="Last Name"
@@ -177,7 +177,7 @@ const FormPageExample = () => {
               required
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="Email"
@@ -189,7 +189,7 @@ const FormPageExample = () => {
               required
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="Phone"
@@ -207,7 +207,7 @@ const FormPageExample = () => {
       description: 'Employment details and role assignment',
       content: (
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth error={!!errors.role} required>
               <InputLabel>Role</InputLabel>
               <Select
@@ -223,7 +223,7 @@ const FormPageExample = () => {
               {errors.role && <FormHelperText>{errors.role}</FormHelperText>}
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth error={!!errors.department} required>
               <InputLabel>Department</InputLabel>
               <Select
@@ -239,7 +239,7 @@ const FormPageExample = () => {
               {errors.department && <FormHelperText>{errors.department}</FormHelperText>}
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="Start Date"
@@ -249,7 +249,7 @@ const FormPageExample = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <FormControlLabel
               control={
                 <Switch
@@ -268,7 +268,7 @@ const FormPageExample = () => {
       description: 'Optional details about the user',
       content: (
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <TextField
               fullWidth
               label="Bio"
@@ -279,7 +279,7 @@ const FormPageExample = () => {
               helperText="Brief description about the user"
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Box>
               <InputLabel sx={{ marginBottom: 1 }}>Skills</InputLabel>
               <Stack direction="row" spacing={1} flexWrap="wrap">

@@ -2,6 +2,11 @@
 import mongoose from 'mongoose';
 
 const vacationSchema = new mongoose.Schema({
+  tenantId: {
+    type: String,
+    required: true,
+    index: true
+  },
   employee: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

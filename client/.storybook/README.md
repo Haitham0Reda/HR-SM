@@ -1,16 +1,39 @@
-# Storybook for Unified Design System
+# Storybook for HR Management Platform
 
-This Storybook instance showcases all components from the Unified Design System.
+This Storybook instance showcases all components from both the HR Application and Platform Administration interfaces, providing a unified design system and component library.
 
 ## Running Storybook
 
-To start Storybook in development mode:
+To start Storybook in development mode from the root:
+
+```bash
+npm run client
+# or
+npm run dev
+```
+
+Or from the client directory:
 
 ```bash
 npm run storybook
 ```
 
 This will start Storybook on `http://localhost:6006`
+
+## Applications Included
+
+### HR Application (`hr-app`)
+- Employee management components
+- Dashboard widgets and templates
+- Form components and validation
+- License management components
+- Common UI components (buttons, cards, tables)
+
+### Platform Administration (`platform-admin`)
+- Multi-tenant management components
+- Company administration interfaces
+- Platform-level configuration components
+- Modern theme system with gradient support
 
 ## Building Storybook
 

@@ -41,12 +41,19 @@ const createPlaceholderRouter = (routeName) => {
     return router;
 };
 
+// Import real routes
+import notificationRoutesImport from './notificationRoutes.js';
+import dashboardRoutesImport from './dashboardRoutes.js';
+
+// Export real routes
+export const notificationRoutes = notificationRoutesImport;
+export const dashboardRoutes = dashboardRoutesImport;
+
 // Legacy routes that don't exist yet - use placeholder routers
 export const featureFlagRoutes = createPlaceholderRouter('Feature Flag');
 export const documentRoutes = createPlaceholderRouter('Document');
 export const documentTemplateRoutes = createPlaceholderRouter('Document Template');
 export const eventRoutes = createPlaceholderRouter('Event');
-export const notificationRoutes = createPlaceholderRouter('Notification');
 export const payrollRoutes = createPlaceholderRouter('Payroll');
 export const reportRoutes = createPlaceholderRouter('Report');
 export const surveyRoutes = createPlaceholderRouter('Survey');
@@ -55,4 +62,3 @@ import themeRoutesImport from '../modules/theme/routes/theme.routes.js';
 export const themeRoutes = themeRoutesImport;
 export const analyticsRoutes = createPlaceholderRouter('Analytics');
 export const announcementRoutes = createPlaceholderRouter('Announcement');
-export const dashboardRoutes = createPlaceholderRouter('Dashboard');

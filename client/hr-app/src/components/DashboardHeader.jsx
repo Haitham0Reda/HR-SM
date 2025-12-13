@@ -26,6 +26,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import ThemeSwitcher from './ThemeSwitcher';
 import { useAuth } from '../contexts/AuthContext';
 import { designTokens } from '../theme/designTokens';
+import { getUserProfilePicture, getUserInitials } from '../utils/profilePicture';
 // eslint-disable-next-line no-unused-vars
 import announcementService from '../services/announcement.service';
 // eslint-disable-next-line no-unused-vars
@@ -317,7 +318,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 }}
                             >
                                 <Avatar
-                                    src={user?.personalInfo?.profilePicture || user?.profilePicture || user?.profile?.profilePicture}
+                                    src={getUserProfilePicture(user)}
                                     alt={user?.personalInfo?.fullName || user?.name || user?.username || 'User'}
                                     sx={{
                                         width: 36,
@@ -331,11 +332,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                         },
                                     }}
                                 >
-                                    {
-                                        !(user?.personalInfo?.profilePicture || user?.profilePicture || user?.profile?.profilePicture) && (user?.personalInfo?.fullName || user?.name || user?.username)
-                                            ? (user?.personalInfo?.fullName || user?.name || user?.username).charAt(0).toUpperCase()
-                                            : !user?.personalInfo?.profilePicture && !user?.profilePicture && !user?.profile?.profilePicture && <PersonIcon />
-                                    }
+                                    {!getUserProfilePicture(user) && getUserInitials(user)}
                                 </Avatar >
                             </IconButton >
                         </Tooltip >

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const LicenseContext = createContext(null);
@@ -34,8 +34,8 @@ export const LicenseProvider = ({ children }) => {
             setError(null);
 
             // Fetch license information
-            const licenseResponse = await axios.get(`/api/v1/licenses/${user.tenantId}`);
-            const licenseData = licenseResponse.data.data;
+            const licenseResponse = await api.get(`/licenses/${user.tenantId}`);
+            const licenseData = licenseResponse.data;
 
             // Transform license data into a map for easy lookup
             const licenseMap = {};
@@ -57,8 +57,8 @@ export const LicenseProvider = ({ children }) => {
 
             // Fetch usage data
             try {
-                const usageResponse = await axios.get(`/api/v1/licenses/${user.tenantId}/usage`);
-                const usageData = usageResponse.data.data;
+                const usageResponse = await api.get(`/licenses/${user.tenantId}/usage`);
+                const usageData = usageResponse.data;
 
                 // Transform usage data into a map
                 const usageMap = {};
@@ -100,7 +100,31 @@ export const LicenseProvider = ({ children }) => {
 
         } catch (err) {
             console.error('Failed to load license data:', err);
-            setError(err.response?.data?.message || 'Failed to load license information');
+            
+            // In development, provide default license configuration
+            if (process.env.NODE_ENV === 'development') {
+                console.warn('Using default license configuration for development');
+                const defaultLicenses = {
+                    'hr-core': {
+                        enabled: true,
+                        tier: 'premium',
+                        limits: {},
+                        status: 'active',
+                        billingCycle: 'monthly'
+                    },
+                    'tasks': {
+                        enabled: true,
+                        tier: 'premium', 
+                        limits: {},
+                        status: 'active',
+                        billingCycle: 'monthly'
+                    }
+                };
+                setLicenses(defaultLicenses);
+                setUsage({});
+            } else {
+                setError(err.response?.data?.message || 'Failed to load license information');
+            }
         } finally {
             setLoading(false);
         }

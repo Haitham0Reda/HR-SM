@@ -144,14 +144,7 @@ export const DataGridItem = ({
   };
 
   return (
-    <Grid
-      item
-      {...getSizeProps()}
-      sx={{
-        display: 'flex',
-        ...sx
-      }}
-    >
+    <Grid size={getSizeProps()} sx={{ display: 'flex', ...sx }}>
       {children}
     </Grid>
   );

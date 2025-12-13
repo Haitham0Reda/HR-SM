@@ -71,8 +71,8 @@ export const validateManager = async (req, res, next) => {
 export const validateorganization = async (req, res, next) => {
     try {
         if (req.body.organization) {
-            const organization = mongoose.model('organization');
-            const organization = await organization.findById(req.body.organization);
+            const OrganizationModel = mongoose.model('organization');
+            const organization = await OrganizationModel.findById(req.body.organization);
 
             if (!organization) {
                 return res.status(404).json({

@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import SystemHealth from '../components/system/SystemHealth';
 import UsageMetrics from '../components/system/UsageMetrics';
+import ThemeSettings from '../components/theme/ThemeSettings';
 
 const TabPanel = ({ children, value, index }) => {
   return (
@@ -28,6 +29,7 @@ const SystemPage = () => {
       <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ mb: 2 }}>
         <Tab label="System Health" />
         <Tab label="Usage Metrics" />
+        <Tab label="Theme Settings" />
       </Tabs>
 
       <TabPanel value={tabValue} index={0}>
@@ -36,6 +38,10 @@ const SystemPage = () => {
 
       <TabPanel value={tabValue} index={1}>
         <UsageMetrics />
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={2}>
+        <ThemeSettings />
       </TabPanel>
     </Box>
   );

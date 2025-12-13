@@ -6,29 +6,21 @@ import Department from '../../modules/hr-core/users/models/department.model.js';
 
 let user;
 let department;
-// organization variable removed
 beforeAll(async () => {
-  // Create organization first
-  organization = await organization.create({
-    organizationCode: 'ENG',
-    name: 'organization of Engineering',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
-
   // Create required references
   department = await Department.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     name: 'Test Department',
-    code: 'TEST': organization._id
+    code: 'TEST'
   });
 
   user = await User.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'admin',
-    employeeId: 'EMP001': organization._id
+    employeeId: 'EMP001'
   });
 });
 
@@ -169,7 +161,7 @@ describe('IDCardBatch Model', () => {
       email: 'employee1@example.com',
       password: 'password123',
       role: 'employee',
-      employeeId: 'EMP002': organization._id
+      employeeId: 'EMP002'
     });
 
     const updatedBatch = await batch.addFailure(

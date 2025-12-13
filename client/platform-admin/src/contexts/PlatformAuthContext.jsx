@@ -28,9 +28,16 @@ export const PlatformAuthProvider = ({ children }) => {
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        // Clear invalid token
-        ls.remove('platformToken');
-        delete platformApi.defaults.headers.common['Authorization'];
+        
+        // Handle rate limiting gracefully
+        if (error.response?.status === 429) {
+          console.warn('Rate limited during auth check - will retry later');
+          // Don't clear token on rate limit, just set loading to false
+        } else {
+          // Clear invalid token for other errors
+          ls.remove('platformToken');
+          delete platformApi.defaults.headers.common['Authorization'];
+        }
       } finally {
         setLoading(false);
       }
@@ -63,9 +70,17 @@ export const PlatformAuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Login failed:', error);
+      
+      let errorMessage = 'Login failed';
+      if (error.response?.status === 429) {
+        errorMessage = 'Too many login attempts. Please wait a moment and try again.';
+      } else {
+        errorMessage = error.response?.data?.error?.message || error.response?.data?.message || 'Login failed';
+      }
+      
       return {
         success: false,
-        error: error.response?.data?.error?.message || error.response?.data?.message || 'Login failed',
+        error: errorMessage,
       };
     }
   };

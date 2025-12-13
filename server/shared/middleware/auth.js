@@ -14,6 +14,7 @@ export const requireAuth = async (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
+        req.tenantId = decoded.tenantId; // Set tenantId for tenant-scoped operations
 
         next();
     } catch (error) {

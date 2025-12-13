@@ -71,7 +71,7 @@ const DetailPageExample = () => {
       icon: <PersonIcon />,
       content: (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -95,7 +95,7 @@ const DetailPageExample = () => {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -140,7 +140,7 @@ const DetailPageExample = () => {
           </Typography>
           <Grid container spacing={2}>
             {user.projects.map((project, index) => (
-              <Grid item xs={12} md={6} key={index}>
+              <Grid size={{ xs: 12, md: 6 }} key={index}>
                 <Card>
                   <CardContent>
                     <Stack direction="row" justifyContent="space-between" alignItems="center">

@@ -40,6 +40,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';
 import Loading from '../../components/common/Loading';
 import { userService, dashboardService } from '../../services';
+import { getUserProfilePicture, getUserInitials } from '../../utils/profilePicture';
 
 const DashboardEditPage = () => {
     const navigate = useNavigate();
@@ -81,7 +82,18 @@ const DashboardEditPage = () => {
             // Fetch existing dashboard configuration from API
             const dashboardConfig = await dashboardService.getConfig();
             if (dashboardConfig) {
-                setConfig(dashboardConfig);
+                // Ensure monthDate and selectedEmployee are properly initialized
+                const configWithDate = {
+                    ...dashboardConfig,
+                    employeeOfTheMonth: {
+                        ...dashboardConfig.employeeOfTheMonth,
+                        monthDate: dashboardConfig.employeeOfTheMonth.monthDate 
+                            ? new Date(dashboardConfig.employeeOfTheMonth.monthDate)
+                            : new Date(), // Default to current date if not provided
+                        selectedEmployee: dashboardConfig.employeeOfTheMonth.selectedEmployee || null
+                    }
+                };
+                setConfig(configWithDate);
             }
         } catch (error) {
             showError('Failed to load dashboard configuration');
@@ -237,7 +249,7 @@ const DashboardEditPage = () => {
                                             getOptionLabel={(option) =>
                                                 `${option.personalInfo?.fullName || option.username} (${option.username})`.trim()
                                             }
-                                            value={config.employeeOfTheMonth.selectedEmployee}
+                                            value={config.employeeOfTheMonth.selectedEmployee || null}
                                             onChange={handleEmployeeSelect}
                                             renderInput={(params) => (
                                                 <TextField
@@ -246,24 +258,27 @@ const DashboardEditPage = () => {
                                                     helperText="Choose the employee of the month"
                                                 />
                                             )}
-                                            renderOption={(props, option) => (
-                                                <Box component="li" {...props}>
-                                                    <Avatar
-                                                        src={option.profile?.profilePicture}
-                                                        sx={{ mr: 2, width: 32, height: 32 }}
-                                                    >
-                                                        {option.personalInfo?.fullName?.charAt(0) || option.username?.charAt(0)}
-                                                    </Avatar>
-                                                    <Box>
-                                                        <Typography variant="body2">
-                                                            {option.personalInfo?.fullName || option.username}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            {option.username} - {option.employeeId}
-                                                        </Typography>
+                                            renderOption={(props, option) => {
+                                                const { key, ...otherProps } = props;
+                                                return (
+                                                    <Box component="li" key={key} {...otherProps}>
+                                                        <Avatar
+                                                            src={getUserProfilePicture(option)}
+                                                            sx={{ mr: 2, width: 32, height: 32 }}
+                                                        >
+                                                            {option.personalInfo?.fullName?.charAt(0) || option.username?.charAt(0)}
+                                                        </Avatar>
+                                                        <Box>
+                                                            <Typography variant="body2">
+                                                                {option.personalInfo?.fullName || option.username}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {option.username} - {option.employeeId}
+                                                            </Typography>
+                                                        </Box>
                                                     </Box>
-                                                </Box>
-                                            )}
+                                                );
+                                            }}
                                         />
                                     </Grid>
 
@@ -273,7 +288,7 @@ const DashboardEditPage = () => {
                                                 <CardContent>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                                         <Avatar
-                                                            src={config.employeeOfTheMonth.selectedEmployee.personalInfo?.profilePicture}
+                                                            src={getUserProfilePicture(config.employeeOfTheMonth.selectedEmployee)}
                                                             sx={{ width: 64, height: 64 }}
                                                         >
                                                             {config.employeeOfTheMonth.selectedEmployee.personalInfo?.fullName?.charAt(0) || config.employeeOfTheMonth.selectedEmployee.username?.charAt(0)}

@@ -67,7 +67,7 @@ export const register = async (req, res) => {
             password,
             firstName,
             lastName,
-            role: role || 'Employee',
+            role: role || 'employee',
             tenantId
         });
 
@@ -184,8 +184,7 @@ export const getCurrentUser = async (req, res) => {
             tenantId: req.tenantId
         })
             .populate('department', 'name code')
-            .populate('position', 'title level')
-            .populate('manager', 'firstName lastName email');
+            .populate('position', 'title level');
 
         if (!user) {
             return res.status(404).json({
@@ -209,25 +208,29 @@ export const getCurrentUser = async (req, res) => {
 // Logout (client-side token removal, but log the action)
 export const logout = async (req, res) => {
     try {
-        await AuditLog.create({
-            action: 'logout',
-            resource: 'User',
-            resourceId: req.user.id,
-            userId: req.user.id,
-            tenantId: req.tenantId,
-            status: 'success',
-            ipAddress: req.ip,
-            userAgent: req.headers['user-agent']
-        });
+        // Only create audit log if user is properly authenticated
+        if (req.user && req.user.id && req.tenantId) {
+            await AuditLog.create({
+                action: 'logout',
+                resource: 'User',
+                resourceId: req.user.id,
+                userId: req.user.id,
+                tenantId: req.tenantId,
+                status: 'success',
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent']
+            });
+        }
 
         res.json({
             success: true,
             message: 'Logged out successfully'
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
+        // Even if audit logging fails, logout should succeed
+        res.json({
+            success: true,
+            message: 'Logged out successfully'
         });
     }
 };

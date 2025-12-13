@@ -51,6 +51,7 @@ describe('Vacation Model', () => {
   describe('Schema Validation', () => {
     it('should create a valid vacation with required fields', async () => {
       const vacation = new Vacation({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         vacationType: 'annual',
         startDate: new Date('2025-12-01'),
@@ -139,6 +140,7 @@ describe('Vacation Model', () => {
 
       for (const type of types) {
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: type,
           startDate: new Date('2025-12-01'),
@@ -175,6 +177,7 @@ describe('Vacation Model', () => {
     it('should validate reason max length', async () => {
       const longReason = 'a'.repeat(501);
       const vacation = new Vacation({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         vacationType: 'annual',
         startDate: new Date('2025-12-01'),
@@ -201,6 +204,7 @@ describe('Vacation Model', () => {
     describe('approve()', () => {
       it('should approve a vacation', async () => {
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: new Date('2025-12-01'),
@@ -220,6 +224,7 @@ describe('Vacation Model', () => {
 
       it('should approve a vacation without notes', async () => {
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'casual',
           startDate: new Date('2025-12-01'),
@@ -239,6 +244,7 @@ describe('Vacation Model', () => {
     describe('reject()', () => {
       it('should reject a vacation with reason', async () => {
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: new Date('2025-12-01'),
@@ -258,6 +264,7 @@ describe('Vacation Model', () => {
 
       it('should reject a vacation without reason', async () => {
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: new Date('2025-12-01'),
@@ -277,6 +284,7 @@ describe('Vacation Model', () => {
     describe('cancel()', () => {
       it('should cancel a vacation with reason', async () => {
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: new Date('2025-12-01'),
@@ -297,6 +305,7 @@ describe('Vacation Model', () => {
 
       it('should cancel a pending vacation', async () => {
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'casual',
           startDate: new Date('2025-12-01'),
@@ -320,6 +329,7 @@ describe('Vacation Model', () => {
       it('should get all vacations for an employee', async () => {
         await Vacation.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'annual',
             startDate: new Date('2025-12-01'),
@@ -329,6 +339,7 @@ describe('Vacation Model', () => {
             department: testDepartment._id
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'casual',
             startDate: new Date('2025-11-01'),
@@ -346,6 +357,7 @@ describe('Vacation Model', () => {
       it('should filter vacations by status', async () => {
         await Vacation.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'annual',
             startDate: new Date('2025-12-01'),
@@ -355,6 +367,7 @@ describe('Vacation Model', () => {
             status: 'approved'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'casual',
             startDate: new Date('2025-11-01'),
@@ -375,6 +388,7 @@ describe('Vacation Model', () => {
       it('should get all pending vacations', async () => {
         await Vacation.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'annual',
             startDate: new Date('2025-12-01'),
@@ -384,6 +398,7 @@ describe('Vacation Model', () => {
             status: 'pending'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'casual',
             startDate: new Date('2025-11-01'),
@@ -409,6 +424,7 @@ describe('Vacation Model', () => {
 
         await Vacation.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'annual',
             startDate: new Date('2025-12-01'),
@@ -418,6 +434,7 @@ describe('Vacation Model', () => {
             status: 'pending'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'casual',
             startDate: new Date('2025-11-01'),
@@ -446,6 +463,7 @@ describe('Vacation Model', () => {
 
         await Vacation.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'annual',
             startDate: yesterday,
@@ -455,6 +473,7 @@ describe('Vacation Model', () => {
             status: 'approved'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'casual',
             startDate: new Date('2020-12-01'),
@@ -475,6 +494,7 @@ describe('Vacation Model', () => {
       it('should get all vacations for a department', async () => {
         await Vacation.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'annual',
             startDate: new Date('2025-12-01'),
@@ -483,6 +503,7 @@ describe('Vacation Model', () => {
             department: testDepartment._id
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'casual',
             startDate: new Date('2025-11-01'),
@@ -500,6 +521,7 @@ describe('Vacation Model', () => {
     describe('hasOverlappingVacation()', () => {
       it('should detect overlapping vacations', async () => {
         await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: new Date('2025-12-01'),
@@ -520,6 +542,7 @@ describe('Vacation Model', () => {
 
       it('should not detect overlap for non-overlapping dates', async () => {
         await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: new Date('2025-12-01'),
@@ -540,6 +563,7 @@ describe('Vacation Model', () => {
 
       it('should exclude specific vacation when checking overlap', async () => {
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: new Date('2025-12-01'),
@@ -561,6 +585,7 @@ describe('Vacation Model', () => {
 
       it('should not detect overlap for rejected or cancelled vacations', async () => {
         await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: new Date('2025-12-01'),
@@ -584,6 +609,7 @@ describe('Vacation Model', () => {
       it('should get vacation statistics for a department', async () => {
         await Vacation.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'annual',
             startDate: new Date('2025-06-01'),
@@ -593,6 +619,7 @@ describe('Vacation Model', () => {
             status: 'approved'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'annual',
             startDate: new Date('2025-07-01'),
@@ -602,6 +629,7 @@ describe('Vacation Model', () => {
             status: 'approved'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             vacationType: 'casual',
             startDate: new Date('2025-08-01'),
@@ -629,6 +657,7 @@ describe('Vacation Model', () => {
         tomorrow.setDate(tomorrow.getDate() + 1);
 
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: yesterday,
@@ -649,6 +678,7 @@ describe('Vacation Model', () => {
         tomorrow.setDate(tomorrow.getDate() + 1);
 
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: yesterday,
@@ -670,6 +700,7 @@ describe('Vacation Model', () => {
         endDate.setDate(endDate.getDate() + 5);
 
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: futureDate,
@@ -684,6 +715,7 @@ describe('Vacation Model', () => {
 
       it('should return false for past vacation', async () => {
         const vacation = await Vacation.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           vacationType: 'annual',
           startDate: new Date('2024-01-01'),

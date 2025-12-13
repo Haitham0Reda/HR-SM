@@ -255,7 +255,7 @@ const PricingPage = () => {
 
                     {/* Key Benefits */}
                     <Grid container spacing={3} sx={{ mt: 2 }}>
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                             <Box sx={{ textAlign: 'center' }}>
                                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                                     ✓ Modular Architecture
@@ -265,7 +265,7 @@ const PricingPage = () => {
                                 </Typography>
                             </Box>
                         </Grid>
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                             <Box sx={{ textAlign: 'center' }}>
                                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                                     ✓ Bundle Discounts
@@ -275,7 +275,7 @@ const PricingPage = () => {
                                 </Typography>
                             </Box>
                         </Grid>
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                             <Box sx={{ textAlign: 'center' }}>
                                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                                     ✓ Flexible Deployment
@@ -315,7 +315,7 @@ const PricingPage = () => {
 
                     <Grid container spacing={3}>
                         {modules.map((module) => (
-                            <Grid item xs={12} md={6} lg={4} key={module.key}>
+                            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={module.key}>
                                 <ModuleCard
                                     module={module}
                                     deploymentMode={deploymentMode}
@@ -346,7 +346,7 @@ const PricingPage = () => {
                             Save More with Bundle Discounts
                         </Typography>
                         <Grid container spacing={3} sx={{ mt: 2 }}>
-                            <Grid item xs={12} md={4}>
+                            <Grid size={{ xs: 12, md: 4 }}>
                                 <Typography variant="h6" color="success.main" sx={{ fontWeight: 700 }}>
                                     10% OFF
                                 </Typography>
@@ -354,7 +354,7 @@ const PricingPage = () => {
                                     Purchase 3+ modules
                                 </Typography>
                             </Grid>
-                            <Grid item xs={12} md={4}>
+                            <Grid size={{ xs: 12, md: 4 }}>
                                 <Typography variant="h6" color="success.main" sx={{ fontWeight: 700 }}>
                                     15% OFF
                                 </Typography>
@@ -362,7 +362,7 @@ const PricingPage = () => {
                                     Purchase 5+ modules
                                 </Typography>
                             </Grid>
-                            <Grid item xs={12} md={4}>
+                            <Grid size={{ xs: 12, md: 4 }}>
                                 <Typography variant="h6" color="success.main" sx={{ fontWeight: 700 }}>
                                     Custom Pricing
                                 </Typography>

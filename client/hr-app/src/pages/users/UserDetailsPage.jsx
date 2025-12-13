@@ -29,6 +29,7 @@ import {
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import userService from '../../services/user.service';
+import { getUserProfilePicture, getUserInitials } from '../../utils/profilePicture';
 import { useNotification } from '../../context/NotificationContext';
 import { generateUserIDCard } from '../../components/users/UserIDCard';
 
@@ -171,7 +172,7 @@ const UserDetailsPage = () => {
                         {/* Profile Card */}
                         <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
                             <Avatar
-                                src={user.personalInfo?.profilePicture}
+                                src={getUserProfilePicture(user)}
                                 sx={{
                                     width: 120,
                                     height: 120,
@@ -184,7 +185,7 @@ const UserDetailsPage = () => {
                                     position: 'relative'
                                 }}
                             >
-                                {user.username?.charAt(0).toUpperCase()}
+                                {!getUserProfilePicture(user) && getUserInitials(user)}
                                 <Box 
                                     sx={{ 
                                         position: 'absolute', 
@@ -245,12 +246,12 @@ const UserDetailsPage = () => {
                                     }}
                                 >
                                     <CakeIcon sx={{ mb: 1 }} />
-                                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 700 }} component="div">
                                         {user.personalInfo?.dateOfBirth ? 
                                             Math.floor((new Date() - new Date(user.personalInfo.dateOfBirth)) / 31557600000) : 
                                             'N/A'}
                                     </Typography>
-                                    <Typography variant="caption">Age</Typography>
+                                    <Typography variant="caption" component="div">Age</Typography>
                                 </Box>
                                 <Box 
                                     sx={{ 
@@ -266,12 +267,12 @@ const UserDetailsPage = () => {
                                     }}
                                 >
                                     <WorkIcon sx={{ mb: 1 }} />
-                                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 700 }} component="div">
                                         {user.employment?.hireDate ? 
                                             Math.floor((new Date() - new Date(user.employment.hireDate)) / 31557600000) : 
                                             'N/A'}
                                     </Typography>
-                                    <Typography variant="caption">Years</Typography>
+                                    <Typography variant="caption" component="div">Years</Typography>
                                 </Box>
                                 <Box 
                                     sx={{ 
@@ -287,10 +288,10 @@ const UserDetailsPage = () => {
                                     }}
                                 >
                                     <PersonIcon sx={{ mb: 1 }} />
-                                    <Typography variant="body2" sx={{ fontWeight: 700, textTransform: 'capitalize' }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 700, textTransform: 'capitalize' }} component="div">
                                         {user.role || 'N/A'}
                                     </Typography>
-                                    <Typography variant="caption">Role</Typography>
+                                    <Typography variant="caption" component="div">Role</Typography>
                                 </Box>
                                 <Box 
                                     sx={{ 
@@ -306,10 +307,10 @@ const UserDetailsPage = () => {
                                     }}
                                 >
                                     <BusinessIcon sx={{ mb: 1 }} />
-                                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 700 }} component="div">
                                         {user.employment?.contractType || 'N/A'}
                                     </Typography>
-                                    <Typography variant="caption">Job Type</Typography>
+                                    <Typography variant="caption" component="div">Job Type</Typography>
                                 </Box>
                             </Box>
                         </Paper>
@@ -471,22 +472,12 @@ const UserDetailsPage = () => {
                                                 <DetailRow 
                                                     icon={<BusinessIcon />} 
                                                     label="MAIN DEPARTMENT" 
-                                                    value={
-                                                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                                                            {user.department.parentDepartment.name}
-                                                            {user.department.parentDepartment.code && ` (${user.department.parentDepartment.code})`}
-                                                        </Typography>
-                                                    } 
+                                                    value={`${user.department.parentDepartment.name}${user.department.parentDepartment.code ? ` (${user.department.parentDepartment.code})` : ''}`}
                                                 />
                                                 <DetailRow 
                                                     icon={<BusinessIcon sx={{ ml: 2 }} />} 
                                                     label="SUB-DEPARTMENT" 
-                                                    value={
-                                                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                                                            {user.department.name}
-                                                            {user.department.code && ` (${user.department.code})`}
-                                                        </Typography>
-                                                    } 
+                                                    value={`${user.department.name}${user.department.code ? ` (${user.department.code})` : ''}`}
                                                 />
                                             </>
                                         ) : (
@@ -494,12 +485,7 @@ const UserDetailsPage = () => {
                                             <DetailRow 
                                                 icon={<BusinessIcon />} 
                                                 label="DEPARTMENT" 
-                                                value={
-                                                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                                                        {user.department.name}
-                                                        {user.department.code && ` (${user.department.code})`}
-                                                    </Typography>
-                                                } 
+                                                value={`${user.department.name}${user.department.code ? ` (${user.department.code})` : ''}`}
                                             />
                                         )}
                                     </>
@@ -579,11 +565,11 @@ const DetailRow = ({ icon, label, value }) => (
             >
                 {icon}
             </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: 0.5 }} component="span">
                 {label}
             </Typography>
         </Box>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+        <Typography variant="body2" sx={{ fontWeight: 600 }} component="span">
             {value}
         </Typography>
     </Box>

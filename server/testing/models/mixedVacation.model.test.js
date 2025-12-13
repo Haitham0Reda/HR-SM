@@ -1,34 +1,28 @@
 import mongoose from 'mongoose';
 import MixedVacation from '../../modules/hr-core/vacations/models/mixedVacation.model.js';
 import User from '../../modules/hr-core/users/models/user.model.js';
-// organization model removed - not needed for general HR system
 import Department from '../../modules/hr-core/users/models/department.model.js';
 import VacationBalance from '../../modules/hr-core/vacations/models/vacationBalance.model.js';
 import Holiday from '../../modules/hr-core/holidays/models/holiday.model.js';
 
 let user;
-// organization variable removed
 let department;
+const TEST_TENANT_ID = 'test_tenant_123';
 
 beforeAll(async () => {
-  organization = await organization.create({
-    name: 'organization of Engineering'Code: 'ENG',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
-
   department = await Department.create({
-      tenantId: 'test_tenant_123',
+    tenantId: TEST_TENANT_ID,
     name: 'Test Department',
-    code: 'TEST': organization._id
+    code: 'TEST'
   });
 
   user = await User.create({
-      tenantId: 'test_tenant_123',
+    tenantId: TEST_TENANT_ID,
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'employee',
-    employeeId: 'EMP001': organization._id,
+    employeeId: 'EMP001',
     department: department._id
   });
 }, 60000);
@@ -160,7 +154,7 @@ describe('MixedVacation Model', () => {
   it('should detect official holidays in date range', async () => {
     // Create holiday settings
     const holiday = await Holiday.create({
-      location: organization._id,
+      tenantId: TEST_TENANT_ID,
       officialHolidays: [
         {
           date: new Date('2024-01-05'),
@@ -180,7 +174,7 @@ describe('MixedVacation Model', () => {
       createdBy: user._id
     });
 
-    const updatedPolicy = await mixedVacation.detectOfficialHolidays(organization._id);
+    const updatedPolicy = await mixedVacation.detectOfficialHolidays(TEST_TENANT_ID);
 
     expect(updatedPolicy.officialHolidays).toHaveLength(1);
     expect(updatedPolicy.officialHolidays[0].name).toBe('Test Holiday');
