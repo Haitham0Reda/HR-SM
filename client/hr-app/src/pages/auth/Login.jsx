@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Box,
     TextField,
@@ -27,9 +28,11 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { generateCompanyRoute } from '../../utils/companySlug';
 
 const Login = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { login } = useAuth();
     const { showSuccess, showError } = useNotification();
 
@@ -61,13 +64,17 @@ const Login = () => {
             setLoading(true);
             setError('');
             
-            // For now, use a default tenant ID since the login form doesn't have tenant selection
+            // For now, use TechCorp tenant ID since the login form doesn't have tenant selection
             // TODO: Add tenant selection to login form if needed
-            const result = await login(formData.email, formData.password, 'default-tenant');
+            const result = await login(formData.email, formData.password, '693db0e2ccc5ea08aeee120c');
             
             if (result.success) {
                 showSuccess('Login successful!');
-                navigate('/app/dashboard');
+                
+                // Always redirect to TechCorp company route after login
+                // The CompanyRouteHandler will handle any further redirects if needed
+                const companyRoute = '/company/techcorp-solutions/dashboard';
+                navigate(companyRoute);
             } else {
                 setError(result.message || 'Login failed. Please check your credentials.');
                 showError(result.message || 'Login failed. Please check your credentials.');

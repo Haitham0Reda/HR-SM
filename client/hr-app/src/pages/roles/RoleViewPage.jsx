@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Paper,
     Typography,
@@ -36,6 +37,7 @@ import { useNotification } from '../../context/NotificationContext';
 const RoleViewPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { showNotification } = useNotification();
 
     // State
@@ -51,7 +53,7 @@ const RoleViewPage = () => {
 
     // Handle edit
     const handleEdit = useCallback(() => {
-        navigate(`/app/roles/${id}/edit`);
+        navigate(getCompanyRoute(`/roles/${id}/edit`));
     }, [id, navigate]);
 
     // Handle delete click - check for user assignments first
@@ -95,7 +97,7 @@ const RoleViewPage = () => {
         // Escape: Go back to roles list
         if (event.key === 'Escape') {
             event.preventDefault();
-            navigate('/app/roles');
+            navigate(getCompanyRoute('/roles'));
         }
     }, [role, navigate, handleEdit, handleDeleteClick]);
 
@@ -124,7 +126,7 @@ const RoleViewPage = () => {
             } catch (error) {
 
                 showNotification('Failed to load role details', 'error');
-                navigate('/app/roles');
+                navigate(getCompanyRoute('/roles'));
             } finally {
                 setLoading(false);
             }
@@ -151,7 +153,7 @@ const RoleViewPage = () => {
             showNotification('Deleting role...', 'info');
             
             // Navigate immediately (optimistic)
-            navigate('/app/roles');
+            navigate(getCompanyRoute('/roles'));
             
             // Make API call
             await roleService.delete(id);
@@ -161,7 +163,7 @@ const RoleViewPage = () => {
         } catch (error) {
 
             // On error, navigate back to the role view page
-            navigate(`/app/roles/${id}`);
+            navigate(getCompanyRoute(`/roles/${id}`));
             
             // API interceptor transforms errors to have message, status, and data at top level
             const errorData = error.data || {};
@@ -205,11 +207,11 @@ const RoleViewPage = () => {
                     underline="hover"
                     sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                     color="inherit"
-                    onClick={() => navigate('/app/dashboard')}
+                    onClick={() => navigate(getCompanyRoute('/dashboard'))}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            navigate('/app/dashboard');
+                            navigate(getCompanyRoute('/dashboard'));
                         }
                     }}
                     tabIndex={0}
@@ -223,11 +225,11 @@ const RoleViewPage = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: 'pointer' }}
-                    onClick={() => navigate('/app/roles')}
+                    onClick={() => navigate(getCompanyRoute('/roles'))}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            navigate('/app/roles');
+                            navigate(getCompanyRoute('/roles'));
                         }
                     }}
                     tabIndex={0}

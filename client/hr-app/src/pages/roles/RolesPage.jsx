@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Box,
     Button,
@@ -46,6 +47,7 @@ import { useNotification } from '../../context/NotificationContext';
 
 const RolesPage = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const [searchParams, setSearchParams] = useSearchParams();
     const [roles, setRoles] = useState([]);
     const [stats, setStats] = useState({ total: 0, system: 0, custom: 0 });
@@ -74,7 +76,7 @@ const RolesPage = () => {
         // Ctrl/Cmd + N: Create new role
         if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
             event.preventDefault();
-            navigate('/app/roles/create');
+            navigate(getCompanyRoute('/roles/create'));
         }
         // Escape: Clear search and filters
         if (event.key === 'Escape' && (searchTerm || typeFilter !== 'all')) {
@@ -296,11 +298,11 @@ const RolesPage = () => {
                     underline="hover"
                     sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                     color="inherit"
-                    onClick={() => navigate('/app/dashboard')}
+                    onClick={() => navigate(getCompanyRoute('/dashboard'))}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            navigate('/app/dashboard');
+                            navigate(getCompanyRoute('/dashboard'));
                         }
                     }}
                     tabIndex={0}
@@ -391,7 +393,7 @@ const RolesPage = () => {
                         <Button
                             variant="contained"
                             startIcon={<AddIcon />}
-                            onClick={() => navigate('/app/roles/create')}
+                            onClick={() => navigate(getCompanyRoute('/roles/create'))}
                             aria-label="Create new role (Ctrl+N)"
                             sx={{
                                 bgcolor: 'white',
@@ -810,7 +812,7 @@ const RolesPage = () => {
                                                 <Tooltip title="View Details" arrow>
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => navigate(`/app/roles/${role._id}`)}
+                                                        onClick={() => navigate(getCompanyRoute(`/roles/${role._id}`))}
                                                         aria-label={`View details for ${role.displayName}`}
                                                         sx={{
                                                             color: 'info.main',
@@ -826,7 +828,7 @@ const RolesPage = () => {
                                                 <Tooltip title="Edit Role" arrow>
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => navigate(`/app/roles/${role._id}/edit`)}
+                                                        onClick={() => navigate(getCompanyRoute(`/roles/${role._id}/edit`))}
                                                         aria-label={`Edit ${role.displayName}`}
                                                         sx={{
                                                             color: 'primary.main',

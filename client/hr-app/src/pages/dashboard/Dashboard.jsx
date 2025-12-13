@@ -48,75 +48,77 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import CongratulationsEffect from '../../components/effects/CongratulationsEffect';
 import { dashboardService } from '../../services';
 import { getUserProfilePicture, getUserInitials } from '../../utils/profilePicture';
-
-// Action card configuration with staggered animation delays
-const actionCards = [
-    {
-        id: 'attendance',
-        title: 'My Attendance',
-        icon: CalendarIcon,
-        description: 'View your attendance records, check in/check out times, and attendance statistics',
-        buttonText: 'View Attendance',
-        buttonColor: 'info',
-        route: '/app/attendance',
-        delay: '200ms'
-    },
-    {
-        id: 'vacation',
-        title: 'Vacation Requests',
-        icon: VacationIcon,
-        description: 'Submit and track your vacation requests, view your vacation balance, and check request status',
-        buttonText: 'Manage Vacations',
-        buttonColor: 'success',
-        route: '/app/leaves',
-        delay: '300ms'
-    },
-    {
-        id: 'permission',
-        title: 'Permission Requests',
-        icon: PermissionIcon,
-        description: 'Submit permission requests for late arrival or early departure, and track their status',
-        buttonText: 'View Requests',
-        buttonText2: 'New Request',
-        buttonColor: 'warning',
-        route: '/app/permissions',
-        delay: '400ms',
-        hasTwoButtons: true
-    },
-    {
-        id: 'forgot',
-        title: 'Forgot Check Requests',
-        icon: ForgotIcon,
-        description: 'Submit requests when you forget to check in or check out, and track their approval status',
-        buttonText: 'View Requests',
-        buttonText2: 'New Request',
-        buttonColor: 'error',
-        route: '/app/requests',
-        delay: '500ms',
-        badge: '1 Pending',
-        hasTwoButtons: true
-    },
-    {
-        id: 'sick',
-        title: 'Sick Leave & Mission',
-        icon: SickIcon,
-        description: 'Submit sick leave or mission requests and track their approval status',
-        buttonText: 'View Requests',
-        buttonText2: 'New Request',
-        buttonColor: 'error',
-        route: '/app/leaves',
-        delay: '600ms',
-        hasTwoButtons: true
-    }
-];
 
 const Dashboard = () => {
     // Get current user from auth context
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
+
+    // Action card configuration with staggered animation delays
+    const actionCards = [
+        {
+            id: 'attendance',
+            title: 'My Attendance',
+            icon: CalendarIcon,
+            description: 'View your attendance records, check in/check out times, and attendance statistics',
+            buttonText: 'View Attendance',
+            buttonColor: 'info',
+            route: getCompanyRoute('/attendance'),
+            delay: '200ms'
+        },
+        {
+            id: 'vacation',
+            title: 'Vacation Requests',
+            icon: VacationIcon,
+            description: 'Submit and track your vacation requests, view your vacation balance, and check request status',
+            buttonText: 'Manage Vacations',
+            buttonColor: 'success',
+            route: getCompanyRoute('/leaves'),
+            delay: '300ms'
+        },
+        {
+            id: 'permission',
+            title: 'Permission Requests',
+            icon: PermissionIcon,
+            description: 'Submit permission requests for late arrival or early departure, and track their status',
+            buttonText: 'View Requests',
+            buttonText2: 'New Request',
+            buttonColor: 'warning',
+            route: getCompanyRoute('/permissions'),
+            delay: '400ms',
+            hasTwoButtons: true
+        },
+        {
+            id: 'forgot',
+            title: 'Forgot Check Requests',
+            icon: ForgotIcon,
+            description: 'Submit requests when you forget to check in or check out, and track their approval status',
+            buttonText: 'View Requests',
+            buttonText2: 'New Request',
+            buttonColor: 'error',
+            route: getCompanyRoute('/requests'),
+            delay: '500ms',
+            badge: '1 Pending',
+            hasTwoButtons: true
+        },
+        {
+            id: 'sick',
+            title: 'Sick Leave & Mission',
+            icon: SickIcon,
+            description: 'Submit sick leave or mission requests and track their approval status',
+            buttonText: 'View Requests',
+            buttonText2: 'New Request',
+            buttonColor: 'error',
+            route: getCompanyRoute('/leaves'),
+            delay: '600ms',
+            hasTwoButtons: true
+        }
+    ];
 
     // State for real-time clock
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -390,7 +392,7 @@ const Dashboard = () => {
 
                                     {(user?.role === 'admin' || user?.role === 'hr') && (
                                         <IconButton
-                                            onClick={() => navigate('/app/dashboard/edit')}
+                                            onClick={() => navigate(getCompanyRoute('/dashboard/edit'))}
                                             sx={{
                                                 bgcolor: 'action.hover',
                                                 transition: 'all 0.3s ease',
@@ -445,7 +447,7 @@ const Dashboard = () => {
                                         <Button
                                             variant="outlined"
                                             startIcon={<EditIcon />}
-                                            onClick={() => navigate('/app/dashboard/edit')}
+                                            onClick={() => navigate(getCompanyRoute('/dashboard/edit'))}
                                             sx={{
                                                 textTransform: 'none',
                                                 transition: 'all 0.3s ease',

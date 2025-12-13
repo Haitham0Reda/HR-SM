@@ -67,7 +67,11 @@ class MultiTenantDB {
 
             this.connections.set(dbName, connection);
             
-            console.log(`Connected to company database: ${dbName}`);
+            // Only log on first connection, not subsequent ones
+            if (!this.connections.has(dbName + '_logged')) {
+                console.log(`Connected to company database: ${dbName}`);
+                this.connections.set(dbName + '_logged', true);
+            }
             
             // Create company directories
             await this.createCompanyDirectories(sanitizedName);
@@ -108,7 +112,17 @@ class MultiTenantDB {
         for (const dir of directories) {
             try {
                 await fs.mkdir(dir, { recursive: true });
-                console.log(`Created directory: ${dir}`);
+                // Only log if directory was actually created (not if it already existed)
+                try {
+                    const stats = await fs.stat(dir);
+                    const isNew = Date.now() - stats.birthtime.getTime() < 1000; // Created within last second
+                    if (isNew) {
+                        console.log(`Created directory: ${dir}`);
+                    }
+                } catch (statError) {
+                    // If we can't stat, assume it was created
+                    console.log(`Created directory: ${dir}`);
+                }
             } catch (error) {
                 if (error.code !== 'EEXIST') {
                     console.error(`Error creating directory ${dir}:`, error.message);

@@ -1,6 +1,6 @@
 import express from 'express';
 import * as platformAuthController from '../controllers/platformAuthController.js';
-import { authenticatePlatform } from '../../../core/middleware/platformAuthentication.js';
+import { authenticatePlatformUser } from '../../middleware/platformAuth.js';
 
 const router = express.Router();
 
@@ -13,8 +13,8 @@ const router = express.Router();
 router.post('/login', platformAuthController.login);
 
 // Protected routes (authentication required)
-router.post('/logout', authenticatePlatform, platformAuthController.logout);
-router.get('/me', authenticatePlatform, platformAuthController.me);
-router.post('/change-password', authenticatePlatform, platformAuthController.changePassword);
+router.post('/logout', authenticatePlatformUser, platformAuthController.logout);
+router.get('/me', authenticatePlatformUser, platformAuthController.me);
+router.post('/change-password', authenticatePlatformUser, platformAuthController.changePassword);
 
 export default router;

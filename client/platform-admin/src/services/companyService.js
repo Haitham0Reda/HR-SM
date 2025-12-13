@@ -114,9 +114,16 @@ class CompanyService {
   /**
    * Enable a specific module for a company
    */
-  async enableModule(companyName, moduleName) {
+  async enableModule(companyName, moduleName, tier) {
     try {
-      const response = await platformApi.post(`/companies/${companyName}/modules/${moduleName}/enable`);
+      // If no tier specified, use business as default (works for most modules)
+      // If business doesn't work, the server will return an error with available tiers
+      const requestTier = tier || 'business';
+      
+      const response = await platformApi.post(`/companies/${companyName}/modules/${moduleName}/enable`, {
+        tier: requestTier,
+        limits: {}
+      });
       return response.data;
     } catch (error) {
       console.error('Error enabling module:', error);

@@ -2,19 +2,11 @@ import jwt from 'jsonwebtoken';
 import User from '../users/models/user.model.js';
 import TenantConfig from '../models/TenantConfig.js';
 import AuditLog from '../models/AuditLog.js';
+import { generateTenantToken } from '../../../core/auth/tenantAuth.js';
 
-// Generate JWT token
+// Generate JWT token using tenant auth system
 const generateToken = (user) => {
-    return jwt.sign(
-        {
-            id: user._id.toString(),
-            email: user.email,
-            role: user.role,
-            tenantId: user.tenantId
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
+    return generateTenantToken(user._id.toString(), user.tenantId, user.role);
 };
 
 // Register (for initial setup or admin creating users)
@@ -67,7 +59,7 @@ export const register = async (req, res) => {
             password,
             firstName,
             lastName,
-            role: role || 'employee',
+            role: role || 'Employee',
             tenantId
         });
 

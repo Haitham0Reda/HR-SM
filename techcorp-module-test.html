@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TechCorp Module Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .module { margin: 5px 0; padding: 5px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>TechCorp Solutions Module Test</h1>
+    <div id="status">Loading...</div>
+    <div id="modules"></div>
+    
+    <script>
+        async function testModules() {
+            const statusDiv = document.getElementById('status');
+            const modulesDiv = document.getElementById('modules');
+            
+            try {
+                statusDiv.innerHTML = 'Testing API...';
+                
+                const response = await fetch('http://localhost:5000/api/platform/companies/techcorp_solutions/modules');
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.innerHTML = '<span class="success">✅ API Working</span>';
+                    
+                    const modules = data.data.availableModules;
+                    const enabledModules = Object.entries(modules).filter(([key, module]) => module.enabled);
+                    
+                    modulesDiv.innerHTML = `
+                        <h2>Enabled Modules (${enabledModules.length})</h2>
+                        ${enabledModules.map(([key, module]) => `
+                            <div class="module">
+                                <strong>${key}</strong>: ${module.name} (${module.tier} tier)
+                            </div>
+                        `).join('')}
+                    `;
+                } else {
+                    statusDiv.innerHTML = '<span class="error">❌ API Failed: ' + data.message + '</span>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+        
+        testModules();
+    </script>
+</body>
+</html>

@@ -753,7 +753,7 @@ const PositionsPage = () => {
                     <Avatar sx={{ bgcolor: 'primary.main' }}>
                         <WorkIcon />
                     </Avatar>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    <Typography variant="h6" component="span" sx={{ fontWeight: 600 }}>
                         {selectedPosition ? 'Edit Position' : 'New Position'}
                     </Typography>
                 </DialogTitle>

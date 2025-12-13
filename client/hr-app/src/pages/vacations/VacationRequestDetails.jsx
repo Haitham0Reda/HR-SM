@@ -30,6 +30,7 @@ import {
     NavigateNext as NavigateNextIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -40,6 +41,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 const VacationRequestDetails = () => {
     useDocumentTitle('Vacation Request Details');
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { id } = useParams();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
@@ -64,7 +66,7 @@ const VacationRequestDetails = () => {
         } catch (error) {
 
             showNotification('Failed to load vacation', 'error');
-            navigate('/app/vacation-requests');
+            navigate(getCompanyRoute('/vacation-requests'));
         } finally {
             setLoading(false);
         }
@@ -133,7 +135,7 @@ const VacationRequestDetails = () => {
         try {
             await vacationService.delete(id);
             showNotification('Vacation deleted successfully', 'success');
-            navigate('/app/vacation-requests');
+            navigate(getCompanyRoute('/vacation-requests'));
         } catch (error) {
             showNotification(error.response?.data?.message || 'Delete failed', 'error');
         }
@@ -185,7 +187,7 @@ const VacationRequestDetails = () => {
                 <Link
                     underline="hover"
                     color="inherit"
-                    onClick={() => navigate('/app/dashboard')}
+                    onClick={() => navigate(getCompanyRoute('/dashboard'))}
                     sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
                     Dashboard
@@ -193,7 +195,7 @@ const VacationRequestDetails = () => {
                 <Link
                     underline="hover"
                     color="inherit"
-                    onClick={() => navigate('/app/vacation-requests')}
+                    onClick={() => navigate(getCompanyRoute('/vacation-requests'))}
                     sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
                     Vacation Requests
@@ -204,7 +206,7 @@ const VacationRequestDetails = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <IconButton onClick={() => navigate('/app/vacation-requests')} color="primary">
+                    <IconButton onClick={() => navigate(getCompanyRoute('/vacation-requests'))} color="primary">
                         <ArrowBack />
                     </IconButton>
                     <Box>
@@ -249,7 +251,7 @@ const VacationRequestDetails = () => {
                         <Button
                             variant="outlined"
                             startIcon={<EditIcon />}
-                            onClick={() => navigate(`/app/vacation-requests/${id}/edit`)}
+                            onClick={() => navigate(getCompanyRoute(`/vacation-requests/${id}/edit`))}
                         >
                             Edit
                         </Button>

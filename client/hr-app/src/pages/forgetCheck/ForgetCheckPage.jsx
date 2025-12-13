@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle, Cancel, Info } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -26,6 +27,7 @@ import userService from '../../services/user.service';
 const ForgetCheckPage = () => {
     const theme = useTheme();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const [forgetChecks, setForgetChecks] = useState([]);
     const [users, setUsers] = useState([]);
@@ -345,7 +347,7 @@ const ForgetCheckPage = () => {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate('/app/forget-checks/create')}
+                    onClick={() => navigate(getCompanyRoute('/forget-checks/create'))}
                 >
                     New Request
                 </Button>

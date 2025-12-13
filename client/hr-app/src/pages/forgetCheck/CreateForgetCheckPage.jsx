@@ -8,6 +8,7 @@ import {
     Alert
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel, AccessTime, EventNote, Info } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,6 +16,7 @@ import forgetCheckService from '../../services/forgetCheck.service';
 
 const CreateForgetCheckPage = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user } = useAuth();
     const { showNotification } = useNotification();
     const [formData, setFormData] = useState({
@@ -62,7 +64,7 @@ const CreateForgetCheckPage = () => {
             showNotification('Request created successfully', 'success');
 
             window.dispatchEvent(new CustomEvent('notificationUpdate'));
-            navigate('/app/forget-checks');
+            navigate(getCompanyRoute('/forget-checks'));
         } catch (error) {
 
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
@@ -90,7 +92,7 @@ const CreateForgetCheckPage = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/app/forget-checks')}
+                    onClick={() => navigate(getCompanyRoute('/forget-checks'))}
                     startIcon={<Cancel />}
                     sx={{ textTransform: 'none' }}
                 >
@@ -191,7 +193,7 @@ const CreateForgetCheckPage = () => {
                                 Submit Request
                             </Button>
                             <Button
-                                onClick={() => navigate('/app/forget-checks')}
+                                onClick={() => navigate(getCompanyRoute('/forget-checks'))}
                                 variant="outlined"
                                 size="large"
                                 sx={{

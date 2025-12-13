@@ -20,6 +20,7 @@ const PrivateRoute = ({ children, requiredRole }) => {
     }
 
     if (!isAuthenticated) {
+        console.log('PrivateRoute: User not authenticated, redirecting to login');
         return <Navigate to="/" replace />;
     }
 
@@ -36,14 +37,19 @@ const PrivateRoute = ({ children, requiredRole }) => {
 
 // Helper function to check role access
 const checkRoleAccess = (userRole, requiredRole) => {
+    // Define role hierarchy (higher roles can access lower role requirements)
     const roleHierarchy = {
-        admin: ['admin', 'hr', 'manager', 'employee'],
-        hr: ['hr', 'manager', 'employee'],
-        manager: ['manager', 'employee'],
-        employee: ['employee'],
+        'platform_admin': 5,
+        'admin': 4,
+        'hr': 3,
+        'manager': 2,
+        'employee': 1
     };
 
-    return roleHierarchy[userRole]?.includes(requiredRole) || false;
+    const userLevel = roleHierarchy[userRole] || 0;
+    const requiredLevel = roleHierarchy[requiredRole] || 0;
+
+    return userLevel >= requiredLevel;
 };
 
 export default PrivateRoute;

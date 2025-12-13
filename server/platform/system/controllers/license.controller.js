@@ -135,12 +135,33 @@ export const getLicenseDetails = async (req, res) => {
     try {
         const { tenantId } = req.params;
 
-        const license = await License.findByTenantId(tenantId);
+        let license = await License.findByTenantId(tenantId);
 
         if (!license) {
-            return res.status(404).json({
-                error: 'LICENSE_NOT_FOUND',
-                message: 'No license found for this tenant'
+            const allowAutoProvision = process.env.AUTO_PROVISION_LICENSE === 'true' || process.env.NODE_ENV !== 'production';
+            if (!allowAutoProvision) {
+                return res.status(404).json({
+                    error: 'LICENSE_NOT_FOUND',
+                    message: 'No license found for this tenant'
+                });
+            }
+            const subscriptionId = `SUB-DEV-${Date.now()}`;
+            license = await License.create({
+                tenantId,
+                subscriptionId,
+                modules: [
+                    {
+                        key: MODULES.CORE_HR,
+                        enabled: true,
+                        tier: 'starter',
+                        limits: {},
+                        activatedAt: new Date(),
+                        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                    }
+                ],
+                billingCycle: 'monthly',
+                status: 'trial',
+                trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
             });
         }
 

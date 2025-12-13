@@ -6,7 +6,7 @@ describe('Attendance Model', () => {
     const attendanceData = {
       tenantId: 'test_tenant_123',
       employee: new mongoose.Types.ObjectId(),
-      date: new Date('2025-12-12T09:00:00Z'),
+      date: new Date(),
       status: 'present',
       schedule: {
         startTime: '09:00',
@@ -36,7 +36,7 @@ describe('Attendance Model', () => {
     const attendanceData = {
       tenantId: 'test_tenant_123',
       employee: new mongoose.Types.ObjectId(),
-      date: new Date('2025-12-12T09:00:00Z'),
+      date: new Date(),
       status: 'present',
       schedule: {
         startTime: '09:00',

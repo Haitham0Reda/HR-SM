@@ -61,7 +61,6 @@ describe('SickLeave Model', () => {
   describe('Schema Validation', () => {
     it('should create a valid sick leave with required fields', async () => {
       const sickLeave = new SickLeave({
-        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         startDate: new Date('2025-12-01'),
         endDate: new Date('2025-12-03'),
@@ -80,7 +79,6 @@ describe('SickLeave Model', () => {
 
     it('should fail validation when employee is missing', async () => {
       const sickLeave = new SickLeave({
-        tenantId: 'test_tenant_123',
         startDate: new Date('2025-12-01'),
         endDate: new Date('2025-12-03'),
         duration: 3,
@@ -101,7 +99,6 @@ describe('SickLeave Model', () => {
 
     it('should fail validation when end date is before start date', async () => {
       const sickLeave = new SickLeave({
-        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         startDate: new Date('2025-12-05'),
         endDate: new Date('2025-12-01'),
@@ -125,7 +122,6 @@ describe('SickLeave Model', () => {
   describe('Medical Documentation Requirements', () => {
     it('should not require medical documentation for sick leave <= 3 days', async () => {
       const sickLeave = await SickLeave.create({
-        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         startDate: new Date('2025-12-01'),
         endDate: new Date('2025-12-03'),
@@ -139,7 +135,6 @@ describe('SickLeave Model', () => {
 
     it('should require medical documentation for sick leave > 3 days', async () => {
       const sickLeave = await SickLeave.create({
-        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         startDate: new Date('2025-12-01'),
         endDate: new Date('2025-12-05'),
@@ -153,7 +148,6 @@ describe('SickLeave Model', () => {
 
     it('should update medical documentation requirement when duration changes', async () => {
       const sickLeave = await SickLeave.create({
-        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         startDate: new Date('2025-12-01'),
         endDate: new Date('2025-12-02'),
@@ -175,7 +169,6 @@ describe('SickLeave Model', () => {
   describe('Two-Step Workflow', () => {
     it('should initialize with supervisor-review workflow step', async () => {
       const sickLeave = await SickLeave.create({
-        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         startDate: new Date('2025-12-01'),
         endDate: new Date('2025-12-03'),
@@ -191,7 +184,6 @@ describe('SickLeave Model', () => {
 
     it('should move to doctor-review after supervisor approval when medical docs required', async () => {
       const sickLeave = await SickLeave.create({
-        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         startDate: new Date('2025-12-01'),
         endDate: new Date('2025-12-10'),
@@ -210,7 +202,6 @@ describe('SickLeave Model', () => {
 
     it('should complete workflow after supervisor approval when medical docs not required', async () => {
       const sickLeave = await SickLeave.create({
-        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         startDate: new Date('2025-12-01'),
         endDate: new Date('2025-12-02'),
@@ -229,7 +220,6 @@ describe('SickLeave Model', () => {
 
     it('should complete workflow after doctor approval', async () => {
       const sickLeave = await SickLeave.create({
-        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         startDate: new Date('2025-12-01'),
         endDate: new Date('2025-12-10'),
@@ -253,7 +243,6 @@ describe('SickLeave Model', () => {
     describe('approveBySupervisor()', () => {
       it('should approve sick leave by supervisor with notes', async () => {
         const sickLeave = await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-03'),
@@ -272,7 +261,6 @@ describe('SickLeave Model', () => {
     describe('approveByDoctor()', () => {
       it('should approve sick leave by doctor after supervisor approval', async () => {
         const sickLeave = await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-10'),
@@ -293,7 +281,6 @@ describe('SickLeave Model', () => {
 
       it('should throw error if doctor approves before supervisor', async () => {
         const sickLeave = await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-10'),
@@ -311,7 +298,6 @@ describe('SickLeave Model', () => {
     describe('rejectBySupervisor()', () => {
       it('should reject sick leave by supervisor with reason', async () => {
         const sickLeave = await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-03'),
@@ -334,7 +320,6 @@ describe('SickLeave Model', () => {
     describe('rejectByDoctor()', () => {
       it('should reject sick leave by doctor after supervisor approval', async () => {
         const sickLeave = await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-10'),
@@ -357,7 +342,6 @@ describe('SickLeave Model', () => {
 
       it('should throw error if doctor rejects before supervisor approval', async () => {
         const sickLeave = await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-10'),
@@ -375,7 +359,6 @@ describe('SickLeave Model', () => {
     describe('requestAdditionalDocs()', () => {
       it('should request additional medical documentation', async () => {
         const sickLeave = await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-10'),
@@ -396,7 +379,6 @@ describe('SickLeave Model', () => {
     describe('cancel()', () => {
       it('should cancel sick leave with reason', async () => {
         const sickLeave = await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-03'),
@@ -421,7 +403,6 @@ describe('SickLeave Model', () => {
       it('should get all sick leaves for an employee', async () => {
         await SickLeave.create([
           {
-            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             startDate: new Date('2025-12-01'),
             endDate: new Date('2025-12-03'),
@@ -430,7 +411,6 @@ describe('SickLeave Model', () => {
             department: testDepartment._id
           },
           {
-            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             startDate: new Date('2025-11-01'),
             endDate: new Date('2025-11-02'),
@@ -449,7 +429,6 @@ describe('SickLeave Model', () => {
       it('should get all sick leaves pending supervisor review', async () => {
         await SickLeave.create([
           {
-            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             startDate: new Date('2025-12-01'),
             endDate: new Date('2025-12-03'),
@@ -458,7 +437,6 @@ describe('SickLeave Model', () => {
             department: testDepartment._id
           },
           {
-            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             startDate: new Date('2025-11-01'),
             endDate: new Date('2025-11-10'),
@@ -482,7 +460,6 @@ describe('SickLeave Model', () => {
     describe('getPendingDoctorReview()', () => {
       it('should get all sick leaves pending doctor review', async () => {
         const sickLeave = await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-10'),
@@ -502,7 +479,6 @@ describe('SickLeave Model', () => {
     describe('hasOverlappingSickLeave()', () => {
       it('should detect overlapping sick leaves', async () => {
         await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-05'),
@@ -523,7 +499,6 @@ describe('SickLeave Model', () => {
 
       it('should not detect overlap for non-overlapping dates', async () => {
         await SickLeave.create({
-          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           startDate: new Date('2025-12-01'),
           endDate: new Date('2025-12-05'),

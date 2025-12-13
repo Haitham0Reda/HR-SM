@@ -9,6 +9,7 @@ import {
     Alert,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel, CloudUpload } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -18,6 +19,7 @@ import Loading from '../../components/common/Loading';
 
 const SickLeaveForm = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { id } = useParams();
     useDocumentTitle(id ? 'Edit Sick Leave' : 'Create Sick Leave');
     const { showNotification } = useNotification();
@@ -58,7 +60,7 @@ const SickLeaveForm = () => {
         } catch (error) {
 
             showNotification('Failed to load sick leave', 'error');
-            navigate('/app/sick-leaves');
+            navigate(getCompanyRoute('/sick-leaves'));
         } finally {
             setLoading(false);
         }
@@ -156,7 +158,7 @@ const SickLeaveForm = () => {
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
 
-            navigate('/app/sick-leaves');
+            navigate(getCompanyRoute('/sick-leaves'));
         } catch (error) {
             console.error('Sick leave submission error:', error);
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
@@ -188,7 +190,7 @@ const SickLeaveForm = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/app/sick-leaves')}
+                    onClick={() => navigate(getCompanyRoute('/sick-leaves'))}
                     startIcon={<Cancel />}
                     sx={{ textTransform: 'none' }}
                 >
@@ -318,7 +320,7 @@ const SickLeaveForm = () => {
                                 {isEditMode ? 'Update Sick Leave' : 'Submit Sick Leave'}
                             </Button>
                             <Button
-                                onClick={() => navigate('/app/sick-leaves')}
+                                onClick={() => navigate(getCompanyRoute('/sick-leaves'))}
                                 variant="outlined"
                                 size="large"
                                 sx={{ textTransform: 'none', fontWeight: 600 }}

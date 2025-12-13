@@ -28,6 +28,7 @@ import {
     Info as InfoIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useLicense } from '../../context/LicenseContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { commercialModuleConfigs } from '../../config/commercialModuleConfigs';
@@ -44,6 +45,7 @@ const LicenseStatusPage = () => {
     useDocumentTitle('License Status');
     const theme = useTheme();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const {
         licenses,
         usage,
@@ -440,7 +442,7 @@ const LicenseStatusPage = () => {
                         <Button
                             variant="contained"
                             startIcon={<ShoppingCartIcon />}
-                            onClick={() => navigate('/app/pricing')}
+                            onClick={() => navigate(getCompanyRoute('/pricing'))}
                             color="primary"
                         >
                             Renew License
@@ -498,7 +500,7 @@ const LicenseStatusPage = () => {
                     </Button>
                     <Button
                         variant="outlined"
-                        onClick={() => navigate('/app/pricing')}
+                        onClick={() => navigate(getCompanyRoute('/pricing'))}
                     >
                         View Pricing
                     </Button>

@@ -19,6 +19,7 @@ import {
     Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -30,6 +31,7 @@ import overtimeService from '../../services/overtime.service';
 const OvertimePage = () => {
     useDocumentTitle('Overtime');
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
     const [overtime, setOvertime] = useState([]);
@@ -331,7 +333,7 @@ const OvertimePage = () => {
                         )}
                         <IconButton
                             size="small"
-                            onClick={() => navigate(`/app/overtime/${row._id}`)}
+                            onClick={() => navigate(getCompanyRoute(`/overtime/${row._id}`))}
                             color="info"
                             title="View Details"
                         >
@@ -340,7 +342,7 @@ const OvertimePage = () => {
                         {canEdit && (
                             <IconButton
                                 size="small"
-                                onClick={() => navigate(`/app/overtime/${row._id}/edit`)}
+                                onClick={() => navigate(getCompanyRoute(`/overtime/${row._id}/edit`))}
                                 color="primary"
                                 title="Edit"
                             >
@@ -380,7 +382,7 @@ const OvertimePage = () => {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate('/app/overtime/create')}
+                    onClick={() => navigate(getCompanyRoute('/overtime/create'))}
                 >
                     New Overtime
                 </Button>

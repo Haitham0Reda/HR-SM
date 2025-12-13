@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     Box,
     Button,
@@ -57,6 +59,8 @@ import { generateUserCredentialPDF } from '../../components/users/UserCredential
 
 const UsersPage = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute, companyName } = useCompanyRouting();
+    const { tenant } = useAuth();
     const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
@@ -80,9 +84,11 @@ const UsersPage = () => {
         try {
             setLoading(true);
             const data = await userService.getAll();
-            setUsers(data);
+            setUsers(Array.isArray(data) ? data : []);
         } catch (error) {
+            console.error('Error fetching users:', error);
             showNotification('Failed to fetch users', 'error');
+            setUsers([]);
         } finally {
             setLoading(false);
         }
@@ -181,10 +187,12 @@ const UsersPage = () => {
     };
 
     const filteredUsers = useMemo(() => {
-        return users.filter(user => {
+        return (Array.isArray(users) ? users : []).filter(user => {
+            const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
             const matchesSearch = searchTerm === '' ||
-                user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (user.employeeId && user.employeeId.toLowerCase().includes(searchTerm.toLowerCase()));
 
             const matchesRole = roleFilter === 'all' || user.role === roleFilter;
 
@@ -192,14 +200,20 @@ const UsersPage = () => {
         });
     }, [users, searchTerm, roleFilter]);
 
-    const stats = useMemo(() => ({
-        total: users.length,
-        admins: users.filter(u => u.role === 'admin').length,
-        active: users.filter(u => u.status === 'active').length,
-        vacation: users.filter(u => u.status === 'vacation').length,
-        resigned: users.filter(u => u.status === 'resigned').length,
-        inactive: users.filter(u => u.status === 'inactive').length
-    }), [users]);
+    const stats = useMemo(() => {
+        const usersArray = Array.isArray(users) ? users : [];
+        return {
+            total: usersArray.length,
+            admins: usersArray.filter(u => u.role === 'admin').length,
+            hr: usersArray.filter(u => u.role === 'hr').length,
+            managers: usersArray.filter(u => u.role === 'manager').length,
+            employees: usersArray.filter(u => u.role === 'employee').length,
+            active: usersArray.filter(u => u.status === 'active').length,
+            vacation: usersArray.filter(u => u.status === 'vacation').length,
+            resigned: usersArray.filter(u => u.status === 'resigned').length,
+            inactive: usersArray.filter(u => u.status === 'inactive').length
+        };
+    }, [users]);
 
     if (loading) return <Loading />;
 
@@ -238,10 +252,10 @@ const UsersPage = () => {
                         </Avatar>
                         <Box>
                             <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                                Users
+                                {companyName || tenant?.name || 'Company'} Users
                             </Typography>
                             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                                Manage system users and permissions
+                                Manage employees and their permissions for {companyName || tenant?.name || 'this company'}
                             </Typography>
                         </Box>
                     </Box>
@@ -302,7 +316,7 @@ const UsersPage = () => {
                         <Button
                             variant="contained"
                             startIcon={<AddIcon />}
-                            onClick={() => navigate('/app/users/create')}
+                            onClick={() => navigate(getCompanyRoute('/users/create'))}
                             sx={{
                                 bgcolor: 'white',
                                 color: 'primary.main',
@@ -368,7 +382,7 @@ const UsersPage = () => {
                         borderRadius: 2.5,
                         border: '1px solid',
                         borderColor: 'divider',
-                        flex: '1 1 250px',
+                        flex: '1 1 200px',
                         transition: 'all 0.3s',
                         '&:hover': {
                             borderColor: 'error.main',
@@ -387,10 +401,112 @@ const UsersPage = () => {
                         </Avatar>
                         <Box sx={{ flex: 1 }}>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                Administrators
+                                Admins
                             </Typography>
                             <Typography variant="h4" sx={{ fontWeight: 700, color: 'error.main' }}>
                                 {stats.admins}
+                            </Typography>
+                        </Box>
+                    </Stack>
+                </Paper>
+                <Paper
+                    elevation={0}
+                    sx={{
+                        p: 2.5,
+                        borderRadius: 2.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        flex: '1 1 200px',
+                        transition: 'all 0.3s',
+                        '&:hover': {
+                            borderColor: '#9c27b0',
+                            boxShadow: 2
+                        }
+                    }}
+                >
+                    <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{
+                            bgcolor: alpha('#9c27b0', 0.1),
+                            color: '#9c27b0',
+                            width: 48,
+                            height: 48
+                        }}>
+                            <PersonIcon />
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                HR
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 700, color: '#9c27b0' }}>
+                                {stats.hr}
+                            </Typography>
+                        </Box>
+                    </Stack>
+                </Paper>
+                <Paper
+                    elevation={0}
+                    sx={{
+                        p: 2.5,
+                        borderRadius: 2.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        flex: '1 1 200px',
+                        transition: 'all 0.3s',
+                        '&:hover': {
+                            borderColor: '#ff9800',
+                            boxShadow: 2
+                        }
+                    }}
+                >
+                    <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{
+                            bgcolor: alpha('#ff9800', 0.1),
+                            color: '#ff9800',
+                            width: 48,
+                            height: 48
+                        }}>
+                            <WorkIcon />
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                Managers
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 700, color: '#ff9800' }}>
+                                {stats.managers}
+                            </Typography>
+                        </Box>
+                    </Stack>
+                </Paper>
+                <Paper
+                    elevation={0}
+                    sx={{
+                        p: 2.5,
+                        borderRadius: 2.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        flex: '1 1 200px',
+                        transition: 'all 0.3s',
+                        '&:hover': {
+                            borderColor: 'success.main',
+                            boxShadow: 2
+                        }
+                    }}
+                >
+                    <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{
+                            bgcolor: alpha('#2e7d32', 0.1),
+                            color: 'success.main',
+                            width: 48,
+                            height: 48
+                        }}>
+                            <BusinessIcon />
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                Employees
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
+                                {stats.employees}
                             </Typography>
                         </Box>
                     </Stack>
@@ -539,7 +655,7 @@ const UsersPage = () => {
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                     <TextField
                         size="small"
-                        placeholder="Search users..."
+                        placeholder="Search by name, email, or employee ID..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         sx={{ flex: '1 1 300px', minWidth: 200 }}
@@ -590,7 +706,9 @@ const UsersPage = () => {
                     >
                         <MenuItem value="all">All Roles</MenuItem>
                         <MenuItem value="admin">Admin</MenuItem>
-                        <MenuItem value="user">User</MenuItem>
+                        <MenuItem value="hr">HR</MenuItem>
+                        <MenuItem value="manager">Manager</MenuItem>
+                        <MenuItem value="employee">Employee</MenuItem>
                     </TextField>
                 </Box>
             </Paper>
@@ -634,7 +752,7 @@ const UsersPage = () => {
                     <Typography variant="body2" color="text.secondary">
                         {searchTerm || roleFilter !== 'all'
                             ? 'Try adjusting your filters'
-                            : 'Create your first user to get started'}
+                            : `Create your first user for ${companyName || tenant?.name || 'this company'} to get started`}
                     </Typography>
                 </Paper>
             ) : (
@@ -661,7 +779,7 @@ const UsersPage = () => {
                                 <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
                                     <Avatar
                                         src={getUserProfilePicture(user)}
-                                        alt={user.personalInfo?.fullName || user.username}
+                                        alt={`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
                                         sx={{
                                             width: 80,
                                             height: 80,
@@ -676,7 +794,7 @@ const UsersPage = () => {
                                             color: user.role === 'admin' ? 'error.main' : 'success.main'
                                         }}
                                     >
-                                        {(user.personalInfo?.fullName || user.username)?.charAt(0).toUpperCase()}
+                                        {(user.firstName?.charAt(0) || user.email?.charAt(0) || '?').toUpperCase()}
                                     </Avatar>
                                     <Box sx={{ textAlign: 'center', width: '100%' }}>
                                         <Typography
@@ -690,7 +808,7 @@ const UsersPage = () => {
                                                 mb: 0.5
                                             }}
                                         >
-                                            {user.personalInfo?.fullName || user.username}
+                                            {`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
                                         </Typography>
                                         <Typography
                                             variant="caption"
@@ -782,7 +900,7 @@ const UsersPage = () => {
                                                 ROLE
                                             </Typography>
                                             <Chip
-                                                label={user.role === 'admin' ? 'Administrator' : 'User'}
+                                                label={user.role?.charAt(0).toUpperCase() + user.role?.slice(1) || 'Employee'}
                                                 size="small"
                                                 sx={{
                                                     height: 22,
@@ -791,11 +909,25 @@ const UsersPage = () => {
                                                     mt: 0.5,
                                                     bgcolor: user.role === 'admin'
                                                         ? alpha('#d32f2f', 0.1)
+                                                        : user.role === 'hr'
+                                                        ? alpha('#9c27b0', 0.1)
+                                                        : user.role === 'manager'
+                                                        ? alpha('#ff9800', 0.1)
                                                         : alpha('#2e7d32', 0.1),
-                                                    color: user.role === 'admin' ? 'error.main' : 'success.main',
+                                                    color: user.role === 'admin' 
+                                                        ? 'error.main' 
+                                                        : user.role === 'hr'
+                                                        ? '#9c27b0'
+                                                        : user.role === 'manager'
+                                                        ? '#ff9800'
+                                                        : 'success.main',
                                                     border: '1px solid',
                                                     borderColor: user.role === 'admin'
                                                         ? alpha('#d32f2f', 0.3)
+                                                        : user.role === 'hr'
+                                                        ? alpha('#9c27b0', 0.3)
+                                                        : user.role === 'manager'
+                                                        ? alpha('#ff9800', 0.3)
                                                         : alpha('#2e7d32', 0.3)
                                                 }}
                                             />
@@ -898,7 +1030,7 @@ const UsersPage = () => {
                                         <Tooltip title="View Details" arrow>
                                             <IconButton
                                                 size="small"
-                                                onClick={() => navigate(`/app/users/${user._id}`)}
+                                                onClick={() => navigate(getCompanyRoute(`/users/${user._id}`))}
                                                 sx={{
                                                     color: 'info.main',
                                                     borderRadius: 1.5,
@@ -996,7 +1128,7 @@ const UsersPage = () => {
                                         <Tooltip title="Edit User" arrow>
                                             <IconButton
                                                 size="small"
-                                                onClick={() => navigate(`/app/users/${user._id}/edit`)}
+                                                onClick={() => navigate(getCompanyRoute(`/users/${user._id}/edit`))}
                                                 sx={{
                                                     color: 'primary.main',
                                                     borderRadius: 1.5,
@@ -1043,7 +1175,7 @@ const UsersPage = () => {
             <ConfirmDialog
                 open={openConfirm}
                 title="Delete User"
-                message={`Are you sure you want to delete "${selectedUser?.username}"?`}
+                message={`Are you sure you want to delete "${selectedUser?.firstName} ${selectedUser?.lastName}" (${selectedUser?.email})?`}
                 onConfirm={handleDelete}
                 onCancel={() => {
                     setOpenConfirm(false);
@@ -1076,14 +1208,14 @@ const UsersPage = () => {
                     <Avatar sx={{ bgcolor: 'warning.main' }}>
                         <KeyIcon />
                     </Avatar>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    <Typography variant="h6" component="span" sx={{ fontWeight: 600 }}>
                         Set Temporary Password
                     </Typography>
                 </DialogTitle>
                 <Divider />
                 <DialogContent sx={{ pt: 3 }}>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Enter the password for <strong>{selectedUser?.personalInfo?.fullName || selectedUser?.username}</strong> to display on the credentials PDF.
+                        Enter the password for <strong>{`${selectedUser?.firstName || ''} ${selectedUser?.lastName || ''}`.trim() || selectedUser?.email}</strong> to display on the credentials PDF.
                     </Typography>
                     <Box sx={{
                         p: 2,
@@ -1197,7 +1329,7 @@ const UsersPage = () => {
                     <Avatar sx={{ bgcolor: 'primary.main' }}>
                         <CloudUploadIcon />
                     </Avatar>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    <Typography variant="h6" component="span" sx={{ fontWeight: 600 }}>
                         Bulk Upload Users
                     </Typography>
                 </DialogTitle>

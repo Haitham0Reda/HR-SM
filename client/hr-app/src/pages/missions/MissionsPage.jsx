@@ -19,6 +19,7 @@ import {
     Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -31,6 +32,7 @@ const MissionsPage = () => {
     useDocumentTitle('Missions');
     const theme = useTheme();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
     const [missions, setMissions] = useState([]);
@@ -283,7 +285,7 @@ const MissionsPage = () => {
                         )}
                         <IconButton
                             size="small"
-                            onClick={() => navigate(`/app/missions/${row._id}`)}
+                            onClick={() => navigate(getCompanyRoute(`/missions/${row._id}`))}
                             color="info"
                             title="View Details"
                         >
@@ -292,7 +294,7 @@ const MissionsPage = () => {
                         {canEdit && (
                             <IconButton
                                 size="small"
-                                onClick={() => navigate(`/app/missions/${row._id}/edit`)}
+                                onClick={() => navigate(getCompanyRoute(`/missions/${row._id}/edit`))}
                                 color="primary"
                                 title="Edit"
                             >
@@ -332,7 +334,7 @@ const MissionsPage = () => {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate('/app/missions/create')}
+                    onClick={() => navigate(getCompanyRoute('/missions/create'))}
                 >
                     New Mission
                 </Button>

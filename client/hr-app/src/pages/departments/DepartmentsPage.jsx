@@ -138,7 +138,7 @@ const DepartmentsPage = () => {
     };
 
     const filteredDepartments = useMemo(() => {
-        return departments.filter(dept => {
+        return (Array.isArray(departments) ? departments : []).filter(dept => {
             const matchesSearch = searchTerm === '' ||
                 dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 dept.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,11 +152,14 @@ const DepartmentsPage = () => {
         });
     }, [departments, searchTerm, statusFilter]);
 
-    const stats = useMemo(() => ({
-        total: departments.length,
-        active: departments.filter(d => d.isActive).length,
-        inactive: departments.filter(d => !d.isActive).length
-    }), [departments]);
+    const stats = useMemo(() => {
+        const deptArray = Array.isArray(departments) ? departments : [];
+        return {
+            total: deptArray.length,
+            active: deptArray.filter(d => d.isActive).length,
+            inactive: deptArray.filter(d => !d.isActive).length
+        };
+    }, [departments]);
 
     if (loading) return <Loading />;
 
@@ -643,7 +646,7 @@ const DepartmentsPage = () => {
                     <Avatar sx={{ bgcolor: 'primary.main' }}>
                         <BusinessIcon />
                     </Avatar>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    <Typography variant="h6" component="span" sx={{ fontWeight: 600 }}>
                         {selectedDepartment ? 'Edit Department' : 'New Department'}
                     </Typography>
                 </DialogTitle>

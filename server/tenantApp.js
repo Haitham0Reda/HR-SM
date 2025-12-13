@@ -10,6 +10,8 @@ import { authRoutes } from './modules/hr-core/auth/routes/authRoutes.js';
 import { tenantContext } from './core/middleware/tenantContext.js';
 import { moduleGuard } from './core/middleware/moduleGuard.js';
 import { moduleRegistry } from './core/registry/moduleRegistry.js';
+import { setupCompanyLogging, logResponseCompletion, logCompanyErrors, trackUserActivity } from './middleware/companyLogging.js';
+import companyLogsRoutes from './routes/companyLogs.js';
 
 const app = express();
 
@@ -36,11 +38,22 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// Tenant context middleware
+// Public routes (no auth required) - BEFORE tenant context
+app.use('/api/v1/auth', authRoutes);
+
+// Company logging middleware (basic setup)
+app.use(setupCompanyLogging);
+app.use(logResponseCompletion);
+
+// Tenant context middleware (for protected routes)
 app.use(tenantContext);
 
-// Public routes (no auth required)
-app.use('/api/v1/auth', authRoutes);
+// User activity tracking middleware (after auth context is available)
+// This will be applied to all routes that come after this point
+app.use('/api/v1', trackUserActivity);
+
+// Company logs routes (protected) - after tenant context
+app.use('/api/company-logs', companyLogsRoutes);
 
 // Module routes (protected by auth and module guard)
 app.use('/api/v1', moduleGuard, moduleRegistry.getRoutes());
@@ -54,6 +67,9 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+
+// Company error logging middleware
+app.use(logCompanyErrors);
 
 // Error handling middleware
 app.use(errorHandler);

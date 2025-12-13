@@ -25,6 +25,7 @@ import {
     NavigateNext as NavigateNextIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -35,6 +36,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 const MissionDetails = () => {
     useDocumentTitle('Mission Details');
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { id } = useParams();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
@@ -57,7 +59,7 @@ const MissionDetails = () => {
         } catch (error) {
 
             showNotification('Failed to load mission', 'error');
-            navigate('/app/missions');
+            navigate(getCompanyRoute('/missions'));
         } finally {
             setLoading(false);
         }
@@ -103,7 +105,7 @@ const MissionDetails = () => {
         try {
             await missionService.delete(id);
             showNotification('Mission deleted successfully', 'success');
-            navigate('/app/missions');
+            navigate(getCompanyRoute('/missions'));
         } catch (error) {
             showNotification(error.response?.data?.message || 'Delete failed', 'error');
         }
@@ -143,7 +145,7 @@ const MissionDetails = () => {
                 <Link
                     underline="hover"
                     color="inherit"
-                    onClick={() => navigate('/app/dashboard')}
+                    onClick={() => navigate(getCompanyRoute('/dashboard'))}
                     sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
                     Dashboard
@@ -151,7 +153,7 @@ const MissionDetails = () => {
                 <Link
                     underline="hover"
                     color="inherit"
-                    onClick={() => navigate('/app/missions')}
+                    onClick={() => navigate(getCompanyRoute('/missions'))}
                     sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
                     Missions
@@ -162,7 +164,7 @@ const MissionDetails = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <IconButton onClick={() => navigate('/app/missions')} color="primary">
+                    <IconButton onClick={() => navigate(getCompanyRoute('/missions'))} color="primary">
                         <ArrowBack />
                     </IconButton>
                     <Box>
@@ -197,7 +199,7 @@ const MissionDetails = () => {
                         <Button
                             variant="outlined"
                             startIcon={<EditIcon />}
-                            onClick={() => navigate(`/app/missions/${id}/edit`)}
+                            onClick={() => navigate(getCompanyRoute(`/missions/${id}/edit`))}
                         >
                             Edit
                         </Button>

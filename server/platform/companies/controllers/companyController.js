@@ -41,11 +41,29 @@ const getCompanyModel = (connection) => {
     }
 };
 
+// Cache for company data (5 minutes)
+let companiesCache = null;
+let cacheTimestamp = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Get all companies with their metadata and statistics
  */
 export const getAllCompanies = async (req, res) => {
     try {
+        // Check cache first
+        const now = Date.now();
+        if (companiesCache && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+            return res.json({
+                success: true,
+                data: {
+                    companies: companiesCache,
+                    cached: true,
+                    cacheAge: Math.round((now - cacheTimestamp) / 1000)
+                }
+            });
+        }
+
         const companies = await multiTenantDB.listCompanyDatabases();
         const companiesData = [];
 
@@ -94,6 +112,10 @@ export const getAllCompanies = async (req, res) => {
             }
         }
 
+        // Update cache
+        companiesCache = companiesData;
+        cacheTimestamp = Date.now();
+
         res.json({
             success: true,
             data: {
@@ -103,7 +125,8 @@ export const getAllCompanies = async (req, res) => {
             },
             meta: {
                 timestamp: new Date().toISOString(),
-                requestId: req.id || 'unknown'
+                requestId: req.id || 'unknown',
+                cached: false
             }
         });
 

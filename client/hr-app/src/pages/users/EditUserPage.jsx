@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Box,
     Paper,
@@ -28,12 +29,13 @@ import { useNotification } from '../../context/NotificationContext';
 const EditUserPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { showNotification } = useNotification();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [departments, setDepartments] = useState([]);
     const [positions, setPositions] = useState([]);
-    const [profilePicture, setProfilePicture] = useState(null);
+    const [profilePicture, setProfilePicture] = useState(null); // eslint-disable-line no-unused-vars
     const [profilePicturePreview, setProfilePicturePreview] = useState('');
     
     const [formData, setFormData] = useState({
@@ -84,37 +86,54 @@ const EditUserPage = () => {
             let posData = [];
             
             try {
-                deptData = await departmentService.getAll();
-
-                // Sort departments hierarchically (main departments first, then sub-departments)
-                const sortedDepts = [];
-                const mainDepts = deptData.filter(d => !d.parentDepartment);
-                const subDepts = deptData.filter(d => d.parentDepartment);
+                const deptResponse = await departmentService.getAll();
                 
-                mainDepts.forEach(mainDept => {
-                    sortedDepts.push(mainDept);
-                    // Add sub-departments of this main department
-                    const children = subDepts.filter(sub => 
-                        (typeof sub.parentDepartment === 'object' ? sub.parentDepartment._id : sub.parentDepartment) === mainDept._id
-                    );
-                    sortedDepts.push(...children);
-                });
+                // Handle API response format: {success: true, data: Array} or just Array
+                const rawDeptData = deptResponse?.data || deptResponse;
                 
-                // Add any remaining sub-departments (orphaned)
-                const addedSubIds = new Set(sortedDepts.filter(d => d.parentDepartment).map(d => d._id));
-                const remainingSubs = subDepts.filter(d => !addedSubIds.has(d._id));
-                sortedDepts.push(...remainingSubs);
-                
-                deptData = sortedDepts;
+                // Ensure we have an array
+                if (Array.isArray(rawDeptData)) {
+                    // Sort departments hierarchically (main departments first, then sub-departments)
+                    const sortedDepts = [];
+                    const mainDepts = rawDeptData.filter(d => !d.parentDepartment);
+                    const subDepts = rawDeptData.filter(d => d.parentDepartment);
+                    
+                    mainDepts.forEach(mainDept => {
+                        sortedDepts.push(mainDept);
+                        // Add sub-departments of this main department
+                        const children = subDepts.filter(sub => 
+                            (typeof sub.parentDepartment === 'object' ? sub.parentDepartment._id : sub.parentDepartment) === mainDept._id
+                        );
+                        sortedDepts.push(...children);
+                    });
+                    
+                    // Add any remaining sub-departments (orphaned)
+                    const addedSubIds = new Set(sortedDepts.filter(d => d.parentDepartment).map(d => d._id));
+                    const remainingSubs = subDepts.filter(d => !addedSubIds.has(d._id));
+                    sortedDepts.push(...remainingSubs);
+                    
+                    deptData = sortedDepts;
+                } else {
+                    console.warn('Department data is not an array:', rawDeptData);
+                    deptData = [];
+                }
             } catch (err) {
-
+                console.error('Error fetching departments:', err);
+                deptData = [];
             }
             
             try {
-                posData = await positionService.getAll();
-
+                const posResponse = await positionService.getAll();
+                // Handle API response format: {success: true, data: Array} or just Array
+                posData = posResponse?.data || posResponse;
+                
+                if (!Array.isArray(posData)) {
+                    console.warn('Position data is not an array:', posData);
+                    posData = [];
+                }
             } catch (err) {
-
+                console.error('Error fetching positions:', err);
+                posData = [];
             }
             
             setDepartments(deptData);
@@ -150,7 +169,7 @@ const EditUserPage = () => {
                 employeeId: userData.employeeId || '',
                 department: mainDept,
                 subDepartment: subDept,
-                position: userData.position?._id || '',
+                position: (userData.position?._id && posData.find(p => p._id === userData.position._id)) ? userData.position._id : '',
                 personalInfo: {
                     fullName: userData.personalInfo?.fullName || '',
                     firstName: userData.personalInfo?.firstName || '',
@@ -158,7 +177,8 @@ const EditUserPage = () => {
                     lastName: userData.personalInfo?.lastName || '',
                     arabicName: userData.personalInfo?.arabicName || '',
                     dateOfBirth: userData.personalInfo?.dateOfBirth ? userData.personalInfo.dateOfBirth.split('T')[0] : '',
-                    gender: userData.personalInfo?.gender || '',
+                    gender: userData.personalInfo?.gender ? 
+                        userData.personalInfo.gender.charAt(0).toUpperCase() + userData.personalInfo.gender.slice(1).toLowerCase() : '',
                     nationality: userData.personalInfo?.nationality || '',
                     nationalId: userData.personalInfo?.nationalId || '',
                     phone: userData.personalInfo?.phone || '',
@@ -175,7 +195,7 @@ const EditUserPage = () => {
         } catch (error) {
 
             showNotification(error.response?.data?.message || 'Failed to fetch user data', 'error');
-            navigate('/app/users');
+            navigate(getCompanyRoute('/users'));
         } finally {
             setLoading(false);
         }
@@ -312,7 +332,14 @@ const EditUserPage = () => {
             const submitData = {
                 ...formData,
                 // Use sub-department if selected, otherwise use main department
-                department: formData.subDepartment || formData.department
+                // Convert empty strings to null to avoid ObjectId validation errors
+                department: (formData.subDepartment && formData.subDepartment !== '') 
+                    ? formData.subDepartment 
+                    : (formData.department && formData.department !== '') 
+                        ? formData.department 
+                        : null,
+                // Also handle position field
+                position: (formData.position && formData.position !== '') ? formData.position : null
             };
             
             // Remove subDepartment field as it's not part of the user model
@@ -320,7 +347,7 @@ const EditUserPage = () => {
             
             await userService.update(id, submitData);
             showNotification('User updated successfully', 'success');
-            navigate(`/app/users/${id}`);
+            navigate(getCompanyRoute(`/users/${id}`));
         } catch (error) {
             showNotification(error.response?.data?.message || 'Failed to update user', 'error');
         } finally {
@@ -347,7 +374,7 @@ const EditUserPage = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Button
                             startIcon={<ArrowBackIcon />}
-                            onClick={() => navigate(`/app/users/${id}`)}
+                            onClick={() => navigate(getCompanyRoute(`/users/${id}`))}
                             sx={{ 
                                 textTransform: 'none', 
                                 fontWeight: 600,
@@ -764,7 +791,7 @@ const EditUserPage = () => {
                                 fullWidth
                             >
                                 <MenuItem value="">Select Main Department</MenuItem>
-                                {departments.filter(dept => !dept.parentDepartment).map((dept) => (
+                                {(Array.isArray(departments) ? departments : []).filter(dept => !dept.parentDepartment).map((dept) => (
                                     <MenuItem 
                                         key={dept._id} 
                                         value={dept._id}
@@ -776,7 +803,7 @@ const EditUserPage = () => {
                             </TextField>
 
                             {/* Sub-Department Dropdown - Only show if main department is selected */}
-                            {formData.department && departments.filter(dept => 
+                            {formData.department && (Array.isArray(departments) ? departments : []).filter(dept => 
                                 dept.parentDepartment && 
                                 (typeof dept.parentDepartment === 'object' ? dept.parentDepartment._id : dept.parentDepartment) === formData.department
                             ).length > 0 && (
@@ -788,7 +815,7 @@ const EditUserPage = () => {
                                     fullWidth
                                 >
                                     <MenuItem value="">None - Use Main Department Only</MenuItem>
-                                    {departments
+                                    {(Array.isArray(departments) ? departments : [])
                                         .filter(dept => 
                                             dept.parentDepartment && 
                                             (typeof dept.parentDepartment === 'object' ? dept.parentDepartment._id : dept.parentDepartment) === formData.department
@@ -813,7 +840,7 @@ const EditUserPage = () => {
                                 fullWidth
                             >
                                 <MenuItem value="">Select Position</MenuItem>
-                                {positions.map((pos) => (
+                                {(Array.isArray(positions) ? positions : []).map((pos) => (
                                     <MenuItem key={pos._id} value={pos._id}>
                                         {pos.title}
                                     </MenuItem>
@@ -859,7 +886,7 @@ const EditUserPage = () => {
                     <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                         <Button
                             variant="outlined"
-                            onClick={() => navigate(`/app/users/${id}`)}
+                            onClick={() => navigate(getCompanyRoute(`/users/${id}`))}
                             sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
                         >
                             Cancel

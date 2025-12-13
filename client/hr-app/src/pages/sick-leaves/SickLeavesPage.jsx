@@ -19,6 +19,7 @@ import {
     Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -31,6 +32,7 @@ const SickLeavesPage = () => {
     useDocumentTitle('Sick Leaves');
     const theme = useTheme();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
     const [sickLeaves, setSickLeaves] = useState([]);
@@ -362,7 +364,7 @@ const SickLeavesPage = () => {
                         )}
                         <IconButton
                             size="small"
-                            onClick={() => navigate(`/app/sick-leaves/${row._id}`)}
+                            onClick={() => navigate(getCompanyRoute(`/sick-leaves/${row._id}`))}
                             color="info"
                             title="View Details"
                         >
@@ -371,7 +373,7 @@ const SickLeavesPage = () => {
                         {canEdit && (
                             <IconButton
                                 size="small"
-                                onClick={() => navigate(`/app/sick-leaves/${row._id}/edit`)}
+                                onClick={() => navigate(getCompanyRoute(`/sick-leaves/${row._id}/edit`))}
                                 color="primary"
                                 title="Edit"
                             >
@@ -412,7 +414,7 @@ const SickLeavesPage = () => {
                     {isDoctor && (
                         <Button
                             variant="outlined"
-                            onClick={() => navigate('/app/sick-leaves/doctor-queue')}
+                            onClick={() => navigate(getCompanyRoute('/sick-leaves/doctor-queue'))}
                         >
                             Doctor Review Queue
                         </Button>
@@ -420,7 +422,7 @@ const SickLeavesPage = () => {
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
-                        onClick={() => navigate('/app/sick-leaves/create')}
+                        onClick={() => navigate(getCompanyRoute('/sick-leaves/create'))}
                     >
                         New Sick Leave
                     </Button>

@@ -55,7 +55,15 @@ const userService = {
 
     // Get user plain password (for credential generation)
     getPlainPassword: async (id) => {
-        return await api.get(`/users/${id}/plain-password`);
+        try {
+            const result = await api.get(`/users/${id}/plain-password`);
+            return result;
+        } catch (err) {
+            if (err?.status === 404) {
+                return { plainPassword: null, status: 404 };
+            }
+            throw err;
+        }
     },
 
     // Update vacation balance for a single user

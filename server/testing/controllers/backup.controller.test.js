@@ -6,11 +6,12 @@ import Backup from '../../modules/hr-core/backup/models/backup.model.js';
 import * as backupController from '../../modules/hr-core/backup/controllers/backup.controller.js';
 import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
-describe('Backup Controller - All 6 Functions', () => {
-    let mockReq, mockRes, testUser;
+describe('Backup Controller - All 9 Functions', () => {
+    let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testUser = await createTestUser(null, null);
+        testorganization = await createTestorganization();
+        testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

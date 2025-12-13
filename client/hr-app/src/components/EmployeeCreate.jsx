@@ -106,7 +106,7 @@ export default function EmployeeCreate() {
                 autoHideDuration: 3000,
             });
 
-            navigate('/app/users');
+            navigate(getCompanyRoute('/users'));
         } catch (createError) {
             notifications.show(
                 `Failed to create employee. Reason: ${createError.message}`,
@@ -120,13 +120,14 @@ export default function EmployeeCreate() {
     }, [formValues, navigate, notifications, setFormErrors]);
 
     const handleCancel = () => {
-        navigate('/app/users');
+    const { getCompanyRoute } = useCompanyRouting();
+        navigate(getCompanyRoute('/users'));
     };
 
     return (
         <PageContainer
             title="New Employee"
-            breadcrumbs={[{ title: 'Employees', path: '/app/users' }, { title: 'New' }]}
+            breadcrumbs={[{ title: 'Employees', path: getCompanyRoute('/users') }, { title: 'New' }]}
         >
             <EmployeeForm
                 formState={formState}

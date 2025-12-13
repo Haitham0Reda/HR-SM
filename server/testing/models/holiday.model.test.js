@@ -1,23 +1,36 @@
 import mongoose from 'mongoose';
 import Holiday from '../../modules/hr-core/holidays/models/holiday.model.js';
+// organization model removed - not needed for general HR system
 
-const TEST_TENANT_ID = 'test_tenant_123';
+// organization variable removed
+beforeAll(async () => {
+  organization = await organization.create({
+    organizationCode: 'ENG',
+    name: 'organization of Engineering',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  });
+});
+
+afterAll(async () => {
+  // Clean up test data
+});
 
 describe('Holiday Model', () => {
   it('should create a new holiday document with default values', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
+    expect(holiday.location.toString()).toBe(organization._id.toString());
     expect(holiday.officialHolidays).toEqual([]);
     expect(holiday.weekendWorkDays).toEqual([]);
     expect(holiday.earlyLeaveDates).toEqual([]);
-    expect(holiday.weekendDays).toEqual([5, 6]);
+    expect(holiday.weekendDays).toEqual([5, 6]); // Default Friday and Saturday
   });
 
   it('should add an official holiday', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
     const updatedHoliday = await holiday.addOfficialHoliday('01-01-2024', 'New Year', 'New Year Celebration');
@@ -31,9 +44,10 @@ describe('Holiday Model', () => {
 
   it('should throw error for invalid date format when adding holiday', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
+    // Test synchronous error throwing
     expect(() => {
       holiday.addOfficialHoliday('invalid-date', 'Test Holiday');
     }).toThrow('Invalid date format: invalid-date. Use DD-MM-YYYY format.');
@@ -41,11 +55,12 @@ describe('Holiday Model', () => {
 
   it('should prevent adding duplicate holidays', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
     await holiday.addOfficialHoliday('01-01-2024', 'New Year');
 
+    // Test synchronous error throwing
     expect(() => {
       holiday.addOfficialHoliday('01-01-2024', 'Another New Year');
     }).toThrow('Holiday already exists for date: 01-01-2024');
@@ -53,7 +68,7 @@ describe('Holiday Model', () => {
 
   it('should add multiple holidays from comma-separated string', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
     const result = holiday.addMultipleHolidays('01-01-2024,15-01-2024,20-01-2024', 'Official Holiday');
@@ -65,7 +80,7 @@ describe('Holiday Model', () => {
 
   it('should handle errors when adding multiple holidays with invalid dates', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
     const result = holiday.addMultipleHolidays('01-01-2024,invalid-date,20-01-2024', 'Official Holiday');
@@ -78,7 +93,7 @@ describe('Holiday Model', () => {
 
   it('should add a weekend work day', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
     const updatedHoliday = await holiday.addWeekendWorkDay('06-01-2024', 'Makeup day for holiday');
@@ -90,11 +105,12 @@ describe('Holiday Model', () => {
 
   it('should prevent adding duplicate weekend work days', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
     await holiday.addWeekendWorkDay('06-01-2024', 'Makeup day');
 
+    // Test synchronous error throwing
     expect(() => {
       holiday.addWeekendWorkDay('06-01-2024', 'Another makeup day');
     }).toThrow('Weekend work day already exists for date: 06-01-2024');
@@ -102,7 +118,7 @@ describe('Holiday Model', () => {
 
   it('should check if a date is a holiday', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
     await holiday.addOfficialHoliday('01-01-2024', 'New Year');
@@ -113,7 +129,7 @@ describe('Holiday Model', () => {
 
   it('should check if a date is a weekend work day', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
     await holiday.addWeekendWorkDay('06-01-2024', 'Makeup day');
@@ -124,29 +140,37 @@ describe('Holiday Model', () => {
 
   it('should determine if a date is a working day', async () => {
     const holiday = await Holiday.create({
-      tenantId: TEST_TENANT_ID
+      location: organization._id
     });
 
+    // Add a holiday (should not be working day)
     await holiday.addOfficialHoliday('01-01-2024', 'New Year');
+
+    // Add a weekend work day (should be working day)
     await holiday.addWeekendWorkDay('06-01-2024', 'Makeup day');
 
-    const defaultWeekend = new Date('2024-01-05');
-    const regularWeekday = new Date('2024-01-02');
+    // Default weekend day (should not be working day)
+    const defaultWeekend = new Date('2024-01-05'); // Friday
 
-    expect(holiday.isWorkingDay(new Date('2024-01-01'))).toBe(false);
-    expect(holiday.isWorkingDay(new Date('2024-01-06'))).toBe(true);
-    expect(holiday.isWorkingDay(defaultWeekend)).toBe(false);
-    expect(holiday.isWorkingDay(regularWeekday)).toBe(true);
+    // Regular weekday (should be working day)
+    const regularWeekday = new Date('2024-01-02'); // Tuesday
+
+    expect(holiday.isWorkingDay(new Date('2024-01-01'))).toBe(false); // Holiday
+    expect(holiday.isWorkingDay(new Date('2024-01-06'))).toBe(true);  // Weekend work day
+    expect(holiday.isWorkingDay(defaultWeekend)).toBe(false);         // Default weekend
+    expect(holiday.isWorkingDay(regularWeekday)).toBe(true);          // Regular weekday
   });
 
-  it('should get or create holiday settings for tenant', async () => {
-    const holidaySettings = await Holiday.getOrCreateForTenant(TEST_TENANT_ID);
+  it('should get or create holiday settings for location', async () => {
+    // First call should create new settings
+    const holidaySettings = await Holiday.getOrCreateForlocation(organization._id);
 
-    expect(holidaySettings.tenantId).toBe(TEST_TENANT_ID);
+    expect(holidaySettings.location.toString()).toBe(organization._id.toString());
     expect(holidaySettings.officialHolidays).toEqual([]);
     expect(holidaySettings.weekendDays).toEqual([5, 6]);
 
-    const sameSettings = await Holiday.getOrCreateForTenant(TEST_TENANT_ID);
+    // Second call should return existing settings
+    const sameSettings = await Holiday.getOrCreateForlocation(organization._id);
 
     expect(sameSettings._id.toString()).toBe(holidaySettings._id.toString());
   });

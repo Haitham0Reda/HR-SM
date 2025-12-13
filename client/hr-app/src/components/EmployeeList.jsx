@@ -158,7 +158,7 @@ export default function EmployeeList() {
     );
 
     const handleCreateClick = React.useCallback(() => {
-        navigate('/app/users/new');
+        navigate(getCompanyRoute('/users/new'));
     }, [navigate]);
 
     const handleRowEdit = React.useCallback(

@@ -3,14 +3,15 @@
  */
 import mongoose from 'mongoose';
 import HardCopy from '../../modules/documents/models/hardcopy.model.js';
-import * as hardcopyController from '../../modules/documents/controllers/hardcopy.controller.js';
+import * as hardCopyController from '../../modules/documents/controllers/hardcopy.controller.js';
 import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
-describe('Hardcopy Controller - All 6 Functions', () => {
-    let mockReq, mockRes, testUser;
+describe('HardCopy Controller - All 5 Functions', () => {
+    let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testUser = await createTestUser(null, null);
+        testorganization = await createTestorganization();
+        testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

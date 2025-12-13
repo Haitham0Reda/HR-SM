@@ -72,22 +72,30 @@ api.interceptors.response.use(
             // Only log errors that aren't expected 403s (permission denied)
             // 403s are expected for users accessing restricted endpoints
             if (status !== 403) {
-                logger.apiCall(
-                    error.config?.method?.toUpperCase(),
-                    error.config?.url,
-                    status,
-                    new Error(data.error || data.message || 'An error occurred')
-                );
+                const method = error.config?.method?.toUpperCase();
+                const url = error.config?.url || '';
+                const isPlainPassword404 = status === 404 && url.endsWith('/plain-password');
+                if (isPlainPassword404) {
+                    logger.debug(`API ${method} ${url} - Status: ${status} (expected)`);
+                } else {
+                    logger.apiCall(
+                        method,
+                        url,
+                        status,
+                        new Error(data.error || data.message || 'An error occurred')
+                    );
+                }
             }
 
-            // Handle 401 Unauthorized - clear auth and redirect to login
+            // Handle 401 Unauthorized - log but don't automatically redirect
+            // Let the AuthContext handle the redirect logic
             if (status === 401) {
-                logger.warn('Unauthorized access - redirecting to login');
-                localStorage.removeItem('tenant_token');
-                localStorage.removeItem('tenant_id');
-                localStorage.removeItem('token'); // Remove old token if exists
-                localStorage.removeItem('user');
-                window.location.href = '/';
+                logger.warn('Unauthorized access detected', {
+                    url: error.config?.url,
+                    method: error.config?.method
+                });
+                // Don't automatically clear storage or redirect
+                // Let the calling component handle this
             }
 
             // Return error with full context

@@ -1,6 +1,6 @@
 import platformAuthService from '../services/platformAuthService.js';
-import { setPlatformTokenCookie, clearPlatformTokenCookie } from '../../../core/auth/platformAuth.js';
-import asyncHandler from '../../../utils/asyncHandler.js';
+import { generatePlatformToken } from '../../middleware/platformAuth.js';
+import logger from '../../../utils/logger.js';
 
 /**
  * Platform Authentication Controller
@@ -14,46 +14,54 @@ import asyncHandler from '../../../utils/asyncHandler.js';
  * @param {Object} req.body.email - User email
  * @param {Object} req.body.password - User password
  */
-export const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-  const { user, token } = await platformAuthService.login(email, password);
+    const { user, token } = await platformAuthService.login(email, password);
 
-  // Set token in HTTP-only cookie
-  setPlatformTokenCookie(res, token);
-
-  res.status(200).json({
-    success: true,
-    data: {
-      user,
-      token
-    },
-    meta: {
-      timestamp: new Date().toISOString(),
-      requestId: req.id
-    }
-  });
-});
+    res.status(200).json({
+      success: true,
+      data: {
+        user,
+        token
+      },
+      meta: {
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    logger.error('Platform login failed', { error: error.message, email: req.body.email });
+    res.status(401).json({
+      success: false,
+      message: error.message || 'Login failed'
+    });
+  }
+};
 
 /**
  * Logout platform user
  * POST /api/platform/auth/logout
  */
-export const logout = asyncHandler(async (req, res) => {
-  // Clear token cookie
-  clearPlatformTokenCookie(res);
-
-  res.status(200).json({
-    success: true,
-    data: {
-      message: 'Logged out successfully'
-    },
-    meta: {
-      timestamp: new Date().toISOString(),
-      requestId: req.id
-    }
-  });
-});
+export const logout = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      data: {
+        message: 'Logged out successfully'
+      },
+      meta: {
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    logger.error('Platform logout failed', { error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Logout failed'
+    });
+  }
+};
 
 /**
  * Get current platform user
@@ -61,21 +69,27 @@ export const logout = asyncHandler(async (req, res) => {
  * 
  * Requires authentication middleware
  */
-export const me = asyncHandler(async (req, res) => {
-  // User ID is set by authentication middleware
-  const user = await platformAuthService.getUserById(req.platformUser.userId);
+export const me = async (req, res) => {
+  try {
+    const user = req.platformUser.toSafeObject();
 
-  res.status(200).json({
-    success: true,
-    data: {
-      user
-    },
-    meta: {
-      timestamp: new Date().toISOString(),
-      requestId: req.id
-    }
-  });
-});
+    res.status(200).json({
+      success: true,
+      data: {
+        user
+      },
+      meta: {
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to get platform user', { error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get user information'
+    });
+  }
+};
 
 /**
  * Change password
@@ -84,20 +98,27 @@ export const me = asyncHandler(async (req, res) => {
  * @param {Object} req.body.currentPassword - Current password
  * @param {Object} req.body.newPassword - New password
  */
-export const changePassword = asyncHandler(async (req, res) => {
-  const { currentPassword, newPassword } = req.body;
-  const userId = req.platformUser.userId;
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.platformUser._id;
 
-  await platformAuthService.changePassword(userId, currentPassword, newPassword);
+    await platformAuthService.changePassword(userId, currentPassword, newPassword);
 
-  res.status(200).json({
-    success: true,
-    data: {
-      message: 'Password changed successfully'
-    },
-    meta: {
-      timestamp: new Date().toISOString(),
-      requestId: req.id
-    }
-  });
-});
+    res.status(200).json({
+      success: true,
+      data: {
+        message: 'Password changed successfully'
+      },
+      meta: {
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to change password', { error: error.message, userId: req.platformUser._id });
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to change password'
+    });
+  }
+};

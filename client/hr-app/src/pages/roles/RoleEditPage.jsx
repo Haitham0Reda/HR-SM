@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Paper,
     Typography,
@@ -30,6 +31,7 @@ import { useNotification } from '../../context/NotificationContext.js';
 const RoleEditPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { showNotification } = useNotification();
     const isEditMode = Boolean(id);
 
@@ -111,7 +113,7 @@ const RoleEditPage = () => {
         // Escape: Cancel and go back
         if (event.key === 'Escape') {
             event.preventDefault();
-            navigate('/app/roles');
+            navigate(getCompanyRoute('/roles'));
         }
     }, [navigate]);
 
@@ -392,7 +394,7 @@ const RoleEditPage = () => {
             showNotification(successMessage, 'success');
             
             // Navigate after successful API call
-            navigate('/app/roles');
+            navigate(getCompanyRoute('/roles'));
         } catch (error) {
 
             // Rollback to original data on error
@@ -426,7 +428,7 @@ const RoleEditPage = () => {
 
     // Handle cancel
     const handleCancel = () => {
-        navigate('/app/roles');
+        navigate(getCompanyRoute('/roles'));
     };
 
     if (initialLoading) {
@@ -463,11 +465,11 @@ const RoleEditPage = () => {
                     underline="hover"
                     sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                     color="inherit"
-                    onClick={() => navigate('/app/dashboard')}
+                    onClick={() => navigate(getCompanyRoute('/dashboard'))}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            navigate('/app/dashboard');
+                            navigate(getCompanyRoute('/dashboard'));
                         }
                     }}
                     tabIndex={0}
@@ -481,11 +483,11 @@ const RoleEditPage = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: 'pointer' }}
-                    onClick={() => navigate('/app/roles')}
+                    onClick={() => navigate(getCompanyRoute('/roles'))}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            navigate('/app/roles');
+                            navigate(getCompanyRoute('/roles'));
                         }
                     }}
                     tabIndex={0}

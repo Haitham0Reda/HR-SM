@@ -56,21 +56,56 @@ const PlatformDashboard = () => {
     try {
       setDashboardData(prev => ({ ...prev, error: null }));
 
-      // Load companies data
-      const companiesResponse = await companyService.getAllCompanies();
-      const companies = companiesResponse.data.companies;
+      // Load companies data with fallback
+      let companies = [];
+      let systemHealth = null;
 
-      // Load system health
-      const healthResponse = await systemService.getHealth();
-      const systemHealth = healthResponse.data;
+      try {
+        const companiesResponse = await companyService.getAllCompanies();
+        console.log('Companies response:', companiesResponse); // Debug log
+        companies = companiesResponse?.data?.companies || companiesResponse?.companies || [];
+        
+        // Ensure companies is always an array
+        if (!Array.isArray(companies)) {
+          console.warn('Companies is not an array:', companies);
+          companies = [];
+        }
+      } catch (companyError) {
+        console.warn('Failed to load companies:', companyError);
+        companies = [];
+      }
 
-      // Calculate aggregated statistics
-      const totalUsers = companies.reduce((sum, company) => sum + (company.statistics.users || 0), 0);
-      const totalDepartments = companies.reduce((sum, company) => sum + (company.statistics.departments || 0), 0);
-      const activeCompanies = companies.filter(company => company.metadata.isActive !== false).length;
+      // Load system health with fallback
+      try {
+        const healthResponse = await systemService.getHealth();
+        systemHealth = healthResponse?.data || null;
+      } catch (healthError) {
+        console.warn('Failed to load system health:', healthError);
+        systemHealth = { status: 'unknown', message: 'Health check failed' };
+      }
+
+      // Calculate aggregated statistics with defensive programming
+      const safeCompanies = Array.isArray(companies) ? companies : [];
+      
+      const totalUsers = safeCompanies.reduce((sum, company) => {
+        if (!company) return sum;
+        const employees = company.usage?.employees || company.statistics?.users || 0;
+        return sum + employees;
+      }, 0);
+      
+      const totalDepartments = safeCompanies.reduce((sum, company) => {
+        if (!company) return sum;
+        const departments = company.usage?.departments || company.statistics?.departments || 0;
+        return sum + departments;
+      }, 0);
+      
+      const activeCompanies = safeCompanies.filter(company => {
+        if (!company) return false;
+        return company.status === 'active' || company.metadata?.isActive !== false;
+      }).length;
 
       setDashboardData({
-        companies,
+        companies: safeCompanies,
         systemHealth,
         totalUsers,
         totalDepartments,
@@ -84,7 +119,7 @@ const PlatformDashboard = () => {
       setDashboardData(prev => ({
         ...prev,
         loading: false,
-        error: 'Failed to load dashboard data: ' + (error.response?.data?.error?.message || error.message)
+        error: 'Failed to load dashboard data: ' + (error.response?.data?.message || error.message)
       }));
     }
   };
@@ -108,17 +143,44 @@ const PlatformDashboard = () => {
   };
 
   const getTopCompanies = () => {
-    return dashboardData.companies
-      .sort((a, b) => (b.statistics.users || 0) - (a.statistics.users || 0))
+    const companies = Array.isArray(dashboardData.companies) ? dashboardData.companies : [];
+    return companies
+      .filter(company => company) // Filter out null/undefined companies
+      .sort((a, b) => {
+        const aUsers = a.usage?.employees || a.statistics?.users || 0;
+        const bUsers = b.usage?.employees || b.statistics?.users || 0;
+        return bUsers - aUsers;
+      })
       .slice(0, 5);
   };
 
   const getModuleUsage = () => {
     const moduleCount = {};
-    dashboardData.companies.forEach(company => {
-      company.metadata.modules?.forEach(module => {
-        moduleCount[module] = (moduleCount[module] || 0) + 1;
-      });
+    const companies = Array.isArray(dashboardData.companies) ? dashboardData.companies : [];
+    
+    companies.forEach(company => {
+      try {
+        if (!company) return;
+        
+        // Get enabled modules from different possible sources
+        let enabledModules = [];
+        
+        if (company.getEnabledModules && typeof company.getEnabledModules === 'function') {
+          enabledModules = company.getEnabledModules();
+        } else if (company.modules && typeof company.modules === 'object') {
+          enabledModules = Object.entries(company.modules)
+            .filter(([key, config]) => config && config.enabled)
+            .map(([key]) => key);
+        } else if (company.metadata?.modules && Array.isArray(company.metadata.modules)) {
+          enabledModules = company.metadata.modules;
+        }
+        
+        enabledModules.forEach(module => {
+          moduleCount[module] = (moduleCount[module] || 0) + 1;
+        });
+      } catch (error) {
+        console.warn('Error processing company modules:', error);
+      }
     });
     
     return Object.entries(moduleCount)
@@ -634,7 +696,7 @@ const PlatformDashboard = () => {
               
               <List sx={{ p: 0 }}>
                 {getTopCompanies().map((company, index) => (
-                  <React.Fragment key={company.sanitizedName}>
+                  <React.Fragment key={company._id || company.slug || `company-${index}`}>
                     <ListItem 
                       sx={{ 
                         px: 0, 
@@ -661,18 +723,18 @@ const PlatformDashboard = () => {
                       <ListItemText
                         primary={
                           <Typography variant="body1" fontWeight="600">
-                            {company.metadata.name || company.sanitizedName}
+                            {company.name || company.slug}
                           </Typography>
                         }
                         secondary={
                           <Typography variant="body2" color="text.secondary">
-                            {company.statistics.users || 0} users • {company.metadata.industry || 'Unknown industry'}
+                            {company.usage?.employees || company.statistics?.users || 0} employees • {company.subscription?.plan || company.metadata?.plan || 'No plan'}
                           </Typography>
                         }
                       />
                       <Chip
-                        label={company.metadata.isActive !== false ? 'Active' : 'Inactive'}
-                        color={company.metadata.isActive !== false ? 'success' : 'error'}
+                        label={(company.status === 'active' || company.metadata?.isActive !== false) ? 'Active' : 'Inactive'}
+                        color={(company.status === 'active' || company.metadata?.isActive !== false) ? 'success' : 'error'}
                         size="small"
                         sx={{ fontWeight: 500 }}
                       />
@@ -742,7 +804,7 @@ const PlatformDashboard = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 120 }}>
                         <LinearProgress
                           variant="determinate"
-                          value={(count / dashboardData.companies.length) * 100}
+                          value={dashboardData.companies.length > 0 ? (count / dashboardData.companies.length) * 100 : 0}
                           color="info"
                           sx={{ 
                             width: 80, 
@@ -751,7 +813,7 @@ const PlatformDashboard = () => {
                           }}
                         />
                         <Typography variant="body2" fontWeight="600" color="secondary.main">
-                          {Math.round((count / dashboardData.companies.length) * 100)}%
+                          {dashboardData.companies.length > 0 ? Math.round((count / dashboardData.companies.length) * 100) : 0}%
                         </Typography>
                       </Box>
                     </ListItem>

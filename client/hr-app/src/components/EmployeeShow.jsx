@@ -76,7 +76,7 @@ export default function EmployeeShow() {
             try {
                 await deleteEmployee(Number(employeeId));
 
-                navigate('/app/users');
+                navigate(getCompanyRoute('/users'));
 
                 notifications.show('Employee deleted successfully.', {
                     severity: 'success',
@@ -96,7 +96,7 @@ export default function EmployeeShow() {
     }, [employee, dialogs, employeeId, navigate, notifications]);
 
     const handleBack = React.useCallback(() => {
-        navigate('/app/users');
+        navigate(getCompanyRoute('/users'));
     }, [navigate]);
 
     const renderShow = React.useMemo(() => {

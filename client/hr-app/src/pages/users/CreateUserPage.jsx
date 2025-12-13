@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Box,
     Button,
@@ -46,12 +47,13 @@ const steps = ['Account', 'Personal Info', 'Employment'];
 
 const CreateUserPage = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { showNotification } = useNotification();
     const [activeStep, setActiveStep] = useState(0);
     const [showPassword, setShowPassword] = useState(false);
     const [departments, setDepartments] = useState([]);
     const [positions, setPositions] = useState([]);
-    const [profilePicture, setProfilePicture] = useState(null);
+    const [profilePicture, setProfilePicture] = useState(null); // eslint-disable-line no-unused-vars
     const [profilePicturePreview, setProfilePicturePreview] = useState('');
     const [formData, setFormData] = useState({
         username: '',
@@ -88,10 +90,24 @@ const CreateUserPage = () => {
 
     const fetchData = async () => {
         try {
-            let [deptData, posData] = await Promise.all([
+            let [deptResponse, posResponse] = await Promise.all([
                 departmentService.getAll(),
                 positionService.getAll()
             ]);
+            
+            // Handle API response format: {success: true, data: Array} or just Array
+            let deptData = deptResponse?.data || deptResponse;
+            let posData = posResponse?.data || posResponse;
+            
+            // Ensure we have arrays
+            if (!Array.isArray(deptData)) {
+                console.warn('Department data is not an array:', deptData);
+                deptData = [];
+            }
+            if (!Array.isArray(posData)) {
+                console.warn('Position data is not an array:', posData);
+                posData = [];
+            }
             
             // Sort departments hierarchically (main departments first, then sub-departments)
             const sortedDepts = [];
@@ -115,7 +131,9 @@ const CreateUserPage = () => {
             setDepartments(sortedDepts);
             setPositions(posData);
         } catch (error) {
-
+            console.error('Error fetching data:', error);
+            setDepartments([]);
+            setPositions([]);
         }
     };
 
@@ -241,7 +259,14 @@ const CreateUserPage = () => {
             const submitData = {
                 ...formData,
                 // Use sub-department if selected, otherwise use main department
-                department: formData.subDepartment || formData.department
+                // Convert empty strings to null to avoid ObjectId validation errors
+                department: (formData.subDepartment && formData.subDepartment !== '') 
+                    ? formData.subDepartment 
+                    : (formData.department && formData.department !== '') 
+                        ? formData.department 
+                        : null,
+                // Also handle position field
+                position: (formData.position && formData.position !== '') ? formData.position : null
             };
             
             // Remove subDepartment field as it's not part of the user model
@@ -249,7 +274,7 @@ const CreateUserPage = () => {
             
             await userService.create(submitData);
             showNotification('User created successfully', 'success');
-            navigate('/app/users');
+            navigate(getCompanyRoute('/users'));
         } catch (error) {
             showNotification(error.response?.data?.message || 'Failed to create user', 'error');
         }
@@ -576,7 +601,7 @@ const CreateUserPage = () => {
                                     }}
                                 >
                                     <MenuItem value="">Select Main Department</MenuItem>
-                                    {departments.filter(dept => !dept.parentDepartment).map((dept) => (
+                                    {(Array.isArray(departments) ? departments : []).filter(dept => !dept.parentDepartment).map((dept) => (
                                         <MenuItem 
                                             key={dept._id} 
                                             value={dept._id}
@@ -588,7 +613,7 @@ const CreateUserPage = () => {
                                 </TextField>
 
                                 {/* Sub-Department Dropdown - Only show if main department is selected */}
-                                {formData.department && departments.filter(dept => 
+                                {formData.department && (Array.isArray(departments) ? departments : []).filter(dept => 
                                     dept.parentDepartment && 
                                     (typeof dept.parentDepartment === 'object' ? dept.parentDepartment._id : dept.parentDepartment) === formData.department
                                 ).length > 0 && (
@@ -607,7 +632,7 @@ const CreateUserPage = () => {
                                         }}
                                     >
                                         <MenuItem value="">None - Use Main Department Only</MenuItem>
-                                        {departments
+                                        {(Array.isArray(departments) ? departments : [])
                                             .filter(dept => 
                                                 dept.parentDepartment && 
                                                 (typeof dept.parentDepartment === 'object' ? dept.parentDepartment._id : dept.parentDepartment) === formData.department
@@ -640,7 +665,7 @@ const CreateUserPage = () => {
                                     }}
                                 >
                                     <MenuItem value="">Select Position</MenuItem>
-                                    {positions.map((pos) => (
+                                    {(Array.isArray(positions) ? positions : []).map((pos) => (
                                         <MenuItem key={pos._id} value={pos._id}>{pos.title}</MenuItem>
                                     ))}
                                 </TextField>
@@ -735,7 +760,7 @@ const CreateUserPage = () => {
                 <Box sx={{ maxWidth: 900, mx: 'auto', px: { xs: 2, sm: 3, md: 4 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <IconButton 
-                            onClick={() => navigate('/app/users')} 
+                            onClick={() => navigate(getCompanyRoute('/users'))} 
                             sx={{ 
                                 color: 'white',
                                 bgcolor: 'rgba(255,255,255,0.1)',

@@ -1,15 +1,24 @@
 import mongoose from 'mongoose';
 import RequestControl from '../../modules/hr-core/requests/models/requestControl.model.js';
 import User from '../../modules/hr-core/users/models/user.model.js';
+// organization model removed - not needed for general HR system
+
 let user;
+// organization variable removed
 beforeAll(async () => {
+  // Create required references
+  organization = await organization.create({
+    name: 'organization of Engineering'Code: 'ENG',
+    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  });
+
   user = await User.create({
-    tenantId: 'test_tenant_123',
+      tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'admin',
-    employeeId: 'EMP001'
+    employeeId: 'EMP001': organization._id
   });
 });
 
@@ -336,7 +345,7 @@ describe('RequestControl Model', () => {
   it('should get all active controls', async () => {
     await RequestControl.create([
       {
-        organization: 'org1'
+        organization: 'org1': organization._id
       },
       {
         organization: 'org2'
@@ -357,11 +366,11 @@ describe('RequestControl Model', () => {
       email: 'employee1@example.com',
       password: 'password123',
       role: 'employee',
-      employeeId: 'EMP002'
+      employeeId: 'EMP002': organization._id
     });
 
     await RequestControl.create({
-      organization: 'default',
+      organization: 'default': organization._id,
       vacationRequests: {
         enabled: false,
         disabledMessage: 'Vacation requests disabled for this organization'

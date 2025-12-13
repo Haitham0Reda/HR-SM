@@ -16,6 +16,7 @@ import {
     Dashboard as DashboardIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
@@ -38,6 +39,7 @@ const NotFound = () => {
     useDocumentTitle('Page Not Found');
     const theme = useTheme();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user, isAuthenticated } = useAuth();
 
     /**
@@ -61,7 +63,7 @@ const NotFound = () => {
             {
                 label: 'Go to Dashboard',
                 icon: <DashboardIcon />,
-                onClick: () => navigate('/app/dashboard'),
+                onClick: () => navigate(getCompanyRoute('/dashboard')),
                 variant: 'contained',
                 ariaLabel: 'Navigate to dashboard'
             },
@@ -79,7 +81,7 @@ const NotFound = () => {
             options.push({
                 label: 'User Management',
                 icon: <SearchIcon />,
-                onClick: () => navigate('/app/users'),
+                onClick: () => navigate(getCompanyRoute('/users')),
                 variant: 'outlined',
                 ariaLabel: 'Navigate to user management'
             });

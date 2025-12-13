@@ -8,6 +8,7 @@ import {
     MenuItem,
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel } from '@mui/icons-material';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,6 +18,7 @@ import Loading from '../../components/common/Loading';
 
 const OvertimeForm = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { id } = useParams();
     useDocumentTitle(id ? 'Edit Overtime' : 'Create Overtime');
     const { user } = useAuth();
@@ -62,7 +64,7 @@ const OvertimeForm = () => {
         } catch (error) {
 
             showNotification('Failed to load overtime', 'error');
-            navigate('/app/overtime');
+            navigate(getCompanyRoute('/overtime'));
         } finally {
             setLoading(false);
         }
@@ -185,7 +187,7 @@ const OvertimeForm = () => {
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
 
-            navigate('/app/overtime');
+            navigate(getCompanyRoute('/overtime'));
         } catch (error) {
 
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
@@ -215,7 +217,7 @@ const OvertimeForm = () => {
                 </Typography>
                 <Button
                     variant="outlined"
-                    onClick={() => navigate('/app/overtime')}
+                    onClick={() => navigate(getCompanyRoute('/overtime'))}
                     startIcon={<Cancel />}
                     sx={{ textTransform: 'none' }}
                 >
@@ -344,7 +346,7 @@ const OvertimeForm = () => {
                                 {isEditMode ? 'Update Overtime' : 'Submit Overtime'}
                             </Button>
                             <Button
-                                onClick={() => navigate('/app/overtime')}
+                                onClick={() => navigate(getCompanyRoute('/overtime'))}
                                 variant="outlined"
                                 size="large"
                                 sx={{ textTransform: 'none', fontWeight: 600 }}

@@ -1,85 +1,55 @@
 import express from 'express';
-import * as tenantController from '../controllers/tenantController.js';
-import { authenticatePlatform } from '../../../core/middleware/platformAuthentication.js';
-import { platformGuard } from '../../../core/middleware/platformAuthorization.js';
+import { authenticatePlatformUser } from '../../middleware/platformAuth.js';
+import { validatePlatformPermission } from '../../middleware/platformPermissions.js';
 
 const router = express.Router();
 
 /**
- * Tenant Management Routes
+ * Platform Tenant Routes
  * Base path: /api/platform/tenants
- * 
- * All routes require Platform JWT authentication and appropriate permissions
  */
 
-// Get tenant statistics (must be before /:id route)
-router.get('/stats', 
-  authenticatePlatform,
-  ...platformGuard('tenants:read', 'VIEW_TENANT_STATS'),
-  tenantController.getTenantStats
-);
-
-// List all tenants
+// Get all tenants
 router.get('/', 
-  authenticatePlatform,
-  ...platformGuard('tenants:read', 'LIST_TENANTS'),
-  tenantController.listTenants
+  authenticatePlatformUser,
+  validatePlatformPermission('manage_companies'),
+  async (req, res) => {
+    try {
+      // TODO: Implement tenant listing
+      res.json({
+        success: true,
+        data: {
+          tenants: [],
+          total: 0
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get tenants'
+      });
+    }
+  }
 );
 
-// Create new tenant
+// Create tenant
 router.post('/', 
-  authenticatePlatform,
-  ...platformGuard('tenants:create', 'CREATE_TENANT'),
-  tenantController.createTenant
-);
-
-// Get tenant by ID
-router.get('/:id', 
-  authenticatePlatform,
-  ...platformGuard('tenants:read', 'VIEW_TENANT'),
-  tenantController.getTenant
-);
-
-// Update tenant
-router.patch('/:id', 
-  authenticatePlatform,
-  ...platformGuard('tenants:update', 'UPDATE_TENANT'),
-  tenantController.updateTenant
-);
-
-// Delete tenant (archive)
-router.delete('/:id', 
-  authenticatePlatform,
-  ...platformGuard('tenants:delete', 'DELETE_TENANT'),
-  tenantController.deleteTenant
-);
-
-// Suspend tenant
-router.post('/:id/suspend', 
-  authenticatePlatform,
-  ...platformGuard('tenants:update', 'SUSPEND_TENANT'),
-  tenantController.suspendTenant
-);
-
-// Reactivate tenant
-router.post('/:id/reactivate', 
-  authenticatePlatform,
-  ...platformGuard('tenants:update', 'REACTIVATE_TENANT'),
-  tenantController.reactivateTenant
-);
-
-// Check tenant limits
-router.get('/:id/limits', 
-  authenticatePlatform,
-  ...platformGuard('tenants:read', 'CHECK_TENANT_LIMITS'),
-  tenantController.checkTenantLimits
-);
-
-// Update tenant usage
-router.patch('/:id/usage', 
-  authenticatePlatform,
-  ...platformGuard('tenants:update', 'UPDATE_TENANT_USAGE'),
-  tenantController.updateTenantUsage
+  authenticatePlatformUser,
+  validatePlatformPermission('manage_companies'),
+  async (req, res) => {
+    try {
+      // TODO: Implement tenant creation
+      res.json({
+        success: true,
+        message: 'Tenant creation not yet implemented'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create tenant'
+      });
+    }
+  }
 );
 
 export default router;

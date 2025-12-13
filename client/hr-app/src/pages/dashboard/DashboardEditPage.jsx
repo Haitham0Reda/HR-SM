@@ -37,6 +37,7 @@ import {
     Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useNotification } from '../../context/NotificationContext';
 import Loading from '../../components/common/Loading';
 import { userService, dashboardService } from '../../services';
@@ -44,6 +45,7 @@ import { getUserProfilePicture, getUserInitials } from '../../utils/profilePictu
 
 const DashboardEditPage = () => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { showSuccess, showError } = useNotification();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -114,7 +116,7 @@ const DashboardEditPage = () => {
             await dashboardService.updateConfig(config);
 
             showSuccess('Dashboard configuration saved successfully');
-            navigate('/app/dashboard');
+            navigate(getCompanyRoute('/dashboard'));
         } catch (error) {
             showError('Failed to save dashboard configuration');
         } finally {
@@ -123,7 +125,7 @@ const DashboardEditPage = () => {
     };
 
     const handleCancel = () => {
-        navigate('/app/dashboard');
+        navigate(getCompanyRoute('/dashboard'));
     };
 
     const handleEmployeeSelect = (event, newValue) => {
