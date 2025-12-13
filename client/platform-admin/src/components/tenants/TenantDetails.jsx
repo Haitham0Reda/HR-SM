@@ -128,7 +128,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
         <TabPanel value={tabValue} index={0}>
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   label="Tenant ID"
@@ -136,7 +136,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                   disabled
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Tenant Name"
@@ -147,7 +147,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                   required
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Domain"
@@ -157,7 +157,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                   disabled={!isEditMode}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControl fullWidth disabled={!isEditMode}>
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -173,7 +173,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Deployment Mode"
@@ -181,7 +181,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                   disabled
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   label="Admin Name"
@@ -191,7 +191,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                   disabled={!isEditMode}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Admin Email"
@@ -202,7 +202,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                   disabled={!isEditMode}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Phone"
@@ -212,7 +212,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                   disabled={!isEditMode}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   label="Address"
@@ -230,7 +230,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
 
         <TabPanel value={tabValue} index={1}>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="subtitle2" color="text.secondary">
                 Timezone
               </Typography>
@@ -238,7 +238,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                 {tenant.config?.timezone || 'UTC'}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="subtitle2" color="text.secondary">
                 Locale
               </Typography>
@@ -251,7 +251,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
 
         <TabPanel value={tabValue} index={2}>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Typography variant="subtitle2" color="text.secondary">
                 User Count
               </Typography>
@@ -259,7 +259,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                 {tenant.usage?.userCount || 0} / {tenant.limits?.maxUsers || 'Unlimited'}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Typography variant="subtitle2" color="text.secondary">
                 Storage Used
               </Typography>
@@ -267,7 +267,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
                 {((tenant.usage?.storageUsed || 0) / 1024 / 1024 / 1024).toFixed(2)} GB
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Typography variant="subtitle2" color="text.secondary">
                 API Calls (This Month)
               </Typography>

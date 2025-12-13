@@ -42,17 +42,33 @@ app.use(helmet());
 app.use(cors({
     origin: [
         process.env.CLIENT_URL || 'http://localhost:3000',
-        'http://localhost:3001' // Platform admin
+        'http://localhost:3001', // Platform admin
+        'http://localhost:3002', // Platform admin (alternative port)
+        'http://localhost:6006' // Storybook
     ],
     credentials: true
 }));
 
-// Rate limiting
+// Rate limiting - more lenient in development
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,
+    max: process.env.NODE_ENV === 'production' ? 100 : 500, // More requests allowed in development
     message: 'Too many requests from this IP, please try again later'
 });
+
+// More lenient rate limiter for platform admin routes
+const platformLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: process.env.NODE_ENV === 'production' ? 200 : 1000, // Even more requests for platform admin
+    message: 'Too many requests from this IP, please try again later',
+    skip: (req) => {
+        // Skip rate limiting for health checks
+        return req.path.includes('/system/health');
+    }
+});
+
+// Apply different rate limiters
+app.use('/api/platform', platformLimiter);
 app.use('/api', limiter);
 
 // Body parsing middleware
@@ -65,6 +81,15 @@ app.use(mongoSanitize());
 
 // Compression
 app.use(compression());
+
+// Static file serving for uploads with CORS headers
+app.use('/uploads', (req, res, next) => {
+    // Set CORS headers for static files
+    res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
+    res.header('Access-Control-Allow-Methods', 'GET');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+}, express.static('uploads'));
 
 // Namespace validation middleware (development mode only)
 if (process.env.NODE_ENV === 'development') {
@@ -134,6 +159,10 @@ export const initializeRoutes = async () => {
         const systemRoutes = await import('./platform/system/routes/systemRoutes.js');
         app.use('/api/platform/system', systemRoutes.default);
         
+        // Company management (multi-tenant)
+        const companyRoutes = await import('./platform/companies/routes/companyRoutes.js');
+        app.use('/api/platform/companies', companyRoutes.default);
+        
         console.log('✓ Platform routes loaded (/api/platform/*)');
     } catch (error) {
         console.warn('⚠️  Platform routes not available:', error.message);
@@ -188,6 +217,14 @@ export const initializeRoutes = async () => {
     // System Management (legacy - not yet moved)
     app.use('/api/v1/theme', themeRoutes);
     app.use('/api/v1/feature-flags', featureFlagRoutes);
+    
+    // HR Auth routes
+    const hrAuthRoutes = await import('./modules/hr-core/routes/authRoutes.js');
+    app.use('/api/v1/auth', hrAuthRoutes.default);
+
+    // Tenant configuration routes
+    const tenantRoutes = await import('./modules/hr-core/routes/tenantRoutes.js');
+    app.use('/api/v1/tenant', tenantRoutes.default);
 
     // License Management (legacy - not yet moved)
     app.use('/api/v1/licenses', licenseRoutes);
