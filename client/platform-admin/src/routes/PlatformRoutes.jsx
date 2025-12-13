@@ -10,6 +10,7 @@ import TenantsPage from '../pages/TenantsPage';
 import SubscriptionsPage from '../pages/SubscriptionsPage';
 import ModulesPage from '../pages/ModulesPage';
 import SystemPage from '../pages/SystemPage';
+import CompaniesPage from '../pages/CompaniesPage';
 
 // Layout
 import PlatformLayout from '../components/layout/PlatformLayout';
@@ -90,6 +91,7 @@ const PlatformRoutes = () => {
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<PlatformDashboard />} />
+        <Route path="companies" element={<CompaniesPage />} />
         <Route path="tenants" element={<TenantsPage />} />
         <Route path="subscriptions" element={<SubscriptionsPage />} />
         <Route path="modules" element={<ModulesPage />} />

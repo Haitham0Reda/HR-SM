@@ -9,36 +9,29 @@ let employee;
 let department;
 let position;
 let hrUser;
-// organization variable removed
-beforeAll(async () => {
-  // Create required references that don't change between tests
-  organization = await organization.create({
-    name: 'organization of Engineering'Code: 'ENG',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
-});
 
 beforeEach(async () => {
   // Create fresh employee and related data for each test
   department = await Department.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     name: 'Test Department',
-    code: 'TEST': organization._id
+    code: 'TEST'
   });
 
   position = await Position.create({
+    tenantId: 'test_tenant_123',
     title: 'Test Position',
     code: 'TP001',
     department: department._id
   });
 
   employee = await User.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     username: 'testemployee',
     email: 'employee@example.com',
     password: 'password123',
     role: 'employee',
-    employeeId: 'EMP001': organization._id,
+    employeeId: 'EMP001',
     department: department._id,
     position: position._id,
     profile: {
@@ -52,12 +45,12 @@ beforeEach(async () => {
   });
 
   hrUser = await User.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     username: 'hruser',
     email: 'hr@example.com',
     password: 'password123',
     role: 'hr',
-    employeeId: 'HR001': organization._id
+    employeeId: 'HR001'
   });
 
   await ResignedEmployee.deleteMany({});
@@ -69,11 +62,15 @@ describe('ResignedEmployee Model', () => {
     const lastWorkingDay = new Date('2024-01-31');
 
     const resignedEmployee = await ResignedEmployee.create({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
       resignationDate: resignationDate,
       lastWorkingDay: lastWorkingDay,
-      reason: 'Personal reasons'
+      resignationReason: 'personal-reasons',
+      processedBy: hrUser._id
     });
 
     expect(resignedEmployee.employee.toString()).toBe(employee._id.toString());
@@ -89,8 +86,13 @@ describe('ResignedEmployee Model', () => {
 
     for (const type of validTypes) {
       const resignedEmployee = new ResignedEmployee({
+        tenantId: 'test_tenant_123',
         employee: employee._id,
+        department: department._id,
+        position: position._id,
         resignationType: type,
+        resignationReason: 'personal-reasons',
+        resignationDate: new Date('2024-01-15'),
         lastWorkingDay: new Date('2024-01-31')
       });
 
@@ -99,8 +101,13 @@ describe('ResignedEmployee Model', () => {
 
     // Test invalid type
     const invalidRecord = new ResignedEmployee({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'invalid-type',
+      resignationReason: 'personal-reasons',
+      resignationDate: new Date('2024-01-15'),
       lastWorkingDay: new Date('2024-01-31')
     });
 
@@ -112,8 +119,13 @@ describe('ResignedEmployee Model', () => {
 
     for (const status of validStatuses) {
       const resignedEmployee = new ResignedEmployee({
+        tenantId: 'test_tenant_123',
         employee: employee._id,
+        department: department._id,
+        position: position._id,
         resignationType: 'resignation-letter',
+        resignationReason: 'personal-reasons',
+        resignationDate: new Date('2024-01-15'),
         lastWorkingDay: new Date('2024-01-31'),
         status: status
       });
@@ -123,8 +135,13 @@ describe('ResignedEmployee Model', () => {
 
     // Test invalid status
     const invalidRecord = new ResignedEmployee({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
+      resignationReason: 'personal-reasons',
+      resignationDate: new Date('2024-01-15'),
       lastWorkingDay: new Date('2024-01-31'),
       status: 'invalid-status'
     });
@@ -134,8 +151,13 @@ describe('ResignedEmployee Model', () => {
 
   it('should calculate virtual properties correctly', async () => {
     const resignedEmployee = await ResignedEmployee.create({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
+      resignationReason: 'personal-reasons',
+      resignationDate: new Date('2024-01-15'),
       lastWorkingDay: new Date('2024-01-31')
     });
 
@@ -145,8 +167,13 @@ describe('ResignedEmployee Model', () => {
 
   it('should add penalties to resigned employee record', async () => {
     const resignedEmployee = await ResignedEmployee.create({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
+      resignationReason: 'personal-reasons',
+      resignationDate: new Date('2024-01-15'),
       lastWorkingDay: new Date('2024-01-31')
     });
 
@@ -169,8 +196,13 @@ describe('ResignedEmployee Model', () => {
 
   it('should remove penalties from resigned employee record', async () => {
     const resignedEmployee = await ResignedEmployee.create({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
+      resignationReason: 'personal-reasons',
+      resignationDate: new Date('2024-01-15'),
       lastWorkingDay: new Date('2024-01-31'),
       penalties: [
         {
@@ -199,8 +231,13 @@ describe('ResignedEmployee Model', () => {
 
   it('should prevent modifying penalties after locking', async () => {
     const resignedEmployee = await ResignedEmployee.create({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
+      resignationReason: 'personal-reasons',
+      resignationDate: new Date('2024-01-15'),
       lastWorkingDay: new Date('2024-01-31'),
       isLocked: true
     });
@@ -231,8 +268,13 @@ describe('ResignedEmployee Model', () => {
 
   it('should update resignation type', async () => {
     const resignedEmployee = await ResignedEmployee.create({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
+      resignationReason: 'personal-reasons',
+      resignationDate: new Date('2024-01-15'),
       lastWorkingDay: new Date('2024-01-31')
     });
 
@@ -243,8 +285,13 @@ describe('ResignedEmployee Model', () => {
 
   it('should lock resigned employee record', async () => {
     const resignedEmployee = await ResignedEmployee.create({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
+      resignationReason: 'personal-reasons',
+      resignationDate: new Date('2024-01-15'),
       lastWorkingDay: new Date('2024-01-31')
     });
 
@@ -257,10 +304,14 @@ describe('ResignedEmployee Model', () => {
 
   it('should generate resignation letter', async () => {
     const resignedEmployee = await ResignedEmployee.create({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
       resignationDate: new Date('2024-01-15'),
       lastWorkingDay: new Date('2024-01-31'),
+      resignationReason: 'personal-reasons',
       penalties: [
         {
           description: 'Late return of company property',
@@ -282,10 +333,14 @@ describe('ResignedEmployee Model', () => {
 
   it('should generate termination letter', async () => {
     const resignedEmployee = await ResignedEmployee.create({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'termination',
       resignationDate: new Date('2024-01-15'),
-      lastWorkingDay: new Date('2024-01-31')
+      lastWorkingDay: new Date('2024-01-31'),
+      resignationReason: 'termination'
     });
 
     const updatedRecord = await resignedEmployee.generateLetter(hrUser._id);
@@ -305,7 +360,7 @@ describe('ResignedEmployee Model', () => {
       email: 'employee2@example.com',
       password: 'password123',
       role: 'employee',
-      employeeId: 'EMP002': organization._id,
+      employeeId: 'EMP002',
       department: department._id,
       position: position._id,
       profile: {
@@ -320,14 +375,24 @@ describe('ResignedEmployee Model', () => {
 
     await ResignedEmployee.create([
       {
+        tenantId: 'test_tenant_123',
         employee: employee._id,
+        department: department._id,
+        position: position._id,
         resignationType: 'resignation-letter',
+        resignationReason: 'personal-reasons',
+        resignationDate: new Date('2024-01-15'),
         lastWorkingDay: new Date('2024-01-31'),
         status: 'pending'
       },
       {
+        tenantId: 'test_tenant_123',
         employee: employee2._id,  // Use different employee
+        department: department._id,
+        position: position._id,
         resignationType: 'termination',
+        resignationReason: 'termination',
+        resignationDate: new Date('2024-01-15'),
         lastWorkingDay: new Date('2024-01-31'),
         status: 'processed'
       }
@@ -351,8 +416,12 @@ describe('ResignedEmployee Model', () => {
     oldDate.setHours(oldDate.getHours() - 25); // 25 hours ago
 
     const resignedEmployee = new ResignedEmployee({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
+      resignationReason: 'personal-reasons',
       lastWorkingDay: new Date('2024-01-31'),
       createdAt: oldDate
     });
@@ -379,8 +448,12 @@ describe('ResignedEmployee Model', () => {
 
   it('should handle letter generation with no penalties', async () => {
     const resignedEmployee = await ResignedEmployee.create({
+      tenantId: 'test_tenant_123',
       employee: employee._id,
+      department: department._id,
+      position: position._id,
       resignationType: 'resignation-letter',
+      resignationReason: 'personal-reasons',
       resignationDate: new Date('2024-01-15'),
       lastWorkingDay: new Date('2024-01-31')
     });

@@ -2,17 +2,32 @@ const path = require('path');
 
 /** @type { import('@storybook/react-webpack5').StorybookConfig } */
 const config = {
-  stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
+  stories: [
+    "../hr-app/src/**/*.mdx", 
+    "../hr-app/src/**/*.stories.@(js|jsx|mjs|ts|tsx)",
+    "../platform-admin/src/**/*.mdx", 
+    "../platform-admin/src/**/*.stories.@(js|jsx|mjs|ts|tsx)",
+    "./*.stories.@(js|jsx|mjs|ts|tsx)"
+  ],
   addons: [
     "@storybook/addon-essentials",
     "@storybook/addon-interactions",
+    "@storybook/addon-links",
+    "@storybook/addon-docs",
   ],
   framework: {
     name: "@storybook/react-webpack5",
     options: {},
   },
-  staticDirs: ["..\\public"],
+  staticDirs: ["../hr-app/public", "../platform-admin/public"],
   webpackFinal: async (config) => {
+    // Add alias for components
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@hr-app': path.resolve(__dirname, '../hr-app/src'),
+      '@platform-admin': path.resolve(__dirname, '../platform-admin/src'),
+    };
+
     // Ensure babel-loader processes JSX files with our .babelrc
     config.module.rules.push({
       test: /\.(js|jsx)$/,

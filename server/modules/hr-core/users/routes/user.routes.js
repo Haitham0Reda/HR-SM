@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from 'multer';
+import path from 'path';
 import {
     getAllUsers,
     createUser,
@@ -12,7 +13,8 @@ import {
     getUserPlainPassword,
     updateVacationBalance,
     bulkUpdateVacationBalances,
-    bulkCreateUsers
+    bulkCreateUsers,
+    uploadProfilePicture
 } from '../controllers/user.controller.js';
 import { bulkDownloadPhotos } from '../controllers/userPhoto.controller.js';
 import {
@@ -42,6 +44,28 @@ const upload = multer({
             cb(null, true);
         } else {
             cb(new Error('Only Excel files (.xls, .xlsx) are allowed'));
+        }
+    }
+});
+
+// Configure multer for profile picture upload
+const profilePictureUpload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, 'uploads/profile-pictures/');
+        },
+        filename: (req, file, cb) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+        }
+    }),
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files (JPEG, PNG, GIF) are allowed'));
         }
     }
 });
@@ -87,6 +111,9 @@ router.post('/',
 
 // Get user by ID - Protected
 router.get('/:id', protect, getUserById);
+
+// Upload profile picture - Protected (users can upload their own, admins can upload for others)
+router.post('/:id/profile-picture', protect, profilePictureUpload.single('profilePicture'), uploadProfilePicture);
 
 // Get user plain password - Admin only (for credential generation)
 router.get('/:id/plain-password', protect, admin, getUserPlainPassword);

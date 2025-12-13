@@ -1,5 +1,6 @@
 import express from 'express';
-import { protect, hrOrAdmin } from '../../../middleware/index.js';
+import { requireAuth, requireRole } from '../../../shared/middleware/auth.js';
+import { ROLES } from '../../../shared/constants/modules.js';
 import {
     getDashboardConfig,
     updateDashboardConfig,
@@ -11,18 +12,18 @@ import {
 const router = express.Router();
 
 // Get dashboard configuration
-router.get('/config', protect, getDashboardConfig);
+router.get('/config', requireAuth, getDashboardConfig);
 
 // Update dashboard configuration (admin/hr only)
-router.put('/config', protect, hrOrAdmin, updateDashboardConfig);
+router.put('/config', requireAuth, requireRole(ROLES.ADMIN, ROLES.HR), updateDashboardConfig);
 
 // Get employee of the month
-router.get('/employee-of-month', protect, getEmployeeOfTheMonth);
+router.get('/employee-of-month', requireAuth, getEmployeeOfTheMonth);
 
 // Set employee of the month (admin/hr only)
-router.post('/employee-of-month', protect, hrOrAdmin, setEmployeeOfTheMonth);
+router.post('/employee-of-month', requireAuth, requireRole(ROLES.ADMIN, ROLES.HR), setEmployeeOfTheMonth);
 
 // Get dashboard statistics
-router.get('/statistics', protect, getDashboardStatistics);
+router.get('/statistics', requireAuth, getDashboardStatistics);
 
 export default router;

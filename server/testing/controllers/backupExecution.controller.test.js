@@ -6,12 +6,11 @@ import BackupExecution from '../../modules/hr-core/backup/models/backupExecution
 import * as backupExecutionController from '../../modules/hr-core/backup/controllers/backupExecution.controller.js';
 import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
-describe('BackupExecution Controller - All 10 Functions', () => {
-    let mockReq, mockRes, testorganization, testUser;
+describe('BackupExecution Controller - All 6 Functions', () => {
+    let mockReq, mockRes, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
-        testUser = await createTestUser(testorganization._id, null, null);
+        testUser = await createTestUser(null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

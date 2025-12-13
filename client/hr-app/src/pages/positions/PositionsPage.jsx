@@ -74,10 +74,14 @@ const PositionsPage = () => {
     const fetchPositions = async () => {
         try {
             setLoading(true);
-            const data = await positionService.getAll();
-            setPositions(data);
+            const response = await positionService.getAll();
+            // Handle the response format { success: true, data: positions }
+            const positions = response?.data || response || [];
+            setPositions(Array.isArray(positions) ? positions : []);
         } catch (error) {
+            console.error('Failed to fetch positions:', error);
             showNotification('Failed to fetch positions', 'error');
+            setPositions([]); // Ensure positions is always an array
         } finally {
             setLoading(false);
         }
@@ -85,10 +89,13 @@ const PositionsPage = () => {
 
     const fetchDepartments = async () => {
         try {
-            const data = await departmentService.getAll();
-            setDepartments(data);
+            const response = await departmentService.getAll();
+            // Handle the response format { success: true, data: departments }
+            const departments = response?.data || response || [];
+            setDepartments(Array.isArray(departments) ? departments : []);
         } catch (error) {
-
+            console.error('Failed to fetch departments:', error);
+            setDepartments([]); // Ensure departments is always an array
         }
     };
 

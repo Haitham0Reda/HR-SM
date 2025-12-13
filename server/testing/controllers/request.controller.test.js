@@ -8,12 +8,11 @@ import * as requestController from '../../modules/hr-core/requests/controllers/r
 import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('Request System Unit Tests', () => {
-    let mockReq, mockRes, testorganization, testUser, testManager;
+    let mockReq, mockRes, testUser, testManager;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
-        testUser = await createTestUser(testorganization._id, null, null);
-        testManager = await createTestUser(testorganization._id, null, null);
+        testUser = await createTestUser(null, null);
+        testManager = await createTestUser(null, null);
 
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();
@@ -205,12 +204,9 @@ describe('Request System Unit Tests', () => {
         let tenant1User, tenant2User, tenant1Request, tenant2Request;
 
         beforeEach(async () => {
-            // Create users for different tenants (simulated with different organizations)
-            const tenant1organization = await createTestorganization();
-            const tenant2organization = await createTestorganization();
-
-            tenant1User = await createTestUser(tenant1organization._id, null, null);
-            tenant2User = await createTestUser(tenant2organization._id, null, null);
+            // Create users for different tenants using overrides
+            tenant1User = await createTestUser(null, null, { tenantId: 'tenant1' });
+            tenant2User = await createTestUser(null, null, { tenantId: 'tenant2' });
 
             // Create requests for different tenants
             tenant1Request = await Request.create({

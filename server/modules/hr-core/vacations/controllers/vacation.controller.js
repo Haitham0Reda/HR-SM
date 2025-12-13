@@ -9,7 +9,7 @@ import User from '../../users/models/user.model.js';
  */
 export const getAllVacations = async (req, res) => {
     try {
-        const query = {};
+        const query = { tenantId: req.tenantId };
 
         // Filter by user/employee if provided
         if (req.query.user) {
@@ -41,10 +41,16 @@ export const getAllVacations = async (req, res) => {
             .populate('vacationBalance')
             .sort({ createdAt: -1 });
 
-        res.json(vacations);
+        res.json({
+            success: true,
+            data: vacations
+        });
     } catch (err) {
-
-        res.status(500).json({ error: err.message });
+        console.error('Get vacations error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
     }
 };
 
@@ -93,7 +99,10 @@ export const createVacation = async (req, res) => {
             });
         }
 
-        const vacation = new Vacation(req.body);
+        const vacation = new Vacation({
+            ...req.body,
+            tenantId: req.tenantId
+        });
         const savedVacation = await vacation.save();
 
         // Create notification for supervisor/manager
@@ -102,12 +111,16 @@ export const createVacation = async (req, res) => {
         // Send email notification to manager
         await sendVacationRequestNotification(savedVacation);
 
-        res.status(201).json(savedVacation);
+        res.status(201).json({
+            success: true,
+            data: savedVacation
+        });
     } catch (err) {
 
 
         res.status(400).json({
-            error: err.message,
+            success: false,
+            message: err.message,
             details: err.errors ? Object.keys(err.errors).map(key => ({
                 field: key,
                 message: err.errors[key].message
@@ -121,7 +134,10 @@ export const createVacation = async (req, res) => {
  */
 export const getVacationById = async (req, res) => {
     try {
-        const vacation = await Vacation.findById(req.params.id)
+        const vacation = await Vacation.findOne({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        })
             .populate('employee', 'username email employeeId personalInfo department position')
             .populate('department', 'name code')
             .populate('position', 'title')
@@ -129,13 +145,22 @@ export const getVacationById = async (req, res) => {
             .populate('vacationBalance');
 
         if (!vacation) {
-            return res.status(404).json({ error: 'Vacation not found' });
+            return res.status(404).json({ 
+                success: false,
+                message: 'Vacation not found' 
+            });
         }
 
-        res.json(vacation);
+        res.json({
+            success: true,
+            data: vacation
+        });
     } catch (err) {
-
-        res.status(500).json({ error: err.message });
+        console.error('Get vacation by ID error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
     }
 };
 

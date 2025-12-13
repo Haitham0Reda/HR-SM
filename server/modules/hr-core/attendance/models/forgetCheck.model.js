@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const forgetCheckSchema = new mongoose.Schema({
+    tenantId: {
+        type: String,
+        required: true,
+        index: true
+    },
     employee: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

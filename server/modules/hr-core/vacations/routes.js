@@ -9,197 +9,42 @@ import {
     rejectVacation,
     cancelVacation
 } from './controllers/vacation.controller.js';
-import {
-    getAllPolicies,
-    getPolicyById,
-    createPolicy,
-    updatePolicy,
-    deletePolicy,
-    testPolicyOnEmployee,
-    applyToEmployee,
-    applyToAll,
-    getPolicyBreakdown,
-    getEmployeeApplications,
-    getActivePolicies,
-    getUpcomingPolicies,
-    cancelPolicy,
-    activatePolicy
-} from './controllers/mixedVacation.controller.js';
-import {
-    protect,
-    checkActive,
-    hrOrAdmin,
-    validateDateRange,
-    validateTotalDays,
-    validateDeductionStrategy,
-    validateApplicableScope,
-    validateEmployeeId,
-    validatePolicyStatus,
-    checkPolicyExists,
-    checkEmployeeExists
-} from '../../../middleware/index.js';
-import upload from '../../../config/multer.config.js';
-import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../../../platform/system/models/license.model.js';
+// TODO: Import policy controllers when implemented
+import { requireAuth, requireRole } from '../../../shared/middleware/auth.js';
+import { ROLES } from '../../../shared/constants/modules.js';
 
 const router = express.Router();
 
-// Apply license validation to all vacation routes
-router.use(requireModuleLicense(MODULES.LEAVE));
+// Apply authentication to all routes
+router.use(requireAuth);
 
 // ===== VACATION ROUTES =====
 
-// Get all vacations - protected route
-router.get('/', protect, getAllVacations);
+// Get all vacations - All authenticated users can view
+router.get('/', getAllVacations);
 
-// Create vacation - with authentication and file upload support
-router.post('/',
-    protect,
-    checkActive,
-    upload.array('attachments', 5), // Allow up to 5 attachments
-    createVacation
-);
+// Create vacation - All authenticated users can create
+router.post('/', createVacation);
 
-// Approve vacation
-router.post('/:id/approve', protect, approveVacation);
+// Approve vacation - HR/Admin only
+router.post('/:id/approve', requireRole([ROLES.ADMIN, ROLES.HR]), approveVacation);
 
-// Reject vacation
-router.post('/:id/reject', protect, rejectVacation);
+// Reject vacation - HR/Admin only
+router.post('/:id/reject', requireRole([ROLES.ADMIN, ROLES.HR]), rejectVacation);
 
-// Cancel vacation
-router.post('/:id/cancel', protect, cancelVacation);
+// Cancel vacation - All authenticated users can cancel their own
+router.post('/:id/cancel', cancelVacation);
 
-// Get vacation by ID
-router.get('/:id', protect, getVacationById);
+// Get vacation by ID - All authenticated users
+router.get('/:id', getVacationById);
 
-// Update vacation
-router.put('/:id', protect, updateVacation);
+// Update vacation - All authenticated users can update their own
+router.put('/:id', updateVacation);
 
-// Delete vacation
-router.delete('/:id', protect, deleteVacation);
+// Delete vacation - All authenticated users can delete their own
+router.delete('/:id', deleteVacation);
 
 // ===== MIXED VACATION POLICY ROUTES =====
-
-// Get all policies - HR or Admin
-router.get('/policies',
-    protect,
-    hrOrAdmin,
-    getAllPolicies
-);
-
-// Get active policies - HR or Admin
-router.get('/policies/active',
-    protect,
-    hrOrAdmin,
-    getActivePolicies
-);
-
-// Get upcoming policies - HR or Admin
-router.get('/policies/upcoming',
-    protect,
-    hrOrAdmin,
-    getUpcomingPolicies
-);
-
-// Get policy by ID - HR or Admin
-router.get('/policies/:id',
-    protect,
-    hrOrAdmin,
-    getPolicyById
-);
-
-// Create policy with validation - HR or Admin
-router.post('/policies',
-    protect,
-    hrOrAdmin,
-    validateDateRange,
-    validateTotalDays,
-    validateDeductionStrategy,
-    validateApplicableScope,
-    validatePolicyStatus,
-    createPolicy
-);
-
-// Update policy with validation - HR or Admin
-router.put('/policies/:id',
-    protect,
-    hrOrAdmin,
-    checkPolicyExists,
-    validateDateRange,
-    validateTotalDays,
-    validateDeductionStrategy,
-    validateApplicableScope,
-    validatePolicyStatus,
-    updatePolicy
-);
-
-// Delete policy - HR or Admin
-router.delete('/policies/:id',
-    protect,
-    hrOrAdmin,
-    checkPolicyExists,
-    deletePolicy
-);
-
-// Test policy on employee - HR or Admin
-router.post('/policies/:id/test/:employeeId',
-    protect,
-    hrOrAdmin,
-    checkPolicyExists,
-    validateEmployeeId,
-    checkEmployeeExists,
-    testPolicyOnEmployee
-);
-
-// Get policy breakdown for employee - HR or Admin
-router.get('/policies/:id/breakdown/:employeeId',
-    protect,
-    hrOrAdmin,
-    checkPolicyExists,
-    validateEmployeeId,
-    checkEmployeeExists,
-    getPolicyBreakdown
-);
-
-// Apply policy to employee - HR or Admin
-router.post('/policies/:id/apply/:employeeId',
-    protect,
-    hrOrAdmin,
-    checkPolicyExists,
-    validateEmployeeId,
-    checkEmployeeExists,
-    applyToEmployee
-);
-
-// Apply policy to all eligible employees - HR or Admin
-router.post('/policies/:id/apply-all',
-    protect,
-    hrOrAdmin,
-    checkPolicyExists,
-    applyToAll
-);
-
-// Get employee applications - Protected
-router.get('/policies/employee/:employeeId/applications',
-    protect,
-    validateEmployeeId,
-    getEmployeeApplications
-);
-
-// Activate policy - HR or Admin
-router.post('/policies/:id/activate',
-    protect,
-    hrOrAdmin,
-    checkPolicyExists,
-    activatePolicy
-);
-
-// Cancel policy - HR or Admin
-router.post('/policies/:id/cancel',
-    protect,
-    hrOrAdmin,
-    checkPolicyExists,
-    cancelPolicy
-);
+// TODO: Implement policy routes with proper middleware
 
 export default router;

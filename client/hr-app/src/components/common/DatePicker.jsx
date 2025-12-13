@@ -26,12 +26,15 @@ const DatePicker = React.forwardRef(({
   sx = {},
   ...props
 }, ref) => {
+  // Ensure value is never undefined to prevent controlled/uncontrolled component warnings
+  const safeValue = value !== undefined ? value : null;
+  
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <MuiDatePicker
         ref={ref}
         label={label}
-        value={value}
+        value={safeValue}
         onChange={onChange}
         disabled={disabled}
         minDate={minDate}

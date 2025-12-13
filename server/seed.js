@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 
 // Load .env from parent directory (root)
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
-import connectDB from './config/db.js';
+import connectDB from './config/database.js';
 
 // HR Core Models
 import User from './modules/hr-core/users/models/user.model.js';
@@ -284,7 +284,7 @@ const seedData = async () => {
                 email: 'admin@company.com',
                 password: 'admin123',
                 role: 'admin',
-                profile: {
+                personalInfo: {
                     firstName: 'System',
                     lastName: 'Administrator',
                     arabicName: 'مسؤول النظام',
@@ -292,7 +292,7 @@ const seedData = async () => {
                     gender: 'male',
                     dateOfBirth: new Date('1980-01-01'),
                     maritalStatus: 'married',
-                    nationalId: 29001010101010
+                    nationalId: '29001010101010'
                 },
                 department: departments[2]._id,
                 position: positions[3]._id,
@@ -310,7 +310,7 @@ const seedData = async () => {
                 email: 'hr@company.com',
                 password: 'hr123',
                 role: 'hr',
-                profile: {
+                personalInfo: {
                     firstName: 'Sarah',
                     lastName: 'Ahmed',
                     arabicName: 'سارة أحمد',
@@ -318,7 +318,7 @@ const seedData = async () => {
                     gender: 'female',
                     dateOfBirth: new Date('1985-05-15'),
                     maritalStatus: 'married',
-                    nationalId: 28505150101011
+                    nationalId: '28505150101011'
                 },
                 department: departments[2]._id,
                 position: positions[3]._id,
@@ -336,7 +336,7 @@ const seedData = async () => {
                 email: 'manager@company.com',
                 password: 'manager123',
                 role: 'manager',
-                profile: {
+                personalInfo: {
                     firstName: 'Mohamed',
                     lastName: 'Hassan',
                     arabicName: 'محمد حسن',
@@ -344,7 +344,7 @@ const seedData = async () => {
                     gender: 'male',
                     dateOfBirth: new Date('1978-08-20'),
                     maritalStatus: 'married',
-                    nationalId: 27808200101012
+                    nationalId: '27808200101012'
                 },
                 department: departments[6]._id,
                 position: positions[7]._id,
@@ -362,7 +362,7 @@ const seedData = async () => {
                 email: 'john.doe@company.com',
                 password: 'employee123',
                 role: 'employee',
-                profile: {
+                personalInfo: {
                     firstName: 'John',
                     medName: 'Michael',
                     lastName: 'Doe',
@@ -371,7 +371,7 @@ const seedData = async () => {
                     gender: 'male',
                     dateOfBirth: new Date('1990-03-10'),
                     maritalStatus: 'single',
-                    nationalId: 29003100101013
+                    nationalId: '29003100101013'
                 },
                 department: departments[0]._id,
                 position: positions[0]._id,
@@ -388,7 +388,7 @@ const seedData = async () => {
                 email: 'jane.smith@company.com',
                 password: 'employee123',
                 role: 'employee',
-                profile: {
+                personalInfo: {
                     firstName: 'Jane',
                     lastName: 'Smith',
                     arabicName: 'جين سميث',
@@ -396,7 +396,7 @@ const seedData = async () => {
                     gender: 'female',
                     dateOfBirth: new Date('1992-07-25'),
                     maritalStatus: 'single',
-                    nationalId: 29207250201014
+                    nationalId: '29207250201014'
                 },
                 department: departments[3]._id,
                 position: positions[4]._id,
@@ -413,7 +413,7 @@ const seedData = async () => {
                 email: 'ahmed.ali@company.com',
                 password: 'employee123',
                 role: 'employee',
-                profile: {
+                personalInfo: {
                     firstName: 'Ahmed',
                     lastName: 'Ali',
                     arabicName: 'أحمد علي',
@@ -421,7 +421,7 @@ const seedData = async () => {
                     gender: 'male',
                     dateOfBirth: new Date('1988-11-30'),
                     maritalStatus: 'married',
-                    nationalId: 28811300301015
+                    nationalId: '28811300301015'
                 },
                 department: departments[6]._id,
                 position: positions[7]._id,
@@ -438,7 +438,7 @@ const seedData = async () => {
                 email: 'fatma.mohamed@company.com',
                 password: 'employee123',
                 role: 'employee',
-                profile: {
+                personalInfo: {
                     firstName: 'Fatma',
                     lastName: 'Mohamed',
                     arabicName: 'فاطمة محمد',
@@ -446,7 +446,7 @@ const seedData = async () => {
                     gender: 'female',
                     dateOfBirth: new Date('1995-02-14'),
                     maritalStatus: 'single',
-                    nationalId: 29502140201016
+                    nationalId: '29502140201016'
                 },
                 department: departments[7]._id,
                 position: positions[8]._id,
@@ -463,7 +463,7 @@ const seedData = async () => {
                 email: 'omar.ibrahim@company.com',
                 password: 'employee123',
                 role: 'employee',
-                profile: {
+                personalInfo: {
                     firstName: 'Omar',
                     lastName: 'Ibrahim',
                     arabicName: 'عمر إبراهيم',
@@ -471,7 +471,7 @@ const seedData = async () => {
                     gender: 'male',
                     dateOfBirth: new Date('1983-06-18'),
                     maritalStatus: 'married',
-                    nationalId: 28306180101017
+                    nationalId: '28306180101017'
                 },
                 department: departments[4]._id,
                 position: positions[5]._id,

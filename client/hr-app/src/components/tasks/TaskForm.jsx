@@ -58,6 +58,16 @@ const TaskForm = ({ open, onClose, onSubmit, task }) => {
                 });
             }
             setError('');
+        } else {
+            // Reset form when dialog is closed to prevent controlled/uncontrolled issues
+            setFormData({
+                title: '',
+                description: '',
+                priority: 'medium',
+                assignee: '',
+                startDate: new Date(),
+                dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            });
         }
     }, [open, task]);
 
@@ -240,14 +250,14 @@ const TaskForm = ({ open, onClose, onSubmit, task }) => {
                     <LocalizationProvider dateAdapter={AdapterDateFns}>
                         <DatePicker
                             label="Start Date"
-                            value={formData.startDate}
+                            value={formData.startDate || new Date()}
                             onChange={(value) => handleDateChange('startDate', value)}
                             renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
                         />
 
                         <DatePicker
                             label="Due Date"
-                            value={formData.dueDate}
+                            value={formData.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
                             onChange={(value) => handleDateChange('dueDate', value)}
                             renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
                         />

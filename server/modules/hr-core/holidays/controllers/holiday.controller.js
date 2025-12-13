@@ -227,3 +227,391 @@ export const updateHolidaySettings = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+/**
+ * Add official holidays
+ */
+export const addOfficialHolidays = async (req, res) => {
+    try {
+        const { holidays } = req.body;
+
+        if (!holidays || !Array.isArray(holidays)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Holidays array is required' 
+            });
+        }
+
+        // Get or create holiday settings for tenant
+        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+
+        const results = {
+            added: [],
+            errors: []
+        };
+
+        // Add each holiday
+        for (const holiday of holidays) {
+            try {
+                const { date, name, description } = holiday;
+                
+                if (!date || !name) {
+                    results.errors.push({
+                        holiday,
+                        error: 'Date and name are required'
+                    });
+                    continue;
+                }
+
+                const holidayDate = new Date(date);
+                
+                // Check if holiday already exists
+                const exists = holidaySettings.officialHolidays.some(h => {
+                    const existingDate = new Date(h.date);
+                    return existingDate.toDateString() === holidayDate.toDateString();
+                });
+
+                if (exists) {
+                    results.errors.push({
+                        holiday,
+                        error: 'Holiday already exists for this date'
+                    });
+                    continue;
+                }
+
+                // Add the holiday
+                holidaySettings.officialHolidays.push({
+                    date: holidayDate,
+                    name,
+                    dayOfWeek: Holiday.getDayOfWeek(holidayDate),
+                    isWeekend: Holiday.isWeekend(holidayDate, holidaySettings.weekendDays),
+                    isIslamic: Holiday.isIslamicHoliday(name),
+                    description: description || ''
+                });
+
+                results.added.push(holiday);
+            } catch (error) {
+                results.errors.push({
+                    holiday,
+                    error: error.message
+                });
+            }
+        }
+
+        // Sort holidays by date
+        holidaySettings.officialHolidays.sort((a, b) => a.date - b.date);
+
+        // Update metadata
+        holidaySettings.lastModified = new Date();
+        if (req.user && req.user._id) {
+            holidaySettings.lastModifiedBy = req.user._id;
+        }
+
+        // Save to database
+        await holidaySettings.save();
+
+        res.json({
+            success: true,
+            message: `Added ${results.added.length} holidays`,
+            data: results
+        });
+    } catch (err) {
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
+    }
+};
+
+/**
+ * Remove official holiday
+ */
+export const removeOfficialHoliday = async (req, res) => {
+    try {
+        const { holidayId } = req.params;
+
+        // Get or create holiday settings for tenant
+        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+
+        // Find and remove the holiday
+        const initialLength = holidaySettings.officialHolidays.length;
+        holidaySettings.officialHolidays = holidaySettings.officialHolidays.filter(
+            h => h._id.toString() !== holidayId
+        );
+
+        if (holidaySettings.officialHolidays.length === initialLength) {
+            return res.status(404).json({
+                success: false,
+                message: 'Holiday not found'
+            });
+        }
+
+        // Update metadata
+        holidaySettings.lastModified = new Date();
+        if (req.user && req.user._id) {
+            holidaySettings.lastModifiedBy = req.user._id;
+        }
+
+        // Save to database
+        await holidaySettings.save();
+
+        res.json({
+            success: true,
+            message: 'Holiday removed successfully'
+        });
+    } catch (err) {
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
+    }
+};
+
+/**
+ * Add weekend work days
+ */
+export const addWeekendWorkDays = async (req, res) => {
+    try {
+        const { workDays } = req.body;
+
+        if (!workDays || !Array.isArray(workDays)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Work days array is required' 
+            });
+        }
+
+        // Get or create holiday settings for tenant
+        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+
+        const results = {
+            added: [],
+            errors: []
+        };
+
+        // Add each work day
+        for (const workDay of workDays) {
+            try {
+                const { date, reason } = workDay;
+                
+                if (!date) {
+                    results.errors.push({
+                        workDay,
+                        error: 'Date is required'
+                    });
+                    continue;
+                }
+
+                const workDate = new Date(date);
+                
+                // Check if work day already exists
+                const exists = holidaySettings.weekendWorkDays.some(w => {
+                    const existingDate = new Date(w.date);
+                    return existingDate.toDateString() === workDate.toDateString();
+                });
+
+                if (exists) {
+                    results.errors.push({
+                        workDay,
+                        error: 'Weekend work day already exists for this date'
+                    });
+                    continue;
+                }
+
+                // Add the work day
+                holidaySettings.weekendWorkDays.push({
+                    date: workDate,
+                    reason: reason || '',
+                    dayOfWeek: Holiday.getDayOfWeek(workDate)
+                });
+
+                results.added.push(workDay);
+            } catch (error) {
+                results.errors.push({
+                    workDay,
+                    error: error.message
+                });
+            }
+        }
+
+        // Sort work days by date
+        holidaySettings.weekendWorkDays.sort((a, b) => a.date - b.date);
+
+        // Update metadata
+        holidaySettings.lastModified = new Date();
+        if (req.user && req.user._id) {
+            holidaySettings.lastModifiedBy = req.user._id;
+        }
+
+        // Save to database
+        await holidaySettings.save();
+
+        res.json({
+            success: true,
+            message: `Added ${results.added.length} weekend work days`,
+            data: results
+        });
+    } catch (err) {
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
+    }
+};
+
+/**
+ * Remove weekend work day
+ */
+export const removeWeekendWorkDay = async (req, res) => {
+    try {
+        const { workDayId } = req.params;
+
+        // Get or create holiday settings for tenant
+        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+
+        // Find and remove the work day
+        const initialLength = holidaySettings.weekendWorkDays.length;
+        holidaySettings.weekendWorkDays = holidaySettings.weekendWorkDays.filter(
+            w => w._id.toString() !== workDayId
+        );
+
+        if (holidaySettings.weekendWorkDays.length === initialLength) {
+            return res.status(404).json({
+                success: false,
+                message: 'Weekend work day not found'
+            });
+        }
+
+        // Update metadata
+        holidaySettings.lastModified = new Date();
+        if (req.user && req.user._id) {
+            holidaySettings.lastModifiedBy = req.user._id;
+        }
+
+        // Save to database
+        await holidaySettings.save();
+
+        res.json({
+            success: true,
+            message: 'Weekend work day removed successfully'
+        });
+    } catch (err) {
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
+    }
+};
+
+/**
+ * Get holiday suggestions (Egypt holidays)
+ */
+export const getHolidaySuggestions = async (req, res) => {
+    try {
+        const { year } = req.query;
+
+        if (!year) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Year parameter is required' 
+            });
+        }
+
+        const holidays = getHolidaysForYear(parseInt(year));
+        
+        // Get existing holidays to filter out duplicates
+        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        
+        const suggestions = holidays.filter(holiday => {
+            const holidayDate = new Date(holiday.date);
+            return !holidaySettings.officialHolidays.some(h => {
+                const existingDate = new Date(h.date);
+                return existingDate.toDateString() === holidayDate.toDateString();
+            });
+        });
+
+        res.json({
+            success: true,
+            data: suggestions
+        });
+    } catch (err) {
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
+    }
+};
+
+/**
+ * Add holidays from suggestions
+ */
+export const addHolidaysFromSuggestions = async (req, res) => {
+    try {
+        const { selectedHolidays } = req.body;
+
+        if (!selectedHolidays || !Array.isArray(selectedHolidays)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Selected holidays array is required' 
+            });
+        }
+
+        // Convert suggestions to holiday format
+        const holidays = selectedHolidays.map(holiday => ({
+            date: holiday.date,
+            name: holiday.name,
+            description: holiday.type || ''
+        }));
+
+        // Use the existing addOfficialHolidays function
+        req.body = { holidays };
+        return await addOfficialHolidays(req, res);
+    } catch (err) {
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
+    }
+};
+
+/**
+ * Check if date is working day (alternative endpoint)
+ */
+export const checkWorkingDayAlt = async (req, res) => {
+    try {
+        const { date } = req.query;
+
+        if (!date) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Date parameter is required' 
+            });
+        }
+
+        // Get holiday settings for tenant
+        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        
+        const checkDate = new Date(date);
+        const isWorking = holidaySettings.isWorkingDay(checkDate);
+        const isHoliday = holidaySettings.isHoliday(checkDate);
+        const isWeekendWorkDay = holidaySettings.isWeekendWorkDay(checkDate);
+        const isWeekend = Holiday.isWeekend(checkDate, holidaySettings.weekendDays);
+
+        res.json({
+            success: true,
+            data: {
+                date: date,
+                isWorkingDay: isWorking,
+                isHoliday,
+                isWeekend,
+                isWeekendWorkDay,
+                dayOfWeek: Holiday.getDayOfWeek(checkDate)
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
+    }
+};

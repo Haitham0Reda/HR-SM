@@ -158,7 +158,7 @@ const TasksPage = () => {
             )}
 
             <Grid container spacing={3}>
-                <Grid item xs={12} md={6} lg={3}>
+                <Grid size={{ xs: 12, md: 6, lg: 3 }}>
                     <TaskList
                         title="Assigned"
                         tasks={getStatusFilteredTasks('assigned')}
@@ -168,7 +168,7 @@ const TasksPage = () => {
                         user={user}
                     />
                 </Grid>
-                <Grid item xs={12} md={6} lg={3}>
+                <Grid size={{ xs: 12, md: 6, lg: 3 }}>
                     <TaskList
                         title="In Progress"
                         tasks={getStatusFilteredTasks('in-progress')}
@@ -178,7 +178,7 @@ const TasksPage = () => {
                         user={user}
                     />
                 </Grid>
-                <Grid item xs={12} md={6} lg={3}>
+                <Grid size={{ xs: 12, md: 6, lg: 3 }}>
                     <TaskList
                         title="Submitted"
                         tasks={getStatusFilteredTasks('submitted')}
@@ -188,7 +188,7 @@ const TasksPage = () => {
                         user={user}
                     />
                 </Grid>
-                <Grid item xs={12} md={6} lg={3}>
+                <Grid size={{ xs: 12, md: 6, lg: 3 }}>
                     <TaskList
                         title="Completed/Rejected"
                         tasks={[

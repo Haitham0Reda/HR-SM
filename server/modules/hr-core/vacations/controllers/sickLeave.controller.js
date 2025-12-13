@@ -9,7 +9,7 @@ import User from '../../users/models/user.model.js';
  */
 export const getAllSickLeaves = async (req, res) => {
     try {
-        const query = {};
+        const query = { tenantId: req.tenantId };
 
         // Filter by user/employee if provided
         if (req.query.user) {
@@ -42,10 +42,16 @@ export const getAllSickLeaves = async (req, res) => {
             .populate('vacationBalance')
             .sort({ createdAt: -1 });
 
-        res.json(sickLeaves);
+        res.json({
+            success: true,
+            data: sickLeaves
+        });
     } catch (err) {
-
-        res.status(500).json({ error: err.message });
+        console.error('Get sick leaves error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
     }
 };
 

@@ -9,7 +9,7 @@ import User from '../../users/models/user.model.js';
  */
 export const getAllMissions = async (req, res) => {
     try {
-        const query = {};
+        const query = { tenantId: req.tenantId };
 
         // Filter by user/employee if provided
         if (req.query.user) {
@@ -36,10 +36,16 @@ export const getAllMissions = async (req, res) => {
             .populate('approvedBy rejectedBy cancelledBy', 'username employeeId personalInfo')
             .sort({ createdAt: -1 });
 
-        res.json(missions);
+        res.json({
+            success: true,
+            data: missions
+        });
     } catch (err) {
-
-        res.status(500).json({ error: err.message });
+        console.error('Get missions error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
     }
 };
 
@@ -60,7 +66,10 @@ export const createMission = async (req, res) => {
             }));
         }
 
-        const mission = new Mission(req.body);
+        const mission = new Mission({
+            ...req.body,
+            tenantId: req.tenantId
+        });
         const savedMission = await mission.save();
 
         // Create notification for supervisor/manager
@@ -69,7 +78,10 @@ export const createMission = async (req, res) => {
         // Send email notification to manager
         await sendMissionRequestNotification(savedMission);
 
-        res.status(201).json(savedMission);
+        res.status(201).json({
+            success: true,
+            data: savedMission
+        });
     } catch (err) {
 
 

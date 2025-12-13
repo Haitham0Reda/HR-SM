@@ -73,14 +73,14 @@ const PlanList = ({ onEdit }) => {
   return (
     <Grid container spacing={3}>
       {plans.length === 0 ? (
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Alert severity="info">
             No subscription plans found. Create your first plan to get started.
           </Alert>
         </Grid>
       ) : (
         plans.map((plan) => (
-          <Grid item xs={12} sm={6} md={4} key={plan._id}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={plan._id}>
             <Card
               sx={{
                 height: '100%',

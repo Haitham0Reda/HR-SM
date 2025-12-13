@@ -209,7 +209,7 @@ const LicenseStatusPage = () => {
         }
 
         return (
-            <Grid item xs={12} md={6} lg={4} key={moduleKey}>
+            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={moduleKey}>
                 <Card
                     sx={{
                         height: '100%',

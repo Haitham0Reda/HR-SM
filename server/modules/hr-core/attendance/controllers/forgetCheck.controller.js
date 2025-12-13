@@ -3,8 +3,8 @@ import User from '../../users/models/user.model.js';
 
 export const getAllForgetChecks = async (req, res) => {
     try {
-        const query = {};
-        const { user, isHR, isAdmin } = req;
+        const query = { tenantId: req.tenantId };
+        const { user } = req;
 
         // Filter by user/employee if provided
         if (req.query.user) {
@@ -13,8 +13,9 @@ export const getAllForgetChecks = async (req, res) => {
             query.employee = req.query.employee;
         }
 
-        // Role-based filtering
-        if (!isHR && !isAdmin) {
+        // Role-based filtering - check user role
+        const isHR = user.role === 'hr' || user.role === 'admin';
+        if (!isHR) {
             // Regular users see only their own requests
             query.employee = user._id;
         }
@@ -26,10 +27,16 @@ export const getAllForgetChecks = async (req, res) => {
             .populate('position', 'title')
             .sort({ createdAt: -1 });
 
-        res.json(forgetChecks);
+        res.json({
+            success: true,
+            data: forgetChecks
+        });
     } catch (err) {
-
-        res.status(500).json({ error: err.message });
+        console.error('Get forget checks error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
     }
 };
 
@@ -52,7 +59,10 @@ export const createForgetCheck = async (req, res) => {
         req.body.department = employee.department?._id;
         req.body.position = employee.position?._id;
 
-        const forgetCheck = new ForgetCheck(req.body);
+        const forgetCheck = new ForgetCheck({
+            ...req.body,
+            tenantId: req.tenantId
+        });
         const savedForgetCheck = await forgetCheck.save();
 
         res.status(201).json(savedForgetCheck);

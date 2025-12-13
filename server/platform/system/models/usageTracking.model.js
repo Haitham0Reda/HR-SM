@@ -82,8 +82,7 @@ const violationSchema = new mongoose.Schema({
 
 const usageTrackingSchema = new mongoose.Schema({
     tenantId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Tenant',
+        type: String,
         required: true,
         index: true
     },

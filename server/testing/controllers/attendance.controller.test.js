@@ -6,12 +6,11 @@ import Attendance from '../../modules/hr-core/attendance/models/attendance.model
 import * as attendanceController from '../../modules/hr-core/attendance/controllers/attendance.controller.js';
 import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
-describe('Attendance Controller - All 5 Functions', () => {
-    let mockReq, mockRes, testorganization, testUser;
+describe('Attendance Controller - All 7 Functions', () => {
+    let mockReq, mockRes, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
-        testUser = await createTestUser(testorganization._id, null, null);
+        testUser = await createTestUser(null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 const AuthContext = createContext(null);
-
-// API Base URL - Tenant API namespace
-const TENANT_API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
@@ -22,11 +19,8 @@ export const AuthProvider = ({ children }) => {
 
     // Configure axios defaults for Tenant API
     useEffect(() => {
-        if (tenantToken) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${tenantToken}`;
-        } else {
-            delete axios.defaults.headers.common['Authorization'];
-        }
+        // Token is handled automatically by the api interceptor
+        // No need to manually set headers
     }, [tenantToken]);
 
     // Load user on mount
@@ -34,11 +28,12 @@ export const AuthProvider = ({ children }) => {
         const loadUser = async () => {
             if (tenantToken && tenantId) {
                 try {
-                    const response = await axios.get(`${TENANT_API_BASE}/auth/me`);
-                    setUser(response.data.data);
+                    const response = await api.get('/auth/me');
+                    setUser(response.data);
                 } catch (error) {
                     console.error('Failed to load user:', error);
-                    logout();
+                    // Clear local state without making API call
+                    clearAuthState();
                 }
             }
             setLoading(false);
@@ -49,13 +44,13 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password, tenantIdInput) => {
         try {
-            const response = await axios.post(`${TENANT_API_BASE}/auth/login`, {
+            const response = await api.post('/auth/login', {
                 email,
                 password,
                 tenantId: tenantIdInput
             });
 
-            const { user, token } = response.data.data;
+            const { user, token } = response.data;
 
             setUser(user);
             setTenantToken(token);
@@ -72,23 +67,27 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             return {
                 success: false,
-                message: error.response?.data?.message || 'Login failed'
+                message: error.message || error.data?.message || 'Login failed'
             };
         }
     };
 
+    const clearAuthState = () => {
+        setUser(null);
+        setTenantToken(null);
+        setTenantId(null);
+        localStorage.removeItem('tenant_token');
+        localStorage.removeItem('tenant_id');
+        localStorage.removeItem('token'); // Remove old token if exists
+    };
+
     const logout = async () => {
         try {
-            await axios.post(`${TENANT_API_BASE}/auth/logout`);
+            await api.post('/auth/logout');
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            setUser(null);
-            setTenantToken(null);
-            setTenantId(null);
-            localStorage.removeItem('tenant_token');
-            localStorage.removeItem('tenant_id');
-            localStorage.removeItem('token'); // Remove old token if exists
+            clearAuthState();
         }
     };
 
@@ -101,6 +100,10 @@ export const AuthProvider = ({ children }) => {
         return userRoleLevel >= requiredRoleLevel;
     };
 
+    const updateUser = (updatedUserData) => {
+        setUser(updatedUserData);
+    };
+
     const value = {
         user,
         token: tenantToken, // Expose as 'token' for backward compatibility
@@ -110,6 +113,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         hasRole,
+        updateUser,
         isAuthenticated: !!user
     };
 
@@ -121,8 +125,8 @@ export const AuthProvider = ({ children }) => {
 };
 
 const ROLE_HIERARCHY = {
-    'Admin': 4,
-    'HR': 3,
-    'Manager': 2,
-    'Employee': 1
+    'admin': 4,
+    'hr': 3,
+    'manager': 2,
+    'employee': 1
 };

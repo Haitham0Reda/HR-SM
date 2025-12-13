@@ -65,10 +65,14 @@ const DepartmentsPage = () => {
     const fetchDepartments = async () => {
         try {
             setLoading(true);
-            const data = await departmentService.getAll();
-            setDepartments(data);
+            const response = await departmentService.getAll();
+            // Handle the response format { success: true, data: departments }
+            const departments = response?.data || response || [];
+            setDepartments(Array.isArray(departments) ? departments : []);
         } catch (error) {
+            console.error('Failed to fetch departments:', error);
             showNotification('Failed to fetch departments', 'error');
+            setDepartments([]); // Ensure departments is always an array
         } finally {
             setLoading(false);
         }

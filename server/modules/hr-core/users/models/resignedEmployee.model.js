@@ -1,39 +1,177 @@
-/**
- * Resigned Employee Model
- * 
- * Manages employees who have left the organization
- */
 import mongoose from 'mongoose';
 
 const resignedEmployeeSchema = new mongoose.Schema({
+    tenantId: {
+        type: String,
+        required: true,
+        index: true
+    },
     employee: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        unique: true,
         index: true
     },
-    // Resignation Details
-    resignationType: {
-        type: String,
-        enum: ['resignation-letter', 'termination'],
+    department: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Department',
+        required: true
+    },
+    position: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Position',
         required: true
     },
     resignationDate: {
         type: Date,
-        required: true,
-        default: Date.now
+        index: true
     },
     lastWorkingDay: {
         type: Date,
         required: true
     },
-    reason: {
+    resignationReason: {
         type: String,
-        maxlength: 500
+        enum: [
+            'better-opportunity',
+            'personal-reasons',
+            'relocation',
+            'career-change',
+            'health-issues',
+            'family-reasons',
+            'retirement',
+            'termination',
+            'other'
+        ],
+        required: true,
+        index: true
     },
+    resignationLetter: {
+        filename: String,
+        url: String,
+        uploadedAt: Date
+    },
+    exitInterview: {
+        conducted: {
+            type: Boolean,
+            default: false
+        },
+        conductedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        conductedDate: Date,
+        feedback: String,
+        rating: {
+            type: Number,
+            min: 1,
+            max: 5
+        }
+    },
+    handover: {
+        completed: {
+            type: Boolean,
+            default: false
+        },
+        handoverTo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        handoverDate: Date,
+        notes: String
+    },
+    clearance: {
+        hr: {
+            cleared: { type: Boolean, default: false },
+            clearedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            clearedDate: Date,
+            notes: String
+        },
+        finance: {
+            cleared: { type: Boolean, default: false },
+            clearedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            clearedDate: Date,
+            notes: String
+        },
+        it: {
+            cleared: { type: Boolean, default: false },
+            clearedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            clearedDate: Date,
+            notes: String
+        }
+    },
+    finalSettlement: {
+        amount: {
+            type: Number,
+            default: 0
+        },
+        currency: {
+            type: String,
+            default: 'USD'
+        },
+        paidDate: Date,
+        paidBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }
+    },
+    rehireEligible: {
+        type: Boolean,
+        default: true
+    },
+    notes: {
+        type: String,
+        maxlength: 1000
+    },
+    processedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    updatedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }
+}, {
+    timestamps: true
+});
 
-    // Letter Information
+resignedEmployeeSchema.add({
+    resignationType: {
+        type: String,
+        enum: ['resignation-letter', 'termination'],
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'processed', 'archived'],
+        default: 'pending'
+    },
+    penalties: [
+        {
+            description: String,
+            amount: {
+                type: Number,
+                default: 0
+            },
+            currency: {
+                type: String,
+                default: 'USD'
+            },
+            addedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User'
+            },
+            addedAt: {
+                type: Date,
+                default: Date.now
+            }
+        }
+    ],
+    isLocked: {
+        type: Boolean,
+        default: false
+    },
+    lockedDate: Date,
     letterGenerated: {
         type: Boolean,
         default: false
@@ -43,244 +181,110 @@ const resignedEmployeeSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    letterContent: {
-        type: String
-    },
-
-    // Arabic Disclaimer
-    arabicDisclaimerGenerated: {
-        type: Boolean,
-        default: false
-    },
-    arabicDisclaimerDate: Date,
-
-    // Penalties
-    penalties: [{
-        description: {
-            type: String,
-            required: true
-        },
-        amount: {
-            type: Number,
-            required: true,
-            min: 0
-        },
-        currency: {
-            type: String,
-            default: 'EGP'
-        },
-        addedDate: {
-            type: Date,
-            default: Date.now
-        },
-        addedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        notes: String
-    }],
-
-    totalPenalties: {
-        type: Number,
-        default: 0
-    },
-
-    // Lock Status
-    isLocked: {
-        type: Boolean,
-        default: false
-    },
-    lockedDate: Date,
-
-    // Processing Status
-    status: {
-        type: String,
-        enum: ['pending', 'processed', 'archived'],
-        default: 'pending'
-    },
-
-    // HR Notes
-    hrNotes: {
-        type: String,
-        maxlength: 1000
-    },
-
-    // Metadata
-    processedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    processedDate: Date
-}, {
-    timestamps: true
+    letterContent: String
 });
 
-// Indexes
-resignedEmployeeSchema.index({ resignationDate: -1 });
-resignedEmployeeSchema.index({ status: 1 });
-resignedEmployeeSchema.index({ isLocked: 1 });
-
-// Virtual for total penalty amount
 resignedEmployeeSchema.virtual('totalPenaltyAmount').get(function () {
-    return this.penalties.reduce((sum, penalty) => sum + penalty.amount, 0);
+    if (!this.penalties || this.penalties.length === 0) return 0;
+    return this.penalties.reduce((sum, p) => sum + (p.amount || 0), 0);
 });
 
-// Virtual to check if can be modified
+resignedEmployeeSchema.virtual('totalPenalties').get(function () {
+    if (!this.penalties || this.penalties.length === 0) return 0;
+    return this.penalties.reduce((sum, p) => sum + (p.amount || 0), 0);
+});
+
 resignedEmployeeSchema.virtual('canModify').get(function () {
-    if (this.isLocked) return false;
-
-    const oneDayAgo = new Date();
-    oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-
-    return this.createdAt > oneDayAgo;
+    return !this.isLocked;
 });
 
-// Method to add penalty
-resignedEmployeeSchema.methods.addPenalty = function (penaltyData, addedBy) {
-    if (this.isLocked) {
-        throw new Error('Cannot modify penalties after 24 hours');
-    }
+resignedEmployeeSchema.virtual('reason').get(function () {
+    const map = {
+        'better-opportunity': 'Better opportunity',
+        'personal-reasons': 'Personal reasons',
+        'relocation': 'Relocation',
+        'career-change': 'Career change',
+        'health-issues': 'Health issues',
+        'family-reasons': 'Family reasons',
+        'retirement': 'Retirement',
+        'termination': 'Termination',
+        'other': 'Other'
+    };
+    return map[this.resignationReason] || this.resignationReason;
+});
 
-    this.penalties.push({
-        ...penaltyData,
-        addedBy,
-        addedDate: new Date()
-    });
+resignedEmployeeSchema.set('toJSON', { virtuals: true });
+resignedEmployeeSchema.set('toObject', { virtuals: true });
 
-    this.totalPenalties = this.penalties.reduce((sum, p) => sum + p.amount, 0);
-    return this.save();
+resignedEmployeeSchema.methods.addPenalty = async function (penalty, addedById) {
+    if (this.isLocked) throw new Error('Cannot modify penalties after 24 hours');
+    const entry = {
+        description: penalty.description,
+        amount: penalty.amount,
+        currency: penalty.currency || 'USD',
+        addedBy: addedById
+    };
+    if (!this.penalties) this.penalties = [];
+    this.penalties.push(entry);
+    return await this.save();
 };
 
-// Method to remove penalty
-resignedEmployeeSchema.methods.removePenalty = function (penaltyId) {
-    if (this.isLocked) {
-        throw new Error('Cannot modify penalties after 24 hours');
-    }
-
-    this.penalties = this.penalties.filter(p => p._id.toString() !== penaltyId.toString());
-    this.totalPenalties = this.penalties.reduce((sum, p) => sum + p.amount, 0);
-    return this.save();
+resignedEmployeeSchema.methods.removePenalty = async function (penaltyId) {
+    if (this.isLocked) throw new Error('Cannot modify penalties after 24 hours');
+    this.penalties = (this.penalties || []).filter(p => p._id.toString() !== penaltyId.toString());
+    return await this.save();
 };
 
-// Method to update resignation type
-resignedEmployeeSchema.methods.updateResignationType = function (type) {
-    if (this.isLocked) {
-        throw new Error('Cannot modify resignation type after 24 hours');
-    }
-
-    this.resignationType = type;
-    return this.save();
+resignedEmployeeSchema.methods.updateResignationType = async function (newType) {
+    this.resignationType = newType;
+    return await this.save();
 };
 
-// Method to lock record
-resignedEmployeeSchema.methods.lock = function () {
+resignedEmployeeSchema.methods.lock = async function () {
     this.isLocked = true;
     this.lockedDate = new Date();
-    return this.save();
+    return await this.save();
 };
 
-// Method to generate letter
-resignedEmployeeSchema.methods.generateLetter = async function (generatedBy) {
-    // Fetch the employee directly instead of using populate
-    const User = mongoose.model('User');
-    const employee = await User.findById(this.employee).select('profile employeeId department position');
-
-    const letterContent = this.resignationType === 'resignation-letter'
-        ? await this.generateResignationLetter(employee)
-        : await this.generateTerminationLetter(employee);
-
-    this.letterContent = letterContent;
+resignedEmployeeSchema.methods.generateLetter = async function (byUserId) {
+    let content = 'TO WHOM IT MAY CONCERN\n\n';
+    if (this.resignationType === 'resignation-letter') {
+        content += 'This is a resignation letter.\n';
+    } else if (this.resignationType === 'termination') {
+        content += 'This employee has been terminated.\n';
+    }
+    const total = this.penalties && this.penalties.length ? this.penalties.reduce((s, p) => s + (p.amount || 0), 0) : 0;
+    if (total > 0) {
+        const currency = this.penalties[0].currency || 'USD';
+        content += `Pending Penalties: ${total} ${currency}`;
+    }
     this.letterGenerated = true;
     this.letterGeneratedDate = new Date();
-    this.letterGeneratedBy = generatedBy;
-
-    return this.save();
+    this.letterGeneratedBy = byUserId;
+    this.letterContent = content;
+    return await this.save();
 };
 
-// Generate resignation letter
-resignedEmployeeSchema.methods.generateResignationLetter = function (employee) {
-    const date = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-
-    return `
-TO WHOM IT MAY CONCERN
-
-Date: ${date}
-
-This is to certify that ${employee.personalInfo.firstName} ${employee.personalInfo.lastName}, 
-Employee ID: ${employee.employeeId}, was employed at our organization.
-
-Employment Period: ${new Date(employee.employment.hireDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - ${new Date(this.lastWorkingDay).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-
-Position: ${employee.position ? 'As per records' : 'Employee'}
-Department: ${employee.department ? 'As per records' : 'N/A'}
-
-The employee submitted their resignation letter on ${new Date(this.resignationDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.
-
-${this.penalties.length > 0 ? `
-Pending Penalties: ${this.totalPenalties} EGP
-Details:
-${this.penalties.map((p, i) => `${i + 1}. ${p.description}: ${p.amount} ${p.currency}`).join('\n')}` : ''}
-
-This letter is issued upon the employee's request for official purposes.
-
-Sincerely,
-        Human Resources Department
-        `;
+resignedEmployeeSchema.statics.findAllResigned = function (filter = {}) {
+    return this.find(filter).sort({ resignationDate: -1 });
 };
 
-// Generate termination letter
-resignedEmployeeSchema.methods.generateTerminationLetter = function (employee) {
-    const date = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-
-    return `
-TO WHOM IT MAY CONCERN
-
-Date: ${date}
-
-This is to certify that ${employee.personalInfo.firstName} ${employee.personalInfo.lastName},
-        Employee ID: ${employee.employeeId}, was employed at our organization.
-
-Employment Period: ${new Date(employee.employment.hireDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - ${new Date(this.lastWorkingDay).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-
-Position: ${employee.position ? 'As per records' : 'Employee'}
-Department: ${employee.department ? 'As per records' : 'N/A'}
-
-The employment was terminated as of ${new Date(this.resignationDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.
-
-        ${this.penalties.length > 0 ? `
-Pending Penalties: ${this.totalPenalties} EGP
-Details:
-${this.penalties.map((p, i) => `${i + 1}. ${p.description}: ${p.amount} ${p.currency}`).join('\n')}` : ''}
-
-This letter is issued for official purposes.
-
-                Sincerely,
-            Human Resources Department
-`;
-};
-
-// Pre-save hook to auto-lock after 24 hours
-resignedEmployeeSchema.pre('save', function (next) {
-    // Auto-calculate total penalties
-    if (this.penalties && this.penalties.length > 0) {
-        this.totalPenalties = this.penalties.reduce((sum, p) => sum + (p.amount || 0), 0);
-    } else {
-        this.totalPenalties = 0;
+resignedEmployeeSchema.statics.toArabicNumerals = function (num) {
+    const map = { '0': '٠', '1': '١', '2': '٢', '3': '٣', '4': '٤', '5': '٥', '6': '٦', '7': '٧', '8': '٨', '9': '٩' };
+    const str = String(num);
+    let out = '';
+    for (const ch of str) {
+        out += map[ch] ?? ch;
     }
+    return out;
+};
 
+resignedEmployeeSchema.pre('save', function (next) {
     if (!this.isLocked) {
-        const oneDayAgo = new Date();
-        oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-
-        if (this.createdAt && this.createdAt < oneDayAgo) {
+        const base = this.createdAt || new Date();
+        const diffMs = Date.now() - base.getTime();
+        const hours = diffMs / 3600000;
+        if (hours >= 24) {
             this.isLocked = true;
             this.lockedDate = new Date();
         }
@@ -288,26 +292,11 @@ resignedEmployeeSchema.pre('save', function (next) {
     next();
 });
 
-// Static method to find all resigned employees
-resignedEmployeeSchema.statics.findAllResigned = async function (options = {}) {
-    const { status, limit = 50, skip = 0 } = options;
+// Indexes for better query performance
+resignedEmployeeSchema.index({ tenantId: 1, resignationDate: -1 });
+resignedEmployeeSchema.index({ tenantId: 1, department: 1 });
+resignedEmployeeSchema.index({ tenantId: 1, resignationReason: 1 });
 
-    const query = status ? { status } : {};
+const ResignedEmployee = mongoose.model('ResignedEmployee', resignedEmployeeSchema);
 
-    return await this.find(query)
-        .populate('employee', 'profile employeeId department position')
-        .populate('processedBy', 'username email')
-        .sort({ resignationDate: -1 })
-        .limit(limit)
-        .skip(skip)
-        .exec(); // Execute the query and return the actual results
-};
-
-// Static method to convert number to Arabic numerals
-resignedEmployeeSchema.statics.toArabicNumerals = function (num) {
-    const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-    return String(num).split('').map(d => arabicNumerals[parseInt(d)] || d).join('');
-};
-
-export default mongoose.model('ResignedEmployee', resignedEmployeeSchema);
-
+export default ResignedEmployee;

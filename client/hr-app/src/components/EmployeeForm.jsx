@@ -27,6 +27,8 @@ import { useNavigate } from 'react-router';
 import dayjs from 'dayjs';
 import departmentService from '../services/department.service';
 import positionService from '../services/position.service';
+import userService from '../services/user.service';
+import { getUserProfilePicture, getUserInitials } from '../utils/profilePicture';
 
 const nationalities = [
     'Egyptian', 'Saudi', 'Emirati', 'Kuwaiti', 'Qatari', 'Bahraini', 'Omani',
@@ -67,6 +69,8 @@ function EmployeeForm(props) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [departments, setDepartments] = useState([]);
     const [positions, setPositions] = useState([]);
+    const [profilePictureFile, setProfilePictureFile] = useState(null);
+    const [profilePicturePreview, setProfilePicturePreview] = useState(getUserProfilePicture(formValues));
     const [supervisors, setSupervisors] = useState([]);
 
     useEffect(() => {
@@ -145,6 +149,57 @@ function EmployeeForm(props) {
         navigate(backButtonPath ?? '/app/users');
     };
 
+    const handleProfilePictureChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            // Validate file size (2MB limit)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('File size must be less than 2MB');
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            setProfilePictureFile(file);
+
+            // Create preview URL
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setProfilePicturePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleRemoveProfilePicture = () => {
+        setProfilePictureFile(null);
+        setProfilePicturePreview('');
+        // Update form values
+        onFieldChange('personalInfo', {
+            ...formValues.personalInfo,
+            profilePicture: ''
+        });
+    };
+
+    const uploadProfilePicture = async (userId) => {
+        if (!profilePictureFile) return null;
+
+        try {
+            const formData = new FormData();
+            formData.append('profilePicture', profilePictureFile);
+            
+            const response = await userService.uploadProfilePicture(userId, formData);
+            return response.profilePicture;
+        } catch (error) {
+            console.error('Error uploading profile picture:', error);
+            throw error;
+        }
+    };
+
     const handleReset = () => {
         if (onReset) {
             onReset();
@@ -162,9 +217,13 @@ function EmployeeForm(props) {
                         <Box sx={{ mr: 3 }}>
                             <Typography variant="subtitle2" sx={{ mb: 1 }}>Employee Photo</Typography>
                             <Avatar
-                                src={formValues.profile?.profilePicture}
+                                src={profilePicturePreview || getUserProfilePicture(formValues)}
                                 sx={{ width: 120, height: 120 }}
-                            />
+                            >
+                                {!profilePicturePreview && !getUserProfilePicture(formValues) && 
+                                    getUserInitials(formValues)
+                                }
+                            </Avatar>
                             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
                                 <Button
                                     variant="contained"
@@ -173,13 +232,19 @@ function EmployeeForm(props) {
                                     component="label"
                                 >
                                     Change Photo
-                                    <input type="file" hidden accept="image/*" />
+                                    <input 
+                                        type="file" 
+                                        hidden 
+                                        accept="image/*" 
+                                        onChange={handleProfilePictureChange}
+                                    />
                                 </Button>
                                 <Button
                                     variant="outlined"
                                     size="small"
                                     color="error"
                                     startIcon={<DeleteIcon />}
+                                    onClick={handleRemoveProfilePicture}
                                 >
                                     Remove
                                 </Button>
@@ -198,7 +263,7 @@ function EmployeeForm(props) {
                                     />
                                 </Grid>
                             )}
-                            <Grid size={{ xs: 12 }} sm={isEditMode ? 6 : 12}>
+                            <Grid size={{ sm: isEditMode ? 6 : 12 }} size={{ xs: 12 }}>
                                 <TextField
                                     label="Username"
                                     value={formValues.username || ''}

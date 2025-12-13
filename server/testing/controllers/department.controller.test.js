@@ -7,11 +7,10 @@ import * as departmentController from '../../modules/hr-core/users/controllers/d
 import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('Department Controller - All 5 Functions', () => {
-    let mockReq, mockRes, testorganization, testUser;
+    let mockReq, mockRes, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
-        testUser = await createTestUser(testorganization._id, null, null);
+        testUser = await createTestUser(null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

@@ -1,3 +1,5 @@
+import { getUserProfilePicture, getUserInitials } from '../../utils/profilePicture';
+
 // Generate Employee ID Card (Front and Back)
 export const generateUserIDCard = (user) => {
     try {
@@ -383,9 +385,9 @@ export const generateUserIDCard = (user) => {
                         </div>
                         <div class="card-body">
                             <div class="photo">
-                                ${user.personalInfo?.profilePicture ? 
-                                    `<img src="${user.personalInfo.profilePicture}" alt="Photo" />` : 
-                                    (user.personalInfo?.fullName || user.username)?.charAt(0).toUpperCase()
+                                ${getUserProfilePicture(user) ? 
+                                    `<img src="${getUserProfilePicture(user)}" alt="Photo" />` : 
+                                    getUserInitials(user)
                                 }
                             </div>
                             <div class="info">

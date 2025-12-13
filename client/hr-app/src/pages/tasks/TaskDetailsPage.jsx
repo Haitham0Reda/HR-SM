@@ -153,7 +153,7 @@ const TaskDetailsPage = () => {
             )}
 
             <Grid container spacing={3}>
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     <Paper sx={{ p: 3 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                             <Assignment sx={{ mr: 1, color: 'primary.main' }} />
@@ -180,7 +180,7 @@ const TaskDetailsPage = () => {
                         </Typography>
 
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                     <Person sx={{ mr: 1, fontSize: 'small' }} />
                                     <Typography variant="subtitle2">Assignee:</Typography>
@@ -190,7 +190,7 @@ const TaskDetailsPage = () => {
                                 </Typography>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                     <Person sx={{ mr: 1, fontSize: 'small' }} />
                                     <Typography variant="subtitle2">Assigner:</Typography>
@@ -200,7 +200,7 @@ const TaskDetailsPage = () => {
                                 </Typography>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                     <CalendarToday sx={{ mr: 1, fontSize: 'small' }} />
                                     <Typography variant="subtitle2">Start Date:</Typography>
@@ -210,7 +210,7 @@ const TaskDetailsPage = () => {
                                 </Typography>
                             </Grid>
 
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                     <Schedule sx={{ mr: 1, fontSize: 'small' }} />
                                     <Typography variant="subtitle2">Due Date:</Typography>
@@ -299,7 +299,7 @@ const TaskDetailsPage = () => {
                     )}
                 </Grid>
 
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Paper sx={{ p: 3 }}>
                         <Typography variant="h6" gutterBottom>Task Actions</Typography>
 

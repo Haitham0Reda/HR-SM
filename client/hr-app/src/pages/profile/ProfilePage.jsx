@@ -19,6 +19,7 @@ import {
 import { PhotoCamera, Save, Close } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import userService from '../../services/user.service';
+import { getUserProfilePicture } from '../../utils/profilePicture';
 
 export default function ProfilePage() {
     const { user, updateUser } = useAuth();
@@ -30,7 +31,7 @@ export default function ProfilePage() {
         position: user?.position?.title || '',
     });
     const [profilePicture, setProfilePicture] = useState(user?.personalInfo?.profilePicture || user?.profilePicture || '');
-    const [previewUrl, setPreviewUrl] = useState(user?.personalInfo?.profilePicture || user?.profilePicture || '');
+    const [previewUrl, setPreviewUrl] = useState(getUserProfilePicture(user));
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [openPreview, setOpenPreview] = useState(false);
@@ -43,14 +44,29 @@ export default function ProfilePage() {
         }));
     };
 
+    const [profilePictureFile, setProfilePictureFile] = useState(null);
+
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Validate file size (2MB limit)
+            if (file.size > 2 * 1024 * 1024) {
+                setMessage({ type: 'error', text: 'File size must be less than 2MB' });
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setMessage({ type: 'error', text: 'Please select an image file' });
+                return;
+            }
+
+            setProfilePictureFile(file);
+
             // Create preview URL
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreviewUrl(reader.result);
-                setProfilePicture(reader.result);
             };
             reader.readAsDataURL(file);
         }
@@ -62,18 +78,24 @@ export default function ProfilePage() {
         setMessage({ type: '', text: '' });
 
         try {
+            let profilePictureUrl = user?.personalInfo?.profilePicture || '';
+
+            // Upload profile picture if a new file was selected
+            if (profilePictureFile) {
+                const formData = new FormData();
+                formData.append('profilePicture', profilePictureFile);
+                
+                const uploadResponse = await userService.uploadProfilePicture(user._id, formData);
+                profilePictureUrl = uploadResponse.profilePicture;
+            }
+
             // Prepare data for update - only send fields that can be updated
             const updateData = {
                 personalInfo: {
                     ...user?.personalInfo,
                     phone: formData.phone,
-                    profilePicture: profilePicture,
-                },
-                profile: {
-                    ...user?.profile,
-                    phone: formData.phone,
-                    profilePicture: profilePicture,
-                },
+                    profilePicture: profilePictureUrl,
+                }
             };
 
             // Call API to update user profile in database

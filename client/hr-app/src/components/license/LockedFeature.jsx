@@ -187,8 +187,6 @@ const LockedFeature = React.memo(({
             </Typography>
         </Box>
     );
-};
-
 });
 
 LockedFeature.propTypes = {

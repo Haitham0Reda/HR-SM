@@ -10,11 +10,10 @@ import * as analyticsController from '../../modules/analytics/controllers/analyt
 import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('Analytics Controller - All 7 Functions', () => {
-    let mockReq, mockRes, testorganization, testUser;
+    let mockReq, mockRes, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
-        testUser = await createTestUser(testorganization._id, null, null);
+        testUser = await createTestUser(null, null);
 
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

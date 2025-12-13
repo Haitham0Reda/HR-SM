@@ -174,18 +174,13 @@ userSchema.pre('save', async function (next) {
     if (this.isModified('password')) {
         // Store plain password before hashing (for credential generation)
         this.plainPassword = this.password;
-
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
+        
+        // Hash password with cost of 12
+        this.password = await bcrypt.hash(this.password, 12);
     }
 
     next();
 });
-
-// Method to compare password
-userSchema.methods.matchPassword = async function (enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
-};
 
 // Method to get effective permissions (role + overrides)
 userSchema.methods.getEffectivePermissions = async function () {
@@ -255,15 +250,10 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-    // Only hash the password if it has been modified (or is new)
-    if (!this.isModified('password')) return next();
-    
-    // Hash password with cost of 12
-    this.password = await bcrypt.hash(this.password, 12);
-    next();
-});
+// Backward-compatible alias for tests expecting matchPassword
+userSchema.methods.matchPassword = async function(candidatePassword) {
+    return this.comparePassword(candidatePassword);
+};
 
 // Ensure virtuals are included in JSON
 userSchema.set('toJSON', { virtuals: true });

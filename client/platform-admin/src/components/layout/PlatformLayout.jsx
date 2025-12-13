@@ -13,7 +13,6 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  Avatar,
   Menu,
   MenuItem,
 } from '@mui/material';
@@ -21,17 +20,23 @@ import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
   Business as BusinessIcon,
+  Domain as DomainIcon,
   CardMembership as CardMembershipIcon,
   Extension as ExtensionIcon,
   Settings as SettingsIcon,
   AccountCircle,
+  Palette as PaletteIcon,
+  LightMode as LightModeIcon,
+  DarkMode as DarkModeIcon,
 } from '@mui/icons-material';
 import { usePlatformAuth } from '../../contexts/PlatformAuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const drawerWidth = 240;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+  { text: 'Companies', icon: <DomainIcon />, path: '/companies' },
   { text: 'Tenants', icon: <BusinessIcon />, path: '/tenants' },
   { text: 'Subscriptions', icon: <CardMembershipIcon />, path: '/subscriptions' },
   { text: 'Modules', icon: <ExtensionIcon />, path: '/modules' },
@@ -41,7 +46,9 @@ const menuItems = [
 const PlatformLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [themeMenuAnchor, setThemeMenuAnchor] = useState(null);
   const { platformUser, logout } = usePlatformAuth();
+  const { currentTheme, changeTheme, getAvailableThemes } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -60,6 +67,19 @@ const PlatformLayout = () => {
   const handleLogout = () => {
     handleMenuClose();
     logout();
+  };
+
+  const handleThemeMenuOpen = (event) => {
+    setThemeMenuAnchor(event.currentTarget);
+  };
+
+  const handleThemeMenuClose = () => {
+    setThemeMenuAnchor(null);
+  };
+
+  const handleThemeChange = (themeName) => {
+    changeTheme(themeName);
+    handleThemeMenuClose();
   };
 
   const handleNavigation = (path) => {
@@ -119,6 +139,15 @@ const PlatformLayout = () => {
             </Typography>
             <IconButton
               size="large"
+              aria-label="theme settings"
+              onClick={handleThemeMenuOpen}
+              color="inherit"
+              title="Change Theme"
+            >
+              <PaletteIcon />
+            </IconButton>
+            <IconButton
+              size="large"
               aria-label="account of current user"
               aria-controls="menu-appbar"
               aria-haspopup="true"
@@ -127,6 +156,44 @@ const PlatformLayout = () => {
             >
               <AccountCircle />
             </IconButton>
+            {/* Theme Menu */}
+            <Menu
+              id="theme-menu"
+              anchorEl={themeMenuAnchor}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={Boolean(themeMenuAnchor)}
+              onClose={handleThemeMenuClose}
+            >
+              <MenuItem disabled>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Select Theme
+                </Typography>
+              </MenuItem>
+              <Divider />
+              {getAvailableThemes().map((themeName) => (
+                <MenuItem 
+                  key={themeName}
+                  onClick={() => handleThemeChange(themeName)}
+                  selected={currentTheme === themeName}
+                  sx={{ textTransform: 'capitalize', minWidth: 120 }}
+                >
+                  {themeName === 'light' && <LightModeIcon sx={{ mr: 1, fontSize: 18 }} />}
+                  {themeName === 'dark' && <DarkModeIcon sx={{ mr: 1, fontSize: 18 }} />}
+                  {!['light', 'dark'].includes(themeName) && <PaletteIcon sx={{ mr: 1, fontSize: 18 }} />}
+                  {themeName}
+                </MenuItem>
+              ))}
+            </Menu>
+
+            {/* User Menu */}
             <Menu
               id="menu-appbar"
               anchorEl={anchorEl}

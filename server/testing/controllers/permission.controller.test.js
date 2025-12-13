@@ -7,11 +7,10 @@ import * as permissionController from '../../modules/hr-core/requests/controller
 import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
 
 describe('Permission Controller - All 9 Functions', () => {
-    let mockReq, mockRes, testorganization, testUser;
+    let mockReq, mockRes, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
-        testUser = await createTestUser(testorganization._id, null, null);
+        testUser = await createTestUser(null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
         mockRes = createMockResponse();

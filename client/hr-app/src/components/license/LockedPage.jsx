@@ -252,8 +252,6 @@ const LockedPage = React.memo(({
             </Container>
         </Box>
     );
-};
-
 });
 
 LockedPage.propTypes = {

@@ -339,8 +339,6 @@ const UpgradeModal = React.memo(({
             </DialogActions>
         </Dialog>
     );
-};
-
 });
 
 UpgradeModal.propTypes = {

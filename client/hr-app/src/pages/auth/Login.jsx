@@ -63,7 +63,7 @@ const Login = () => {
             
             // For now, use a default tenant ID since the login form doesn't have tenant selection
             // TODO: Add tenant selection to login form if needed
-            const result = await login(formData.email, formData.password, 'default');
+            const result = await login(formData.email, formData.password, 'default-tenant');
             
             if (result.success) {
                 showSuccess('Login successful!');

@@ -1,5 +1,6 @@
 export default {
   testEnvironment: 'node',
+  roots: ['<rootDir>/server/testing'],
   collectCoverageFrom: [
     'server/**/*.js',
     '!server/index.js',
@@ -8,7 +9,8 @@ export default {
     '!server/**/*.test.js'
   ],
   testMatch: ['**/server/testing/**/*.test.js'],
-  testPathIgnorePatterns: ['<rootDir>/docs/'],
+  testPathIgnorePatterns: ['<rootDir>/docs/', '<rootDir>/server/backups/'],
+  modulePathIgnorePatterns: ['<rootDir>/docs/', '<rootDir>/server/backups/', '<rootDir>/client/'],
   setupFilesAfterEnv: ['<rootDir>/server/testing/setup.js'],
   verbose: false,
   moduleNameMapper: {
@@ -18,17 +20,12 @@ export default {
     '^.+\\.js$': 'babel-jest'
   },
   // Memory and performance optimizations
-  maxWorkers: 1, // Run serially to avoid test interference
+  maxWorkers: 1,
   cache: true,
   cacheDirectory: '<rootDir>/.jest-cache',
-  testTimeout: 60000, // Increase timeout for property tests
-  // Memory management
+  testTimeout: 60000,
   errorOnDeprecated: false,
-  detectOpenHandles: false, // Disable to save memory
-  forceExit: true, // Force exit after tests complete
-  // Additional memory optimizations
-  logHeapUsage: false,
-  runInBand: true, // Run tests serially
-  // Node.js memory options
-  workerIdleMemoryLimit: '512MB'
+  detectOpenHandles: false,
+  forceExit: true,
+  logHeapUsage: false
 };

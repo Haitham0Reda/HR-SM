@@ -50,6 +50,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CongratulationsEffect from '../../components/effects/CongratulationsEffect';
 import { dashboardService } from '../../services';
+import { getUserProfilePicture, getUserInitials } from '../../utils/profilePicture';
 
 // Action card configuration with staggered animation delays
 const actionCards = [
@@ -221,7 +222,7 @@ const Dashboard = () => {
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 3 }}>
                             <Zoom in={true} timeout={800}>
                                 <Avatar
-                                    src={user?.personalInfo?.profilePicture || user?.profilePicture || user?.profile?.profilePicture}
+                                    src={getUserProfilePicture(user)}
                                     alt={user?.personalInfo?.fullName || user?.name || user?.username}
                                     sx={{
                                         width: 72,
@@ -234,9 +235,7 @@ const Dashboard = () => {
                                         boxShadow: 4,
                                     }}
                                 >
-                                    {!(user?.personalInfo?.profilePicture || user?.profilePicture || user?.profile?.profilePicture) && (user?.personalInfo?.fullName || user?.name || user?.username)
-                                        ? (user?.personalInfo?.fullName || user?.name || user?.username).charAt(0).toUpperCase()
-                                        : !(user?.personalInfo?.profilePicture || user?.profilePicture || user?.profile?.profilePicture) && <ProfileIcon sx={{ fontSize: 36 }} />}
+                                    {!getUserProfilePicture(user) && getUserInitials(user)}
                                 </Avatar>
                             </Zoom>
                             <Box sx={{ flex: '1 1 200px' }}>
@@ -346,9 +345,7 @@ const Dashboard = () => {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                                     <Zoom in={true} timeout={1000}>
                                         <Avatar
-                                            src={employeeOfMonth.selectedEmployee.profile?.profilePicture || 
-                                                 employeeOfMonth.selectedEmployee.profilePicture ||
-                                                 employeeOfMonth.selectedEmployee.personalInfo?.profilePicture}
+                                            src={getUserProfilePicture(employeeOfMonth.selectedEmployee)}
                                             alt={employeeOfMonth.selectedEmployee.personalInfo?.fullName || 
                                                  employeeOfMonth.selectedEmployee.name ||
                                                  employeeOfMonth.selectedEmployee.username}
@@ -363,13 +360,8 @@ const Dashboard = () => {
                                                 bgcolor: 'warning.light',
                                             }}
                                         >
-                                            {!employeeOfMonth.selectedEmployee.profile?.profilePicture && 
-                                             !employeeOfMonth.selectedEmployee.profilePicture &&
-                                             !employeeOfMonth.selectedEmployee.personalInfo?.profilePicture && (
-                                                employeeOfMonth.selectedEmployee.personalInfo?.fullName?.charAt(0) ||
-                                                employeeOfMonth.selectedEmployee.name?.charAt(0) ||
-                                                employeeOfMonth.selectedEmployee.username?.charAt(0)
-                                            )}
+                                            {!getUserProfilePicture(employeeOfMonth.selectedEmployee) && 
+                                                getUserInitials(employeeOfMonth.selectedEmployee)}
                                         </Avatar>
                                     </Zoom>
 

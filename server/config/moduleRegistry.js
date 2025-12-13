@@ -5,13 +5,21 @@ export const moduleRegistry = {
     [MODULES.HR_CORE]: {
         routes: {
             auth: () => import('../modules/hr-core/routes/authRoutes.js'),
-            users: () => import('../modules/hr-core/users/routes.js'),
+            users: () => import('../modules/hr-core/users/routes/user.routes.js'),
+            departments: () => import('../modules/hr-core/users/routes/department.routes.js'),
+            positions: () => import('../modules/hr-core/users/routes/position.routes.js'),
+            roles: () => import('../modules/hr-core/users/routes/role.routes.js'),
+            tenant: () => import('../modules/hr-core/routes/tenantRoutes.js'),
             attendance: () => import('../modules/hr-core/attendance/routes.js'),
             holidays: () => import('../modules/hr-core/holidays/routes.js'),
             missions: () => import('../modules/hr-core/missions/routes.js'),
             overtime: () => import('../modules/hr-core/overtime/routes.js'),
             requests: () => import('../modules/hr-core/requests/routes.js'),
-            vacations: () => import('../modules/hr-core/vacations/routes.js')
+            vacations: () => import('../modules/hr-core/vacations/routes.js'),
+            'sick-leaves': () => import('../modules/hr-core/vacations/sickLeave.routes.js'),
+            'forget-checks': () => import('../modules/hr-core/attendance/routes/forgetCheck.routes.js'),
+            'resigned-employees': () => import('../modules/hr-core/users/routes/resignedEmployee.routes.js'),
+            dashboard: () => import('../modules/dashboard/routes/dashboard.routes.js')
         },
         basePath: '/api/v1'
     },

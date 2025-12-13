@@ -22,6 +22,7 @@ import Loading from '../../components/common/Loading';
 import userService from '../../services/user.service';
 import departmentService from '../../services/department.service';
 import positionService from '../../services/position.service';
+import { getUserProfilePicture } from '../../utils/profilePicture';
 import { useNotification } from '../../context/NotificationContext';
 
 const EditUserPage = () => {
@@ -120,8 +121,9 @@ const EditUserPage = () => {
             setPositions(posData);
             
             // Set profile picture preview if exists
-            if (userData.personalInfo?.profilePicture) {
-                setProfilePicturePreview(userData.personalInfo.profilePicture);
+            const profilePictureUrl = getUserProfilePicture(userData);
+            if (profilePictureUrl) {
+                setProfilePicturePreview(profilePictureUrl);
             }
             
             // Determine if the selected department is a main or sub-department
