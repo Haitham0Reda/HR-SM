@@ -999,7 +999,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                         variant="contained"
                         color="secondary"
                         startIcon={<CloudUploadIcon />}
-                        onClick={() => navigate('/attendance/import')}
+                        onClick={() => navigate(getCompanyRoute('/attendance/import'))}
                     >
                         Import Attendance
                     </Button>

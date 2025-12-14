@@ -86,8 +86,8 @@ const OvertimePage = () => {
             if (filters.sortBy) params.sortBy = filters.sortBy;
             if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
-            const data = await overtimeService.getAll(params);
-            const overtimeArray = Array.isArray(data) ? data : [];
+            const response = await overtimeService.getAll(params);
+            const overtimeArray = response?.data || [];
 
             // Filter based on role
             let filteredData;

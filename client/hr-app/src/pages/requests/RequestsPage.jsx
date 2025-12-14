@@ -86,7 +86,7 @@ const RequestsPage = () => {
 
             // Fetch permission requests (includes late-arrival, early-departure)
             const permissionData = await permissionService.getAll();
-            const permissions = Array.isArray(permissionData) ? permissionData : [];
+            const permissions = Array.isArray(permissionData.data) ? permissionData.data : (Array.isArray(permissionData) ? permissionData : []);
 
             // Transform all permission requests
             const transformedPermissions = permissions.map(permission => ({

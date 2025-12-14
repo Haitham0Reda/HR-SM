@@ -41,9 +41,18 @@ export const getAllVacations = async (req, res) => {
             .populate('vacationBalance')
             .sort({ createdAt: -1 });
 
+        // Map vacationType to leaveType for frontend compatibility
+        const mappedVacations = vacations.map(vacation => {
+            const vacationObj = vacation.toObject();
+            if (vacationObj.vacationType && !vacationObj.leaveType) {
+                vacationObj.leaveType = vacationObj.vacationType;
+            }
+            return vacationObj;
+        });
+
         res.json({
             success: true,
-            data: vacations
+            data: mappedVacations
         });
     } catch (err) {
         console.error('Get vacations error:', err);
@@ -63,8 +72,8 @@ export const createVacation = async (req, res) => {
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
         // Set employee from authenticated user if not provided
-        if (!req.body.employee && req.user && req.user._id) {
-            req.body.employee = req.user._id;
+        if (!req.body.employee && req.user && req.user.id) {
+            req.body.employee = req.user.id;
         }
 
         // Set department and position from user if available
@@ -75,6 +84,11 @@ export const createVacation = async (req, res) => {
             if (!req.body.position && req.user.position) {
                 req.body.position = req.user.position;
             }
+        }
+
+        // Map leaveType to vacationType for model compatibility
+        if (req.body.leaveType && !req.body.vacationType) {
+            req.body.vacationType = req.body.leaveType;
         }
 
         // Handle file uploads for attachments
@@ -258,7 +272,7 @@ export const approveVacation = async (req, res) => {
         }
 
         const { notes } = req.body;
-        const userId = req.user._id;
+        const userId = req.user.id;
 
         // Check if user has permission to approve (supervisor, HR, admin)
         const canApprove = ['hr', 'admin', 'manager', 'supervisor', 'head-of-department', 'dean'].includes(req.user.role);
@@ -305,7 +319,7 @@ export const rejectVacation = async (req, res) => {
 
 
         const { reason } = req.body;
-        const userId = req.user._id;
+        const userId = req.user.id;
 
         // Check if user has permission to reject (supervisor, HR, admin)
         const canReject = ['hr', 'admin', 'manager', 'supervisor', 'head-of-department', 'dean'].includes(req.user.role);
@@ -381,7 +395,7 @@ export const cancelVacation = async (req, res) => {
         }
 
         const { reason } = req.body;
-        const userId = req.user._id;
+        const userId = req.user.id;
 
         // Validate reason
         if (!reason || typeof reason !== 'string') {

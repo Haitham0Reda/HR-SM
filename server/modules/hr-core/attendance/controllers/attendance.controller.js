@@ -5,7 +5,14 @@ import logger from '../../../../utils/logger.js';
 
 export const getAllAttendance = async (req, res) => {
     try {
-        const attendance = await Attendance.find()
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const attendance = await Attendance.find({ tenantId })
             .populate('employee', 'username email employeeId personalInfo')
             .populate('department', 'name code')
             .populate('position', 'title')
@@ -19,7 +26,14 @@ export const getAllAttendance = async (req, res) => {
 
 export const createAttendance = async (req, res) => {
     try {
-        const attendanceData = { ...req.body };
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const attendanceData = { ...req.body, tenantId };
         
         // Get holiday information for the date
         const holidayInfo = getHolidayInfo(attendanceData.date);
@@ -47,7 +61,14 @@ export const createAttendance = async (req, res) => {
 
 export const getAttendanceById = async (req, res) => {
     try {
-        const attendance = await Attendance.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const attendance = await Attendance.findOne({ _id: req.params.id, tenantId })
             .populate('employee', 'username email employeeId personalInfo')
             .populate('department', 'name code')
             .populate('position', 'title');
@@ -103,6 +124,13 @@ export const deleteAttendance = async (req, res) => {
  */
 export const getTodayAttendance = async (req, res) => {
     try {
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
@@ -110,6 +138,7 @@ export const getTodayAttendance = async (req, res) => {
         tomorrow.setDate(tomorrow.getDate() + 1);
         
         const attendance = await Attendance.find({
+            tenantId,
             date: { $gte: today, $lt: tomorrow }
         })
             .populate('employee', 'username email employeeId personalInfo')
@@ -165,6 +194,13 @@ export const getTodayAttendance = async (req, res) => {
  */
 export const getMonthlyAttendance = async (req, res) => {
     try {
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         const { year, month } = req.query;
         
         const startDate = new Date(year || new Date().getFullYear(), (month || new Date().getMonth()), 1);
@@ -172,6 +208,7 @@ export const getMonthlyAttendance = async (req, res) => {
         endDate.setHours(23, 59, 59, 999);
         
         const attendance = await Attendance.find({
+            tenantId,
             date: { $gte: startDate, $lte: endDate }
         })
             .populate('employee', 'username email employeeId personalInfo')
@@ -247,8 +284,16 @@ export const manualCheckIn = async (req, res) => {
         
         const checkInTime = time ? new Date(time) : new Date();
         
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         // Find or create attendance record
         let attendance = await Attendance.findOne({
+            tenantId,
             employee: employeeId,
             date: checkInDate
         });
@@ -257,6 +302,7 @@ export const manualCheckIn = async (req, res) => {
             const employee = await Attendance.findOne({ _id: employeeId }).populate('department position');
             
             attendance = new Attendance({
+                tenantId,
                 employee: employeeId,
                 department: employee?.department,
                 position: employee?.position,
@@ -311,8 +357,16 @@ export const manualCheckOut = async (req, res) => {
         
         const checkOutTime = time ? new Date(time) : new Date();
         
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         // Find attendance record
         const attendance = await Attendance.findOne({
+            tenantId,
             employee: employeeId,
             date: checkOutDate
         });

@@ -82,8 +82,9 @@ const VacationRequestsPage = () => {
             if (filters.sortBy) params.sortBy = filters.sortBy;
             if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
-            const data = await vacationService.getAll(params);
-            const vacationsArray = Array.isArray(data) ? data : [];
+            const response = await vacationService.getAll(params);
+            console.log('🏖️ VacationRequestsPage Debug:', response);
+            const vacationsArray = response?.data || [];
 
             // Filter based on role
             let filteredData;
@@ -185,13 +186,14 @@ const VacationRequestsPage = () => {
     };
 
     const columns = [
-        ...(canManage ? [{
+        // Show employee name for all users
+        {
             id: 'employee',
             label: 'Employee',
             width: 180,
             align: 'center',
             render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
-        }] : []),
+        },
         {
             id: 'vacationType',
             label: 'Type',
@@ -263,9 +265,9 @@ const VacationRequestsPage = () => {
                 const isPending = row.status === 'pending';
                 const isOwnRequest = row.employee?._id === user?._id || String(row.employee?._id) === String(user?._id);
 
-                const canEdit = isOwnRequest && isPending;
-                const canDelete = isOwnRequest;
-                const canApprove = canManage && isPending;
+                const canEdit = isAdmin || (isOwnRequest && isPending);
+                const canDelete = isAdmin || isOwnRequest;
+                const canApprove = canManage && (isAdmin || isPending);
 
                 return (
                     <Box sx={{ display: 'flex', gap: 0.5 }}>

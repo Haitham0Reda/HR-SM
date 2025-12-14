@@ -5,7 +5,7 @@
 import axios from 'axios';
 
 // Configure axios defaults
-axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
 axios.defaults.timeout = 30000; // 30 seconds
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 

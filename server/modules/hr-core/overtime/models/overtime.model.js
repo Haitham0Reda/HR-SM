@@ -2,6 +2,11 @@
 import mongoose from 'mongoose';
 
 const overtimeSchema = new mongoose.Schema({
+  tenantId: {
+    type: String,
+    required: true,
+    index: true
+  },
   employee: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -41,7 +46,7 @@ const overtimeSchema = new mongoose.Schema({
   },
   reason: {
     type: String,
-    required: true,
+    required: false,
     trim: true,
     maxlength: 300
   },
@@ -271,10 +276,10 @@ overtimeSchema.statics.getTotalUncompensatedHours = async function (employeeId) 
 };
 
 // Compound indexes for better performance
-overtimeSchema.index({ employee: 1, date: 1 });
-overtimeSchema.index({ employee: 1, status: 1 });
-overtimeSchema.index({ department: 1, status: 1 });
-overtimeSchema.index({ date: 1, status: 1 });
-overtimeSchema.index({ compensationType: 1, compensated: 1 });
+overtimeSchema.index({ tenantId: 1, employee: 1, date: 1 });
+overtimeSchema.index({ tenantId: 1, employee: 1, status: 1 });
+overtimeSchema.index({ tenantId: 1, department: 1, status: 1 });
+overtimeSchema.index({ tenantId: 1, date: 1, status: 1 });
+overtimeSchema.index({ tenantId: 1, compensationType: 1, compensated: 1 });
 
 export default mongoose.model('Overtime', overtimeSchema);

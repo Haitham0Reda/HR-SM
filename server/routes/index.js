@@ -49,16 +49,41 @@ import dashboardRoutesImport from './dashboardRoutes.js';
 export const notificationRoutes = notificationRoutesImport;
 export const dashboardRoutes = dashboardRoutesImport;
 
+// Import real payroll routes
+import payrollRoutesImport from '../modules/payroll/routes/payroll.routes.js';
+
 // Legacy routes that don't exist yet - use placeholder routers
 export const featureFlagRoutes = createPlaceholderRouter('Feature Flag');
 export const documentRoutes = createPlaceholderRouter('Document');
 export const documentTemplateRoutes = createPlaceholderRouter('Document Template');
 export const eventRoutes = createPlaceholderRouter('Event');
-export const payrollRoutes = createPlaceholderRouter('Payroll');
+export const payrollRoutes = payrollRoutesImport; // Use real payroll routes
 export const reportRoutes = createPlaceholderRouter('Report');
 export const surveyRoutes = createPlaceholderRouter('Survey');
 // Import theme routes from the theme module
 import themeRoutesImport from '../modules/theme/routes/theme.routes.js';
 export const themeRoutes = themeRoutesImport;
+
+// Import real department, position, and resigned employee routes
+import departmentRoutesImport from '../modules/hr-core/users/routes/department.routes.js';
+import positionRoutesImport from '../modules/hr-core/users/routes/position.routes.js';
+import resignedEmployeeRoutesImport from '../modules/hr-core/users/routes/resignedEmployee.routes.js';
+
+// Legacy routes that don't exist yet - use placeholder routers
 export const analyticsRoutes = createPlaceholderRouter('Analytics');
 export const announcementRoutes = createPlaceholderRouter('Announcement');
+export const hardcopyRoutes = createPlaceholderRouter('Hardcopy');
+export const holidayRoutes = createPlaceholderRouter('Holiday');
+export const missionRoutes = createPlaceholderRouter('Mission');
+export const mixedVacationRoutes = createPlaceholderRouter('Mixed Vacation');
+export const forgetCheckRoutes = createPlaceholderRouter('Forget Check');
+export const permissionRequestRoutes = createPlaceholderRouter('Permission Request');
+export const positionRoutes = positionRoutesImport;
+export const requestRoutes = createPlaceholderRouter('Request');
+export const resignedEmployeeRoutes = resignedEmployeeRoutesImport;
+export const backupRoutes = createPlaceholderRouter('Backup');
+export const backupExecutionRoutes = createPlaceholderRouter('Backup Execution');
+export const departmentRoutes = departmentRoutesImport;
+export const authRoutes = createPlaceholderRouter('Auth');
+export const userRoutes = createPlaceholderRouter('User');
+export const attendanceRoutes = createPlaceholderRouter('Attendance');

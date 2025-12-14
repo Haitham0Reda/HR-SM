@@ -19,10 +19,12 @@ import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../hooks/useAuth';
 import vacationService from '../../services/vacation.service';
 import userService from '../../services/user.service';
 
 const VacationsPage = () => {
+    const { user, isHR, isAdmin } = useAuth();
     const [vacations, setVacations] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -49,11 +51,20 @@ const VacationsPage = () => {
     const fetchVacations = async () => {
         try {
             setLoading(true);
-            const data = await vacationService.getAll();
+            console.log('🏖️ VacationsPage fetchVacations called!');
+            
+            const response = await vacationService.getAll();
+            console.log('🔍 VacationsPage Debug:', response);
+            
+            // Extract data from API response format {success: true, data: [...]}
+            const vacationsArray = response?.data || [];
+            console.log('Extracted vacationsArray:', vacationsArray.length);
+            
             // Filter to show only annual, casual, sick, and unpaid vacation types
-            const filteredData = data.filter(vacation => 
-                ['annual', 'casual', 'sick', 'unpaid'].includes(vacation.type)
+            const filteredData = vacationsArray.filter(vacation => 
+                ['annual', 'casual', 'sick', 'unpaid'].includes(vacation.vacationType || vacation.type)
             );
+            console.log('Filtered data:', filteredData.length);
             setVacations(filteredData);
         } catch (error) {
             showNotification('Failed to fetch vacation records', 'error');
@@ -213,27 +224,49 @@ const VacationsPage = () => {
             id: 'actions',
             label: 'Actions',
             align: 'center',
-            render: (row) => (
-                <Box>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(row)}
-                        color="primary"
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        onClick={() => {
-                            setSelectedVacation(row);
-                            setOpenConfirm(true);
-                        }}
-                        color="error"
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Box>
-            )
+            render: (row) => {
+                // Only HR and Admin can manage vacation balances
+                const canManage = isHR || isAdmin;
+                const isOwnRecord = row.user?._id === user?._id || String(row.user?._id) === String(user?._id);
+                
+                return (
+                    <Box>
+                        {/* Edit button - only for HR/Admin or own records */}
+                        {(canManage || isOwnRecord) && (
+                            <IconButton
+                                size="small"
+                                onClick={() => handleOpenDialog(row)}
+                                color="primary"
+                                title="Edit"
+                            >
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                        )}
+                        
+                        {/* Delete button - only for HR/Admin */}
+                        {canManage && (
+                            <IconButton
+                                size="small"
+                                onClick={() => {
+                                    setSelectedVacation(row);
+                                    setOpenConfirm(true);
+                                }}
+                                color="error"
+                                title="Delete"
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        )}
+                        
+                        {/* Show message if no actions available */}
+                        {!canManage && !isOwnRecord && (
+                            <Typography variant="caption" color="text.secondary">
+                                View Only
+                            </Typography>
+                        )}
+                    </Box>
+                );
+            }
         }
     ];
 
@@ -243,13 +276,16 @@ const VacationsPage = () => {
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4">Annual, Casual, Sick & Unpaid Vacation</Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenDialog()}
-                >
-                    Add Vacation Record
-                </Button>
+                {/* Only HR and Admin can add vacation records */}
+                {(isHR || isAdmin) && (
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpenDialog()}
+                    >
+                        Add Vacation Record
+                    </Button>
+                )}
             </Box>
 
             <Box sx={{ mb: 3 }}>

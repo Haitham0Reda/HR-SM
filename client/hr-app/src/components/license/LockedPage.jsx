@@ -19,6 +19,7 @@ import { Box, Typography, Button, Container, Stack } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { designTokens } from '../../theme/designTokens';
 import { useThemeConfig } from '../../context/ThemeContext';
 
@@ -31,6 +32,7 @@ const LockedPage = React.memo(({
     onUpgradeClick,
 }) => {
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { colorMode } = useThemeConfig();
     const isDark = colorMode === 'dark';
 
@@ -43,7 +45,7 @@ const LockedPage = React.memo(({
     };
 
     const handleBackClick = () => {
-        navigate('/dashboard');
+        navigate(getCompanyRoute('/dashboard'));
     };
 
     return (

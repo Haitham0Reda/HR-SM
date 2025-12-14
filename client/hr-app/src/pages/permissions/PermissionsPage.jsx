@@ -80,32 +80,16 @@ const PermissionsPage = () => {
             if (filters.sortBy) params.sortBy = filters.sortBy;
             if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
-            console.log('Fetching permissions with params:', params);
             const response = await permissionService.getAll(params);
-            console.log('Permissions API response:', response);
 
-            // Handle different response formats
-            let permissionsArray = [];
-            if (Array.isArray(response)) {
-                permissionsArray = response;
-            } else if (response?.data && Array.isArray(response.data)) {
-                permissionsArray = response.data;
-            } else if (response?.permissions && Array.isArray(response.permissions)) {
-                permissionsArray = response.permissions;
-            }
-
-            console.log('Processed permissions array:', permissionsArray);
-            if (permissionsArray.length > 0) {
-                console.log('First permission employee field:', permissionsArray[0].employee);
-            }
+            // Handle response format
+            const permissionsArray = response?.data || [];
 
             // Filter based on role
             let filteredData;
             if (canManage) {
-                // Admin/HR see all permissions
                 filteredData = permissionsArray;
             } else {
-                // Regular employees see only their own permissions
                 filteredData = permissionsArray.filter(permission => {
                     const permissionUserId = permission.employee?._id || permission.employee;
                     const currentUserId = user?._id;
@@ -113,11 +97,9 @@ const PermissionsPage = () => {
                 });
             }
 
-            console.log('Filtered permissions:', filteredData);
             setPermissions(filteredData);
         } catch (error) {
             console.error('Error fetching permissions:', error);
-
             showNotification('Failed to fetch permissions', 'error');
             setPermissions([]);
         } finally {
@@ -238,13 +220,19 @@ const PermissionsPage = () => {
             id: 'time',
             label: 'Time',
             align: 'center',
-            render: (row) => row.time || '-',
+            render: (row) => {
+                if (!row.time) return '-';
+                return `${row.time.scheduled || 'N/A'} → ${row.time.requested || 'N/A'}`;
+            },
         },
         {
             id: 'duration',
             label: 'Duration',
             align: 'center',
-            render: (row) => row.duration ? `${row.duration}h` : '-',
+            render: (row) => {
+                const duration = row.time?.duration || row.duration;
+                return duration ? `${duration}h` : '-';
+            },
         },
         {
             id: 'reason',

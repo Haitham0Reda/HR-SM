@@ -143,9 +143,7 @@ const OvertimeForm = () => {
             }
         }
 
-        if (!formData.reason || formData.reason.trim() === '') {
-            newErrors.reason = 'Reason is required';
-        } else if (formData.reason.length > 300) {
+        if (formData.reason && formData.reason.length > 300) {
             newErrors.reason = 'Reason must not exceed 300 characters';
         }
 
@@ -169,9 +167,13 @@ const OvertimeForm = () => {
                 date: formData.date,
                 startTime: formData.startTime.trim(),
                 endTime: formData.endTime.trim(),
-                reason: formData.reason.trim(),
                 compensationType: formData.compensationType,
             };
+
+            // Only include reason if provided and not empty
+            if (formData.reason && formData.reason.trim()) {
+                submitData.reason = formData.reason.trim();
+            }
 
             // Add duration if provided
             if (formData.duration) {
@@ -319,16 +321,15 @@ const OvertimeForm = () => {
                         </TextField>
 
                         <TextField
-                            label="Reason *"
+                            label="Reason"
                             name="reason"
                             value={formData.reason}
                             onChange={handleChange}
                             multiline
                             rows={4}
-                            required
                             fullWidth
                             error={Boolean(errors.reason)}
-                            helperText={errors.reason || 'Provide a reason for the overtime (max 300 characters)'}
+                            helperText={errors.reason || 'Optional: Provide a reason for the overtime (max 300 characters)'}
                             slotProps={{
                                 htmlInput: { maxLength: 300 }
                             }}

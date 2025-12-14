@@ -86,7 +86,7 @@ const SickLeavesPage = () => {
             if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
             const data = await sickLeaveService.getAll(params);
-            const sickLeavesArray = Array.isArray(data) ? data : [];
+            const sickLeavesArray = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
 
             // Filter based on role
             let filteredData;

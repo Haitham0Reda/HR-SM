@@ -175,10 +175,10 @@ const VacationRequestDetails = () => {
     const isPending = vacation.status === 'pending';
     const isApproved = vacation.status === 'approved';
     const isOwnRequest = vacation.employee?._id === user?._id || String(vacation.employee?._id) === String(user?._id);
-    const canEdit = isOwnRequest && isPending;
-    const canDelete = isOwnRequest;
-    const canApprove = canManage && isPending;
-    const canCancel = isOwnRequest && isApproved;
+    const canEdit = isAdmin || (isOwnRequest && isPending);
+    const canDelete = isAdmin || isOwnRequest;
+    const canApprove = canManage && (isAdmin || isPending);
+    const canCancel = isAdmin || (isOwnRequest && isApproved);
 
     return (
         <Box sx={{ p: 3 }}>

@@ -36,6 +36,7 @@ import RequestsPage from '../../pages/requests/RequestsPage';
 import RequestDetailsPage from '../../pages/requests/RequestDetailsPage';
 import VacationRequestPage from '../../pages/vacation/VacationRequestPage';
 import VacationPage from '../../pages/vacation/VacationPage';
+import VacationDebug from '../../pages/debug/VacationDebug';
 import PayrollPage from '../../pages/payroll/PayrollPage';
 import DocumentsPage from '../../pages/documents/DocumentsPage';
 import TemplatesPage from '../../pages/templates/TemplatesPage';
@@ -164,6 +165,7 @@ const CompanyRouter = () => {
                 <Route path="requests/:id" element={<RequestDetailsPage />} />
                 <Route path="vacation-request" element={<VacationRequestPage />} />
                 <Route path="vacation" element={<VacationPage />} />
+                <Route path="vacation-debug" element={<VacationDebug />} />
                 <Route path="payroll" element={<PayrollPage />} />
 
                 {/* Documents */}

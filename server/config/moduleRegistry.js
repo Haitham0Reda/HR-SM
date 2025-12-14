@@ -16,19 +16,20 @@ export const moduleRegistry = {
             overtime: () => import('../modules/hr-core/overtime/routes.js'),
             requests: () => import('../modules/hr-core/requests/routes.js'),
             vacations: () => import('../modules/hr-core/vacations/routes.js'),
-            'sick-leaves': () => import('../modules/hr-core/vacations/sickLeave.routes.js'),
+            'sick-leaves': () => import('../modules/hr-core/vacations/routes/sickLeave.routes.js'),
             'forget-checks': () => import('../modules/hr-core/attendance/routes/forgetCheck.routes.js'),
             'resigned-employees': () => import('../modules/hr-core/users/routes/resignedEmployee.routes.js'),
+            'backups': () => import('../modules/hr-core/routes/backup.routes.js'),
             dashboard: () => import('../modules/dashboard/routes/dashboard.routes.js')
         },
         basePath: '/api/v1'
     },
     [MODULES.TASKS]: {
         routes: {
-            tasks: () => import('../modules/tasks/routes/taskRoutes.js'),
-            reports: () => import('../modules/tasks/routes/taskReportRoutes.js')
+            'tasks': () => import('../modules/tasks/routes/taskRoutes.js'),
+            'task-reports': () => import('../modules/tasks/routes/taskReportRoutes.js')
         },
-        basePath: '/api/v1/tasks'
+        basePath: '/api/v1'
     }
     // Add other modules here as they are implemented
 };
@@ -71,4 +72,9 @@ export const loadOptionalModuleRoutes = async (app, enabledModules) => {
     }
 };
 
-export default { moduleRegistry, loadModuleRoutes, loadCoreRoutes, loadOptionalModuleRoutes };
+export default { 
+    moduleRegistry, 
+    loadModuleRoutes, 
+    loadCoreRoutes, 
+    loadOptionalModuleRoutes
+};

@@ -32,6 +32,7 @@ import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 
 const VacationPage = () => {
+    console.log('🏖️ VacationPage component rendering...');
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
 
@@ -51,6 +52,7 @@ const VacationPage = () => {
     });
 
     useEffect(() => {
+        console.log('🔄 VacationPage useEffect triggered');
         fetchVacationHistory();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -58,17 +60,36 @@ const VacationPage = () => {
     const fetchVacationHistory = async () => {
         try {
             setLoading(true);
+            console.log('🚀 fetchVacationHistory called!');
 
-            const data = await vacationService.getAll();
+            const response = await vacationService.getAll();
+            
+            // Debug logging
+            console.log('🔍 VacationPage Debug:');
+            console.log('Raw response:', response);
+            console.log('Response type:', typeof response);
+            console.log('Response keys:', response ? Object.keys(response) : 'null');
+            console.log('Response.data:', response?.data);
+            console.log('Response.data type:', typeof response?.data);
+            console.log('Response.data length:', response?.data?.length);
 
-            // Ensure data is an array
-            const leavesArray = Array.isArray(data) ? data : [];
+            // API service already extracts data, so response is the actual data object
+            const leavesArray = response?.data || [];
+            console.log('Extracted leavesArray:', leavesArray);
+            console.log('leavesArray length:', leavesArray.length);
+            
+            if (leavesArray.length > 0) {
+                console.log('First vacation record:', leavesArray[0]);
+                console.log('First record keys:', Object.keys(leavesArray[0]));
+            }
 
             // Filter to only show vacation types (annual, casual, sick)
             const vacationTypes = ['annual', 'casual', 'sick'];
             const vacationRequests = leavesArray.filter(leave =>
-                vacationTypes.includes(leave.leaveType?.toLowerCase())
+                vacationTypes.includes(leave.vacationType?.toLowerCase() || leave.leaveType?.toLowerCase())
             );
+            console.log('After filtering:', vacationRequests.length);
+            console.log('Filtered requests:', vacationRequests);
 
             // For HR and Admin users, show all vacation requests
             // For regular users, show only their own vacation requests
@@ -85,8 +106,11 @@ const VacationPage = () => {
                 });
             }
 
+            console.log('Final filteredData:', filteredData);
+            console.log('Setting vacationHistory to:', filteredData.length, 'items');
             setVacationHistory(filteredData);
         } catch (error) {
+            console.error('fetchVacationHistory error:', error);
             showNotification('Failed to fetch vacation history', 'error');
         } finally {
             setLoading(false);
@@ -220,7 +244,7 @@ const VacationPage = () => {
     const handleEditRequest = (request) => {
         setSelectedRequest(request);
         setFormData({
-            type: request.leaveType || 'annual',
+            type: request.vacationType || request.leaveType || 'annual',
             startDate: request.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
             endDate: request.endDate?.split('T')[0] || new Date().toISOString().split('T')[0],
             reason: request.reason || ''
@@ -272,9 +296,9 @@ const VacationPage = () => {
     };
 
     const historyColumns = [
-        // Show user column only for HR/Admin users
-        ...(isHR || isAdmin ? [{
-            field: 'user',
+        // Show employee name for all users
+        {
+            field: 'employee',
             headerName: 'Employee',
             renderCell: (row) => {
                 const userObj = row.employee || row.user;
@@ -282,13 +306,13 @@ const VacationPage = () => {
 
                 return userObj.personalInfo?.fullName || userObj.username || userObj.email || 'Unknown User';
             }
-        }] : []),
+        },
         {
-            field: 'leaveType',
+            field: 'vacationType',
             headerName: 'Type',
             renderCell: (row) => (
                 <Chip
-                    label={row.leaveType?.charAt(0).toUpperCase() + row.leaveType?.slice(1) || 'N/A'}
+                    label={(row.vacationType || row.leaveType)?.charAt(0).toUpperCase() + (row.vacationType || row.leaveType)?.slice(1) || 'N/A'}
                     size="small"
                     variant="outlined"
                     color="primary"
@@ -332,7 +356,7 @@ const VacationPage = () => {
             width: 200,
             renderCell: (row) => {
                 const isPending = row.status === 'pending';
-                const isSickLeave = row.leaveType === 'sick';
+                const isSickLeave = (row.vacationType || row.leaveType) === 'sick';
                 const isOwnRequest = row.employee?._id === user?._id || row.employee === user?._id;
 
                 return (
@@ -347,8 +371,8 @@ const VacationPage = () => {
                             <VisibilityIcon fontSize="small" />
                         </IconButton>
 
-                        {/* Edit button - only for own pending requests */}
-                        {isOwnRequest && isPending && (
+                        {/* Edit button - Admin can edit any request, employees only their own pending requests */}
+                        {(isAdmin || (isOwnRequest && isPending)) && (
                             <IconButton
                                 size="small"
                                 color="info"
@@ -359,8 +383,8 @@ const VacationPage = () => {
                             </IconButton>
                         )}
 
-                        {/* Delete button - only for own pending requests */}
-                        {isOwnRequest && isPending && (
+                        {/* Delete button - Admin can delete any request, employees only their own pending requests */}
+                        {(isAdmin || (isOwnRequest && isPending)) && (
                             <IconButton
                                 size="small"
                                 color="error"
@@ -371,14 +395,14 @@ const VacationPage = () => {
                             </IconButton>
                         )}
 
-                        {/* HR/Admin approve/reject buttons for non-sick pending leaves */}
-                        {(isHR || isAdmin) && isPending && !isSickLeave && (
+                        {/* Admin can approve/reject any request, HR only pending non-sick leaves */}
+                        {((isAdmin && !isSickLeave) || (isHR && isPending && !isSickLeave)) && (
                             <>
                                 <Button
                                     size="small"
                                     variant="contained"
                                     color="success"
-                                    onClick={() => handleApprove(row._id, row.leaveType)}
+                                    onClick={() => handleApprove(row._id, row.vacationType || row.leaveType)}
                                     sx={{ ml: 1 }}
                                 >
                                     Approve
@@ -387,7 +411,7 @@ const VacationPage = () => {
                                     size="small"
                                     variant="contained"
                                     color="error"
-                                    onClick={() => handleReject(row._id, row.leaveType)}
+                                    onClick={() => handleReject(row._id, row.vacationType || row.leaveType)}
                                 >
                                     Reject
                                 </Button>
@@ -407,7 +431,14 @@ const VacationPage = () => {
 
             <Tabs
                 value={activeTab}
-                onChange={(e, newValue) => setActiveTab(newValue)}
+                onChange={(e, newValue) => {
+                    console.log('🔄 Tab changed to:', newValue);
+                    setActiveTab(newValue);
+                    if (newValue === 1) { // History tab
+                        console.log('📋 Switching to history tab, fetching data...');
+                        fetchVacationHistory();
+                    }
+                }}
                 sx={{ mb: 3 }}
             >
                 <Tab icon={<BeachAccessIcon />} label="Request Vacation" />
@@ -537,7 +568,7 @@ const VacationPage = () => {
                             <Box>
                                 <Typography variant="subtitle2" color="text.secondary">Type</Typography>
                                 <Chip
-                                    label={selectedRequest.leaveType?.charAt(0).toUpperCase() + selectedRequest.leaveType?.slice(1)}
+                                    label={(selectedRequest.vacationType || selectedRequest.leaveType)?.charAt(0).toUpperCase() + (selectedRequest.vacationType || selectedRequest.leaveType)?.slice(1)}
                                     size="small"
                                     color="primary"
                                 />

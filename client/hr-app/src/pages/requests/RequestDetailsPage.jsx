@@ -262,7 +262,7 @@ const RequestDetailsPage = () => {
                     <Link
                         component="button"
                         variant="body1"
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate(getCompanyRoute('/dashboard'))}
                         sx={{ textDecoration: 'none', color: 'primary.main', cursor: 'pointer' }}
                     >
                         Home
@@ -270,7 +270,7 @@ const RequestDetailsPage = () => {
                     <Link
                         component="button"
                         variant="body1"
-                        onClick={() => navigate('/app')}
+                        onClick={() => navigate(getCompanyRoute('/requests'))}
                         sx={{ textDecoration: 'none', color: 'primary.main', cursor: 'pointer' }}
                     >
                         My Requests

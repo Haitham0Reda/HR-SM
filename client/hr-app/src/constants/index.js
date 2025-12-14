@@ -22,7 +22,7 @@ export const MINI_DRAWER_WIDTH = 64;
 export const APP_NAME = 'HR SM';
 
 // API Configuration
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
 export const API_TIMEOUT = 30000; // 30 seconds
 
 // Pagination

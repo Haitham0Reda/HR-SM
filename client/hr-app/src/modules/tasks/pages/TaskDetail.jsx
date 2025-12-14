@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useCompanyRouting } from '../../../hooks/useCompanyRouting';
 import TaskReportForm from '../components/TaskReportForm';
 import TaskReportList from '../components/TaskReportList';
 
 const TaskDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const { user } = useAuth();
     const [task, setTask] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ const TaskDetail = () => {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <button
-                onClick={() => navigate('/tasks')}
+                onClick={() => navigate(getCompanyRoute('/tasks'))}
                 className="text-blue-600 hover:text-blue-800 mb-4"
             >
                 ← Back to Tasks

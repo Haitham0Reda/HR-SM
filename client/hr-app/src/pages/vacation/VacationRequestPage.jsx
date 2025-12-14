@@ -172,6 +172,15 @@ const VacationRequestPage = () => {
 
     const columns = [
         {
+            field: 'employee',
+            headerName: 'Employee',
+            renderCell: (row) => {
+                const userObj = row.employee || row.user;
+                if (!userObj) return 'Me';
+                return userObj.personalInfo?.fullName || userObj.username || userObj.email || 'Me';
+            }
+        },
+        {
             field: 'leaveType',
             headerName: 'Type',
             renderCell: (row) => (

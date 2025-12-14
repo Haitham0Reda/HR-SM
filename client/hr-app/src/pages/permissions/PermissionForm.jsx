@@ -49,11 +49,23 @@ const PermissionForm = () => {
         try {
             setLoading(true);
             const permission = await permissionService.getById(id);
+            
+            // Handle time field - convert object to string for form input
+            let timeValue = '';
+            if (permission.time) {
+                if (typeof permission.time === 'string') {
+                    timeValue = permission.time;
+                } else if (typeof permission.time === 'object') {
+                    // Use the requested time as the form value
+                    timeValue = permission.time.requested || '';
+                }
+            }
+            
             setFormData({
                 permissionType: permission.permissionType || '',
                 date: permission.date?.split('T')[0] || new Date().toISOString().split('T')[0],
-                time: permission.time || '',
-                duration: permission.duration || '',
+                time: timeValue,
+                duration: permission.time?.duration || permission.duration || '',
                 reason: permission.reason || '',
             });
         } catch (error) {
@@ -91,15 +103,14 @@ const PermissionForm = () => {
             newErrors.date = 'Date is required';
         }
 
-        if (!formData.time || formData.time.trim() === '') {
+        if (!formData.time || (typeof formData.time === 'string' && formData.time.trim() === '')) {
             newErrors.time = 'Time is required';
-        } else if (!validateTimeFormat(formData.time)) {
+        } else if (typeof formData.time === 'string' && !validateTimeFormat(formData.time)) {
             newErrors.time = 'Time must be in HH:MM format (e.g., 09:30)';
         }
 
-        if (!formData.reason || formData.reason.trim() === '') {
-            newErrors.reason = 'Reason is required';
-        } else if (formData.reason.length > 300) {
+        // Reason is optional, but if provided, validate length
+        if (formData.reason && formData.reason.length > 300) {
             newErrors.reason = 'Reason must not exceed 300 characters';
         }
 
@@ -117,9 +128,13 @@ const PermissionForm = () => {
             const submitData = {
                 permissionType: formData.permissionType,
                 date: formData.date,
-                time: formData.time.trim(),
-                reason: formData.reason.trim(),
+                time: typeof formData.time === 'string' ? formData.time.trim() : formData.time,
             };
+
+            // Only include reason if it's provided
+            if (formData.reason && typeof formData.reason === 'string' && formData.reason.trim()) {
+                submitData.reason = formData.reason.trim();
+            }
 
             // Add duration if provided
             if (formData.duration) {
@@ -253,16 +268,15 @@ const PermissionForm = () => {
                         </Grid>
 
                         <TextField
-                            label="Reason *"
+                            label="Reason"
                             name="reason"
                             value={formData.reason}
                             onChange={handleChange}
                             multiline
                             rows={4}
-                            required
                             fullWidth
                             error={Boolean(errors.reason)}
-                            helperText={errors.reason || 'Provide a reason for the permission (max 300 characters)'}
+                            helperText={errors.reason || 'Optional: Provide a reason for the permission (max 300 characters)'}
                             slotProps={{
                                 htmlInput: { maxLength: 300 }
                             }}
@@ -339,7 +353,7 @@ const PermissionForm = () => {
                         </Typography>
                         <Box component="ul" sx={{ pl: 2, m: 0, color: 'text.secondary' }}>
                             <li>Submit permission requests promptly</li>
-                            <li>Provide clear and valid reasons</li>
+                            <li>Reason is optional but recommended</li>
                             <li>All permissions require supervisor approval</li>
                         </Box>
                     </Box>
