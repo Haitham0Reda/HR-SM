@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -20,39 +20,47 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../context/NotificationContext';
 import resignedService from '../../services/resigned.service';
 import userService from '../../services/user.service';
+import api from '../../services/api';
 
 const ResignedPage = () => {
     const [resignedEmployees, setResignedEmployees] = useState([]);
     const [users, setUsers] = useState([]);
+    const [departments, setDepartments] = useState([]);
+    const [positions, setPositions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [formData, setFormData] = useState({
-        user: '',
+        employee: '',
+        department: '',
+        position: '',
         resignationDate: new Date().toISOString().split('T')[0],
         lastWorkingDay: '',
-        reason: '',
-        exitInterview: false,
-        clearanceStatus: 'pending',
+        resignationReason: '',
+        exitInterview: { conducted: false },
         notes: ''
     });
     const { showNotification } = useNotification();
 
-    const clearanceStatuses = ['pending', 'in-progress', 'completed'];
+
     const resignationReasons = [
-        'Better Opportunity',
-        'Personal Reasons',
-        'Relocation',
-        'Career Change',
-        'Health Issues',
-        'Retirement',
-        'Other'
+        { value: 'better-opportunity', label: 'Better Opportunity' },
+        { value: 'personal-reasons', label: 'Personal Reasons' },
+        { value: 'relocation', label: 'Relocation' },
+        { value: 'career-change', label: 'Career Change' },
+        { value: 'health-issues', label: 'Health Issues' },
+        { value: 'family-reasons', label: 'Family Reasons' },
+        { value: 'retirement', label: 'Retirement' },
+        { value: 'termination', label: 'Termination' },
+        { value: 'other', label: 'Other' }
     ];
 
     useEffect(() => {
         fetchResignedEmployees();
         fetchUsers();
+        fetchDepartments();
+        fetchPositions();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -60,14 +68,21 @@ const ResignedPage = () => {
         try {
             setLoading(true);
             const data = await resignedService.getAll();
-            // Ensure we're working with an array
-            if (!Array.isArray(data)) {
-                setResignedEmployees([]);
-            } else {
-                setResignedEmployees(data);
+            console.log('Fetched resigned employees data:', data); // Debug log
+            
+            // Handle different response formats
+            let employees = [];
+            if (Array.isArray(data)) {
+                employees = data;
+            } else if (data && Array.isArray(data.data)) {
+                employees = data.data;
+            } else if (data && Array.isArray(data.resignedEmployees)) {
+                employees = data.resignedEmployees;
             }
+            
+            setResignedEmployees(employees);
         } catch (error) {
-
+            console.error('Error fetching resigned employees:', error); // Debug log
             showNotification('Failed to fetch resigned employees', 'error');
         } finally {
             setLoading(false);
@@ -79,7 +94,25 @@ const ResignedPage = () => {
             const data = await userService.getAll();
             setUsers(data);
         } catch (error) {
+            console.error('Error fetching users:', error);
+        }
+    };
 
+    const fetchDepartments = async () => {
+        try {
+            const data = await api.get('/departments');
+            setDepartments(Array.isArray(data) ? data : data.data || []);
+        } catch (error) {
+            console.error('Error fetching departments:', error);
+        }
+    };
+
+    const fetchPositions = async () => {
+        try {
+            const data = await api.get('/positions');
+            setPositions(Array.isArray(data) ? data : data.data || []);
+        } catch (error) {
+            console.error('Error fetching positions:', error);
         }
     };
 
@@ -87,23 +120,25 @@ const ResignedPage = () => {
         if (employee) {
             setSelectedEmployee(employee);
             setFormData({
-                user: employee.user?._id || employee.user || '',
+                employee: employee.employee?._id || employee.employee || employee.user?._id || employee.user || '',
+                department: employee.department?._id || employee.department || '',
+                position: employee.position?._id || employee.position || '',
                 resignationDate: employee.resignationDate?.split('T')[0] || new Date().toISOString().split('T')[0],
                 lastWorkingDay: employee.lastWorkingDay?.split('T')[0] || '',
-                reason: employee.reason || '',
-                exitInterview: employee.exitInterview || false,
-                clearanceStatus: employee.clearanceStatus || 'pending',
+                resignationReason: employee.resignationReason || employee.reason || '',
+                exitInterview: employee.exitInterview || { conducted: false },
                 notes: employee.notes || ''
             });
         } else {
             setSelectedEmployee(null);
             setFormData({
-                user: '',
+                employee: '',
+                department: '',
+                position: '',
                 resignationDate: new Date().toISOString().split('T')[0],
                 lastWorkingDay: '',
-                reason: '',
-                exitInterview: false,
-                clearanceStatus: 'pending',
+                resignationReason: '',
+                exitInterview: { conducted: false },
                 notes: ''
             });
         }
@@ -159,69 +194,76 @@ const ResignedPage = () => {
 
     const columns = [
         {
-            field: 'user',
-            headerName: 'Employee Name',
-            width: 200,
-            renderCell: (params) => params.row.user?.name || 'N/A'
+            id: 'employee',
+            label: 'Employee Name',
+            render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || row.user?.name || 'N/A'
         },
         {
-            field: 'email',
-            headerName: 'Email',
-            width: 200,
-            renderCell: (params) => params.row.user?.email || 'N/A'
+            id: 'email',
+            label: 'Email',
+            render: (row) => row.employee?.email || row.user?.email || 'N/A'
         },
         {
-            field: 'department',
-            headerName: 'Department',
-            renderCell: (row) => row.user?.department?.name || 'N/A'
+            id: 'department',
+            label: 'Department',
+            render: (row) => row.department?.name || row.user?.department?.name || 'N/A'
         },
         {
-            field: 'resignationDate',
-            headerName: 'Resignation Date',
-            renderCell: (row) => new Date(row.resignationDate).toLocaleDateString()
+            id: 'resignationDate',
+            label: 'Resignation Date',
+            render: (row) => row.resignationDate ? new Date(row.resignationDate).toLocaleDateString() : 'N/A'
         },
         {
-            field: 'lastWorkingDay',
-            headerName: 'Last Working Day',
-            renderCell: (row) => row.lastWorkingDay ? new Date(row.lastWorkingDay).toLocaleDateString() : 'N/A'
+            id: 'lastWorkingDay',
+            label: 'Last Working Day',
+            render: (row) => row.lastWorkingDay ? new Date(row.lastWorkingDay).toLocaleDateString() : 'N/A'
         },
         {
-            field: 'reason',
-            headerName: 'Reason',
-            renderCell: (row) => row.reason || 'N/A'
+            id: 'reason',
+            label: 'Reason',
+            render: (row) => row.resignationReason || row.reason || 'N/A'
         },
         {
-            field: 'exitInterview',
-            headerName: 'Exit Interview',
-            renderCell: (row) => (
+            id: 'exitInterview',
+            label: 'Exit Interview',
+            render: (row) => (
                 <Chip
-                    label={row.exitInterview ? 'Completed' : 'Pending'}
-                    color={row.exitInterview ? 'success' : 'default'}
+                    label={row.exitInterview?.conducted ? 'Completed' : 'Pending'}
+                    color={row.exitInterview?.conducted ? 'success' : 'default'}
                     size="small"
                 />
             )
         },
         {
-            field: 'clearanceStatus',
-            headerName: 'Clearance',
-            width: 130,
-            renderCell: (params) => (
-                <Chip
-                    label={params.row.clearanceStatus}
-                    color={getClearanceColor(params.row.clearanceStatus)}
-                    size="small"
-                />
-            )
+            id: 'clearanceStatus',
+            label: 'Clearance',
+            render: (row) => {
+                const clearance = row.clearance || {};
+                const hrCleared = clearance.hr?.cleared || false;
+                const financeCleared = clearance.finance?.cleared || false;
+                const itCleared = clearance.it?.cleared || false;
+                
+                const totalCleared = [hrCleared, financeCleared, itCleared].filter(Boolean).length;
+                const status = totalCleared === 3 ? 'completed' : totalCleared > 0 ? 'in-progress' : 'pending';
+                
+                return (
+                    <Chip
+                        label={`${totalCleared}/3 Cleared`}
+                        color={getClearanceColor(status)}
+                        size="small"
+                    />
+                );
+            }
         },
         {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 120,
-            renderCell: (params) => (
+            id: 'actions',
+            label: 'Actions',
+            sortable: false,
+            render: (row) => (
                 <Box>
                     <IconButton
                         size="small"
-                        onClick={() => handleOpenDialog(params.row)}
+                        onClick={() => handleOpenDialog(row)}
                         color="primary"
                     >
                         <EditIcon fontSize="small" />
@@ -229,7 +271,7 @@ const ResignedPage = () => {
                     <IconButton
                         size="small"
                         onClick={() => {
-                            setSelectedEmployee(params.row);
+                            setSelectedEmployee(row);
                             setOpenConfirm(true);
                         }}
                         color="error"
@@ -258,32 +300,46 @@ const ResignedPage = () => {
 
             {/* Summary Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid xs={12} sm={6} md={3}>
                     <Box sx={{ p: 2, bgcolor: 'primary.light', borderRadius: 1, textAlign: 'center' }}>
                         <Typography variant="h4" color="primary.contrastText">{resignedEmployees.length}</Typography>
                         <Typography variant="body2" color="primary.contrastText">Total Resigned</Typography>
                     </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid xs={12} sm={6} md={3}>
                     <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1, textAlign: 'center' }}>
                         <Typography variant="h4" color="warning.contrastText">
-                            {resignedEmployees.filter(e => e.clearanceStatus === 'pending').length}
+                            {resignedEmployees.filter(e => {
+                                const clearance = e.clearance || {};
+                                const hrCleared = clearance.hr?.cleared || false;
+                                const financeCleared = clearance.finance?.cleared || false;
+                                const itCleared = clearance.it?.cleared || false;
+                                const totalCleared = [hrCleared, financeCleared, itCleared].filter(Boolean).length;
+                                return totalCleared === 0;
+                            }).length}
                         </Typography>
                         <Typography variant="body2" color="warning.contrastText">Pending Clearance</Typography>
                     </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid xs={12} sm={6} md={3}>
                     <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1, textAlign: 'center' }}>
                         <Typography variant="h4" color="info.contrastText">
-                            {resignedEmployees.filter(e => !e.exitInterview).length}
+                            {resignedEmployees.filter(e => !e.exitInterview?.conducted).length}
                         </Typography>
                         <Typography variant="body2" color="info.contrastText">Exit Interview Pending</Typography>
                     </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid xs={12} sm={6} md={3}>
                     <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1, textAlign: 'center' }}>
                         <Typography variant="h4" color="success.contrastText">
-                            {resignedEmployees.filter(e => e.clearanceStatus === 'completed').length}
+                            {resignedEmployees.filter(e => {
+                                const clearance = e.clearance || {};
+                                const hrCleared = clearance.hr?.cleared || false;
+                                const financeCleared = clearance.finance?.cleared || false;
+                                const itCleared = clearance.it?.cleared || false;
+                                const totalCleared = [hrCleared, financeCleared, itCleared].filter(Boolean).length;
+                                return totalCleared === 3;
+                            }).length}
                         </Typography>
                         <Typography variant="body2" color="success.contrastText">Clearance Completed</Typography>
                     </Box>
@@ -304,20 +360,57 @@ const ResignedPage = () => {
                         <TextField
                             select
                             label="Employee"
-                            name="user"
-                            value={formData.user}
+                            name="employee"
+                            value={formData.employee}
                             onChange={handleChange}
                             required
                             fullWidth
                         >
                             {users.map((user) => (
                                 <MenuItem key={user._id} value={user._id}>
-                                    {user.name} - {user.email}
+                                    {user.name || user.username} - {user.email}
                                 </MenuItem>
                             ))}
                         </TextField>
+                        
                         <Grid container spacing={2}>
-                            <Grid size={{ xs: 6 }}>
+                            <Grid xs={6}>
+                                <TextField
+                                    select
+                                    label="Department"
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleChange}
+                                    required
+                                    fullWidth
+                                >
+                                    {departments.map((dept) => (
+                                        <MenuItem key={dept._id} value={dept._id}>
+                                            {dept.name}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                            <Grid xs={6}>
+                                <TextField
+                                    select
+                                    label="Position"
+                                    name="position"
+                                    value={formData.position}
+                                    onChange={handleChange}
+                                    required
+                                    fullWidth
+                                >
+                                    {positions.map((pos) => (
+                                        <MenuItem key={pos._id} value={pos._id}>
+                                            {pos.title || pos.name}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                        </Grid>
+                        <Grid container spacing={2}>
+                            <Grid xs={6}>
                                 <TextField
                                     type="date"
                                     label="Resignation Date"
@@ -326,10 +419,10 @@ const ResignedPage = () => {
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                 />
                             </Grid>
-                            <Grid size={{ xs: 6 }}>
+                            <Grid xs={6}>
                                 <TextField
                                     type="date"
                                     label="Last Working Day"
@@ -337,22 +430,22 @@ const ResignedPage = () => {
                                     value={formData.lastWorkingDay}
                                     onChange={handleChange}
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                 />
                             </Grid>
                         </Grid>
                         <TextField
                             select
                             label="Reason for Resignation"
-                            name="reason"
-                            value={formData.reason}
+                            name="resignationReason"
+                            value={formData.resignationReason}
                             onChange={handleChange}
                             required
                             fullWidth
                         >
                             {resignationReasons.map((reason) => (
-                                <MenuItem key={reason} value={reason}>
-                                    {reason}
+                                <MenuItem key={reason.value} value={reason.value}>
+                                    {reason.label}
                                 </MenuItem>
                             ))}
                         </TextField>
@@ -360,27 +453,20 @@ const ResignedPage = () => {
                             select
                             label="Exit Interview"
                             name="exitInterview"
-                            value={formData.exitInterview}
-                            onChange={(e) => setFormData(prev => ({ ...prev, exitInterview: e.target.value === 'true' }))}
+                            value={formData.exitInterview.conducted}
+                            onChange={(e) => setFormData(prev => ({ 
+                                ...prev, 
+                                exitInterview: { 
+                                    ...prev.exitInterview, 
+                                    conducted: e.target.value === 'true' 
+                                } 
+                            }))}
                             fullWidth
                         >
                             <MenuItem value="true">Completed</MenuItem>
                             <MenuItem value="false">Pending</MenuItem>
                         </TextField>
-                        <TextField
-                            select
-                            label="Clearance Status"
-                            name="clearanceStatus"
-                            value={formData.clearanceStatus}
-                            onChange={handleChange}
-                            fullWidth
-                        >
-                            {clearanceStatuses.map((status) => (
-                                <MenuItem key={status} value={status}>
-                                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+
                         <TextField
                             label="Notes"
                             name="notes"

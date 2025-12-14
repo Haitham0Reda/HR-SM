@@ -15,6 +15,7 @@ import { taskService } from '../../services/task.service';
 import TaskList from '../../components/tasks/TaskList';
 import TaskForm from '../../components/tasks/TaskForm';
 import TaskReportForm from '../../components/tasks/TaskReportForm';
+import ModuleNotAvailable from '../../components/common/ModuleNotAvailable';
 
 const TasksPage = () => {
     const [activeTab, setActiveTab] = useState(0);
@@ -24,6 +25,7 @@ const TasksPage = () => {
     const [openTaskForm, setOpenTaskForm] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const [openReportForm, setOpenReportForm] = useState(false);
+    const [moduleNotAvailable, setModuleNotAvailable] = useState(false);
     const { user } = useAuth();
 
     const fetchTasks = async () => {
@@ -33,15 +35,24 @@ const TasksPage = () => {
             setTasks(data);
             setError('');
         } catch (err) {
-            setError(err.message);
+            // Handle module not enabled error gracefully
+            if (err.message && err.message.includes('not enabled')) {
+                setModuleNotAvailable(true);
+                setError('');
+            } else {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchTasks();
-    }, []);
+        // Only fetch tasks if user is authenticated
+        if (user) {
+            fetchTasks();
+        }
+    }, [user]);
 
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
@@ -114,6 +125,10 @@ const TasksPage = () => {
                 <CircularProgress />
             </Container>
         );
+    }
+
+    if (moduleNotAvailable) {
+        return <ModuleNotAvailable moduleName="Tasks module" />;
     }
 
     return (

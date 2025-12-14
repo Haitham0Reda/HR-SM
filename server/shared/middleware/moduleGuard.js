@@ -40,7 +40,8 @@ export const requireModule = (moduleName) => {
                 });
             }
 
-            const moduleEnabled = config.modules?.[moduleName]?.enabled;
+            const moduleData = config.modules?.get(moduleName);
+            const moduleEnabled = moduleData?.enabled;
 
             // Update cache
             featureFlagCache.set(cacheKey, {

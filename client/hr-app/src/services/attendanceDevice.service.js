@@ -3,56 +3,47 @@ import api from './api';
 const attendanceDeviceService = {
     // Get all devices
     getAllDevices: async () => {
-        const response = await api.get('/attendance-devices');
-        return response.data;
+        return await api.get('/attendance-devices');
     },
 
     // Get device by ID
     getDeviceById: async (id) => {
-        const response = await api.get(`/attendance-devices/${id}`);
-        return response.data;
+        return await api.get(`/attendance-devices/${id}`);
     },
 
     // Register new device
     registerDevice: async (deviceData) => {
-        const response = await api.post('/attendance-devices/register', deviceData);
-        return response.data;
+        return await api.post('/attendance-devices/register', deviceData);
     },
 
     // Update device
     updateDevice: async (id, deviceData) => {
-        const response = await api.put(`/attendance-devices/${id}`, deviceData);
-        return response.data;
+        return await api.put(`/attendance-devices/${id}`, deviceData);
     },
 
     // Delete device
     deleteDevice: async (id) => {
-        const response = await api.delete(`/attendance-devices/${id}`);
-        return response.data;
+        return await api.delete(`/attendance-devices/${id}`);
     },
 
     // Test device connection
     testConnection: async (id) => {
-        const response = await api.post(`/attendance-devices/${id}/test-connection`);
-        return response.data;
+        return await api.post(`/attendance-devices/${id}/test-connection`);
     },
 
     // Sync device
     syncDevice: async (id) => {
-        const response = await api.post(`/attendance-devices/${id}/sync`);
-        return response.data;
+        return await api.post(`/attendance-devices/${id}/sync`);
     },
 
     // Sync all devices
     syncAllDevices: async () => {
-        const response = await api.post('/attendance-devices/sync-all');
-        return response.data;
+        return await api.post('/attendance-devices/sync-all');
     },
 
     // Get device statistics
     getDeviceStats: async () => {
-        const response = await api.get('/attendance-devices/stats');
-        return response.data;
+        return await api.get('/attendance-devices/stats');
     },
 
     // Import CSV
@@ -68,33 +59,30 @@ const attendanceDeviceService = {
                 'Content-Type': 'multipart/form-data'
             }
         });
-        return response.data;
+        // For FormData, we might need to handle differently, but let's keep it simple for now
+        return response;
     },
 
     // Get today's attendance
     getTodayAttendance: async () => {
-        const response = await api.get('/attendance/today');
-        return response.data;
+        return await api.get('/attendance/today');
     },
 
     // Get monthly attendance
     getMonthlyAttendance: async (year, month) => {
-        const response = await api.get('/attendance/monthly', {
+        return await api.get('/attendance/monthly', {
             params: { year, month }
         });
-        return response.data;
     },
 
     // Manual check-in
     manualCheckIn: async (data) => {
-        const response = await api.post('/attendance/manual/checkin', data);
-        return response.data;
+        return await api.post('/attendance/manual/checkin', data);
     },
 
     // Manual check-out
     manualCheckOut: async (data) => {
-        const response = await api.post('/attendance/manual/checkout', data);
-        return response.data;
+        return await api.post('/attendance/manual/checkout', data);
     }
 };
 

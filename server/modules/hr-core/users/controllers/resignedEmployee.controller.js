@@ -57,7 +57,7 @@ export const createResignedEmployee = async (req, res) => {
         const resignedEmployee = new ResignedEmployee({
             ...req.body,
             tenantId: req.tenantId,
-            processedBy: req.user._id
+            processedBy: req.user.id
         });
 
         const savedResignedEmployee = await resignedEmployee.save();
@@ -124,7 +124,7 @@ export const updateResignedEmployee = async (req, res) => {
     try {
         const resignedEmployee = await ResignedEmployee.findOneAndUpdate(
             { _id: req.params.id, tenantId: req.tenantId },
-            { ...req.body, updatedBy: req.user._id },
+            { ...req.body, updatedBy: req.user.id },
             { new: true, runValidators: true }
         )
             .populate('employee', 'username email employeeId personalInfo')

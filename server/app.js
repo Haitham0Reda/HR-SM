@@ -241,6 +241,42 @@ export const initializeRoutes = async () => {
     // Load optional modules (checked by moduleGuard middleware)
     await loadModuleRoutes(app, MODULES.TASKS);
 
+    // Ensure forget-checks route is loaded (temporary fix until module registry is fully working)
+    try {
+        const forgetCheckRoutes = await import('./modules/hr-core/attendance/routes/forgetCheck.routes.js');
+        app.use('/api/v1/forget-checks', forgetCheckRoutes.default);
+        console.log('✓ Forget-checks route loaded at /api/v1/forget-checks');
+    } catch (error) {
+        console.error('❌ Failed to load forget-checks route:', error);
+    }
+
+    // Ensure missions route is loaded (temporary fix until module registry is fully working)
+    try {
+        const missionRoutes = await import('./modules/hr-core/missions/routes.js');
+        app.use('/api/v1/missions', missionRoutes.default);
+        console.log('✓ Missions route loaded at /api/v1/missions');
+    } catch (error) {
+        console.error('❌ Failed to load missions route:', error);
+    }
+
+    // Ensure sick-leaves route is loaded (temporary fix until module registry is fully working)
+    try {
+        const sickLeaveRoutes = await import('./modules/hr-core/vacations/routes/sickLeave.routes.js');
+        app.use('/api/v1/sick-leaves', sickLeaveRoutes.default);
+        console.log('✓ Sick-leaves route loaded at /api/v1/sick-leaves');
+    } catch (error) {
+        console.error('❌ Failed to load sick-leaves route:', error);
+    }
+
+    // Ensure permission-requests route is loaded (temporary fix until module registry is fully working)
+    try {
+        const permissionRequestRoutes = await import('./modules/hr-core/requests/routes/permissionRequest.routes.js');
+        app.use('/api/v1/permission-requests', permissionRequestRoutes.default);
+        console.log('✓ Permission-requests route loaded at /api/v1/permission-requests');
+    } catch (error) {
+        console.error('❌ Failed to load permission-requests route:', error);
+    }
+
     console.log('✓ Modular routes loaded');
 
     // EXISTING LEGACY ROUTES (Tenant-scoped)

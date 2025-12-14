@@ -12,22 +12,25 @@ import { MODULES } from '../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 
-// Apply license validation to all payroll routes
+// Apply authentication to all payroll routes first
+router.use(protect);
+
+// Apply license validation after authentication (so tenant ID is available)
 router.use(requireModuleLicense(MODULES.PAYROLL));
 
 // Get all payrolls - HR or Admin only
-router.get('/', protect, hrOrAdmin, getAllPayrolls);
+router.get('/', hrOrAdmin, getAllPayrolls);
 
 // Create payroll - HR or Admin only
-router.post('/', protect, hrOrAdmin, createPayroll);
+router.post('/', hrOrAdmin, createPayroll);
 
-// Get payroll by ID - Protected
-router.get('/:id', protect, getPayrollById);
+// Get payroll by ID - Protected (already authenticated)
+router.get('/:id', getPayrollById);
 
 // Update payroll - HR or Admin only
-router.put('/:id', protect, hrOrAdmin, updatePayroll);
+router.put('/:id', hrOrAdmin, updatePayroll);
 
 // Delete payroll - HR or Admin only
-router.delete('/:id', protect, hrOrAdmin, deletePayroll);
+router.delete('/:id', hrOrAdmin, deletePayroll);
 
 export default router;

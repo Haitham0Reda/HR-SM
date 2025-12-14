@@ -4,7 +4,7 @@ import logger from '../../../../utils/logger.js';
 
 export const getAllOvertime = async (req, res) => {
     try {
-        const { tenantId } = req.tenant || {};
+        const tenantId = req.tenant?.tenantId || req.tenantId;
         if (!tenantId) {
             return res.status(400).json({ error: 'Tenant context required' });
         }
@@ -24,7 +24,7 @@ export const getAllOvertime = async (req, res) => {
 
 export const createOvertime = async (req, res) => {
     try {
-        const { tenantId } = req.tenant || {};
+        const tenantId = req.tenant?.tenantId || req.tenantId;
         if (!tenantId) {
             return res.status(400).json({ error: 'Tenant context required' });
         }
@@ -43,7 +43,7 @@ export const createOvertime = async (req, res) => {
 
 export const getOvertimeById = async (req, res) => {
     try {
-        const { tenantId } = req.tenant || {};
+        const tenantId = req.tenant?.tenantId || req.tenantId;
         if (!tenantId) {
             return res.status(400).json({ error: 'Tenant context required' });
         }
@@ -64,7 +64,7 @@ export const getOvertimeById = async (req, res) => {
 
 export const updateOvertime = async (req, res) => {
     try {
-        const { tenantId } = req.tenant || {};
+        const tenantId = req.tenant?.tenantId || req.tenantId;
         if (!tenantId) {
             return res.status(400).json({ error: 'Tenant context required' });
         }
@@ -89,7 +89,7 @@ export const updateOvertime = async (req, res) => {
 
 export const deleteOvertime = async (req, res) => {
     try {
-        const { tenantId } = req.tenant || {};
+        const tenantId = req.tenant?.tenantId || req.tenantId;
         if (!tenantId) {
             return res.status(400).json({ error: 'Tenant context required' });
         }

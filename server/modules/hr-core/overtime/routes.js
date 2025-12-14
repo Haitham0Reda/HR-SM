@@ -4,37 +4,38 @@ import {
     createOvertime,
     getOvertimeById,
     updateOvertime,
-    deleteOvertime,
+    deleteOvertime
+} from './controllers/overtimeController.js';
+import {
     approveOvertime,
     rejectOvertime
 } from './controllers/overtime.controller.js';
-import { protect, checkActive } from '../../../middleware/index.js';
+import { requireAuth } from '../../../shared/middleware/auth.js';
 
 const router = express.Router();
 
-// Get all overtime - protected route
-router.get('/', protect, getAllOvertime);
+// Apply authentication to all routes
+router.use(requireAuth);
 
-// Create overtime - with authentication
-router.post('/',
-    protect,
-    checkActive,
-    createOvertime
-);
+// Get all overtime
+router.get('/', getAllOvertime);
 
-// Approve overtime
-router.post('/:id/approve', protect, approveOvertime);
-
-// Reject overtime
-router.post('/:id/reject', protect, rejectOvertime);
+// Create overtime
+router.post('/', createOvertime);
 
 // Get overtime by ID
-router.get('/:id', protect, getOvertimeById);
+router.get('/:id', getOvertimeById);
 
 // Update overtime
-router.put('/:id', protect, updateOvertime);
+router.put('/:id', updateOvertime);
 
 // Delete overtime
-router.delete('/:id', protect, deleteOvertime);
+router.delete('/:id', deleteOvertime);
+
+// Approve overtime
+router.post('/:id/approve', approveOvertime);
+
+// Reject overtime
+router.post('/:id/reject', rejectOvertime);
 
 export default router;

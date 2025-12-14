@@ -16,7 +16,7 @@ const permissionService = {
      * @returns {Promise<Object>} Response containing permissions array and metadata
      */
     getAll: async (params) => {
-        const data = await api.get('/permissions', { params });
+        const data = await api.get('/permission-requests', { params });
         return data;
     },
 
@@ -26,7 +26,7 @@ const permissionService = {
      * @returns {Promise<Object>} Permission object
      */
     getById: async (id) => {
-        const data = await api.get(`/permissions/${id}`);
+        const data = await api.get(`/permission-requests/${id}`);
         return data;
     },
 
@@ -36,7 +36,7 @@ const permissionService = {
      * @returns {Promise<Object>} Created permission object
      */
     create: async (data) => {
-        const result = await api.post('/permissions', data);
+        const result = await api.post('/permission-requests', data);
         return result;
     },
 
@@ -47,7 +47,7 @@ const permissionService = {
      * @returns {Promise<Object>} Updated permission object
      */
     update: async (id, data) => {
-        const result = await api.put(`/permissions/${id}`, data);
+        const result = await api.put(`/permission-requests/${id}`, data);
         // If status is being updated, dispatch notification update event
         if (data && (data.status === 'approved' || data.status === 'rejected')) {
             // Add a small delay to ensure server has time to create notification
@@ -64,7 +64,7 @@ const permissionService = {
      * @returns {Promise<Object>} Deletion confirmation
      */
     delete: async (id) => {
-        const result = await api.delete(`/permissions/${id}`);
+        const result = await api.delete(`/permission-requests/${id}`);
         return result;
     },
 
@@ -75,7 +75,7 @@ const permissionService = {
      * @returns {Promise<Object>} Approved permission object
      */
     approve: async (id, notes = '') => {
-        const result = await api.post(`/permissions/${id}/approve`, { notes });
+        const result = await api.post(`/permission-requests/${id}/approve`, { notes });
         // Add a small delay to ensure server has time to create notification
         await new Promise(resolve => setTimeout(resolve, 500));
         // Dispatch notification update event
@@ -90,7 +90,7 @@ const permissionService = {
      * @returns {Promise<Object>} Rejected permission object
      */
     reject: async (id, reason) => {
-        const result = await api.post(`/permissions/${id}/reject`, { reason });
+        const result = await api.post(`/permission-requests/${id}/reject`, { reason });
         // Add a small delay to ensure server has time to create notification
         await new Promise(resolve => setTimeout(resolve, 500));
         // Dispatch notification update event

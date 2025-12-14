@@ -51,6 +51,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import CongratulationsEffect from '../../components/effects/CongratulationsEffect';
 import { dashboardService } from '../../services';
+import attendanceService from '../../services/attendance.service';
+import api from '../../services/api';
 import { getUserProfilePicture, getUserInitials } from '../../utils/profilePicture';
 
 const Dashboard = () => {
@@ -129,11 +131,76 @@ const Dashboard = () => {
     // State for congratulations effect
     const [showCongratulations, setShowCongratulations] = useState(false);
 
+    // State for today's attendance
+    const [todayAttendance, setTodayAttendance] = useState(null);
+    const [attendanceLoading, setAttendanceLoading] = useState(true);
+
     // Update clock every second
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
+
+    // Fetch today's attendance data using the dedicated today endpoint
+    useEffect(() => {
+        const fetchTodayAttendance = async () => {
+            try {
+                setAttendanceLoading(true);
+                console.log('Fetching today\'s attendance for dashboard...');
+                
+                // First try to use the dedicated today's attendance endpoint
+                try {
+                    const todayResponse = await api.get('/attendance/today');
+                    console.log('Dashboard today\'s attendance response:', todayResponse);
+                    
+                    // Find current user's attendance in today's data
+                    let userTodayAttendance = null;
+                    if (todayResponse.success && todayResponse.data && Array.isArray(todayResponse.data)) {
+                        userTodayAttendance = todayResponse.data.find(record => {
+                            const employeeId = record.employee?._id || record.employee;
+                            return employeeId === user?._id || String(employeeId) === String(user?._id);
+                        });
+                    }
+                    
+                    console.log('User today attendance from today endpoint:', userTodayAttendance);
+                    setTodayAttendance(userTodayAttendance);
+                    return;
+                } catch (todayError) {
+                    console.log('Today endpoint not available, falling back to all attendance:', todayError.message);
+                }
+                
+                // Fallback: Get all attendance and filter for today
+                const response = await attendanceService.getAll();
+                console.log('Dashboard attendance response (fallback):', response);
+                
+                // Find today's attendance for current user
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayString = today.toISOString().split('T')[0];
+                
+                let userTodayAttendance = null;
+                if (Array.isArray(response)) {
+                    userTodayAttendance = response.find(record => {
+                        const recordDate = new Date(record.date).toISOString().split('T')[0];
+                        const employeeId = record.employee?._id || record.employee;
+                        return recordDate === todayString && (employeeId === user?._id || String(employeeId) === String(user?._id));
+                    });
+                }
+                
+                console.log('User today attendance (fallback):', userTodayAttendance);
+                setTodayAttendance(userTodayAttendance);
+            } catch (error) {
+                console.error('Error fetching today\'s attendance:', error);
+                setTodayAttendance(null);
+            } finally {
+                setAttendanceLoading(false);
+            }
+        };
+
+        if (user?._id) {
+            fetchTodayAttendance();
+        }
+    }, [user?._id]);
 
     // Fetch Employee of the Month and check if current user is employee of the month
     useEffect(() => {
@@ -159,7 +226,7 @@ const Dashboard = () => {
                     }
                 }
             } catch (error) {
-
+                console.error('Error fetching employee of the month:', error);
             }
         };
 
@@ -189,6 +256,61 @@ const Dashboard = () => {
             day: 'numeric',
             year: 'numeric'
         });
+    };
+
+    /**
+     * Calculate working hours between check-in and check-out
+     */
+    const calculateWorkingHours = (checkIn, checkOut) => {
+        if (!checkIn?.time || !checkOut?.time) return 'N/A';
+        
+        const start = new Date(checkIn.time);
+        const end = new Date(checkOut.time);
+        const diff = end - start;
+        
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        return `${hours}h ${minutes}m ${seconds}s`;
+    };
+
+    /**
+     * Format attendance time
+     */
+    const formatAttendanceTime = (timeObj) => {
+        if (!timeObj?.time) return 'N/A';
+        const date = new Date(timeObj.time);
+        return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    };
+
+    /**
+     * Get attendance status display
+     */
+    const getAttendanceStatus = (attendance) => {
+        if (!attendance) return { label: 'NO RECORD', color: 'error' };
+        
+        const status = attendance.status?.toUpperCase() || 'UNKNOWN';
+        
+        switch (status) {
+            case 'PRESENT':
+            case 'ON-TIME':
+                return { label: 'PRESENT', color: 'success' };
+            case 'LATE':
+                return { label: 'LATE', color: 'warning' };
+            case 'ABSENT':
+                return { label: 'ABSENT', color: 'error' };
+            case 'WORK-FROM-HOME':
+                return { label: 'WFH', color: 'info' };
+            case 'EARLY-DEPARTURE':
+                return { label: 'EARLY OUT', color: 'warning' };
+            default:
+                return { label: status, color: 'info' };
+        }
     };
 
     return (
@@ -485,12 +607,65 @@ const Dashboard = () => {
                             </Typography>
                         </Box>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                            {[
-                                { icon: CheckInIcon, label: 'Check In', value: '8:46 AM', color: 'info', delay: 100 },
-                                { icon: CheckOutIcon, label: 'Check Out', value: '3:59 PM', color: 'warning', delay: 200 },
-                                { icon: WorkingHoursIcon, label: 'Working Hours', value: '6h 52m 47s', color: 'success', delay: 300 },
-                                { icon: StatusIcon, label: 'Status', value: 'PRESENT', color: 'success', delay: 400, isChip: true }
-                            ].map((item, index) => {
+                            {attendanceLoading ? (
+                                // Loading state
+                                [1, 2, 3, 4].map((index) => (
+                                    <Zoom key={index} in={true} timeout={800} style={{ transitionDelay: `${index * 100}ms` }}>
+                                        <Box
+                                            sx={{
+                                                flex: '1 1 calc(25% - 12px)',
+                                                minWidth: '200px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                bgcolor: 'action.hover',
+                                                color: 'text.secondary',
+                                                p: 3,
+                                                borderRadius: 2,
+                                                boxShadow: 2,
+                                            }}
+                                        >
+                                            <Typography variant="body2">Loading...</Typography>
+                                        </Box>
+                                    </Zoom>
+                                ))
+                            ) : (
+                                (() => {
+                                    const statusInfo = getAttendanceStatus(todayAttendance);
+                                    return [
+                                        { 
+                                            icon: CheckInIcon, 
+                                            label: 'Check In', 
+                                            value: formatAttendanceTime(todayAttendance?.checkIn), 
+                                            color: todayAttendance?.checkIn?.isLate ? 'warning' : 'info', 
+                                            delay: 100 
+                                        },
+                                        { 
+                                            icon: CheckOutIcon, 
+                                            label: 'Check Out', 
+                                            value: formatAttendanceTime(todayAttendance?.checkOut), 
+                                            color: todayAttendance?.checkOut?.isEarly ? 'warning' : 'info', 
+                                            delay: 200 
+                                        },
+                                        { 
+                                            icon: WorkingHoursIcon, 
+                                            label: 'Working Hours', 
+                                            value: calculateWorkingHours(todayAttendance?.checkIn, todayAttendance?.checkOut), 
+                                            color: 'success', 
+                                            delay: 300 
+                                        },
+                                        { 
+                                            icon: StatusIcon, 
+                                            label: 'Status', 
+                                            value: statusInfo.label, 
+                                            color: statusInfo.color, 
+                                            delay: 400, 
+                                            isChip: true 
+                                        }
+                                    ];
+                                })()
+                            ).map((item, index) => {
                                 const Icon = item.icon;
                                 return (
                                     <Zoom key={index} in={true} timeout={800} style={{ transitionDelay: `${item.delay}ms` }}>

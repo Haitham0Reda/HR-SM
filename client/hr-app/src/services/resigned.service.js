@@ -7,7 +7,7 @@ const resignedService = {
         if (Array.isArray(response)) {
             return response;
         }
-        return response?.resignedEmployees || [];
+        return response?.data || response?.resignedEmployees || [];
     },
     getById: async (id) => await api.get(`/resigned-employees/${id}`),
     create: async (data) => await api.post('/resigned-employees', data),

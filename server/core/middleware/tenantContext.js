@@ -116,12 +116,27 @@ export const tenantContext = async (req, res, next) => {
             );
         }
 
+        // Normalize enabled modules to extract module IDs
+        const normalizeEnabledModules = (modules) => {
+            if (!Array.isArray(modules)) return [];
+            
+            return modules.map(module => {
+                // Handle both string format and object format
+                if (typeof module === 'string') {
+                    return module;
+                } else if (typeof module === 'object' && module.moduleId) {
+                    return module.moduleId;
+                }
+                return null;
+            }).filter(Boolean); // Remove null values
+        };
+
         // Normalize tenant object structure
         tenant = {
             id: tenant.tenantId || tenantId,
             tenantId: tenant.tenantId || tenantId,
             status: tenant.status,
-            enabledModules: tenant.enabledModules || [],
+            enabledModules: normalizeEnabledModules(tenant.enabledModules),
             config: tenant.config || {}
         };
 

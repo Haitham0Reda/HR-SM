@@ -11,9 +11,14 @@ import {
     Typography,
     Chip,
     MenuItem,
-    Grid
+    Grid,
+    Card,
+    CardContent,
+    List,
+    ListItem,
+    ListItemText
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as ViewIcon } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -26,26 +31,32 @@ const PayrollPage = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
+    const [openViewDialog, setOpenViewDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedPayroll, setSelectedPayroll] = useState(null);
     const [formData, setFormData] = useState({
-        user: '',
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
-        basicSalary: 0,
-        allowances: 0,
-        deductions: 0,
-        bonus: 0,
-        overtime: 0,
-        tax: 0,
-        status: 'pending'
+        employee: '',
+        period: '',
+        deductions: [],
+        totalDeductions: 0
     });
     const { showNotification } = useNotification();
 
-    const statuses = ['pending', 'approved', 'paid', 'cancelled'];
     const months = [
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const deductionTypes = [
+        { value: 'tax', label: 'Tax', arabicName: 'ضريبة الدخل' },
+        { value: 'insurance', label: 'Insurance', arabicName: 'التأمين الصحي' },
+        { value: 'loan', label: 'Loan', arabicName: 'قرض شخصي' },
+        { value: 'absence', label: 'Absence', arabicName: 'غياب' },
+        { value: 'medical', label: 'Medical', arabicName: 'مصاريف طبية' },
+        { value: 'transportation', label: 'Transportation', arabicName: 'بدل المواصلات' },
+        { value: 'mobile-bill', label: 'Mobile Bill', arabicName: 'فاتورة الهاتف' },
+        { value: 'disciplinary-sanctions', label: 'Disciplinary Sanctions', arabicName: 'جزاءات تأديبية' },
+        { value: 'other', label: 'Other', arabicName: 'أخرى' }
     ];
 
     useEffect(() => {
@@ -58,8 +69,10 @@ const PayrollPage = () => {
         try {
             setLoading(true);
             const data = await payrollService.getAll();
+            console.log('Fetched payroll data:', data); // Debug log
             setPayrolls(data);
         } catch (error) {
+            console.error('Error fetching payrolls:', error); // Debug log
             showNotification('Failed to fetch payroll records', 'error');
         } finally {
             setLoading(false);
@@ -71,54 +84,55 @@ const PayrollPage = () => {
             const data = await userService.getAll();
             setUsers(data);
         } catch (error) {
-
+            console.error('Error fetching users:', error);
         }
     };
 
-    const calculateNetSalary = (data) => {
-        const gross = parseFloat(data.basicSalary || 0) +
-            parseFloat(data.allowances || 0) +
-            parseFloat(data.bonus || 0) +
-            parseFloat(data.overtime || 0);
-        const net = gross - parseFloat(data.deductions || 0) - parseFloat(data.tax || 0);
-        return net.toFixed(2);
+    const getBaseSalaryByRole = (role) => {
+        const salaries = {
+            'admin': 8000,
+            'hr': 6000,
+            'manager': 7000,
+            'employee': 4500
+        };
+        return salaries[role] || 4000;
+    };
+
+    const calculateTotalDeductions = (deductions) => {
+        return deductions.reduce((sum, deduction) => sum + (parseFloat(deduction.amount) || 0), 0);
     };
 
     const handleOpenDialog = (payroll = null) => {
         if (payroll) {
             setSelectedPayroll(payroll);
             setFormData({
-                user: payroll.user?._id || payroll.user || '',
-                month: payroll.month || new Date().getMonth() + 1,
-                year: payroll.year || new Date().getFullYear(),
-                basicSalary: payroll.basicSalary || 0,
-                allowances: payroll.allowances || 0,
-                deductions: payroll.deductions || 0,
-                bonus: payroll.bonus || 0,
-                overtime: payroll.overtime || 0,
-                tax: payroll.tax || 0,
-                status: payroll.status || 'pending'
+                employee: payroll.employee?._id || payroll.employee || '',
+                period: payroll.period || '',
+                deductions: payroll.deductions || [],
+                totalDeductions: payroll.totalDeductions || 0
             });
         } else {
             setSelectedPayroll(null);
+            const currentDate = new Date();
+            const currentPeriod = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
             setFormData({
-                user: '',
-                month: new Date().getMonth() + 1,
-                year: new Date().getFullYear(),
-                basicSalary: 0,
-                allowances: 0,
-                deductions: 0,
-                bonus: 0,
-                overtime: 0,
-                tax: 0,
-                status: 'pending'
+                employee: '',
+                period: currentPeriod,
+                deductions: [],
+                totalDeductions: 0
             });
         }
         setOpenDialog(true);
     };
 
+    const handleViewPayroll = (payroll) => {
+        setSelectedPayroll(payroll);
+        setOpenViewDialog(true);
+    };
+
     const handleCloseDialog = () => {
         setOpenDialog(false);
+        setOpenViewDialog(false);
         setSelectedPayroll(null);
     };
 
@@ -127,11 +141,54 @@ const PayrollPage = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleAddDeduction = () => {
+        const newDeduction = {
+            type: 'tax',
+            arabicName: 'ضريبة الدخل',
+            description: '',
+            amount: 0
+        };
+        const updatedDeductions = [...formData.deductions, newDeduction];
+        setFormData(prev => ({
+            ...prev,
+            deductions: updatedDeductions,
+            totalDeductions: calculateTotalDeductions(updatedDeductions)
+        }));
+    };
+
+    const handleDeductionChange = (index, field, value) => {
+        const updatedDeductions = [...formData.deductions];
+        updatedDeductions[index] = { ...updatedDeductions[index], [field]: value };
+        
+        // Update Arabic name when type changes
+        if (field === 'type') {
+            const deductionType = deductionTypes.find(dt => dt.value === value);
+            updatedDeductions[index].arabicName = deductionType?.arabicName || '';
+        }
+        
+        setFormData(prev => ({
+            ...prev,
+            deductions: updatedDeductions,
+            totalDeductions: calculateTotalDeductions(updatedDeductions)
+        }));
+    };
+
+    const handleRemoveDeduction = (index) => {
+        const updatedDeductions = formData.deductions.filter((_, i) => i !== index);
+        setFormData(prev => ({
+            ...prev,
+            deductions: updatedDeductions,
+            totalDeductions: calculateTotalDeductions(updatedDeductions)
+        }));
+    };
+
     const handleSubmit = async () => {
         try {
             const submitData = {
-                ...formData,
-                netSalary: calculateNetSalary(formData)
+                employee: formData.employee,
+                period: formData.period,
+                deductions: formData.deductions,
+                totalDeductions: formData.totalDeductions
             };
 
             if (selectedPayroll) {
@@ -160,78 +217,64 @@ const PayrollPage = () => {
         }
     };
 
-    const getStatusColor = (status) => {
-        const colors = {
-            pending: 'warning',
-            approved: 'info',
-            paid: 'success',
-            cancelled: 'error'
-        };
-        return colors[status] || 'default';
-    };
-
     const columns = [
         {
-            field: 'user',
-            headerName: 'Employee',
-            width: 180,
-            renderCell: (params) => params.row.user?.name || 'N/A'
+            id: 'employee',
+            label: 'Employee',
+            render: (row) => {
+                const employee = row.employee;
+                return employee?.name || employee?.email?.split('@')[0] || 'N/A';
+            }
         },
         {
-            field: 'period',
-            headerName: 'Period',
-            width: 150,
-            renderCell: (params) => `${months[params.row.month - 1]} ${params.row.year}`
+            id: 'period',
+            label: 'Period',
+            render: (row) => {
+                const [year, month] = row.period.split('-');
+                const monthName = months[parseInt(month) - 1];
+                return `${monthName} ${year}`;
+            }
         },
         {
-            field: 'basicSalary',
-            headerName: 'Basic Salary',
-            width: 120,
-            renderCell: (params) => `$${parseFloat(params.row.basicSalary || 0).toFixed(2)}`
+            id: 'deductionsCount',
+            label: 'Deductions',
+            render: (row) => `${row.deductions?.length || 0} items`
         },
         {
-            field: 'allowances',
-            headerName: 'Allowances',
-            width: 110,
-            renderCell: (params) => `$${parseFloat(params.row.allowances || 0).toFixed(2)}`
+            id: 'totalDeductions',
+            label: 'Total Deductions',
+            render: (row) => `$${row.totalDeductions?.toFixed(2) || '0.00'}`
         },
         {
-            field: 'deductions',
-            headerName: 'Deductions',
-            width: 110,
-            renderCell: (params) => `$${parseFloat(params.row.deductions || 0).toFixed(2)}`
+            id: 'netSalary',
+            label: 'Net Salary',
+            render: (row) => {
+                const role = row.employee?.role;
+                const baseSalary = getBaseSalaryByRole(role);
+                const netSalary = baseSalary - (row.totalDeductions || 0);
+                return (
+                    <Typography fontWeight="bold" color="primary">
+                        ${netSalary.toFixed(2)}
+                    </Typography>
+                );
+            }
         },
         {
-            field: 'netSalary',
-            headerName: 'Net Salary',
-            width: 120,
-            renderCell: (params) => (
-                <Typography fontWeight="bold" color="primary">
-                    ${parseFloat(params.row.netSalary || 0).toFixed(2)}
-                </Typography>
-            )
-        },
-        {
-            field: 'status',
-            headerName: 'Status',
-            width: 120,
-            renderCell: (params) => (
-                <Chip
-                    label={params.row.status}
-                    color={getStatusColor(params.row.status)}
-                    size="small"
-                />
-            )
-        },
-        {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 120,
-            renderCell: (params) => (
+            id: 'actions',
+            label: 'Actions',
+            sortable: false,
+            render: (row) => (
                 <Box>
                     <IconButton
                         size="small"
-                        onClick={() => handleOpenDialog(params.row)}
+                        onClick={() => handleViewPayroll(row)}
+                        color="info"
+                    >
+                        <ViewIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                        size="small"
+                        onClick={() => handleOpenDialog(row)}
                         color="primary"
                     >
                         <EditIcon fontSize="small" />
@@ -239,7 +282,7 @@ const PayrollPage = () => {
                     <IconButton
                         size="small"
                         onClick={() => {
-                            setSelectedPayroll(params.row);
+                            setSelectedPayroll(row);
                             setOpenConfirm(true);
                         }}
                         color="error"
@@ -256,13 +299,13 @@ const PayrollPage = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4">Payroll</Typography>
+                <Typography variant="h4">Payroll Management</Typography>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpenDialog()}
                 >
-                    New Payroll
+                    New Payroll Record
                 </Button>
             </Box>
 
@@ -271,151 +314,121 @@ const PayrollPage = () => {
                 columns={columns}
             />
 
+            {/* Create/Edit Dialog */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
                 <DialogTitle>
-                    {selectedPayroll ? 'Edit Payroll' : 'New Payroll'}
+                    {selectedPayroll ? 'Edit Payroll Record' : 'New Payroll Record'}
                 </DialogTitle>
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
                         <TextField
                             select
                             label="Employee"
-                            name="user"
-                            value={formData.user}
+                            name="employee"
+                            value={formData.employee}
                             onChange={handleChange}
                             required
                             fullWidth
                         >
                             {users.map((user) => (
                                 <MenuItem key={user._id} value={user._id}>
-                                    {user.name} - {user.email}
+                                    {user.name || user.email} - {user.role}
                                 </MenuItem>
                             ))}
                         </TextField>
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    select
-                                    label="Month"
-                                    name="month"
-                                    value={formData.month}
-                                    onChange={handleChange}
-                                    required
-                                    fullWidth
-                                >
-                                    {months.map((month, index) => (
-                                        <MenuItem key={index} value={index + 1}>
-                                            {month}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="number"
-                                    label="Year"
-                                    name="year"
-                                    value={formData.year}
-                                    onChange={handleChange}
-                                    required
-                                    fullWidth
-                                />
-                            </Grid>
-                        </Grid>
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="number"
-                                    label="Basic Salary"
-                                    name="basicSalary"
-                                    value={formData.basicSalary}
-                                    onChange={handleChange}
-                                    required
-                                    fullWidth
-                                    inputProps={{ step: '0.01', min: '0' }}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="number"
-                                    label="Allowances"
-                                    name="allowances"
-                                    value={formData.allowances}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    inputProps={{ step: '0.01', min: '0' }}
-                                />
-                            </Grid>
-                        </Grid>
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="number"
-                                    label="Bonus"
-                                    name="bonus"
-                                    value={formData.bonus}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    inputProps={{ step: '0.01', min: '0' }}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="number"
-                                    label="Overtime"
-                                    name="overtime"
-                                    value={formData.overtime}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    inputProps={{ step: '0.01', min: '0' }}
-                                />
-                            </Grid>
-                        </Grid>
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="number"
-                                    label="Deductions"
-                                    name="deductions"
-                                    value={formData.deductions}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    inputProps={{ step: '0.01', min: '0' }}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="number"
-                                    label="Tax"
-                                    name="tax"
-                                    value={formData.tax}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    inputProps={{ step: '0.01', min: '0' }}
-                                />
-                            </Grid>
-                        </Grid>
+                        
                         <TextField
-                            label="Net Salary"
-                            value={`$${calculateNetSalary(formData)}`}
+                            type="month"
+                            label="Period"
+                            name="period"
+                            value={formData.period}
+                            onChange={handleChange}
+                            required
+                            fullWidth
+                        />
+
+                        <Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">Deductions</Typography>
+                                <Button onClick={handleAddDeduction} variant="outlined" size="small">
+                                    Add Deduction
+                                </Button>
+                            </Box>
+                            
+                            {formData.deductions.map((deduction, index) => (
+                                <Card key={index} sx={{ mb: 2 }}>
+                                    <CardContent>
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12} sm={3}>
+                                                <TextField
+                                                    select
+                                                    label="Type"
+                                                    value={deduction.type}
+                                                    onChange={(e) => handleDeductionChange(index, 'type', e.target.value)}
+                                                    fullWidth
+                                                    size="small"
+                                                >
+                                                    {deductionTypes.map((type) => (
+                                                        <MenuItem key={type.value} value={type.value}>
+                                                            {type.label}
+                                                        </MenuItem>
+                                                    ))}
+                                                </TextField>
+                                            </Grid>
+                                            <Grid item xs={12} sm={3}>
+                                                <TextField
+                                                    label="Arabic Name"
+                                                    value={deduction.arabicName}
+                                                    onChange={(e) => handleDeductionChange(index, 'arabicName', e.target.value)}
+                                                    fullWidth
+                                                    size="small"
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} sm={3}>
+                                                <TextField
+                                                    type="number"
+                                                    label="Amount"
+                                                    value={deduction.amount}
+                                                    onChange={(e) => handleDeductionChange(index, 'amount', e.target.value)}
+                                                    fullWidth
+                                                    size="small"
+                                                    inputProps={{ step: '0.01', min: '0' }}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} sm={3}>
+                                                <Button
+                                                    onClick={() => handleRemoveDeduction(index)}
+                                                    color="error"
+                                                    size="small"
+                                                    fullWidth
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                                <TextField
+                                                    label="Description"
+                                                    value={deduction.description}
+                                                    onChange={(e) => handleDeductionChange(index, 'description', e.target.value)}
+                                                    fullWidth
+                                                    size="small"
+                                                    multiline
+                                                    rows={2}
+                                                />
+                                            </Grid>
+                                        </Grid>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </Box>
+
+                        <TextField
+                            label="Total Deductions"
+                            value={`$${formData.totalDeductions.toFixed(2)}`}
                             disabled
                             fullWidth
                             sx={{ bgcolor: 'action.hover' }}
                         />
-                        <TextField
-                            select
-                            label="Status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            fullWidth
-                        >
-                            {statuses.map((status) => (
-                                <MenuItem key={status} value={status}>
-                                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                                </MenuItem>
-                            ))}
-                        </TextField>
                     </Box>
                 </DialogContent>
                 <DialogActions>
@@ -423,6 +436,51 @@ const PayrollPage = () => {
                     <Button onClick={handleSubmit} variant="contained">
                         {selectedPayroll ? 'Update' : 'Create'}
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* View Dialog */}
+            <Dialog open={openViewDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>Payroll Details</DialogTitle>
+                <DialogContent>
+                    {selectedPayroll && (
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="h6" gutterBottom>
+                                {selectedPayroll.employee?.name || selectedPayroll.employee?.email}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Period: {(() => {
+                                    const [year, month] = selectedPayroll.period.split('-');
+                                    return `${months[parseInt(month) - 1]} ${year}`;
+                                })()}
+                            </Typography>
+                            
+                            <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                                Deductions:
+                            </Typography>
+                            <List>
+                                {selectedPayroll.deductions?.map((deduction, index) => (
+                                    <ListItem key={index}>
+                                        <ListItemText
+                                            primary={`${deduction.type} - $${deduction.amount}`}
+                                            secondary={`${deduction.arabicName} - ${deduction.description}`}
+                                        />
+                                    </ListItem>
+                                ))}
+                            </List>
+                            
+                            <Typography variant="h6" sx={{ mt: 2 }}>
+                                Total Deductions: ${selectedPayroll.totalDeductions?.toFixed(2)}
+                            </Typography>
+                            
+                            <Typography variant="h6" sx={{ mt: 1 }}>
+                                Net Salary: ${(getBaseSalaryByRole(selectedPayroll.employee?.role) - selectedPayroll.totalDeductions).toFixed(2)}
+                            </Typography>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog}>Close</Button>
                 </DialogActions>
             </Dialog>
 

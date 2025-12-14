@@ -54,11 +54,13 @@ const ForgetCheckPage = () => {
     const fetchForgetChecks = async () => {
         try {
             setLoading(true);
-            const data = await forgetCheckService.getAll();
-            const requestsArray = Array.isArray(data) ? data : [];
+            const response = await forgetCheckService.getAll();
+            // Handle both direct array and API response format
+            const requestsArray = Array.isArray(response) ? response : 
+                                 (response?.data && Array.isArray(response.data)) ? response.data : [];
             setForgetChecks(requestsArray);
         } catch (error) {
-
+            console.error('Error fetching forget checks:', error);
             showNotification('Failed to fetch requests', 'error');
             setForgetChecks([]);
         } finally {
