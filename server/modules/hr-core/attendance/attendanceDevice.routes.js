@@ -14,6 +14,7 @@ import {
     importCSV
 } from './controllers/attendanceDevice.controller.js';
 import { protect, checkRole } from '../../../middleware/index.js';
+import { tenantContext } from '../../../core/middleware/tenantContext.js';
 
 const router = express.Router();
 
@@ -36,8 +37,9 @@ const upload = multer({
 // Public endpoint for devices to push logs (requires device authentication in production)
 router.post('/push', receivePushedLogs);
 
-// Protected routes - require authentication
+// Protected routes - require authentication and tenant context
 router.use(protect);
+router.use(tenantContext);
 
 // Device management routes
 router.get('/', getAllDevices);

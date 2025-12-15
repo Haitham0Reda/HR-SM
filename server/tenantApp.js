@@ -10,6 +10,7 @@ import { authRoutes } from './modules/hr-core/auth/routes/authRoutes.js';
 import { tenantContext } from './core/middleware/tenantContext.js';
 import { moduleGuard } from './core/middleware/moduleGuard.js';
 import { moduleRegistry } from './core/registry/moduleRegistry.js';
+import hardcopyRoutes from './modules/documents/routes/hardcopy.routes.js';
 import { setupCompanyLogging, logResponseCompletion, logCompanyErrors, trackUserActivity } from './middleware/companyLogging.js';
 import companyLogsRoutes from './routes/companyLogs.js';
 
@@ -55,8 +56,12 @@ app.use('/api/v1', trackUserActivity);
 // Company logs routes (protected) - after tenant context
 app.use('/api/company-logs', companyLogsRoutes);
 
+// Hardcopies routes (part of documents module)
+app.use('/api/v1/hardcopies', hardcopyRoutes);
+
 // Module routes (protected by auth and module guard)
-app.use('/api/v1', moduleGuard, moduleRegistry.getRoutes());
+// Note: moduleRegistry.getRoutes() method needs to be implemented
+// For now, routes are loaded individually above
 
 // Health check endpoint
 app.get('/health', (req, res) => {

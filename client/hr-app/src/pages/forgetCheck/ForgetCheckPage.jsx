@@ -11,9 +11,12 @@ import {
     Typography,
     Chip,
     MenuItem,
-    useTheme
+    useTheme,
+    Tabs,
+    Tab,
+    Paper
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle, Cancel, Info } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle, Cancel, Info, Person as PersonIcon, Group as GroupIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
@@ -35,6 +38,7 @@ const ForgetCheckPage = () => {
     const [openDialog, setOpenDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
+    const [currentTab, setCurrentTab] = useState(0);
     const [formData, setFormData] = useState({
         user: '',
         date: new Date().toISOString().split('T')[0],
@@ -50,6 +54,10 @@ const ForgetCheckPage = () => {
         { value: 'check-in', label: 'Check In' },
         { value: 'check-out', label: 'Check Out' }
     ];
+
+    const handleTabChange = (event, newValue) => {
+        setCurrentTab(newValue);
+    };
 
     const fetchForgetChecks = async () => {
         try {
@@ -216,12 +224,13 @@ const ForgetCheckPage = () => {
     };
 
     const columns = [
-        {
+        // Only show employee column in "All Users" tab (tab 1) and if user can manage
+        ...(currentTab === 1 && canManage ? [{
             id: 'employee',
             label: 'Employee',
             align: 'center',
             render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A'
-        },
+        }] : []),
         {
             id: 'date',
             label: 'Date',
@@ -335,6 +344,22 @@ const ForgetCheckPage = () => {
         }
     ];
 
+    // Filter data based on current tab
+    const getFilteredData = () => {
+        if (currentTab === 0) {
+            // My Forget Check - show only current user's requests
+            return forgetChecks.filter(request => {
+                const employeeId = request.employee?._id || request.employee;
+                return employeeId === user?._id;
+            });
+        } else {
+            // All Users Forget Check - show all requests (only for HR/Admin)
+            return canManage ? forgetChecks : [];
+        }
+    };
+
+    const filteredData = getFilteredData();
+
     if (loading) return <Loading />;
 
     return (
@@ -343,7 +368,7 @@ const ForgetCheckPage = () => {
                 <Box>
                     <Typography variant="h4">Forget Check Requests</Typography>
                     <Typography variant="body2" color="text.secondary">
-                        {canManage ? 'Manage all forget check requests' : 'View and manage your forget check requests'}
+                        Manage forget check requests for missed check-ins and check-outs
                     </Typography>
                 </Box>
                 <Button
@@ -355,11 +380,74 @@ const ForgetCheckPage = () => {
                 </Button>
             </Box>
 
-            <DataTable
-                data={forgetChecks}
-                columns={columns}
-                emptyMessage="No requests found. Click 'New Request' to create one."
-            />
+            {/* Tabs */}
+            <Paper sx={{ mb: 2 }}>
+                <Tabs
+                    value={currentTab}
+                    onChange={handleTabChange}
+                    sx={{
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        '& .MuiTab-root': {
+                            minHeight: 48,
+                            textTransform: 'none',
+                        },
+                    }}
+                >
+                    <Tab
+                        icon={<PersonIcon fontSize="small" />}
+                        iconPosition="start"
+                        label="My Forget Check"
+                    />
+                    {canManage && (
+                        <Tab
+                            icon={<GroupIcon fontSize="small" />}
+                            iconPosition="start"
+                            label="All Users Forget Check"
+                        />
+                    )}
+                </Tabs>
+            </Paper>
+
+            {/* Tab Content */}
+            <Box>
+                {currentTab === 0 && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            📋 My Forget Check Requests ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No requests found. Click 'New Request' to create one."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && canManage && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            👥 All Users Forget Check Requests ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No forget check requests found from any employees."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && !canManage && (
+                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="h6" color="error.main">
+                            Access Denied
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            You don't have permission to view all users' forget check requests.
+                        </Typography>
+                    </Box>
+                )}
+            </Box>
 
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>

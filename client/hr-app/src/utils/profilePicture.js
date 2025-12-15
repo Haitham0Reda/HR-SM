@@ -2,7 +2,6 @@
  * Utility functions for handling profile pictures
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const SERVER_BASE_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000';
 
 /**
@@ -46,8 +45,9 @@ export const getProfilePictureUrl = (profilePicture) => {
  * @returns {string} - The profile picture URL
  */
 export const getUserProfilePicture = (user) => {
-    const profilePicture = user?.personalInfo?.profilePicture || 
-                          user?.profilePicture || 
+    // Check the actual User model structure first, then fallbacks for compatibility
+    const profilePicture = user?.profilePicture || 
+                          user?.personalInfo?.profilePicture || 
                           user?.profile?.profilePicture || 
                           user?.avatar || 
                           user?.photo;
@@ -61,10 +61,20 @@ export const getUserProfilePicture = (user) => {
  * @returns {string} - The user initials
  */
 export const getUserInitials = (user) => {
+    // Use the actual User model structure
+    const firstName = user?.firstName;
+    const lastName = user?.lastName;
+    
+    if (firstName && lastName) {
+        return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    }
+    
+    // Fallbacks for compatibility
     const name = user?.personalInfo?.fullName || 
                  user?.name || 
                  user?.username || 
-                 user?.personalInfo?.firstName;
+                 user?.personalInfo?.firstName ||
+                 firstName;
     
     if (!name) return 'U';
     

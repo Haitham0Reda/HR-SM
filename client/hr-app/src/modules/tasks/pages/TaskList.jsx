@@ -143,11 +143,15 @@ const TaskList = () => {
                             <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                                 <div>
                                     <span className="font-medium">Assigned to:</span>{' '}
-                                    {task.assignedTo?.firstName} {task.assignedTo?.lastName}
+                                    {task.assignedTo?.personalInfo?.fullName || 
+                                     `${task.assignedTo?.personalInfo?.firstName || ''} ${task.assignedTo?.personalInfo?.lastName || ''}`.trim() ||
+                                     task.assignedTo?.username || 'Unknown User'}
                                 </div>
                                 <div>
                                     <span className="font-medium">Assigned by:</span>{' '}
-                                    {task.assignedBy?.firstName} {task.assignedBy?.lastName}
+                                    {task.assignedBy?.personalInfo?.fullName || 
+                                     `${task.assignedBy?.personalInfo?.firstName || ''} ${task.assignedBy?.personalInfo?.lastName || ''}`.trim() ||
+                                     task.assignedBy?.username || 'Unknown User'}
                                 </div>
                                 <div>
                                     <span className="font-medium">Due:</span>{' '}

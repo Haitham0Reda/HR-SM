@@ -20,21 +20,23 @@ import { MODULES } from '../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 
-// Apply license validation to all announcement routes
+// Apply authentication to all routes first
+router.use(protect);
+
+// Apply license validation to all announcement routes (after authentication)
 router.use(requireModuleLicense(MODULES.COMMUNICATION));
 
 // Get active announcements - All authenticated users can view
-router.get('/active', protect, getActiveAnnouncements);
+router.get('/active', getActiveAnnouncements);
 
 // Get announcements by status (upcoming, active, expired) - All authenticated users can view
-router.get('/status/:status', protect, getAnnouncementsByStatus);
+router.get('/status/:status', getAnnouncementsByStatus);
 
 // Get all announcements - All authenticated users can view
-router.get('/', protect, getAllAnnouncements);
+router.get('/', getAllAnnouncements);
 
 // Create announcement - HR or Admin only with validation
 router.post('/',
-    protect,
     hrOrAdmin,
     validateAnnouncementDates,
     validateTargetAudience,
@@ -43,11 +45,10 @@ router.post('/',
 );
 
 // Get announcement by ID - All authenticated users
-router.get('/:id', protect, getAnnouncementById);
+router.get('/:id', getAnnouncementById);
 
 // Update announcement - HR or Admin only with validation
 router.put('/:id',
-    protect,
     hrOrAdmin,
     validateAnnouncementDates,
     validateTargetAudience,
@@ -55,6 +56,6 @@ router.put('/:id',
 );
 
 // Delete announcement - HR or Admin only
-router.delete('/:id', protect, hrOrAdmin, deleteAnnouncement);
+router.delete('/:id', hrOrAdmin, deleteAnnouncement);
 
 export default router;

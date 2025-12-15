@@ -15,6 +15,7 @@ import { namespaceValidator, validateRouteNamespaces, logValidationResults } fro
 import {
     documentRoutes,
     documentTemplateRoutes,
+    hardcopyRoutes,
     eventRoutes,
     notificationRoutes,
     payrollRoutes,
@@ -240,6 +241,10 @@ export const initializeRoutes = async () => {
 
     // Load optional modules (checked by moduleGuard middleware)
     await loadModuleRoutes(app, MODULES.TASKS);
+    await loadModuleRoutes(app, MODULES.COMMUNICATION);
+    await loadModuleRoutes(app, MODULES.DOCUMENTS);
+    await loadModuleRoutes(app, MODULES.REPORTING);
+    await loadModuleRoutes(app, MODULES.PAYROLL);
 
     // Ensure forget-checks route is loaded (temporary fix until module registry is fully working)
     try {
@@ -290,6 +295,7 @@ export const initializeRoutes = async () => {
     // Documents (legacy - not yet moved)
     app.use('/api/v1/documents', documentRoutes);
     app.use('/api/v1/document-templates', documentTemplateRoutes);
+    app.use('/api/v1/hardcopies', hardcopyRoutes);
 
     // Payroll (legacy - not yet moved)
     app.use('/api/v1/payroll', payrollRoutes);

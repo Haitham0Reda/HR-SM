@@ -17,13 +17,13 @@ import {
     Card,
     CardContent,
     CardActions,
-    Grid
+    Grid,
+    useTheme
 } from '@mui/material';
 import {
-    Add as AddIcon,
-    Edit as EditIcon,
     Delete as DeleteIcon,
-    Download as DownloadIcon
+    Download as DownloadIcon,
+    Upload as UploadIcon
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -32,25 +32,59 @@ import { useAuth } from '../../contexts/AuthContext';
 import hardCopyService from '../../services/hardcopy.service';
 
 const HardCopiesPage = () => {
+    const theme = useTheme();
     const { user, isHR, isAdmin } = useAuth();
+
+    // Common styles using theme
+    const textFieldStyles = {
+        '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+                borderColor: theme.palette.divider
+            },
+            '&:hover fieldset': {
+                borderColor: theme.palette.primary.main
+            },
+            '&.Mui-focused fieldset': {
+                borderColor: theme.palette.primary.main
+            }
+        },
+        '& .MuiInputLabel-root': {
+            color: theme.palette.text.secondary
+        },
+        '& .MuiInputLabel-root.Mui-focused': {
+            color: theme.palette.primary.main
+        }
+    };
+
+    const selectStyles = {
+        '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.divider
+        },
+        '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.primary.main
+        },
+        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.primary.main
+        }
+    };
     const [hardCopies, setHardCopies] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [openDialog, setOpenDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedHardCopy, setSelectedHardCopy] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
-        category: 'general',
-        location: '',
-        fileUrl: '',
-        fileName: '',
-        fileSize: 0
+        category: 'general'
     });
+    const [openUploadDialog, setOpenUploadDialog] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [newCategory, setNewCategory] = useState('');
+    const [showAddCategory, setShowAddCategory] = useState(false);
     const { showNotification } = useNotification();
 
-    // Hard copy categories
-    const categories = [
+    // Hard copy categories - dynamic list
+    const [categories, setCategories] = useState([
         { value: 'general', label: 'General' },
         { value: 'contract', label: 'Contract' },
         { value: 'certificate', label: 'Certificate' },
@@ -58,7 +92,7 @@ const HardCopiesPage = () => {
         { value: 'payroll', label: 'Payroll' },
         { value: 'attendance', label: 'Attendance' },
         { value: 'other', label: 'Other' }
-    ];
+    ]);
 
     const canManage = isHR || isAdmin;
 
@@ -70,10 +104,16 @@ const HardCopiesPage = () => {
     const fetchHardCopies = async () => {
         try {
             setLoading(true);
-            const data = await hardCopyService.getAll();
-            setHardCopies(data);
+            const response = await hardCopyService.getAll();
+            console.log('Hardcopies API response:', response);
+            
+            // Handle the response format: { success: true, data: [...] }
+            const hardcopiesData = response.data || response || [];
+            console.log('Hardcopies data:', hardcopiesData);
+            
+            setHardCopies(Array.isArray(hardcopiesData) ? hardcopiesData : []);
         } catch (error) {
-
+            console.error('Error fetching hardcopies:', error);
             showNotification('Failed to fetch hard copies', 'error');
             setHardCopies([]);
         } finally {
@@ -81,57 +121,23 @@ const HardCopiesPage = () => {
         }
     };
 
-    const handleOpenDialog = (hardCopy = null) => {
-        if (hardCopy) {
-            setSelectedHardCopy(hardCopy);
-            setFormData({
-                title: hardCopy.title || '',
-                description: hardCopy.description || '',
-                category: hardCopy.category || 'general',
-                location: hardCopy.location || '',
-                fileUrl: hardCopy.fileUrl || '',
-                fileName: hardCopy.fileName || '',
-                fileSize: hardCopy.fileSize || 0
-            });
-        } else {
-            setSelectedHardCopy(null);
-            setFormData({
-                title: '',
-                description: '',
-                category: 'general',
-                location: '',
-                fileUrl: '',
-                fileName: '',
-                fileSize: 0
-            });
-        }
-        setOpenDialog(true);
-    };
-
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-        setSelectedHardCopy(null);
-    };
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = async () => {
-        try {
-            if (selectedHardCopy) {
-                await hardCopyService.update(selectedHardCopy._id, formData);
-                showNotification('Hard copy updated successfully', 'success');
-            } else {
-                await hardCopyService.create(formData);
-                showNotification('Hard copy created successfully', 'success');
-            }
-            handleCloseDialog();
-            fetchHardCopies();
-        } catch (error) {
-
-            showNotification('Operation failed', 'error');
+    const handleAddCategory = () => {
+        if (newCategory.trim() && !categories.find(cat => cat.value === newCategory.toLowerCase().replace(/\s+/g, '-'))) {
+            const categoryValue = newCategory.toLowerCase().replace(/\s+/g, '-');
+            const categoryLabel = newCategory.trim();
+            
+            setCategories(prev => [...prev, { value: categoryValue, label: categoryLabel }]);
+            setFormData(prev => ({ ...prev, category: categoryValue }));
+            setNewCategory('');
+            setShowAddCategory(false);
+            showNotification('Category added successfully', 'success');
+        } else {
+            showNotification('Category already exists or is invalid', 'error');
         }
     };
 
@@ -163,6 +169,57 @@ const HardCopiesPage = () => {
         showNotification('Download started', 'success');
     };
 
+    const handleFileSelect = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            setFormData(prev => ({
+                ...prev,
+                title: file.name.split('.')[0] // Use filename without extension as default title
+            }));
+        }
+    };
+
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            showNotification('Please select a file to upload', 'error');
+            return;
+        }
+
+        if (!formData.title.trim()) {
+            showNotification('Please enter a title for the hard copy', 'error');
+            return;
+        }
+
+        try {
+            setUploading(true);
+            
+            // Create FormData for file upload
+            const uploadFormData = new FormData();
+            uploadFormData.append('file', selectedFile);
+            uploadFormData.append('title', formData.title);
+            uploadFormData.append('description', formData.description);
+            uploadFormData.append('category', formData.category);
+
+            await hardCopyService.upload(uploadFormData);
+            showNotification('Hard copy uploaded successfully', 'success');
+            setOpenUploadDialog(false);
+            setSelectedFile(null);
+            setFormData({
+                title: '',
+                description: '',
+                category: 'general'
+            });
+            fetchHardCopies();
+        } catch (error) {
+            console.error('Upload error:', error);
+            const errorMessage = error.response?.data?.message || 'Upload failed';
+            showNotification(errorMessage, 'error');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     if (loading) return <Loading />;
 
     return (
@@ -172,7 +229,7 @@ const HardCopiesPage = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: 3,
-            background: 'var(--mui-palette-background-default)'
+            backgroundColor: theme.palette.background.default
         }}>
             {/* Header Section */}
             <Box sx={{
@@ -182,7 +239,7 @@ const HardCopiesPage = () => {
                 flexWrap: 'wrap',
                 gap: 2,
                 pb: 1,
-                borderBottom: '1px solid var(--mui-palette-divider)'
+                borderBottom: `1px solid ${theme.palette.divider}`
             }}>
                 <Typography variant="h4" fontWeight="600" sx={{ color: 'primary.main' }}>
                     Hard Copies
@@ -190,18 +247,19 @@ const HardCopiesPage = () => {
                 {canManage && (
                     <Button
                         variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpenDialog()}
+                        startIcon={<UploadIcon />}
+                        onClick={() => setOpenUploadDialog(true)}
                         sx={{
-                            background: 'primary.main',
+                            backgroundColor: theme.palette.primary.main,
+                            color: theme.palette.primary.contrastText,
                             fontWeight: 600,
                             '&:hover': {
-                                background: 'primary.dark',
-                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                                backgroundColor: theme.palette.primary.dark,
+                                boxShadow: `0 4px 12px ${theme.palette.action.hover}`
                             }
                         }}
                     >
-                        Add Hard Copy
+                        Upload Hard Copy
                     </Button>
                 )}
             </Box>
@@ -215,15 +273,15 @@ const HardCopiesPage = () => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: 2,
-                    background: 'var(--mui-palette-background-paper)',
+                    backgroundColor: theme.palette.background.paper,
                     borderRadius: 2,
-                    border: '1px dashed var(--mui-palette-divider)'
+                    border: `1px dashed ${theme.palette.divider}`
                 }}>
                     <Box sx={{
                         width: 80,
                         height: 80,
                         borderRadius: '50%',
-                        bgcolor: 'action.hover',
+                        backgroundColor: theme.palette.action.hover,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -231,10 +289,10 @@ const HardCopiesPage = () => {
                     }}>
                         <Typography variant="h2">📄</Typography>
                     </Box>
-                    <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                    <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 600 }}>
                         No hard copies found
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                         Hard copies will appear here once added
                     </Typography>
                 </Box>
@@ -247,15 +305,15 @@ const HardCopiesPage = () => {
                                     height: '100%',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    boxShadow: 4,
+                                    boxShadow: theme.shadows[4],
                                     borderRadius: 3,
                                     transition: 'all 0.3s ease',
-                                    border: '1px solid var(--mui-palette-divider)',
-                                    background: 'var(--mui-palette-background-paper)',
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    backgroundColor: theme.palette.background.paper,
                                     '&:hover': {
                                         transform: 'translateY(-6px)',
-                                        boxShadow: '0 12px 24px rgba(0, 0, 0, 0.15)',
-                                        border: '1px solid var(--mui-palette-primary-main)'
+                                        boxShadow: theme.shadows[12],
+                                        borderColor: theme.palette.primary.main
                                     },
                                     width: '100%',
                                     maxWidth: 300,
@@ -274,7 +332,7 @@ const HardCopiesPage = () => {
                                         alignItems: 'flex-start',
                                         mb: 2
                                     }}>
-                                        <Typography variant="h6" fontWeight="600" noWrap sx={{ color: 'primary.main' }}>
+                                        <Typography variant="h6" fontWeight="600" noWrap sx={{ color: theme.palette.primary.main }}>
                                             {hardCopy.title}
                                         </Typography>
                                     </Box>
@@ -283,7 +341,7 @@ const HardCopiesPage = () => {
                                         <Typography
                                             variant="body2"
                                             sx={{
-                                                color: 'text.secondary',
+                                                color: theme.palette.text.secondary,
                                                 mb: 2,
                                                 overflow: 'hidden',
                                                 textOverflow: 'ellipsis',
@@ -306,8 +364,8 @@ const HardCopiesPage = () => {
                                                 fontSize: '0.75rem',
                                                 height: 24,
                                                 borderRadius: 1.5,
-                                                backgroundColor: 'primary.main',
-                                                color: 'primary.contrastText'
+                                                backgroundColor: theme.palette.primary.main,
+                                                color: theme.palette.primary.contrastText
                                             }}
                                         />
                                     </Box>
@@ -318,14 +376,15 @@ const HardCopiesPage = () => {
                                         alignItems: 'center',
                                         mt: 2,
                                         pt: 1.5,
-                                        borderTop: '1px solid var(--mui-palette-divider)'
+                                        borderTop: `1px solid ${theme.palette.divider}`
                                     }}>
-                                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
                                             Size: {formatFileSize(hardCopy.fileSize)}
                                         </Typography>
-                                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                            By: {hardCopy.uploadedBy?.personalInfo?.fullName ||
-                                                hardCopy.uploadedBy?.username?.substring(0, 10) || 'N/A'}
+                                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                                            By: {hardCopy.uploadedBy ? 
+                                                `${hardCopy.uploadedBy.firstName} ${hardCopy.uploadedBy.lastName}` : 
+                                                'N/A'}
                                         </Typography>
                                     </Box>
                                 </CardContent>
@@ -339,9 +398,9 @@ const HardCopiesPage = () => {
                                         size="small"
                                         onClick={() => handleDownload(hardCopy)}
                                         sx={{
-                                            color: 'success.main',
+                                            color: theme.palette.success.main,
                                             '&:hover': {
-                                                backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                                                backgroundColor: theme.palette.action.hover
                                             }
                                         }}
                                         title="Download"
@@ -349,37 +408,22 @@ const HardCopiesPage = () => {
                                         <DownloadIcon fontSize="small" />
                                     </IconButton>
                                     {canManage && (
-                                        <>
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => handleOpenDialog(hardCopy)}
-                                                sx={{
-                                                    color: 'primary.main',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                                                    }
-                                                }}
-                                                title="Edit"
-                                            >
-                                                <EditIcon fontSize="small" />
-                                            </IconButton>
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => {
-                                                    setSelectedHardCopy(hardCopy);
-                                                    setOpenConfirm(true);
-                                                }}
-                                                sx={{
-                                                    color: 'error.main',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                                                    }
-                                                }}
-                                                title="Delete"
-                                            >
-                                                <DeleteIcon fontSize="small" />
-                                            </IconButton>
-                                        </>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                                setSelectedHardCopy(hardCopy);
+                                                setOpenConfirm(true);
+                                            }}
+                                            sx={{
+                                                color: theme.palette.error.main,
+                                                '&:hover': {
+                                                    backgroundColor: theme.palette.action.hover
+                                                }
+                                            }}
+                                            title="Delete"
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
                                     )}
                                 </CardActions>
                             </Card>
@@ -388,11 +432,13 @@ const HardCopiesPage = () => {
                 </Grid>
             )}
 
-            {/* Add/Edit Dialog */}
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth
+
+
+            {/* Upload Dialog */}
+            <Dialog open={openUploadDialog} onClose={() => setOpenUploadDialog(false)} maxWidth="sm" fullWidth
                 PaperProps={{
                     sx: {
-                        background: 'var(--mui-palette-background-paper)',
+                        backgroundColor: theme.palette.background.paper,
                         borderRadius: 2
                     }
                 }}
@@ -401,13 +447,48 @@ const HardCopiesPage = () => {
                     pb: 1,
                     pt: 2,
                     fontWeight: 600,
-                    color: 'primary.main',
-                    borderBottom: '1px solid var(--mui-palette-divider)'
+                    color: theme.palette.primary.main,
+                    borderBottom: `1px solid ${theme.palette.divider}`
                 }}>
-                    {selectedHardCopy ? 'Edit Hard Copy' : 'Add Hard Copy'}
+                    Upload Hard Copy
                 </DialogTitle>
                 <DialogContent sx={{ pt: 2 }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        <Box sx={{
+                            border: `2px dashed ${theme.palette.divider}`,
+                            borderRadius: 2,
+                            p: 3,
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                                borderColor: theme.palette.primary.main,
+                                backgroundColor: theme.palette.action.hover
+                            }
+                        }}>
+                            <input
+                                type="file"
+                                id="file-upload"
+                                style={{ display: 'none' }}
+                                onChange={handleFileSelect}
+                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                            />
+                            <label htmlFor="file-upload" style={{ cursor: 'pointer', width: '100%', display: 'block' }}>
+                                <UploadIcon sx={{ fontSize: 48, color: theme.palette.primary.main, mb: 1 }} />
+                                <Typography variant="h6" sx={{ color: theme.palette.primary.main, mb: 1 }}>
+                                    {selectedFile ? selectedFile.name : 'Click to select file'}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                    Supported formats: PDF, DOC, DOCX, JPG, PNG, TXT
+                                </Typography>
+                                {selectedFile && (
+                                    <Typography variant="caption" sx={{ color: theme.palette.primary.main, mt: 1, display: 'block' }}>
+                                        Size: {formatFileSize(selectedFile.size)}
+                                    </Typography>
+                                )}
+                            </label>
+                        </Box>
+                        
                         <TextField
                             label="Title"
                             name="title"
@@ -416,26 +497,8 @@ const HardCopiesPage = () => {
                             required
                             fullWidth
                             variant="outlined"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                        borderColor: 'var(--mui-palette-divider)'
-                                    },
-                                    '&:hover fieldset': {
-                                        borderColor: 'primary.main'
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                        borderColor: 'primary.main'
-                                    }
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: 'text.secondary'
-                                },
-                                '& .MuiInputLabel-root.Mui-focused': {
-                                    color: 'primary.main'
-                                }
-                            }}
                         />
+                        
                         <TextField
                             label="Description"
                             name="description"
@@ -445,174 +508,102 @@ const HardCopiesPage = () => {
                             rows={3}
                             fullWidth
                             variant="outlined"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                        borderColor: 'var(--mui-palette-divider)'
-                                    },
-                                    '&:hover fieldset': {
-                                        borderColor: 'primary.main'
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                        borderColor: 'primary.main'
-                                    }
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: 'text.secondary'
-                                },
-                                '& .MuiInputLabel-root.Mui-focused': {
-                                    color: 'primary.main'
-                                }
-                            }}
                         />
-                        <FormControl fullWidth variant="outlined">
-                            <InputLabel sx={{
-                                color: 'text.secondary',
-                                '&.Mui-focused': {
-                                    color: 'primary.main'
-                                }
-                            }}>
-                                Category
-                            </InputLabel>
-                            <Select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                label="Category"
-                                sx={{
-                                    '& .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: 'var(--mui-palette-divider)'
-                                    },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: 'primary.main'
-                                    },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: 'primary.main'
-                                    }
-                                }}
-                            >
-                                {categories.map((cat) => (
-                                    <MenuItem key={cat.value} value={cat.value}>
-                                        {cat.label}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        <TextField
-                            label="Physical Location"
-                            name="location"
-                            value={formData.location}
-                            onChange={handleChange}
-                            fullWidth
-                            variant="outlined"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                        borderColor: 'var(--mui-palette-divider)'
-                                    },
-                                    '&:hover fieldset': {
-                                        borderColor: 'primary.main'
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                        borderColor: 'primary.main'
-                                    }
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: 'text.secondary'
-                                },
-                                '& .MuiInputLabel-root.Mui-focused': {
-                                    color: 'primary.main'
-                                }
-                            }}
-                        />
-                        <TextField
-                            label="File URL"
-                            name="fileUrl"
-                            value={formData.fileUrl}
-                            onChange={handleChange}
-                            fullWidth
-                            variant="outlined"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                        borderColor: 'var(--mui-palette-divider)'
-                                    },
-                                    '&:hover fieldset': {
-                                        borderColor: 'primary.main'
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                        borderColor: 'primary.main'
-                                    }
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: 'text.secondary'
-                                },
-                                '& .MuiInputLabel-root.Mui-focused': {
-                                    color: 'primary.main'
-                                }
-                            }}
-                        />
-                        <TextField
-                            label="File Name"
-                            name="fileName"
-                            value={formData.fileName}
-                            onChange={handleChange}
-                            fullWidth
-                            variant="outlined"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                        borderColor: 'var(--mui-palette-divider)'
-                                    },
-                                    '&:hover fieldset': {
-                                        borderColor: 'primary.main'
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                        borderColor: 'primary.main'
-                                    }
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: 'text.secondary'
-                                },
-                                '& .MuiInputLabel-root.Mui-focused': {
-                                    color: 'primary.main'
-                                }
-                            }}
-                        />
-                        <TextField
-                            label="File Size (bytes)"
-                            name="fileSize"
-                            type="number"
-                            value={formData.fileSize}
-                            onChange={handleChange}
-                            fullWidth
-                            variant="outlined"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                        borderColor: 'var(--mui-palette-divider)'
-                                    },
-                                    '&:hover fieldset': {
-                                        borderColor: 'primary.main'
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                        borderColor: 'primary.main'
-                                    }
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: 'text.secondary'
-                                },
-                                '& .MuiInputLabel-root.Mui-focused': {
-                                    color: 'primary.main'
-                                }
-                            }}
-                        />
+                        
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <FormControl fullWidth variant="outlined">
+                                <InputLabel>Category</InputLabel>
+                                <Select
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={handleChange}
+                                    label="Category"
+                                >
+                                    {categories.map((cat) => (
+                                        <MenuItem key={cat.value} value={cat.value}>
+                                            {cat.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            
+                            {(isHR || isAdmin) && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    {!showAddCategory ? (
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            onClick={() => setShowAddCategory(true)}
+                                            sx={{
+                                                borderColor: theme.palette.primary.main,
+                                                color: theme.palette.primary.main,
+                                                '&:hover': {
+                                                    borderColor: theme.palette.primary.dark,
+                                                    backgroundColor: theme.palette.action.hover
+                                                }
+                                            }}
+                                        >
+                                            Add New Category
+                                        </Button>
+                                    ) : (
+                                        <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
+                                            <TextField
+                                                label="New Category"
+                                                value={newCategory}
+                                                onChange={(e) => setNewCategory(e.target.value)}
+                                                size="small"
+                                                sx={{ flexGrow: 1 }}
+                                                onKeyPress={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        handleAddCategory();
+                                                    }
+                                                }}
+                                            />
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                onClick={handleAddCategory}
+                                                disabled={!newCategory.trim()}
+                                                sx={{
+                                                    backgroundColor: theme.palette.success.main,
+                                                    '&:hover': { backgroundColor: theme.palette.success.dark }
+                                                }}
+                                            >
+                                                Add
+                                            </Button>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                onClick={() => {
+                                                    setShowAddCategory(false);
+                                                    setNewCategory('');
+                                                }}
+                                            >
+                                                Cancel
+                                            </Button>
+                                        </Box>
+                                    )}
+                                </Box>
+                            )}
+                        </Box>
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={handleCloseDialog}>Cancel</Button>
-                    <Button onClick={handleSubmit} variant="contained" sx={{ background: 'primary.main', '&:hover': { background: 'primary.dark' } }}>
-                        {selectedHardCopy ? 'Update' : 'Create'}
+                    <Button onClick={() => setOpenUploadDialog(false)} disabled={uploading}>
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={handleUpload} 
+                        variant="contained" 
+                        disabled={!selectedFile || uploading}
+                        sx={{ 
+                            backgroundColor: theme.palette.primary.main,
+                            color: theme.palette.primary.contrastText,
+                            '&:hover': { backgroundColor: theme.palette.primary.dark },
+                            '&:disabled': { backgroundColor: theme.palette.action.disabled }
+                        }}
+                    >
+                        {uploading ? 'Uploading...' : 'Upload'}
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -18,11 +18,14 @@ import { MODULES } from '../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 
-// Apply license validation to all analytics routes
+// Apply authentication to all routes first
+router.use(protect);
+
+// Apply license validation to all analytics routes (after authentication)
 router.use(requireModuleLicense(MODULES.REPORTING));
 
 // Apply common middleware to all routes
-router.use(protect, hrOrAdmin, canViewReports);
+router.use(hrOrAdmin, canViewReports);
 
 // Route configurations
 const routes = [

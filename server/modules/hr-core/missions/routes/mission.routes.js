@@ -15,33 +15,35 @@ import { MODULES } from '../../../../models/license.model.js';
 
 const router = express.Router();
 
-// Apply license validation to all mission routes
+// Apply authentication to all routes first
+router.use(protect);
+
+// Apply license validation to all mission routes (after authentication)
 router.use(requireModuleLicense(MODULES.LEAVE));
 
 // Get all missions - protected route
-router.get('/', protect, getAllMissions);
+router.get('/', getAllMissions);
 
 // Create mission - with authentication and file upload support
 router.post('/',
-    protect,
     checkActive,
     upload.array('attachments', 5), // Allow up to 5 attachments
     createMission
 );
 
 // Approve mission
-router.post('/:id/approve', protect, approveMission);
+router.post('/:id/approve', approveMission);
 
 // Reject mission
-router.post('/:id/reject', protect, rejectMission);
+router.post('/:id/reject', rejectMission);
 
 // Get mission by ID
-router.get('/:id', protect, getMissionById);
+router.get('/:id', getMissionById);
 
 // Update mission
-router.put('/:id', protect, updateMission);
+router.put('/:id', updateMission);
 
 // Delete mission
-router.delete('/:id', protect, deleteMission);
+router.delete('/:id', deleteMission);
 
 export default router;

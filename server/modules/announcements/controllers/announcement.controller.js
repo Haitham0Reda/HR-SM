@@ -4,17 +4,38 @@ import { createAnnouncementNotifications } from '../../../middleware/index.js';
 
 export const getAllAnnouncements = async (req, res) => {
     try {
+        // Get tenant ID from user or request
+        const tenantId = req.user?.tenantId || req.tenantId;
+        
+        // Base query - filter by tenant through createdBy user's tenant
         let query = {};
+        
+        // If we have tenant ID, filter announcements by users from the same tenant
+        if (tenantId) {
+            // Import User model to get users from same tenant
+            const { default: User } = await import('../../hr-core/users/models/user.model.js');
+            const tenantUsers = await User.find({ tenantId }).select('_id');
+            const tenantUserIds = tenantUsers.map(u => u._id);
+            
+            query.createdBy = { $in: tenantUserIds };
+        }
 
         // If user is not HR or Admin, filter announcements based on their role
         if (req.user.role !== 'hr' && req.user.role !== 'admin') {
-            query = {
+            const roleFilter = {
                 $or: [
                     { targetAudience: 'all' },
                     { targetAudience: 'employees' },
                     { targetAudience: req.user.role }
                 ]
             };
+            
+            // Combine tenant filter with role filter
+            if (query.createdBy) {
+                query = { $and: [{ createdBy: query.createdBy }, roleFilter] };
+            } else {
+                query = roleFilter;
+            }
         }
 
         const announcements = await Announcement.find(query)
@@ -30,6 +51,10 @@ export const getAllAnnouncements = async (req, res) => {
 export const getActiveAnnouncements = async (req, res) => {
     try {
         const now = new Date();
+        
+        // Get tenant ID from user or request
+        const tenantId = req.user?.tenantId || req.tenantId;
+        
         let query = {
             isActive: true,
             $or: [
@@ -44,21 +69,27 @@ export const getActiveAnnouncements = async (req, res) => {
             ]
         };
 
+        // Filter by tenant through createdBy user's tenant
+        if (tenantId) {
+            const { default: User } = await import('../../hr-core/users/models/user.model.js');
+            const tenantUsers = await User.find({ tenantId }).select('_id');
+            const tenantUserIds = tenantUsers.map(u => u._id);
+            
+            query.createdBy = { $in: tenantUserIds };
+        }
+
         // If user is not HR or Admin, filter announcements based on their role
         if (req.user.role !== 'hr' && req.user.role !== 'admin') {
-            query = {
-                ...query,
-                $and: [
-                    query,
-                    {
-                        $or: [
-                            { targetAudience: 'all' },
-                            { targetAudience: 'employees' },
-                            { targetAudience: req.user.role }
-                        ]
-                    }
+            const roleFilter = {
+                $or: [
+                    { targetAudience: 'all' },
+                    { targetAudience: 'employees' },
+                    { targetAudience: req.user.role }
                 ]
             };
+            
+            // Combine existing query with role filter
+            query = { $and: [query, roleFilter] };
         }
 
         const announcements = await Announcement.find(query)

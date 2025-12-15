@@ -1,4 +1,4 @@
-import TenantConfig from '../../modules/hr-core/models/TenantConfig.js';
+import Company from '../../platform/models/Company.js';
 
 // Cache for feature flags to reduce DB queries
 const featureFlagCache = new Map();
@@ -30,18 +30,26 @@ export const requireModule = (moduleName) => {
                 return next();
             }
 
-            // Fetch from database
-            const config = await TenantConfig.findOne({ tenantId });
+            // Fetch company by tenantId (tenantId is the company _id)
+            const company = await Company.findById(tenantId);
 
-            if (!config) {
+            if (!company) {
                 return res.status(500).json({
                     success: false,
-                    message: 'Tenant configuration not found'
+                    message: 'Company not found'
                 });
             }
 
-            const moduleData = config.modules?.get(moduleName);
-            const moduleEnabled = moduleData?.enabled;
+            // Check if company subscription is active
+            if (!company.isSubscriptionActive()) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Subscription expired'
+                });
+            }
+
+            // Check if module is enabled
+            const moduleEnabled = company.isModuleEnabled(moduleName);
 
             // Update cache
             featureFlagCache.set(cacheKey, {

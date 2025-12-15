@@ -9,6 +9,9 @@ import {
     MenuItem,
     Grid,
     useTheme,
+    Tabs,
+    Tab,
+    Paper,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -17,6 +20,8 @@ import {
     CheckCircle,
     Cancel,
     Visibility as ViewIcon,
+    Person as PersonIcon,
+    Group as GroupIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
@@ -39,6 +44,7 @@ const MissionsPage = () => {
     const [loading, setLoading] = useState(true);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedMission, setSelectedMission] = useState(null);
+    const [currentTab, setCurrentTab] = useState(0);
     const [filters, setFilters] = useState({
         status: '',
         sortBy: 'createdAt',
@@ -46,6 +52,10 @@ const MissionsPage = () => {
     });
 
     const canManage = isHR || isAdmin;
+
+    const handleTabChange = (event, newValue) => {
+        setCurrentTab(newValue);
+    };
 
     const statusOptions = [
         { value: '', label: 'All Statuses' },
@@ -89,26 +99,7 @@ const MissionsPage = () => {
             }
 
             console.log('Processed missions array:', missionsArray);
-            console.log('Can manage:', canManage);
-            console.log('Current user:', user);
-
-            // Filter based on role
-            let filteredData;
-            if (canManage) {
-                // Admin/HR see all missions
-                filteredData = missionsArray;
-            } else {
-                // Regular employees see only their own missions
-                filteredData = missionsArray.filter(mission => {
-                    const missionUserId = mission.employee?._id || mission.employee;
-                    const currentUserId = user?._id;
-                    console.log('Comparing:', missionUserId, 'with', currentUserId);
-                    return missionUserId === currentUserId || String(missionUserId) === String(currentUserId);
-                });
-            }
-
-            console.log('Filtered missions:', filteredData);
-            setMissions(filteredData);
+            setMissions(missionsArray);
         } catch (error) {
             console.error('Error fetching missions:', error);
             console.error('Error details:', error.response?.data);
@@ -184,8 +175,26 @@ const MissionsPage = () => {
         return colors[status] || theme.palette.grey[500];
     };
 
+    // Filter data based on current tab
+    const getFilteredData = () => {
+        if (currentTab === 0) {
+            // My Missions - show only current user's missions
+            return missions.filter(mission => {
+                const missionUserId = mission.employee?._id || mission.employee;
+                const currentUserId = user?._id;
+                return missionUserId === currentUserId || String(missionUserId) === String(currentUserId);
+            });
+        } else {
+            // All Users Missions - show all missions (only for HR/Admin)
+            return canManage ? missions : [];
+        }
+    };
+
+    const filteredData = getFilteredData();
+
     const columns = [
-        ...(canManage ? [{
+        // Only show employee column in "All Users" tab (tab 1) and if user can manage
+        ...(currentTab === 1 && canManage ? [{
             id: 'employee',
             label: 'Employee',
             align: 'center',
@@ -394,17 +403,74 @@ const MissionsPage = () => {
                 </Grid>
             </Box>
 
-            <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                    Total missions: {missions.length}
-                </Typography>
-            </Box>
+            {/* Tabs */}
+            <Paper sx={{ mb: 2 }}>
+                <Tabs
+                    value={currentTab}
+                    onChange={handleTabChange}
+                    sx={{
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        '& .MuiTab-root': {
+                            minHeight: 48,
+                            textTransform: 'none',
+                        },
+                    }}
+                >
+                    <Tab
+                        icon={<PersonIcon fontSize="small" />}
+                        iconPosition="start"
+                        label="My Missions"
+                    />
+                    {canManage && (
+                        <Tab
+                            icon={<GroupIcon fontSize="small" />}
+                            iconPosition="start"
+                            label="All Users Missions"
+                        />
+                    )}
+                </Tabs>
+            </Paper>
 
-            <DataTable
-                data={missions}
-                columns={columns}
-                emptyMessage="No missions found. Click 'New Mission' to create one."
-            />
+            {/* Tab Content */}
+            <Box>
+                {currentTab === 0 && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            🎯 My Mission Requests ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No missions found. Click 'New Mission' to create one."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && canManage && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            👥 All Users Mission Requests ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No mission requests found from any employees."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && !canManage && (
+                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="h6" color="error.main">
+                            Access Denied
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            You don't have permission to view all users' mission requests.
+                        </Typography>
+                    </Box>
+                )}
+            </Box>
 
             <ConfirmDialog
                 open={openConfirm}

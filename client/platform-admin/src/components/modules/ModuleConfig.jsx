@@ -136,6 +136,7 @@ const ModuleConfig = ({ open, onClose, tenant, onSuccess }) => {
                             )}
                           </Box>
                         }
+                        primaryTypographyProps={{ component: 'div' }}
                         secondary={
                           <>
                             <Typography variant="body2" color="text.secondary">

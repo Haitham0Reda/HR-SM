@@ -9,6 +9,9 @@ import {
     MenuItem,
     Grid,
     useTheme,
+    Tabs,
+    Tab,
+    Paper,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -17,6 +20,8 @@ import {
     CheckCircle,
     Cancel,
     Visibility as ViewIcon,
+    Person as PersonIcon,
+    Group as GroupIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
@@ -39,6 +44,7 @@ const SickLeavesPage = () => {
     const [loading, setLoading] = useState(true);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedSickLeave, setSelectedSickLeave] = useState(null);
+    const [currentTab, setCurrentTab] = useState(0);
     const [filters, setFilters] = useState({
         status: '',
         workflowStatus: '',
@@ -48,6 +54,10 @@ const SickLeavesPage = () => {
 
     const canManage = isHR || isAdmin;
     const isDoctor = user?.role?.name === 'doctor' || user?.roles?.some(r => r.name === 'doctor');
+
+    const handleTabChange = (event, newValue) => {
+        setCurrentTab(newValue);
+    };
 
     const statusOptions = [
         { value: '', label: 'All Statuses' },
@@ -87,22 +97,7 @@ const SickLeavesPage = () => {
 
             const data = await sickLeaveService.getAll(params);
             const sickLeavesArray = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
-
-            // Filter based on role
-            let filteredData;
-            if (canManage || isDoctor) {
-                // Admin/HR/Doctor see all sick leaves
-                filteredData = sickLeavesArray;
-            } else {
-                // Regular employees see only their own sick leaves
-                filteredData = sickLeavesArray.filter(sickLeave => {
-                    const sickLeaveUserId = sickLeave.employee?._id || sickLeave.employee;
-                    const currentUserId = user?._id;
-                    return sickLeaveUserId === currentUserId || String(sickLeaveUserId) === String(currentUserId);
-                });
-            }
-
-            setSickLeaves(filteredData);
+            setSickLeaves(sickLeavesArray);
         } catch (error) {
 
             showNotification('Failed to fetch sick leaves', 'error');
@@ -225,8 +220,26 @@ const SickLeavesPage = () => {
         return colors[workflowStep] || theme.palette.grey[500];
     };
 
+    // Filter data based on current tab
+    const getFilteredData = () => {
+        if (currentTab === 0) {
+            // My Sick Leaves - show only current user's sick leaves
+            return sickLeaves.filter(sickLeave => {
+                const sickLeaveUserId = sickLeave.employee?._id || sickLeave.employee;
+                const currentUserId = user?._id;
+                return sickLeaveUserId === currentUserId || String(sickLeaveUserId) === String(currentUserId);
+            });
+        } else {
+            // All Users Sick Leaves - show all sick leaves (only for HR/Admin/Doctor)
+            return (canManage || isDoctor) ? sickLeaves : [];
+        }
+    };
+
+    const filteredData = getFilteredData();
+
     const columns = [
-        ...(canManage || isDoctor ? [{
+        // Only show employee column in "All Users" tab (tab 1) and if user can manage or is doctor
+        ...(currentTab === 1 && (canManage || isDoctor) ? [{
             id: 'employee',
             label: 'Employee',
             align: 'center',
@@ -500,11 +513,74 @@ const SickLeavesPage = () => {
                 </Grid>
             </Box>
 
-            <DataTable
-                data={sickLeaves}
-                columns={columns}
-                emptyMessage="No sick leaves found. Click 'New Sick Leave' to create one."
-            />
+            {/* Tabs */}
+            <Paper sx={{ mb: 2 }}>
+                <Tabs
+                    value={currentTab}
+                    onChange={handleTabChange}
+                    sx={{
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        '& .MuiTab-root': {
+                            minHeight: 48,
+                            textTransform: 'none',
+                        },
+                    }}
+                >
+                    <Tab
+                        icon={<PersonIcon fontSize="small" />}
+                        iconPosition="start"
+                        label="My Sick Leaves"
+                    />
+                    {(canManage || isDoctor) && (
+                        <Tab
+                            icon={<GroupIcon fontSize="small" />}
+                            iconPosition="start"
+                            label="All Users Sick Leaves"
+                        />
+                    )}
+                </Tabs>
+            </Paper>
+
+            {/* Tab Content */}
+            <Box>
+                {currentTab === 0 && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            🏥 My Sick Leave Requests ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No sick leaves found. Click 'New Sick Leave' to create one."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && (canManage || isDoctor) && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            👥 All Users Sick Leave Requests ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No sick leave requests found from any employees."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && !(canManage || isDoctor) && (
+                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="h6" color="error.main">
+                            Access Denied
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            You don't have permission to view all users' sick leave requests.
+                        </Typography>
+                    </Box>
+                )}
+            </Box>
 
             <ConfirmDialog
                 open={openConfirm}

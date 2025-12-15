@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const attendanceDeviceSchema = new mongoose.Schema({
+    tenantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tenant',
+        required: true,
+        index: true
+    },
     deviceName: {
         type: String,
         required: true,
@@ -112,9 +118,10 @@ const attendanceDeviceSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-attendanceDeviceSchema.index({ deviceType: 1, status: 1 });
-attendanceDeviceSchema.index({ autoSync: 1, isActive: 1 });
-attendanceDeviceSchema.index({ lastSync: 1 });
+attendanceDeviceSchema.index({ tenantId: 1, deviceType: 1, status: 1 });
+attendanceDeviceSchema.index({ tenantId: 1, autoSync: 1, isActive: 1 });
+attendanceDeviceSchema.index({ tenantId: 1, lastSync: 1 });
+attendanceDeviceSchema.index({ tenantId: 1, deviceName: 1 }, { unique: true }); // Unique device names per tenant
 
 // Instance method to update sync status
 attendanceDeviceSchema.methods.updateSyncStatus = async function (success, recordCount = 0, error = null) {
@@ -135,18 +142,27 @@ attendanceDeviceSchema.methods.updateSyncStatus = async function (success, recor
     return await this.save();
 };
 
-// Static method to get active devices for sync
-attendanceDeviceSchema.statics.getDevicesForSync = function () {
-    return this.find({
+// Static method to get active devices for sync (tenant-aware)
+attendanceDeviceSchema.statics.getDevicesForSync = function (tenantId = null) {
+    const query = {
         isActive: true,
         autoSync: true,
         status: { $ne: 'syncing' }
-    });
+    };
+    
+    if (tenantId) {
+        query.tenantId = tenantId;
+    }
+    
+    return this.find(query);
 };
 
-// Static method to get device statistics
-attendanceDeviceSchema.statics.getDeviceStats = async function () {
+// Static method to get device statistics (tenant-aware)
+attendanceDeviceSchema.statics.getDeviceStats = async function (tenantId = null) {
+    const matchStage = tenantId ? { $match: { tenantId: new mongoose.Types.ObjectId(tenantId) } } : { $match: {} };
+    
     const stats = await this.aggregate([
+        matchStage,
         {
             $group: {
                 _id: '$deviceType',

@@ -35,7 +35,7 @@ import {
     Assessment as ReportIcon,
     Person as PersonIcon,
     TrendingUp as TrendingUpIcon,
-    CloudUpload as CloudUploadIcon,
+
 } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
@@ -44,6 +44,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import attendanceService from '../../services/attendance.service';
 import userService from '../../services/user.service';
+import departmentService from '../../services/department.service';
 import { getHolidayInfo } from '../../utils/holidayChecker';
 
 const AttendancePage = ({ viewMode = 'my' }) => {
@@ -52,6 +53,8 @@ const AttendancePage = ({ viewMode = 'my' }) => {
     const { user, isHR, isAdmin } = useAuth();
     const [attendances, setAttendances] = useState([]);
     const [users, setUsers] = useState([]);
+    const [departments, setDepartments] = useState([]);
+    const [departmentStats, setDepartmentStats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
@@ -85,7 +88,16 @@ const AttendancePage = ({ viewMode = 'my' }) => {
         try {
             setLoading(true);
             console.log('Fetching attendance records...');
-            const response = await attendanceService.getAll();
+            
+            // Build query parameters for filtering
+            const params = {};
+            if (startDate) params.startDate = startDate;
+            if (endDate) params.endDate = endDate;
+            if (filterEmployee) params.employee = filterEmployee;
+            if (filterStatus) params.status = filterStatus;
+            if (filterDepartment) params.department = filterDepartment;
+            
+            const response = await attendanceService.getAll(params);
             console.log('Attendance API response:', response);
 
             // The API interceptor should have already extracted the data
@@ -136,15 +148,35 @@ const AttendancePage = ({ viewMode = 'my' }) => {
         }
     };
 
+    const fetchDepartments = async () => {
+        try {
+            const response = await departmentService.getAll();
+            const departmentsArray = Array.isArray(response) ? response : (response?.data || []);
+            setDepartments(departmentsArray);
+        } catch (error) {
+            console.error('Error fetching departments:', error);
+            setDepartments([]);
+        }
+    };
+
     useEffect(() => {
         if (user) {
             fetchAttendances();
             if (canManage) {
                 fetchUsers();
+                fetchDepartments();
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?._id, canManage]);
+
+    // Refetch attendance when filters change
+    useEffect(() => {
+        if (user) {
+            fetchAttendances();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [startDate, endDate, filterEmployee, filterStatus, filterDepartment]);
 
     const handleOpenDialog = (attendance = null) => {
         if (attendance) {
@@ -980,6 +1012,59 @@ const AttendancePage = ({ viewMode = 'my' }) => {
         workFromHome: filteredAllUsersAttendance.filter(a => a.status === 'work-from-home').length,
     };
 
+    // Calculate department-wise statistics
+    const calculateDepartmentStats = () => {
+        const deptStatsMap = new Map();
+        
+        filteredAllUsersAttendance.forEach(att => {
+            const deptId = att.employee?.department?._id || att.department?._id;
+            const deptName = att.employee?.department?.name || att.department?.name || 'Unassigned';
+            
+            if (!deptStatsMap.has(deptId)) {
+                deptStatsMap.set(deptId, {
+                    departmentId: deptId,
+                    departmentName: deptName,
+                    total: 0,
+                    present: 0,
+                    absent: 0,
+                    late: 0,
+                    workFromHome: 0,
+                    onTime: 0
+                });
+            }
+            
+            const stats = deptStatsMap.get(deptId);
+            stats.total++;
+            
+            switch (att.status) {
+                case 'present':
+                case 'on-time':
+                    stats.present++;
+                    stats.onTime++;
+                    break;
+                case 'late':
+                    stats.present++;
+                    stats.late++;
+                    break;
+                case 'absent':
+                    stats.absent++;
+                    break;
+                case 'work-from-home':
+                    stats.present++;
+                    stats.workFromHome++;
+                    break;
+                default:
+                    if (['present', 'on-time'].includes(att.status)) {
+                        stats.present++;
+                    }
+            }
+        });
+        
+        return Array.from(deptStatsMap.values()).sort((a, b) => a.departmentName.localeCompare(b.departmentName));
+    };
+
+    const departmentStatsData = calculateDepartmentStats();
+
     // HR/Admin view - show management interface
     return (
         <Box sx={{ p: 3 }}>
@@ -987,7 +1072,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                 <Typography variant="h4">
                     Attendance Management
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
@@ -995,13 +1080,38 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                     >
                         Record Attendance
                     </Button>
+
                     <Button
-                        variant="contained"
-                        color="secondary"
-                        startIcon={<CloudUploadIcon />}
-                        onClick={() => navigate(getCompanyRoute('/attendance/import'))}
+                        variant="outlined"
+                        startIcon={<TrendingUpIcon />}
+                        onClick={() => {
+                            // Set today's date range
+                            const today = new Date().toISOString().split('T')[0];
+                            setStartDate(today);
+                            setEndDate(today);
+                            setFilterDepartment('');
+                            setFilterEmployee('');
+                            setFilterStatus('');
+                        }}
                     >
-                        Import Attendance
+                        Today's Attendance
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<ReportIcon />}
+                        onClick={() => {
+                            // Set current month range
+                            const now = new Date();
+                            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                            setStartDate(startOfMonth.toISOString().split('T')[0]);
+                            setEndDate(endOfMonth.toISOString().split('T')[0]);
+                            setFilterDepartment('');
+                            setFilterEmployee('');
+                            setFilterStatus('');
+                        }}
+                    >
+                        Monthly Report
                     </Button>
                 </Box>
             </Box>
@@ -1077,6 +1187,22 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                                     ))}
                                 </TextField>
                             </Grid>
+                            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                                <TextField
+                                    select
+                                    label="Department"
+                                    value={filterDepartment}
+                                    onChange={(e) => setFilterDepartment(e.target.value)}
+                                    fullWidth
+                                >
+                                    <MenuItem value="">All Departments</MenuItem>
+                                    {departments.map((dept) => (
+                                        <MenuItem key={dept._id} value={dept._id}>
+                                            {dept.name} ({dept.code})
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
                         </Grid>
                         <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
                             <Button
@@ -1097,6 +1223,41 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             </Button>
                         </Box>
                     </Paper>
+
+                    {/* Active Filters Summary */}
+                    {(filterDepartment || filterEmployee || filterStatus) && (
+                        <Paper sx={{ p: 2, mb: 3, bgcolor: 'primary.50' }}>
+                            <Typography variant="h6" sx={{ mb: 1 }}>
+                                Active Filters
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                {filterDepartment && (
+                                    <Chip
+                                        label={`Department: ${departments.find(d => d._id === filterDepartment)?.name || 'Unknown'}`}
+                                        onDelete={() => setFilterDepartment('')}
+                                        color="primary"
+                                        variant="outlined"
+                                    />
+                                )}
+                                {filterEmployee && (
+                                    <Chip
+                                        label={`Employee: ${users.find(u => u._id === filterEmployee)?.personalInfo?.fullName || users.find(u => u._id === filterEmployee)?.username || 'Unknown'}`}
+                                        onDelete={() => setFilterEmployee('')}
+                                        color="primary"
+                                        variant="outlined"
+                                    />
+                                )}
+                                {filterStatus && (
+                                    <Chip
+                                        label={`Status: ${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}`}
+                                        onDelete={() => setFilterStatus('')}
+                                        color="primary"
+                                        variant="outlined"
+                                    />
+                                )}
+                            </Box>
+                        </Paper>
+                    )}
 
                     {/* Statistics Cards */}
                     <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -1149,6 +1310,67 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             </Card>
                         </Grid>
                     </Grid>
+
+                    {/* Department Statistics */}
+                    {departmentStatsData.length > 0 && !filterDepartment && (
+                        <Paper sx={{ p: 2, mb: 3 }}>
+                            <Typography variant="h6" sx={{ mb: 2 }}>
+                                Department Breakdown
+                            </Typography>
+                            <Grid container spacing={2}>
+                                {departmentStatsData.map((dept) => (
+                                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dept.departmentId || 'unassigned'}>
+                                        <Card variant="outlined">
+                                            <CardContent>
+                                                <Typography variant="h6" gutterBottom>
+                                                    {dept.departmentName}
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        Total:
+                                                    </Typography>
+                                                    <Typography variant="body2" fontWeight="bold">
+                                                        {dept.total}
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                    <Typography variant="body2" color="success.main">
+                                                        Present:
+                                                    </Typography>
+                                                    <Typography variant="body2" color="success.main" fontWeight="bold">
+                                                        {dept.present}
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                    <Typography variant="body2" color="error.main">
+                                                        Absent:
+                                                    </Typography>
+                                                    <Typography variant="body2" color="error.main" fontWeight="bold">
+                                                        {dept.absent}
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                    <Typography variant="body2" color="warning.main">
+                                                        Late:
+                                                    </Typography>
+                                                    <Typography variant="body2" color="warning.main" fontWeight="bold">
+                                                        {dept.late}
+                                                    </Typography>
+                                                </Box>
+                                                {dept.total > 0 && (
+                                                    <Box sx={{ mt: 2, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            Attendance Rate: {Math.round((dept.present / dept.total) * 100)}%
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        </Paper>
+                    )}
 
                     {/* Attendance Table */}
                     <Paper sx={{ p: 2 }}>

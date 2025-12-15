@@ -347,7 +347,7 @@ const Dashboard = () => {
                             <Zoom in={true} timeout={800}>
                                 <Avatar
                                     src={getUserProfilePicture(user)}
-                                    alt={user?.personalInfo?.fullName || user?.name || user?.username}
+                                    alt={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User'}
                                     sx={{
                                         width: 72,
                                         height: 72,
@@ -367,7 +367,7 @@ const Dashboard = () => {
                                     Employee Dashboard
                                 </Typography>
                                 <Typography variant="body2" sx={{ opacity: 0.95 }}>
-                                    Welcome back, {user?.personalInfo?.fullName || user?.name || user?.username}
+                                    Welcome back, {`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email?.split('@')[0] || 'User'}
                                 </Typography>
                             </Box>
                             <Box sx={{
@@ -470,9 +470,9 @@ const Dashboard = () => {
                                     <Zoom in={true} timeout={1000}>
                                         <Avatar
                                             src={getUserProfilePicture(employeeOfMonth.selectedEmployee)}
-                                            alt={employeeOfMonth.selectedEmployee.personalInfo?.fullName || 
-                                                 employeeOfMonth.selectedEmployee.name ||
-                                                 employeeOfMonth.selectedEmployee.username}
+                                            alt={`${employeeOfMonth.selectedEmployee?.firstName || ''} ${employeeOfMonth.selectedEmployee?.lastName || ''}`.trim() || 
+                                                 employeeOfMonth.selectedEmployee?.email ||
+                                                 'Employee'}
                                             sx={{
                                                 width: 80,
                                                 height: 80,
@@ -505,7 +505,7 @@ const Dashboard = () => {
                                             </Typography>
                                         </Box>
                                         <Typography variant="h5" fontWeight="700" sx={{ mb: 0.5 }}>
-                                            {employeeOfMonth.selectedEmployee.personalInfo?.fullName || employeeOfMonth.selectedEmployee.username}
+                                            {`${employeeOfMonth.selectedEmployee?.firstName || ''} ${employeeOfMonth.selectedEmployee?.lastName || ''}`.trim() || employeeOfMonth.selectedEmployee?.email || 'Employee'}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
                                             {employeeOfMonth?.month || new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}

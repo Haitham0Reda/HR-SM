@@ -52,10 +52,14 @@ export const dashboardRoutes = dashboardRoutesImport;
 // Import real payroll routes
 import payrollRoutesImport from '../modules/payroll/routes/payroll.routes.js';
 
+// Import real document routes
+import documentRoutesImport from '../modules/documents/routes/document.routes.js';
+import documentTemplateRoutesImport from '../modules/documents/routes/documentTemplate.routes.js';
+
 // Legacy routes that don't exist yet - use placeholder routers
 export const featureFlagRoutes = createPlaceholderRouter('Feature Flag');
-export const documentRoutes = createPlaceholderRouter('Document');
-export const documentTemplateRoutes = createPlaceholderRouter('Document Template');
+export const documentRoutes = documentRoutesImport;
+export const documentTemplateRoutes = documentTemplateRoutesImport;
 export const eventRoutes = createPlaceholderRouter('Event');
 export const payrollRoutes = payrollRoutesImport; // Use real payroll routes
 export const reportRoutes = createPlaceholderRouter('Report');
@@ -72,7 +76,9 @@ import resignedEmployeeRoutesImport from '../modules/hr-core/users/routes/resign
 // Legacy routes that don't exist yet - use placeholder routers
 export const analyticsRoutes = createPlaceholderRouter('Analytics');
 export const announcementRoutes = createPlaceholderRouter('Announcement');
-export const hardcopyRoutes = createPlaceholderRouter('Hardcopy');
+// Import hardcopy routes
+import hardcopyRoutesImport from '../modules/documents/routes/hardcopy.routes.js';
+export const hardcopyRoutes = hardcopyRoutesImport;
 export const holidayRoutes = createPlaceholderRouter('Holiday');
 export const missionRoutes = createPlaceholderRouter('Mission');
 export const mixedVacationRoutes = createPlaceholderRouter('Mixed Vacation');

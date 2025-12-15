@@ -335,8 +335,13 @@ class AttendanceDeviceService {
      * @param {String} deviceId - Device ID
      * @returns {Promise<Object>} Sync result
      */
-    async syncDevice(deviceId) {
-        const device = await AttendanceDevice.findById(deviceId);
+    async syncDevice(deviceId, tenantId = null) {
+        const query = { _id: deviceId };
+        if (tenantId) {
+            query.tenantId = tenantId;
+        }
+        
+        const device = await AttendanceDevice.findOne(query);
         
         if (!device) {
             throw new Error('Device not found');
@@ -411,8 +416,13 @@ class AttendanceDeviceService {
      * @param {String} deviceId - Device ID
      * @returns {Promise<Object>} Connection test result
      */
-    async testConnection(deviceId) {
-        const device = await AttendanceDevice.findById(deviceId);
+    async testConnection(deviceId, tenantId = null) {
+        const query = { _id: deviceId };
+        if (tenantId) {
+            query.tenantId = tenantId;
+        }
+        
+        const device = await AttendanceDevice.findOne(query);
         
         if (!device) {
             throw new Error('Device not found');

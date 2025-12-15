@@ -11,6 +11,7 @@ export const moduleRegistry = {
             roles: () => import('../modules/hr-core/users/routes/role.routes.js'),
             tenant: () => import('../modules/hr-core/routes/tenantRoutes.js'),
             attendance: () => import('../modules/hr-core/attendance/routes.js'),
+            'attendance-devices': () => import('../modules/hr-core/attendance/attendanceDevice.routes.js'),
             holidays: () => import('../modules/hr-core/holidays/routes.js'),
             missions: () => import('../modules/hr-core/missions/routes.js'),
             overtime: () => import('../modules/hr-core/overtime/routes.js'),
@@ -28,6 +29,34 @@ export const moduleRegistry = {
         routes: {
             'tasks': () => import('../modules/tasks/routes/taskRoutes.js'),
             'task-reports': () => import('../modules/tasks/routes/taskReportRoutes.js')
+        },
+        basePath: '/api/v1'
+    },
+    [MODULES.DOCUMENTS]: {
+        routes: {
+            'documents': () => import('../modules/documents/routes/document.routes.js'),
+            'document-templates': () => import('../modules/documents/routes/documentTemplate.routes.js'),
+            'hardcopies': () => import('../modules/documents/routes/hardcopy.routes.js')
+        },
+        basePath: '/api/v1'
+    },
+    [MODULES.COMMUNICATION]: {
+        routes: {
+            'announcements': () => import('../modules/announcements/routes/announcement.routes.js'),
+            'notifications': () => import('../modules/notifications/routes/notification.routes.js')
+        },
+        basePath: '/api/v1'
+    },
+    [MODULES.REPORTING]: {
+        routes: {
+            'reports': () => import('../modules/reports/routes/report.routes.js'),
+            'analytics': () => import('../modules/analytics/routes/analytics.routes.js')
+        },
+        basePath: '/api/v1'
+    },
+    [MODULES.PAYROLL]: {
+        routes: {
+            'payroll': () => import('../modules/payroll/routes/payroll.routes.js')
         },
         basePath: '/api/v1'
     }

@@ -9,6 +9,9 @@ import {
     MenuItem,
     Grid,
     useTheme,
+    Tabs,
+    Tab,
+    Paper,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -17,6 +20,8 @@ import {
     CheckCircle,
     Cancel,
     Visibility as ViewIcon,
+    Person as PersonIcon,
+    Group as GroupIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
@@ -39,6 +44,7 @@ const PermissionsPage = () => {
     const [loading, setLoading] = useState(true);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedPermission, setSelectedPermission] = useState(null);
+    const [currentTab, setCurrentTab] = useState(0);
     const [filters, setFilters] = useState({
         status: '',
         permissionType: '',
@@ -47,6 +53,10 @@ const PermissionsPage = () => {
     });
 
     const canManage = isHR || isAdmin;
+
+    const handleTabChange = (event, newValue) => {
+        setCurrentTab(newValue);
+    };
 
     const statusOptions = [
         { value: '', label: 'All Statuses' },
@@ -84,20 +94,7 @@ const PermissionsPage = () => {
 
             // Handle response format
             const permissionsArray = response?.data || [];
-
-            // Filter based on role
-            let filteredData;
-            if (canManage) {
-                filteredData = permissionsArray;
-            } else {
-                filteredData = permissionsArray.filter(permission => {
-                    const permissionUserId = permission.employee?._id || permission.employee;
-                    const currentUserId = user?._id;
-                    return permissionUserId === currentUserId || String(permissionUserId) === String(currentUserId);
-                });
-            }
-
-            setPermissions(filteredData);
+            setPermissions(permissionsArray);
         } catch (error) {
             console.error('Error fetching permissions:', error);
             showNotification('Failed to fetch permissions', 'error');
@@ -179,8 +176,26 @@ const PermissionsPage = () => {
         return labels[type] || type;
     };
 
+    // Filter data based on current tab
+    const getFilteredData = () => {
+        if (currentTab === 0) {
+            // My Permissions - show only current user's permissions
+            return permissions.filter(permission => {
+                const permissionUserId = permission.employee?._id || permission.employee;
+                const currentUserId = user?._id;
+                return permissionUserId === currentUserId || String(permissionUserId) === String(currentUserId);
+            });
+        } else {
+            // All Users Permissions - show all permissions (only for HR/Admin)
+            return canManage ? permissions : [];
+        }
+    };
+
+    const filteredData = getFilteredData();
+
     const columns = [
-        ...(canManage ? [{
+        // Only show employee column in "All Users" tab (tab 1) and if user can manage
+        ...(currentTab === 1 && canManage ? [{
             id: 'employee',
             label: 'Employee',
             align: 'center',
@@ -430,11 +445,74 @@ const PermissionsPage = () => {
                 </Grid>
             </Box>
 
-            <DataTable
-                data={permissions}
-                columns={columns}
-                emptyMessage="No permissions found. Click 'New Permission' to create one."
-            />
+            {/* Tabs */}
+            <Paper sx={{ mb: 2 }}>
+                <Tabs
+                    value={currentTab}
+                    onChange={handleTabChange}
+                    sx={{
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        '& .MuiTab-root': {
+                            minHeight: 48,
+                            textTransform: 'none',
+                        },
+                    }}
+                >
+                    <Tab
+                        icon={<PersonIcon fontSize="small" />}
+                        iconPosition="start"
+                        label="My Permissions"
+                    />
+                    {canManage && (
+                        <Tab
+                            icon={<GroupIcon fontSize="small" />}
+                            iconPosition="start"
+                            label="All Users Permissions"
+                        />
+                    )}
+                </Tabs>
+            </Paper>
+
+            {/* Tab Content */}
+            <Box>
+                {currentTab === 0 && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            🔐 My Permission Requests ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No permissions found. Click 'New Permission' to create one."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && canManage && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            👥 All Users Permission Requests ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No permission requests found from any employees."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && !canManage && (
+                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="h6" color="error.main">
+                            Access Denied
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            You don't have permission to view all users' permission requests.
+                        </Typography>
+                    </Box>
+                )}
+            </Box>
 
             <ConfirmDialog
                 open={openConfirm}

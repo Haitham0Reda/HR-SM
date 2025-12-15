@@ -90,13 +90,17 @@ const AttendanceDashboard = () => {
         <PageContainer title="Attendance Dashboard">
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h5" gutterBottom>
-                    Today's Attendance - {new Date().toLocaleDateString()}
+                    Today's Attendance - {new Date().toLocaleDateString('en-GB', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                    })}
                 </Typography>
             </Box>
 
             {/* Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                     <Card>
                         <CardContent>
                             <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -112,7 +116,7 @@ const AttendanceDashboard = () => {
                     </Card>
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                     <Card>
                         <CardContent>
                             <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -130,7 +134,7 @@ const AttendanceDashboard = () => {
                     </Card>
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                     <Card>
                         <CardContent>
                             <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -148,7 +152,7 @@ const AttendanceDashboard = () => {
                     </Card>
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                     <Card>
                         <CardContent>
                             <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -166,7 +170,7 @@ const AttendanceDashboard = () => {
                     </Card>
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                     <Card>
                         <CardContent>
                             <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -184,7 +188,7 @@ const AttendanceDashboard = () => {
                     </Card>
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                     <Card>
                         <CardContent>
                             <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -228,8 +232,8 @@ const AttendanceDashboard = () => {
                                         <TableRow key={record._id}>
                                             <TableCell>{record.employee?.employeeId}</TableCell>
                                             <TableCell>
-                                                {record.employee?.personalInfo?.firstName}{' '}
-                                                {record.employee?.personalInfo?.lastName}
+                                                {record.employee?.firstName}{' '}
+                                                {record.employee?.lastName}
                                             </TableCell>
                                             <TableCell>{record.department?.name || '-'}</TableCell>
                                             <TableCell>{formatTime(record.checkIn?.time)}</TableCell>

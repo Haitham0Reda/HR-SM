@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import {
     Box,
     Button,
@@ -20,12 +22,15 @@ import {
 } from '@mui/material';
 import {
     CloudUpload as CloudUploadIcon,
-    CheckCircle as CheckCircleIcon
+    CheckCircle as CheckCircleIcon,
+    ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import attendanceDeviceService from '../../services/attendanceDevice.service';
 import PageContainer from '../../components/PageContainer';
 
 const AttendanceImport = () => {
+    const navigate = useNavigate();
+    const { getCompanyRoute } = useCompanyRouting();
     const [activeStep, setActiveStep] = useState(0);
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewData, setPreviewData] = useState([]);
@@ -103,6 +108,24 @@ const AttendanceImport = () => {
     return (
         <PageContainer title="Import Attendance">
             <Box sx={{ mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<ArrowBackIcon />}
+                        onClick={() => navigate(getCompanyRoute('/attendance'))}
+                        sx={{ 
+                            minWidth: 'auto',
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            px: 3,
+                            py: 1
+                        }}
+                    >
+                        Back to Attendance
+                    </Button>
+                </Box>
                 <Typography variant="h5" gutterBottom>
                     Import Attendance from CSV
                 </Typography>
@@ -161,7 +184,15 @@ const AttendanceImport = () => {
                                 CSV Format Example:
                             </Typography>
                             <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                                <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace' }}>
+                                <Typography 
+                                    variant="body2" 
+                                    component="pre" 
+                                    sx={{ 
+                                        fontFamily: 'monospace',
+                                        color: 'primary.main',
+                                        fontWeight: 500
+                                    }}
+                                >
                                     {`employeeId,date,timestamp,type
 EMP001,2024-01-15,2024-01-15 09:00:00,checkin
 EMP001,2024-01-15,2024-01-15 17:30:00,checkout
