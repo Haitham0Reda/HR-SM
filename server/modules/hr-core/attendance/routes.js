@@ -7,6 +7,7 @@ import {
     deleteAttendance,
     getTodayAttendance,
     getMonthlyAttendance,
+    getAttendanceByDepartment,
     manualCheckIn,
     manualCheckOut
 } from './controllers/attendance.controller.js';
@@ -36,6 +37,9 @@ router.get('/today', requireAuth, requireModuleLicense(MODULES.HR_CORE), getToda
 
 // Get monthly attendance
 router.get('/monthly', requireAuth, requireModuleLicense(MODULES.HR_CORE), getMonthlyAttendance);
+
+// Get attendance statistics by department
+router.get('/departments', requireAuth, requireModuleLicense(MODULES.HR_CORE), getAttendanceByDepartment);
 
 // Manual check-in/check-out
 router.post('/manual/checkin', requireAuth, requireModuleLicense(MODULES.HR_CORE), requireRole(ROLES.ADMIN, ROLES.HR), manualCheckIn);

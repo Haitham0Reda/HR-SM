@@ -94,13 +94,17 @@ const TaskDetail = () => {
                     <div>
                         <span className="font-medium text-gray-600">Assigned To:</span>
                         <span className="ml-2">
-                            {task.assignedTo?.firstName} {task.assignedTo?.lastName}
+                            {task.assignedTo?.personalInfo?.fullName || 
+                             `${task.assignedTo?.personalInfo?.firstName || ''} ${task.assignedTo?.personalInfo?.lastName || ''}`.trim() ||
+                             task.assignedTo?.username || 'Unknown User'}
                         </span>
                     </div>
                     <div>
                         <span className="font-medium text-gray-600">Assigned By:</span>
                         <span className="ml-2">
-                            {task.assignedBy?.firstName} {task.assignedBy?.lastName}
+                            {task.assignedBy?.personalInfo?.fullName || 
+                             `${task.assignedBy?.personalInfo?.firstName || ''} ${task.assignedBy?.personalInfo?.lastName || ''}`.trim() ||
+                             task.assignedBy?.username || 'Unknown User'}
                         </span>
                     </div>
                 </div>

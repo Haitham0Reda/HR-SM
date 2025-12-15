@@ -4,11 +4,11 @@ import logger from '../../../../utils/logger.js';
 import xlsx from 'xlsx';
 
 /**
- * Get all attendance devices
+ * Get all attendance devices (tenant-aware)
  */
 export const getAllDevices = async (req, res) => {
     try {
-        const devices = await AttendanceDevice.find()
+        const devices = await AttendanceDevice.find({ tenantId: req.tenantId })
             .populate('departments', 'name code')
             .populate('createdBy', 'username employeeId')
             .sort({ createdAt: -1 });
@@ -28,11 +28,14 @@ export const getAllDevices = async (req, res) => {
 };
 
 /**
- * Get device by ID
+ * Get device by ID (tenant-aware)
  */
 export const getDeviceById = async (req, res) => {
     try {
-        const device = await AttendanceDevice.findById(req.params.id)
+        const device = await AttendanceDevice.findOne({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        })
             .populate('departments', 'name code')
             .populate('createdBy', 'username employeeId');
         
@@ -57,12 +60,13 @@ export const getDeviceById = async (req, res) => {
 };
 
 /**
- * Register new attendance device
+ * Register new attendance device (tenant-aware)
  */
 export const registerDevice = async (req, res) => {
     try {
         const deviceData = {
             ...req.body,
+            tenantId: req.tenantId,
             createdBy: req.user._id
         };
         
@@ -72,7 +76,7 @@ export const registerDevice = async (req, res) => {
         await device.populate('departments', 'name code');
         await device.populate('createdBy', 'username employeeId');
         
-        logger.info(`New device registered: ${device.deviceName} by user ${req.user.username}`);
+        logger.info(`New device registered: ${device.deviceName} by user ${req.user.username} for tenant ${req.tenantId}`);
         
         res.status(201).json({
             success: true,
@@ -89,12 +93,12 @@ export const registerDevice = async (req, res) => {
 };
 
 /**
- * Update device
+ * Update device (tenant-aware)
  */
 export const updateDevice = async (req, res) => {
     try {
-        const device = await AttendanceDevice.findByIdAndUpdate(
-            req.params.id,
+        const device = await AttendanceDevice.findOneAndUpdate(
+            { _id: req.params.id, tenantId: req.tenantId },
             req.body,
             { new: true, runValidators: true }
         )
@@ -108,7 +112,7 @@ export const updateDevice = async (req, res) => {
             });
         }
         
-        logger.info(`Device updated: ${device.deviceName} by user ${req.user.username}`);
+        logger.info(`Device updated: ${device.deviceName} by user ${req.user.username} for tenant ${req.tenantId}`);
         
         res.json({
             success: true,
@@ -125,11 +129,14 @@ export const updateDevice = async (req, res) => {
 };
 
 /**
- * Delete device
+ * Delete device (tenant-aware)
  */
 export const deleteDevice = async (req, res) => {
     try {
-        const device = await AttendanceDevice.findByIdAndDelete(req.params.id);
+        const device = await AttendanceDevice.findOneAndDelete({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        });
         
         if (!device) {
             return res.status(404).json({
@@ -138,7 +145,7 @@ export const deleteDevice = async (req, res) => {
             });
         }
         
-        logger.info(`Device deleted: ${device.deviceName} by user ${req.user.username}`);
+        logger.info(`Device deleted: ${device.deviceName} by user ${req.user.username} for tenant ${req.tenantId}`);
         
         res.json({
             success: true,
@@ -158,7 +165,7 @@ export const deleteDevice = async (req, res) => {
  */
 export const testConnection = async (req, res) => {
     try {
-        const result = await attendanceDeviceService.testConnection(req.params.id);
+        const result = await attendanceDeviceService.testConnection(req.params.id, req.tenantId);
         
         res.json({
             success: result.success,
@@ -179,7 +186,7 @@ export const testConnection = async (req, res) => {
  */
 export const syncDevice = async (req, res) => {
     try {
-        const result = await attendanceDeviceService.syncDevice(req.params.id);
+        const result = await attendanceDeviceService.syncDevice(req.params.id, req.tenantId);
         
         logger.info(`Device sync completed: ${result.device}, processed: ${result.processed}, errors: ${result.errors}`);
         
@@ -198,17 +205,17 @@ export const syncDevice = async (req, res) => {
 };
 
 /**
- * Sync all active devices
+ * Sync all active devices (tenant-aware)
  */
 export const syncAllDevices = async (req, res) => {
     try {
-        const devices = await AttendanceDevice.getDevicesForSync();
+        const devices = await AttendanceDevice.getDevicesForSync(req.tenantId);
         
         const results = [];
         
         for (const device of devices) {
             try {
-                const result = await attendanceDeviceService.syncDevice(device._id);
+                const result = await attendanceDeviceService.syncDevice(device._id, req.tenantId);
                 results.push(result);
             } catch (error) {
                 logger.error(`Error syncing device ${device.deviceName}:`, error);
@@ -239,11 +246,11 @@ export const syncAllDevices = async (req, res) => {
 };
 
 /**
- * Get device statistics
+ * Get device statistics (tenant-aware)
  */
 export const getDeviceStats = async (req, res) => {
     try {
-        const stats = await AttendanceDevice.getDeviceStats();
+        const stats = await AttendanceDevice.getDeviceStats(req.tenantId);
         
         res.json({
             success: true,
@@ -260,10 +267,11 @@ export const getDeviceStats = async (req, res) => {
 
 /**
  * Receive pushed logs from biometric device
+ * Note: This endpoint is public but validates device ownership
  */
 export const receivePushedLogs = async (req, res) => {
     try {
-        const { deviceId, logs } = req.body;
+        const { deviceId, logs, tenantId } = req.body;
         
         if (!deviceId || !logs || !Array.isArray(logs)) {
             return res.status(400).json({
@@ -272,7 +280,13 @@ export const receivePushedLogs = async (req, res) => {
             });
         }
         
-        const device = await AttendanceDevice.findById(deviceId);
+        // Find device with tenant validation
+        const query = { _id: deviceId };
+        if (tenantId) {
+            query.tenantId = tenantId;
+        }
+        
+        const device = await AttendanceDevice.findOne(query);
         
         if (!device) {
             return res.status(404).json({
@@ -290,7 +304,7 @@ export const receivePushedLogs = async (req, res) => {
             result.errors > 0 ? `${result.errors} errors occurred` : null
         );
         
-        logger.info(`Received ${logs.length} pushed logs from device ${device.deviceName}`);
+        logger.info(`Received ${logs.length} pushed logs from device ${device.deviceName} for tenant ${device.tenantId}`);
         
         res.json({
             success: true,

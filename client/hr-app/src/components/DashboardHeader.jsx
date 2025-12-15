@@ -107,10 +107,14 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     // Define fetchNotifications before useEffect that uses it
     const fetchNotifications = React.useCallback(async () => {
         try {
+            console.log('🔔 Fetching notifications...');
             // Fetch notifications from the notification API
             const notificationData = await notificationService.getAll();
+            console.log('📡 Notification response:', notificationData);
 
             const notifications = Array.isArray(notificationData) ? notificationData : (notificationData.data || []);
+            console.log('📊 Processed notifications:', notifications);
+            console.log('📈 Notifications length:', notifications.length);
 
             // Filter to show only unread notifications and sort by date
             const unreadNotifications = notifications
@@ -118,8 +122,15 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .slice(0, 10);
 
+            console.log('🔔 Unread notifications:', unreadNotifications);
             setNotifications(unreadNotifications);
         } catch (error) {
+            console.error('❌ Error fetching notifications:', error);
+            console.error('📋 Error details:', {
+                message: error.message,
+                status: error.status,
+                data: error.data
+            });
 
             // Fallback to empty array if API fails
             setNotifications([]);
@@ -321,7 +332,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                             >
                                 <Avatar
                                     src={getUserProfilePicture(user)}
-                                    alt={user?.personalInfo?.fullName || user?.name || user?.username || 'User'}
+                                    alt={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User'}
                                     sx={{
                                         width: 36,
                                         height: 36,
@@ -355,7 +366,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                     color: 'text.primary',
                                 }}
                             >
-                                {user?.personalInfo?.firstName || user?.profile?.firstName || user?.name?.split(' ')[0] || user?.username || 'User'}
+                                {user?.firstName || user?.email?.split('@')[0] || 'User'}
                             </Typography>
                             <Chip
                                 label={user?.role?.toUpperCase() || 'EMPLOYEE'}
@@ -410,7 +421,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             >
                 <Box sx={{ px: 2.5, py: 2 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        {user?.personalInfo?.fullName || user?.name || user?.username || 'User'}
+                        {`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
                         {user?.email || ''}

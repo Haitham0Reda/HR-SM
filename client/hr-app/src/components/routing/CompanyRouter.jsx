@@ -16,6 +16,8 @@ import EditUserPage from '../../pages/users/EditUserPage';
 import DepartmentsPage from '../../pages/departments/DepartmentsPage';
 import PositionsPage from '../../pages/positions/PositionsPage';
 import AttendanceManagementPage from '../../pages/attendance/AttendanceManagementPage';
+import AttendanceImport from '../../pages/attendance/AttendanceImport';
+import DeviceManagement from '../../pages/attendance/DeviceManagement';
 import MissionsPage from '../../pages/missions/MissionsPage';
 import MissionForm from '../../pages/missions/MissionForm';
 import MissionDetails from '../../pages/missions/MissionDetails';
@@ -78,6 +80,12 @@ import ProfilePage from '../../pages/profile/ProfilePage';
 import SettingsPage from '../../pages/settings/SettingsPage';
 import UserActivityTracker from '../../pages/admin/UserActivityTracker';
 import AuthDebug from '../../pages/debug/AuthDebug';
+import APIDebugger from '../debug/APIDebugger';
+import AnnouncementDebugger from '../debug/AnnouncementDebugger';
+import SimpleAnnouncementTest from '../debug/SimpleAnnouncementTest';
+import AuthTokenTest from '../debug/AuthTokenTest';
+import DirectAPITest from '../debug/DirectAPITest';
+import ComprehensiveAnnouncementDebug from '../debug/ComprehensiveAnnouncementDebug';
 
 /**
  * Company-scoped router component
@@ -142,6 +150,8 @@ const CompanyRouter = () => {
 
                 {/* HR Operations */}
                 <Route path="attendance" element={<AttendanceManagementPage />} />
+                <Route path="attendance/import" element={<PrivateRoute requiredRole="hr"><AttendanceImport /></PrivateRoute>} />
+                <Route path="attendance/devices" element={<PrivateRoute requiredRole="hr"><DeviceManagement /></PrivateRoute>} />
                 <Route path="missions" element={<MissionsPage />} />
                 <Route path="missions/create" element={<MissionForm />} />
                 <Route path="missions/:id" element={<MissionDetails />} />
@@ -220,8 +230,14 @@ const CompanyRouter = () => {
                 <Route path="system-settings/mixed-vacation" element={<MixedVacationPage />} />
                 <Route path="system-settings/employee-of-month" element={<EmployeeOfMonthPage />} />
                 
-                {/* Debug route */}
+                {/* Debug routes */}
                 <Route path="debug" element={<AuthDebug />} />
+                <Route path="debug/api" element={<APIDebugger />} />
+                <Route path="debug/announcements" element={<AnnouncementDebugger />} />
+                <Route path="debug/simple-announcements" element={<SimpleAnnouncementTest />} />
+                <Route path="debug/auth-token" element={<AuthTokenTest />} />
+                <Route path="debug/direct-api" element={<DirectAPITest />} />
+                <Route path="debug/comprehensive" element={<ComprehensiveAnnouncementDebug />} />
             </Route>
         </Routes>
     );

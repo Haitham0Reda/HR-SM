@@ -42,7 +42,7 @@ const TaskForm = ({ open, onClose, onSubmit, task }) => {
                     title: task.title || '',
                     description: task.description || '',
                     priority: task.priority || 'medium',
-                    assignee: task.assignee?._id || '',
+                    assignee: task.assignedTo?._id || '',
                     startDate: task.startDate ? new Date(task.startDate) : new Date(),
                     dueDate: task.dueDate ? new Date(task.dueDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
                 });
@@ -152,7 +152,10 @@ const TaskForm = ({ open, onClose, onSubmit, task }) => {
             }
 
             await onSubmit({
-                ...formData,
+                title: formData.title,
+                description: formData.description,
+                priority: formData.priority,
+                assignedTo: formData.assignee,  // Map assignee to assignedTo
                 startDate: formData.startDate.toISOString(),
                 dueDate: formData.dueDate.toISOString()
             });

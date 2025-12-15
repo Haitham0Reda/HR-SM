@@ -136,8 +136,8 @@ const TaskDetailsPage = () => {
         );
     }
 
-    const isAssignee = task.assignee._id === user._id;
-    const isAssigner = task.assigner._id === user._id;
+    const isAssignee = task.assignedTo?._id === user._id;
+    const isAssigner = task.assignedBy?._id === user._id;
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -188,7 +188,9 @@ const TaskDetailsPage = () => {
                                     <Typography variant="subtitle2">Assignee:</Typography>
                                 </Box>
                                 <Typography variant="body2">
-                                    {task.assignee.personalInfo?.fullName || task.assignee.username}
+                                    {task.assignedTo?.personalInfo?.fullName || 
+                                     `${task.assignedTo?.personalInfo?.firstName || ''} ${task.assignedTo?.personalInfo?.lastName || ''}`.trim() ||
+                                     task.assignedTo?.username || 'Unknown User'}
                                 </Typography>
                             </Grid>
 
@@ -198,7 +200,9 @@ const TaskDetailsPage = () => {
                                     <Typography variant="subtitle2">Assigner:</Typography>
                                 </Box>
                                 <Typography variant="body2">
-                                    {task.assigner.personalInfo?.fullName || task.assigner.username}
+                                    {task.assignedBy?.personalInfo?.fullName || 
+                                     `${task.assignedBy?.personalInfo?.firstName || ''} ${task.assignedBy?.personalInfo?.lastName || ''}`.trim() ||
+                                     task.assignedBy?.username || 'Unknown User'}
                                 </Typography>
                             </Grid>
 

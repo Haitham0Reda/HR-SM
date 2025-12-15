@@ -8,6 +8,9 @@ import {
     TextField,
     MenuItem,
     Grid,
+    Tabs,
+    Tab,
+    Paper,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -16,6 +19,8 @@ import {
     CheckCircle,
     Cancel,
     Visibility as ViewIcon,
+    Person as PersonIcon,
+    Group as GroupIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
@@ -37,6 +42,7 @@ const VacationRequestsPage = () => {
     const [loading, setLoading] = useState(true);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedVacation, setSelectedVacation] = useState(null);
+    const [currentTab, setCurrentTab] = useState(0);
     const [filters, setFilters] = useState({
         status: '',
         vacationType: '',
@@ -45,6 +51,10 @@ const VacationRequestsPage = () => {
     });
 
     const canManage = isHR || isAdmin;
+
+    const handleTabChange = (event, newValue) => {
+        setCurrentTab(newValue);
+    };
 
     const statusOptions = [
         { value: '', label: 'All Statuses' },
@@ -85,22 +95,7 @@ const VacationRequestsPage = () => {
             const response = await vacationService.getAll(params);
             console.log('🏖️ VacationRequestsPage Debug:', response);
             const vacationsArray = response?.data || [];
-
-            // Filter based on role
-            let filteredData;
-            if (canManage) {
-                // Admin/HR see all vacations
-                filteredData = vacationsArray;
-            } else {
-                // Regular employees see only their own vacations
-                filteredData = vacationsArray.filter(vacation => {
-                    const vacationUserId = vacation.employee?._id || vacation.employee;
-                    const currentUserId = user?._id;
-                    return vacationUserId === currentUserId || String(vacationUserId) === String(currentUserId);
-                });
-            }
-
-            setVacations(filteredData);
+            setVacations(vacationsArray);
         } catch (error) {
 
             showNotification('Failed to fetch vacations', 'error');
@@ -185,15 +180,32 @@ const VacationRequestsPage = () => {
         return colors[type] || 'default';
     };
 
+    // Filter data based on current tab
+    const getFilteredData = () => {
+        if (currentTab === 0) {
+            // My Vacations - show only current user's vacations
+            return vacations.filter(vacation => {
+                const vacationUserId = vacation.employee?._id || vacation.employee;
+                const currentUserId = user?._id;
+                return vacationUserId === currentUserId || String(vacationUserId) === String(currentUserId);
+            });
+        } else {
+            // All Users Vacations - show all vacations (only for HR/Admin)
+            return canManage ? vacations : [];
+        }
+    };
+
+    const filteredData = getFilteredData();
+
     const columns = [
-        // Show employee name for all users
-        {
+        // Only show employee column in "All Users" tab (tab 1) and if user can manage
+        ...(currentTab === 1 && canManage ? [{
             id: 'employee',
             label: 'Employee',
             width: 180,
             align: 'center',
             render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
-        },
+        }] : []),
         {
             id: 'vacationType',
             label: 'Type',
@@ -419,11 +431,74 @@ const VacationRequestsPage = () => {
                 </Grid>
             </Box>
 
-            <DataTable
-                data={vacations}
-                columns={columns}
-                emptyMessage="No vacation requests found. Click 'New Vacation Request' to create one."
-            />
+            {/* Tabs */}
+            <Paper sx={{ mb: 2 }}>
+                <Tabs
+                    value={currentTab}
+                    onChange={handleTabChange}
+                    sx={{
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        '& .MuiTab-root': {
+                            minHeight: 48,
+                            textTransform: 'none',
+                        },
+                    }}
+                >
+                    <Tab
+                        icon={<PersonIcon fontSize="small" />}
+                        iconPosition="start"
+                        label="My Vacations"
+                    />
+                    {canManage && (
+                        <Tab
+                            icon={<GroupIcon fontSize="small" />}
+                            iconPosition="start"
+                            label="All Users Vacations"
+                        />
+                    )}
+                </Tabs>
+            </Paper>
+
+            {/* Tab Content */}
+            <Box>
+                {currentTab === 0 && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            🏖️ My Vacation Requests ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No vacation requests found. Click 'New Vacation Request' to create one."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && canManage && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            👥 All Users Vacation Requests ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No vacation requests found from any employees."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && !canManage && (
+                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="h6" color="error.main">
+                            Access Denied
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            You don't have permission to view all users' vacation requests.
+                        </Typography>
+                    </Box>
+                )}
+            </Box>
 
             <ConfirmDialog
                 open={openConfirm}

@@ -17,12 +17,11 @@ export const createTask = async (req, res) => {
             startDate,
             dueDate,
             tags,
-            tenantId: req.tenantId,
-            createdBy: req.user.id
+            tenantId: req.tenantId
         });
 
-        await task.populate('assignedTo', 'firstName lastName email');
-        await task.populate('assignedBy', 'firstName lastName email');
+        await task.populate('assignedTo', 'username email personalInfo.firstName personalInfo.lastName personalInfo.fullName');
+        await task.populate('assignedBy', 'username email personalInfo.firstName personalInfo.lastName personalInfo.fullName');
 
         // Log audit
         await AuditLog.create({
@@ -77,8 +76,8 @@ export const getTasks = async (req, res) => {
         if (assignedBy) filter.assignedBy = assignedBy;
 
         const tasks = await Task.find(filter)
-            .populate('assignedTo', 'firstName lastName email')
-            .populate('assignedBy', 'firstName lastName email')
+            .populate('assignedTo', 'username email personalInfo.firstName personalInfo.lastName personalInfo.fullName')
+            .populate('assignedBy', 'username email personalInfo.firstName personalInfo.lastName personalInfo.fullName')
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit);
@@ -109,8 +108,8 @@ export const getTask = async (req, res) => {
             _id: req.params.id,
             tenantId: req.tenantId
         })
-            .populate('assignedTo', 'firstName lastName email')
-            .populate('assignedBy', 'firstName lastName email');
+            .populate('assignedTo', 'username email personalInfo.firstName personalInfo.lastName personalInfo.fullName')
+            .populate('assignedBy', 'username email personalInfo.firstName personalInfo.lastName personalInfo.fullName');
 
         if (!task) {
             return res.status(404).json({
@@ -180,8 +179,8 @@ export const updateTask = async (req, res) => {
         task.updatedBy = req.user.id;
         await task.save();
 
-        await task.populate('assignedTo', 'firstName lastName email');
-        await task.populate('assignedBy', 'firstName lastName email');
+        await task.populate('assignedTo', 'username email personalInfo.firstName personalInfo.lastName personalInfo.fullName');
+        await task.populate('assignedBy', 'username email personalInfo.firstName personalInfo.lastName personalInfo.fullName');
 
         res.json({
             success: true,
@@ -371,6 +370,206 @@ export const getTaskAnalytics = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Get task reports
+export const getTaskReports = async (req, res) => {
+    try {
+        const task = await Task.findOne({
+            _id: req.params.id,
+            tenantId: req.tenantId
+        });
+
+        if (!task) {
+            return res.status(404).json({
+                success: false,
+                message: 'Task not found'
+            });
+        }
+
+        // Check access
+        const canAccess =
+            task.assignedTo.toString() === req.user.id ||
+            task.assignedBy.toString() === req.user.id ||
+            ['Admin', 'HR'].includes(req.user.role);
+
+        if (!canAccess) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied'
+            });
+        }
+
+        const reports = await TaskReport.getHistoryForTask(req.params.id, req.tenantId);
+
+        res.json({
+            success: true,
+            data: reports
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Create or update task report
+export const upsertTaskReport = async (req, res) => {
+    try {
+        const { reportText, timeSpent } = req.body;
+
+        const task = await Task.findOne({
+            _id: req.params.id,
+            tenantId: req.tenantId
+        });
+
+        if (!task) {
+            return res.status(404).json({
+                success: false,
+                message: 'Task not found'
+            });
+        }
+
+        // Only assignee can create reports
+        if (task.assignedTo.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only the assigned employee can create reports'
+            });
+        }
+
+        // Check if task is in correct status
+        if (!['in-progress', 'rejected'].includes(task.status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Task must be in progress or rejected to submit a report'
+            });
+        }
+
+        // Get the latest report version
+        const latestReport = await TaskReport.findOne({
+            task: req.params.id,
+            tenantId: req.tenantId
+        }).sort({ version: -1 });
+
+        const version = latestReport ? latestReport.version + 1 : 1;
+
+        const report = await TaskReport.create({
+            task: req.params.id,
+            submittedBy: req.user.id,
+            reportText,
+            timeSpent,
+            version,
+            tenantId: req.tenantId
+        });
+
+        await report.populate('submittedBy', 'username email personalInfo.firstName personalInfo.lastName personalInfo.fullName');
+
+        // Update task status to submitted
+        task.status = 'submitted';
+        task.updatedBy = req.user.id;
+        await task.save();
+
+        // Send notification to manager
+        await sendNotification({
+            type: 'task_report_submitted',
+            recipientId: task.assignedBy,
+            taskId: task._id,
+            tenantId: req.tenantId
+        });
+
+        res.status(201).json({
+            success: true,
+            data: report
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Review task report
+export const reviewTaskReport = async (req, res) => {
+    try {
+        const { action, comments } = req.body; // action: 'approve' or 'reject'
+
+        const task = await Task.findOne({
+            _id: req.params.id,
+            tenantId: req.tenantId
+        });
+
+        if (!task) {
+            return res.status(404).json({
+                success: false,
+                message: 'Task not found'
+            });
+        }
+
+        // Only assigner can review
+        if (task.assignedBy.toString() !== req.user.id && !['Admin', 'HR'].includes(req.user.role)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only the task assigner can review reports'
+            });
+        }
+
+        // Get the latest report
+        const report = await TaskReport.getLatestForTask(req.params.id, req.tenantId);
+
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: 'No report found for this task'
+            });
+        }
+
+        if (report.status !== 'pending') {
+            return res.status(400).json({
+                success: false,
+                message: 'Report has already been reviewed'
+            });
+        }
+
+        // Update report status
+        if (action === 'approve') {
+            report.approve(req.user.id, comments);
+            task.status = 'completed';
+            task.completedAt = new Date();
+        } else if (action === 'reject') {
+            report.reject(req.user.id, comments);
+            task.status = 'rejected';
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid action. Must be "approve" or "reject"'
+            });
+        }
+
+        await report.save();
+        task.updatedBy = req.user.id;
+        await task.save();
+
+        // Send notification to employee
+        await sendNotification({
+            type: action === 'approve' ? 'task_approved' : 'task_rejected',
+            recipientId: task.assignedTo,
+            taskId: task._id,
+            tenantId: req.tenantId
+        });
+
+        res.json({
+            success: true,
+            data: report
+        });
+    } catch (error) {
+        res.status(400).json({
             success: false,
             message: error.message
         });

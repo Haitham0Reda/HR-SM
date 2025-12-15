@@ -9,6 +9,8 @@ import {
     MenuItem,
     Grid,
     Paper,
+    Tabs,
+    Tab,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -17,6 +19,8 @@ import {
     CheckCircle,
     Cancel,
     Visibility as ViewIcon,
+    Person as PersonIcon,
+    Group as GroupIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
@@ -38,6 +42,7 @@ const OvertimePage = () => {
     const [loading, setLoading] = useState(true);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedOvertime, setSelectedOvertime] = useState(null);
+    const [currentTab, setCurrentTab] = useState(0);
     const [filters, setFilters] = useState({
         status: '',
         compensationType: '',
@@ -52,6 +57,10 @@ const OvertimePage = () => {
     });
 
     const canManage = isHR || isAdmin;
+
+    const handleTabChange = (event, newValue) => {
+        setCurrentTab(newValue);
+    };
 
     const statusOptions = [
         { value: '', label: 'All Statuses' },
@@ -88,23 +97,8 @@ const OvertimePage = () => {
 
             const response = await overtimeService.getAll(params);
             const overtimeArray = response?.data || [];
-
-            // Filter based on role
-            let filteredData;
-            if (canManage) {
-                // Admin/HR see all overtime
-                filteredData = overtimeArray;
-            } else {
-                // Regular employees see only their own overtime
-                filteredData = overtimeArray.filter(ot => {
-                    const otUserId = ot.employee?._id || ot.employee;
-                    const currentUserId = user?._id;
-                    return otUserId === currentUserId || String(otUserId) === String(currentUserId);
-                });
-            }
-
-            setOvertime(filteredData);
-            calculateMonthlySummary(filteredData);
+            setOvertime(overtimeArray);
+            calculateMonthlySummary(overtimeArray);
         } catch (error) {
 
             showNotification('Failed to fetch overtime records', 'error');
@@ -220,8 +214,26 @@ const OvertimePage = () => {
         return labels[type] || type;
     };
 
+    // Filter data based on current tab
+    const getFilteredData = () => {
+        if (currentTab === 0) {
+            // My Overtime - show only current user's overtime
+            return overtime.filter(ot => {
+                const otUserId = ot.employee?._id || ot.employee;
+                const currentUserId = user?._id;
+                return otUserId === currentUserId || String(otUserId) === String(currentUserId);
+            });
+        } else {
+            // All Users Overtime - show all overtime (only for HR/Admin)
+            return canManage ? overtime : [];
+        }
+    };
+
+    const filteredData = getFilteredData();
+
     const columns = [
-        ...(canManage ? [{
+        // Only show employee column in "All Users" tab (tab 1) and if user can manage
+        ...(currentTab === 1 && canManage ? [{
             id: 'employee',
             label: 'Employee',
             align: 'center',
@@ -508,11 +520,74 @@ const OvertimePage = () => {
                 </Grid>
             </Box>
 
-            <DataTable
-                data={overtime}
-                columns={columns}
-                emptyMessage="No overtime records found. Click 'New Overtime' to create one."
-            />
+            {/* Tabs */}
+            <Paper sx={{ mb: 2 }}>
+                <Tabs
+                    value={currentTab}
+                    onChange={handleTabChange}
+                    sx={{
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        '& .MuiTab-root': {
+                            minHeight: 48,
+                            textTransform: 'none',
+                        },
+                    }}
+                >
+                    <Tab
+                        icon={<PersonIcon fontSize="small" />}
+                        iconPosition="start"
+                        label="My Overtime"
+                    />
+                    {canManage && (
+                        <Tab
+                            icon={<GroupIcon fontSize="small" />}
+                            iconPosition="start"
+                            label="All Users Overtime"
+                        />
+                    )}
+                </Tabs>
+            </Paper>
+
+            {/* Tab Content */}
+            <Box>
+                {currentTab === 0 && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            ⏰ My Overtime Records ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No overtime records found. Click 'New Overtime' to create one."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && canManage && (
+                    <Box>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                            👥 All Users Overtime Records ({filteredData.length})
+                        </Typography>
+                        <DataTable
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No overtime records found from any employees."
+                        />
+                    </Box>
+                )}
+
+                {currentTab === 1 && !canManage && (
+                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="h6" color="error.main">
+                            Access Denied
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            You don't have permission to view all users' overtime records.
+                        </Typography>
+                    </Box>
+                )}
+            </Box>
 
             <ConfirmDialog
                 open={openConfirm}

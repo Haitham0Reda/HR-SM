@@ -14,28 +14,31 @@ import { MODULES } from '../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 
-// Apply license validation to all notification routes
+// Apply authentication to all routes first
+router.use(protect);
+
+// Apply license validation to all notification routes (after authentication)
 router.use(requireModuleLicense(MODULES.COMMUNICATION));
 
 // Get all notifications - Protected (users see their own)
-router.get('/', protect, getAllNotifications);
+router.get('/', getAllNotifications);
 
 // Mark all as read - Protected
-router.put('/read-all', protect, markAllAsRead);
+router.put('/read-all', markAllAsRead);
 
 // Create notification - HR or Admin only
-router.post('/', protect, hrOrAdmin, createNotification);
+router.post('/', hrOrAdmin, createNotification);
 
 // Get notification by ID - Protected
-router.get('/:id', protect, getNotificationById);
+router.get('/:id', getNotificationById);
 
 // Mark notification as read - Protected
-router.put('/:id/read', protect, markAsRead);
+router.put('/:id/read', markAsRead);
 
 // Update notification - Protected
-router.put('/:id', protect, updateNotification);
+router.put('/:id', updateNotification);
 
 // Delete notification - HR or Admin only
-router.delete('/:id', protect, hrOrAdmin, deleteNotification);
+router.delete('/:id', hrOrAdmin, deleteNotification);
 
 export default router;

@@ -19,15 +19,17 @@ import { MODULES } from '../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 
-// Apply license validation to all document template routes
+// Apply authentication to all routes first
+router.use(protect);
+
+// Apply license validation to all document template routes (after authentication)
 router.use(requireModuleLicense(MODULES.DOCUMENTS));
 
 // Get all document templates - All authenticated users can view
-router.get('/', protect, getAllDocumentTemplates);
+router.get('/', getAllDocumentTemplates);
 
 // Create document template - HR or Admin only with validation
 router.post('/',
-    protect,
     hrOrAdmin,
     checkTemplateNameUnique,
     validateTemplateFileType,
@@ -37,11 +39,10 @@ router.post('/',
 );
 
 // Get document template by ID - All authenticated users
-router.get('/:id', protect, getDocumentTemplateById);
+router.get('/:id', getDocumentTemplateById);
 
 // Update document template - HR or Admin only with validation
 router.put('/:id',
-    protect,
     hrOrAdmin,
     checkTemplateNameUnique,
     validateTemplateFileType,
@@ -49,6 +50,6 @@ router.put('/:id',
 );
 
 // Delete document template - HR or Admin only
-router.delete('/:id', protect, hrOrAdmin, deleteDocumentTemplate);
+router.delete('/:id', hrOrAdmin, deleteDocumentTemplate);
 
 export default router;

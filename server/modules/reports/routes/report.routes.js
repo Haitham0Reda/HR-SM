@@ -30,31 +30,30 @@ import { MODULES } from '../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 
-// Apply license validation to all report routes
+// Apply authentication to all routes first
+router.use(protect);
+
+// Apply license validation to all report routes (after authentication)
 router.use(requireModuleLicense(MODULES.REPORTING));
 
 // Get all reports for user
 router.get('/',
-    protect,
     getAllReports
 );
 
 // Get report templates
 router.get('/templates',
-    protect,
     getTemplates
 );
 
 // Get report by ID
 router.get('/:id',
-    protect,
     checkReportAccess,
     getReportById
 );
 
 // Create new report with validation
 router.post('/',
-    protect,
     validateReportType,
     validateReportFields,
     validateReportFilters,
@@ -66,7 +65,6 @@ router.post('/',
 
 // Update report with validation
 router.put('/:id',
-    protect,
     checkReportAccess,
     validateReportType,
     validateReportFields,
@@ -79,47 +77,40 @@ router.put('/:id',
 
 // Delete report
 router.delete('/:id',
-    protect,
     checkReportAccess,
     deleteReport
 );
 
 // Execute report
 router.post('/:id/execute',
-    protect,
     checkReportAccess,
     executeReport
 );
 
 // Export report execution
 router.get('/execution/:executionId/export',
-    protect,
     exportReport
 );
 
 // Get execution history
 router.get('/:id/history',
-    protect,
     checkReportAccess,
     getExecutionHistory
 );
 
 // Get report statistics
 router.get('/:id/statistics',
-    protect,
     checkReportAccess,
     getReportStatistics
 );
 
 // Share report
 router.post('/:id/share',
-    protect,
     shareReport
 );
 
 // Unshare report
 router.delete('/:id/share/:userId',
-    protect,
     unshareReport
 );
 

@@ -6,51 +6,29 @@ import {
     updateDocument,
     deleteDocument
 } from '../controllers/document.controller.js';
-import {
-    protect,
-    hrOrAdmin,
-    validateDocumentEmployee,
-    setUploadedBy,
-    validateDocumentExpiry,
-    checkDocumentAccess
-} from '../../../middleware/index.js';
-import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../../../platform/system/models/license.model.js';
+import { requireAuth, requireRole } from '../../../shared/middleware/auth.js';
+import { requireModule } from '../../../shared/middleware/moduleGuard.js';
+import { MODULES, ROLES } from '../../../shared/constants/modules.js';
 
 const router = express.Router();
 
-// Apply license validation to all document routes
-router.use(requireModuleLicense(MODULES.DOCUMENTS));
+// All routes require authentication and documents module
+router.use(requireAuth);
+router.use(requireModule(MODULES.DOCUMENTS));
 
 // Get all documents - All authenticated users (filtered by role in controller)
-router.get('/', protect, getAllDocuments);
+router.get('/', getAllDocuments);
 
-// Create document - HR or Admin only with validation
-router.post('/',
-    protect,
-    hrOrAdmin,
-    validateDocumentEmployee,
-    setUploadedBy,
-    validateDocumentExpiry,
-    createDocument
-);
+// Create document - HR or Admin only
+router.post('/', requireRole(ROLES.HR, ROLES.ADMIN), createDocument);
 
-// Get document by ID - Protected with access control
-router.get('/:id',
-    protect,
-    checkDocumentAccess,
-    getDocumentById
-);
+// Get document by ID - All authenticated users (access control in controller)
+router.get('/:id', getDocumentById);
 
-// Update document - HR or Admin only with validation
-router.put('/:id',
-    protect,
-    hrOrAdmin,
-    validateDocumentExpiry,
-    updateDocument
-);
+// Update document - HR or Admin only
+router.put('/:id', requireRole(ROLES.HR, ROLES.ADMIN), updateDocument);
 
 // Delete document - HR or Admin only
-router.delete('/:id', protect, hrOrAdmin, deleteDocument);
+router.delete('/:id', requireRole(ROLES.HR, ROLES.ADMIN), deleteDocument);
 
 export default router;

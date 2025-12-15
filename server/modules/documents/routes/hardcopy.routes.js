@@ -4,28 +4,35 @@ import {
     createHardCopy,
     getHardCopyById,
     updateHardCopy,
-    deleteHardCopy
+    deleteHardCopy,
+    uploadHardCopy,
+    upload
 } from '../controllers/hardcopy.controller.js';
-import {
-    protect,
-    hrOrAdmin
-} from '../middleware/index.js';
+import { requireAuth, requireRole } from '../../../shared/middleware/auth.js';
+import { requireModule } from '../../../shared/middleware/moduleGuard.js';
 
 const router = express.Router();
 
+// Apply authentication and module guard to all routes
+router.use(requireAuth);
+router.use(requireModule('documents'));
+
 // Get all hard copies - All authenticated users
-router.get('/', protect, getAllHardCopies);
+router.get('/', getAllHardCopies);
 
 // Create hard copy - HR or Admin only
-router.post('/', protect, hrOrAdmin, createHardCopy);
+router.post('/', requireRole('hr', 'admin'), createHardCopy);
+
+// Upload hard copy file - HR or Admin only
+router.post('/upload', requireRole('hr', 'admin'), upload.single('file'), uploadHardCopy);
 
 // Get hard copy by ID - All authenticated users
-router.get('/:id', protect, getHardCopyById);
+router.get('/:id', getHardCopyById);
 
 // Update hard copy - HR or Admin only
-router.put('/:id', protect, hrOrAdmin, updateHardCopy);
+router.put('/:id', requireRole('hr', 'admin'), updateHardCopy);
 
 // Delete hard copy - HR or Admin only
-router.delete('/:id', protect, hrOrAdmin, deleteHardCopy);
+router.delete('/:id', requireRole('hr', 'admin'), deleteHardCopy);
 
 export default router;

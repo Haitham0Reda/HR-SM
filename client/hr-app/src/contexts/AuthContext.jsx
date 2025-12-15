@@ -145,6 +145,12 @@ export const AuthProvider = ({ children }) => {
                        (tenant?.name ? tenant.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') : null) ||
                        'techcorp_solutions'; // Default fallback
 
+    // Computed role checks
+    const isAdmin = user?.role === 'admin';
+    const isHR = user?.role === 'hr';
+    const isManager = user?.role === 'manager';
+    const isEmployee = user?.role === 'employee';
+
     const value = {
         user,
         tenant,
@@ -157,7 +163,11 @@ export const AuthProvider = ({ children }) => {
         logout,
         hasRole,
         updateUser,
-        isAuthenticated: !!user
+        isAuthenticated: !!user,
+        isAdmin,
+        isHR,
+        isManager,
+        isEmployee
     };
 
     return (

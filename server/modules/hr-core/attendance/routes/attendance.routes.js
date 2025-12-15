@@ -16,32 +16,35 @@ import { MODULES } from '../../../../models/license.model.js';
 
 const router = express.Router();
 
-// Apply license validation to all attendance routes
+// Apply authentication to all routes first
+router.use(protect);
+
+// Apply license validation to all attendance routes (after authentication)
 router.use(requireModuleLicense(MODULES.ATTENDANCE));
 
 // Get all attendance records - protected
-router.get('/', protect, getAllAttendance);
+router.get('/', getAllAttendance);
 
 // Get today's attendance
-router.get('/today', protect, getTodayAttendance);
+router.get('/today', getTodayAttendance);
 
 // Get monthly attendance
-router.get('/monthly', protect, getMonthlyAttendance);
+router.get('/monthly', getMonthlyAttendance);
 
 // Manual check-in/check-out
-router.post('/manual/checkin', protect, checkRole(['admin', 'hr']), manualCheckIn);
-router.post('/manual/checkout', protect, checkRole(['admin', 'hr']), manualCheckOut);
+router.post('/manual/checkin', checkRole(['admin', 'hr']), manualCheckIn);
+router.post('/manual/checkout', checkRole(['admin', 'hr']), manualCheckOut);
 
 // Create attendance record - protected, requires active employee
-router.post('/', protect, checkActive, createAttendance);
+router.post('/', checkActive, createAttendance);
 
 // Get attendance by ID
-router.get('/:id', protect, getAttendanceById);
+router.get('/:id', getAttendanceById);
 
 // Update attendance record
-router.put('/:id', protect, updateAttendance);
+router.put('/:id', updateAttendance);
 
 // Delete attendance record - admin only recommended
-router.delete('/:id', protect, deleteAttendance);
+router.delete('/:id', deleteAttendance);
 
 export default router;

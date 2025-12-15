@@ -9,7 +9,10 @@ import {
     updateTask,
     updateTaskStatus,
     deleteTask,
-    getTaskAnalytics
+    getTaskAnalytics,
+    getTaskReports,
+    upsertTaskReport,
+    reviewTaskReport
 } from '../controllers/taskController.js';
 
 const router = express.Router();
@@ -26,5 +29,10 @@ router.get('/:id', getTask);
 router.put('/:id', requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN), updateTask);
 router.patch('/:id/status', updateTaskStatus);
 router.delete('/:id', requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN), deleteTask);
+
+// Task Reports
+router.get('/:id/reports', getTaskReports);
+router.post('/:id/reports', upsertTaskReport);
+router.post('/:id/reports/review', requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN), reviewTaskReport);
 
 export default router;

@@ -7,8 +7,13 @@ import {
     Chip,
     Button,
     Tabs,
-    Tab
+    Tab,
+    Paper
 } from '@mui/material';
+import {
+    Person as PersonIcon,
+    Group as GroupIcon,
+} from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import { useNotification } from '../../context/NotificationContext';
@@ -317,12 +322,31 @@ const RequestsPage = () => {
             </Box>
 
             {canViewAll && (
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                    <Tabs value={currentTab} onChange={(e, newValue) => setCurrentTab(newValue)}>
-                        <Tab label={`My Requests (${myRequests.length})`} />
-                        <Tab label={`All Requests (${allRequests.length})`} />
+                <Paper sx={{ mb: 2 }}>
+                    <Tabs
+                        value={currentTab}
+                        onChange={(e, newValue) => setCurrentTab(newValue)}
+                        sx={{
+                            borderBottom: 1,
+                            borderColor: 'divider',
+                            '& .MuiTab-root': {
+                                minHeight: 48,
+                                textTransform: 'none',
+                            },
+                        }}
+                    >
+                        <Tab
+                            icon={<PersonIcon fontSize="small" />}
+                            iconPosition="start"
+                            label={`My Requests (${myRequests.length})`}
+                        />
+                        <Tab
+                            icon={<GroupIcon fontSize="small" />}
+                            iconPosition="start"
+                            label={`All Requests (${allRequests.length})`}
+                        />
                     </Tabs>
-                </Box>
+                </Paper>
             )}
 
             <DataTable
