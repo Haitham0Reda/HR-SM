@@ -41,3 +41,33 @@ server/backups/*
 logs/
 *.log
 *.log.gz
+
+# temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+*-temp.*
+*-debug.*
+test-*.js
+debug-*.js
+check-*.js
+create-*.js
+enable-*.js
+fix-*.js
+force-*.js
+sync-*.js
+verify-*.js
+wait-*.js
+*-test.html
+*-debug.html
+
+# documentation (temporary)
+*_FIXED.md
+*_FIX.md
+*_COMPLETE.md
+*_FINAL.md
+*_DEBUG.md
+*_STATUS.md
+*_VERIFICATION.md
+*_SOLUTION.md
