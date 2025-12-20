@@ -4,6 +4,14 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { logAuthEvent } from '../../../../middleware/activityLogger.js';
 import xlsx from 'xlsx';
+import { 
+    logControllerAction, 
+    logControllerError, 
+    logDataAccess, 
+    logSecurityEvent,
+    logAuthenticationEvent,
+    logAdminAction 
+} from '../../../../utils/controllerLogger.js';
 
 // Helper: sanitize user object (remove sensitive fields)
 const sanitizeUser = (user) => {
@@ -36,6 +44,12 @@ const validateUserInput = (data, isUpdate = false) => {
 
 export const getAllUsers = async (req, res) => {
     try {
+        // Log controller action start
+        logControllerAction(req, 'getAllUsers', {
+            controller: 'UserController',
+            filters: req.query
+        });
+
         // Build query with tenant filtering
         const query = {};
         
@@ -59,9 +73,22 @@ export const getAllUsers = async (req, res) => {
             .populate('position');
             
         console.log(`✓ Found ${users.length} users for tenant ${query.tenantId || 'unknown'}`);
+        
+        // Log sensitive data access
+        logDataAccess(req, 'users', {
+            operation: 'read',
+            recordsAccessed: users.length,
+            sensitiveData: true,
+            filters: req.query
+        });
+        
         res.json(users.map(sanitizeUser));
     } catch (err) {
         console.error('❌ Error fetching users:', err);
+        logControllerError(req, err, {
+            controller: 'UserController',
+            action: 'getAllUsers'
+        });
         res.status(500).json({ error: err.message });
     }
 };
@@ -267,6 +294,10 @@ export const deleteUser = async (req, res) => {
 export const loginUser = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
+        logSecurityEvent(req, 'incomplete_login_attempt', {
+            severity: 'low',
+            missingFields: !email ? 'email' : 'password'
+        });
         return res.status(400).json({ error: 'Email and password are required.' });
     }
     try {
@@ -278,16 +309,33 @@ export const loginUser = async (req, res) => {
                 email,
                 reason: 'User not found'
             });
+            
+            // Enhanced authentication logging
+            logAuthenticationEvent(req, 'login_failed', {
+                success: false,
+                userEmail: email,
+                reason: 'user_not_found'
+            });
+            
             return res.status(401).json({ error: 'Invalid email or password.' });
         }
 
         // Compare password using model method
-        const isMatch = await user.matchPassword(password);
+        const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             // Log failed login attempt - wrong password
             logAuthEvent('LOGIN_FAILED', user, req, {
                 reason: 'Invalid password'
             });
+            
+            // Enhanced authentication logging
+            logAuthenticationEvent(req, 'login_failed', {
+                success: false,
+                userId: user._id.toString(),
+                userEmail: email,
+                reason: 'invalid_password'
+            });
+            
             return res.status(401).json({ error: 'Invalid email or password.' });
         }
 
@@ -304,6 +352,17 @@ export const loginUser = async (req, res) => {
             position: user.position?.title,
             lastLogin: user.lastLogin
         });
+        
+        // Enhanced authentication logging
+        logAuthenticationEvent(req, 'login_success', {
+            success: true,
+            userId: user._id.toString(),
+            userEmail: email,
+            userRole: user.role,
+            department: user.department?.name,
+            position: user.position?.title,
+            lastLogin: user.lastLogin
+        });
 
         res.json({ user: sanitizeUser(user), token });
     } catch (err) {
@@ -312,6 +371,13 @@ export const loginUser = async (req, res) => {
             reason: 'Server error',
             error: err.message
         });
+        
+        logControllerError(req, err, {
+            controller: 'UserController',
+            action: 'loginUser',
+            userEmail: email
+        });
+        
         res.status(500).json({ error: err.message });
     }
 };

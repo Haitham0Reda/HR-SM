@@ -11,24 +11,28 @@ let user;
 let department;
 
 beforeAll(async () => {
-  organization = await organization.create({
-    name: 'organization of Engineering'Code: 'ENG',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
+  // organization variable removed
+  // organization = await organization.create({
+  //   name: 'organization of Engineering',
+  //   code: 'ENG',
+  //   arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  // });
 
   department = await Department.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     name: 'Test Department',
-    code: 'TEST': organization._id
+    code: 'TEST'
+    // organization._id removed as not needed
   });
 
   user = await User.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'employee',
-    employeeId: 'EMP001': organization._id,
+    employeeId: 'EMP001',
+    // organization._id removed as not needed,
     department: department._id
   });
 }, 60000);
@@ -159,8 +163,9 @@ describe('MixedVacation Model', () => {
 
   it('should detect official holidays in date range', async () => {
     // Create holiday settings
+    // Note: organization is not defined in this test, so we'll create a simple holiday without location
     const holiday = await Holiday.create({
-      location: organization._id,
+      tenantId: department._id.toString(),
       officialHolidays: [
         {
           date: new Date('2024-01-05'),
@@ -180,7 +185,7 @@ describe('MixedVacation Model', () => {
       createdBy: user._id
     });
 
-    const updatedPolicy = await mixedVacation.detectOfficialHolidays(organization._id);
+    const updatedPolicy = await mixedVacation.detectOfficialHolidays(department._id);
 
     expect(updatedPolicy.officialHolidays).toHaveLength(1);
     expect(updatedPolicy.officialHolidays[0].name).toBe('Test Holiday');

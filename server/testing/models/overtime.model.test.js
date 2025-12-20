@@ -51,6 +51,7 @@ describe('Overtime Model', () => {
   describe('Schema Validation', () => {
     it('should create a valid overtime with required fields', async () => {
       const overtime = new Overtime({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-20'),
         startTime: '18:00',
@@ -74,6 +75,7 @@ describe('Overtime Model', () => {
 
     it('should fail validation when employee is missing', async () => {
       const overtime = new Overtime({
+        tenantId: 'test_tenant_123',
         date: new Date('2025-11-20'),
         startTime: '18:00',
         endTime: '21:00',
@@ -96,6 +98,7 @@ describe('Overtime Model', () => {
 
     it('should fail validation when compensation type is invalid', async () => {
       const overtime = new Overtime({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-20'),
         startTime: '18:00',
@@ -119,6 +122,7 @@ describe('Overtime Model', () => {
 
     it('should accept valid compensation types', async () => {
       const paidOvertime = await Overtime.create({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-20'),
         startTime: '18:00',
@@ -128,8 +132,9 @@ describe('Overtime Model', () => {
         compensationType: 'paid',
         department: testDepartment._id
       });
-
+      
       const timeOffOvertime = await Overtime.create({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-21'),
         startTime: '18:00',
@@ -139,8 +144,9 @@ describe('Overtime Model', () => {
         compensationType: 'time-off',
         department: testDepartment._id
       });
-
+      
       const noneOvertime = await Overtime.create({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-22'),
         startTime: '18:00',
@@ -159,6 +165,7 @@ describe('Overtime Model', () => {
     it('should fail validation when reason exceeds max length', async () => {
       const longReason = 'a'.repeat(301);
       const overtime = new Overtime({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-20'),
         startTime: '18:00',
@@ -184,6 +191,7 @@ describe('Overtime Model', () => {
   describe('Time Range Validation', () => {
     it('should accept valid time formats', async () => {
       const overtime = await Overtime.create({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-20'),
         startTime: '18:00',
@@ -203,6 +211,7 @@ describe('Overtime Model', () => {
 
       for (const time of invalidTimes) {
         const overtime = new Overtime({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-20'),
           startTime: time,
@@ -230,6 +239,7 @@ describe('Overtime Model', () => {
 
       for (const time of invalidTimes) {
         const overtime = new Overtime({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-20'),
           startTime: '18:00',
@@ -254,6 +264,7 @@ describe('Overtime Model', () => {
 
     it('should fail when end time is before start time', async () => {
       const overtime = new Overtime({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-20'),
         startTime: '21:00',
@@ -276,6 +287,7 @@ describe('Overtime Model', () => {
 
     it('should fail when end time equals start time', async () => {
       const overtime = new Overtime({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-20'),
         startTime: '18:00',
@@ -300,6 +312,7 @@ describe('Overtime Model', () => {
   describe('Duration Calculation', () => {
     it('should store duration in hours', async () => {
       const overtime = await Overtime.create({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-20'),
         startTime: '18:00',
@@ -315,6 +328,7 @@ describe('Overtime Model', () => {
 
     it('should handle fractional hours', async () => {
       const overtime = await Overtime.create({
+        tenantId: 'test_tenant_123',
         employee: testEmployee._id,
         date: new Date('2025-11-20'),
         startTime: '18:00',
@@ -333,6 +347,7 @@ describe('Overtime Model', () => {
     describe('approve()', () => {
       it('should approve overtime', async () => {
         const overtime = await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-20'),
           startTime: '18:00',
@@ -353,6 +368,7 @@ describe('Overtime Model', () => {
 
       it('should approve without notes', async () => {
         const overtime = await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-20'),
           startTime: '18:00',
@@ -375,6 +391,7 @@ describe('Overtime Model', () => {
     describe('reject()', () => {
       it('should reject overtime with reason', async () => {
         const overtime = await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-20'),
           startTime: '18:00',
@@ -395,6 +412,7 @@ describe('Overtime Model', () => {
 
       it('should reject without reason', async () => {
         const overtime = await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-20'),
           startTime: '18:00',
@@ -417,6 +435,7 @@ describe('Overtime Model', () => {
     describe('markCompensated()', () => {
       it('should mark overtime as compensated', async () => {
         const overtime = await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-20'),
           startTime: '18:00',
@@ -441,6 +460,7 @@ describe('Overtime Model', () => {
       it('should get all overtime for an employee', async () => {
         await Overtime.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-20'),
             startTime: '18:00',
@@ -451,6 +471,7 @@ describe('Overtime Model', () => {
             department: testDepartment._id
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-21'),
             startTime: '18:00',
@@ -468,6 +489,7 @@ describe('Overtime Model', () => {
 
       it('should filter overtime by status', async () => {
         const overtime1 = await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-20'),
           startTime: '18:00',
@@ -477,10 +499,11 @@ describe('Overtime Model', () => {
           compensationType: 'paid',
           department: testDepartment._id
         });
-
+        
         await overtime1.approve(testApprover._id);
-
+        
         await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-21'),
           startTime: '18:00',
@@ -505,6 +528,7 @@ describe('Overtime Model', () => {
       it('should get all pending overtime', async () => {
         await Overtime.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-20'),
             startTime: '18:00',
@@ -516,6 +540,7 @@ describe('Overtime Model', () => {
             status: 'pending'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-21'),
             startTime: '18:00',
@@ -543,6 +568,7 @@ describe('Overtime Model', () => {
 
         await Overtime.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-20'),
             startTime: '18:00',
@@ -554,6 +580,7 @@ describe('Overtime Model', () => {
             status: 'pending'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-21'),
             startTime: '18:00',
@@ -576,6 +603,7 @@ describe('Overtime Model', () => {
       it('should get overtime within date range', async () => {
         await Overtime.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-01'),
             startTime: '18:00',
@@ -586,6 +614,7 @@ describe('Overtime Model', () => {
             department: testDepartment._id
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-15'),
             startTime: '18:00',
@@ -596,6 +625,7 @@ describe('Overtime Model', () => {
             department: testDepartment._id
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-25'),
             startTime: '18:00',
@@ -621,6 +651,7 @@ describe('Overtime Model', () => {
       it('should calculate monthly statistics', async () => {
         await Overtime.create([
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-01'),
             startTime: '18:00',
@@ -632,6 +663,7 @@ describe('Overtime Model', () => {
             status: 'approved'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-05'),
             startTime: '18:00',
@@ -643,6 +675,7 @@ describe('Overtime Model', () => {
             status: 'approved'
           },
           {
+            tenantId: 'test_tenant_123',
             employee: testEmployee._id,
             date: new Date('2025-11-10'),
             startTime: '18:00',
@@ -672,6 +705,7 @@ describe('Overtime Model', () => {
     describe('getTotalUncompensatedHours()', () => {
       it('should calculate total uncompensated hours', async () => {
         const overtime1 = await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-01'),
           startTime: '18:00',
@@ -681,8 +715,9 @@ describe('Overtime Model', () => {
           compensationType: 'paid',
           department: testDepartment._id
         });
-
+        
         const overtime2 = await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-05'),
           startTime: '18:00',
@@ -692,8 +727,9 @@ describe('Overtime Model', () => {
           compensationType: 'time-off',
           department: testDepartment._id
         });
-
+        
         const overtime3 = await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-10'),
           startTime: '18:00',
@@ -722,6 +758,7 @@ describe('Overtime Model', () => {
 
       it('should return empty array when all overtime is compensated', async () => {
         const overtime1 = await Overtime.create({
+          tenantId: 'test_tenant_123',
           employee: testEmployee._id,
           date: new Date('2025-11-01'),
           startTime: '18:00',

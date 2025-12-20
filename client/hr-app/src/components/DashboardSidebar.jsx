@@ -52,6 +52,7 @@ import DevicesIcon from '@mui/icons-material/Devices';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import { useModules } from '../contexts/ModuleContext';
@@ -209,6 +210,9 @@ function DashboardSidebar({
             
             // Tasks module
             'tasks': 'tasks',
+            
+            // Life Insurance module
+            'insurance': 'life-insurance',
             
             // Core HR - always enabled (no module key needed)
             'dashboard': null,
@@ -606,6 +610,16 @@ function DashboardSidebar({
                                         locked={isMenuItemLocked('payroll')}
                                     />
                                 )}
+                                {shouldShowMenuItem('insurance') && (
+                                    <DashboardSidebarPageItem
+                                        id="insurance"
+                                        title="Life Insurance"
+                                        icon={<HealthAndSafetyIcon />}
+                                        href={getCompanyRoute("/insurance/policies")}
+                                        selected={pathname.startsWith(getCompanyRoute('/insurance'))}
+                                        locked={isMenuItemLocked('insurance')}
+                                    />
+                                )}
 
                                 <DashboardSidebarDividerItem />
                                 <DashboardSidebarHeaderItem>Task Management</DashboardSidebarHeaderItem>
@@ -857,6 +871,16 @@ function DashboardSidebar({
                                         href={getCompanyRoute("/payroll")}
                                         selected={!!matchPath(getCompanyRoute('/payroll'), pathname)}
                                         locked={isMenuItemLocked('payroll')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('insurance') && (
+                                    <DashboardSidebarPageItem
+                                        id="insurance"
+                                        title="Life Insurance"
+                                        icon={<HealthAndSafetyIcon />}
+                                        href={getCompanyRoute("/insurance/policies")}
+                                        selected={pathname.startsWith(getCompanyRoute('/insurance'))}
+                                        locked={isMenuItemLocked('insurance')}
                                     />
                                 )}
                                 {shouldShowMenuItem('resigned') && (

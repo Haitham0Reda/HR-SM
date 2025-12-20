@@ -1,11 +1,17 @@
 /**
  * Company Logging Middleware
  * Automatically sets up company-specific logging for requests
- * Enhanced to support new company-based routing structure
+ * Enhanced to support new company-based routing structure with correlation IDs and security detection
+ * 
+ * Requirements: 1.2, 4.2, 4.3
  */
 
 import { getLoggerForTenant } from '../utils/companyLogger.js';
 import logger from '../utils/logger.js';
+import { correlationMiddleware, generateCorrelationId } from '../services/correlationId.service.js';
+import backendSecurityDetectionService from '../services/backendSecurityDetection.service.js';
+import platformLogger from '../utils/platformLogger.js';
+import loggingModuleService from '../services/loggingModule.service.js';
 
 /**
  * Extract company slug from URL path
@@ -41,11 +47,26 @@ function slugToCompanyName(slug) {
 }
 
 /**
- * Middleware to add company logger to request object
- * Enhanced to support company-based routing
+ * Enhanced middleware to add company logger to request object
+ * Now includes correlation ID generation, security detection, and comprehensive logging
+ * 
+ * Requirements: 1.2, 4.2, 4.3
  */
 export function setupCompanyLogging(req, res, next) {
     try {
+        // Generate or extract correlation ID first
+        let correlationId = req.headers['x-correlation-id'] || 
+                           req.headers['correlation-id'] ||
+                           req.get('X-Correlation-ID');
+        
+        if (!correlationId) {
+            correlationId = generateCorrelationId('req');
+        }
+        
+        // Add correlation ID to request and response
+        req.correlationId = correlationId;
+        res.setHeader('X-Correlation-ID', correlationId);
+        
         // Extract company info from URL path (new routing structure)
         const companySlugFromPath = extractCompanySlugFromPath(req.path);
         const internalPath = extractInternalPath(req.path);
@@ -89,46 +110,134 @@ export function setupCompanyLogging(req, res, next) {
             req.companySlug = companySlugFromPath;
             req.internalPath = internalPath;
             req.isCompanyRoute = isCompanyRoute;
-            
-            // Log the request with enhanced routing context
-            if (process.env.LOG_REQUESTS !== 'false') {
-                const logData = {
-                    method: req.method,
-                    url: req.originalUrl,
-                    userAgent: req.get('User-Agent'),
-                    ip: req.ip,
-                    userId: req.user?.id,
-                    userEmail: req.user?.email
-                };
-                
-                // Add company routing context
-                if (isCompanyRoute) {
-                    logData.routing = {
-                        isCompanyRoute: true,
-                        companySlug: companySlugFromPath,
-                        internalPath: internalPath,
-                        companyName: companyName
-                    };
-                }
-                
-                req.companyLogger.info('Request received', logData);
-            }
         } else {
             // Fallback to global logger if no tenant info
             req.companyLogger = logger;
         }
         
+        // Perform security analysis on the request (module-aware)
+        try {
+            const securityThreats = await backendSecurityDetectionService.analyzeRequest(req, tenantId);
+            
+            // If threats detected, log them and potentially block request
+            if (securityThreats.length > 0) {
+                const criticalThreats = securityThreats.filter(threat => threat.severity === 'critical');
+                
+                if (criticalThreats.length > 0) {
+                    // Log critical security threat
+                    const threatLog = {
+                        correlationId,
+                        securityThreats: criticalThreats,
+                        method: req.method,
+                        url: req.originalUrl,
+                        ip: req.ip,
+                        userAgent: req.get('User-Agent'),
+                        userId: req.user?.id,
+                        tenantId,
+                        blocked: true,
+                        moduleAware: true
+                    };
+                    
+                    if (req.companyLogger) {
+                        req.companyLogger.security('Critical security threat detected - request blocked', threatLog);
+                    }
+                    
+                    platformLogger.platformSecurity('critical_threat_blocked', threatLog);
+                    
+                    // Block the request for critical threats
+                    return res.status(403).json({
+                        success: false,
+                        error: 'Request blocked due to security policy violation',
+                        correlationId: correlationId
+                    });
+                }
+                
+                // Log non-critical threats but allow request to continue
+                const threatLog = {
+                    correlationId,
+                    securityThreats,
+                    method: req.method,
+                    url: req.originalUrl,
+                    ip: req.ip,
+                    userAgent: req.get('User-Agent'),
+                    userId: req.user?.id,
+                    tenantId,
+                    blocked: false,
+                    moduleAware: true
+                };
+                
+                if (req.companyLogger) {
+                    req.companyLogger.security('Security threats detected', threatLog);
+                }
+            }
+        } catch (securityError) {
+            // Don't block request if security analysis fails, but log the error
+            platformLogger.error('Security analysis failed', {
+                correlationId,
+                error: securityError.message,
+                stack: securityError.stack,
+                url: req.originalUrl
+            });
+        }
+        
+        // Enhanced request logging with correlation ID and security context (module-aware)
+        const shouldLogRequest = await shouldPerformLogging(tenantId, 'request_logging');
+        if (process.env.LOG_REQUESTS !== 'false' && shouldLogRequest) {
+            const logData = {
+                correlationId,
+                method: req.method,
+                url: req.originalUrl,
+                userAgent: req.get('User-Agent'),
+                ip: req.ip,
+                userId: req.user?.id,
+                userEmail: req.user?.email,
+                sessionId: req.sessionID || req.headers['x-session-id'],
+                timestamp: new Date().toISOString(),
+                referer: req.get('Referer')
+            };
+            
+            // Add company routing context
+            if (isCompanyRoute) {
+                logData.routing = {
+                    isCompanyRoute: true,
+                    companySlug: companySlugFromPath,
+                    internalPath: internalPath,
+                    companyName: companyName
+                };
+            }
+            
+            // Add tenant context
+            if (tenantId) {
+                logData.tenantContext = {
+                    tenantId,
+                    companyName
+                };
+            }
+            
+            req.companyLogger.info('Request received', logData);
+        }
+        
+        // Store request start time for performance monitoring
+        req.startTime = Date.now();
+        
         next();
     } catch (error) {
-        logger.error('Failed to setup company logging:', error);
+        logger.error('Failed to setup company logging:', {
+            error: error.message,
+            stack: error.stack,
+            url: req.originalUrl,
+            correlationId: req.correlationId
+        });
         req.companyLogger = logger; // Fallback to global logger
         next();
     }
 }
 
 /**
- * Middleware to log response completion
- * Enhanced with company routing context
+ * Enhanced middleware to log response completion
+ * Now includes correlation ID, performance metrics, and comprehensive activity tracking
+ * 
+ * Requirements: 1.2, 4.2, 4.3
  */
 export function logResponseCompletion(req, res, next) {
     // Store original end function
@@ -147,15 +256,24 @@ export function logResponseCompletion(req, res, next) {
                 // Re-create company logger with correct tenant info to ensure file logging
                 req.companyLogger = getLoggerForTenant(req.user.tenantId, req.companyName || 'TechCorp Solutions');
             }
-            const responseTime = Date.now() - req.startTime;
+            
+            const responseTime = Date.now() - (req.startTime || Date.now());
+            const isSlowRequest = responseTime > 5000; // 5 seconds
+            const isError = res.statusCode >= 400;
             
             const logData = {
+                correlationId: req.correlationId,
                 method: req.method,
                 url: req.originalUrl,
                 statusCode: res.statusCode,
-                responseTime: responseTime + 'ms',
+                responseTime: responseTime,
+                responseTimeMs: responseTime + 'ms',
                 userId: req.user?.id,
-                userEmail: req.user?.email
+                userEmail: req.user?.email,
+                sessionId: req.sessionID || req.headers['x-session-id'],
+                timestamp: new Date().toISOString(),
+                isSlowRequest,
+                isError
             };
             
             // Add company routing context if available
@@ -168,7 +286,43 @@ export function logResponseCompletion(req, res, next) {
                 };
             }
             
-            req.companyLogger.info('Request completed', logData);
+            // Add tenant context
+            if (req.tenantId) {
+                logData.tenantContext = {
+                    tenantId: req.tenantId,
+                    companyName: req.companyName
+                };
+            }
+            
+            // Add performance metrics
+            logData.performance = {
+                responseTime,
+                isSlowRequest,
+                memoryUsage: process.memoryUsage(),
+                cpuUsage: process.cpuUsage()
+            };
+            
+            // Log with appropriate level based on response
+            if (isError) {
+                req.companyLogger.warn('Request completed with error', logData);
+            } else if (isSlowRequest) {
+                req.companyLogger.warn('Slow request completed', logData);
+            } else {
+                req.companyLogger.info('Request completed', logData);
+            }
+            
+            // Log performance metrics to platform logger if slow
+            if (isSlowRequest) {
+                platformLogger.systemPerformance({
+                    eventType: 'slow_request',
+                    correlationId: req.correlationId,
+                    url: req.originalUrl,
+                    method: req.method,
+                    responseTime,
+                    tenantId: req.tenantId,
+                    userId: req.user?.id
+                });
+            }
             
             // Also log user activity if user is authenticated and this is an API route
             if (req.user && (req.isCompanyRoute || req.originalUrl.includes('/api/v1/'))) {
@@ -177,12 +331,14 @@ export function logResponseCompletion(req, res, next) {
                 const activityData = {
                     eventType: 'user_activity',
                     activityType: activityType,
+                    correlationId: req.correlationId,
                     userId: req.user.id,
                     userEmail: req.user.email,
                     userName: req.user.name || req.user.firstName + ' ' + req.user.lastName,
                     userRole: req.user.role,
                     companySlug: req.companySlug,
                     companyName: req.companyName,
+                    tenantId: req.tenantId,
                     method: req.method,
                     internalPath: req.internalPath || req.path,
                     fullUrl: req.originalUrl,
@@ -192,6 +348,7 @@ export function logResponseCompletion(req, res, next) {
                     timestamp: new Date().toISOString(),
                     statusCode: res.statusCode,
                     responseTime: responseTime,
+                    success: !isError,
                     // Additional context
                     referer: req.get('Referer'),
                     requestBody: sanitizeRequestBody(req.body, activityType),
@@ -199,28 +356,67 @@ export function logResponseCompletion(req, res, next) {
                 };
                 
                 req.companyLogger.info('User activity tracked', activityData);
+                
+                // Log authentication events if this is an auth-related endpoint
+                if (req.originalUrl.includes('/auth/') || req.originalUrl.includes('/login') || req.originalUrl.includes('/logout')) {
+                    const authEventType = determineAuthEventType(req.originalUrl, req.method, res.statusCode);
+                    if (authEventType) {
+                        const authThreats = backendSecurityDetectionService.analyzeAuthenticationEvent(
+                            authEventType, 
+                            req.user.id, 
+                            req.ip, 
+                            req.tenantId, 
+                            { correlationId: req.correlationId, statusCode: res.statusCode }
+                        );
+                        
+                        if (authThreats.length > 0) {
+                            req.companyLogger.security('Authentication security threats detected', {
+                                correlationId: req.correlationId,
+                                authEventType,
+                                threats: authThreats,
+                                userId: req.user.id,
+                                ip: req.ip
+                            });
+                        }
+                    }
+                }
             }
         }
     };
     
-    // Store request start time
-    req.startTime = Date.now();
+    // Store request start time if not already set
+    if (!req.startTime) {
+        req.startTime = Date.now();
+    }
+    
     next();
 }
 
 /**
- * Error logging middleware for company-specific errors
- * Enhanced with company routing context
+ * Enhanced error logging middleware for company-specific errors
+ * Now includes correlation ID, security analysis, and comprehensive error context
+ * 
+ * Requirements: 1.4, 4.2, 4.3
  */
 export function logCompanyErrors(err, req, res, next) {
+    const responseTime = Date.now() - (req.startTime || Date.now());
+    
     const logData = {
+        correlationId: req.correlationId,
         error: err.message,
         stack: err.stack,
+        errorCode: err.code,
         method: req.method,
         url: req.originalUrl,
         userId: req.user?.id,
         userEmail: req.user?.email,
-        statusCode: err.statusCode || 500
+        sessionId: req.sessionID || req.headers['x-session-id'],
+        statusCode: err.statusCode || 500,
+        responseTime,
+        timestamp: new Date().toISOString(),
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        referer: req.get('Referer')
     };
     
     // Add company routing context if available
@@ -233,24 +429,124 @@ export function logCompanyErrors(err, req, res, next) {
         };
     }
     
+    // Add tenant context
+    if (req.tenantId) {
+        logData.tenantContext = {
+            tenantId: req.tenantId,
+            companyName: req.companyName
+        };
+    }
+    
+    // Add request context for debugging
+    logData.requestContext = {
+        headers: sanitizeHeaders(req.headers),
+        query: req.query,
+        body: sanitizeRequestBody(req.body, 'error'),
+        params: req.params
+    };
+    
+    // Determine error severity
+    const isCriticalError = err.statusCode >= 500 || err.name === 'DatabaseError' || err.name === 'SecurityError';
+    const isSecurityError = err.name === 'SecurityError' || err.message.includes('security') || err.message.includes('unauthorized');
+    
+    logData.errorSeverity = isCriticalError ? 'critical' : (err.statusCode >= 400 ? 'high' : 'medium');
+    logData.isSecurityError = isSecurityError;
+    
+    // Log the error with appropriate level
     if (req.companyLogger) {
-        req.companyLogger.error('Request error', logData);
+        if (isCriticalError) {
+            req.companyLogger.error('Critical request error', logData);
+        } else if (isSecurityError) {
+            req.companyLogger.security('Security-related request error', logData);
+        } else {
+            req.companyLogger.warn('Request error', logData);
+        }
     } else {
         logger.error('Request error (no company context)', logData);
+    }
+    
+    // Log to platform logger for critical errors
+    if (isCriticalError) {
+        platformLogger.systemHealth('request-error', 'critical', {
+            correlationId: req.correlationId,
+            error: err.message,
+            statusCode: err.statusCode || 500,
+            url: req.originalUrl,
+            tenantId: req.tenantId,
+            userId: req.user?.id,
+            errorType: err.name || 'UnknownError'
+        });
+    }
+    
+    // Analyze error for security implications
+    if (isSecurityError && req.user) {
+        try {
+            const securityThreats = backendSecurityDetectionService.analyzeAuthenticationEvent(
+                'error_occurred',
+                req.user.id,
+                req.ip,
+                req.tenantId,
+                {
+                    correlationId: req.correlationId,
+                    errorMessage: err.message,
+                    statusCode: err.statusCode || 500,
+                    url: req.originalUrl
+                }
+            );
+            
+            if (securityThreats.length > 0) {
+                if (req.companyLogger) {
+                    req.companyLogger.security('Security threats detected from error analysis', {
+                        correlationId: req.correlationId,
+                        threats: securityThreats,
+                        originalError: err.message
+                    });
+                }
+            }
+        } catch (securityAnalysisError) {
+            // Don't let security analysis errors break error handling
+            platformLogger.warn('Security analysis failed during error handling', {
+                correlationId: req.correlationId,
+                originalError: err.message,
+                analysisError: securityAnalysisError.message
+            });
+        }
     }
     
     next(err);
 }
 
 /**
- * Middleware to log security events
- * Enhanced with company routing context
+ * Sanitize headers for logging (remove sensitive information)
+ * @param {Object} headers - Request headers
+ * @returns {Object} Sanitized headers
+ */
+function sanitizeHeaders(headers) {
+    const sanitized = { ...headers };
+    const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key', 'x-auth-token'];
+    
+    sensitiveHeaders.forEach(header => {
+        if (sanitized[header]) {
+            sanitized[header] = '[REDACTED]';
+        }
+    });
+    
+    return sanitized;
+}
+
+/**
+ * Enhanced middleware to log security events
+ * Now includes correlation ID, threat analysis, and comprehensive security context
+ * 
+ * Requirements: 7.1, 7.2, 9.1, 9.2
  */
 export function logSecurityEvent(eventType, details = {}) {
     return (req, res, next) => {
         if (req.companyLogger) {
             const logData = {
+                correlationId: req.correlationId,
                 eventType,
+                securityEventType: eventType,
                 ...details,
                 method: req.method,
                 url: req.originalUrl,
@@ -258,7 +554,9 @@ export function logSecurityEvent(eventType, details = {}) {
                 userAgent: req.get('User-Agent'),
                 userId: req.user?.id,
                 userEmail: req.user?.email,
-                timestamp: new Date().toISOString()
+                sessionId: req.sessionID || req.headers['x-session-id'],
+                timestamp: new Date().toISOString(),
+                severity: details.severity || 'medium'
             };
             
             // Add company routing context if available
@@ -271,27 +569,60 @@ export function logSecurityEvent(eventType, details = {}) {
                 };
             }
             
+            // Add tenant context
+            if (req.tenantId) {
+                logData.tenantContext = {
+                    tenantId: req.tenantId,
+                    companyName: req.companyName
+                };
+            }
+            
+            // Add security context
+            logData.securityContext = {
+                threatLevel: details.severity || 'medium',
+                blocked: details.blocked || false,
+                actionTaken: details.actionTaken || 'logged',
+                riskScore: details.riskScore || 0
+            };
+            
             req.companyLogger.security(`Security event: ${eventType}`, logData);
+            
+            // Log to platform logger for high/critical security events
+            if (details.severity === 'high' || details.severity === 'critical') {
+                platformLogger.platformSecurity(`Company Security Event: ${eventType}`, {
+                    ...logData,
+                    tenantId: req.tenantId,
+                    companyName: req.companyName
+                });
+            }
         }
         next();
     };
 }
 
 /**
- * Middleware to log audit events
- * Enhanced with company routing context
+ * Enhanced middleware to log audit events
+ * Now includes correlation ID, compliance tracking, and comprehensive audit context
+ * 
+ * Requirements: 2.1, 2.2, 2.4, 7.5
  */
 export function logAuditEvent(eventType, details = {}) {
     return (req, res, next) => {
         if (req.companyLogger) {
             const logData = {
+                correlationId: req.correlationId,
                 eventType,
+                auditEventType: eventType,
                 ...details,
                 method: req.method,
                 url: req.originalUrl,
                 userId: req.user?.id,
                 userEmail: req.user?.email,
-                timestamp: new Date().toISOString()
+                userRole: req.user?.role,
+                sessionId: req.sessionID || req.headers['x-session-id'],
+                timestamp: new Date().toISOString(),
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
             };
             
             // Add company routing context if available
@@ -304,7 +635,44 @@ export function logAuditEvent(eventType, details = {}) {
                 };
             }
             
+            // Add tenant context
+            if (req.tenantId) {
+                logData.tenantContext = {
+                    tenantId: req.tenantId,
+                    companyName: req.companyName
+                };
+            }
+            
+            // Add audit context
+            logData.auditContext = {
+                complianceLevel: details.complianceLevel || 'standard',
+                retentionPeriod: details.retentionPeriod || 'standard',
+                tamperProof: true,
+                auditTrailId: `audit_${req.correlationId}_${Date.now()}`,
+                dataClassification: details.dataClassification || 'internal'
+            };
+            
+            // Add data access context if this is a data operation
+            if (details.dataAccessed) {
+                logData.dataAccess = {
+                    dataType: details.dataType || 'unknown',
+                    recordsAffected: details.recordsAffected || 0,
+                    operation: details.operation || req.method,
+                    sensitiveData: details.sensitiveData || false
+                };
+            }
+            
             req.companyLogger.audit(`Audit event: ${eventType}`, logData);
+            
+            // Log sensitive data access to platform logger
+            if (details.sensitiveData || details.complianceLevel === 'high') {
+                platformLogger.adminAction(`Sensitive Data Access: ${eventType}`, req.user?.id || 'unknown', {
+                    ...logData,
+                    tenantId: req.tenantId,
+                    companyName: req.companyName,
+                    sensitiveDataAccess: true
+                });
+            }
         }
         next();
     };
@@ -431,6 +799,31 @@ export function trackUserActivity(req, res, next) {
 }
 
 /**
+ * Determine authentication event type from URL and response
+ * @param {string} url - Request URL
+ * @param {string} method - HTTP method
+ * @param {number} statusCode - Response status code
+ * @returns {string|null} Authentication event type
+ */
+function determineAuthEventType(url, method, statusCode) {
+    if (method === 'POST') {
+        if (url.includes('/login') || url.includes('/auth/login')) {
+            return statusCode === 200 ? 'login_success' : 'login_failed';
+        }
+        if (url.includes('/logout') || url.includes('/auth/logout')) {
+            return 'logout';
+        }
+        if (url.includes('/password-reset') || url.includes('/auth/password-reset')) {
+            return 'password_reset_request';
+        }
+        if (url.includes('/register') || url.includes('/auth/register')) {
+            return statusCode === 201 ? 'registration_success' : 'registration_failed';
+        }
+    }
+    return null;
+}
+
+/**
  * Determine the type of user activity based on request details
  * @param {string} method - HTTP method
  * @param {string} path - Internal path
@@ -522,6 +915,82 @@ export function trackUserSession(eventType, req, additionalData = {}) {
     }
 }
 
+/**
+ * Check if logging should be performed based on module settings
+ * @param {string} tenantId - Tenant ID
+ * @param {string} logType - Type of logging to check
+ * @returns {boolean} Whether logging should be performed
+ */
+async function shouldPerformLogging(tenantId, logType) {
+    if (!tenantId) {
+        return true; // Always log for platform-level requests
+    }
+    
+    try {
+        const moduleConfig = await loggingModuleService.getConfig(tenantId);
+        
+        // If module is disabled, only log essential events
+        if (!moduleConfig.enabled) {
+            return false;
+        }
+        
+        // Check specific feature flags
+        switch (logType) {
+            case 'request_logging':
+                return true; // Request logging is always enabled when module is enabled
+            case 'user_activity':
+                return moduleConfig.features.userActionLogging;
+            case 'performance':
+                return moduleConfig.features.performanceLogging;
+            case 'detailed_error':
+                return moduleConfig.features.detailedErrorLogging;
+            case 'audit':
+                return moduleConfig.features.auditLogging;
+            case 'security':
+                return moduleConfig.features.securityLogging;
+            default:
+                return true;
+        }
+    } catch (error) {
+        // Fallback to logging if module service fails
+        return true;
+    }
+}
+
+/**
+ * Check if an event is essential (always logged regardless of module settings)
+ * @param {string} eventType - Type of event
+ * @param {Object} logData - Log data to check
+ * @returns {boolean} Whether the event is essential
+ */
+function isEssentialEvent(eventType, logData = {}) {
+    const essentialEvents = [
+        'authentication_attempt',
+        'authorization_failure',
+        'security_breach',
+        'data_access_violation',
+        'system_error',
+        'compliance_event',
+        'platform_security_event'
+    ];
+    
+    // Check if event type is essential
+    if (essentialEvents.includes(eventType)) {
+        return true;
+    }
+    
+    // Check if log data indicates essential event
+    if (logData.essential === true) {
+        return true;
+    }
+    
+    if (logData.severity === 'critical') {
+        return true;
+    }
+    
+    return false;
+}
+
 export default {
     setupCompanyLogging,
     logResponseCompletion,
@@ -532,5 +1001,7 @@ export default {
     logRouteAccess,
     logCompanyEvent,
     trackUserActivity,
-    trackUserSession
+    trackUserSession,
+    shouldPerformLogging,
+    isEssentialEvent
 };

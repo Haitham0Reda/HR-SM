@@ -2,13 +2,32 @@
 import Attendance from '../models/attendance.model.js';
 import { getHolidayInfo } from '../../holidays/utils/holidayChecker.js';
 import logger from '../../../../utils/logger.js';
+import { 
+    logControllerAction, 
+    logControllerError, 
+    logDataAccess, 
+    logSecurityEvent,
+    logAdminAction,
+    withLogging 
+} from '../../../../utils/controllerLogger.js';
 
 export const getAllAttendance = async (req, res) => {
     try {
+        // Log controller action start
+        logControllerAction(req, 'getAllAttendance', {
+            controller: 'AttendanceController',
+            filters: req.query
+        });
+
         // Get tenantId from user context (set by auth middleware)
         const tenantId = req.user?.tenantId || req.tenant?.tenantId;
         
         if (!tenantId) {
+            logSecurityEvent(req, 'missing_tenant_context', {
+                severity: 'medium',
+                controller: 'AttendanceController',
+                action: 'getAllAttendance'
+            });
             return res.status(400).json({ 
                 success: false,
                 error: 'Tenant ID is required' 
@@ -148,6 +167,14 @@ export const getAllAttendance = async (req, res) => {
             ]);
         }
 
+        // Log data access
+        logDataAccess(req, 'attendance', {
+            operation: 'read',
+            recordsAccessed: attendance.length,
+            filters: { department: department || departments, employee, status, startDate, endDate },
+            sensitiveData: true
+        });
+
         res.json({
             success: true,
             data: attendance,
@@ -176,7 +203,10 @@ export const getAllAttendance = async (req, res) => {
             }
         });
     } catch (err) {
-        logger.error('Error fetching attendance records:', err);
+        logControllerError(req, err, {
+            controller: 'AttendanceController',
+            action: 'getAllAttendance'
+        });
         res.status(500).json({ 
             success: false,
             error: err.message 
@@ -186,10 +216,22 @@ export const getAllAttendance = async (req, res) => {
 
 export const createAttendance = async (req, res) => {
     try {
+        // Log controller action start
+        logControllerAction(req, 'createAttendance', {
+            controller: 'AttendanceController',
+            employeeId: req.body.employee,
+            date: req.body.date
+        });
+
         // Get tenantId from user context (set by auth middleware)
         const tenantId = req.user?.tenantId || req.tenant?.tenantId;
         
         if (!tenantId) {
+            logSecurityEvent(req, 'missing_tenant_context', {
+                severity: 'medium',
+                controller: 'AttendanceController',
+                action: 'createAttendance'
+            });
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
@@ -213,8 +255,22 @@ export const createAttendance = async (req, res) => {
         await attendance.populate('employee', 'firstName lastName email employeeId');
         await attendance.populate('department', 'name code');
         await attendance.populate('position', 'title');
+        
+        // Log data access for attendance creation
+        logDataAccess(req, 'attendance', {
+            operation: 'create',
+            recordsAccessed: 1,
+            recordIds: [attendance._id.toString()],
+            sensitiveData: true,
+            employeeId: attendanceData.employee
+        });
+        
         res.status(201).json(attendance);
     } catch (err) {
+        logControllerError(req, err, {
+            controller: 'AttendanceController',
+            action: 'createAttendance'
+        });
         res.status(400).json({ error: err.message });
     }
 };
@@ -780,6 +836,15 @@ export const manualCheckIn = async (req, res) => {
         await attendance.populate('employee', 'firstName lastName email employeeId');
         await attendance.populate('department', 'name code');
         await attendance.populate('position', 'title');
+        
+        // Log admin action for manual check-in
+        logAdminAction(req, 'manual_check_in', {
+            employeeId,
+            date: checkInDate,
+            time: checkInTime,
+            notes,
+            attendanceId: attendance._id.toString()
+        });
         
         logger.info(`Manual check-in recorded by ${req.user.firstName || req.user.email} for employee ${employeeId}`);
         

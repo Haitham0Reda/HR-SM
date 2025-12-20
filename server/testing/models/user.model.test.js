@@ -97,10 +97,10 @@ describe('User Model', () => {
     const user = new User(userData);
     const savedUser = await user.save();
 
-    const isMatch = await savedUser.matchPassword('Password123!');
+    const isMatch = await savedUser.comparePassword('Password123!');
     expect(isMatch).toBe(true);
 
-    const isNotMatch = await savedUser.matchPassword('WrongPassword');
+    const isNotMatch = await savedUser.comparePassword('WrongPassword');
     expect(isNotMatch).toBe(false);
   });
 });
@@ -128,8 +128,8 @@ describe('User Model Methods', () => {
     }
   });
 
-  it('should have matchPassword method', () => {
-    expect(typeof testUser.matchPassword).toBe('function');
+  it('should have comparePassword method', () => {
+    expect(typeof testUser.comparePassword).toBe('function');
   });
 
   it('should have getEffectivePermissions method', () => {

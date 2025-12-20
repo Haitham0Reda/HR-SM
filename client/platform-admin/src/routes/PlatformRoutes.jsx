@@ -11,6 +11,7 @@ import SubscriptionsPage from '../pages/SubscriptionsPage';
 import ModulesPage from '../pages/ModulesPage';
 import SystemPage from '../pages/SystemPage';
 import CompaniesPage from '../pages/CompaniesPage';
+import AnalyticsPage from '../pages/AnalyticsPage';
 
 // Layout
 import PlatformLayout from '../components/layout/PlatformLayout';
@@ -95,6 +96,7 @@ const PlatformRoutes = () => {
         <Route path="tenants" element={<TenantsPage />} />
         <Route path="subscriptions" element={<SubscriptionsPage />} />
         <Route path="modules" element={<ModulesPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="system" element={<SystemPage />} />
       </Route>
 

@@ -1,0 +1,10 @@
+{
+  "features": {
+    "userActionLogging": {
+      "enabled": true
+    },
+    "performanceLogging": {
+      "enabled": false
+    }
+  }
+}

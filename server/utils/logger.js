@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { getLoggerForTenant } from './companyLogger.js';
+import { generateCorrelationId } from '../services/correlationId.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,6 +71,20 @@ const logger = winston.createLogger({
 // Add helper method for company-specific logging
 logger.forCompany = function(tenantId, companyName = null) {
     return getLoggerForTenant(tenantId, companyName);
+};
+
+// Add correlation ID generation method
+logger.generateCorrelationId = generateCorrelationId;
+
+// Override log method to automatically include correlation ID if available
+const originalLog = logger.log.bind(logger);
+logger.log = function(level, message, meta = {}) {
+    // Add correlation ID if not present and available in context
+    if (!meta.correlationId && global.correlationId) {
+        meta.correlationId = global.correlationId;
+    }
+    
+    return originalLog(level, message, meta);
 };
 
 export default logger;

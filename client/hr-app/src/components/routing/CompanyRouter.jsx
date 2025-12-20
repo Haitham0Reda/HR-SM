@@ -87,6 +87,18 @@ import AuthTokenTest from '../debug/AuthTokenTest';
 import DirectAPITest from '../debug/DirectAPITest';
 import ComprehensiveAnnouncementDebug from '../debug/ComprehensiveAnnouncementDebug';
 
+// Insurance pages
+import {
+    InsurancePoliciesPage,
+    CreatePolicyPage,
+    EditPolicyPage,
+    PolicyDetailsPage,
+    ClaimsPage,
+    CreateClaimPage,
+    ClaimDetailsPage,
+    InsuranceReportsPage
+} from '../../pages/insurance';
+
 /**
  * Company-scoped router component
  * Handles all routes within a company context
@@ -202,6 +214,17 @@ const CompanyRouter = () => {
                 {/* Task Management */}
                 <Route path="tasks" element={<TasksPage />} />
                 <Route path="tasks/:id" element={<TaskDetailsPage />} />
+
+                {/* Insurance Management */}
+                <Route path="insurance" element={<Navigate to="insurance/policies" replace />} />
+                <Route path="insurance/policies" element={<InsurancePoliciesPage />} />
+                <Route path="insurance/policies/new" element={<CreatePolicyPage />} />
+                <Route path="insurance/policies/:policyId" element={<PolicyDetailsPage />} />
+                <Route path="insurance/policies/:policyId/edit" element={<EditPolicyPage />} />
+                <Route path="insurance/claims" element={<ClaimsPage />} />
+                <Route path="insurance/claims/new" element={<CreateClaimPage />} />
+                <Route path="insurance/claims/:claimId" element={<ClaimDetailsPage />} />
+                <Route path="insurance/reports" element={<InsuranceReportsPage />} />
 
                 {/* Pricing */}
                 <Route path="pricing" element={<PricingPage />} />

@@ -3,12 +3,13 @@ import ReportConfig from '../../modules/reports/models/reportConfig.model.js';
 // organization model removed - not needed for general HR system
 
 // organization variable removed
-beforeAll(async () => {
-  organization = await organization.create({
-    name: 'organization of Engineering'Code: 'ENG',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
-});
+// beforeAll(async () => {
+//   organization = await organization.create({
+//     name: 'organization of Engineering',
+//     code: 'ENG',
+//     arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+//   });
+// });
 
 afterAll(async () => {
   // Clean up test data

@@ -9,22 +9,23 @@ let user;
 // organization variable removed
 beforeAll(async () => {
   // Create a organization first
-  organization = await organization.create({
-    organizationCode: 'ENG',
-    name: 'organization of Engineering',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
+  // organization = await organization.create({
+  //   organizationCode: 'ENG',
+  //   name: 'organization of Engineering',
+  //   arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  // });
 });
 
 beforeEach(async () => {
   // Create a user for reference (in beforeEach because the global afterEach clears all data)
   user = await User.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'admin',
-    employeeId: 'EMP001': organization._id
+    employeeId: 'EMP001'
+    // organization._id removed as not needed
   });
 
   // Create a backup for reference

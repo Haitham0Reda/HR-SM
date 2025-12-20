@@ -28,6 +28,7 @@ import {
   Palette as PaletteIcon,
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
+  Analytics as AnalyticsIcon,
 } from '@mui/icons-material';
 import { usePlatformAuth } from '../../contexts/PlatformAuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -40,6 +41,7 @@ const menuItems = [
   { text: 'Tenants', icon: <BusinessIcon />, path: '/tenants' },
   { text: 'Subscriptions', icon: <CardMembershipIcon />, path: '/subscriptions' },
   { text: 'Modules', icon: <ExtensionIcon />, path: '/modules' },
+  { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
   { text: 'System', icon: <SettingsIcon />, path: '/system' },
 ];
 

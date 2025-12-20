@@ -12,30 +12,34 @@ let position;
 
 beforeAll(async () => {
   // Create required references
-  organization = await organization.create({
-    name: 'organization of Engineering'Code: 'ENG',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
+  // organization = await organization.create({
+  //   name: 'organization of Engineering',
+  //   code: 'ENG',
+  //   arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  // });
 
   department = await Department.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     name: 'Test Department',
-    code: 'TEST': organization._id
+    code: 'TEST'
+    // organization._id removed as not needed
   });
 
   position = await Position.create({
+    tenantId: 'test_tenant_123',
     title: 'Test Position',
     code: 'TP001',
     department: department._id
   });
 
   user = await User.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'hr',
-    employeeId: 'EMP001': organization._id,
+    employeeId: 'EMP001',
+    // organization._id removed as not needed,
     department: department._id,
     position: position._id
   });

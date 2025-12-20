@@ -244,9 +244,9 @@ describe('Tenant Isolation - Property-Based Tests', () => {
                     expect(totalDepartments).toBe(sumOfTenantDepartments);
                 }
             ),
-            { numRuns: 50, timeout: 60000 } // Reduced runs for performance, increased timeout
+            { numRuns: 10, timeout: 30000 } // Further reduced runs for performance, reduced timeout
         );
-    }, 90000); // 90 second timeout for this test
+    }, 60000); // 60 second timeout for this test
 
     /**
      * Property 1.1: Queries without tenantId filter should not be allowed

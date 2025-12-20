@@ -1,10 +1,17 @@
 import Company from '../../platform/models/Company.js';
+import { requireModule as licenseAwareRequireModule } from '../../middleware/licenseFeatureGuard.middleware.js';
+import logger from '../../utils/logger.js';
 
 // Cache for feature flags to reduce DB queries
 const featureFlagCache = new Map();
 const CACHE_TTL = 60000; // 1 minute
 
-export const requireModule = (moduleName) => {
+/**
+ * Legacy module guard - maintained for backward compatibility
+ * @param {string} moduleName - Module name to check
+ * @returns {Function} Express middleware function
+ */
+export const requireModuleLegacy = (moduleName) => {
     return async (req, res, next) => {
         try {
             const tenantId = req.tenantId;
@@ -66,13 +73,25 @@ export const requireModule = (moduleName) => {
 
             next();
         } catch (error) {
-            console.error('Module guard error:', error);
+            logger.error('Legacy module guard error:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error checking module access'
             });
         }
     };
+};
+
+/**
+ * Enhanced module guard with license validation
+ * Uses the new license-aware module guard for better integration
+ * @param {string} moduleName - Module name to check
+ * @param {Object} options - Options for module guard
+ * @returns {Function} Express middleware function
+ */
+export const requireModule = (moduleName, options = {}) => {
+    // Use the new license-aware module guard
+    return licenseAwareRequireModule(moduleName, options);
 };
 
 // Clear cache for a tenant (call when config changes)

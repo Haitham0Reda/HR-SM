@@ -9,7 +9,8 @@ const MODULES = {
     DOCUMENTS: 'documents',
     COMMUNICATION: 'communication',
     REPORTING: 'reporting',
-    TASKS: 'tasks'
+    TASKS: 'tasks',
+    LOGGING: 'logging'
 };
 
 const PRICING_TIERS = ['starter', 'business', 'enterprise'];

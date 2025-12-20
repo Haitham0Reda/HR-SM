@@ -1,40 +1,10 @@
 import mongoose from 'mongoose';
+import { getOptimizedConnectionOptions, optimizeDatabase } from './databaseOptimization.js';
 
 export const connectDatabase = async () => {
     try {
-        // Enhanced connection options for stability
-        const options = {
-            // Connection pool settings
-            maxPoolSize: 10, // Maximum number of connections in the pool
-            minPoolSize: 2,  // Minimum number of connections in the pool
-            maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
-
-            // Timeout settings
-            serverSelectionTimeoutMS: 5000, // How long to try selecting a server
-            socketTimeoutMS: 45000, // How long to wait for a response
-            connectTimeoutMS: 10000, // How long to wait for initial connection
-
-            // Retry settings
-            retryWrites: true,
-            retryReads: true,
-
-            // Buffer settings - Modern MongoDB driver handles buffering automatically
-            bufferCommands: true, // Enable mongoose buffering (default)
-            useNewUrlParser: true, // Use new URL parser
-            useUnifiedTopology: true, // Use new server discovery and monitoring engine
-
-            // Heartbeat settings
-            heartbeatFrequencyMS: 10000, // Send heartbeat every 10 seconds
-
-            // Write concern
-            w: 'majority',
-
-            // Read preference
-            readPreference: 'primary',
-
-            // Compression
-            compressors: ['zlib'],
-        };
+        // Use optimized connection options for enhanced performance
+        const options = getOptimizedConnectionOptions();
 
         const conn = await mongoose.connect(process.env.MONGODB_URI, options);
 
@@ -74,6 +44,19 @@ export const connectDatabase = async () => {
                 process.exit(1);
             }
         });
+
+        // Run database optimization after successful connection
+        if (process.env.NODE_ENV !== 'test') {
+            setTimeout(async () => {
+                try {
+                    console.log('🔧 Running database optimization...');
+                    const result = await optimizeDatabase();
+                    console.log(`✅ Database optimization completed: ${result.totalIndexes} indexes created`);
+                } catch (error) {
+                    console.error('⚠️  Database optimization failed:', error.message);
+                }
+            }, 5000); // Wait 5 seconds after connection to run optimization
+        }
 
         return conn;
     } catch (error) {

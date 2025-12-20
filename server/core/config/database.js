@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { logger } from '../logging/logger.js';
+import { initializeDatabaseLogging } from '../../middleware/database.middleware.js';
 
 /**
  * Establishes a connection to MongoDB
@@ -28,6 +29,10 @@ export const connectDatabase = async () => {
         await mongoose.connect(cleanUri, connectionOptions);
 
         logger.info('✅ MongoDB connection established');
+        
+        // Initialize database operation logging
+        initializeDatabaseLogging();
+        logger.info('✅ Database logging middleware initialized');
 
         // Log database connection events
         mongoose.connection.on('connected', () => {
