@@ -4,13 +4,13 @@
 import mongoose from 'mongoose';
 import Notification from '../../modules/notifications/models/notification.model.js';
 import * as notificationController from '../../modules/notifications/controllers/notification.controller.js';
-import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestUser, createTestDepartment, cleanupTestData } from './testHelpers.js';
 
 describe('Notification Controller - All 5 Functions', () => {
     let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
+        testorganization = await createTestDepartment();
         testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });

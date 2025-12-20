@@ -20,6 +20,7 @@ describe('User Controller - All 7 Functions', () => {
     });
 
     testPosition = await Position.create({
+      tenantId: 'test_tenant_123',
       title: 'Developer',
       arabicTitle: 'مطور',
       code: 'DEV001',
@@ -44,7 +45,7 @@ describe('User Controller - All 7 Functions', () => {
       }
     });
 
-    mockReq = createMockRequest({ user: { _id: testUser._id } });
+    mockReq = createMockRequest({ user: { _id: testUser._id, tenantId: 'test_tenant_123' } });
     mockRes = createMockResponse();
   });
 
@@ -109,7 +110,6 @@ describe('User Controller - All 7 Functions', () => {
   describe('3. createUser', () => {
     it('should create a new user successfully', async () => {
       mockReq.body = {
-        tenantId: 'test_tenant_123',
         username: 'newuser',
         email: 'new@test.com',
         password: 'password123',
@@ -125,6 +125,7 @@ describe('User Controller - All 7 Functions', () => {
           hireDate: new Date()
         }
       };
+      mockReq.user = { tenantId: 'test_tenant_123' };
 
       await userController.createUser(mockReq, mockRes);
 
@@ -175,6 +176,7 @@ describe('User Controller - All 7 Functions', () => {
         email: 'test@test.com', // Already exists
         password: 'password123'
       };
+      mockReq.user = { tenantId: 'test_tenant_123' };
 
       await userController.createUser(mockReq, mockRes);
 
@@ -188,6 +190,7 @@ describe('User Controller - All 7 Functions', () => {
         email: 'different@test.com',
         password: 'password123'
       };
+      mockReq.user = { tenantId: 'test_tenant_123' };
 
       await userController.createUser(mockReq, mockRes);
 
@@ -202,6 +205,7 @@ describe('User Controller - All 7 Functions', () => {
         password: 'password123',
         role: 'invalid-role'
       };
+      mockReq.user = { tenantId: 'test_tenant_123' };
 
       await userController.createUser(mockReq, mockRes);
 
@@ -298,9 +302,9 @@ describe('User Controller - All 7 Functions', () => {
     it('should login successfully with valid credentials', async () => {
       mockReq.body = {
         email: 'test@test.com',
-        password: 'password123',
-        role: 'employee'
+        password: 'password123'
       };
+      mockReq.user = { tenantId: 'test_tenant_123' };
 
       await userController.loginUser(mockReq, mockRes);
 
@@ -311,9 +315,9 @@ describe('User Controller - All 7 Functions', () => {
 
     it('should reject missing email', async () => {
       mockReq.body = {
-        password: 'password123',
-        role: 'employee'
+        password: 'password123'
       };
+      mockReq.user = { tenantId: 'test_tenant_123' };
 
       await userController.loginUser(mockReq, mockRes);
 
@@ -323,9 +327,10 @@ describe('User Controller - All 7 Functions', () => {
 
     it('should reject missing password', async () => {
       mockReq.body = {
-        email: 'test@test.com',
-        role: 'employee'
+        email: 'test@test.com'
       };
+      mockReq.user = { tenantId: 'test_tenant_123' };
+      mockReq.tenantId = 'test_tenant_123';
 
       await userController.loginUser(mockReq, mockRes);
 
@@ -337,9 +342,9 @@ describe('User Controller - All 7 Functions', () => {
     it('should reject invalid email', async () => {
       mockReq.body = {
         email: 'wrong@test.com',
-        password: 'password123',
-        role: 'employee'
+        password: 'password123'
       };
+      mockReq.user = { tenantId: 'test_tenant_123' };
 
       await userController.loginUser(mockReq, mockRes);
 
@@ -349,9 +354,9 @@ describe('User Controller - All 7 Functions', () => {
     it('should reject invalid password', async () => {
       mockReq.body = {
         email: 'test@test.com',
-        password: 'wrongpassword',
-        role: 'employee'
+        password: 'wrongpassword'
       };
+      mockReq.user = { tenantId: 'test_tenant_123' };
 
       await userController.loginUser(mockReq, mockRes);
 

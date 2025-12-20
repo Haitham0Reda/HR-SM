@@ -4,13 +4,13 @@
 import mongoose from 'mongoose';
 import PermissionAudit from '../../platform/system/models/permissionAudit.model.js';
 import * as permissionAuditController from '../../platform/system/controllers/permissionAudit.controller.js';
-import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestUser, createTestDepartment, cleanupTestData } from './testHelpers.js';
 
 describe('PermissionAudit Controller - All 9 Functions', () => {
     let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
+        testorganization = await createTestDepartment();
         testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });

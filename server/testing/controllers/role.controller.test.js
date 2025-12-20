@@ -31,12 +31,14 @@ describe('Role Controller', () => {
         beforeEach(async () => {
             await Role.create([
                 {
+                    tenantId: 'test_tenant_123',
                     name: 'admin',
                     displayName: 'Administrator',
                     permissions: ['users.view', 'users.create'],
                     isSystemRole: true
                 },
                 {
+                    tenantId: 'test_tenant_123',
                     name: 'custom-role',
                     displayName: 'Custom Role',
                     permissions: ['documents.view'],
@@ -95,6 +97,7 @@ describe('Role Controller', () => {
 
         beforeEach(async () => {
             testRole = await Role.create({
+                tenantId: 'test_tenant_123',
                 name: 'test-role',
                 displayName: 'Test Role',
                 permissions: ['users.view']
@@ -104,7 +107,7 @@ describe('Role Controller', () => {
         it('should return role by ID', async () => {
             const req = createMockRequest({
                 params: { id: testRole._id.toString() },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -138,7 +141,7 @@ describe('Role Controller', () => {
                     description: 'A new custom role',
                     permissions: ['users.view', 'documents.view']
                 },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -154,7 +157,7 @@ describe('Role Controller', () => {
                 body: {
                     description: 'Missing required fields'
                 },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -166,6 +169,7 @@ describe('Role Controller', () => {
 
         it('should fail with duplicate name', async () => {
             await Role.create({
+                tenantId: 'test_tenant_123',
                 name: 'existing-role',
                 displayName: 'Existing Role',
                 permissions: ['users.view']
@@ -177,7 +181,7 @@ describe('Role Controller', () => {
                     displayName: 'Duplicate Role',
                     permissions: ['users.view']
                 },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -194,7 +198,7 @@ describe('Role Controller', () => {
                     displayName: 'Invalid Permissions Role',
                     permissions: ['invalid.permission']
                 },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -210,6 +214,7 @@ describe('Role Controller', () => {
 
         beforeEach(async () => {
             testRole = await Role.create({
+                tenantId: 'test_tenant_123',
                 name: 'update-test-role',
                 displayName: 'Update Test Role',
                 description: 'Original description',
@@ -226,7 +231,7 @@ describe('Role Controller', () => {
                     description: 'Updated description',
                     permissions: ['users.view', 'users.create']
                 },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -240,6 +245,7 @@ describe('Role Controller', () => {
 
         it('should prevent modifying system role name', async () => {
             const systemRole = await Role.create({
+                tenantId: 'test_tenant_123',
                 name: 'system-role',
                 displayName: 'System Role',
                 permissions: ['users.view'],
@@ -251,7 +257,7 @@ describe('Role Controller', () => {
                 body: {
                     name: 'new-name'
                 },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -263,6 +269,7 @@ describe('Role Controller', () => {
 
         it('should prevent changing isSystemRole flag', async () => {
             const systemRole = await Role.create({
+                tenantId: 'test_tenant_123',
                 name: 'system-role-2',
                 displayName: 'System Role 2',
                 permissions: ['users.view'],
@@ -274,7 +281,7 @@ describe('Role Controller', () => {
                 body: {
                     isSystemRole: false
                 },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -288,7 +295,7 @@ describe('Role Controller', () => {
             const req = createMockRequest({
                 params: { id: '507f1f77bcf86cd799439099' },
                 body: { displayName: 'Updated' },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -303,6 +310,7 @@ describe('Role Controller', () => {
 
         beforeEach(async () => {
             testRole = await Role.create({
+                tenantId: 'test_tenant_123',
                 name: 'delete-test-role',
                 displayName: 'Delete Test Role',
                 permissions: ['users.view'],
@@ -313,7 +321,7 @@ describe('Role Controller', () => {
         it('should delete custom role successfully', async () => {
             const req = createMockRequest({
                 params: { id: testRole._id.toString() },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -328,6 +336,7 @@ describe('Role Controller', () => {
 
         it('should prevent deleting system roles', async () => {
             const systemRole = await Role.create({
+                tenantId: 'test_tenant_123',
                 name: 'system-role-delete',
                 displayName: 'System Role Delete',
                 permissions: ['users.view'],
@@ -336,7 +345,7 @@ describe('Role Controller', () => {
 
             const req = createMockRequest({
                 params: { id: systemRole._id.toString() },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -365,7 +374,7 @@ describe('Role Controller', () => {
 
             const req = createMockRequest({
                 params: { id: testRole._id.toString() },
-                user: mockUser
+                user: { ...mockUser, tenantId: 'test_tenant_123' }
             });
             const res = createMockResponse();
 
@@ -393,18 +402,21 @@ describe('Role Controller', () => {
         beforeEach(async () => {
             await Role.create([
                 {
+                    tenantId: 'test_tenant_123',
                     name: 'admin',
                     displayName: 'Admin',
                     permissions: ['users.view'],
                     isSystemRole: true
                 },
                 {
+                    tenantId: 'test_tenant_123',
                     name: 'hr',
                     displayName: 'HR',
                     permissions: ['users.view'],
                     isSystemRole: true
                 },
                 {
+                    tenantId: 'test_tenant_123',
                     name: 'custom-1',
                     displayName: 'Custom 1',
                     permissions: ['users.view'],
@@ -446,6 +458,7 @@ describe('Role Controller', () => {
 
         it('should update existing system roles', async () => {
             await Role.create({
+                tenantId: 'test_tenant_123',
                 name: 'admin',
                 displayName: 'Admin',
                 permissions: ['users.view', 'users.create'],

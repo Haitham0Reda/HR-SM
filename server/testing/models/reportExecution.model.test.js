@@ -12,20 +12,21 @@ beforeEach(async () => {
   await ReportExecution.deleteMany({});
 
   // Create organization first
-  organization = await organization.create({
-    organizationCode: 'ENG',
-    name: 'organization of Engineering',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
+  // organization = await organization.create({
+  //   organizationCode: 'ENG',
+  //   name: 'organization of Engineering',
+  //   arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  // });
 
   // Create user for testing
   user = await User.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'hr',
-    employeeId: 'EMP001': organization._id
+    employeeId: 'EMP001'
+    // organization._id removed as not needed
   });
 
   // Create report for testing

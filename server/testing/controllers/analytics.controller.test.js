@@ -7,13 +7,13 @@ import Attendance from '../../modules/hr-core/attendance/models/attendance.model
 import Vacation from '../../modules/hr-core/vacations/models/vacation.model.js';
 import Payroll from '../../modules/payroll/models/payroll.model.js';
 import * as analyticsController from '../../modules/analytics/controllers/analytics.controller.js';
-import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestUser, createTestDepartment, cleanupTestData } from './testHelpers.js';
 
 describe('Analytics Controller - All 7 Functions', () => {
     let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
+        testorganization = await createTestDepartment();
         testUser = await createTestUser(testorganization._id, null, null);
 
         mockReq = createMockRequest({ user: { id: testUser._id } });

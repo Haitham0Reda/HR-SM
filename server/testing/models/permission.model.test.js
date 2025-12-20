@@ -1,9 +1,12 @@
 import mongoose from 'mongoose';
 import Permission from '../../modules/hr-core/requests/models/permission.model.js';
 
+const testTenantId = new mongoose.Types.ObjectId();
+
 describe('Permission Model', () => {
   it('should create and save a permission request successfully', async () => {
     const permissionData = {
+      tenantId: testTenantId,
       employee: new mongoose.Types.ObjectId(),
       permissionType: 'late-arrival',
       date: new Date(), // Use current date
@@ -30,6 +33,7 @@ describe('Permission Model', () => {
 
   it('should fail to create a permission request without required fields', async () => {
     const permissionData = {
+      tenantId: testTenantId,
       reason: 'Permission without required fields'
     };
 
@@ -53,6 +57,7 @@ describe('Permission Model', () => {
 
   it('should validate reason length', async () => {
     const permissionData = {
+      tenantId: testTenantId,
       employee: new mongoose.Types.ObjectId(),
       permissionType: 'late-arrival',
       date: new Date(),
@@ -78,6 +83,7 @@ describe('Permission Model', () => {
 
   it('should approve permission request', async () => {
     const permissionData = {
+      tenantId: testTenantId,
       employee: new mongoose.Types.ObjectId(),
       permissionType: 'late-arrival',
       date: new Date(),
@@ -103,6 +109,7 @@ describe('Permission Model', () => {
 
   it('should reject permission request', async () => {
     const permissionData = {
+      tenantId: testTenantId,
       employee: new mongoose.Types.ObjectId(),
       permissionType: 'early-departure',
       date: new Date(),

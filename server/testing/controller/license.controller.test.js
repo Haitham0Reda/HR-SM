@@ -52,6 +52,8 @@ describe('License Controller', () => {
     let testSubscriptionId;
 
     beforeEach(() => {
+        // Disable auto-provisioning for tests
+        process.env.AUTO_PROVISION_LICENSE = 'false';
         testTenantId = new mongoose.Types.ObjectId();
         testSubscriptionId = `sub_${Date.now()}`;
     });
@@ -181,6 +183,10 @@ describe('License Controller', () => {
         });
 
         test('should return 404 if license not found', async () => {
+            // Temporarily set NODE_ENV to production to disable auto-provisioning
+            const originalNodeEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = 'production';
+            
             const req = createMockRequest({
                 params: { tenantId: new mongoose.Types.ObjectId().toString() }
             });
@@ -188,6 +194,9 @@ describe('License Controller', () => {
             const res = createMockResponse();
 
             await getLicenseDetails(req, res);
+            
+            // Restore original NODE_ENV
+            process.env.NODE_ENV = originalNodeEnv;
 
             expect(res.statusCode).toBe(404);
             expect(res.data.error).toBe('LICENSE_NOT_FOUND');

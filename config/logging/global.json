@@ -1,0 +1,146 @@
+{
+  "global": {
+    "level": "info",
+    "format": "json",
+    "enableConsole": true,
+    "enableFile": true,
+    "enableCorrelation": true,
+    "maxFileSize": "20m",
+    "maxFiles": 5,
+    "datePattern": "YYYY-MM-DD",
+    "zippedArchive": true
+  },
+  "environments": {
+    "development": {
+      "level": "debug",
+      "enableConsole": true,
+      "enableFile": true,
+      "maxFiles": 3
+    },
+    "test": {
+      "level": "warn",
+      "enableConsole": false,
+      "enableFile": false
+    },
+    "staging": {
+      "level": "info",
+      "enableConsole": true,
+      "enableFile": true,
+      "maxFiles": 7
+    },
+    "production": {
+      "level": "warn",
+      "enableConsole": false,
+      "enableFile": true,
+      "maxFiles": 30
+    }
+  },
+  "logTypes": {
+    "application": {
+      "enabled": true,
+      "level": "info",
+      "retentionDays": 30,
+      "directory": "logs"
+    },
+    "audit": {
+      "enabled": true,
+      "level": "info",
+      "retentionDays": 2555,
+      "directory": "logs",
+      "tamperProof": true
+    },
+    "security": {
+      "enabled": true,
+      "level": "warn",
+      "retentionDays": 365,
+      "directory": "logs",
+      "immediateAlert": true
+    },
+    "performance": {
+      "enabled": true,
+      "level": "info",
+      "retentionDays": 90,
+      "directory": "logs",
+      "sampling": 0.1
+    },
+    "error": {
+      "enabled": true,
+      "level": "error",
+      "retentionDays": 180,
+      "directory": "logs",
+      "immediateAlert": true
+    },
+    "platform": {
+      "enabled": true,
+      "level": "info",
+      "retentionDays": 365,
+      "directory": "logs/platform",
+      "crossTenant": true
+    }
+  },
+  "features": {
+    "userInteractionTracking": {
+      "enabled": false,
+      "samplingRate": 0.01,
+      "privacyMode": true
+    },
+    "performanceMonitoring": {
+      "enabled": true,
+      "detailedMetrics": false,
+      "thresholdMs": 1000
+    },
+    "securityDetection": {
+      "enabled": true,
+      "frontendDetection": true,
+      "backendDetection": true,
+      "platformDetection": true,
+      "realTimeAlerts": true
+    },
+    "logCorrelation": {
+      "enabled": true,
+      "crossSystemTracking": true,
+      "sessionTracking": true
+    },
+    "complianceLogging": {
+      "enabled": true,
+      "extendedRetention": true,
+      "immutableLogs": true
+    }
+  },
+  "alerts": {
+    "channels": {
+      "email": {
+        "enabled": false,
+        "recipients": [],
+        "severity": [
+          "critical",
+          "high"
+        ]
+      },
+      "webhook": {
+        "enabled": false,
+        "url": "",
+        "severity": [
+          "critical",
+          "high",
+          "medium"
+        ]
+      },
+      "slack": {
+        "enabled": false,
+        "webhookUrl": "",
+        "channel": "#alerts",
+        "severity": [
+          "critical",
+          "high"
+        ]
+      }
+    },
+    "thresholds": {
+      "errorRate": 0.05,
+      "responseTime": 2000,
+      "logVolume": 10000,
+      "diskUsage": 0.85
+    }
+  }
+}

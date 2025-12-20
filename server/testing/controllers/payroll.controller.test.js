@@ -4,13 +4,13 @@
 import mongoose from 'mongoose';
 import Payroll from '../../modules/payroll/models/payroll.model.js';
 import * as payrollController from '../../modules/payroll/controllers/payroll.controller.js';
-import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestUser, createTestDepartment, cleanupTestData } from './testHelpers.js';
 
 describe('Payroll Controller - All 5 Functions', () => {
     let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
+        testorganization = await createTestDepartment();
         testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });

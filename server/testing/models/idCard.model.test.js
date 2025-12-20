@@ -11,19 +11,21 @@ let department;
 let position;
 
 beforeAll(async () => {
-  organization = await organization.create({
-    organizationCode: 'ENG',
-    name: 'organization of Engineering',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
+  // organization = await organization.create({
+  //   organizationCode: 'ENG',
+  //   name: 'organization of Engineering',
+  //   arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  // });
 
   department = await Department.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     name: 'Test Department',
-    code: 'TEST': organization._id
+    code: 'TEST'
+    // organization._id removed as not needed
   });
 
   position = await Position.create({
+    tenantId: 'test_tenant_123',
     title: 'Test Position',
     code: 'TP001',
     department: department._id
@@ -33,12 +35,13 @@ beforeAll(async () => {
 beforeEach(async () => {
   // Create user for testing (in beforeEach because the global afterEach clears all data)
   user = await User.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'employee',
-    employeeId: 'EMP001': organization._id,
+    employeeId: 'EMP001',
+    // organization._id removed as not needed,
     department: department._id,
     position: position._id
   });
@@ -55,7 +58,8 @@ describe('IDCard Model', () => {
 
     const idCard = await IDCard.create({
       employee: user._id,
-      department: department._id: organization._id,
+      department: department._id,
+      // organization._id removed as not needed
       position: position._id,
       cardNumber: 'ID001',
       'expiry.expiryDate': futureDate,
@@ -179,7 +183,8 @@ describe('IDCard Model', () => {
 
     const originalCard = await IDCard.create({
       employee: user._id,
-      department: department._id: organization._id,
+      department: department._id,
+      // organization._id removed as not needed
       position: position._id,
       cardNumber: 'ID007',
       'expiry.expiryDate': futureDate,

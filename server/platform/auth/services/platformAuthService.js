@@ -1,6 +1,7 @@
 import PlatformUser from '../../models/PlatformUser.js';
 import { generatePlatformToken } from '../../middleware/platformAuth.js';
 import logger from '../../../utils/logger.js';
+import AppError from '../../../core/errors/AppError.js';
 
 /**
  * Platform Authentication Service
@@ -18,26 +19,26 @@ class PlatformAuthService {
   async login(email, password) {
     // Validate input
     if (!email || !password) {
-      throw new Error('Email and password are required');
+      throw new AppError('Email and password are required', 400, 'MISSING_CREDENTIALS');
     }
 
     // Find user by email (include password field)
     const user = await PlatformUser.findOne({ email }).select('+password');
 
     if (!user) {
-      throw new Error('Invalid email or password');
+      throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
     }
 
     // Check if user is active
     if (user.status !== 'active') {
-      throw new Error(`Account is ${user.status}. Please contact system administrator.`);
+      throw new AppError(`Account is ${user.status}. Please contact system administrator.`, 401, 'ACCOUNT_INACTIVE');
     }
 
     // Verify password
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
-      throw new Error('Invalid email or password');
+      throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
     }
 
     // Update last login
@@ -64,11 +65,11 @@ class PlatformAuthService {
     const user = await PlatformUser.findById(userId);
 
     if (!user) {
-      throw new Error('Platform user not found');
+      throw new AppError('Platform user not found', 404, 'USER_NOT_FOUND');
     }
 
     if (user.status !== 'active') {
-      throw new Error('User account is not active');
+      throw new AppError('User account is not active', 401, 'ACCOUNT_INACTIVE');
     }
 
     return user.toSafeObject();
@@ -84,7 +85,7 @@ class PlatformAuthService {
       return user.toSafeObject();
     } catch (error) {
       if (error.code === 11000) {
-        throw new Error('Email already exists');
+        throw new AppError('Email already exists', 409, 'EMAIL_EXISTS');
       }
       throw error;
     }
@@ -104,7 +105,7 @@ class PlatformAuthService {
     );
 
     if (!user) {
-      throw new Error('Platform user not found');
+      throw new AppError('Platform user not found', 404, 'USER_NOT_FOUND');
     }
 
     return user.toSafeObject();
@@ -124,7 +125,7 @@ class PlatformAuthService {
     const isPasswordValid = await user.comparePassword(currentPassword);
 
     if (!isPasswordValid) {
-      throw new Error('Current password is incorrect');
+      throw new AppError('Current password is incorrect', 400, 'INVALID_PASSWORD');
     }
 
     // Update password (will be hashed by pre-save hook)
@@ -143,7 +144,7 @@ class PlatformAuthService {
     );
 
     if (!user) {
-      throw new Error('Platform user not found');
+      throw new AppError('Platform user not found', 404, 'USER_NOT_FOUND');
     }
 
     return user.toSafeObject();

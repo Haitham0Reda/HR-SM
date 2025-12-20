@@ -4,6 +4,7 @@ import Position from '../../modules/hr-core/users/models/position.model.js';
 describe('Position Model', () => {
   it('should create and save a position successfully', async () => {
     const positionData = {
+      tenantId: 'test_tenant_123',
       title: 'Software Engineer',
       code: 'SE',
       department: new mongoose.Types.ObjectId(),
@@ -23,6 +24,7 @@ describe('Position Model', () => {
 
   it('should fail to create a position without required fields', async () => {
     const positionData = {
+      tenantId: 'test_tenant_123',
       jobDescription: 'Position without title and code'
     };
 
@@ -46,12 +48,14 @@ describe('Position Model', () => {
 
     const code = 'UNIQUEPOS';
     const positionData1 = {
+      tenantId: 'test_tenant_123',
       title: 'Position 1',
       code: code,
       department: new mongoose.Types.ObjectId()
     };
 
     const positionData2 = {
+      tenantId: 'test_tenant_123',
       title: 'Position 2',
       code: code,
       department: new mongoose.Types.ObjectId()

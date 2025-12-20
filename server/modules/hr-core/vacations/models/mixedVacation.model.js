@@ -207,7 +207,7 @@ mixedVacationSchema.methods.calculatePersonalDays = function () {
 mixedVacationSchema.methods.detectOfficialHolidays = async function (locationId) {
     const Holiday = mongoose.model('Holiday');
 
-    const holidaySettings = await Holiday.getOrCreateForlocation(locationId);
+    const holidaySettings = await Holiday.getOrCreateForTenant(locationId);
 
     const holidays = holidaySettings.officialHolidays.filter(h => {
         const holidayDate = new Date(h.date);

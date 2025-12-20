@@ -4,13 +4,13 @@
 import mongoose from 'mongoose';
 import BackupExecution from '../../modules/hr-core/backup/models/backupExecution.model.js';
 import * as backupExecutionController from '../../modules/hr-core/backup/controllers/backupExecution.controller.js';
-import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestUser, createTestDepartment, cleanupTestData } from './testHelpers.js';
 
 describe('BackupExecution Controller - All 10 Functions', () => {
     let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
+        testorganization = await createTestDepartment();
         testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });

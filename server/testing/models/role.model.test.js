@@ -8,6 +8,7 @@ describe('Role Model', () => {
     describe('Schema Validation', () => {
         it('should create a valid role with required fields', async () => {
             const roleData = {
+                tenantId: 'test_tenant_123',
                 name: 'test-role',
                 displayName: 'Test Role',
                 description: 'A test role',
@@ -26,6 +27,7 @@ describe('Role Model', () => {
 
         it('should fail when name is missing', async () => {
             const roleData = {
+                tenantId: 'test_tenant_123',
                 displayName: 'Test Role',
                 permissions: ['users.view']
             };
@@ -35,6 +37,7 @@ describe('Role Model', () => {
 
         it('should fail when displayName is missing', async () => {
             const roleData = {
+                tenantId: 'test_tenant_123',
                 name: 'test-role',
                 permissions: ['users.view']
             };
@@ -44,6 +47,7 @@ describe('Role Model', () => {
 
         it('should convert name to lowercase', async () => {
             const roleData = {
+                tenantId: 'test_tenant_123',
                 name: 'TEST-ROLE',
                 displayName: 'Test Role',
                 permissions: ['users.view']
@@ -55,6 +59,7 @@ describe('Role Model', () => {
 
         it('should enforce unique name constraint', async () => {
             const roleData = {
+                tenantId: 'test_tenant_123',
                 name: 'unique-role',
                 displayName: 'Unique Role',
                 permissions: ['users.view']
@@ -66,6 +71,7 @@ describe('Role Model', () => {
 
         it('should validate permissions against PERMISSIONS object', async () => {
             const roleData = {
+                tenantId: 'test_tenant_123',
                 name: 'invalid-permissions-role',
                 displayName: 'Invalid Permissions Role',
                 permissions: ['invalid.permission', 'another.invalid']
@@ -77,6 +83,7 @@ describe('Role Model', () => {
         it('should accept valid permissions', async () => {
             const validPermissions = Object.keys(PERMISSIONS).slice(0, 5);
             const roleData = {
+                tenantId: 'test_tenant_123',
                 name: 'valid-permissions-role',
                 displayName: 'Valid Permissions Role',
                 permissions: validPermissions
@@ -92,6 +99,7 @@ describe('Role Model', () => {
 
         beforeEach(async () => {
             testRole = await Role.create({
+                tenantId: 'test_tenant_123',
                 name: 'method-test-role',
                 displayName: 'Method Test Role',
                 permissions: ['users.view', 'users.create', 'documents.view']
@@ -105,6 +113,7 @@ describe('Role Model', () => {
 
             it('should return 0 for role with no permissions', async () => {
                 const emptyRole = new Role({
+                    tenantId: 'test_tenant_123',
                     name: 'empty-role',
                     displayName: 'Empty Role',
                     permissions: []
@@ -169,18 +178,21 @@ describe('Role Model', () => {
         beforeEach(async () => {
             await Role.create([
                 {
+                    tenantId: 'test_tenant_123',
                     name: 'system-admin',
                     displayName: 'System Admin',
                     permissions: ['users.view'],
                     isSystemRole: true
                 },
                 {
+                    tenantId: 'test_tenant_123',
                     name: 'custom-manager',
                     displayName: 'Custom Manager',
                     permissions: ['users.view'],
                     isSystemRole: false
                 },
                 {
+                    tenantId: 'test_tenant_123',
                     name: 'system-hr',
                     displayName: 'System HR',
                     permissions: ['users.view'],

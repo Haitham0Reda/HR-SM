@@ -4,13 +4,13 @@
 import mongoose from 'mongoose';
 import Attendance from '../../modules/hr-core/attendance/models/attendance.model.js';
 import * as attendanceController from '../../modules/hr-core/attendance/controllers/attendance.controller.js';
-import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestUser, createTestDepartment, cleanupTestData } from './testHelpers.js';
 
 describe('Attendance Controller - All 5 Functions', () => {
     let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
+        testorganization = await createTestDepartment();
         testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });

@@ -5,13 +5,13 @@ import mongoose from 'mongoose';
 import Request from '../../modules/hr-core/requests/models/request.model.js';
 import User from '../../modules/hr-core/users/models/user.model.js';
 import * as requestController from '../../modules/hr-core/requests/controllers/request.controller.js';
-import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestUser, createTestDepartment, cleanupTestData } from './testHelpers.js';
 
 describe('Request System Unit Tests', () => {
     let mockReq, mockRes, testorganization, testUser, testManager;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
+        testorganization = await createTestDepartment();
         testUser = await createTestUser(testorganization._id, null, null);
         testManager = await createTestUser(testorganization._id, null, null);
 
@@ -206,8 +206,9 @@ describe('Request System Unit Tests', () => {
 
         beforeEach(async () => {
             // Create users for different tenants (simulated with different organizations)
-            const tenant1organization = await createTestorganization();
-            const tenant2organization = await createTestorganization();
+            const tenant1organization = await createTestDepartment();
+            // Create a unique second department to avoid duplicate key error
+            const tenant2organization = await createTestDepartment('test_tenant_456', 'HR Department');
 
             tenant1User = await createTestUser(tenant1organization._id, null, null);
             tenant2User = await createTestUser(tenant2organization._id, null, null);

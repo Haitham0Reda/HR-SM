@@ -4,13 +4,13 @@
 import mongoose from 'mongoose';
 import ResignedEmployee from '../../modules/hr-core/users/models/resignedEmployee.model.js';
 import * as resignedEmployeeController from '../../modules/hr-core/users/controllers/resignedEmployee.controller.js';
-import { createMockResponse, createMockRequest, createTestUser, cleanupTestData } from './testHelpers.js';
+import { createMockResponse, createMockRequest, createTestUser, createTestDepartment, cleanupTestData } from './testHelpers.js';
 
-describe('ResignedEmployee Controller - All 11 Functions', () => {
+describe('ResignedEmployee Controller - Existing Functions', () => {
     let mockReq, mockRes, testorganization, testUser;
 
     beforeEach(async () => {
-        testorganization = await createTestorganization();
+        testorganization = await createTestDepartment();
         testUser = await createTestUser(testorganization._id, null, null);
         
         mockReq = createMockRequest({ user: { id: testUser._id } });
@@ -67,112 +67,22 @@ describe('ResignedEmployee Controller - All 11 Functions', () => {
         });
     });
 
-    describe('4. updateResignationType', () => {
-        it('should execute updateResignationType function', async () => {
-            await resignedEmployeeController.updateResignationType(mockReq, mockRes);
+    describe('4. updateResignedEmployee', () => {
+        it('should execute updateResignedEmployee function', async () => {
+            await resignedEmployeeController.updateResignedEmployee(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
             expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
         });
 
-        it('should handle invalid ID in updateResignationType', async () => {
+        it('should handle invalid ID in updateResignedEmployee', async () => {
             mockReq.params.id = 'invalid-id';
-            await resignedEmployeeController.updateResignationType(mockReq, mockRes);
+            await resignedEmployeeController.updateResignedEmployee(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
             expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
         });
     });
 
-    describe('5. addPenalty', () => {
-        it('should execute addPenalty function', async () => {
-            await resignedEmployeeController.addPenalty(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-
-        it('should handle execution in addPenalty', async () => {
-            // Function executes normally
-            await resignedEmployeeController.addPenalty(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-    });
-
-    describe('6. removePenalty', () => {
-        it('should execute removePenalty function', async () => {
-            await resignedEmployeeController.removePenalty(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-
-        it('should handle execution in removePenalty', async () => {
-            // Function executes normally
-            await resignedEmployeeController.removePenalty(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-    });
-
-    describe('7. generateLetter', () => {
-        it('should execute generateLetter function', async () => {
-            await resignedEmployeeController.generateLetter(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-
-        it('should handle execution in generateLetter', async () => {
-            // Function executes normally
-            await resignedEmployeeController.generateLetter(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-    });
-
-    describe('8. generateArabicDisclaimer', () => {
-        it('should execute generateArabicDisclaimer function', async () => {
-            await resignedEmployeeController.generateArabicDisclaimer(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-
-        it('should handle execution in generateArabicDisclaimer', async () => {
-            // Function executes normally
-            await resignedEmployeeController.generateArabicDisclaimer(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-    });
-
-    describe('9. lockResignedEmployee', () => {
-        it('should execute lockResignedEmployee function', async () => {
-            await resignedEmployeeController.lockResignedEmployee(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-
-        it('should handle execution in lockResignedEmployee', async () => {
-            // Function executes normally
-            await resignedEmployeeController.lockResignedEmployee(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-    });
-
-    describe('10. updateStatus', () => {
-        it('should execute updateStatus function', async () => {
-            await resignedEmployeeController.updateStatus(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-
-        it('should handle invalid ID in updateStatus', async () => {
-            mockReq.params.id = 'invalid-id';
-            await resignedEmployeeController.updateStatus(mockReq, mockRes);
-            expect(mockRes.statusCode).toBeDefined();
-            expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
-        });
-    });
-
-    describe('11. deleteResignedEmployee', () => {
+    describe('5. deleteResignedEmployee', () => {
         it('should execute deleteResignedEmployee function', async () => {
             await resignedEmployeeController.deleteResignedEmployee(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();

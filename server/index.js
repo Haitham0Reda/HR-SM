@@ -8,11 +8,20 @@ import licenseFileLoader from './platform/system/services/licenseFileLoader.serv
 import licenseWebSocketService from './platform/system/services/licenseWebSocket.service.js';
 import redisService from './core/services/redis.service.js';
 import licenseMonitoringJob from './jobs/licenseMonitoring.job.js';
+import licenseValidationService from './services/licenseValidationService.js';
+import realtimeMonitoringService from './services/realtimeMonitoring.service.js';
+import BackupIntegration from './services/backupIntegration.js';
+import { enhanceSpecificModels } from './utils/modelCacheEnhancer.js';
+import cachePerformanceMonitor from './services/cachePerformanceMonitor.js';
+import mongoose from 'mongoose';
 
 // Load environment variables
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
+
+// Initialize backup system
+const backupIntegration = new BackupIntegration();
 
 // Ensure upload directories exist
 const setupDirectories = async () => {
@@ -65,6 +74,26 @@ const startServer = async () => {
         // Initialize routes (legacy and modular)
         await initializeRoutes();
 
+        // Enhance Mongoose models with Redis caching
+        try {
+            const modelsToCache = [
+                'User', 'Department', 'Position', 'Tenant', 'License',
+                'InsurancePolicy', 'InsuranceClaim', 'FamilyMember',
+                'Attendance', 'Vacation', 'SickLeave', 'Mission',
+                'Payroll', 'VacationBalance', 'Document', 'Announcement',
+                'Task', 'Request', 'Report', 'AuditLog'
+            ];
+            
+            const enhancedModels = enhanceSpecificModels(modelsToCache, mongoose, {
+                defaultTTL: 300, // 5 minutes
+                autoInvalidate: true
+            });
+            
+            console.log(`✓ Enhanced ${enhancedModels.length} models with Redis caching`);
+        } catch (error) {
+            console.warn('⚠️  Model cache enhancement failed:', error.message);
+        }
+
         // Create HTTP server
         const server = http.createServer(app);
 
@@ -72,9 +101,38 @@ const startServer = async () => {
         licenseWebSocketService.initialize(server);
         console.log('✓ License WebSocket server initialized');
 
+        // Initialize real-time monitoring service
+        realtimeMonitoringService.initialize(server);
+        console.log('✓ Real-time monitoring service initialized');
+
         // Start license monitoring job
         licenseMonitoringJob.start();
         console.log('✓ License monitoring job started');
+
+        // Initialize and start license validation service
+        const licenseServiceInitialized = await licenseValidationService.initialize();
+        if (licenseServiceInitialized) {
+            licenseValidationService.start();
+            console.log('✓ License validation service started');
+        } else {
+            console.warn('⚠️  License validation service initialization failed');
+        }
+
+        // Initialize backup system
+        try {
+            await backupIntegration.initialize();
+            console.log('✓ Backup system initialized');
+        } catch (error) {
+            console.warn('⚠️  Backup system initialization failed:', error.message);
+        }
+
+        // Start cache performance monitoring
+        try {
+            cachePerformanceMonitor.startMonitoring(30000); // 30 seconds interval
+            console.log('✓ Cache performance monitoring started');
+        } catch (error) {
+            console.warn('⚠️  Cache performance monitoring failed to start:', error.message);
+        }
 
         // Start listening
         server.listen(PORT, () => {
@@ -103,6 +161,28 @@ const gracefulShutdown = (signal) => {
 
     // Shutdown WebSocket server
     licenseWebSocketService.shutdown();
+
+    // Shutdown real-time monitoring service
+    realtimeMonitoringService.shutdown();
+
+    // Shutdown license validation service
+    licenseValidationService.stop();
+
+    // Shutdown backup system
+    try {
+        await backupIntegration.shutdown();
+        console.log('✓ Backup system shut down');
+    } catch (error) {
+        console.warn('⚠️  Backup system shutdown failed:', error.message);
+    }
+
+    // Stop cache performance monitoring
+    try {
+        cachePerformanceMonitor.stopMonitoring();
+        console.log('✓ Cache performance monitoring stopped');
+    } catch (error) {
+        console.warn('⚠️  Cache performance monitoring shutdown failed:', error.message);
+    }
 
     // Shutdown license file loader
     if (process.env.DEPLOYMENT_MODE === 'on-premise') {

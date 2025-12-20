@@ -4,6 +4,7 @@ import Document from '../../modules/documents/models/document.model.js';
 describe('Document Model', () => {
   it('should create and save a document successfully', async () => {
     const documentData = {
+      tenantId: 'test_tenant_123',
       title: 'Employment Contract',
       type: 'contract',
       employee: new mongoose.Types.ObjectId(),
@@ -30,6 +31,7 @@ describe('Document Model', () => {
 
   it('should fail to create a document without required fields', async () => {
     const documentData = {
+      tenantId: 'test_tenant_123',
       title: 'Document without required fields'
     };
 
@@ -50,6 +52,7 @@ describe('Document Model', () => {
 
   it('should handle Arabic title', async () => {
     const documentData = {
+      tenantId: 'test_tenant_123',
       title: 'Employment Contract',
       arabicTitle: 'عقد العمل',
       type: 'contract',

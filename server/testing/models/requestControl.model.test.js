@@ -7,18 +7,21 @@ let user;
 // organization variable removed
 beforeAll(async () => {
   // Create required references
-  organization = await organization.create({
-    name: 'organization of Engineering'Code: 'ENG',
-    arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
-  });
+  // organization variable removed
+  // organization = await organization.create({
+  //   name: 'organization of Engineering',
+  //   code: 'ENG',
+  //   arabicName: 'المعهد الكندى العالى للهندسة بالسادس من اكتوبر'
+  // });
 
   user = await User.create({
-      tenantId: 'test_tenant_123',
+    tenantId: 'test_tenant_123',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
     role: 'admin',
-    employeeId: 'EMP001': organization._id
+    employeeId: 'EMP001'
+    // organization._id removed as not needed
   });
 });
 
@@ -345,7 +348,8 @@ describe('RequestControl Model', () => {
   it('should get all active controls', async () => {
     await RequestControl.create([
       {
-        organization: 'org1': organization._id
+        organization: 'org1'
+        // organization._id removed as not needed
       },
       {
         organization: 'org2'
@@ -366,11 +370,13 @@ describe('RequestControl Model', () => {
       email: 'employee1@example.com',
       password: 'password123',
       role: 'employee',
-      employeeId: 'EMP002': organization._id
+      employeeId: 'EMP002'
+      // organization._id removed as not needed
     });
 
     await RequestControl.create({
-      organization: 'default': organization._id,
+      organization: 'default',
+      // organization._id removed as not needed
       vacationRequests: {
         enabled: false,
         disabledMessage: 'Vacation requests disabled for this organization'

@@ -1,6 +1,13 @@
 import platformAuthService from '../services/platformAuthService.js';
 import { generatePlatformToken } from '../../middleware/platformAuth.js';
 import logger from '../../../utils/logger.js';
+import platformLogger from '../../../utils/platformLogger.js';
+import { 
+    logControllerAction, 
+    logControllerError, 
+    logAuthenticationEvent,
+    logSecurityEvent 
+} from '../../../utils/controllerLogger.js';
 
 /**
  * Platform Authentication Controller
@@ -17,8 +24,44 @@ import logger from '../../../utils/logger.js';
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    // Log platform login attempt
+    logControllerAction(req, 'platform_login_attempt', {
+      controller: 'PlatformAuthController',
+      userEmail: email
+    });
+
+    if (!email || !password) {
+      logSecurityEvent(req, 'incomplete_platform_login', {
+        severity: 'medium',
+        missingFields: !email ? 'email' : 'password'
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
 
     const { user, token } = await platformAuthService.login(email, password);
+
+    // Log successful platform authentication
+    logAuthenticationEvent(req, 'platform_login_success', {
+      success: true,
+      userId: user.id,
+      userEmail: email,
+      userRole: user.role,
+      platformAccess: true
+    });
+    
+    // Log to platform logger
+    platformLogger.adminAction('platform_login', user.id, {
+      correlationId: req.correlationId,
+      userEmail: email,
+      userRole: user.role,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      timestamp: new Date().toISOString()
+    });
 
     res.status(200).json({
       success: true,
@@ -32,6 +75,21 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     logger.error('Platform login failed', { error: error.message, email: req.body.email });
+    
+    // Enhanced error logging for platform authentication
+    logAuthenticationEvent(req, 'platform_login_failed', {
+      success: false,
+      userEmail: req.body.email,
+      reason: error.message,
+      platformAccess: true
+    });
+    
+    logControllerError(req, error, {
+      controller: 'PlatformAuthController',
+      action: 'login',
+      userEmail: req.body.email
+    });
+    
     res.status(401).json({
       success: false,
       message: error.message || 'Login failed'

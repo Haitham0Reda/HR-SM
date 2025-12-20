@@ -258,3 +258,312 @@ export const updateTenantUsage = asyncHandler(async (req, res) => {
     }
   });
 });
+
+/**
+ * Get tenant metrics with aggregation
+ * GET /api/platform/tenants/:id/metrics
+ */
+export const getTenantMetrics = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  // Get tenant with populated metrics
+  const tenant = await tenantService.getTenantById(id);
+  
+  // Calculate additional metrics using aggregation
+  const metricsAggregation = await tenantService.getTenantMetricsAggregation(id);
+  
+  const metrics = {
+    basic: {
+      totalUsers: tenant.usage.userCount,
+      activeUsers: tenant.usage.activeUsers,
+      storageUsed: tenant.usage.storageUsed,
+      apiCallsThisMonth: tenant.usage.apiCallsThisMonth,
+      lastActivityAt: tenant.usage.lastActivityAt
+    },
+    performance: {
+      responseTime: tenant.metrics?.responseTime || 0,
+      availability: tenant.metrics?.availability || 100,
+      errorRate: tenant.metrics?.errorRate || 0,
+      uptime: tenant.metrics?.uptime || 0
+    },
+    resources: {
+      cpuUsage: tenant.metrics?.cpuUsage || 0,
+      memoryUsage: tenant.metrics?.memoryUsage || 0,
+      diskUsage: tenant.metrics?.diskUsage || 0,
+      resourceUtilization: tenant.resourceUtilization
+    },
+    usage: {
+      storageUsagePercentage: tenant.storageUsagePercentage,
+      userUsagePercentage: tenant.userUsagePercentage,
+      apiUsagePercentage: tenant.apiUsagePercentage
+    },
+    health: {
+      healthScore: tenant.healthScore,
+      riskLevel: tenant.riskLevel,
+      complianceStatus: tenant.complianceStatus
+    },
+    license: {
+      status: tenant.licenseStatus,
+      daysRemaining: tenant.licenseDaysRemaining,
+      type: tenant.license?.licenseType,
+      features: tenant.license?.features || []
+    },
+    aggregated: metricsAggregation
+  };
+
+  res.status(200).json({
+    success: true,
+    data: {
+      tenantId: tenant.tenantId,
+      name: tenant.name,
+      metrics
+    },
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    }
+  });
+});
+
+/**
+ * Bulk update tenants
+ * PATCH /api/platform/tenants/bulk
+ * 
+ * Body:
+ * - tenantIds: Array of tenant IDs
+ * - updates: Object with fields to update
+ * - operation: 'update' | 'suspend' | 'reactivate' | 'enable-module' | 'disable-module'
+ */
+export const bulkUpdateTenants = asyncHandler(async (req, res) => {
+  const { tenantIds, updates, operation } = req.body;
+
+  if (!tenantIds || !Array.isArray(tenantIds) || tenantIds.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'tenantIds array is required'
+    });
+  }
+
+  let result;
+  
+  switch (operation) {
+    case 'update':
+      result = await tenantService.bulkUpdateTenants(tenantIds, updates);
+      break;
+    case 'suspend':
+      result = await tenantService.bulkSuspendTenants(tenantIds, updates.reason);
+      break;
+    case 'reactivate':
+      result = await tenantService.bulkReactivateTenants(tenantIds);
+      break;
+    case 'enable-module':
+      result = await tenantService.bulkEnableModule(tenantIds, updates.moduleId, updates.enabledBy);
+      break;
+    case 'disable-module':
+      result = await tenantService.bulkDisableModule(tenantIds, updates.moduleId);
+      break;
+    default:
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid operation. Must be one of: update, suspend, reactivate, enable-module, disable-module'
+      });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      operation,
+      affected: result.modifiedCount || result.length,
+      details: result
+    },
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    }
+  });
+});
+
+/**
+ * Create tenant with license integration
+ * POST /api/platform/tenants/with-license
+ * 
+ * Body:
+ * - tenantData: Tenant information
+ * - licenseData: License configuration
+ * - adminUser: Admin user data
+ */
+export const createTenantWithLicense = asyncHandler(async (req, res) => {
+  const { tenantData, licenseData, adminUser } = req.body;
+
+  // Validate required fields
+  if (!tenantData || !licenseData || !adminUser) {
+    return res.status(400).json({
+      success: false,
+      error: 'tenantData, licenseData, and adminUser are required'
+    });
+  }
+
+  const result = await tenantService.createTenantWithLicense({
+    tenantData,
+    licenseData,
+    adminUser,
+    createdBy: req.user?.id || 'platform-admin'
+  });
+
+  res.status(201).json({
+    success: true,
+    data: result,
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    }
+  });
+});
+
+/**
+ * Get license status for tenant
+ * GET /api/platform/tenants/:id/license
+ */
+export const getLicenseStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const licenseStatus = await tenantService.getLicenseStatus(id);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      licenseStatus
+    },
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    }
+  });
+});
+
+/**
+ * Update tenant license
+ * PATCH /api/platform/tenants/:id/license
+ * 
+ * Body:
+ * - licenseKey: New license key
+ * - licenseNumber: License number
+ * - expiresAt: Expiration date
+ */
+export const updateTenantLicense = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const licenseData = req.body;
+
+  const tenant = await tenantService.updateTenantLicense(id, licenseData);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      tenant,
+      message: 'License updated successfully'
+    },
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    }
+  });
+});
+
+/**
+ * Get tenants needing attention
+ * GET /api/platform/tenants/attention
+ */
+export const getTenantsNeedingAttention = asyncHandler(async (req, res) => {
+  const tenants = await tenantService.getTenantsNeedingAttention();
+
+  res.status(200).json({
+    success: true,
+    data: {
+      tenants,
+      count: tenants.length
+    },
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    }
+  });
+});
+
+/**
+ * Get tenant analytics dashboard data
+ * GET /api/platform/tenants/analytics
+ */
+export const getTenantAnalytics = asyncHandler(async (req, res) => {
+  const analytics = await tenantService.getTenantAnalytics();
+
+  res.status(200).json({
+    success: true,
+    data: {
+      analytics
+    },
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    }
+  });
+});
+
+/**
+ * Get revenue analytics
+ * GET /api/platform/tenants/analytics/revenue
+ */
+export const getRevenueAnalytics = asyncHandler(async (req, res) => {
+  const { period } = req.query; // 'month', 'quarter', 'year'
+  
+  const revenueData = await tenantService.getRevenueAnalytics(period);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      revenue: revenueData,
+      period: period || 'month'
+    },
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    }
+  });
+});
+
+/**
+ * Get usage analytics
+ * GET /api/platform/tenants/analytics/usage
+ */
+export const getUsageAnalytics = asyncHandler(async (req, res) => {
+  const usageData = await tenantService.getUsageAnalytics();
+
+  res.status(200).json({
+    success: true,
+    data: {
+      usage: usageData
+    },
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    }
+  });
+});
+
+/**
+ * Get performance analytics
+ * GET /api/platform/tenants/analytics/performance
+ */
+export const getPerformanceAnalytics = asyncHandler(async (req, res) => {
+  const performanceData = await tenantService.getPerformanceAnalytics();
+
+  res.status(200).json({
+    success: true,
+    data: {
+      performance: performanceData
+    },
+    meta: {
+      timestamp: new Date().toISOString(),
+      requestId: req.id
+    }
+  });
+});

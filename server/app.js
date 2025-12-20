@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
-import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { tenantContext } from './shared/middleware/tenantContext.js';
@@ -10,6 +9,22 @@ import { loadCoreRoutes, loadModuleRoutes } from './config/moduleRegistry.js';
 import { MODULES } from './shared/constants/modules.js';
 import moduleInitializer from './core/registry/moduleInitializer.js';
 import { namespaceValidator, validateRouteNamespaces, logValidationResults } from './core/middleware/namespaceValidator.js';
+import { preventInjection, validateJsonSchema } from './middleware/enhancedValidation.middleware.js';
+import { 
+    authRateLimit, 
+    sensitiveRateLimit, 
+    apiRateLimit, 
+    publicRateLimit, 
+    globalRateLimit 
+} from './middleware/enhancedRateLimit.middleware.js';
+
+// Import Redis caching middleware
+import { 
+    cacheHeadersMiddleware, 
+    conditionalRequestMiddleware,
+    cacheStatsMiddleware 
+} from './middleware/mongooseCache.middleware.js';
+import { initializeSessionMiddleware } from './middleware/redisSession.middleware.js';
 
 // Import remaining legacy routes (not yet moved to modules)
 import {
@@ -54,38 +69,52 @@ app.use(cors({
     credentials: true
 }));
 
-// Rate limiting - more lenient in development
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'production' ? 100 : 500, // More requests allowed in development
-    message: 'Too many requests from this IP, please try again later'
-});
+// Enhanced rate limiting with Redis support and license-based limits
+// Apply different rate limiters based on endpoint categories
 
-// More lenient rate limiter for platform admin routes
-const platformLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === 'production' ? 200 : 1000, // Even more requests for platform admin
-    message: 'Too many requests from this IP, please try again later',
-    skip: (req) => {
-        // Skip rate limiting for health checks
-        return req.path.includes('/system/health');
-    }
-});
+// Global rate limiter as fallback
+app.use(globalRateLimit());
 
-// Apply different rate limiters
-app.use('/api/platform', platformLimiter);
-app.use('/api', limiter);
+// Authentication endpoints - very strict
+app.use('/api/*/auth', authRateLimit);
+app.use('/api/platform/auth', authRateLimit);
+
+// Sensitive operations - strict
+app.use('/api/platform/tenants', sensitiveRateLimit);
+app.use('/api/platform/system', sensitiveRateLimit);
+
+// Platform admin routes - moderate limits
+app.use('/api/platform', publicRateLimit);
+
+// General API routes - license-based limits
+app.use('/api/v1', apiRateLimit);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Data sanitization
+// Data sanitization and security
 app.use(mongoSanitize());
+
+// Enhanced security middleware
+app.use(preventInjection);
+app.use(validateJsonSchema());
 
 // Compression
 app.use(compression());
+
+// Initialize Redis session middleware
+try {
+    initializeSessionMiddleware(app);
+    console.log('✓ Redis session middleware initialized');
+} catch (error) {
+    console.warn('⚠️  Redis session middleware initialization failed:', error.message);
+}
+
+// Cache headers and conditional request middleware for API responses
+app.use('/api', cacheHeadersMiddleware);
+app.use('/api', conditionalRequestMiddleware);
 
 // CORS is now properly configured - test endpoint removed
 
@@ -147,6 +176,15 @@ if (process.env.NODE_ENV === 'development') {
 // Tenant context middleware (applies to tenant routes only, not platform routes)
 app.use(tenantContext);
 
+// License validation middleware (applies to tenant routes, skips platform routes)
+try {
+    const { validateLicense } = await import('./middleware/licenseServerValidation.middleware.js');
+    app.use('/api/v1', validateLicense);
+    console.log('✓ License validation middleware loaded');
+} catch (error) {
+    console.warn('⚠️  License validation middleware not available:', error.message);
+}
+
 // Company logging middleware (basic setup)
 try {
     const { setupCompanyLogging, logResponseCompletion, trackUserActivity } = await import('./middleware/companyLogging.js');
@@ -159,6 +197,25 @@ try {
     console.log('✓ Company logging middleware loaded');
 } catch (error) {
     console.warn('⚠️  Company logging middleware not available:', error.message);
+}
+
+// Enhanced audit logging middleware
+try {
+    const { auditLogger, auditSecurityOperation } = await import('./middleware/auditLogger.middleware.js');
+    
+    // Apply audit logging to all API routes with different configurations
+    app.use('/api/platform', auditSecurityOperation()); // High-security operations
+    app.use('/api/v1', auditLogger({
+        skipPaths: ['/health', '/metrics'],
+        skipMethods: ['OPTIONS'],
+        logSuccessOnly: false,
+        includeRequestBody: false,
+        includeResponseBody: false
+    }));
+    
+    console.log('✓ Enhanced audit logging middleware loaded');
+} catch (error) {
+    console.warn('⚠️  Enhanced audit logging middleware not available:', error.message);
 }
 
 // Health check
@@ -347,6 +404,24 @@ export const initializeRoutes = async () => {
         console.warn('⚠️  Company module routes not available:', error.message);
     }
 
+    // Logging module configuration routes
+    try {
+        const moduleConfigurationRoutes = await import('./routes/moduleConfiguration.routes.js');
+        app.use('/api/v1/logging/module', moduleConfigurationRoutes.default);
+        console.log('✓ Logging module configuration routes loaded (/api/v1/logging/module/*)');
+    } catch (error) {
+        console.warn('⚠️  Logging module configuration routes not available:', error.message);
+    }
+
+    // Log ingestion routes
+    try {
+        const logIngestionRoutes = await import('./routes/logs.routes.js');
+        app.use('/api/v1', logIngestionRoutes.default);
+        console.log('✓ Log ingestion routes loaded (/api/v1/logs/*)');
+    } catch (error) {
+        console.warn('⚠️  Log ingestion routes not available:', error.message);
+    }
+
     // License Management (legacy - not yet moved)
     app.use('/api/v1/licenses', licenseRoutes);
     app.use('/api/v1/licenses/audit', licenseAuditRoutes);
@@ -356,6 +431,33 @@ export const initializeRoutes = async () => {
 
     // Metrics & Monitoring (legacy - not yet moved)
     app.use('/api/v1/metrics', metricsRoutes);
+
+    // Real-time monitoring routes
+    try {
+        const realtimeMonitoringRoutes = await import('./routes/realtimeMonitoring.routes.js');
+        app.use('/api/v1/monitoring/realtime', realtimeMonitoringRoutes.default);
+        console.log('✓ Real-time monitoring routes loaded (/api/v1/monitoring/realtime/*)');
+    } catch (error) {
+        console.warn('⚠️  Real-time monitoring routes not available:', error.message);
+    }
+
+    // Enhanced audit logs routes
+    try {
+        const auditLogsRoutes = await import('./routes/auditLogs.routes.js');
+        app.use('/api/v1/audit-logs', auditLogsRoutes.default);
+        console.log('✓ Enhanced audit logs routes loaded (/api/v1/audit-logs/*)');
+    } catch (error) {
+        console.warn('⚠️  Enhanced audit logs routes not available:', error.message);
+    }
+
+    // Cache management routes
+    try {
+        const cacheManagementRoutes = await import('./routes/cacheManagement.routes.js');
+        app.use('/api/v1/cache', cacheManagementRoutes.default);
+        console.log('✓ Cache management routes loaded (/api/v1/cache/*)');
+    } catch (error) {
+        console.warn('⚠️  Cache management routes not available:', error.message);
+    }
 
     console.log('✓ Tenant routes loaded (/api/v1/*)');
     console.log('✓ All routes initialized');

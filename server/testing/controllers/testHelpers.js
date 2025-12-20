@@ -21,20 +21,33 @@ export const createMockRequest = (overrides = {}) => ({
     params: {},
     query: {},
     user: {},
+    tenantId: 'test_tenant_123',
     get: function (header) {
         return this.headers?.[header.toLowerCase()] || null;
     },
     headers: {},
     ip: '127.0.0.1',
+    companyLogger: {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        debug: () => {},
+        security: () => {},
+        performance: () => {},
+        audit: () => {}
+    },
     ...overrides
 });
 
-export const createTestDepartment = async () => {
+export const createTestDepartment = async (tenantId = 'test_tenant_123', name = 'IT Department') => {
+    const uniqueCode = tenantId === 'test_tenant_123' ? 'IT001' : 'HR001';
+    const arabicName = tenantId === 'test_tenant_123' ? 'قسم تكنولوجيا المعلومات' : 'قسم الموارد البشرية';
+    
     return await Department.create({
-        tenantId: 'test_tenant_123',
-        name: 'IT Department',
-        arabicName: 'قسم تكنولوجيا المعلومات',
-        code: 'IT001'
+        tenantId: tenantId,
+        name: name,
+        arabicName: arabicName,
+        code: uniqueCode
     });
 };
 
