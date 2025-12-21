@@ -51,7 +51,12 @@ describe('Bulk Operation Atomicity Property-Based Tests', () => {
         testTenantIds = [];
     });
 
-    test('Property 7: Bulk operations maintain atomicity - all succeed or all fail', async () => {
+    /**
+     * Property 7: Bulk Operation Atomicity
+     * For any set of tenants selected for bulk operations, either all operations should succeed or all should fail, maintaining data consistency
+     * Validates: Requirements 2.4
+     */
+    test('Property 7: Bulk update operations maintain atomicity - all succeed or all fail', async () => {
         await fc.assert(
             fc.asyncProperty(
                 fc.subarray(fc.constantFrom(...testTenantIds), { minLength: 1, maxLength: 3 }),
@@ -105,6 +110,156 @@ describe('Bulk Operation Atomicity Property-Based Tests', () => {
                 }
             ),
             { numRuns: 50 }
+        );
+    });
+
+    test('Bulk suspend operations maintain atomicity', async () => {
+        await fc.assert(
+            fc.asyncProperty(
+                fc.subarray(fc.constantFrom(...testTenantIds), { minLength: 1, maxLength: 3 }),
+                fc.string({ minLength: 5, maxLength: 50 }),
+                async (selectedTenantIds, suspensionReason) => {
+                    const initialStates = await Tenant.find({ 
+                        tenantId: { $in: testTenantIds } 
+                    }).lean();
+                    
+                    const initialStateMap = new Map();
+                    initialStates.forEach(tenant => {
+                        initialStateMap.set(tenant.tenantId, {
+                            status: tenant.status,
+                            suspensionReason: tenant.metadata?.suspensionReason,
+                            suspendedAt: tenant.metadata?.suspendedAt
+                        });
+                    });
+
+                    try {
+                        const result = await tenantService.bulkSuspendTenants(selectedTenantIds, suspensionReason);
+                        
+                        const updatedTenants = await Tenant.find({ 
+                            tenantId: { $in: selectedTenantIds } 
+                        }).lean();
+                        
+                        expect(result.modifiedCount).toBe(selectedTenantIds.length);
+                        expect(result.matchedCount).toBe(selectedTenantIds.length);
+                        
+                        updatedTenants.forEach(tenant => {
+                            expect(tenant.status).toBe('suspended');
+                            expect(tenant.metadata?.suspensionReason).toBe(suspensionReason);
+                            expect(tenant.metadata?.suspendedAt).toBeDefined();
+                        });
+                        
+                    } catch (error) {
+                        const currentStates = await Tenant.find({ 
+                            tenantId: { $in: testTenantIds } 
+                        }).lean();
+                        
+                        currentStates.forEach(tenant => {
+                            const initialState = initialStateMap.get(tenant.tenantId);
+                            expect(tenant.status).toBe(initialState.status);
+                            expect(tenant.metadata?.suspensionReason).toBe(initialState.suspensionReason);
+                        });
+                    }
+                }
+            ),
+            { numRuns: 30 }
+        );
+    });
+
+    test('Bulk reactivate operations maintain atomicity', async () => {
+        await fc.assert(
+            fc.asyncProperty(
+                fc.subarray(fc.constantFrom(...testTenantIds), { minLength: 1, maxLength: 3 }),
+                async (selectedTenantIds) => {
+                    // First suspend the tenants
+                    await tenantService.bulkSuspendTenants(selectedTenantIds, 'Test suspension');
+                    
+                    const initialStates = await Tenant.find({ 
+                        tenantId: { $in: testTenantIds } 
+                    }).lean();
+                    
+                    const initialStateMap = new Map();
+                    initialStates.forEach(tenant => {
+                        initialStateMap.set(tenant.tenantId, {
+                            status: tenant.status,
+                            suspensionReason: tenant.metadata?.suspensionReason,
+                            suspendedAt: tenant.metadata?.suspendedAt
+                        });
+                    });
+
+                    try {
+                        const result = await tenantService.bulkReactivateTenants(selectedTenantIds);
+                        
+                        const updatedTenants = await Tenant.find({ 
+                            tenantId: { $in: selectedTenantIds } 
+                        }).lean();
+                        
+                        expect(result.modifiedCount).toBe(selectedTenantIds.length);
+                        expect(result.matchedCount).toBe(selectedTenantIds.length);
+                        
+                        updatedTenants.forEach(tenant => {
+                            expect(tenant.status).toBe('active');
+                            expect(tenant.metadata?.suspensionReason).toBeUndefined();
+                            expect(tenant.metadata?.suspendedAt).toBeUndefined();
+                        });
+                        
+                    } catch (error) {
+                        const currentStates = await Tenant.find({ 
+                            tenantId: { $in: testTenantIds } 
+                        }).lean();
+                        
+                        currentStates.forEach(tenant => {
+                            const initialState = initialStateMap.get(tenant.tenantId);
+                            expect(tenant.status).toBe(initialState.status);
+                        });
+                    }
+                }
+            ),
+            { numRuns: 30 }
+        );
+    });
+
+    test('Bulk module enable operations maintain atomicity', async () => {
+        await fc.assert(
+            fc.asyncProperty(
+                fc.subarray(fc.constantFrom(...testTenantIds), { minLength: 1, maxLength: 3 }),
+                fc.constantFrom('payroll', 'attendance', 'performance'),
+                async (selectedTenantIds, moduleId) => {
+                    const initialStates = await Tenant.find({ 
+                        tenantId: { $in: testTenantIds } 
+                    }).lean();
+                    
+                    const initialStateMap = new Map();
+                    initialStates.forEach(tenant => {
+                        initialStateMap.set(tenant.tenantId, {
+                            enabledModules: [...tenant.enabledModules]
+                        });
+                    });
+
+                    try {
+                        await tenantService.bulkEnableModule(selectedTenantIds, moduleId, 'test-admin');
+                        
+                        const finalStates = await Tenant.find({ 
+                            tenantId: { $in: selectedTenantIds } 
+                        }).lean();
+                        
+                        finalStates.forEach(tenant => {
+                            const hasModule = tenant.enabledModules.some(mod => mod.moduleId === moduleId);
+                            expect(hasModule).toBe(true);
+                        });
+                        
+                    } catch (error) {
+                        const currentStates = await Tenant.find({ 
+                            tenantId: { $in: testTenantIds } 
+                        }).lean();
+                        
+                        currentStates.forEach(tenant => {
+                            const initialState = initialStateMap.get(tenant.tenantId);
+                            expect(tenant.enabledModules).toEqual(initialState.enabledModules);
+                        });
+                    }
+                }
+            ),
+            { numRuns: 30 }
         );
     });
 });
