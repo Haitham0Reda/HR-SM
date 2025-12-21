@@ -709,15 +709,15 @@ tenantSchema.methods.disableModule = function(moduleId) {
 tenantSchema.methods.checkLimits = function() {
   const exceeded = {};
 
-  if (this.usage.userCount >= this.limits.maxUsers) {
+  if (this.usage.userCount >= this.restrictions.maxUsers) {
     exceeded.users = true;
   }
 
-  if (this.usage.storageUsed >= this.limits.maxStorage) {
+  if (this.usage.storageUsed >= this.restrictions.maxStorage) {
     exceeded.storage = true;
   }
 
-  if (this.usage.apiCallsThisMonth >= this.limits.apiCallsPerMonth) {
+  if (this.usage.apiCallsThisMonth >= this.restrictions.maxAPICallsPerMonth) {
     exceeded.apiCalls = true;
   }
 

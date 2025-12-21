@@ -248,16 +248,48 @@ class TenantService {
       );
     }
 
-    // Update usage fields
+    // Enforce restrictions before updating
     if (usageData.userCount !== undefined) {
+      if (usageData.userCount > tenant.restrictions.maxUsers) {
+        throw new AppError(
+          `User count ${usageData.userCount} exceeds maximum allowed users (${tenant.restrictions.maxUsers})`,
+          400,
+          ERROR_TYPES.USAGE_LIMIT_EXCEEDED
+        );
+      }
       tenant.usage.userCount = usageData.userCount;
     }
 
+    if (usageData.activeUsers !== undefined) {
+      if (usageData.activeUsers > tenant.restrictions.maxUsers) {
+        throw new AppError(
+          `Active user count ${usageData.activeUsers} exceeds maximum allowed users (${tenant.restrictions.maxUsers})`,
+          400,
+          ERROR_TYPES.USAGE_LIMIT_EXCEEDED
+        );
+      }
+      tenant.usage.activeUsers = usageData.activeUsers;
+    }
+
     if (usageData.storageUsed !== undefined) {
+      if (usageData.storageUsed > tenant.restrictions.maxStorage) {
+        throw new AppError(
+          `Storage usage ${usageData.storageUsed} MB exceeds maximum allowed storage (${tenant.restrictions.maxStorage} MB)`,
+          400,
+          ERROR_TYPES.USAGE_LIMIT_EXCEEDED
+        );
+      }
       tenant.usage.storageUsed = usageData.storageUsed;
     }
 
     if (usageData.apiCallsThisMonth !== undefined) {
+      if (usageData.apiCallsThisMonth > tenant.restrictions.maxAPICallsPerMonth) {
+        throw new AppError(
+          `API calls ${usageData.apiCallsThisMonth} exceeds maximum allowed API calls per month (${tenant.restrictions.maxAPICallsPerMonth})`,
+          400,
+          ERROR_TYPES.USAGE_LIMIT_EXCEEDED
+        );
+      }
       tenant.usage.apiCallsThisMonth = usageData.apiCallsThisMonth;
     }
 
@@ -273,6 +305,26 @@ class TenantService {
    * @returns {Promise<void>}
    */
   async incrementApiCalls(tenantId) {
+    const tenant = await Tenant.findOne({ tenantId });
+
+    if (!tenant) {
+      throw new AppError(
+        `Tenant with ID ${tenantId} not found`,
+        404,
+        ERROR_TYPES.TENANT_NOT_FOUND
+      );
+    }
+
+    // Check if incrementing would exceed the limit
+    const newApiCallCount = tenant.usage.apiCallsThisMonth + 1;
+    if (newApiCallCount > tenant.restrictions.maxAPICallsPerMonth) {
+      throw new AppError(
+        `API call limit exceeded. Current: ${tenant.usage.apiCallsThisMonth}, Limit: ${tenant.restrictions.maxAPICallsPerMonth}`,
+        429,
+        ERROR_TYPES.USAGE_LIMIT_EXCEEDED
+      );
+    }
+
     await Tenant.findOneAndUpdate(
       { tenantId },
       { $inc: { 'usage.apiCallsThisMonth': 1 } }
@@ -286,7 +338,16 @@ class TenantService {
    * @returns {Promise<Object>} Exceeded limits
    */
   async checkLimits(tenantId) {
-    const tenant = await this.getTenantById(tenantId);
+    const tenant = await Tenant.findOne({ tenantId });
+    
+    if (!tenant) {
+      throw new AppError(
+        `Tenant with ID ${tenantId} not found`,
+        404,
+        ERROR_TYPES.TENANT_NOT_FOUND
+      );
+    }
+    
     return tenant.checkLimits();
   }
 
