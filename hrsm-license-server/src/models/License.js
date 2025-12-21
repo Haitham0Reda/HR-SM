@@ -4,6 +4,7 @@ import crypto from 'crypto';
 const licenseSchema = new mongoose.Schema({
   licenseNumber: { 
     type: String, 
+    required: true,
     unique: true
   },
   tenantId: { 
@@ -139,7 +140,6 @@ licenseSchema.methods.updateUsage = function(currentUsers, currentStorage) {
 };
 
 // Set up MongoDB indexes for license queries
-licenseSchema.index({ licenseNumber: 1 }, { unique: true });
 licenseSchema.index({ tenantId: 1 });
 licenseSchema.index({ status: 1 });
 licenseSchema.index({ expiresAt: 1 });
@@ -147,4 +147,4 @@ licenseSchema.index({ 'activations.machineId': 1 });
 licenseSchema.index({ type: 1 });
 licenseSchema.index({ createdAt: -1 });
 
-export default mongoose.model('License', licenseSchema);
+export default mongoose.model('License', licenseSchema, 'licenses');

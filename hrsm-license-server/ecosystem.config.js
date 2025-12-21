@@ -10,7 +10,7 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       PORT: 4000,
-      MONGODB_URI: 'mongodb://localhost:27017/hrsm-licenses',
+      MONGODB_URI: 'mongodb+srv://devhaithammoreda_db_user:Jj9BcW2KPu4qLLWr@cluster.uwhj601.mongodb.net/hrsm_license_db?retryWrites=true&w=majority',
       JWT_PRIVATE_KEY_PATH: './keys/private.pem',
       JWT_PUBLIC_KEY_PATH: './keys/public.pem',
       ADMIN_API_KEY: 'your-secure-admin-api-key-here',
@@ -23,7 +23,7 @@ module.exports = {
     env_development: {
       NODE_ENV: 'development',
       PORT: 4000,
-      MONGODB_URI: 'mongodb://localhost:27017/hrsm-licenses-dev',
+      MONGODB_URI: 'mongodb+srv://devhaithammoreda_db_user:Jj9BcW2KPu4qLLWr@cluster.uwhj601.mongodb.net/hrsm_license_db_dev?retryWrites=true&w=majority',
       JWT_PRIVATE_KEY_PATH: './keys/private.pem',
       JWT_PUBLIC_KEY_PATH: './keys/public.pem',
       ADMIN_API_KEY: 'dev-admin-key-change-in-production',

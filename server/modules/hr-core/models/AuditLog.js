@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import crypto from 'crypto';
+import os from 'os';
 import { baseSchemaPlugin } from '../../../shared/models/BaseModel.js';
 
 const auditLogSchema = new mongoose.Schema({
@@ -149,7 +151,7 @@ auditLogSchema.pre('save', function(next) {
         
         // Set system info if not provided
         if (!this.systemInfo.hostname) {
-            this.systemInfo.hostname = require('os').hostname();
+            this.systemInfo.hostname = os.hostname();
         }
         if (!this.systemInfo.service) {
             this.systemInfo.service = 'hr-sm-backend';
@@ -159,7 +161,6 @@ auditLogSchema.pre('save', function(next) {
         }
         
         // Generate hash for integrity verification
-        const crypto = require('crypto');
         const dataToHash = JSON.stringify({
             action: this.action,
             resource: this.resource,
@@ -180,6 +181,7 @@ auditLogSchema.statics.createAuditLog = async function(logData) {
         resource: logData.resource,
         resourceId: logData.resourceId,
         userId: logData.userId,
+        tenantId: logData.tenantId, // Add tenantId field for baseSchemaPlugin
         changes: logData.changes,
         ipAddress: logData.ipAddress,
         userAgent: logData.userAgent,

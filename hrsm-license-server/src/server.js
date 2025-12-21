@@ -116,9 +116,6 @@ const connectDB = async (retries = 5, delay = 5000) => {
       
       // Optimized connection options for license server
       const options = {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        
         // Enhanced connection pool settings for license server
         maxPoolSize: 15, // Slightly smaller pool for license server
         minPoolSize: 3,  // Maintain warm connections
@@ -133,13 +130,11 @@ const connectDB = async (retries = 5, delay = 5000) => {
         retryWrites: true,
         retryReads: true,
         
-        // Performance optimizations
-        bufferCommands: true,
-        bufferMaxEntries: 0,
-        
         // Write concern for license operations (ensure durability)
-        w: 'majority',
-        j: true, // Enable journaling for license operations
+        writeConcern: {
+          w: 'majority',
+          journal: true // Use journal instead of deprecated j option
+        },
         
         // Read preference
         readPreference: 'primaryPreferred',
@@ -149,10 +144,6 @@ const connectDB = async (retries = 5, delay = 5000) => {
         
         // Connection monitoring
         heartbeatFrequencyMS: 10000,
-        
-        // Keep-alive settings
-        keepAlive: true,
-        keepAliveInitialDelay: 300000,
         
         // Auto-index creation (disable in production)
         autoIndex: process.env.NODE_ENV !== 'production'
