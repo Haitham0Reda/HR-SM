@@ -145,7 +145,7 @@ describe('AlertGenerationService', () => {
             };
 
             const matchingRules = alertGenerationService.findMatchingRules(alert);
-            
+
             // Should not match critical security rule
             const criticalSecurityRule = matchingRules.find(rule => rule.id === 'critical_security');
             expect(criticalSecurityRule).toBeUndefined();
@@ -173,12 +173,12 @@ describe('AlertGenerationService', () => {
     describe('alert statistics', () => {
         test('should return correct alert statistics', () => {
             const stats = alertGenerationService.getAlertStats();
-            
+
             expect(stats).toHaveProperty('queueLength');
             expect(stats).toHaveProperty('historyCount');
             expect(stats).toHaveProperty('rulesCount');
             expect(stats).toHaveProperty('rateLimitersActive');
-            
+
             expect(typeof stats.queueLength).toBe('number');
             expect(typeof stats.historyCount).toBe('number');
             expect(typeof stats.rulesCount).toBe('number');
@@ -188,11 +188,15 @@ describe('AlertGenerationService', () => {
 
     describe('alert history cleanup', () => {
         test('should clear old alerts from history', async () => {
-            // Generate some test alerts
+            // Generate some test alerts that match rules (so they get stored)
             await alertGenerationService.generateAlert({
+                severity: ALERT_SEVERITY.CRITICAL,
+                type: ALERT_TYPES.SYSTEM_ERROR,
                 message: 'Test alert 1'
             });
             await alertGenerationService.generateAlert({
+                severity: ALERT_SEVERITY.CRITICAL,
+                type: ALERT_TYPES.SYSTEM_ERROR,
                 message: 'Test alert 2'
             });
 
@@ -200,7 +204,7 @@ describe('AlertGenerationService', () => {
 
             // Clear alerts older than 0 hours (should clear all)
             const cleared = alertGenerationService.clearAlertHistory(0);
-            
+
             expect(cleared).toBe(2);
             expect(alertGenerationService.alertHistory.size).toBe(0);
         });

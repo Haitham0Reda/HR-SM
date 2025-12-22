@@ -1,0 +1,8 @@
+server/testing/controllers/moduleConfiguration.controller.test.js
+server/testing/integration/enhanced-tenant-model.test.js
+server/testing/integration/licenseControlledLogging.integration.test.js
+server/testing/services/alertGenerationAndNotification.property.test.js
+server/testing/services/auditLogger.service.test.js
+server/testing/services/auditLogQueryFiltering.property.test.js
+server/testing/services/auditTrailCompleteness.property.test.js
+server/testing/services/logProcessingPipeline.service.test.js

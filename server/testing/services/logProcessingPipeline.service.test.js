@@ -8,34 +8,93 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import logProcessingPipeline from '../../services/logProcessingPipeline.service.js';
 
-// Mock dependencies will be set up in beforeEach
+// Mock all dependencies before importing the service under test
+const mockCorrelationIdService = {
+    isValidCorrelationId: jest.fn(),
+    generateCorrelationId: jest.fn()
+};
+
+const mockLogCorrelationService = {
+    linkLog: jest.fn(),
+    getRecentUserLogs: jest.fn()
+};
+
+const mockFrontendSecurityDetection = {
+    analyzeLogEntry: jest.fn()
+};
+
+const mockBackendSecurityDetection = {
+    analyzeLogEntry: jest.fn()
+};
+
+const mockLogStorage = {
+    storeLog: jest.fn()
+};
+
+const mockTenantIsolationEnforcement = {
+    enforceRequestIsolation: jest.fn()
+};
+
+// Set up module mocks
+jest.unstable_mockModule('../../services/correlationId.service.js', () => ({
+    default: mockCorrelationIdService
+}));
+
+jest.unstable_mockModule('../../services/logCorrelation.service.js', () => ({
+    default: mockLogCorrelationService
+}));
+
+jest.unstable_mockModule('../../../client/hr-app/src/services/frontendSecurityDetection.service.js', () => ({
+    default: mockFrontendSecurityDetection
+}));
+
+jest.unstable_mockModule('../../services/backendSecurityDetection.service.js', () => ({
+    default: mockBackendSecurityDetection
+}));
+
+jest.unstable_mockModule('../../services/logStorage.service.js', () => ({
+    default: mockLogStorage,
+    LOG_TYPES: {
+        APPLICATION: { name: 'application', retention: 30 },
+        ERROR: { name: 'error', retention: 90 },
+        AUDIT: { name: 'audit', retention: 2555 },
+        SECURITY: { name: 'security', retention: 1825 },
+        PERFORMANCE: { name: 'performance', retention: 90 },
+        COMPLIANCE: { name: 'compliance', retention: 2555 }
+    },
+    PLATFORM_LOG_TYPES: {
+        PLATFORM: { name: 'platform', retention: 365 },
+        PLATFORM_AUDIT: { name: 'platform-audit', retention: 2555 },
+        PLATFORM_SECURITY: { name: 'platform-security', retention: 2555 },
+        PLATFORM_PERFORMANCE: { name: 'platform-performance', retention: 180 },
+        PLATFORM_ERROR: { name: 'platform-error', retention: 365 }
+    },
+    createCompanyDirectoryStructure: jest.fn().mockResolvedValue('/mock/path'),
+    createPlatformDirectoryStructure: jest.fn().mockResolvedValue('/mock/platform'),
+    getLogFilePath: jest.fn().mockReturnValue('/mock/log/path'),
+    getPlatformLogFilePath: jest.fn().mockReturnValue('/mock/platform/log'),
+    compressLogFile: jest.fn().mockResolvedValue('/mock/compressed'),
+    applyCompanyRetentionPolicies: jest.fn().mockResolvedValue({ processed: 0, compressed: 0, deleted: 0 }),
+    applyPlatformRetentionPolicies: jest.fn().mockResolvedValue({ processed: 0, compressed: 0, deleted: 0 }),
+    getCompanyStorageStats: jest.fn().mockResolvedValue(null),
+    getPlatformStorageStats: jest.fn().mockResolvedValue(null),
+    validateLogIntegrity: jest.fn().mockResolvedValue({ valid: true }),
+    runGlobalRetentionCleanup: jest.fn().mockResolvedValue({ companiesProcessed: 0 }),
+    generateIntegrityHash: jest.fn().mockReturnValue('mockhash123')
+}));
+
+jest.unstable_mockModule('../../services/tenantIsolationEnforcement.service.js', () => ({
+    default: mockTenantIsolationEnforcement
+}));
+
+// Now import the service under test
+const logProcessingPipeline = (await import('../../services/logProcessingPipeline.service.js')).default;
 
 describe('Log Processing Pipeline Service', () => {
     let mockLogEntry;
-    let mockCorrelationIdService;
-    let mockLogCorrelationService;
-    let mockFrontendSecurityDetection;
-    let mockBackendSecurityDetection;
-    let mockLogStorage;
-    let mockTenantIsolationEnforcement;
 
     beforeEach(async () => {
-        // Import mocked modules
-        console.log('Importing correlationId.service.js');
-        const correlationIdModule = await import('../../services/correlationId.service.js');
-        console.log('correlationIdModule:', correlationIdModule);
-        mockCorrelationIdService = correlationIdModule.default;
-        console.log('mockCorrelationIdService:', mockCorrelationIdService);
-        mockLogCorrelationService = (await import('../../services/logCorrelation.service.js')).default;
-        mockFrontendSecurityDetection = (await import('../../../client/hr-app/src/services/frontendSecurityDetection.service.js')).default;
-        mockBackendSecurityDetection = (await import('../../services/backendSecurityDetection.service.js')).default;
-        mockLogStorage = (await import('../../services/logStorage.service.js')).default;
-        mockTenantIsolationEnforcement = (await import('../../services/tenantIsolationEnforcement.service.js')).default;
-
-
-
         // Setup mock log entry
         mockLogEntry = {
             timestamp: new Date().toISOString(),
@@ -54,49 +113,23 @@ describe('Log Processing Pipeline Service', () => {
         };
 
         jest.clearAllMocks();
-        
-        // Setup default mock implementations
-        // The service uses the default export, so we need to set up mocks on the default object
-        mockCorrelationIdService.default.isValidCorrelationId.mockReturnValue(true);
-        mockCorrelationIdService.default.generateCorrelationId.mockReturnValue('new-corr-123');
-        
-        const linkLogMock = mockLogCorrelationService.linkLog || 
-            (mockLogCorrelationService.default && mockLogCorrelationService.default.linkLog);
-        if (linkLogMock && linkLogMock.mockResolvedValue) {
-            linkLogMock.mockResolvedValue({ success: true });
-        }
-        
-        const analyzeLogEntryFrontendMock = mockFrontendSecurityDetection.analyzeLogEntry || 
-            (mockFrontendSecurityDetection.default && mockFrontendSecurityDetection.default.analyzeLogEntry);
-        if (analyzeLogEntryFrontendMock && analyzeLogEntryFrontendMock.mockResolvedValue) {
-            analyzeLogEntryFrontendMock.mockResolvedValue([]);
-        }
-        
-        const analyzeLogEntryBackendMock = mockBackendSecurityDetection.analyzeLogEntry || 
-            (mockBackendSecurityDetection.default && mockBackendSecurityDetection.default.analyzeLogEntry);
-        if (analyzeLogEntryBackendMock && analyzeLogEntryBackendMock.mockResolvedValue) {
-            analyzeLogEntryBackendMock.mockResolvedValue([]);
-        }
-        
-        const storeLogMock = mockLogStorage.storeLog || 
-            (mockLogStorage.default && mockLogStorage.default.storeLog);
-        if (storeLogMock && storeLogMock.mockResolvedValue) {
-            storeLogMock.mockResolvedValue({
-                success: true,
-                filePath: '/logs/tenant123/general/2024-01-01.log'
-            });
-        }
 
-        const enforceRequestIsolationMock = mockTenantIsolationEnforcement.enforceRequestIsolation || 
-            (mockTenantIsolationEnforcement.default && mockTenantIsolationEnforcement.default.enforceRequestIsolation);
-        if (enforceRequestIsolationMock && enforceRequestIsolationMock.mockReturnValue) {
-            enforceRequestIsolationMock.mockReturnValue({
-                valid: true,
-                violations: [],
-                warnings: []
-            });
-        }
-        
+        // Setup default mock implementations
+        mockCorrelationIdService.isValidCorrelationId.mockReturnValue(true);
+        mockCorrelationIdService.generateCorrelationId.mockReturnValue('new-corr-123');
+        mockLogCorrelationService.linkLog.mockResolvedValue({ success: true });
+        mockFrontendSecurityDetection.analyzeLogEntry.mockResolvedValue([]);
+        mockBackendSecurityDetection.analyzeLogEntry.mockResolvedValue([]);
+        mockLogStorage.storeLog.mockResolvedValue({
+            success: true,
+            filePath: '/logs/tenant123/general/2024-01-01.log'
+        });
+        mockTenantIsolationEnforcement.enforceRequestIsolation.mockReturnValue({
+            valid: true,
+            violations: [],
+            warnings: []
+        });
+
         // Reset processing stats
         logProcessingPipeline.processingStats = {
             totalProcessed: 0,
@@ -137,7 +170,7 @@ describe('Log Processing Pipeline Service', () => {
 
         test('should handle tenant isolation violations', async () => {
             // Handle both direct mock and default export mock structures
-            const enforceRequestIsolationMock = mockTenantIsolationEnforcement.enforceRequestIsolation || 
+            const enforceRequestIsolationMock = mockTenantIsolationEnforcement.enforceRequestIsolation ||
                 (mockTenantIsolationEnforcement.default && mockTenantIsolationEnforcement.default.enforceRequestIsolation);
             enforceRequestIsolationMock.mockReturnValue({
                 valid: false,
@@ -155,8 +188,8 @@ describe('Log Processing Pipeline Service', () => {
         test('should process correlation ID validation and linking', async () => {
             const result = await logProcessingPipeline.processLog(mockLogEntry);
 
-            // The service uses the default export, so we need to check the default object
-            expect(mockCorrelationIdService.default.isValidCorrelationId).toHaveBeenCalledWith('corr123');
+            // Check that correlation ID was validated
+            expect(mockCorrelationIdService.isValidCorrelationId).toHaveBeenCalledWith('corr123');
             if (mockLogCorrelationService.linkLog) {
                 expect(mockLogCorrelationService.linkLog).toHaveBeenCalledWith(
                     expect.objectContaining({
@@ -168,10 +201,10 @@ describe('Log Processing Pipeline Service', () => {
         });
 
         test('should generate new correlation ID for invalid ones', async () => {
-            // The service uses the default export, so we need to set up mocks on the default object
-            mockCorrelationIdService.default.isValidCorrelationId.mockReturnValue(false);
+            // Set up mock for invalid correlation ID
+            mockCorrelationIdService.isValidCorrelationId.mockReturnValue(false);
             // Ensure generateCorrelationId returns the expected value
-            mockCorrelationIdService.default.generateCorrelationId.mockReturnValue('new-corr-123');
+            mockCorrelationIdService.generateCorrelationId.mockReturnValue('new-corr-123');
 
             const result = await logProcessingPipeline.processLog(mockLogEntry);
 
@@ -188,7 +221,7 @@ describe('Log Processing Pipeline Service', () => {
             };
 
             // Handle both direct mock and default export mock structures
-            const analyzeLogEntryMock = mockFrontendSecurityDetection.analyzeLogEntry || 
+            const analyzeLogEntryMock = mockFrontendSecurityDetection.analyzeLogEntry ||
                 (mockFrontendSecurityDetection.default && mockFrontendSecurityDetection.default.analyzeLogEntry);
             if (analyzeLogEntryMock && analyzeLogEntryMock.mockResolvedValue) {
                 analyzeLogEntryMock.mockResolvedValue([securityEvent]);
@@ -208,7 +241,7 @@ describe('Log Processing Pipeline Service', () => {
             };
 
             // Handle both direct mock and default export mock structures
-            const analyzeLogEntryMock = mockFrontendSecurityDetection.analyzeLogEntry || 
+            const analyzeLogEntryMock = mockFrontendSecurityDetection.analyzeLogEntry ||
                 (mockFrontendSecurityDetection.default && mockFrontendSecurityDetection.default.analyzeLogEntry);
             if (analyzeLogEntryMock && analyzeLogEntryMock.mockResolvedValue) {
                 analyzeLogEntryMock.mockResolvedValue([securityEvent]);
@@ -217,7 +250,7 @@ describe('Log Processing Pipeline Service', () => {
             await logProcessingPipeline.processLog(mockLogEntry);
 
             // Handle both direct mock and default export mock structures
-            const storeLogMock = mockLogStorage.storeLog || 
+            const storeLogMock = mockLogStorage.storeLog ||
                 (mockLogStorage.default && mockLogStorage.default.storeLog);
             if (storeLogMock) {
                 expect(storeLogMock).toHaveBeenCalledWith(
@@ -237,7 +270,7 @@ describe('Log Processing Pipeline Service', () => {
             await logProcessingPipeline.processLog(mockLogEntry);
 
             // Handle both direct mock and default export mock structures
-            const storeLogMock = mockLogStorage.storeLog || 
+            const storeLogMock = mockLogStorage.storeLog ||
                 (mockLogStorage.default && mockLogStorage.default.storeLog);
             if (storeLogMock) {
                 expect(storeLogMock).toHaveBeenCalledWith(
@@ -255,7 +288,7 @@ describe('Log Processing Pipeline Service', () => {
             await logProcessingPipeline.processLog(mockLogEntry);
 
             // Handle both direct mock and default export mock structures
-            const storeLogMock = mockLogStorage.storeLog || 
+            const storeLogMock = mockLogStorage.storeLog ||
                 (mockLogStorage.default && mockLogStorage.default.storeLog);
             if (storeLogMock) {
                 expect(storeLogMock).toHaveBeenCalledWith(
@@ -269,7 +302,7 @@ describe('Log Processing Pipeline Service', () => {
 
         test('should handle storage failures', async () => {
             // Handle both direct mock and default export mock structures
-            const storeLogMock = mockLogStorage.storeLog || 
+            const storeLogMock = mockLogStorage.storeLog ||
                 (mockLogStorage.default && mockLogStorage.default.storeLog);
             if (storeLogMock && storeLogMock.mockResolvedValue) {
                 storeLogMock.mockResolvedValue({
@@ -287,7 +320,7 @@ describe('Log Processing Pipeline Service', () => {
 
         test('should handle processing exceptions', async () => {
             // Handle both direct mock and default export mock structures
-            const linkLogMock = mockLogCorrelationService.linkLog || 
+            const linkLogMock = mockLogCorrelationService.linkLog ||
                 (mockLogCorrelationService.default && mockLogCorrelationService.default.linkLog);
             if (linkLogMock && linkLogMock.mockRejectedValue) {
                 linkLogMock.mockRejectedValue(new Error('Correlation failed'));
@@ -303,10 +336,10 @@ describe('Log Processing Pipeline Service', () => {
         test('should track processing timeout warnings', async () => {
             // Mock slow processing
             // Handle both direct mock and default export mock structures
-            const storeLogMock = mockLogStorage.storeLog || 
+            const storeLogMock = mockLogStorage.storeLog ||
                 (mockLogStorage.default && mockLogStorage.default.storeLog);
             if (storeLogMock && storeLogMock.mockImplementation) {
-                storeLogMock.mockImplementation(() => 
+                storeLogMock.mockImplementation(() =>
                     new Promise(resolve => setTimeout(() => resolve({ success: true, filePath: '/test' }), 100))
                 );
             }
@@ -395,7 +428,7 @@ describe('Log Processing Pipeline Service', () => {
     describe('analyzeCrossSystemSecurity', () => {
         beforeEach(() => {
             // Handle both direct mock and default export mock structures
-            const getRecentUserLogsMock = mockLogCorrelationService.getRecentUserLogs || 
+            const getRecentUserLogsMock = mockLogCorrelationService.getRecentUserLogs ||
                 (mockLogCorrelationService.default && mockLogCorrelationService.default.getRecentUserLogs);
             if (getRecentUserLogsMock) {
                 getRecentUserLogsMock.mockResolvedValue([]);
@@ -404,7 +437,7 @@ describe('Log Processing Pipeline Service', () => {
 
         test('should detect rapid API calls', async () => {
             mockLogEntry.meta.apiCall = { endpoint: '/api/test', method: 'GET' };
-            
+
             // Mock 60 recent API calls
             const recentApiCalls = Array(60).fill().map((_, i) => ({
                 userId: 'user123',
@@ -413,7 +446,7 @@ describe('Log Processing Pipeline Service', () => {
             }));
 
             // Handle both direct mock and default export mock structures
-            const getRecentUserLogsMock = mockLogCorrelationService.getRecentUserLogs || 
+            const getRecentUserLogsMock = mockLogCorrelationService.getRecentUserLogs ||
                 (mockLogCorrelationService.default && mockLogCorrelationService.default.getRecentUserLogs);
             if (getRecentUserLogsMock) {
                 getRecentUserLogsMock.mockResolvedValue(recentApiCalls);
@@ -428,7 +461,7 @@ describe('Log Processing Pipeline Service', () => {
 
         test('should detect high error rates', async () => {
             mockLogEntry.level = 'error';
-            
+
             // Mock 15 recent errors
             const recentErrors = Array(15).fill().map((_, i) => ({
                 userId: 'user123',
@@ -437,7 +470,7 @@ describe('Log Processing Pipeline Service', () => {
             }));
 
             // Handle both direct mock and default export mock structures
-            const getRecentUserLogsMock = mockLogCorrelationService.getRecentUserLogs || 
+            const getRecentUserLogsMock = mockLogCorrelationService.getRecentUserLogs ||
                 (mockLogCorrelationService.default && mockLogCorrelationService.default.getRecentUserLogs);
             if (getRecentUserLogsMock) {
                 getRecentUserLogsMock.mockResolvedValue(recentErrors);
@@ -452,7 +485,7 @@ describe('Log Processing Pipeline Service', () => {
 
         test('should handle analysis errors gracefully', async () => {
             // Handle both direct mock and default export mock structures
-            const getRecentUserLogsMock = mockLogCorrelationService.getRecentUserLogs || 
+            const getRecentUserLogsMock = mockLogCorrelationService.getRecentUserLogs ||
                 (mockLogCorrelationService.default && mockLogCorrelationService.default.getRecentUserLogs);
             if (getRecentUserLogsMock) {
                 getRecentUserLogsMock.mockRejectedValue(new Error('Database error'));

@@ -6,6 +6,11 @@ describe('Enhanced Tenant Model Integration Tests', () => {
   let mongoServer;
 
   beforeAll(async () => {
+    // Disconnect if already connected
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
     await mongoose.connect(mongoUri);
@@ -137,7 +142,7 @@ describe('Enhanced Tenant Model Integration Tests', () => {
 
     it('should get analytics correctly', async () => {
       const analytics = await Tenant.getAnalytics();
-      
+
       expect(analytics).toHaveLength(1);
       expect(analytics[0].totalTenants).toBe(3);
       expect(analytics[0].activeTenants).toBe(2);
@@ -168,9 +173,9 @@ describe('Enhanced Tenant Model Integration Tests', () => {
       await highUsageTenant.save();
 
       const tenantsNeedingAttention = await Tenant.findTenantsNeedingAttention();
-      
+
       expect(tenantsNeedingAttention.length).toBeGreaterThan(0);
-      
+
       // Should include the high usage tenant
       const foundTenant = tenantsNeedingAttention.find(t => t.tenantId === 'high-usage-tenant');
       expect(foundTenant).toBeDefined();
@@ -180,21 +185,21 @@ describe('Enhanced Tenant Model Integration Tests', () => {
   describe('Enhanced Indexes', () => {
     it('should have proper indexes for enterprise features', async () => {
       const indexes = await Tenant.collection.getIndexes();
-      
+
       // Check for license-related indexes
-      const licenseNumberIndex = Object.keys(indexes).find(key => 
+      const licenseNumberIndex = Object.keys(indexes).find(key =>
         key.includes('license.licenseNumber')
       );
       expect(licenseNumberIndex).toBeDefined();
 
       // Check for billing indexes
-      const billingPlanIndex = Object.keys(indexes).find(key => 
+      const billingPlanIndex = Object.keys(indexes).find(key =>
         key.includes('billing.currentPlan')
       );
       expect(billingPlanIndex).toBeDefined();
 
       // Check for compound indexes
-      const compoundIndex = Object.keys(indexes).find(key => 
+      const compoundIndex = Object.keys(indexes).find(key =>
         key.includes('status') && key.includes('billing.currentPlan')
       );
       expect(compoundIndex).toBeDefined();

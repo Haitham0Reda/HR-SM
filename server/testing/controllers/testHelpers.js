@@ -28,25 +28,27 @@ export const createMockRequest = (overrides = {}) => ({
     headers: {},
     ip: '127.0.0.1',
     companyLogger: {
-        info: () => {},
-        warn: () => {},
-        error: () => {},
-        debug: () => {},
-        security: () => {},
-        performance: () => {},
-        audit: () => {}
+        info: () => { },
+        warn: () => { },
+        error: () => { },
+        debug: () => { },
+        security: () => { },
+        performance: () => { },
+        audit: () => { }
     },
     ...overrides
 });
 
 export const createTestDepartment = async (tenantId = 'test_tenant_123', name = 'IT Department') => {
-    const uniqueCode = tenantId === 'test_tenant_123' ? 'IT001' : 'HR001';
+    const uniqueSuffix = Math.random().toString(36).substring(7);
+    const uniqueCode = `${tenantId === 'test_tenant_123' ? 'IT' : 'HR'}${uniqueSuffix}`;
+    const uniqueName = `${name}_${uniqueSuffix}`;
     const arabicName = tenantId === 'test_tenant_123' ? 'قسم تكنولوجيا المعلومات' : 'قسم الموارد البشرية';
-    
+
     return await Department.create({
         tenantId: tenantId,
-        name: name,
-        arabicName: arabicName,
+        name: uniqueName,
+        arabicName: `${arabicName}_${uniqueSuffix}`,
         code: uniqueCode
     });
 };

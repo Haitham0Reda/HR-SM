@@ -8,11 +8,33 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import moduleConfigurationController from '../../controllers/moduleConfiguration.controller.js';
-import loggingModuleService from '../../services/loggingModule.service.js';
-import configurationAuditService from '../../services/configurationAudit.service.js';
 
-// Note: Mocks not needed for this test suite
+// Mock loggingModuleService before importing
+const mockLoggingModuleService = {
+    getConfig: jest.fn(),
+    updateConfig: jest.fn(),
+    isEssentialFeature: jest.fn(),
+    validateConfig: jest.fn(),
+    getPlatformRequiredLogs: jest.fn()
+};
+
+const mockConfigurationAuditService = {
+    logConfigChange: jest.fn()
+};
+
+jest.unstable_mockModule('../../services/loggingModule.service.js', () => ({
+    default: mockLoggingModuleService
+}));
+
+jest.unstable_mockModule('../../services/configurationAudit.service.js', () => ({
+    default: mockConfigurationAuditService
+}));
+
+const { default: moduleConfigurationController } = await import('../../controllers/moduleConfiguration.controller.js');
+
+// Use the mock references
+const loggingModuleService = mockLoggingModuleService;
+const configurationAuditService = mockConfigurationAuditService;
 
 describe('ModuleConfigurationController', () => {
     let app;
