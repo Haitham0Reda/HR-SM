@@ -25,7 +25,7 @@ describe('Platform Security Monitoring Service', () => {
     });
 
     describe('Unauthorized Admin Access Detection', () => {
-        test('should detect failed authentication to admin endpoint', () => {
+        test('should detect failed authentication to admin endpoint', async () => {
             const requestData = {
                 ipAddress: '192.168.1.100',
                 userAgent: 'Mozilla/5.0',
@@ -35,7 +35,7 @@ describe('Platform Security Monitoring Service', () => {
                 userId: 'user123'
             };
 
-            const violations = platformSecurityMonitoring.detectUnauthorizedAdminAccess(requestData);
+            const violations = await platformSecurityMonitoring.detectUnauthorizedAdminAccess(requestData);
 
             expect(violations).toBeTruthy();
             expect(violations).toHaveLength(1);
@@ -44,7 +44,7 @@ describe('Platform Security Monitoring Service', () => {
             expect(violations[0].description).toBe('Failed authentication to admin endpoint');
         });
 
-        test('should detect brute force attack on admin endpoint', () => {
+        test('should detect brute force attack on admin endpoint', async () => {
             const baseRequestData = {
                 ipAddress: '192.168.1.100',
                 userAgent: 'Mozilla/5.0',
@@ -57,7 +57,7 @@ describe('Platform Security Monitoring Service', () => {
             // Simulate 5 failed attempts
             let violations = null;
             for (let i = 0; i < 5; i++) {
-                violations = platformSecurityMonitoring.detectUnauthorizedAdminAccess(baseRequestData);
+                violations = await platformSecurityMonitoring.detectUnauthorizedAdminAccess(baseRequestData);
             }
 
             expect(violations).toBeTruthy();
@@ -65,7 +65,7 @@ describe('Platform Security Monitoring Service', () => {
             expect(violations.some(v => v.description.includes('Brute force attack'))).toBe(true);
         });
 
-        test('should detect access without proper admin role', () => {
+        test('should detect access without proper admin role', async () => {
             const requestData = {
                 ipAddress: '192.168.1.100',
                 userAgent: 'Mozilla/5.0',
@@ -76,15 +76,15 @@ describe('Platform Security Monitoring Service', () => {
                 adminRole: 'user' // Not an admin role
             };
 
-            const violations = platformSecurityMonitoring.detectUnauthorizedAdminAccess(requestData);
+            const violations = await platformSecurityMonitoring.detectUnauthorizedAdminAccess(requestData);
 
             expect(violations).toBeTruthy();
-            expect(violations.some(v => 
+            expect(violations.some(v =>
                 v.description.includes('Successful access to admin endpoint without admin role')
             )).toBe(true);
         });
 
-        test('should detect suspicious user agent', () => {
+        test('should detect suspicious user agent', async () => {
             const requestData = {
                 ipAddress: '192.168.1.100',
                 userAgent: 'curl/7.68.0',
@@ -95,17 +95,17 @@ describe('Platform Security Monitoring Service', () => {
                 adminRole: 'admin'
             };
 
-            const violations = platformSecurityMonitoring.detectUnauthorizedAdminAccess(requestData);
+            const violations = await platformSecurityMonitoring.detectUnauthorizedAdminAccess(requestData);
 
             expect(violations).toBeTruthy();
-            expect(violations.some(v => 
+            expect(violations.some(v =>
                 v.description.includes('Suspicious user agent')
             )).toBe(true);
         });
     });
 
     describe('Cross-Tenant Violation Detection', () => {
-        test('should detect cross-tenant data access attempt', () => {
+        test('should detect cross-tenant data access attempt', async () => {
             const operationData = {
                 userId: 'user123',
                 userCompanyId: 'company-a',
@@ -118,7 +118,7 @@ describe('Platform Security Monitoring Service', () => {
                 userAgent: 'Mozilla/5.0'
             };
 
-            const violations = platformSecurityMonitoring.detectCrossTenantViolations(operationData);
+            const violations = await platformSecurityMonitoring.detectCrossTenantViolations(operationData);
 
             expect(violations).toBeTruthy();
             expect(violations).toHaveLength(1);
@@ -127,7 +127,7 @@ describe('Platform Security Monitoring Service', () => {
             expect(violations[0].description).toBe('Cross-tenant data access attempt detected');
         });
 
-        test('should detect systematic cross-tenant violation pattern', () => {
+        test('should detect systematic cross-tenant violation pattern', async () => {
             const baseOperationData = {
                 userId: 'user123',
                 userCompanyId: 'company-a',
@@ -143,16 +143,16 @@ describe('Platform Security Monitoring Service', () => {
             // Simulate 10 violations to the same target company to trigger pattern detection
             let violations = null;
             for (let i = 0; i < 10; i++) {
-                violations = platformSecurityMonitoring.detectCrossTenantViolations(baseOperationData);
+                violations = await platformSecurityMonitoring.detectCrossTenantViolations(baseOperationData);
             }
 
             expect(violations).toBeTruthy();
-            expect(violations.some(v => 
+            expect(violations.some(v =>
                 v.description.includes('Systematic cross-tenant violation pattern')
             )).toBe(true);
         });
 
-        test('should detect multi-tenant data harvesting', () => {
+        test('should detect multi-tenant data harvesting', async () => {
             const baseOperationData = {
                 userId: 'user123',
                 userCompanyId: 'company-a',
@@ -167,19 +167,19 @@ describe('Platform Security Monitoring Service', () => {
             // Access 5 different companies from the same user/company combination
             let violations = null;
             for (let i = 0; i < 5; i++) {
-                violations = platformSecurityMonitoring.detectCrossTenantViolations({
+                violations = await platformSecurityMonitoring.detectCrossTenantViolations({
                     ...baseOperationData,
                     requestedCompanyId: `target-company-${i}`
                 });
             }
 
             expect(violations).toBeTruthy();
-            expect(violations.some(v => 
+            expect(violations.some(v =>
                 v.description.includes('Multi-tenant data harvesting attempt')
             )).toBe(true);
         });
 
-        test('should not detect violation for same company access', () => {
+        test('should not detect violation for same company access', async () => {
             const operationData = {
                 userId: 'user123',
                 userCompanyId: 'company-a',
@@ -192,14 +192,14 @@ describe('Platform Security Monitoring Service', () => {
                 userAgent: 'Mozilla/5.0'
             };
 
-            const violations = platformSecurityMonitoring.detectCrossTenantViolations(operationData);
+            const violations = await platformSecurityMonitoring.detectCrossTenantViolations(operationData);
 
             expect(violations).toBeNull();
         });
     });
 
     describe('Infrastructure Attack Detection', () => {
-        test('should detect DDoS attack pattern', () => {
+        test('should detect DDoS attack pattern', async () => {
             const baseRequestData = {
                 ipAddress: '192.168.1.100',
                 userAgent: 'Mozilla/5.0',
@@ -211,16 +211,16 @@ describe('Platform Security Monitoring Service', () => {
             // Simulate 101 requests to trigger DDoS detection
             let violations = null;
             for (let i = 0; i < 101; i++) {
-                violations = platformSecurityMonitoring.detectInfrastructureAttacks(baseRequestData);
+                violations = await platformSecurityMonitoring.detectInfrastructureAttacks(baseRequestData);
             }
 
             expect(violations).toBeTruthy();
-            expect(violations.some(v => 
+            expect(violations.some(v =>
                 v.description.includes('High-volume request pattern detected')
             )).toBe(true);
         });
 
-        test('should detect large request attack', () => {
+        test('should detect large request attack', async () => {
             const requestData = {
                 ipAddress: '192.168.1.100',
                 userAgent: 'Mozilla/5.0',
@@ -230,15 +230,15 @@ describe('Platform Security Monitoring Service', () => {
                 requestSize: 15 * 1024 * 1024 // 15MB request
             };
 
-            const violations = platformSecurityMonitoring.detectInfrastructureAttacks(requestData);
+            const violations = await platformSecurityMonitoring.detectInfrastructureAttacks(requestData);
 
             expect(violations).toBeTruthy();
-            expect(violations.some(v => 
+            expect(violations.some(v =>
                 v.description.includes('Unusually large request detected')
             )).toBe(true);
         });
 
-        test('should detect systematic targeting of sensitive endpoints', () => {
+        test('should detect systematic targeting of sensitive endpoints', async () => {
             const baseRequestData = {
                 ipAddress: '192.168.1.100',
                 userAgent: 'Mozilla/5.0',
@@ -250,11 +250,11 @@ describe('Platform Security Monitoring Service', () => {
             // Simulate 21 requests to sensitive endpoints
             let violations = null;
             for (let i = 0; i < 21; i++) {
-                violations = platformSecurityMonitoring.detectInfrastructureAttacks(baseRequestData);
+                violations = await platformSecurityMonitoring.detectInfrastructureAttacks(baseRequestData);
             }
 
             expect(violations).toBeTruthy();
-            expect(violations.some(v => 
+            expect(violations.some(v =>
                 v.description.includes('Systematic targeting of sensitive endpoints')
             )).toBe(true);
         });

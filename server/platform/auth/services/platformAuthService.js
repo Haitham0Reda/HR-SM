@@ -1,5 +1,5 @@
 import PlatformUser from '../../models/PlatformUser.js';
-import { generatePlatformToken } from '../../middleware/platformAuth.js';
+import { generatePlatformToken } from '../../../core/auth/platformAuth.js';
 import logger from '../../../utils/logger.js';
 import AppError from '../../../core/errors/AppError.js';
 
@@ -46,7 +46,7 @@ class PlatformAuthService {
     await user.save();
 
     // Generate JWT token
-    const token = generatePlatformToken(user);
+    const token = generatePlatformToken(user._id.toString(), user.role);
 
     // Return user (without password) and token
     return {
