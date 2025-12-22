@@ -479,5 +479,112 @@ licenseAuditSchema.statics.cleanupOldLogs = async function (daysToKeep = 365) {
     };
 };
 
+/**
+ * Static method to log subscription events
+ * @param {string} tenantId - Tenant ID
+ * @param {string} moduleKey - Module key
+ * @param {string} eventType - Event type (SUBSCRIPTION_CREATED, SUBSCRIPTION_UPGRADED, etc.)
+ * @param {Object} details - Additional details
+ * @returns {Promise<LicenseAudit>} Created audit log
+ */
+licenseAuditSchema.statics.logSubscriptionEvent = function (tenantId, moduleKey, eventType, details = {}) {
+    const validEvents = [
+        'SUBSCRIPTION_CREATED', 'SUBSCRIPTION_UPGRADED', 'SUBSCRIPTION_DOWNGRADED',
+        'SUBSCRIPTION_EXPIRED', 'SUBSCRIPTION_CANCELLED'
+    ];
+
+    if (!validEvents.includes(eventType)) {
+        throw new Error('Invalid subscription event type');
+    }
+
+    const severityMap = {
+        'SUBSCRIPTION_CREATED': 'info',
+        'SUBSCRIPTION_UPGRADED': 'info',
+        'SUBSCRIPTION_DOWNGRADED': 'warning',
+        'SUBSCRIPTION_EXPIRED': 'error',
+        'SUBSCRIPTION_CANCELLED': 'warning'
+    };
+
+    return this.createLog({
+        tenantId,
+        moduleKey,
+        eventType,
+        details: {
+            ...details
+        },
+        severity: severityMap[eventType] || 'info'
+    });
+};
+
+/**
+ * Static method to log trial events
+ * @param {string} tenantId - Tenant ID
+ * @param {string} moduleKey - Module key
+ * @param {string} eventType - Event type (TRIAL_STARTED, TRIAL_ENDED)
+ * @param {Object} details - Additional details
+ * @returns {Promise<LicenseAudit>} Created audit log
+ */
+licenseAuditSchema.statics.logTrialEvent = function (tenantId, moduleKey, eventType, details = {}) {
+    const validEvents = ['TRIAL_STARTED', 'TRIAL_ENDED'];
+
+    if (!validEvents.includes(eventType)) {
+        throw new Error('Invalid trial event type');
+    }
+
+    return this.createLog({
+        tenantId,
+        moduleKey,
+        eventType,
+        details: {
+            ...details
+        },
+        severity: eventType === 'TRIAL_ENDED' ? 'warning' : 'info'
+    });
+};
+
+/**
+ * Static method to log usage tracking
+ * @param {string} tenantId - Tenant ID
+ * @param {string} moduleKey - Module key
+ * @param {string} usageType - Type of usage
+ * @param {number} count - Usage count
+ * @param {Object} details - Additional details
+ * @returns {Promise<LicenseAudit>} Created audit log
+ */
+licenseAuditSchema.statics.logUsageTracked = function (tenantId, moduleKey, usageType, count, details = {}) {
+    return this.createLog({
+        tenantId,
+        moduleKey,
+        eventType: 'USAGE_TRACKED',
+        details: {
+            usageType,
+            count,
+            ...details
+        },
+        severity: 'info'
+    });
+};
+
+/**
+ * Static method to log dependency violations
+ * @param {string} tenantId - Tenant ID
+ * @param {string} moduleKey - Module key
+ * @param {string} dependencyType - Type of dependency
+ * @param {Object} details - Additional details
+ * @returns {Promise<LicenseAudit>} Created audit log
+ */
+licenseAuditSchema.statics.logDependencyViolation = function (tenantId, moduleKey, dependencyType, details = {}) {
+    return this.createLog({
+        tenantId,
+        moduleKey,
+        eventType: 'DEPENDENCY_VIOLATION',
+        details: {
+            dependencyType,
+            ...details
+        },
+        severity: 'error'
+    });
+};
+
 export default mongoose.model('LicenseAudit', licenseAuditSchema);
 export { EVENT_TYPES, SEVERITY_LEVELS };

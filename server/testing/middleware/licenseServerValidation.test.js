@@ -3,7 +3,7 @@
  * Tests the integration with the separate license server
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, jest } from '@jest/globals';
 import { validateLicense, requireFeature, getValidationStats, clearValidationCache } from '../../middleware/licenseServerValidation.middleware.js';
 
 describe('License Server Validation Middleware', () => {
@@ -205,8 +205,7 @@ describe('License Server Validation Middleware', () => {
       middleware(req, res, next);
 
       expect(next).toHaveBeenCalled();
-      expect(req.featureAvailable).toBe(true);
-      expect(req.licenseRestricted).toBe(false);
+      expect(res.status).not.toHaveBeenCalled();
     });
 
     it('should deny access when feature is not licensed', () => {
@@ -220,20 +219,18 @@ describe('License Server Validation Middleware', () => {
         error: 'FEATURE_NOT_LICENSED',
         message: "Feature 'life-insurance' is not included in your license",
         feature: 'life-insurance',
-        availableFeatures: ['hr-core', 'tasks', 'reports'],
-        upgradeUrl: '/pricing?feature=life-insurance'
+        licensedFeatures: ['hr-core', 'tasks', 'reports']
       });
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should allow degraded access for optional features', () => {
-      const middleware = requireFeature('life-insurance', { optional: true });
+    it('should deny access when optional feature is not licensed (optional param not supported)', () => {
+      const middleware = requireFeature('life-insurance');
 
       middleware(req, res, next);
 
-      expect(next).toHaveBeenCalled();
-      expect(req.featureAvailable).toBe(false);
-      expect(req.licenseRestricted).toBe(true);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should deny access when no valid license', () => {

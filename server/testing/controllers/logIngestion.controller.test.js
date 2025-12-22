@@ -64,7 +64,7 @@ describe('Log Ingestion Controller', () => {
         // Setup Express app for testing
         app = express();
         app.use(express.json());
-        
+
         // Mock request and response objects
         mockReq = {
             user: {
@@ -109,7 +109,7 @@ describe('Log Ingestion Controller', () => {
         mockLogProcessingPipeline.processLog.mockClear();
         mockCorrelationIdService.generateCorrelationId.mockClear();
         mockCompanyLogger.getLoggerForTenant.mockClear();
-        
+
         // Setup default mock implementations
         mockLogProcessingPipeline.processLog.mockResolvedValue({
             success: true,
@@ -118,13 +118,18 @@ describe('Log Ingestion Controller', () => {
         });
 
         mockCorrelationIdService.generateCorrelationId.mockReturnValue('new-corr-123');
-        
+
         mockCompanyLogger.getLoggerForTenant.mockResolvedValue({
             info: jest.fn(),
             warn: jest.fn(),
             error: jest.fn(),
             debug: jest.fn()
         });
+
+        // Clear ingestionStats to ensure test isolation
+        if (logIngestionController.default.ingestionStats) {
+            logIngestionController.default.ingestionStats.clear();
+        }
     });
 
     afterEach(() => {
@@ -185,13 +190,13 @@ describe('Log Ingestion Controller', () => {
             validationResult.mockReturnValue(mockValidationResult);
 
             // Mock pipeline failure
-            logProcessingPipeline.processLog.mockResolvedValue({
+            mockLogProcessingPipeline.processLog.mockResolvedValue({
                 success: false,
                 error: 'Processing failed',
                 correlationId: 'log-corr-123'
             });
 
-            await logIngestionController.ingestLogs(mockReq, mockRes);
+            await logIngestionController.default.ingestLogs(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith(
@@ -230,7 +235,7 @@ describe('Log Ingestion Controller', () => {
             ];
 
             // Mock mixed results
-            logProcessingPipeline.processLog
+            mockLogProcessingPipeline.processLog
                 .mockResolvedValueOnce({
                     success: true,
                     correlationId: 'corr1'
@@ -241,9 +246,9 @@ describe('Log Ingestion Controller', () => {
                     correlationId: 'corr2'
                 });
 
-            await logIngestionController.ingestLogs(mockReq, mockRes);
+            await logIngestionController.default.ingestLogs(mockReq, mockRes);
 
-            expect(logProcessingPipeline.processLog).toHaveBeenCalledTimes(2);
+            expect(mockLogProcessingPipeline.processLog).toHaveBeenCalledTimes(2);
             expect(mockRes.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: true,
@@ -264,9 +269,9 @@ describe('Log Ingestion Controller', () => {
             validationResult.mockReturnValue(mockValidationResult);
 
             // Mock pipeline exception
-            logProcessingPipeline.processLog.mockRejectedValue(new Error('Pipeline exception'));
+            mockLogProcessingPipeline.processLog.mockRejectedValue(new Error('Pipeline exception'));
 
-            await logIngestionController.ingestLogs(mockReq, mockRes);
+            await logIngestionController.default.ingestLogs(mockReq, mockRes);
 
             expect(mockRes.json).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -285,7 +290,7 @@ describe('Log Ingestion Controller', () => {
                 throw new Error('Validation exception');
             });
 
-            await logIngestionController.ingestLogs(mockReq, mockRes);
+            await logIngestionController.default.ingestLogs(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(500);
             expect(mockRes.json).toHaveBeenCalledWith(
@@ -299,12 +304,12 @@ describe('Log Ingestion Controller', () => {
 
     describe('healthCheck', () => {
         test('should return healthy status', async () => {
-            logProcessingPipeline.healthCheck.mockResolvedValue({
+            mockLogProcessingPipeline.healthCheck.mockResolvedValue({
                 status: 'healthy',
                 components: {}
             });
 
-            await logIngestionController.healthCheck(mockReq, mockRes);
+            await logIngestionController.default.healthCheck(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith(
@@ -317,9 +322,9 @@ describe('Log Ingestion Controller', () => {
         });
 
         test('should handle health check exceptions', async () => {
-            logProcessingPipeline.healthCheck.mockRejectedValue(new Error('Health check failed'));
+            mockLogProcessingPipeline.healthCheck.mockRejectedValue(new Error('Health check failed'));
 
-            await logIngestionController.healthCheck(mockReq, mockRes);
+            await logIngestionController.default.healthCheck(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(503);
             expect(mockRes.json).toHaveBeenCalledWith(
@@ -333,7 +338,7 @@ describe('Log Ingestion Controller', () => {
 
     describe('getIngestionStats', () => {
         test('should return ingestion statistics', async () => {
-            await logIngestionController.getIngestionStats(mockReq, mockRes);
+            await logIngestionController.default.getIngestionStats(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith(
@@ -353,7 +358,7 @@ describe('Log Ingestion Controller', () => {
             // Mock missing tenant context
             mockReq.tenant = null;
 
-            await logIngestionController.getIngestionStats(mockReq, mockRes);
+            await logIngestionController.default.getIngestionStats(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(500);
             expect(mockRes.json).toHaveBeenCalledWith(
@@ -385,7 +390,7 @@ describe('Log Ingestion Controller', () => {
                 requestId: 'req123'
             };
 
-            const enriched = logIngestionController.enrichLogEntry(logEntry, context);
+            const enriched = logIngestionController.default.enrichLogEntry(logEntry, context);
 
             expect(enriched).toMatchObject({
                 ...logEntry,
@@ -415,10 +420,10 @@ describe('Log Ingestion Controller', () => {
                 userId: 'user123'
             };
 
-            const enriched = logIngestionController.enrichLogEntry(logEntry, context);
+            const enriched = logIngestionController.default.enrichLogEntry(logEntry, context);
 
             expect(enriched.correlationId).toBe('new-corr-123');
-            expect(correlationIdService.generateCorrelationId).toHaveBeenCalled();
+            expect(mockCorrelationIdService.generateCorrelationId).toHaveBeenCalled();
         });
     });
 
@@ -435,7 +440,7 @@ describe('Log Ingestion Controller', () => {
                 }
             };
 
-            const sanitized = logIngestionController.sanitizeLogForLogging(logEntry);
+            const sanitized = logIngestionController.default.sanitizeLogForLogging(logEntry);
 
             expect(sanitized.meta.password).toBeUndefined();
             expect(sanitized.meta.token).toBeUndefined();
@@ -451,7 +456,7 @@ describe('Log Ingestion Controller', () => {
                 meta: {}
             };
 
-            const sanitized = logIngestionController.sanitizeLogForLogging(logEntry);
+            const sanitized = logIngestionController.default.sanitizeLogForLogging(logEntry);
 
             expect(sanitized.message.length).toBeLessThan(longMessage.length);
             expect(sanitized.message).toContain('... [truncated]');
@@ -461,10 +466,10 @@ describe('Log Ingestion Controller', () => {
     describe('updateIngestionStats', () => {
         test('should update statistics correctly', () => {
             const companyId = 'tenant123';
-            
-            logIngestionController.updateIngestionStats(companyId, 5, 2);
-            
-            const stats = logIngestionController.ingestionStats.get(companyId);
+
+            logIngestionController.default.updateIngestionStats(companyId, 5, 2);
+
+            const stats = logIngestionController.default.ingestionStats.get(companyId);
             expect(stats).toMatchObject({
                 totalRequests: 1,
                 totalLogs: 7,
@@ -476,11 +481,11 @@ describe('Log Ingestion Controller', () => {
 
         test('should accumulate statistics over multiple calls', () => {
             const companyId = 'tenant123';
-            
-            logIngestionController.updateIngestionStats(companyId, 3, 1);
-            logIngestionController.updateIngestionStats(companyId, 2, 0);
-            
-            const stats = logIngestionController.ingestionStats.get(companyId);
+
+            logIngestionController.default.updateIngestionStats(companyId, 3, 1);
+            logIngestionController.default.updateIngestionStats(companyId, 2, 0);
+
+            const stats = logIngestionController.default.ingestionStats.get(companyId);
             expect(stats).toMatchObject({
                 totalRequests: 2,
                 totalLogs: 6,

@@ -8,17 +8,6 @@ import performanceMonitoringMiddleware from '../middleware/performanceMonitoring
  * Provides system capacity utilization monitoring and automated performance reporting
  */
 class PerformanceMonitoringService {
-  constructor() {
-    this.monitoringInterval = null;
-    this.alertThresholds = {
-      cpu: 80, // 80% CPU usage
-      memory: 85, // 85% memory usage
-      responseTime: 2000, // 2 seconds
-      errorRate: 5, // 5% error rate
-      diskSpace: 90 // 90% disk usage
-    };
-    this.isMonitoring = false;
-  }
 
   /**
    * Start continuous system monitoring
@@ -81,7 +70,7 @@ class PerformanceMonitoringService {
   getCPUMetrics() {
     const cpus = os.cpus();
     const loadAvg = os.loadavg();
-    
+
     return {
       cores: cpus.length,
       model: cpus[0]?.model || 'Unknown',
@@ -164,7 +153,7 @@ class PerformanceMonitoringService {
    */
   getProcessMetrics() {
     const usage = process.cpuUsage();
-    
+
     return {
       pid: process.pid,
       uptime: process.uptime(),
@@ -186,7 +175,7 @@ class PerformanceMonitoringService {
   async getDatabaseMetrics() {
     try {
       const connection = mongoose.connection;
-      
+
       if (connection.readyState !== 1) {
         return {
           connected: false,
@@ -196,7 +185,7 @@ class PerformanceMonitoringService {
 
       // Get database statistics
       const dbStats = await connection.db.stats();
-      
+
       return {
         connected: true,
         readyState: connection.readyState,
@@ -397,13 +386,13 @@ class PerformanceMonitoringService {
   async triggerAlerts(alerts) {
     for (const alert of alerts) {
       console.warn(`🚨 PERFORMANCE ALERT [${alert.severity.toUpperCase()}]: ${alert.message}`);
-      
+
       // In production, implement additional alert mechanisms:
       // - Email notifications
       // - Slack/Teams webhooks
       // - PagerDuty integration
       // - SMS alerts for critical issues
-      
+
       // Store alert in database for tracking
       await this.storeAlert(alert);
     }
@@ -510,7 +499,7 @@ class PerformanceMonitoringService {
 
     try {
       const SystemMetrics = mongoose.model('SystemMetrics');
-      
+
       const result = await SystemMetrics.aggregate([
         {
           $match: {
@@ -594,7 +583,7 @@ class PerformanceMonitoringService {
     // System health assessment
     if (report.systemMetrics) {
       const { cpu, memory } = report.systemMetrics;
-      
+
       summary.keyMetrics.avgCpuUtilization = cpu.average;
       summary.keyMetrics.peakCpuUtilization = cpu.peak;
       summary.keyMetrics.avgMemoryUtilization = memory.average;
@@ -612,7 +601,7 @@ class PerformanceMonitoringService {
     // Performance health assessment
     if (report.performanceMetrics) {
       const { summary: perfSummary } = report.performanceMetrics;
-      
+
       summary.keyMetrics.avgResponseTime = perfSummary.avgResponseTime;
       summary.keyMetrics.errorRate = perfSummary.errorRate;
       summary.keyMetrics.totalRequests = perfSummary.totalRequests;
@@ -640,7 +629,7 @@ class PerformanceMonitoringService {
     // System recommendations
     if (report.systemMetrics) {
       const { cpu, memory } = report.systemMetrics;
-      
+
       if (cpu.average > 70) {
         recommendations.push({
           type: 'system',
@@ -663,7 +652,7 @@ class PerformanceMonitoringService {
     // Performance recommendations
     if (report.performanceMetrics) {
       const { summary: perfSummary, endpoints } = report.performanceMetrics;
-      
+
       if (perfSummary.avgResponseTime > 1000) {
         recommendations.push({
           type: 'performance',
@@ -702,7 +691,7 @@ class PerformanceMonitoringService {
    */
   async getSystemStatus() {
     const metrics = await this.collectSystemMetrics();
-    
+
     return {
       status: 'healthy',
       timestamp: new Date(),
@@ -727,6 +716,237 @@ class PerformanceMonitoringService {
         activeRequests: metrics.process.activeRequests
       }
     };
+  }
+
+  // Test-compatible metric recording system
+  constructor() {
+    this.monitoringInterval = null;
+    this.alertThresholds = {
+      cpu: 80,
+      memory: 85,
+      responseTime: 2000,
+      errorRate: 5,
+      diskSpace: 90
+    };
+    this.isMonitoring = false;
+
+    // Add properties expected by tests
+    this.metrics = new Map();
+    this.metricHistory = new Map();
+    this.alertCooldowns = new Map();
+    this.healthState = 'healthy';
+    this.backpressureActive = false;
+    this.thresholds = new Map();
+    this.startTime = Date.now();
+  }
+
+  /**
+   * Record a performance metric (test-compatible method)
+   */
+  async recordMetric(type, value, context = {}) {
+    const metric = {
+      type,
+      value,
+      context,
+      timestamp: new Date().toISOString()
+    };
+
+    // Store current metric
+    this.metrics.set(type, metric);
+
+    // Store in history
+    if (!this.metricHistory.has(type)) {
+      this.metricHistory.set(type, []);
+    }
+    const history = this.metricHistory.get(type);
+    history.push(metric);
+
+    // Limit history to 100 entries
+    if (history.length > 100) {
+      history.shift();
+    }
+
+    // Check thresholds and update states
+    await this.checkMetricThresholds(type, value);
+
+    return metric;
+  }
+
+  /**
+   * Check metric against thresholds
+   */
+  async checkMetricThresholds(type, value) {
+    const thresholds = this.thresholds.get(type) || this.getDefaultThresholds(type);
+
+    if (!thresholds) return;
+
+    // Check critical threshold
+    if (thresholds.critical && value >= thresholds.critical) {
+      this.healthState = 'critical';
+      await this.generateThresholdAlert(type, value, 'critical', thresholds.critical);
+    }
+    // Check warning threshold
+    else if (thresholds.warning && value >= thresholds.warning) {
+      if (this.healthState === 'healthy') {
+        this.healthState = 'degraded';
+      }
+      await this.generateThresholdAlert(type, value, 'high', thresholds.warning);
+    }
+
+    // Check backpressure thresholds
+    await this.checkBackpressure(type, value);
+  }
+
+  /**
+   * Get default thresholds for a metric type
+   */
+  getDefaultThresholds(type) {
+    const defaults = {
+      'memory_usage': { warning: 0.8, critical: 0.9 },
+      'cpu_usage': { warning: 0.7, critical: 0.9 },
+      'api_response_time': { warning: 2000, critical: 5000 },
+      'error_rate': { warning: 0.05, critical: 0.1 },
+      'throughput': { warning: 1000, critical: 10000 }
+    };
+    return defaults[type];
+  }
+
+  /**
+   * Generate alert when threshold is exceeded
+   */
+  async generateThresholdAlert(type, value, severity, threshold) {
+    const cooldownKey = `${type}_${severity}`;
+    const now = Date.now();
+    const lastAlert = this.alertCooldowns.get(cooldownKey);
+
+    // 5 minute cooldown
+    if (lastAlert && (now - lastAlert) < 5 * 60 * 1000) {
+      return;
+    }
+
+    this.alertCooldowns.set(cooldownKey, now);
+
+    // Import alert service if available
+    try {
+      const alertService = await import('./alertGeneration.service.js');
+      await alertService.default.generateAlert({
+        severity,
+        type: 'performance_degradation',
+        title: `Performance threshold exceeded for ${type}`,
+        message: `${type} is ${value}, exceeding threshold of ${threshold}`
+      });
+    } catch (error) {
+      // Alert service not available in tests
+    }
+  }
+
+  /**
+   * Check and activate backpressure if needed
+   */
+  async checkBackpressure(type, value) {
+    const backpressureThresholds = {
+      'memory_usage': 0.85,
+      'cpu_usage': 0.9,
+      'error_rate': 0.15
+    };
+
+    if (backpressureThresholds[type] && value >= backpressureThresholds[type]) {
+      this.backpressureActive = true;
+    }
+  }
+
+  /**
+   * Set custom threshold for a metric
+   */
+  setThreshold(type, warning, critical) {
+    this.thresholds.set(type, { warning, critical });
+  }
+
+  /**
+   * Get metric trend analysis
+   */
+  getMetricTrend(type) {
+    const history = this.metricHistory.get(type);
+
+    if (!history || history.length < 5) {
+      return { trend: 'insufficient_data', confidence: 0 };
+    }
+
+    const values = history.map(m => m.value);
+    const recentValues = values.slice(-10);
+
+    // Simple linear regression
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    const n = recentValues.length;
+
+    for (let i = 0; i < n; i++) {
+      sumX += i;
+      sumY += recentValues[i];
+      sumXY += i * recentValues[i];
+      sumX2 += i * i;
+    }
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const avgValue = sumY / n;
+    const threshold = avgValue * 0.05; // 5% threshold
+
+    if (Math.abs(slope) < threshold / n) {
+      return { trend: 'stable', slope, values: recentValues };
+    } else if (slope > 0) {
+      return { trend: 'increasing', slope, values: recentValues };
+    } else {
+      return { trend: 'decreasing', slope, values: recentValues };
+    }
+  }
+
+  /**
+   * Get performance status summary
+   */
+  getPerformanceStatus() {
+    const metricsObj = {};
+    for (const [type, metric] of this.metrics.entries()) {
+      metricsObj[type] = metric.value;
+    }
+
+    const thresholdsObj = {};
+    for (const [type, threshold] of this.thresholds.entries()) {
+      thresholdsObj[type] = threshold;
+    }
+
+    return {
+      healthState: this.healthState,
+      backpressureActive: this.backpressureActive,
+      metrics: metricsObj,
+      thresholds: thresholdsObj,
+      uptime: (Date.now() - this.startTime) / 1000
+    };
+  }
+
+  /**
+   * Get metric history with optional limit
+   */
+  getMetricHistory(type, limit = 100) {
+    const history = this.metricHistory.get(type) || [];
+    return history.slice(-limit);
+  }
+
+  /**
+   * Clear old history entries
+   */
+  clearOldHistory(maxAgeHours = 24) {
+    const cutoffTime = Date.now() - (maxAgeHours * 60 * 60 * 1000);
+    let cleared = 0;
+
+    for (const [type, history] of this.metricHistory.entries()) {
+      const filtered = history.filter(m => {
+        const metricTime = new Date(m.timestamp).getTime();
+        return metricTime >= cutoffTime;
+      });
+      cleared += history.length - filtered.length;
+      this.metricHistory.set(type, filtered);
+    }
+
+    return cleared;
   }
 }
 

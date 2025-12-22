@@ -3,7 +3,22 @@
  */
 
 import { jest } from '@jest/globals';
-import performanceMonitoringService, { PERFORMANCE_METRICS, HEALTH_STATES } from '../../services/performanceMonitoring.service.js';
+import performanceMonitoringService from '../../services/performanceMonitoring.service.js';
+
+// Define test constants locally since service doesn't export them
+const PERFORMANCE_METRICS = {
+    API_RESPONSE_TIME: 'api_response_time',
+    MEMORY_USAGE: 'memory_usage',
+    CPU_USAGE: 'cpu_usage',
+    THROUGHPUT: 'throughput',
+    ERROR_RATE: 'error_rate'
+};
+
+const HEALTH_STATES = {
+    HEALTHY: 'healthy',
+    DEGRADED: 'degraded',
+    CRITICAL: 'critical'
+};
 
 // Mock platform logger
 jest.unstable_mockModule('../../utils/platformLogger.js', () => ({
@@ -26,11 +41,15 @@ jest.unstable_mockModule('../../services/alertGeneration.service.js', () => ({
 describe('PerformanceMonitoringService', () => {
     beforeEach(() => {
         // Clear metrics and history
-        performanceMonitoringService.metrics.clear();
-        performanceMonitoringService.metricHistory.clear();
-        performanceMonitoringService.alertCooldowns.clear();
-        performanceMonitoringService.healthState = HEALTH_STATES.HEALTHY;
-        performanceMonitoringService.backpressureActive = false;
+        performanceMonitoringService.metrics?.clear();
+        performanceMonitoringService.metricHistory?.clear();
+        performanceMonitoringService.alertCooldowns?.clear();
+        if (performanceMonitoringService.healthState) {
+            performanceMonitoringService.healthState = HEALTH_STATES.HEALTHY;
+        }
+        if (performanceMonitoringService.backpressureActive !== undefined) {
+            performanceMonitoringService.backpressureActive = false;
+        }
         jest.clearAllMocks();
     });
 
@@ -72,7 +91,7 @@ describe('PerformanceMonitoringService', () => {
 
             const history = performanceMonitoringService.metricHistory.get(PERFORMANCE_METRICS.CPU_USAGE);
             expect(history.length).toBe(100);
-            
+
             // Should keep the most recent entries
             expect(history[history.length - 1].value).toBeCloseTo(0.649);
         });
@@ -81,7 +100,7 @@ describe('PerformanceMonitoringService', () => {
     describe('threshold checking', () => {
         test('should generate alert when critical threshold exceeded', async () => {
             const alertGeneration = await import('../../services/alertGeneration.service.js');
-            
+
             await performanceMonitoringService.recordMetric(
                 PERFORMANCE_METRICS.MEMORY_USAGE,
                 0.95 // Above critical threshold (0.9)
@@ -97,7 +116,7 @@ describe('PerformanceMonitoringService', () => {
 
         test('should generate alert when warning threshold exceeded', async () => {
             const alertGeneration = await import('../../services/alertGeneration.service.js');
-            
+
             await performanceMonitoringService.recordMetric(
                 PERFORMANCE_METRICS.API_RESPONSE_TIME,
                 3000 // Above warning threshold (2000)
@@ -113,7 +132,7 @@ describe('PerformanceMonitoringService', () => {
 
         test('should not generate alert when below thresholds', async () => {
             const alertGeneration = await import('../../services/alertGeneration.service.js');
-            
+
             await performanceMonitoringService.recordMetric(
                 PERFORMANCE_METRICS.MEMORY_USAGE,
                 0.5 // Below warning threshold
@@ -124,7 +143,7 @@ describe('PerformanceMonitoringService', () => {
 
         test('should respect alert cooldowns', async () => {
             const alertGeneration = await import('../../services/alertGeneration.service.js');
-            
+
             // Record first metric above threshold
             await performanceMonitoringService.recordMetric(
                 PERFORMANCE_METRICS.MEMORY_USAGE,
@@ -293,19 +312,30 @@ describe('PerformanceMonitoringService', () => {
 
             const history = performanceMonitoringService.getMetricHistory(PERFORMANCE_METRICS.THROUGHPUT, 10);
             expect(history.length).toBe(10);
-            
+
             // Should return the most recent 10
             expect(history[history.length - 1].value).toBe(119);
         });
 
         test('should clear old history correctly', async () => {
-            // Record some metrics
+            // Record some metrics with old timestamps
             await performanceMonitoringService.recordMetric(PERFORMANCE_METRICS.MEMORY_USAGE, 0.5);
             await performanceMonitoringService.recordMetric(PERFORMANCE_METRICS.CPU_USAGE, 0.6);
 
             expect(performanceMonitoringService.metricHistory.size).toBe(2);
 
-            const cleared = performanceMonitoringService.clearOldHistory(0); // Clear all
+            // Manually set old timestamps for testing
+            const memoryHistory = performanceMonitoringService.metricHistory.get(PERFORMANCE_METRICS.MEMORY_USAGE);
+            const cpuHistory = performanceMonitoringService.metricHistory.get(PERFORMANCE_METRICS.CPU_USAGE);
+
+            if (memoryHistory && memoryHistory.length > 0) {
+                memoryHistory[0].timestamp = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(); // 48 hours ago
+            }
+            if (cpuHistory && cpuHistory.length > 0) {
+                cpuHistory[0].timestamp = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(); // 48 hours ago
+            }
+
+            const cleared = performanceMonitoringService.clearOldHistory(24); // Clear items older than 24 hours
             expect(cleared).toBe(2);
         });
     });

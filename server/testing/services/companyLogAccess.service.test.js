@@ -5,14 +5,33 @@
  */
 
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
-import companyLogAccessService, {
-    CompanyAccessContext,
-    AccessRestrictionResult,
-    COMPANY_ADMIN_ROLES,
-    PLATFORM_ADMIN_ROLES
-} from '../../services/companyLogAccess.service.js';
 
-// Note: Mocks not needed for this test suite
+// Mock loggingModuleService before importing the service
+const mockLoggingModuleService = {
+    getConfig: jest.fn(),
+    updateConfig: jest.fn(),
+    isEssentialFeature: jest.fn(),
+    validateConfig: jest.fn(),
+    getPlatformRequiredLogs: jest.fn()
+};
+
+// Mock ESSENTIAL_LOG_EVENTS constant that is imported by dependencies
+const ESSENTIAL_LOG_EVENTS = [
+    'authentication_attempt',
+    'authentication_failure',
+    'authorization_failure',
+    'security_breach',
+    'data_breach'
+];
+
+jest.unstable_mockModule('../../services/loggingModule.service.js', () => ({
+    default: mockLoggingModuleService,
+    ESSENTIAL_LOG_EVENTS
+}));
+
+const { default: companyLogAccessService, CompanyAccessContext, AccessRestrictionResult, COMPANY_ADMIN_ROLES, PLATFORM_ADMIN_ROLES } = await import('../../services/companyLogAccess.service.js');
+
+// Note: loggingModuleService is now properly mocked
 
 describe('CompanyLogAccessService', () => {
     let mockReq;
@@ -167,8 +186,7 @@ describe('CompanyLogAccessService', () => {
             const context = new CompanyAccessContext('admin-1', 'company_admin', 'company123');
 
             // Mock module service to return enabled config
-            const { default: loggingModuleService } = await import('../../services/loggingModule.service.js');
-            loggingModuleService.getConfig.mockResolvedValue({ enabled: true });
+            mockLoggingModuleService.getConfig.mockResolvedValue({ enabled: true });
 
             const result = await companyLogAccessService.validateCompanyAccess(context, 'company123');
 
@@ -189,8 +207,7 @@ describe('CompanyLogAccessService', () => {
             const context = new CompanyAccessContext('admin-1', 'company_admin', 'company123');
 
             // Mock module service to return disabled config
-            const { default: loggingModuleService } = await import('../../services/loggingModule.service.js');
-            loggingModuleService.getConfig.mockResolvedValue({ enabled: false });
+            mockLoggingModuleService.getConfig.mockResolvedValue({ enabled: false });
 
             const result = await companyLogAccessService.validateCompanyAccess(context, 'company123');
 

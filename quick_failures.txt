@@ -1,0 +1,20 @@
+
+FAIL server/testing/services/auditLogger.service.test.js (5.551 s)
+FAIL server/testing/integration/enhanced-tenant-model.test.js (5.934 s)
+FAIL server/testing/controllers/moduleConfiguration.controller.test.js (6.379 s)
+FAIL server/testing/services/auditTrailCompleteness.property.test.js (9.044 s)
+FAIL server/testing/services/auditLogQueryFiltering.property.test.js (9.119 s)
+FAIL server/testing/services/tenantMetricsTracking.property.test.js (15.371 s)
+FAIL server/testing/services/logProcessingPipeline.service.test.js
+FAIL server/testing/integration/licenseControlledLogging.integration.test.js
+FAIL server/testing/services/auditLogger.service.test.js (5.551 s)
+FAIL server/testing/integration/enhanced-tenant-model.test.js (5.934 s)
+FAIL server/testing/controllers/moduleConfiguration.controller.test.js (6.379 s)
+FAIL server/testing/services/auditTrailCompleteness.property.test.js (9.044 s)
+FAIL server/testing/services/auditLogQueryFiltering.property.test.js (9.119 s)
+FAIL server/testing/services/tenantMetricsTracking.property.test.js (15.371 s)
+FAIL server/testing/services/logProcessingPipeline.service.test.js
+FAIL server/testing/integration/licenseControlledLogging.integration.test.js
+Test Suites: 8 failed, 1 skipped, 170 passed, 178 of 179 total
+Tests:       16 failed, 5 skipped, 2609 passed, 2630 total
+

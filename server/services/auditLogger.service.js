@@ -65,12 +65,12 @@ class AuditLoggerService {
 
     return {
       ipAddress: req.ip || req.connection?.remoteAddress,
-      userAgent: req.get('User-Agent'),
-      requestId: req.id || req.headers['x-request-id'],
+      userAgent: req.get ? req.get('User-Agent') : req.headers?.['user-agent'],
+      requestId: req.id || req.headers?.['x-request-id'],
       sessionId: req.sessionID || req.session?.id,
       method: req.method,
       url: req.originalUrl || req.url,
-      referer: req.get('Referer')
+      referer: req.get ? req.get('Referer') : req.headers?.['referer']
     };
   }
 
@@ -161,6 +161,26 @@ class AuditLoggerService {
    * @returns {Promise<Object>} Created audit log
    */
   async createLog(logData, req = null) {
+    // Import LicenseAudit model dynamically to get valid event types and severity levels
+    const { EVENT_TYPES, SEVERITY_LEVELS } = await import('../platform/system/models/licenseAudit.model.js');
+
+    // Validate event type if provided
+    if (logData.eventType && !EVENT_TYPES.includes(logData.eventType)) {
+      throw new Error('Invalid event type');
+    }
+
+    // Validate severity if provided
+    if (logData.severity && !SEVERITY_LEVELS.includes(logData.severity)) {
+      throw new Error('Invalid severity level');
+    }
+
+    // If this is a license audit log (has moduleKey and eventType), use LicenseAudit model
+    if (logData.moduleKey && logData.eventType) {
+      const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+      return await LicenseAudit.createLog(logData);
+    }
+
+    // Otherwise use the general audit log
     return await this.createAuditLog(logData, req);
   }
 
@@ -631,118 +651,72 @@ class AuditLoggerService {
   }
 
   /**
-   * Log validation failure
+   * Log validation failure (wrapper for LicenseAudit compatibility)
    * @param {string} tenantId - Tenant ID
    * @param {string} moduleKey - Module key
    * @param {string} reason - Failure reason
+   * @param {Object} details - Additional details
    * @param {Object} req - Express request object
    * @returns {Promise<Object>} Audit log entry
    */
-  async logValidationFailure(tenantId, moduleKey, reason, req = null) {
-    return await this.createAuditLog({
-      action: 'license_validate',
-      resource: 'module',
-      tenantId: tenantId,
-      category: 'security',
-      severity: 'medium',
-      status: 'failure',
-      errorMessage: reason,
-      module: moduleKey,
-      tags: ['validation', 'failure', moduleKey]
-    }, req);
+  async logValidationFailure(tenantId, moduleKey, reason, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logValidationFailure(tenantId, moduleKey, reason, details);
   }
 
   /**
-   * Log validation success
+   * Log validation success (wrapper for LicenseAudit  compatibility)
    * @param {string} tenantId - Tenant ID
    * @param {string} moduleKey - Module key
+   * @param {Object} details - Additional details
    * @param {Object} req - Express request object
    * @returns {Promise<Object>} Audit log entry
    */
-  async logValidationSuccess(tenantId, moduleKey, req = null) {
-    return await this.createAuditLog({
-      action: 'license_validate',
-      resource: 'module',
-      tenantId: tenantId,
-      category: 'license_management',
-      severity: 'low',
-      status: 'success',
-      module: moduleKey,
-      licenseInfo: {
-        tenantId: tenantId,
-        validationResult: 'valid'
-      },
-      tags: ['validation', 'success', moduleKey]
-    }, req);
+  async logValidationSuccess(tenantId, moduleKey, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logValidationSuccess(tenantId, moduleKey, details);
   }
 
   /**
-   * Log limit exceeded
+   * Log limit exceeded (wrapper for LicenseAudit compatibility)
    * @param {string} tenantId - Tenant ID
    * @param {string} moduleKey - Module key
    * @param {string} limitType - Type of limit
    * @param {number} currentUsage - Current usage
    * @param {number} limit - Limit value
+   * @param {Object} details - Additional details
    * @param {Object} req - Express request object
    * @returns {Promise<Object>} Audit log entry
    */
-  async logLimitExceeded(tenantId, moduleKey, limitType, currentUsage, limit, req = null) {
-    return await this.createAuditLog({
-      action: 'performance_alert',
-      resource: 'module',
-      tenantId: tenantId,
-      category: 'performance',
-      severity: 'high',
-      status: 'warning',
-      module: moduleKey,
-      errorMessage: `Limit exceeded for ${limitType}: ${currentUsage}/${limit}`,
-      changes: {
-        limitType,
-        currentUsage,
-        limit
-      },
-      tags: ['limit', 'exceeded', moduleKey]
-    }, req);
+  async logLimitExceeded(tenantId, moduleKey, limitType, currentUsage, limit, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logLimitExceeded(tenantId, moduleKey, limitType, currentUsage, limit, details);
   }
 
   /**
-   * Log license expired
+   * Log license expired (wrapper for LicenseAudit compatibility)
    * @param {string} tenantId - Tenant ID
    * @param {string} moduleKey - Module key
+   * @param {Object} details - Additional details
    * @param {Object} req - Express request object
    * @returns {Promise<Object>} Audit log entry
    */
-  async logLicenseExpired(tenantId, moduleKey, req = null) {
-    return await this.createAuditLog({
-      action: 'license_expire',
-      resource: 'license',
-      tenantId: tenantId,
-      category: 'license_management',
-      severity: 'high',
-      status: 'failure',
-      module: moduleKey,
-      tags: ['license', 'expired', moduleKey]
-    }, req);
+  async logLicenseExpired(tenantId, moduleKey, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logLicenseExpired(tenantId, moduleKey, details);
   }
 
   /**
-   * Log module activated
+   * Log module activated (wrapper for LicenseAudit compatibility)
    * @param {string} tenantId - Tenant ID
    * @param {string} moduleKey - Module key
+   * @param {Object} details - Additional details
    * @param {Object} req - Express request object
    * @returns {Promise<Object>} Audit log entry
    */
-  async logModuleActivated(tenantId, moduleKey, req = null) {
-    return await this.createAuditLog({
-      action: 'module_enable',
-      resource: 'module',
-      tenantId: tenantId,
-      category: 'module_management',
-      severity: 'medium',
-      status: 'success',
-      module: moduleKey,
-      tags: ['module', 'activated', moduleKey]
-    }, req);
+  async logModuleActivated(tenantId, moduleKey, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logModuleActivated(tenantId, moduleKey, details);
   }
 
 
@@ -772,26 +746,80 @@ class AuditLoggerService {
   // Compatibility methods
 
   async queryLogs(filters) {
+    // If filters include moduleKey or eventType, use LicenseAudit model
+    if (filters.moduleKey || filters.eventType) {
+      const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+      return await LicenseAudit.queryLogs(filters);
+    }
     return await this.queryAuditLogs(filters);
   }
 
   async getStatistics(tenantId) {
-    return await this.getAuditStatistics({ tenantId });
+    // Use LicenseAudit for license-specific statistics
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.getStatistics(tenantId);
   }
 
-  async getRecentViolations(tenantId) {
-    const logs = await this.queryAuditLogs({ tenantId });
-    return logs.filter(log => ['high', 'critical', 'error'].includes(log.severity));
+  async getRecentViolations(tenantId, limit = 50) {
+    // Use LicenseAudit for violations
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.getRecentViolations(tenantId, limit);
   }
 
   async getModuleAuditTrail(tenantId, moduleKey, days = 30) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    return await this.queryAuditLogs({
-      tenantId,
-      module: moduleKey,
-      startDate: startDate.toISOString()
-    });
+    // Use LicenseAudit for module-specific audit trail
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.getModuleAuditTrail(tenantId, moduleKey, days);
+  }
+
+  // Additional compatibility methods for license audit tests
+
+  /**
+   * Log module deactivated event (wrapper for LicenseAudit compatibility)
+   */
+  async logModuleDeactivated(tenantId, moduleKey, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logModuleDeactivated(tenantId, moduleKey, details);
+  }
+
+  /**
+   * Log limit warning (first signature - wrapper for LicenseAudit compatibility)
+   */
+  async logLimitWarning(tenantId, moduleKey, limitType, currentValue, limitValue, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logLimitWarning(tenantId, moduleKey, limitType, currentValue, limitValue, details);
+  }
+
+  /**
+   * Log subscription event (wrapper for LicenseAudit compatibility)
+   */
+  async logSubscriptionEvent(tenantId, moduleKey, eventType, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logSubscriptionEvent(tenantId, moduleKey, eventType, details);
+  }
+
+  /**
+   * Log trial event (wrapper for LicenseAudit compatibility)
+   */
+  async logTrialEvent(tenantId, moduleKey, eventType, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logTrialEvent(tenantId, moduleKey, eventType, details);
+  }
+
+  /**
+   * Log usage tracked (wrapper for LicenseAudit compatibility)
+   */
+  async logUsageTracked(tenantId, moduleKey, usageType, count, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logUsageTracked(tenantId, moduleKey, usageType, count, details);
+  }
+
+  /**
+   * Log dependency violation (wrapper for LicenseAudit compatibility)
+   */
+  async logDependencyViolation(tenantId, moduleKey, dependencyType, details = {}, req = null) {
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+    return await LicenseAudit.logDependencyViolation(tenantId, moduleKey, dependencyType, details);
   }
 }
 

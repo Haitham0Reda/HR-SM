@@ -5,11 +5,17 @@ import Role from '../../modules/hr-core/users/models/role.model.js';
 import { PERMISSIONS } from '../../platform/system/models/permission.system.js';
 
 describe('Role Model', () => {
+    // Clean up after each test to prevent unique constraint violations
+    afterEach(async () => {
+        await Role.deleteMany({});
+    });
+
     describe('Schema Validation', () => {
         it('should create a valid role with required fields', async () => {
+            const uniqueId = Math.random().toString(36).substring(7);
             const roleData = {
                 tenantId: 'test_tenant_123',
-                name: 'test-role',
+                name: `test-role-${uniqueId}`,
                 displayName: 'Test Role',
                 description: 'A test role',
                 permissions: ['users.view', 'documents.view'],
@@ -18,7 +24,7 @@ describe('Role Model', () => {
 
             const role = await Role.create(roleData);
 
-            expect(role.name).toBe('test-role');
+            expect(role.name).toBe(`test-role-${uniqueId}`);
             expect(role.displayName).toBe('Test Role');
             expect(role.description).toBe('A test role');
             expect(role.permissions).toHaveLength(2);
@@ -36,9 +42,10 @@ describe('Role Model', () => {
         });
 
         it('should fail when displayName is missing', async () => {
+            const uniqueId = Math.random().toString(36).substring(7);
             const roleData = {
                 tenantId: 'test_tenant_123',
-                name: 'test-role',
+                name: `test-role-${uniqueId}`,
                 permissions: ['users.view']
             };
 
@@ -46,21 +53,23 @@ describe('Role Model', () => {
         });
 
         it('should convert name to lowercase', async () => {
+            const uniqueId = Math.random().toString(36).substring(7);
             const roleData = {
                 tenantId: 'test_tenant_123',
-                name: 'TEST-ROLE',
+                name: `TEST-ROLE-${uniqueId}`,
                 displayName: 'Test Role',
                 permissions: ['users.view']
             };
 
             const role = await Role.create(roleData);
-            expect(role.name).toBe('test-role');
+            expect(role.name).toBe(`test-role-${uniqueId}`);
         });
 
         it('should enforce unique name constraint', async () => {
+            const uniqueId = Math.random().toString(36).substring(7);
             const roleData = {
                 tenantId: 'test_tenant_123',
-                name: 'unique-role',
+                name: `unique-role-${uniqueId}`,
                 displayName: 'Unique Role',
                 permissions: ['users.view']
             };
@@ -70,9 +79,10 @@ describe('Role Model', () => {
         });
 
         it('should validate permissions against PERMISSIONS object', async () => {
+            const uniqueId = Math.random().toString(36).substring(7);
             const roleData = {
                 tenantId: 'test_tenant_123',
-                name: 'invalid-permissions-role',
+                name: `invalid-permissions-role-${uniqueId}`,
                 displayName: 'Invalid Permissions Role',
                 permissions: ['invalid.permission', 'another.invalid']
             };
@@ -81,10 +91,11 @@ describe('Role Model', () => {
         });
 
         it('should accept valid permissions', async () => {
+            const uniqueId = Math.random().toString(36).substring(7);
             const validPermissions = Object.keys(PERMISSIONS).slice(0, 5);
             const roleData = {
                 tenantId: 'test_tenant_123',
-                name: 'valid-permissions-role',
+                name: `valid-permissions-role-${uniqueId}`,
                 displayName: 'Valid Permissions Role',
                 permissions: validPermissions
             };
@@ -98,9 +109,10 @@ describe('Role Model', () => {
         let testRole;
 
         beforeEach(async () => {
+            const uniqueId = Math.random().toString(36).substring(7);
             testRole = await Role.create({
                 tenantId: 'test_tenant_123',
-                name: 'method-test-role',
+                name: `method-test-role-${uniqueId}`,
                 displayName: 'Method Test Role',
                 permissions: ['users.view', 'users.create', 'documents.view']
             });
@@ -175,25 +187,28 @@ describe('Role Model', () => {
     });
 
     describe('Static Methods', () => {
+        let uniqueSuffix;
+
         beforeEach(async () => {
+            uniqueSuffix = Math.random().toString(36).substring(7);
             await Role.create([
                 {
                     tenantId: 'test_tenant_123',
-                    name: 'system-admin',
+                    name: `system-admin-${uniqueSuffix}`,
                     displayName: 'System Admin',
                     permissions: ['users.view'],
                     isSystemRole: true
                 },
                 {
                     tenantId: 'test_tenant_123',
-                    name: 'custom-manager',
+                    name: `custom-manager-${uniqueSuffix}`,
                     displayName: 'Custom Manager',
                     permissions: ['users.view'],
                     isSystemRole: false
                 },
                 {
                     tenantId: 'test_tenant_123',
-                    name: 'system-hr',
+                    name: `system-hr-${uniqueSuffix}`,
                     displayName: 'System HR',
                     permissions: ['users.view'],
                     isSystemRole: true
@@ -203,13 +218,13 @@ describe('Role Model', () => {
 
         describe('findByName', () => {
             it('should find role by name', async () => {
-                const role = await Role.findByName('system-admin');
+                const role = await Role.findByName(`system-admin-${uniqueSuffix}`);
                 expect(role).toBeDefined();
                 expect(role.displayName).toBe('System Admin');
             });
 
             it('should find role by name case-insensitively', async () => {
-                const role = await Role.findByName('SYSTEM-ADMIN');
+                const role = await Role.findByName(`SYSTEM-ADMIN-${uniqueSuffix}`.toUpperCase());
                 expect(role).toBeDefined();
                 expect(role.displayName).toBe('System Admin');
             });
