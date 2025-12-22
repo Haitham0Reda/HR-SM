@@ -69,6 +69,12 @@ describe('Tenant Isolation - Property-Based Tests', () => {
                     )
                 }),
                 async ({ tenants }) => {
+                    // Clean up DB to ensure isolation between property runs
+                    await User.deleteMany({});
+                    await Department.deleteMany({});
+                    await Attendance.deleteMany({});
+                    await Task.deleteMany({});
+
                     // Ensure unique tenantIds
                     const uniqueTenantIds = new Set();
                     const validTenants = tenants.filter(t => {
@@ -86,7 +92,7 @@ describe('Tenant Isolation - Property-Based Tests', () => {
 
                     // Create data for each tenant
                     const createdData = [];
-                    
+
                     for (const tenant of validTenants) {
                         const tenantData = {
                             tenantId: tenant.tenantId,
@@ -212,9 +218,9 @@ describe('Tenant Isolation - Property-Based Tests', () => {
                         }
 
                         // Test 6: Compound queries with other filters still enforce tenant isolation
-                        const activeUsers = await User.find({ 
+                        const activeUsers = await User.find({
                             tenantId,
-                            isActive: true 
+                            isActive: true
                         }).lean();
                         for (const user of activeUsers) {
                             expect(user.tenantId).toBe(tenantId);
@@ -279,18 +285,18 @@ describe('Tenant Isolation - Property-Based Tests', () => {
                     });
 
                     // Query WITH tenantId should find the user
-                    const foundWithTenant = await User.findOne({ 
+                    const foundWithTenant = await User.findOne({
                         tenantId,
-                        _id: user._id 
+                        _id: user._id
                     });
                     expect(foundWithTenant).not.toBeNull();
                     expect(foundWithTenant.tenantId).toBe(tenantId);
 
                     // Query with WRONG tenantId should NOT find the user
                     const wrongTenantId = `${tenantId}_wrong`;
-                    const foundWithWrongTenant = await User.findOne({ 
+                    const foundWithWrongTenant = await User.findOne({
                         tenantId: wrongTenantId,
-                        _id: user._id 
+                        _id: user._id
                     });
                     expect(foundWithWrongTenant).toBeNull();
 
@@ -357,9 +363,9 @@ describe('Tenant Isolation - Property-Based Tests', () => {
                     });
 
                     // Query user1 and populate department
-                    const populatedUser = await User.findOne({ 
+                    const populatedUser = await User.findOne({
                         tenantId: tenant1Id,
-                        _id: user1._id 
+                        _id: user1._id
                     }).populate('department');
 
                     // Verify populated department belongs to same tenant
@@ -370,19 +376,19 @@ describe('Tenant Isolation - Property-Based Tests', () => {
 
                     // Verify we cannot populate department from another tenant
                     // (This would require manually setting wrong department ID, which shouldn't happen)
-                    const user1WithWrongDept = await User.findOne({ 
+                    const user1WithWrongDept = await User.findOne({
                         tenantId: tenant1Id,
-                        _id: user1._id 
+                        _id: user1._id
                     });
-                    
+
                     // Manually set wrong department (simulating a bug)
                     user1WithWrongDept.department = dept2._id;
                     await user1WithWrongDept.save({ validateBeforeSave: false });
 
                     // Now populate - the department will be from wrong tenant
-                    const userWithWrongDept = await User.findOne({ 
+                    const userWithWrongDept = await User.findOne({
                         tenantId: tenant1Id,
-                        _id: user1._id 
+                        _id: user1._id
                     }).populate('department');
 
                     // This demonstrates the importance of application-level checks

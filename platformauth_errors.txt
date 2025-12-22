@@ -1,0 +1,52 @@
+﻿
+> hr-sm@1.0.0 test
+> node --max-old-space-size=8192 --experimental-vm-modules --no-warnings=ExperimentalWarning node_modules/jest/bin/jest.js server/testing/platform/platformAuth.test.js
+
+node.exe : FAIL 
+server/testing/platform/platformAuth.test.js (6.702 s)
+At C:\Program Files\nodejs\npm.ps1:29 char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL server/te 
+   s...st.js (6.702 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  ΓùÅ Platform Authentication ΓÇ║ Platform JWT - Issued 
+correctly with separate secret ΓÇ║ login should return JWT 
+that can be verified
+
+    Invalid platform token
+
+    [0m [90m 81 |[39m         
+     [90m 82 |[39m         [36mif[39m 
+(error[33m.[39mname [33m===[39m 
+[32m'JsonWebTokenError'[39m) {
+    [31m[1m>[22m[39m[90m 83 |[39m             
+[36mthrow[39m [36mnew[39m [33mAppError[39m(
+     [90m    |[39m                   [31m[1m^[22m[39m
+     [90m 84 |[39m                 [32m'Invalid platform 
+token'[39m[33m,[39m
+     [90m 85 |[39m                 
+[35m401[39m[33m,[39m
+     [90m 86 |[39m                 [33mERROR_TYPES[39m[
+33m.[39m[33mINVALID_PLATFORM_TOKEN[39m[0m
+
+      at verifyPlatformToken 
+(server/core/auth/platformAuth.js:83:19)
+      at Object.verifyPlatformToken 
+(server/testing/platform/platformAuth.test.js:225:23)
+
+A worker process has failed to exit gracefully and has been 
+force exited. This is likely caused by tests leaking due to 
+improper teardown. Try running with --detectOpenHandles to 
+find leaks. Active timers can also cause this, ensure that 
+.unref() was called on them.
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 19 passed, 20 total
+Snapshots:   0 total
+Time:        8.891 s
+Ran all test suites matching 
+server/testing/platform/platformAuth.test.js.
+Force exiting Jest: Have you considered using 
+`--detectOpenHandles` to detect async operations that kept 
+running after all tests finished?

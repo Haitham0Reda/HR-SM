@@ -1,0 +1,23 @@
+﻿
+> hr-sm@1.0.0 test
+> node --max-old-space-size=8192 --experimental-vm-modules --no-warnings=ExperimentalWarning node_modules/jest/bin/jest.js server/testing/services/tenantMetricsTracking.property.test.js
+
+node.exe : PASS server/testing/services/tenantMetricsTrackin
+g.property.test.js (9.397 s)
+At C:\Program Files\nodejs\npm.ps1:29 char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS server/te 
+   s...st.js (9.397 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        12.606 s
+Ran all test suites matching server/testing/services/tenantM
+etricsTracking.property.test.js.
+Force exiting Jest: Have you considered using 
+`--detectOpenHandles` to detect async operations that kept 
+running after all tests finished?

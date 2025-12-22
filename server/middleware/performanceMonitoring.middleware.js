@@ -16,7 +16,7 @@ const performanceMetricSchema = new mongoose.Schema({
   userAgent: String,
   ipAddress: String,
   userId: String,
-  
+
   // System metrics at time of request
   systemMetrics: {
     cpuUsage: Number,
@@ -25,21 +25,21 @@ const performanceMetricSchema = new mongoose.Schema({
     loadAverage: [Number],
     uptime: Number
   },
-  
+
   // Database metrics
   dbMetrics: {
     connectionCount: Number,
     queryTime: Number,
     queryCount: Number
   },
-  
+
   // Error information
   error: {
     message: String,
     stack: String,
     code: String
   },
-  
+
   timestamp: { type: Date, default: Date.now, index: true }
 }, {
   timestamps: true,
@@ -84,11 +84,11 @@ class PerformanceMonitoringMiddleware {
 
       const startTime = process.hrtime.bigint();
       const startMemory = process.memoryUsage();
-      
+
       // Store original methods
       const originalSend = res.send;
       const originalJson = res.json;
-      
+
       let responseSize = 0;
       let dbQueryCount = 0;
       let dbQueryTime = 0;
@@ -102,12 +102,12 @@ class PerformanceMonitoringMiddleware {
       }
 
       // Override response methods to capture response size
-      res.send = function(data) {
+      res.send = function (data) {
         responseSize = Buffer.byteLength(data || '', 'utf8');
         return originalSend.call(this, data);
       };
 
-      res.json = function(data) {
+      res.json = function (data) {
         const jsonString = JSON.stringify(data);
         responseSize = Buffer.byteLength(jsonString, 'utf8');
         return originalJson.call(this, data);
@@ -118,7 +118,7 @@ class PerformanceMonitoringMiddleware {
         try {
           const endTime = process.hrtime.bigint();
           const responseTime = Number(endTime - startTime) / 1000000; // Convert to milliseconds
-          
+
           // Only log if it's a slow request or within sample rate
           if (responseTime >= this.slowRequestThreshold || Math.random() <= this.sampleRate) {
             await this.logPerformanceMetric({
@@ -151,12 +151,12 @@ class PerformanceMonitoringMiddleware {
       '/favicon.ico',
       '/robots.txt'
     ];
-    
+
     const skipExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg'];
-    
-    return skipPaths.includes(req.path) || 
-           skipExtensions.some(ext => req.path.endsWith(ext)) ||
-           req.path.startsWith('/static/');
+
+    return skipPaths.includes(req.path) ||
+      skipExtensions.some(ext => req.path.endsWith(ext)) ||
+      req.path.startsWith('/static/');
   }
 
   /**
@@ -169,7 +169,7 @@ class PerformanceMonitoringMiddleware {
       '/api/export',
       '/api/backup'
     ];
-    
+
     return slowPaths.some(path => req.path.startsWith(path));
   }
 
@@ -181,12 +181,12 @@ class PerformanceMonitoringMiddleware {
     if (contentLength) {
       return parseInt(contentLength);
     }
-    
+
     // Estimate size from body if available
     if (req.body) {
       return Buffer.byteLength(JSON.stringify(req.body), 'utf8');
     }
-    
+
     return 0;
   }
 
@@ -196,16 +196,16 @@ class PerformanceMonitoringMiddleware {
   trackDatabaseQueries(req, callback) {
     let queryCount = 0;
     let totalQueryTime = 0;
-    
+
     // Hook into Mongoose query execution
     const originalExec = mongoose.Query.prototype.exec;
-    
-    mongoose.Query.prototype.exec = function() {
+
+    mongoose.Query.prototype.exec = function () {
       const startTime = Date.now();
       queryCount++;
-      
+
       const result = originalExec.apply(this, arguments);
-      
+
       if (result && typeof result.then === 'function') {
         return result.then(res => {
           totalQueryTime += Date.now() - startTime;
@@ -217,12 +217,12 @@ class PerformanceMonitoringMiddleware {
           throw err;
         });
       }
-      
+
       totalQueryTime += Date.now() - startTime;
       callback(queryCount, totalQueryTime);
       return result;
     };
-    
+
     // Restore original method after request
     req.on('end', () => {
       mongoose.Query.prototype.exec = originalExec;
@@ -246,7 +246,7 @@ class PerformanceMonitoringMiddleware {
 
     try {
       const systemMetrics = this.enableSystemMetrics ? this.getSystemMetrics() : {};
-      
+
       const metric = new PerformanceMetric({
         tenantId: req.tenantId || req.headers['x-tenant-id'],
         requestId: req.id || req.headers['x-request-id'],
@@ -283,7 +283,7 @@ class PerformanceMonitoringMiddleware {
    */
   getSystemMetrics() {
     const memoryUsage = process.memoryUsage();
-    
+
     return {
       cpuUsage: process.cpuUsage().user / 1000000, // Convert to milliseconds
       memoryUsage: memoryUsage.heapUsed,
@@ -413,11 +413,11 @@ class PerformanceMonitoringMiddleware {
 
       // Error statistics
       PerformanceMetric.aggregate([
-        { 
-          $match: { 
-            ...matchStage, 
-            statusCode: { $gte: 400 } 
-          } 
+        {
+          $match: {
+            ...matchStage,
+            statusCode: { $gte: 400 }
+          }
         },
         {
           $group: {
@@ -436,6 +436,7 @@ class PerformanceMonitoringMiddleware {
         {
           $group: {
             _id: null,
+            avgResponseTime: { $avg: '$responseTime' },
             avgCpuUsage: { $avg: '$systemMetrics.cpuUsage' },
             maxCpuUsage: { $max: '$systemMetrics.cpuUsage' },
             avgMemoryUsage: { $avg: '$systemMetrics.memoryUsage' },
@@ -452,7 +453,7 @@ class PerformanceMonitoringMiddleware {
     ]);
 
     const systemSummary = systemStats[0] || {};
-    
+
     return {
       period: { start: startDate, end: endDate },
       groupBy,
@@ -462,8 +463,8 @@ class PerformanceMonitoringMiddleware {
       summary: {
         totalRequests: systemSummary.totalRequests || 0,
         totalErrors: systemSummary.totalErrors || 0,
-        errorRate: systemSummary.totalRequests > 0 
-          ? (systemSummary.totalErrors / systemSummary.totalRequests) * 100 
+        errorRate: systemSummary.totalRequests > 0
+          ? (systemSummary.totalErrors / systemSummary.totalRequests) * 100
           : 0,
         avgResponseTime: systemSummary.avgResponseTime || 0,
         avgCpuUsage: systemSummary.avgCpuUsage || 0,
@@ -533,8 +534,8 @@ class PerformanceMonitoringMiddleware {
     ]);
 
     const stats = result[0] || {};
-    const memoryUtilization = stats.avgMemoryTotal > 0 
-      ? (stats.avgMemoryUsage / stats.avgMemoryTotal) * 100 
+    const memoryUtilization = stats.avgMemoryTotal > 0
+      ? (stats.avgMemoryUsage / stats.avgMemoryTotal) * 100
       : 0;
 
     return {

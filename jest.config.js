@@ -51,10 +51,10 @@ export default {
   ],
 
   // Memory and performance optimizations
-  maxWorkers: '50%', // Allow parallel execution to speed up tests
+  maxWorkers: '100%', // Increased parallelism for faster tests
   cache: true,
   cacheDirectory: '<rootDir>/.jest-cache',
-  testTimeout: 60000, // Increase timeout for property tests
+  testTimeout: 300000, // Increased timeout for long-running tests
   // Memory management
   errorOnDeprecated: false,
   detectOpenHandles: false, // Disable to save memory

@@ -1,0 +1,1773 @@
+﻿node.exe : FAIL server/testing/routes/role.routes.test.js
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL server/te 
+   s....routes.test.js:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  ΓùÅ Role Routes E2E Tests ΓÇ║ POST /api/roles - Create 
+Role ΓÇ║ should create a new custom role
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ POST /api/roles - Create 
+Role ΓÇ║ should fail with missing required fields
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ POST /api/roles - Create 
+Role ΓÇ║ should fail with duplicate role name
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ POST /api/roles - Create 
+Role ΓÇ║ should fail with invalid permissions
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ POST /api/roles - Create 
+Role ΓÇ║ should fail without authentication
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ GET /api/roles - Get All 
+Roles ΓÇ║ should get all roles
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ GET /api/roles - Get All 
+Roles ΓÇ║ should filter by system roles
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ GET /api/roles - Get All 
+Roles ΓÇ║ should filter by custom roles
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ GET /api/roles - Get All 
+Roles ΓÇ║ should search roles by name
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ GET /api/roles/:id - Get 
+Role By ID ΓÇ║ should get role by ID
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ GET /api/roles/:id - Get 
+Role By ID ΓÇ║ should return 404 for non-existing role
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ PUT /api/roles/:id - Update 
+Role ΓÇ║ should update role successfully
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ PUT /api/roles/:id - Update 
+Role ΓÇ║ should prevent modifying system role name
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ PUT /api/roles/:id - Update 
+Role ΓÇ║ should prevent changing isSystemRole flag
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ PUT /api/roles/:id - Update 
+Role ΓÇ║ should fail with invalid permissions
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ DELETE /api/roles/:id - 
+Delete Role ΓÇ║ should delete custom role successfully
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ DELETE /api/roles/:id - 
+Delete Role ΓÇ║ should prevent deleting system roles
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ DELETE /api/roles/:id - 
+Delete Role ΓÇ║ should prevent deleting role with assigned 
+users
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ GET /api/roles/stats - Get 
+Role Statistics ΓÇ║ should return role statistics
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ POST /api/roles/sync - Sync 
+System Roles ΓÇ║ should sync system roles from 
+permission.system.js
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ GET /api/roles/permissions 
+- Get All Permissions ΓÇ║ should return all permissions and 
+categories
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ Bulk Operations and Edge 
+Cases ΓÇ║ should handle creating multiple roles in sequence
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ Bulk Operations and Edge 
+Cases ΓÇ║ should handle permission selection with bulk 
+operations
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+  ΓùÅ Role Routes E2E Tests ΓÇ║ Bulk Operations and Edge 
+Cases ΓÇ║ should handle form validation errors gracefully
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to enable 
+it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\Work\HR-SM\server\utils\logger.js:15
+    const _filename = (0, 
+_url.fileURLToPath)(import.meta.url);
+                                                     ^^^^
+
+    SyntaxError: Cannot use 'import.meta' outside a module
+
+    [0m [90m 3 |[39m [36mimport[39m [33mUser[39m 
+[36mfrom[39m 
+[32m'../models/user.model.js'[39m[33m;[39m
+     [90m 4 |[39m [36mimport[39m { 
+[33mROLE_PERMISSIONS[39m[33m,[39m 
+[33mPERMISSIONS[39m[33m,[39m 
+[33mPERMISSION_CATEGORIES[39m } [36mfrom[39m [32m'../..
+/../../platform/system/models/permission.system.js'[39m[33
+m;[39m
+    [31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m 
+logger [36mfrom[39m 
+[32m'../../../../utils/logger.js'[39m[33m;[39m
+     [90m   |[39m [31m[1m^[22m[39m
+     [90m 6 |[39m [36mimport[39m {
+     [90m 7 |[39m     logRoleCreation[33m,[39m
+     [90m 8 |[39m     logRoleUpdate[33m,[39m[0m
+
+      at Runtime.createScriptFromCode 
+(node_modules/jest-runtime/build/index.js:1318:40)
+      at Object.require (server/modules/hr-core/users/contro
+llers/role.controller.js:5:1)
+      at require 
+(server/testing/routes/role.routes.test.js:36:32)
+      at Object.<anonymous> 
+(server/testing/routes/role.routes.test.js:36:32)
+
+Test Suites: 1 failed, 1 total
+Tests:       24 failed, 24 total
+Snapshots:   0 total
+Time:        5.944 s
+Ran all test suites matching 
+server/testing/routes/role.routes.test.js.
+Force exiting Jest: Have you considered using 
+`--detectOpenHandles` to detect async operations that kept 
+running after all tests finished?

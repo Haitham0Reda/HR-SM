@@ -18,13 +18,13 @@ class AuditLoggerService {
       ),
       defaultMeta: { service: 'audit-logger' },
       transports: [
-        new winston.transports.File({ 
-          filename: 'logs/audit-error.log', 
+        new winston.transports.File({
+          filename: 'logs/audit-error.log',
           level: 'error',
           maxsize: 5242880, // 5MB
           maxFiles: 5
         }),
-        new winston.transports.File({ 
+        new winston.transports.File({
           filename: 'logs/audit-combined.log',
           maxsize: 5242880, // 5MB
           maxFiles: 10
@@ -98,28 +98,28 @@ class AuditLoggerService {
         errorMessage: logData.errorMessage,
         errorCode: logData.errorCode,
         module: logData.module,
-        
+
         // Request information
         ipAddress: requestInfo.ipAddress,
         userAgent: requestInfo.userAgent,
         requestId: requestInfo.requestId,
         sessionId: requestInfo.sessionId,
-        
+
         // License information (if applicable)
         licenseInfo: logData.licenseInfo,
-        
+
         // System information
         systemInfo: {
           ...this.systemInfo,
           ...logData.systemInfo
         },
-        
+
         // Performance metrics
         performance: {
           duration: Date.now() - startTime,
           ...logData.performance
         },
-        
+
         // Compliance and metadata
         retentionPolicy: logData.retentionPolicy || 'standard',
         complianceFlags: logData.complianceFlags || {},
@@ -152,6 +152,16 @@ class AuditLoggerService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Compatibility wrapper for older tests expecting `createLog`.
+   * @param {Object} logData - Audit log data
+   * @param {Object} req - Express request object (optional)
+   * @returns {Promise<Object>} Created audit log
+   */
+  async createLog(logData, req = null) {
+    return await this.createAuditLog(logData, req);
   }
 
   /**
@@ -215,6 +225,53 @@ class AuditLoggerService {
       },
       tags: ['license', 'validation', validationData.valid ? 'success' : 'failure']
     }, req);
+  }
+
+  /**
+   * Log license update event
+   * @param {string} tenantId - Tenant ID
+   * @param {string} moduleKey - Module key
+   * @param {Object} previousValue - Previous license value
+   * @param {Object} newValue - New license value
+   * @param {Object} additionalDetails - Additional details (optional)
+   * @param {Object} req - Express request object
+   * @returns {Promise<Object>} Audit log entry
+   */
+  async logLicenseUpdated(tenantId, moduleKey, previousValue, newValue, additionalDetails = {}, req = null) {
+    // Import LicenseAudit model dynamically to avoid circular dependencies
+    const LicenseAudit = (await import('../platform/system/models/licenseAudit.model.js')).default;
+
+    // Create entry in LicenseAudit model for license-specific queries
+    const licenseAuditEntry = await LicenseAudit.logLicenseUpdated(
+      tenantId,
+      moduleKey,
+      previousValue,
+      newValue,
+      additionalDetails
+    );
+
+    // Also create entry in general AuditLog for comprehensive audit trail
+    const auditLogEntry = await this.createAuditLog({
+      action: 'license_update',
+      resource: 'license',
+      tenantId: tenantId,
+      category: 'license_management',
+      severity: 'medium',
+      module: moduleKey,
+      changes: {
+        before: previousValue,
+        after: newValue,
+        fields: Object.keys(newValue)
+      },
+      licenseInfo: {
+        tenantId: tenantId,
+        moduleKey: moduleKey
+      },
+      tags: ['license', 'update', moduleKey],
+      complianceFlags: { sox: true }
+    }, req);
+
+    return { licenseAuditEntry, auditLogEntry };
   }
 
   /**
@@ -401,7 +458,7 @@ class AuditLoggerService {
   async getAuditStatistics(filters = {}) {
     try {
       const pipeline = [];
-      
+
       // Match stage
       const matchStage = {};
       if (filters.startDate || filters.endDate) {
@@ -411,7 +468,7 @@ class AuditLoggerService {
       }
       if (filters.tenantId) matchStage['licenseInfo.tenantId'] = filters.tenantId;
       if (filters.category) matchStage.category = filters.category;
-      
+
       if (Object.keys(matchStage).length > 0) {
         pipeline.push({ $match: matchStage });
       }
@@ -553,7 +610,7 @@ class AuditLoggerService {
         changes: auditLog.changes,
         timestamp: auditLog.createdAt
       });
-      
+
       const calculatedHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
       const isValid = calculatedHash === auditLog.hash;
 
@@ -571,6 +628,170 @@ class AuditLoggerService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Log validation failure
+   * @param {string} tenantId - Tenant ID
+   * @param {string} moduleKey - Module key
+   * @param {string} reason - Failure reason
+   * @param {Object} req - Express request object
+   * @returns {Promise<Object>} Audit log entry
+   */
+  async logValidationFailure(tenantId, moduleKey, reason, req = null) {
+    return await this.createAuditLog({
+      action: 'license_validate',
+      resource: 'module',
+      tenantId: tenantId,
+      category: 'security',
+      severity: 'medium',
+      status: 'failure',
+      errorMessage: reason,
+      module: moduleKey,
+      tags: ['validation', 'failure', moduleKey]
+    }, req);
+  }
+
+  /**
+   * Log validation success
+   * @param {string} tenantId - Tenant ID
+   * @param {string} moduleKey - Module key
+   * @param {Object} req - Express request object
+   * @returns {Promise<Object>} Audit log entry
+   */
+  async logValidationSuccess(tenantId, moduleKey, req = null) {
+    return await this.createAuditLog({
+      action: 'license_validate',
+      resource: 'module',
+      tenantId: tenantId,
+      category: 'license_management',
+      severity: 'low',
+      status: 'success',
+      module: moduleKey,
+      licenseInfo: {
+        tenantId: tenantId,
+        validationResult: 'valid'
+      },
+      tags: ['validation', 'success', moduleKey]
+    }, req);
+  }
+
+  /**
+   * Log limit exceeded
+   * @param {string} tenantId - Tenant ID
+   * @param {string} moduleKey - Module key
+   * @param {string} limitType - Type of limit
+   * @param {number} currentUsage - Current usage
+   * @param {number} limit - Limit value
+   * @param {Object} req - Express request object
+   * @returns {Promise<Object>} Audit log entry
+   */
+  async logLimitExceeded(tenantId, moduleKey, limitType, currentUsage, limit, req = null) {
+    return await this.createAuditLog({
+      action: 'performance_alert',
+      resource: 'module',
+      tenantId: tenantId,
+      category: 'performance',
+      severity: 'high',
+      status: 'warning',
+      module: moduleKey,
+      errorMessage: `Limit exceeded for ${limitType}: ${currentUsage}/${limit}`,
+      changes: {
+        limitType,
+        currentUsage,
+        limit
+      },
+      tags: ['limit', 'exceeded', moduleKey]
+    }, req);
+  }
+
+  /**
+   * Log license expired
+   * @param {string} tenantId - Tenant ID
+   * @param {string} moduleKey - Module key
+   * @param {Object} req - Express request object
+   * @returns {Promise<Object>} Audit log entry
+   */
+  async logLicenseExpired(tenantId, moduleKey, req = null) {
+    return await this.createAuditLog({
+      action: 'license_expire',
+      resource: 'license',
+      tenantId: tenantId,
+      category: 'license_management',
+      severity: 'high',
+      status: 'failure',
+      module: moduleKey,
+      tags: ['license', 'expired', moduleKey]
+    }, req);
+  }
+
+  /**
+   * Log module activated
+   * @param {string} tenantId - Tenant ID
+   * @param {string} moduleKey - Module key
+   * @param {Object} req - Express request object
+   * @returns {Promise<Object>} Audit log entry
+   */
+  async logModuleActivated(tenantId, moduleKey, req = null) {
+    return await this.createAuditLog({
+      action: 'module_enable',
+      resource: 'module',
+      tenantId: tenantId,
+      category: 'module_management',
+      severity: 'medium',
+      status: 'success',
+      module: moduleKey,
+      tags: ['module', 'activated', moduleKey]
+    }, req);
+  }
+
+
+  /**
+   * Get event types
+   * @returns {Array<string>} Event types
+   */
+  getEventTypes() {
+    return [
+      'VALIDATION_SUCCESS', 'LICENSE_EXPIRED', 'LIMIT_EXCEEDED', 'MODULE_ACTIVATED', // Legacy
+      'license_create', 'license_validate', 'license_renew', 'license_revoke',
+      'license_activate', 'license_check', 'license_expire',
+      'system_alert', 'system_health_check', 'backup_create', 'backup_restore',
+      'module_enable', 'module_disable', 'tenant_create', 'tenant_suspend',
+      'tenant_reactivate', 'security_event', 'performance_alert'
+    ];
+  }
+
+  /**
+   * Get severity levels
+   * @returns {Array<string>} Severity levels
+   */
+  getSeverityLevels() {
+    return ['info', 'warning', 'error', 'critical'];
+  }
+
+  // Compatibility methods
+
+  async queryLogs(filters) {
+    return await this.queryAuditLogs(filters);
+  }
+
+  async getStatistics(tenantId) {
+    return await this.getAuditStatistics({ tenantId });
+  }
+
+  async getRecentViolations(tenantId) {
+    const logs = await this.queryAuditLogs({ tenantId });
+    return logs.filter(log => ['high', 'critical', 'error'].includes(log.severity));
+  }
+
+  async getModuleAuditTrail(tenantId, moduleKey, days = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    return await this.queryAuditLogs({
+      tenantId,
+      module: moduleKey,
+      startDate: startDate.toISOString()
+    });
   }
 }
 

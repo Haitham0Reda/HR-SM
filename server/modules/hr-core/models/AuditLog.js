@@ -12,7 +12,7 @@ const auditLogSchema = new mongoose.Schema({
             'create', 'read', 'update', 'delete', 'login', 'logout', 'export', 'import',
             // New license-related actions
             'license_create', 'license_validate', 'license_renew', 'license_revoke',
-            'license_activate', 'license_check', 'license_expire',
+            'license_activate', 'license_check', 'license_expire', 'license_update',
             // New system actions
             'system_alert', 'system_health_check', 'backup_create', 'backup_restore',
             'module_enable', 'module_disable', 'tenant_create', 'tenant_suspend',
@@ -29,20 +29,20 @@ const auditLogSchema = new mongoose.Schema({
         ref: 'User',
         required: false // Some system actions may not have a user
     },
-    
+
     // Enhanced change tracking
     changes: {
         before: mongoose.Schema.Types.Mixed,
         after: mongoose.Schema.Types.Mixed,
         fields: [String] // List of changed fields
     },
-    
+
     // Enhanced request information
     ipAddress: String,
     userAgent: String,
     requestId: String, // For correlation across services
     sessionId: String,
-    
+
     // Enhanced categorization
     module: String,
     category: {
@@ -54,7 +54,7 @@ const auditLogSchema = new mongoose.Schema({
         ],
         default: 'data_modification'
     },
-    
+
     // Enhanced status and error handling
     status: {
         type: String,
@@ -63,14 +63,14 @@ const auditLogSchema = new mongoose.Schema({
     },
     errorMessage: String,
     errorCode: String,
-    
+
     // New fields for enhanced audit logging
     severity: {
         type: String,
         enum: ['low', 'medium', 'high', 'critical'],
         default: 'medium'
     },
-    
+
     // License-specific fields
     licenseInfo: {
         licenseNumber: String,
@@ -80,7 +80,7 @@ const auditLogSchema = new mongoose.Schema({
         machineId: String,
         validationResult: String
     },
-    
+
     // System context
     systemInfo: {
         hostname: String,
@@ -88,14 +88,14 @@ const auditLogSchema = new mongoose.Schema({
         version: String,
         environment: String
     },
-    
+
     // Performance metrics
     performance: {
         duration: Number, // milliseconds
         memoryUsage: Number, // bytes
         cpuUsage: Number // percentage
     },
-    
+
     // Compliance and retention
     retentionPolicy: {
         type: String,
@@ -107,12 +107,12 @@ const auditLogSchema = new mongoose.Schema({
         sox: { type: Boolean, default: false },
         hipaa: { type: Boolean, default: false }
     },
-    
+
     // Additional metadata
     tags: [String],
     correlationId: String, // For tracking related events
     parentEventId: mongoose.Schema.Types.ObjectId,
-    
+
     // Immutability protection
     hash: String, // SHA-256 hash of the log entry for integrity verification
     signature: String // Digital signature for non-repudiation
@@ -132,23 +132,23 @@ auditLogSchema.index({ status: 1, severity: 1 });
 auditLogSchema.index({ tags: 1 });
 
 // Virtual for determining if this is a license-related event
-auditLogSchema.virtual('isLicenseEvent').get(function() {
+auditLogSchema.virtual('isLicenseEvent').get(function () {
     return this.action && this.action.startsWith('license_');
 });
 
 // Virtual for determining if this is a system event
-auditLogSchema.virtual('isSystemEvent').get(function() {
+auditLogSchema.virtual('isSystemEvent').get(function () {
     return this.category === 'system_operation' || this.category === 'performance';
 });
 
 // Pre-save middleware for generating hash and ensuring data integrity
-auditLogSchema.pre('save', function(next) {
+auditLogSchema.pre('save', function (next) {
     if (this.isNew) {
         // Generate correlation ID if not provided
         if (!this.correlationId) {
             this.correlationId = `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         }
-        
+
         // Set system info if not provided
         if (!this.systemInfo.hostname) {
             this.systemInfo.hostname = os.hostname();
@@ -159,7 +159,7 @@ auditLogSchema.pre('save', function(next) {
         if (!this.systemInfo.environment) {
             this.systemInfo.environment = process.env.NODE_ENV || 'development';
         }
-        
+
         // Generate hash for integrity verification
         const dataToHash = JSON.stringify({
             action: this.action,
@@ -175,7 +175,7 @@ auditLogSchema.pre('save', function(next) {
 });
 
 // Static method for creating audit logs with validation
-auditLogSchema.statics.createAuditLog = async function(logData) {
+auditLogSchema.statics.createAuditLog = async function (logData) {
     const auditLog = new this({
         action: logData.action,
         resource: logData.resource,
@@ -202,14 +202,14 @@ auditLogSchema.statics.createAuditLog = async function(logData) {
         correlationId: logData.correlationId,
         parentEventId: logData.parentEventId
     });
-    
+
     return await auditLog.save();
 };
 
 // Static method for querying audit logs with common filters
-auditLogSchema.statics.queryAuditLogs = function(filters = {}) {
+auditLogSchema.statics.queryAuditLogs = function (filters = {}) {
     const query = {};
-    
+
     if (filters.userId) query.userId = filters.userId;
     if (filters.action) query.action = filters.action;
     if (filters.resource) query.resource = filters.resource;
@@ -219,13 +219,13 @@ auditLogSchema.statics.queryAuditLogs = function(filters = {}) {
     if (filters.licenseNumber) query['licenseInfo.licenseNumber'] = filters.licenseNumber;
     if (filters.tenantId) query['licenseInfo.tenantId'] = filters.tenantId;
     if (filters.correlationId) query.correlationId = filters.correlationId;
-    
+
     if (filters.startDate || filters.endDate) {
         query.createdAt = {};
         if (filters.startDate) query.createdAt.$gte = new Date(filters.startDate);
         if (filters.endDate) query.createdAt.$lte = new Date(filters.endDate);
     }
-    
+
     return this.find(query)
         .sort({ createdAt: -1 })
         .limit(filters.limit || 100)

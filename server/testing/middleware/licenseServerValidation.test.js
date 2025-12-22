@@ -3,15 +3,19 @@
  * Tests the integration with the separate license server
  */
 
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from '@jest/globals';
 import { validateLicense, requireFeature, getValidationStats, clearValidationCache } from '../../middleware/licenseServerValidation.middleware.js';
-import axios from 'axios';
-
-// Mock axios
-jest.mock('axios');
-const mockedAxios = axios;
 
 describe('License Server Validation Middleware', () => {
   let req, res, next;
+  let axios;
+
+  beforeAll(async () => {
+    // Dynamically import and mock axios
+    const axiosModule = await import('axios');
+    axios = axiosModule.default;
+    axios.post = jest.fn();
+  });
 
   beforeEach(() => {
     req = {
@@ -48,7 +52,7 @@ describe('License Server Validation Middleware', () => {
       await validateLicense(req, res, next);
 
       expect(next).toHaveBeenCalled();
-      expect(mockedAxios.post).not.toHaveBeenCalled();
+      expect(axios.post).not.toHaveBeenCalled();
     });
 
     it('should allow request to continue when no tenant ID is found', async () => {
@@ -58,7 +62,7 @@ describe('License Server Validation Middleware', () => {
       await validateLicense(req, res, next);
 
       expect(next).toHaveBeenCalled();
-      expect(mockedAxios.post).not.toHaveBeenCalled();
+      expect(axios.post).not.toHaveBeenCalled();
     });
 
     it('should return 403 when no license token is found', async () => {
@@ -89,11 +93,11 @@ describe('License Server Validation Middleware', () => {
         }
       };
 
-      mockedAxios.post.mockResolvedValue(mockResponse);
+      axios.post.mockResolvedValue(mockResponse);
 
       await validateLicense(req, res, next);
 
-      expect(mockedAxios.post).toHaveBeenCalledWith(
+      expect(axios.post).toHaveBeenCalledWith(
         'http://localhost:4000/licenses/validate',
         expect.objectContaining({
           token: 'test-license-token',
@@ -131,7 +135,7 @@ describe('License Server Validation Middleware', () => {
         }
       };
 
-      mockedAxios.post.mockResolvedValue(mockResponse);
+      axios.post.mockResolvedValue(mockResponse);
 
       await validateLicense(req, res, next);
 
@@ -146,7 +150,7 @@ describe('License Server Validation Middleware', () => {
     });
 
     it('should return 503 when license server is unavailable', async () => {
-      mockedAxios.post.mockRejectedValue(new Error('ECONNREFUSED'));
+      axios.post.mockRejectedValue(new Error('ECONNREFUSED'));
 
       await validateLicense(req, res, next);
 
@@ -170,18 +174,18 @@ describe('License Server Validation Middleware', () => {
         }
       };
 
-      mockedAxios.post.mockResolvedValue(mockResponse);
+      axios.post.mockResolvedValue(mockResponse);
 
       // First call
       await validateLicense(req, res, next);
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+      expect(axios.post).toHaveBeenCalledTimes(1);
 
       // Reset mocks
       jest.clearAllMocks();
 
       // Second call should use cache
       await validateLicense(req, res, next);
-      expect(mockedAxios.post).not.toHaveBeenCalled();
+      expect(axios.post).not.toHaveBeenCalled();
       expect(req.licenseInfo.cached).toBe(true);
       expect(next).toHaveBeenCalled();
     });
@@ -197,7 +201,7 @@ describe('License Server Validation Middleware', () => {
 
     it('should allow access when feature is licensed', () => {
       const middleware = requireFeature('tasks');
-      
+
       middleware(req, res, next);
 
       expect(next).toHaveBeenCalled();
@@ -207,7 +211,7 @@ describe('License Server Validation Middleware', () => {
 
     it('should deny access when feature is not licensed', () => {
       const middleware = requireFeature('life-insurance');
-      
+
       middleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
@@ -224,7 +228,7 @@ describe('License Server Validation Middleware', () => {
 
     it('should allow degraded access for optional features', () => {
       const middleware = requireFeature('life-insurance', { optional: true });
-      
+
       middleware(req, res, next);
 
       expect(next).toHaveBeenCalled();
@@ -235,7 +239,7 @@ describe('License Server Validation Middleware', () => {
     it('should deny access when no valid license', () => {
       req.licenseInfo = null;
       const middleware = requireFeature('tasks');
-      
+
       middleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
@@ -274,17 +278,17 @@ describe('License Server Validation Middleware', () => {
         }
       };
 
-      mockedAxios.post.mockResolvedValue(mockResponse);
+      axios.post.mockResolvedValue(mockResponse);
 
       // Call twice
       await validateLicense(req, res, next);
-      const firstCall = mockedAxios.post.mock.calls[0];
-      
+      const firstCall = axios.post.mock.calls[0];
+
       jest.clearAllMocks();
       clearValidationCache();
-      
+
       await validateLicense(req, res, next);
-      const secondCall = mockedAxios.post.mock.calls[0];
+      const secondCall = axios.post.mock.calls[0];
 
       // Machine ID should be the same
       expect(firstCall[1].machineId).toBe(secondCall[1].machineId);

@@ -1,0 +1,201 @@
+﻿
+> hr-sm@1.0.0 test
+> node --max-old-space-size=8192 --experimental-vm-modules --no-warnings=ExperimentalWarning node_modules/jest/bin/jest.js server/testing/services/auditTrailCompleteness.property.test.js
+
+node.exe : FAIL server/testing/services/auditTrailCompletene
+ss.property.test.js (6.588 s)
+At C:\Program Files\nodejs\npm.ps1:29 char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL server/te 
+   s...st.js (6.588 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  ΓùÅ Audit Trail Completeness Property-Based Tests ΓÇ║ 
+Property 8: Audit Trail Completeness ΓÇ║ should create 
+complete audit logs for all administrative actions with 
+required fields
+
+    Property failed after 2 tests
+    { seed: -1023126640, path: "1:0:0:0:0:0:0:0:0:0:0:0:0:0:
+0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0", endOnFailure: 
+true }
+    Counterexample: [{"administrativeActions":[{"action":"te
+nant_create","resource":"tenant","userId":6949432e8abbd130ca
+2e4a55,"reason":"          
+","ipAddress":"192.168.1.100","userAgent":"Mozilla/5.0 
+(Windows NT 10.0; Win64; x64) AppleWebKit/537.36","changes":
+{"before":{"status":"active","enabled":false,"value":"     
+"},"after":{"status":"active","enabled":false,"value":"     
+"}}}]}]
+    Shrunk 33 time(s)
+
+    Hint: Enable verbose mode in order to have the list of 
+all failing values encountered during the run
+
+      at buildError (node_modules/fast-check/lib/check/runne
+r/utils/RunDetailsFormatter.js:156:19)
+      at buildError (node_modules/fast-check/lib/check/runne
+r/utils/RunDetailsFormatter.js:170:11)
+
+    Cause:
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 42
+    Received array:  [[Object], [Object], [Object], 
+[Object], [Object], [Object], [Object], [Object], [Object], 
+[Object], ΓÇª]
+
+    [0m [90m 205 |[39m                         
+})[33m.[39msort({ createdAt[33m:[39m 
+[33m-[39m[35m1[39m })[33m;[39m
+     [90m 206 |[39m
+    [31m[1m>[22m[39m[90m 207 |[39m                    
+     expect(tenantAuditLogs)[33m.[39mtoHaveLength(administ
+rativeActions[33m.[39mlength)[33m;[39m
+     [90m     |[39m                                       
+          [31m[1m^[22m[39m
+     [90m 208 |[39m
+     [90m 209 |[39m                         [90m// 
+Assertion 4: Audit logs should maintain proper 
+categorization[39m
+     [90m 210 |[39m                         
+[36mconst[39m categorizedLogs [33m=[39m [36mawait[39m 
+[33mTestAuditLog[39m[33m.[39maggregate([[0m
+
+      at toHaveLength (server/testing/services/auditTrailCom
+pleteness.property.test.js:207:49)
+      at AsyncProperty.run (node_modules/fast-check/lib/chec
+k/property/AsyncProperty.generic.js:43:28)
+      at asyncRunIt 
+(node_modules/fast-check/lib/check/runner/Runner.js:24:21)
+      at Object.<anonymous> (server/testing/services/auditTr
+ailCompleteness.property.test.js:59:13)
+
+  ΓùÅ Audit Trail Completeness Property-Based Tests ΓÇ║ 
+Property 8: Audit Trail Completeness ΓÇ║ should maintain 
+audit trail integrity and immutability
+
+    Property failed after 2 tests
+    { seed: 1174728505, path: 
+"1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0", 
+endOnFailure: true }
+    Counterexample: 
+[{"criticalActions":[{"action":"tenant_suspend","reason":"  
+                  
+","severity":"high","errorCode":null,"errorMessage":null}]}]
+    Shrunk 25 time(s)
+
+    Hint: Enable verbose mode in order to have the list of 
+all failing values encountered during the run
+
+      at buildError (node_modules/fast-check/lib/check/runne
+r/utils/RunDetailsFormatter.js:156:19)
+      at buildError (node_modules/fast-check/lib/check/runne
+r/utils/RunDetailsFormatter.js:170:11)
+
+    Cause:
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 28
+    Received array:  [[Object], [Object], [Object], 
+[Object], [Object], [Object], [Object], [Object], [Object], 
+[Object], ΓÇª]
+
+    [0m [90m 343 |[39m                         
+})[33m;[39m
+     [90m 344 |[39m
+    [31m[1m>[22m[39m[90m 345 |[39m                    
+     expect(complianceQuery)[33m.[39mtoHaveLength(critical
+Actions[33m.[39mlength)[33m;[39m
+     [90m     |[39m                                       
+          [31m[1m^[22m[39m
+     [90m 346 |[39m
+     [90m 347 |[39m                         [90m// 
+Verify all required compliance fields are present[39m
+     [90m 348 |[39m                         
+complianceQuery[33m.[39mforEach(log [33m=>[39m {[0m
+
+      at toHaveLength (server/testing/services/auditTrailCom
+pleteness.property.test.js:345:49)
+      at AsyncProperty.run (node_modules/fast-check/lib/chec
+k/property/AsyncProperty.generic.js:43:28)
+      at asyncRunIt 
+(node_modules/fast-check/lib/check/runner/Runner.js:24:21)
+      at Object.<anonymous> (server/testing/services/auditTr
+ailCompleteness.property.test.js:235:13)
+
+  ΓùÅ Audit Trail Completeness Property-Based Tests ΓÇ║ 
+Property 8: Audit Trail Completeness ΓÇ║ should provide 
+comprehensive audit statistics and querying capabilities
+
+    Property failed after 1 tests
+    { seed: 1846888519, path: 
+"0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0", 
+endOnFailure: true }
+    Counterexample: [{"auditEvents":[{"action":"tenant_creat
+e","category":"tenant_management","severity":"low","status":
+"success","timeOffset":0},{"action":"tenant_create","categor
+y":"tenant_management","severity":"low","status":"success","
+timeOffset":0},{"action":"tenant_create","category":"tenant_
+management","severity":"low","status":"success","timeOffset"
+:0},{"action":"tenant_create","category":"tenant_management"
+,"severity":"low","status":"success","timeOffset":0},{"actio
+n":"tenant_create","category":"tenant_management","severity"
+:"low","status":"success","timeOffset":0}]}]
+    Shrunk 23 time(s)
+
+    Hint: Enable verbose mode in order to have the list of 
+all failing values encountered during the run
+
+      at buildError (node_modules/fast-check/lib/check/runne
+r/utils/RunDetailsFormatter.js:156:19)
+      at buildError (node_modules/fast-check/lib/check/runne
+r/utils/RunDetailsFormatter.js:170:11)
+
+    Cause:
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 5
+    Received: 120
+
+    [0m [90m 433 |[39m                         [90m// 
+For test purposes, we'll calculate statistics directly from 
+TestAuditLog[39m
+     [90m 434 |[39m                         
+[36mconst[39m totalLogs [33m=[39m [36mawait[39m 
+[33mTestAuditLog[39m[33m.[39mcountDocuments({ 
+tenantId[33m:[39m testTenantId })[33m;[39m
+    [31m[1m>[22m[39m[90m 435 |[39m                    
+     expect(totalLogs)[33m.[39mtoBe(auditEvents[33m.[39m
+length)[33m;[39m
+     [90m     |[39m                                       
+    [31m[1m^[22m[39m
+     [90m 436 |[39m
+     [90m 437 |[39m                         [90m// 
+Calculate statistics manually for test[39m
+     [90m 438 |[39m                         
+[36mconst[39m allLogs [33m=[39m [36mawait[39m 
+[33mTestAuditLog[39m[33m.[39mfind({ tenantId[33m:[39m 
+testTenantId })[33m;[39m[0m
+
+      at toBe (server/testing/services/auditTrailCompletenes
+s.property.test.js:435:43)
+      at AsyncProperty.run (node_modules/fast-check/lib/chec
+k/property/AsyncProperty.generic.js:43:28)
+      at asyncRunIt 
+(node_modules/fast-check/lib/check/runner/Runner.js:24:21)
+      at Object.<anonymous> (server/testing/services/auditTr
+ailCompleteness.property.test.js:367:13)
+
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 3 total
+Snapshots:   0 total
+Time:        8.136 s
+Ran all test suites matching server/testing/services/auditTr
+ailCompleteness.property.test.js.
+Force exiting Jest: Have you considered using 
+`--detectOpenHandles` to detect async operations that kept 
+running after all tests finished?

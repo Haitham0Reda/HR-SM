@@ -11,6 +11,7 @@ describe('Role Routes E2E Tests', () => {
     let app;
     let adminToken;
     let adminUser;
+    const TEST_TENANT_ID = 'test_tenant_123';
 
     beforeAll(async () => {
         // Create express app
@@ -34,10 +35,10 @@ describe('Role Routes E2E Tests', () => {
 
         // Import controller functions directly
         const roleController = await import('../../modules/hr-core/users/controllers/role.controller.js');
-        
+
         // Create routes manually with mock middleware
         const router = express.Router();
-        
+
         router.get('/', mockProtect, roleController.getAllRoles);
         router.get('/stats', mockProtect, roleController.getRoleStats);
         router.get('/permissions', mockProtect, roleController.getAllPermissions);
@@ -46,12 +47,12 @@ describe('Role Routes E2E Tests', () => {
         router.post('/', mockProtect, roleController.createRole);
         router.put('/:id', mockProtect, roleController.updateRole);
         router.delete('/:id', mockProtect, roleController.deleteRole);
-        
+
         app.use('/api/roles', router);
 
         // Create admin user and token
         adminUser = await User.create({
-      tenantId: 'test_tenant_123',
+            tenantId: TEST_TENANT_ID,
             username: 'admin',
             email: 'admin@test.com',
             password: 'password123',
@@ -67,7 +68,12 @@ describe('Role Routes E2E Tests', () => {
         });
 
         adminToken = jwt.sign(
-            { _id: adminUser._id, username: adminUser.username, role: adminUser.role },
+            {
+                _id: adminUser._id,
+                username: adminUser.username,
+                role: adminUser.role,
+                tenantId: adminUser.tenantId
+            },
             process.env.JWT_SECRET || 'test-secret',
             { expiresIn: '1h' }
         );
@@ -106,6 +112,7 @@ describe('Role Routes E2E Tests', () => {
 
         it('should fail with duplicate role name', async () => {
             await Role.create({
+                tenantId: TEST_TENANT_ID,
                 name: 'duplicate-role',
                 displayName: 'Duplicate Role',
                 permissions: ['users.view']
@@ -154,18 +161,21 @@ describe('Role Routes E2E Tests', () => {
         beforeEach(async () => {
             await Role.create([
                 {
+                    tenantId: TEST_TENANT_ID,
                     name: 'admin',
                     displayName: 'Administrator',
                     permissions: ['users.view', 'users.create', 'users.edit'],
                     isSystemRole: true
                 },
                 {
+                    tenantId: TEST_TENANT_ID,
                     name: 'custom-role-1',
                     displayName: 'Custom Role 1',
                     permissions: ['documents.view'],
                     isSystemRole: false
                 },
                 {
+                    tenantId: TEST_TENANT_ID,
                     name: 'custom-role-2',
                     displayName: 'Custom Role 2',
                     permissions: ['reports.view'],
@@ -210,8 +220,8 @@ describe('Role Routes E2E Tests', () => {
                 .expect(200);
 
             expect(response.body.length).toBeGreaterThanOrEqual(2);
-            expect(response.body.every(role => 
-                role.name.includes('custom') || 
+            expect(response.body.every(role =>
+                role.name.includes('custom') ||
                 role.displayName.toLowerCase().includes('custom')
             )).toBe(true);
         });
@@ -222,6 +232,7 @@ describe('Role Routes E2E Tests', () => {
 
         beforeEach(async () => {
             testRole = await Role.create({
+                tenantId: TEST_TENANT_ID,
                 name: 'view-test-role',
                 displayName: 'View Test Role',
                 description: 'Role for viewing tests',
@@ -256,6 +267,7 @@ describe('Role Routes E2E Tests', () => {
 
         beforeEach(async () => {
             testRole = await Role.create({
+                tenantId: TEST_TENANT_ID,
                 name: 'update-test-role',
                 displayName: 'Update Test Role',
                 description: 'Original description',
@@ -282,6 +294,7 @@ describe('Role Routes E2E Tests', () => {
 
         it('should prevent modifying system role name', async () => {
             const systemRole = await Role.create({
+                tenantId: TEST_TENANT_ID,
                 name: 'system-role',
                 displayName: 'System Role',
                 permissions: ['users.view'],
@@ -301,6 +314,7 @@ describe('Role Routes E2E Tests', () => {
 
         it('should prevent changing isSystemRole flag', async () => {
             const systemRole = await Role.create({
+                tenantId: TEST_TENANT_ID,
                 name: 'system-role-2',
                 displayName: 'System Role 2',
                 permissions: ['users.view'],
@@ -336,6 +350,7 @@ describe('Role Routes E2E Tests', () => {
 
         beforeEach(async () => {
             testRole = await Role.create({
+                tenantId: TEST_TENANT_ID,
                 name: 'delete-test-role',
                 displayName: 'Delete Test Role',
                 permissions: ['users.view'],
@@ -357,6 +372,7 @@ describe('Role Routes E2E Tests', () => {
 
         it('should prevent deleting system roles', async () => {
             const systemRole = await Role.create({
+                tenantId: TEST_TENANT_ID,
                 name: 'system-role-delete',
                 displayName: 'System Role Delete',
                 permissions: ['users.view'],
@@ -376,7 +392,7 @@ describe('Role Routes E2E Tests', () => {
 
         it('should prevent deleting role with assigned users', async () => {
             await User.create({
-      tenantId: 'test_tenant_123',
+                tenantId: TEST_TENANT_ID,
                 username: 'roleuser',
                 email: 'roleuser@test.com',
                 password: 'password123',
@@ -405,24 +421,28 @@ describe('Role Routes E2E Tests', () => {
         beforeEach(async () => {
             await Role.create([
                 {
+                    tenantId: TEST_TENANT_ID,
                     name: 'admin',
                     displayName: 'Admin',
                     permissions: ['users.view'],
                     isSystemRole: true
                 },
                 {
+                    tenantId: TEST_TENANT_ID,
                     name: 'hr',
                     displayName: 'HR',
                     permissions: ['users.view'],
                     isSystemRole: true
                 },
                 {
+                    tenantId: TEST_TENANT_ID,
                     name: 'custom-1',
                     displayName: 'Custom 1',
                     permissions: ['users.view'],
                     isSystemRole: false
                 },
                 {
+                    tenantId: TEST_TENANT_ID,
                     name: 'custom-2',
                     displayName: 'Custom 2',
                     permissions: ['users.view'],
@@ -499,6 +519,7 @@ describe('Role Routes E2E Tests', () => {
 
         it('should handle permission selection with bulk operations', async () => {
             const role = await Role.create({
+                tenantId: TEST_TENANT_ID,
                 name: 'bulk-perm-role',
                 displayName: 'Bulk Permission Role',
                 permissions: ['users.view']
@@ -506,7 +527,7 @@ describe('Role Routes E2E Tests', () => {
 
             // Add multiple permissions
             const permissions = ['users.view', 'users.create', 'users.edit', 'documents.view', 'documents.edit'];
-            
+
             const response = await request(app)
                 .put(`/api/roles/${role._id}`)
                 .set('Authorization', `Bearer ${adminToken}`)

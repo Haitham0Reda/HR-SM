@@ -19,7 +19,7 @@ class FrontendSecurityDetectionService {
             rapidNavigation: { count: 10, timeWindow: 3000 }, // 10 navigations in 3 seconds
             suspiciousPatterns: { count: 5, timeWindow: 60000 } // 5 suspicious patterns in 1 minute
         };
-        
+
         // Activity tracking
         this.activityCounters = {
             requests: [],
@@ -27,7 +27,7 @@ class FrontendSecurityDetectionService {
             navigations: [],
             suspiciousPatterns: []
         };
-        
+
         // XSS and injection patterns
         this.xssPatterns = [
             /<script[^>]*>.*?<\/script>/gi,
@@ -45,7 +45,7 @@ class FrontendSecurityDetectionService {
             /<link[^>]*>/gi,
             /<meta[^>]*>/gi
         ];
-        
+
         // Script injection patterns
         this.injectionPatterns = [
             /\balert\s*\(/gi,
@@ -61,7 +61,7 @@ class FrontendSecurityDetectionService {
             /setTimeout\s*\(/gi,
             /setInterval\s*\(/gi
         ];
-        
+
         // Suspicious URL patterns
         this.suspiciousUrlPatterns = [
             /data:text\/html/gi,
@@ -77,7 +77,7 @@ class FrontendSecurityDetectionService {
 
     initialize() {
         if (this.isInitialized) return;
-        
+
         this.generateClientFingerprint();
         this.setupDOMMonitoring();
         this.setupNetworkMonitoring();
@@ -86,7 +86,7 @@ class FrontendSecurityDetectionService {
         this.setupConsoleMonitoring();
         this.setupDevToolsDetection();
         this.setupIntegrityMonitoring();
-        
+
         this.isInitialized = true;
         logger.security('Frontend security detection service initialized', {
             fingerprint: this.clientFingerprint,
@@ -117,10 +117,10 @@ class FrontendSecurityDetectionService {
             plugins: Array.from(navigator.plugins).map(p => p.name),
             timestamp: Date.now()
         };
-        
+
         // Create hash of fingerprint
         this.clientFingerprint = this.hashFingerprint(fingerprint);
-        
+
         return this.clientFingerprint;
     }
 
@@ -129,7 +129,7 @@ class FrontendSecurityDetectionService {
             const canvas = document.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
             if (!gl) return null;
-            
+
             return {
                 vendor: gl.getParameter(gl.VENDOR),
                 renderer: gl.getParameter(gl.RENDERER),
@@ -157,13 +157,13 @@ class FrontendSecurityDetectionService {
     getFontFingerprint() {
         const testFonts = ['Arial', 'Helvetica', 'Times', 'Courier', 'Verdana', 'Georgia', 'Palatino', 'Garamond', 'Bookman', 'Tahoma'];
         const availableFonts = [];
-        
+
         for (const font of testFonts) {
             if (this.isFontAvailable(font)) {
                 availableFonts.push(font);
             }
         }
-        
+
         return availableFonts;
     }
 
@@ -171,13 +171,13 @@ class FrontendSecurityDetectionService {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         const baselineText = 'mmmmmmmmmmlli';
-        
+
         ctx.font = '72px monospace';
         const baselineWidth = ctx.measureText(baselineText).width;
-        
+
         ctx.font = `72px ${fontName}, monospace`;
         const testWidth = ctx.measureText(baselineText).width;
-        
+
         return baselineWidth !== testWidth;
     }
 
@@ -199,14 +199,14 @@ class FrontendSecurityDetectionService {
                 this.analyzeDOMMutation(mutation);
             }
         });
-        
+
         observer.observe(document.body, {
             childList: true,
             subtree: true,
             attributes: true,
             attributeFilter: ['src', 'href', 'onclick', 'onload', 'onerror']
         });
-        
+
         // Monitor for script injection
         document.addEventListener('DOMNodeInserted', (event) => {
             if (event.target.tagName === 'SCRIPT') {
@@ -222,10 +222,10 @@ class FrontendSecurityDetectionService {
             this.analyzeNetworkRequest('fetch', args[0], args[1]);
             return originalFetch(...args);
         };
-        
+
         // Monitor XMLHttpRequest
         const originalXHROpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(method, url, ...args) {
+        XMLHttpRequest.prototype.open = function (method, url, ...args) {
             frontendSecurityDetectionService.analyzeNetworkRequest('xhr', url, { method });
             return originalXHROpen.call(this, method, url, ...args);
         };
@@ -238,7 +238,7 @@ class FrontendSecurityDetectionService {
                 this.analyzeUserInput(event.target.value, event.target);
             }
         });
-        
+
         // Monitor paste events
         document.addEventListener('paste', (event) => {
             const pastedData = event.clipboardData?.getData('text');
@@ -252,12 +252,12 @@ class FrontendSecurityDetectionService {
         // Monitor for suspicious navigation patterns
         let navigationCount = 0;
         const navigationTimes = [];
-        
+
         const trackNavigation = () => {
             const now = Date.now();
             navigationTimes.push(now);
             navigationCount++;
-            
+
             // Check for rapid navigation
             const recentNavigations = navigationTimes.filter(time => now - time < this.suspiciousActivityThresholds.rapidNavigation.timeWindow);
             if (recentNavigations.length > this.suspiciousActivityThresholds.rapidNavigation.count) {
@@ -269,7 +269,7 @@ class FrontendSecurityDetectionService {
                 });
             }
         };
-        
+
         // Monitor URL changes
         let currentUrl = window.location.href;
         setInterval(() => {
@@ -286,17 +286,17 @@ class FrontendSecurityDetectionService {
         const originalConsoleLog = console.log;
         const originalConsoleError = console.error;
         const originalConsoleWarn = console.warn;
-        
+
         console.log = (...args) => {
             this.analyzeConsoleOutput('log', args);
             return originalConsoleLog.apply(console, args);
         };
-        
+
         console.error = (...args) => {
             this.analyzeConsoleOutput('error', args);
             return originalConsoleError.apply(console, args);
         };
-        
+
         console.warn = (...args) => {
             this.analyzeConsoleOutput('warn', args);
             return originalConsoleWarn.apply(console, args);
@@ -306,7 +306,7 @@ class FrontendSecurityDetectionService {
     setupDevToolsDetection() {
         // Detect if developer tools are open (potential security risk)
         let devtools = { open: false, orientation: null };
-        
+
         setInterval(() => {
             if (window.outerHeight - window.innerHeight > 200 || window.outerWidth - window.innerWidth > 200) {
                 if (!devtools.open) {
@@ -341,10 +341,10 @@ class FrontendSecurityDetectionService {
             'XMLHttpRequest',
             'fetch'
         ];
-        
+
         // Store original function references
         this.originalFunctions = new Map();
-        
+
         // Check integrity periodically
         setInterval(() => {
             this.checkFunctionIntegrity();
@@ -365,22 +365,22 @@ class FrontendSecurityDetectionService {
 
     analyzeElement(element) {
         const tagName = element.tagName?.toLowerCase();
-        
+
         // Check for suspicious script tags
         if (tagName === 'script') {
             this.detectScriptInjection(element);
         }
-        
+
         // Check for suspicious iframe tags
         if (tagName === 'iframe') {
             this.analyzeIframe(element);
         }
-        
+
         // Check for suspicious link tags
         if (tagName === 'link' && element.rel === 'stylesheet') {
             this.analyzeStylesheet(element);
         }
-        
+
         // Check innerHTML for XSS patterns
         if (element.innerHTML) {
             this.analyzeHTML(element.innerHTML, element);
@@ -389,7 +389,7 @@ class FrontendSecurityDetectionService {
 
     analyzeElementAttributes(element, attributeName) {
         const attributeValue = element.getAttribute(attributeName);
-        
+
         // Check for event handler attributes
         if (attributeName.startsWith('on') && attributeValue) {
             this.reportSecurityEvent('suspicious_event_handler', {
@@ -400,7 +400,7 @@ class FrontendSecurityDetectionService {
                 severity: 'high'
             });
         }
-        
+
         // Check for suspicious src/href attributes
         if ((attributeName === 'src' || attributeName === 'href') && attributeValue) {
             this.analyzeURL(attributeValue, element);
@@ -410,11 +410,11 @@ class FrontendSecurityDetectionService {
     detectScriptInjection(scriptElement) {
         const src = scriptElement.src;
         const content = scriptElement.textContent || scriptElement.innerHTML;
-        
+
         if (src) {
             this.analyzeURL(src, scriptElement);
         }
-        
+
         if (content) {
             // Check for suspicious script content
             for (const pattern of this.injectionPatterns) {
@@ -428,7 +428,7 @@ class FrontendSecurityDetectionService {
                 }
             }
         }
-        
+
         // Check if script was added dynamically (potential XSS)
         if (!scriptElement.hasAttribute('data-original')) {
             this.reportSecurityEvent('dynamic_script', {
@@ -441,10 +441,10 @@ class FrontendSecurityDetectionService {
 
     analyzeIframe(iframe) {
         const src = iframe.src;
-        
+
         if (src) {
             this.analyzeURL(src, iframe);
-            
+
             // Check for data URLs in iframes (potential XSS)
             if (src.startsWith('data:')) {
                 this.reportSecurityEvent('data_url_iframe', {
@@ -458,7 +458,7 @@ class FrontendSecurityDetectionService {
 
     analyzeStylesheet(link) {
         const href = link.href;
-        
+
         if (href) {
             this.analyzeURL(href, link);
         }
@@ -485,7 +485,7 @@ class FrontendSecurityDetectionService {
         this.activityCounters.requests = this.activityCounters.requests.filter(
             time => now - time < this.suspiciousActivityThresholds.rapidRequests.timeWindow
         );
-        
+
         // Check for rapid requests
         if (this.activityCounters.requests.length > this.suspiciousActivityThresholds.rapidRequests.count) {
             this.reportSecurityEvent('rapid_requests', {
@@ -495,7 +495,7 @@ class FrontendSecurityDetectionService {
                 severity: 'medium'
             });
         }
-        
+
         // Analyze URL for suspicious patterns
         this.analyzeURL(url, null, type);
     }
@@ -515,7 +515,7 @@ class FrontendSecurityDetectionService {
                 });
             }
         }
-        
+
         // Check for script injection patterns
         for (const pattern of this.injectionPatterns) {
             if (pattern.test(input)) {
@@ -546,7 +546,7 @@ class FrontendSecurityDetectionService {
                 });
             }
         }
-        
+
         // Check for potential phishing domains
         if (this.isPotentialPhishingDomain(url)) {
             this.reportSecurityEvent('phishing_domain', {
@@ -559,8 +559,15 @@ class FrontendSecurityDetectionService {
     }
 
     analyzeConsoleOutput(level, args) {
-        const message = args.join(' ');
-        
+        const message = args.map(arg => {
+            try {
+                return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+            } catch (e) {
+                return String(arg);
+            }
+        }).join(' ');
+
+
         // Check for security-related console messages
         const securityKeywords = [
             'Content Security Policy',
@@ -573,7 +580,7 @@ class FrontendSecurityDetectionService {
             'script-src',
             'object-src'
         ];
-        
+
         for (const keyword of securityKeywords) {
             if (message.includes(keyword)) {
                 this.reportSecurityEvent('security_console_message', {
@@ -591,7 +598,7 @@ class FrontendSecurityDetectionService {
         try {
             const urlObj = new URL(url);
             const domain = urlObj.hostname.toLowerCase();
-            
+
             // Check for suspicious domain patterns
             const suspiciousDomainPatterns = [
                 /[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/, // IP addresses
@@ -600,7 +607,7 @@ class FrontendSecurityDetectionService {
                 /[0-9]{5,}/, // Long numeric sequences
                 /[a-z]{20,}/ // Very long domain names
             ];
-            
+
             return suspiciousDomainPatterns.some(pattern => pattern.test(domain));
         } catch (error) {
             return false;
@@ -611,7 +618,7 @@ class FrontendSecurityDetectionService {
         // Check if critical functions have been tampered with
         const currentFetch = window.fetch.toString();
         const currentXHR = XMLHttpRequest.prototype.open.toString();
-        
+
         // Simple integrity check (in production, use more sophisticated methods)
         if (!currentFetch.includes('native code') && !this.originalFunctions.has('fetch')) {
             this.reportSecurityEvent('function_tampering', {
@@ -619,7 +626,7 @@ class FrontendSecurityDetectionService {
                 severity: 'high'
             });
         }
-        
+
         if (!currentXHR.includes('native code') && !this.originalFunctions.has('xhr')) {
             this.reportSecurityEvent('function_tampering', {
                 type: 'xhr_function_modified',
@@ -630,7 +637,7 @@ class FrontendSecurityDetectionService {
 
     reportSecurityEvent(eventType, details) {
         if (!this.detectionEnabled) return;
-        
+
         const securityEvent = {
             id: this.generateEventId(),
             type: eventType,
@@ -640,20 +647,20 @@ class FrontendSecurityDetectionService {
             userAgent: navigator.userAgent,
             ...details
         };
-        
+
         // Add to security events queue
         this.securityEvents.push(securityEvent);
         if (this.securityEvents.length > this.maxSecurityEvents) {
             this.securityEvents.shift();
         }
-        
+
         // Log security event
         logger.security(`Frontend Security Event: ${eventType}`, {
             eventType: logger.SECURITY_EVENT_TYPES.XSS_ATTEMPT,
             securityEvent,
             actionType: 'security_detection'
         });
-        
+
         // Immediate action for critical events
         if (details.severity === 'critical') {
             this.handleCriticalSecurityEvent(securityEvent);
@@ -666,7 +673,7 @@ class FrontendSecurityDetectionService {
             securityEvent: event,
             actionType: 'critical_security_event'
         });
-        
+
         // Could implement additional actions like:
         // - Disable certain functionality
         // - Redirect to security page
@@ -681,12 +688,12 @@ class FrontendSecurityDetectionService {
     getSecurityStats() {
         const eventsByType = {};
         const eventsBySeverity = {};
-        
+
         for (const event of this.securityEvents) {
             eventsByType[event.type] = (eventsByType[event.type] || 0) + 1;
             eventsBySeverity[event.severity] = (eventsBySeverity[event.severity] || 0) + 1;
         }
-        
+
         return {
             totalEvents: this.securityEvents.length,
             eventsByType,

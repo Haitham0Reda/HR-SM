@@ -82,9 +82,9 @@ describe('Tenant Metrics Tracking Property-Based Tests', () => {
                         const initialApiCalls = initialTenant.usage.apiCallsThisMonth;
                         const initialActiveUsers = initialTenant.usage.activeUsers;
 
-                        // Calculate expected values (ensuring non-negative)
-                        const expectedUserCount = Math.max(0, initialUserCount + userCountDelta);
-                        const expectedStorageUsed = Math.max(0, initialStorageUsed + storageUsedDelta);
+                        // Calculate expected values (ensuring non-negative and within limits)
+                        const expectedUserCount = Math.max(0, Math.min(initialTenant.restrictions.maxUsers, initialUserCount + userCountDelta));
+                        const expectedStorageUsed = Math.max(0, Math.min(initialTenant.restrictions.maxStorage, initialStorageUsed + storageUsedDelta));
                         const expectedApiCalls = Math.max(0, initialApiCalls + apiCallsDelta);
                         const expectedActiveUsers = Math.max(0, initialActiveUsers + activeUsersDelta);
 
@@ -98,7 +98,7 @@ describe('Tenant Metrics Tracking Property-Based Tests', () => {
                         // Update active users separately (simulating real-world scenario)
                         await Tenant.findOneAndUpdate(
                             { tenantId: testTenantId },
-                            { 
+                            {
                                 'usage.activeUsers': expectedActiveUsers,
                                 'usage.lastActivityAt': new Date()
                             }
@@ -213,12 +213,12 @@ describe('Tenant Metrics Tracking Property-Based Tests', () => {
                     async ({ operations }) => {
                         // Get initial state
                         const initialTenant = await Tenant.findOne({ tenantId: testTenantId });
-                        
+
                         // Action: Perform concurrent updates
                         const updatePromises = operations.map(async (op, index) => {
                             // Small delay to simulate real-world timing
                             await new Promise(resolve => setTimeout(resolve, index * 10));
-                            
+
                             const updateData = {};
                             if (op.type === 'userCount') {
                                 updateData.userCount = op.value;
@@ -227,7 +227,7 @@ describe('Tenant Metrics Tracking Property-Based Tests', () => {
                             } else if (op.type === 'apiCalls') {
                                 updateData.apiCallsThisMonth = op.value;
                             }
-                            
+
                             return tenantService.updateUsage(testTenantId, updateData);
                         });
 
@@ -370,7 +370,7 @@ describe('Tenant Metrics Tracking Property-Based Tests', () => {
                     async ({ errorRate, availability, paymentStatus, licenseExpiresInDays }) => {
                         // Setup: Update tenant with test values
                         const licenseExpiresAt = new Date(Date.now() + licenseExpiresInDays * 24 * 60 * 60 * 1000);
-                        
+
                         await Tenant.findOneAndUpdate(
                             { tenantId: testTenantId },
                             {
@@ -389,7 +389,7 @@ describe('Tenant Metrics Tracking Property-Based Tests', () => {
                         expect(metricsAggregation.isHighRisk).toBeDefined();
 
                         // Assertion 2: High-risk calculation should be correct
-                        const shouldBeHighRisk = 
+                        const shouldBeHighRisk =
                             errorRate >= 5 ||
                             availability <= 99 ||
                             paymentStatus === 'past_due' ||

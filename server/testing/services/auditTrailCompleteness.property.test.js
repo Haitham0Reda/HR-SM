@@ -19,7 +19,7 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
     beforeAll(async () => {
         // Create a test-specific AuditLog model for isolation
         TestAuditLog = createTestAuditLogModel();
-        
+
         // Ensure we have a clean database before starting tests
         await TestAuditLog.deleteMany({});
     });
@@ -28,7 +28,7 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
         // Create unique test identifiers for each test run
         testTenantId = `test-tenant-audit-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
         testUserId = new mongoose.Types.ObjectId();
-        
+
         // Clean up any existing audit logs from previous tests more thoroughly
         await TestAuditLog.deleteMany({});
         await new Promise(resolve => setTimeout(resolve, 50)); // Small delay to ensure cleanup
@@ -44,7 +44,7 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
         // Final cleanup after all tests
         await TestAuditLog.deleteMany({});
         // Drop the test collection
-        await TestAuditLog.collection.drop().catch(() => {});
+        await TestAuditLog.collection.drop().catch(() => { });
     });
 
     describe('Property 8: Audit Trail Completeness', () => {
@@ -131,6 +131,10 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
                                 tenantId: testTenantId, // Root-level tenantId required by baseSchemaPlugin
                                 category: getCategoryForAction(actionData.action),
                                 severity: getSeverityForAction(actionData.action),
+                                ipAddress: actionData.ipAddress,
+                                userAgent: actionData.userAgent,
+                                requestId: mockRequest.id,
+                                sessionId: mockRequest.sessionID,
                                 changes: {
                                     before: actionData.changes.before,
                                     after: actionData.changes.after,
@@ -250,22 +254,26 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
                         for (const actionData of criticalActions) {
                             const auditLogData = {
                                 action: actionData.action,
-                                resource: actionData.action.includes('tenant') ? 'tenant' : 
-                                         actionData.action.includes('license') ? 'license' : 'system',
+                                resource: actionData.action.includes('tenant') ? 'tenant' :
+                                    actionData.action.includes('license') ? 'license' : 'system',
                                 resourceId: new mongoose.Types.ObjectId(),
                                 userId: testUserId,
                                 tenantId: testTenantId, // Root-level tenantId required by baseSchemaPlugin
-                                category: actionData.action === 'security_event' ? 'security' : 
-                                         actionData.action.includes('tenant') ? 'tenant_management' : 'license_management',
+                                category: actionData.action === 'security_event' ? 'security' :
+                                    actionData.action.includes('tenant') ? 'tenant_management' : 'license_management',
                                 severity: actionData.severity,
                                 status: actionData.errorMessage ? 'failure' : 'success',
+                                ipAddress: '192.168.1.100',
+                                userAgent: 'Mozilla/5.0 Test Browser',
+                                requestId: `req-${Date.now()}`,
+                                sessionId: `session-${Date.now()}`,
                                 errorMessage: actionData.errorMessage,
                                 errorCode: actionData.errorCode,
                                 changes: {
                                     before: { status: 'active', reason: null },
-                                    after: { 
+                                    after: {
                                         status: actionData.action.includes('suspend') ? 'suspended' : 'revoked',
-                                        reason: actionData.reason 
+                                        reason: actionData.reason
                                     },
                                     fields: ['status', 'reason']
                                 },
@@ -290,17 +298,17 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
                         // Assertion 2: Critical audit logs should have proper severity and retention
                         auditLogs.forEach((auditLog, index) => {
                             const originalAction = criticalActions[index];
-                            
+
                             expect(auditLog.severity).toBe(originalAction.severity);
                             expect(auditLog.retentionPolicy).toBe('extended');
                             expect(auditLog.complianceFlags.sox).toBe(true);
                             expect(auditLog.complianceFlags.gdpr).toBe(true);
-                            
+
                             if (originalAction.errorMessage) {
                                 expect(auditLog.status).toBe('failure');
                                 expect(auditLog.errorMessage).toBe(originalAction.errorMessage);
                             }
-                            
+
                             if (originalAction.errorCode) {
                                 expect(auditLog.errorCode).toBe(originalAction.errorCode);
                             }
@@ -335,7 +343,7 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
                         });
 
                         expect(complianceQuery).toHaveLength(criticalActions.length);
-                        
+
                         // Verify all required compliance fields are present
                         complianceQuery.forEach(log => {
                             expect(log.action).toBeDefined();
@@ -362,11 +370,11 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
                         auditEvents: fc.array(
                             fc.record({
                                 action: fc.constantFrom(
-                                    'tenant_create', 'tenant_suspend', 'module_enable', 
+                                    'tenant_create', 'tenant_suspend', 'module_enable',
                                     'license_create', 'license_validate', 'security_event'
                                 ),
                                 category: fc.constantFrom(
-                                    'tenant_management', 'module_management', 
+                                    'tenant_management', 'module_management',
                                     'license_management', 'security'
                                 ),
                                 severity: fc.constantFrom('low', 'medium', 'high', 'critical'),
@@ -377,29 +385,36 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
                         )
                     }),
                     async ({ auditEvents }) => {
+                        // Generate unique tenantId for THIS property run to ensure isolation
+                        const propertyRunTenantId = `test-tenant-audit-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
                         const createdLogs = [];
                         const baseTime = new Date();
 
                         // Action: Create diverse audit logs with different timestamps
                         for (const eventData of auditEvents) {
                             const eventTime = new Date(baseTime.getTime() - (eventData.timeOffset * 1000));
-                            
+
                             const auditLogData = {
                                 action: eventData.action,
                                 resource: eventData.action.split('_')[0],
                                 resourceId: new mongoose.Types.ObjectId(),
                                 userId: testUserId,
-                                tenantId: testTenantId, // Root-level tenantId required by baseSchemaPlugin
+                                tenantId: propertyRunTenantId, // Use property-run-specific tenantId
                                 category: eventData.category,
                                 severity: eventData.severity,
                                 status: eventData.status,
+                                ipAddress: '192.168.1.100',
+                                userAgent: 'Mozilla/5.0 Test Browser',
+                                requestId: `req-${Date.now()}`,
+                                sessionId: `session-${Date.now()}`,
                                 changes: {
                                     before: { value: 'old' },
                                     after: { value: 'new' },
                                     fields: ['value']
                                 },
                                 licenseInfo: {
-                                    tenantId: testTenantId,
+                                    tenantId: propertyRunTenantId,
                                     licenseNumber: `LIC-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
                                 },
                                 correlationId: `test-audit-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
@@ -407,10 +422,10 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
                             };
 
                             const auditLog = await TestAuditLog.createAuditLog(auditLogData);
-                            
+
                             // Manually update the timestamp to simulate historical events
                             await TestAuditLog.findByIdAndUpdate(auditLog._id, { createdAt: eventTime });
-                            
+
                             createdLogs.push({ ...auditLog.toObject(), createdAt: eventTime });
                         }
 
@@ -419,11 +434,11 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
 
                         // Assertion 2: Audit statistics should be accurate
                         // For test purposes, we'll calculate statistics directly from TestAuditLog
-                        const totalLogs = await TestAuditLog.countDocuments({ tenantId: testTenantId });
+                        const totalLogs = await TestAuditLog.countDocuments({ tenantId: propertyRunTenantId });
                         expect(totalLogs).toBe(auditEvents.length);
 
                         // Calculate statistics manually for test
-                        const allLogs = await TestAuditLog.find({ tenantId: testTenantId });
+                        const allLogs = await TestAuditLog.find({ tenantId: propertyRunTenantId });
                         const stats = {
                             total: allLogs.length,
                             byAction: {},
@@ -457,25 +472,25 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
 
                         // Assertion 3: Audit log querying should work with various filters
                         const uniqueCategories = [...new Set(auditEvents.map(e => e.category))];
-                        
+
                         for (const category of uniqueCategories) {
                             const categoryLogs = await TestAuditLog.find({
-                                tenantId: testTenantId,
+                                tenantId: propertyRunTenantId,
                                 category: category
                             });
 
                             const expectedCount = auditEvents.filter(e => e.category === category).length;
                             expect(categoryLogs.length).toBe(expectedCount);
-                            
+
                             categoryLogs.forEach(log => {
                                 expect(log.category).toBe(category);
-                                expect(log.licenseInfo.tenantId).toBe(testTenantId);
+                                expect(log.licenseInfo.tenantId).toBe(propertyRunTenantId);
                             });
                         }
 
                         // Assertion 4: Severity-based querying should work
                         const criticalLogs = await TestAuditLog.find({
-                            tenantId: testTenantId,
+                            tenantId: propertyRunTenantId,
                             severity: 'critical'
                         });
 
@@ -484,7 +499,7 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
 
                         // Assertion 5: Time-based querying should work
                         const recentLogs = await TestAuditLog.find({
-                            tenantId: testTenantId,
+                            tenantId: propertyRunTenantId,
                             createdAt: {
                                 $gte: new Date(baseTime.getTime() - 3600000), // 1 hour ago
                                 $lte: baseTime
@@ -496,12 +511,12 @@ describe('Audit Trail Completeness Property-Based Tests', () => {
 
                         // Assertion 6: Correlation ID tracking should work
                         const correlationIds = createdLogs.map(log => log.correlationId);
-                        
+
                         for (const correlationId of correlationIds) {
                             const correlatedLogs = await TestAuditLog.find({
                                 correlationId: correlationId
                             });
-                            
+
                             expect(correlatedLogs.length).toBe(1);
                             expect(correlatedLogs[0].correlationId).toBe(correlationId);
                         }
