@@ -156,7 +156,7 @@ const startServer = async () => {
 };
 
 // Graceful shutdown handler
-const gracefulShutdown = (signal) => {
+const gracefulShutdown = async (signal) => {
     console.log(`\n${signal} received. Starting graceful shutdown...`);
 
     // Shutdown WebSocket server

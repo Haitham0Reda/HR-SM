@@ -23,6 +23,18 @@ const execAsync = promisify(exec);
  */
 class BackupService {
     constructor() {
+        this.logger = winston.createLogger({
+            level: 'info',
+            format: winston.format.combine(
+                winston.format.timestamp(),
+                winston.format.json()
+            ),
+            transports: [
+                new winston.transports.Console(),
+                new winston.transports.File({ filename: 'logs/backup.log' })
+            ]
+        });
+        
         this.backupDir = path.join(process.cwd(), 'backups');
         this.tempDir = path.join(this.backupDir, 'temp');
         this.encryptionKey = process.env.BACKUP_ENCRYPTION_KEY || this.generateEncryptionKey();

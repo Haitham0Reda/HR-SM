@@ -4,6 +4,7 @@
  * Integrates with the cache service for performance optimization
  */
 
+import crypto from 'crypto';
 import cacheService from '../services/cacheService.js';
 import cacheInvalidationService from '../services/cacheInvalidationService.js';
 import logger from '../utils/logger.js';
@@ -264,7 +265,6 @@ export const cacheHeadersMiddleware = (req, res, next) => {
  * @returns {string} ETag value
  */
 function generateETag(url, query) {
-    const crypto = require('crypto');
     const content = url + JSON.stringify(query);
     return crypto.createHash('md5').update(content).digest('hex');
 }

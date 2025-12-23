@@ -5,10 +5,12 @@
  */
 
 import session from 'express-session';
-import RedisStore from 'connect-redis';
+import * as connectRedis from 'connect-redis';
 import redisService from '../core/services/redis.service.js';
 import sessionService from '../services/sessionService.js';
 import logger from '../utils/logger.js';
+
+const RedisStore = connectRedis.default;
 
 /**
  * Configure Redis session store

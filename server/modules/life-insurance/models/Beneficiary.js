@@ -213,12 +213,18 @@ beneficiarySchema.pre('save', async function(next) {
         // Only validate if this is a new beneficiary or percentage changed
         if (this.isNew || this.isModified('benefitPercentage')) {
             // Get all other active beneficiaries for the same policy and type
-            const otherBeneficiaries = await this.constructor.find({
+            const query = {
                 policyId: this.policyId,
                 beneficiaryType: this.beneficiaryType,
-                status: 'active',
-                _id: { $ne: this._id } // Exclude current document
-            });
+                status: 'active'
+            };
+            
+            // Only exclude current document if it has an _id (not new)
+            if (!this.isNew && this._id) {
+                query._id = { $ne: this._id };
+            }
+            
+            const otherBeneficiaries = await this.constructor.find(query);
             
             // Calculate total percentage including this beneficiary
             const otherPercentageTotal = otherBeneficiaries.reduce(
