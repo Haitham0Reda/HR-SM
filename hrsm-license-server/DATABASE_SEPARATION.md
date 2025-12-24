@@ -12,10 +12,10 @@ The license server now uses a separate database from the main HR-SM application 
 - **Connection String**: `mongodb+srv://devhaithammoreda_db_user:Jj9BcW2KPu4qLLWr@cluster.uwhj601.mongodb.net/hrsm_license_db?retryWrites=true&w=majority`
 
 ### Main HR-SM Database
-- **Database Name**: `hrsm_db`
+- **Database Name**: `hrms`
 - **Username**: `devhaithammoreda_db_user`
 - **Password**: `cvF50PEZvfPVmKU3`
-- **Connection String**: `mongodb+srv://devhaithammoreda_db_user:cvF50PEZvfPVmKU3@cluster.uwhj601.mongodb.net/hrsm_db?retryWrites=true&w=majority`
+- **Connection String**: `mongodb+srv://devhaithammoreda_db_user:cvF50PEZvfPVmKU3@cluster.uwhj601.mongodb.net/hrms?retryWrites=true&w=majority`
 
 ## Benefits of Separation
 
@@ -35,7 +35,7 @@ The license server now uses a separate database from the main HR-SM application 
 
 If you have existing license data in the main database, you'll need to:
 
-1. Export license-related collections from `hrsm_db`
+1. Export license-related collections from `hrms`
 2. Import them into the new `hrsm_license_db`
 3. Update any references in the main application
 

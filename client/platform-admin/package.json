@@ -20,6 +20,7 @@
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.18",
+    "formik": "^2.4.9",
     "js-cookie": "^3.0.5",
     "react": "^19.2.0",
     "react-chartjs-2": "^5.2.0",
@@ -31,6 +32,7 @@
     "socket.io-client": "^4.8.1",
     "styled-components": "^6.1.19",
     "web-vitals": "^2.1.4",
+    "yup": "^1.7.1",
     "zod": "^4.1.13"
   },
   "scripts": {

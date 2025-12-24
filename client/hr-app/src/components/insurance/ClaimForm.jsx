@@ -17,11 +17,6 @@ import {
     Paper,
     Stack,
     Autocomplete,
-    Alert,
-    Divider,
-    Card,
-    CardContent,
-    CardActions,
     IconButton,
     List,
     ListItem,
@@ -76,7 +71,6 @@ const ClaimForm = ({
     const [policyLoading, setPolicyLoading] = useState(false);
     const [selectedPolicy, setSelectedPolicy] = useState(null);
     const [uploadedFiles, setUploadedFiles] = useState([]);
-    const [uploading, setUploading] = useState(false);
 
     // Load policy data if editing
     useEffect(() => {

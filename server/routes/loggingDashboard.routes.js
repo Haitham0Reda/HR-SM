@@ -6,7 +6,7 @@
 
 import express from 'express';
 import loggingDashboardController from '../controllers/loggingDashboard.controller.js';
-import { authenticateToken } from '../middleware/auth.middleware.js';
+import { authenticateJWT as authenticateToken } from '../middleware/auth.middleware.js';
 import { setupCompanyLogging } from '../middleware/companyLogging.js';
 
 const router = express.Router();

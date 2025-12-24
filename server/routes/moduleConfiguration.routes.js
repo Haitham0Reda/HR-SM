@@ -7,7 +7,7 @@
 
 import express from 'express';
 import moduleConfigurationController from '../controllers/moduleConfiguration.controller.js';
-import { authenticateToken } from '../middleware/auth.middleware.js';
+import { authenticateJWT as authenticateToken } from '../middleware/auth.middleware.js';
 import { setupCompanyLogging } from '../middleware/companyLogging.js';
 import { rateLimitMiddleware } from '../middleware/rateLimit.middleware.js';
 

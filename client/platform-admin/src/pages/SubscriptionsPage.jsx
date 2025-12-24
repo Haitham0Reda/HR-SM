@@ -21,6 +21,7 @@ const TabPanel = ({ children, value, index }) => {
 
 const SubscriptionsPage = () => {
   const [tabValue, setTabValue] = useState(0);
+  // eslint-disable-next-line no-unused-vars
   const [refreshKey, setRefreshKey] = useState(0);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 

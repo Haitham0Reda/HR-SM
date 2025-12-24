@@ -239,7 +239,7 @@ app.use('/api/platform/companies', authenticatePlatform, companyRoutes);
 
 ```env
 PLATFORM_JWT_SECRET=your-platform-secret
-MONGODB_URI=mongodb+srv://user:pass@cluster/hrsm_db?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://user:pass@cluster/hrms?retryWrites=true&w=majority
 ```
 
 ### **3. Frontend Integration**

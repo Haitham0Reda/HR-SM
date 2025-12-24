@@ -174,7 +174,7 @@ export function optionalAuth(req, res, next) {
 export function requireRole(allowedRoles) {
     const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
 
-    return (req, res, next) => {
+    return async (req, res, next) => {
         if (!req.user) {
             return res.status(401).json({
                 success: false,
@@ -214,7 +214,7 @@ export function requireRole(allowedRoles) {
  * @returns {Function} Express middleware function
  */
 export function requirePermission(permission) {
-    return (req, res, next) => {
+    return async (req, res, next) => {
         if (!req.user) {
             return res.status(401).json({
                 success: false,

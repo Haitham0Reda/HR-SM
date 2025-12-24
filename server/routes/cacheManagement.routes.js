@@ -11,8 +11,7 @@ import sessionService from '../services/sessionService.js';
 import redisService from '../core/services/redis.service.js';
 import cachePerformanceMonitor from '../services/cachePerformanceMonitor.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { authenticateToken } from '../middleware/auth.js';
-import { requireRole } from '../middleware/roleAuth.js';
+import { authenticateToken, requireRole } from '../shared/middleware/auth.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();

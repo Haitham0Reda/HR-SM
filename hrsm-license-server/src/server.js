@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 // Import routes
 import licenseRoutes from './routes/licenseRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
+import metricsRoutes from './routes/metricsRoutes.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
@@ -184,6 +185,7 @@ mongoose.connection.on('reconnected', () => {
 // Routes
 app.use('/health', healthRoutes);
 app.use('/licenses', licenseRoutes);
+app.use('/metrics', metricsRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

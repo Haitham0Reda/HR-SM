@@ -59,6 +59,12 @@ export const moduleRegistry = {
             'payroll': () => import('../modules/payroll/routes/payroll.routes.js')
         },
         basePath: '/api/v1'
+    },
+    [MODULES.LIFE_INSURANCE]: {
+        routes: {
+            'life-insurance': () => import('../modules/life-insurance/routes/insuranceRoutes.js')
+        },
+        basePath: '/api/v1'
     }
     // Add other modules here as they are implemented
 };

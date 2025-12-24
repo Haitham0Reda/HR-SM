@@ -4,8 +4,8 @@ import crypto from 'crypto';
 const licenseSchema = new mongoose.Schema({
   licenseNumber: { 
     type: String, 
-    required: true,
-    unique: true
+    unique: true,
+    sparse: true // Allow null/undefined values but enforce uniqueness when present
   },
   tenantId: { 
     type: String, 
@@ -83,9 +83,10 @@ licenseSchema.virtual('isValid').get(function() {
 // Mongoose pre-save middleware for auto-generating license numbers (HRSM-YYYY-NNNNNN format)
 licenseSchema.pre('save', function(next) {
   if (this.isNew && !this.licenseNumber) {
-    const timestamp = Date.now().toString(16).toUpperCase();
-    const random = crypto.randomBytes(4).toString('hex').toUpperCase();
-    this.licenseNumber = `HRSM-${timestamp}-${random}`;
+    const year = new Date().getFullYear();
+    const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+    const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    this.licenseNumber = `HRSM-${year}-${timestamp}${random}`;
   }
   next();
 });

@@ -1,0 +1,1056 @@
+npm warn Unknown cli config "--testNamePattern". This will stop working in the next major version of npm.
+
+> hr-sm@1.0.0 test
+> node --max-old-space-size=8192 --experimental-vm-modules --no-warnings=ExperimentalWarning node_modules/jest/bin/jest.js server/testing/services/cloudStorageIntegration.property.test.js
+
+FAIL server/testing/services/cloudStorageIntegration.property.test.js
+  ΓùÅ Cloud Storage Integration - Property-Based Tests ΓÇ║ Property 29: Cloud Storage Integration - Upload, encryption, and compression work correctly
+
+    Property failed after 1 tests
+    { seed: 468441941, path: "0:0:0:0:0:0:0:0:0:0:0:0:0:0:0", endOnFailure: true }
+    Counterexample: [{"backupContent":"          ","backupType":"daily","filename":"test1.backup","metadata":{"tenantId":"tenant1","component":"mongodb","priority":"high"}}]
+    Shrunk 14 time(s)
+
+    Hint: Enable verbose mode in order to have the list of all failing values encountered during the run
+
+      236 |      */
+      237 |     test('Property 29: Cloud Storage Integration - Upload, encryption, and compression work correctly', () => {
+    > 238 |         fc.assert(
+          |            ^
+      239 |             fc.property(
+      240 |                 // Generate simple test data to avoid complexity
+      241 |                 fc.record({
+
+      at buildError (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:156:19)
+      at buildError (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:165:11)
+      at throwIfFailed (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:178:16)
+      at Module.reportRunDetails (node_modules/fast-check/lib/check/runner/Runner.js:61:9)
+      at Object.assert (server/testing/services/cloudStorageIntegration.property.test.js:238:12)
+
+    Cause:
+    Property failed by returning false
+
+      236 |      */
+      237 |     test('Property 29: Cloud Storage Integration - Upload, encryption, and compression work correctly', () => {
+    > 238 |         fc.assert(
+          |            ^
+      239 |             fc.property(
+      240 |                 // Generate simple test data to avoid complexity
+      241 |                 fc.record({
+
+      at Property.run (node_modules/fast-check/lib/check/property/Property.generic.js:46:28)
+      at run (node_modules/fast-check/lib/check/runner/Runner.js:14:30)
+      at runIt (node_modules/fast-check/lib/check/runner/Runner.js:54:11)
+      at Module.check (node_modules/fast-check/lib/check/runner/Runner.js:57:17)
+      at Object.assert (server/testing/services/cloudStorageIntegration.property.test.js:238:12)
+
+  ΓùÅ Cloud Storage Integration - Property-Based Tests ΓÇ║ Property 29.1: Cloud Storage Encryption Integrity - Data is properly encrypted and secure
+
+    Property failed after 1 tests
+    { seed: -554299769, path: "0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0", endOnFailure: true }
+    Counterexample: [{"sensitiveData":"                    ","backupType":"mongodb","encryptionStrength":"AES256"}]
+    Shrunk 24 time(s)
+
+    Hint: Enable verbose mode in order to have the list of all failing values encountered during the run
+
+      330 |      */
+      331 |     test('Property 29.1: Cloud Storage Encryption Integrity - Data is properly encrypted and secure', () => {
+    > 332 |         fc.assert(
+          |            ^
+      333 |             fc.property(
+      334 |                 fc.record({
+      335 |                     sensitiveData: fc.string({ minLength: 20, maxLength: 100 }),
+
+      at buildError (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:156:19)
+      at buildError (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:165:11)
+      at throwIfFailed (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:178:16)
+      at Module.reportRunDetails (node_modules/fast-check/lib/check/runner/Runner.js:61:9)
+      at Object.assert (server/testing/services/cloudStorageIntegration.property.test.js:332:12)
+
+    Cause:
+    Property failed by returning false
+
+      330 |      */
+      331 |     test('Property 29.1: Cloud Storage Encryption Integrity - Data is properly encrypted and secure', () => {
+    > 332 |         fc.assert(
+          |            ^
+      333 |             fc.property(
+      334 |                 fc.record({
+      335 |                     sensitiveData: fc.string({ minLength: 20, maxLength: 100 }),
+
+      at Property.run (node_modules/fast-check/lib/check/property/Property.generic.js:46:28)
+      at run (node_modules/fast-check/lib/check/runner/Runner.js:14:30)
+      at runIt (node_modules/fast-check/lib/check/runner/Runner.js:54:11)
+      at Module.check (node_modules/fast-check/lib/check/runner/Runner.js:57:17)
+      at Object.assert (server/testing/services/cloudStorageIntegration.property.test.js:332:12)
+
+  ΓùÅ Cloud Storage Integration - Property-Based Tests ΓÇ║ Property 29.2: Cloud Storage Compression Efficiency - Compression reduces size while maintaining integrity
+
+    Property failed after 1 tests
+    { seed: 376907180, path: "0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0", endOnFailure: true }
+    Counterexample: [{"testContent":"                    ","compressionType":"gzip"}]
+    Shrunk 22 time(s)
+
+    Hint: Enable verbose mode in order to have the list of all failing values encountered during the run
+
+      384 |      */
+      385 |     test('Property 29.2: Cloud Storage Compression Efficiency - Compression reduces size while maintaining integrity', () => {
+    > 386 |         fc.assert(
+          |            ^
+      387 |             fc.property(
+      388 |                 fc.record({
+      389 |                     testContent: fc.string({ minLength: 20, maxLength: 100 }),
+
+      at buildError (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:156:19)
+      at buildError (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:165:11)
+      at throwIfFailed (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:178:16)
+      at Module.reportRunDetails (node_modules/fast-check/lib/check/runner/Runner.js:61:9)
+      at Object.assert (server/testing/services/cloudStorageIntegration.property.test.js:386:12)
+
+    Cause:
+    Property failed by returning false
+
+      384 |      */
+      385 |     test('Property 29.2: Cloud Storage Compression Efficiency - Compression reduces size while maintaining integrity', () => {
+    > 386 |         fc.assert(
+          |            ^
+      387 |             fc.property(
+      388 |                 fc.record({
+      389 |                     testContent: fc.string({ minLength: 20, maxLength: 100 }),
+
+      at Property.run (node_modules/fast-check/lib/check/property/Property.generic.js:46:28)
+      at run (node_modules/fast-check/lib/check/runner/Runner.js:14:30)
+      at runIt (node_modules/fast-check/lib/check/runner/Runner.js:54:11)
+      at Module.check (node_modules/fast-check/lib/check/runner/Runner.js:57:17)
+      at Object.assert (server/testing/services/cloudStorageIntegration.property.test.js:386:12)
+
+  ΓùÅ Cloud Storage Integration - Property-Based Tests ΓÇ║ Property 29.3: Cloud Storage Connection Reliability - Connection testing and error handling work correctly
+
+    Property failed after 1 tests
+    { seed: -1325419307, path: "0:0:0:0:0:0", endOnFailure: true }
+    Counterexample: [{"provider":"aws-s3","bucket":"bucket1","region":"us-east-1","simulateFailure":false}]
+    Shrunk 5 time(s)
+
+    Hint: Enable verbose mode in order to have the list of all failing values encountered during the run
+
+      442 |      */
+      443 |     test('Property 29.3: Cloud Storage Connection Reliability - Connection testing and error handling work correctly', () => {
+    > 444 |         fc.assert(
+          |            ^
+      445 |             fc.property(
+      446 |                 fc.record({
+      447 |                     provider: fc.constantFrom('aws-s3', 'google-cloud', 'azure-blob'),
+
+      at buildError (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:156:19)
+      at buildError (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:165:11)
+      at throwIfFailed (node_modules/fast-check/lib/check/runner/utils/RunDetailsFormatter.js:178:16)
+      at Module.reportRunDetails (node_modules/fast-check/lib/check/runner/Runner.js:61:9)
+      at Object.assert (server/testing/services/cloudStorageIntegration.property.test.js:444:12)
+
+    Cause:
+    Property failed by returning false
+
+      442 |      */
+      443 |     test('Property 29.3: Cloud Storage Connection Reliability - Connection testing and error handling work correctly', () => {
+    > 444 |         fc.assert(
+          |            ^
+      445 |             fc.property(
+      446 |                 fc.record({
+      447 |                     provider: fc.constantFrom('aws-s3', 'google-cloud', 'azure-blob'),
+
+      at Property.run (node_modules/fast-check/lib/check/property/Property.generic.js:46:28)
+      at run (node_modules/fast-check/lib/check/runner/Runner.js:14:30)
+      at runIt (node_modules/fast-check/lib/check/runner/Runner.js:54:11)
+      at Module.check (node_modules/fast-check/lib/check/runner/Runner.js:57:17)
+      at Object.assert (server/testing/services/cloudStorageIntegration.property.test.js:444:12)
+
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 10
+    Received:   13
+
+      278 |                     // CRITICAL TEST 3: Verify compression is applied
+      279 |                     const originalSize = fs.statSync(backupPath).size;
+    > 280 |                     expect(uploadResult.size).toBeLessThan(originalSize); // Compressed size should be smaller
+          |                                               ^
+      281 |                     
+      282 |                     // CRITICAL TEST 4: Verify upload integrity
+      283 |                     const verificationResult = await mockCloudStorage.verifyUpload(backupId, backupPath);
+
+      at toBeLessThan (server/testing/services/cloudStorageIntegration.property.test.js:280:47)
+
+  ΓùÅ Test suite failed to run
+
+    Checksum verification failed
+
+      172 |                 
+      173 |                 if (originalChecksum !== encryptedData.checksum) {
+    > 174 |                     throw new Error('Checksum verification failed');
+          |                           ^
+      175 |                 }
+      176 |                 
+      177 |                 return true;
+
+      at Object.verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:174:27)
+      at verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:283:71)
+
+  ΓùÅ Test suite failed to run
+
+    Checksum verification failed
+
+      172 |                 
+      173 |                 if (originalChecksum !== encryptedData.checksum) {
+    > 174 |                     throw new Error('Checksum verification failed');
+          |                           ^
+      175 |                 }
+      176 |                 
+      177 |                 return true;
+
+      at Object.verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:174:27)
+      at verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:283:71)
+
+  ΓùÅ Test suite failed to run
+
+    Checksum verification failed
+
+      172 |                 
+      173 |                 if (originalChecksum !== encryptedData.checksum) {
+    > 174 |                     throw new Error('Checksum verification failed');
+          |                           ^
+      175 |                 }
+      176 |                 
+      177 |                 return true;
+
+      at Object.verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:174:27)
+      at verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:283:71)
+
+  ΓùÅ Test suite failed to run
+
+    Checksum verification failed
+
+      172 |                 
+      173 |                 if (originalChecksum !== encryptedData.checksum) {
+    > 174 |                     throw new Error('Checksum verification failed');
+          |                           ^
+      175 |                 }
+      176 |                 
+      177 |                 return true;
+
+      at Object.verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:174:27)
+      at verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:283:71)
+
+  ΓùÅ Test suite failed to run
+
+    Checksum verification failed
+
+      172 |                 
+      173 |                 if (originalChecksum !== encryptedData.checksum) {
+    > 174 |                     throw new Error('Checksum verification failed');
+          |                           ^
+      175 |                 }
+      176 |                 
+      177 |                 return true;
+
+      at Object.verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:174:27)
+      at verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:283:71)
+
+  ΓùÅ Test suite failed to run
+
+    Checksum verification failed
+
+      172 |                 
+      173 |                 if (originalChecksum !== encryptedData.checksum) {
+    > 174 |                     throw new Error('Checksum verification failed');
+          |                           ^
+      175 |                 }
+      176 |                 
+      177 |                 return true;
+
+      at Object.verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:174:27)
+      at verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:283:71)
+
+  ΓùÅ Test suite failed to run
+
+    Checksum verification failed
+
+      172 |                 
+      173 |                 if (originalChecksum !== encryptedData.checksum) {
+    > 174 |                     throw new Error('Checksum verification failed');
+          |                           ^
+      175 |                 }
+      176 |                 
+      177 |                 return true;
+
+      at Object.verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:174:27)
+      at verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:283:71)
+
+  ΓùÅ Test suite failed to run
+
+    Checksum verification failed
+
+      172 |                 
+      173 |                 if (originalChecksum !== encryptedData.checksum) {
+    > 174 |                     throw new Error('Checksum verification failed');
+          |                           ^
+      175 |                 }
+      176 |                 
+      177 |                 return true;
+
+      at Object.verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:174:27)
+      at verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:283:71)
+
+  ΓùÅ Test suite failed to run
+
+    Checksum verification failed
+
+      172 |                 
+      173 |                 if (originalChecksum !== encryptedData.checksum) {
+    > 174 |                     throw new Error('Checksum verification failed');
+          |                           ^
+      175 |                 }
+      176 |                 
+      177 |                 return true;
+
+      at Object.verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:174:27)
+      at verifyUpload (server/testing/services/cloudStorageIntegration.property.test.js:283:71)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "de8a2a4d638bbafd378c8a8c0feb0daf040feefd9427c7b8dbc73e542b454c1c"
+    Received: "e91772ccb5e6ce5f932d6417eacd9a1e031b957101cdb68be76d417defa7fd28"
+
+      290 |                     expect(uploadedBackup.encrypted).toBe(true);
+      291 |                     expect(uploadedBackup.size).toBe(uploadResult.size);
+    > 292 |                     expect(uploadedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                     ^
+      293 |                     
+      294 |                     // CRITICAL TEST 6: Verify backup can be downloaded and restored
+      295 |                     const downloadPath = path.join(testBackupDir, 'downloaded-' + testConfig.filename);
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:292:53)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "1067b484b5504d000ca38ac4a9d6338e13d8ff8c9fab4b4891ec8b7def18a518"
+    Received: "188fc543e14c7e900d9e1450927fcc21363f41503a00d42fb5f57e181de141a7"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "2a3519704733a792bf129240cd510aed6346f60dfcd6fecabf857ac13b3aaf03"
+    Received: "b4e7c48d1ae90861bce824de3b633054028ef42e69239a7054ad19a133ebcdfc"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "095195a668d11a52ec4a6efdd5e1c5a74ad0c81fbe08fcf24580071cd968865e"
+    Received: "b4e7c48d1ae90861bce824de3b633054028ef42e69239a7054ad19a133ebcdfc"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "1820b37a3a01deade39ad481a1d13c5c4b792e361db00e44a5ba170514e973b7"
+    Received: "0730407715a9fcddc2529a4d1ebcab974afe49fb05a9c61d4c1aaad666e3efda"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "45329b105f6683aa453ca28873eea9343bdfe96860adb8062180ce46a1784c84"
+    Received: "0730407715a9fcddc2529a4d1ebcab974afe49fb05a9c61d4c1aaad666e3efda"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "cd0624a58b3b5014c60c36e51169ee07763d80bc9bc66dee8f065bda83a4d9d5"
+    Received: "a76275d5ac0036715bcf8f237bddc7a2f6239c5cccd32f1d0e5e6518848ddf2e"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "4ec5b9ead940d348e6dd42d2e691d50762bd8f29c1b2b28beefdd99c24be2d14"
+    Received: "c9295ec0dd28aa38847ddf7e7accb3380a9045a1f3af985a5b7a238d2d125b42"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "b5c354bb7ab41c8b643c6c1c02b13ce2f8f3b6d45637f5f76aa1cbb2c6a28510"
+    Received: "c9295ec0dd28aa38847ddf7e7accb3380a9045a1f3af985a5b7a238d2d125b42"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "27408b2d1567ef1da8ae907daf1c6d60a40050900129e7b3a22b4084e8def691"
+    Received: "2d8cdc1a520cdaf37d055ce79807ef6acf9196150a1bc546c887ec5f99d9c032"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "5c406a8864db73f14fea2fb756188a6b10926dbb6c30f6d00ae8544768563259"
+    Received: "e6f121065de65906340ce074184ab7785afeeb32f53ac1f3e692fe115cc09b2b"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "a84e8b9258b1fb6013856d1a8c2b9db12c6ef8329b5a569c99da0ea2100b6b12"
+    Received: "e6f121065de65906340ce074184ab7785afeeb32f53ac1f3e692fe115cc09b2b"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "55028beef98712d5435e26ed0e2abdf9cedecc6a0ab0463bbbca936a19ac4ff9"
+    Received: "1e8a105dbcab2f5d6b30a670c0ff91942f4db62401e669331037101e94198250"
+
+      356 |                     const encryptedBackup = cloudBackups.find(backup => backup.key === uploadResult.key);
+      357 |                     expect(encryptedBackup.encrypted).toBe(true);
+    > 358 |                     expect(encryptedBackup.checksum).toBe(uploadResult.checksum);
+          |                                                      ^
+      359 |                     
+      360 |                     // CRITICAL TEST 3: Verify decryption restores original data
+      361 |                     const downloadPath = path.join(testBackupDir, 'decrypted.backup');
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:358:54)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "|w)\"!zz\"!Rx#$,!|!Uyq"
+    Received: "                    "
+
+      363 |                     
+      364 |                     const decryptedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 365 |                     expect(decryptedContent).toBe(testData.sensitiveData);
+          |                                              ^
+      366 |                     
+      367 |                     // CRITICAL TEST 4: Verify encryption metadata is preserved
+      368 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:365:46)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "   \"!zz\"!Rx#$,!|!Uyq"
+    Received: "                    "
+
+      363 |                     
+      364 |                     const decryptedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 365 |                     expect(decryptedContent).toBe(testData.sensitiveData);
+          |                                              ^
+      366 |                     
+      367 |                     // CRITICAL TEST 4: Verify encryption metadata is preserved
+      368 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:365:46)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "      z\"!Rx#$,!|!Uyq"
+    Received: "                    "
+
+      363 |                     
+      364 |                     const decryptedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 365 |                     expect(decryptedContent).toBe(testData.sensitiveData);
+          |                                              ^
+      366 |                     
+      367 |                     // CRITICAL TEST 4: Verify encryption metadata is preserved
+      368 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:365:46)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "       \"!Rx#$,!|!Uyq"
+    Received: "                    "
+
+      363 |                     
+      364 |                     const decryptedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 365 |                     expect(decryptedContent).toBe(testData.sensitiveData);
+          |                                              ^
+      366 |                     
+      367 |                     // CRITICAL TEST 4: Verify encryption metadata is preserved
+      368 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:365:46)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "        !Rx#$,!|!Uyq"
+    Received: "                    "
+
+      363 |                     
+      364 |                     const decryptedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 365 |                     expect(decryptedContent).toBe(testData.sensitiveData);
+          |                                              ^
+      366 |                     
+      367 |                     // CRITICAL TEST 4: Verify encryption metadata is preserved
+      368 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:365:46)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "          x#$,!|!Uyq"
+    Received: "                    "
+
+      363 |                     
+      364 |                     const decryptedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 365 |                     expect(decryptedContent).toBe(testData.sensitiveData);
+          |                                              ^
+      366 |                     
+      367 |                     // CRITICAL TEST 4: Verify encryption metadata is preserved
+      368 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:365:46)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "             ,!|!Uyq"
+    Received: "                    "
+
+      363 |                     
+      364 |                     const decryptedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 365 |                     expect(decryptedContent).toBe(testData.sensitiveData);
+          |                                              ^
+      366 |                     
+      367 |                     // CRITICAL TEST 4: Verify encryption metadata is preserved
+      368 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:365:46)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "               |!Uyq"
+    Received: "                    "
+
+      363 |                     
+      364 |                     const decryptedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 365 |                     expect(decryptedContent).toBe(testData.sensitiveData);
+          |                                              ^
+      366 |                     
+      367 |                     // CRITICAL TEST 4: Verify encryption metadata is preserved
+      368 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:365:46)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "                  yq"
+    Received: "                    "
+
+      363 |                     
+      364 |                     const decryptedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 365 |                     expect(decryptedContent).toBe(testData.sensitiveData);
+          |                                              ^
+      366 |                     
+      367 |                     // CRITICAL TEST 4: Verify encryption metadata is preserved
+      368 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:365:46)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "umerapropertyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "erapropertyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: " rapropertyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "  apropertyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "   propertyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "    ropertyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "     opertyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "      pertyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "       ertyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "        rtyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "         tyIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "          yIsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "           IsEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "            sEnumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "             Enumera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "              numera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "               umera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "                mera"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "                 era"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "                  ra"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+  ΓùÅ Test suite failed to run
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "                   a"
+    Received: "                    "
+
+      419 |                     
+      420 |                     const decompressedContent = fs.readFileSync(downloadPath, 'utf8');
+    > 421 |                     expect(decompressedContent).toBe(testData.testContent);
+          |                                                 ^
+      422 |                     
+      423 |                     // CRITICAL TEST 4: Verify compression statistics are tracked
+      424 |                     const stats = await mockCloudStorage.getCloudStorageStats();
+
+      at toBe (server/testing/services/cloudStorageIntegration.property.test.js:421:49)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 4 total
+Snapshots:   0 total
+Time:        3.701 s
+Ran all test suites matching server/testing/services/cloudStorageIntegration.property.test.js.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

@@ -107,14 +107,28 @@ class DatabaseRecoveryService {
         try {
             // Connect to specific database
             const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-            const dbUri = `${mongoUri}/${databaseName}`;
+            let dbUri;
+            
+            // Handle MongoDB Memory Server URI format
+            if (mongoUri.includes('mongodb://127.0.0.1') && process.env.MONGODB_TEST_URI) {
+                // For MongoDB Memory Server, use the base URI and append database name
+                dbUri = `${mongoUri}/${databaseName}`;
+            } else {
+                dbUri = `${mongoUri}/${databaseName}`;
+            }
             
             // Test basic connectivity
             const connection = await mongoose.createConnection(dbUri);
             
             try {
                 // Get database statistics
-                const dbStats = await connection.db.stats();
+                const db = connection.db;
+                
+                if (!db) {
+                    throw new Error('Database connection is not available');
+                }
+                
+                const dbStats = await db.stats();
                 dbReport.stats = {
                     collections: dbStats.collections,
                     dataSize: dbStats.dataSize,
@@ -123,7 +137,7 @@ class DatabaseRecoveryService {
                 };
 
                 // Check each collection
-                const collections = await connection.db.listCollections().toArray();
+                const collections = await db.listCollections().toArray();
                 
                 for (const collectionInfo of collections) {
                     const collectionReport = await this.checkCollectionIntegrity(
@@ -173,16 +187,16 @@ class DatabaseRecoveryService {
         };
 
         try {
-            const collection = connection.collection(collectionName);
+            const collection = connection.db.collection(collectionName);
             
-            // Get collection stats
-            const stats = await collection.stats();
+            // Get collection stats using the correct method
+            const stats = await connection.db.command({ collStats: collectionName });
             collectionReport.stats = {
                 count: stats.count,
                 size: stats.size,
                 avgObjSize: stats.avgObjSize,
                 storageSize: stats.storageSize,
-                indexes: stats.nindexes
+                nindexes: stats.nindexes
             };
 
             // Check for basic issues
@@ -236,11 +250,16 @@ class DatabaseRecoveryService {
             const connection = await mongoose.createConnection(`${mongoUri}/${databaseName}`);
             
             try {
-                const collections = await connection.db.listCollections().toArray();
+                const db = connection.db;
+                if (!db) {
+                    throw new Error('Database connection not available for validation');
+                }
+                
+                const collections = await db.listCollections().toArray();
                 
                 for (const collectionInfo of collections) {
                     try {
-                        const result = await connection.db.command({
+                        const result = await db.command({
                             validate: collectionInfo.name,
                             full: true
                         });

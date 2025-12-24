@@ -143,11 +143,9 @@ const companySchema = new mongoose.Schema({
 });
 
 // Indexes
-companySchema.index({ slug: 1 });
-companySchema.index({ databaseName: 1 });
+// Note: slug, databaseName, and licenseKey already have unique: true in field definitions
 companySchema.index({ status: 1 });
 companySchema.index({ 'subscription.plan': 1 });
-companySchema.index({ licenseKey: 1 });
 
 /**
  * Pre-save middleware to update timestamps

@@ -43,13 +43,9 @@ import BuildIcon from '@mui/icons-material/Build';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import GroupIcon from '@mui/icons-material/Group';
 import BeachAccessOutlinedIcon from '@mui/icons-material/BeachAccessOutlined';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import PolicyIcon from '@mui/icons-material/Policy';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
-import DevicesIcon from '@mui/icons-material/Devices';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
@@ -62,7 +58,6 @@ import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
 import DashboardSidebarPageItem from './DashboardSidebarPageItem';
 import DashboardSidebarHeaderItem from './DashboardSidebarHeaderItem';
 import DashboardSidebarDividerItem from './DashboardSidebarDividerItem';
-import LockIcon from '@mui/icons-material/Lock';
 import {
     getDrawerSxTransitionMixin,
     getDrawerWidthTransitionMixin,
@@ -106,7 +101,7 @@ function DashboardSidebar({
         if (pathname.startsWith(getCompanyRoute('/system-settings')) && !expandedItemIds.includes('settings')) {
             setExpandedItemIds((prev) => [...prev, 'settings']);
         }
-    }, [pathname, expandedItemIds]);
+    }, [pathname, expandedItemIds, getCompanyRoute]);
 
     const isOverSmViewport = useMediaQuery(theme.breakpoints.up('sm'));
     const isOverMdViewport = useMediaQuery(theme.breakpoints.up('md'));
@@ -1226,6 +1221,9 @@ function DashboardSidebar({
             pathname,
             userRole,
             expandedItemIds,
+            getCompanyRoute,
+            isMenuItemLocked,
+            shouldShowMenuItem,
         ],
     );
 

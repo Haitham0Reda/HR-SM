@@ -7,7 +7,8 @@ export const MODULES = {
     DOCUMENTS: 'documents',
     COMMUNICATION: 'communication',
     REPORTING: 'reporting',
-    TASKS: 'tasks'
+    TASKS: 'tasks',
+    LIFE_INSURANCE: 'life-insurance'
 };
 
 export const MODULE_METADATA = {
@@ -58,6 +59,14 @@ export const MODULE_METADATA = {
         description: 'Task assignment and employee work reporting',
         locked: false,
         dependencies: [MODULES.HR_CORE]
+    },
+    [MODULES.LIFE_INSURANCE]: {
+        name: 'Life Insurance Management',
+        description: 'Comprehensive life insurance management including policies, family members, claims processing, and beneficiary management',
+        locked: false,
+        dependencies: [MODULES.HR_CORE],
+        requiresLicense: true,
+        licenseFeature: 'life-insurance'
     }
 };
 

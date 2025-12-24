@@ -1,4 +1,5 @@
-# Prometheus Configuration for HRMS License Management
+# Prometheus Configuration for HRMS Enterprise System
+# Monitors both main backend and license server with comprehensive metrics
 
 global:
   scrape_interval: 15s # Scrape targets every 15 seconds
@@ -17,32 +18,100 @@ alerting:
 # Load alerting rules
 rule_files:
   - 'prometheus-alerts.yml'
+  - 'license-server-alerts.yml'
+  - 'system-alerts.yml'
 
 # Scrape configurations
 scrape_configs:
-  # HRMS Application Metrics
-  - job_name: 'hrms-api'
+  # HRMS Main Backend Metrics
+  - job_name: 'hrms-main-backend'
     static_configs:
       - targets:
-          - 'localhost:5000' # Your HRMS API server
-    metrics_path: '/api/v1/metrics'
-    scrape_interval: 30s
+          - 'localhost:5000' # Main HRMS backend
+    metrics_path: '/metrics'
+    scrape_interval: 15s
     scrape_timeout: 10s
+    labels:
+      service: 'hrms-backend'
+      component: 'main'
 
-  # Node Exporter (for system metrics)
-  - job_name: 'node'
+  # HRMS License Server Metrics
+  - job_name: 'hrms-license-server'
+    static_configs:
+      - targets:
+          - 'localhost:4000' # License server
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    labels:
+      service: 'license-server'
+      component: 'licensing'
+
+  # Node Exporter (system metrics)
+  - job_name: 'node-exporter'
     static_configs:
       - targets:
           - 'localhost:9100'
+    scrape_interval: 15s
+    labels:
+      service: 'system'
+      component: 'node'
 
-  # MongoDB Exporter (optional, for database metrics)
-  - job_name: 'mongodb'
+  # MongoDB Exporter (database metrics)
+  - job_name: 'mongodb-exporter'
     static_configs:
       - targets:
           - 'localhost:9216'
+    scrape_interval: 30s
+    labels:
+      service: 'database'
+      component: 'mongodb'
 
-  # Redis Exporter (optional, for cache metrics)
-  - job_name: 'redis'
+  # Redis Exporter (cache metrics)
+  - job_name: 'redis-exporter'
     static_configs:
       - targets:
           - 'localhost:9121'
+    scrape_interval: 30s
+    labels:
+      service: 'cache'
+      component: 'redis'
+
+  # Nginx Exporter (load balancer metrics)
+  - job_name: 'nginx-exporter'
+    static_configs:
+      - targets:
+          - 'localhost:9113'
+    scrape_interval: 30s
+    labels:
+      service: 'loadbalancer'
+      component: 'nginx'
+
+  # Process Exporter (PM2 process metrics)
+  - job_name: 'process-exporter'
+    static_configs:
+      - targets:
+          - 'localhost:9256'
+    scrape_interval: 30s
+    labels:
+      service: 'processes'
+      component: 'pm2'
+
+  # Blackbox Exporter (health checks)
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://localhost:5000/health # Main backend health
+          - http://localhost:4000/health # License server health
+          - http://localhost:3000 # HR App
+          - http://localhost:3001 # Platform Admin
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: localhost:9115 # Blackbox exporter address

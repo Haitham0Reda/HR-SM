@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Paper,
   Typography,
@@ -30,7 +30,7 @@ import {
   Refresh as RefreshIcon,
   GetApp as ExportIcon
 } from '@mui/icons-material';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Line, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -82,11 +82,7 @@ const LicenseUsageAnalytics = () => {
 
   const { api, status } = useApi();
 
-  useEffect(() => {
-    loadLicenseData();
-  }, [timeRange]);
-
-  const loadLicenseData = async () => {
+  const loadLicenseData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -112,7 +108,11 @@ const LicenseUsageAnalytics = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, timeRange]);
+
+  useEffect(() => {
+    loadLicenseData();
+  }, [loadLicenseData]);
 
   const getDateRange = (range) => {
     const now = new Date();
@@ -138,6 +138,7 @@ const LicenseUsageAnalytics = () => {
     return { start: start.toISOString(), end: now.toISOString() };
   };
 
+  // eslint-disable-next-line no-unused-vars
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -152,6 +153,7 @@ const LicenseUsageAnalytics = () => {
     return Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getStatusColor = (status) => {
     switch (status) {
       case 'active':

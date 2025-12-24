@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Paper,
   Typography,
@@ -68,11 +68,7 @@ const PerformanceAnalytics = () => {
 
   const { api, status } = useApi();
 
-  useEffect(() => {
-    loadPerformanceData();
-  }, [timeRange]);
-
-  const loadPerformanceData = async () => {
+  const loadPerformanceData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -88,7 +84,11 @@ const PerformanceAnalytics = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, timeRange]);
+
+  useEffect(() => {
+    loadPerformanceData();
+  }, [loadPerformanceData]);
 
   const getDateRange = (range) => {
     const now = new Date();

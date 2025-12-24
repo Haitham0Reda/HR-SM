@@ -302,6 +302,7 @@ export const initializeRoutes = async () => {
     await loadModuleRoutes(app, MODULES.DOCUMENTS);
     await loadModuleRoutes(app, MODULES.REPORTING);
     await loadModuleRoutes(app, MODULES.PAYROLL);
+    await loadModuleRoutes(app, MODULES.LIFE_INSURANCE);
 
     // Ensure forget-checks route is loaded (temporary fix until module registry is fully working)
     try {

@@ -17,8 +17,7 @@ import {
     Stack,
     Card,
     CardContent,
-    CircularProgress,
-    IconButton
+    CircularProgress
 } from '@mui/material';
 import {
     Refresh as RefreshIcon,
@@ -60,7 +59,7 @@ const InsuranceReportsPanel = () => {
         status: ''
     });
 
-    const [analytics, setAnalytics] = useState({
+    const [analytics] = useState({
         totalPolicies: 156,
         activePolicies: 142,
         totalClaims: 23,

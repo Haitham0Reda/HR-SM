@@ -1,0 +1,274 @@
+# Prometheus Alert Rules for HRMS Enterprise System
+# Comprehensive alerting for main backend, license server, and infrastructure
+
+groups:
+  # Main Backend Alerts
+  - name: hrms-main-backend
+    rules:
+      - alert: MainBackendDown
+        expr: up{job="hrms-main-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: hrms-backend
+        annotations:
+          summary: "HRMS Main Backend is down"
+          description: "The main HRMS backend has been down for more than 1 minute."
+
+      - alert: MainBackendHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="hrms-main-backend"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: hrms-backend
+        annotations:
+          summary: "High response time on main backend"
+          description: "95th percentile response time is {{ $value }}s for the last 5 minutes."
+
+      - alert: MainBackendHighErrorRate
+        expr: rate(http_requests_total{job="hrms-main-backend",status=~"5.."}[5m]) / rate(http_requests_total{job="hrms-main-backend"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: hrms-backend
+        annotations:
+          summary: "High error rate on main backend"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes."
+
+      - alert: MainBackendHighMemoryUsage
+        expr: process_resident_memory_bytes{job="hrms-main-backend"} / 1024 / 1024 / 1024 > 1.5
+        for: 10m
+        labels:
+          severity: warning
+          service: hrms-backend
+        annotations:
+          summary: "High memory usage on main backend"
+          description: "Memory usage is {{ $value | humanize }}GB, exceeding 1.5GB threshold."
+
+      - alert: MainBackendDatabaseConnectionFailure
+        expr: mongodb_connections_current{job="hrms-main-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: hrms-backend
+        annotations:
+          summary: "Database connection failure on main backend"
+          description: "Main backend has lost database connectivity."
+
+  # License Server Alerts
+  - name: hrms-license-server
+    rules:
+      - alert: LicenseServerDown
+        expr: up{job="hrms-license-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: license-server
+        annotations:
+          summary: "HRMS License Server is down"
+          description: "The license server has been down for more than 1 minute. This will affect license validation."
+
+      - alert: LicenseServerHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="hrms-license-server"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: license-server
+        annotations:
+          summary: "High response time on license server"
+          description: "95th percentile response time is {{ $value }}s for the last 5 minutes."
+
+      - alert: LicenseValidationFailureRate
+        expr: rate(license_validation_failures_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: license-server
+        annotations:
+          summary: "High license validation failure rate"
+          description: "License validation failure rate is {{ $value }} per second."
+
+      - alert: LicenseServerDatabaseConnectionFailure
+        expr: mongodb_connections_current{job="hrms-license-server"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: license-server
+        annotations:
+          summary: "License server database connection failure"
+          description: "License server has lost database connectivity."
+
+      - alert: ExpiredLicensesHigh
+        expr: license_expired_count > 10
+        for: 1h
+        labels:
+          severity: warning
+          service: license-server
+        annotations:
+          summary: "High number of expired licenses"
+          description: "{{ $value }} licenses have expired and need attention."
+
+  # System Resource Alerts
+  - name: system-resources
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}."
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Low disk space"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }} {{ $labels.mountpoint }}."
+
+      - alert: HighDiskIOWait
+        expr: irate(node_cpu_seconds_total{mode="iowait"}[5m]) * 100 > 20
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High disk I/O wait"
+          description: "Disk I/O wait is {{ $value }}% on {{ $labels.instance }}."
+
+  # Database Alerts
+  - name: mongodb-alerts
+    rules:
+      - alert: MongoDBDown
+        expr: up{job="mongodb-exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "MongoDB is down"
+          description: "MongoDB has been down for more than 2 minutes."
+
+      - alert: MongoDBHighConnections
+        expr: mongodb_connections_current / mongodb_connections_available > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "MongoDB high connection usage"
+          description: "MongoDB is using {{ $value | humanizePercentage }} of available connections."
+
+      - alert: MongoDBReplicationLag
+        expr: mongodb_replset_member_replication_lag > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "MongoDB replication lag"
+          description: "MongoDB replication lag is {{ $value }} seconds."
+
+  # Redis Alerts
+  - name: redis-alerts
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis-exporter"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 2 minutes. Application will fall back to in-memory cache."
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}."
+
+      - alert: RedisHighConnections
+        expr: redis_connected_clients > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "Redis high connection count"
+          description: "Redis has {{ $value }} connected clients."
+
+  # Application Health Alerts
+  - name: application-health
+    rules:
+      - alert: HealthCheckFailure
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: health-check
+        annotations:
+          summary: "Health check failure"
+          description: "Health check failed for {{ $labels.instance }}."
+
+      - alert: WebSocketConnectionsHigh
+        expr: websocket_connections_active > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: websocket
+        annotations:
+          summary: "High WebSocket connections"
+          description: "Active WebSocket connections: {{ $value }}."
+
+  # Business Logic Alerts
+  - name: business-alerts
+    rules:
+      - alert: LicenseExpirationSoon
+        expr: license_days_until_expiry < 30 and license_days_until_expiry > 0
+        for: 1h
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "Licenses expiring soon"
+          description: "{{ $value }} licenses will expire within 30 days."
+
+      - alert: FailedBackupJob
+        expr: backup_job_success == 0
+        for: 1h
+        labels:
+          severity: critical
+          service: backup
+        annotations:
+          summary: "Backup job failed"
+          description: "Daily backup job has failed. Data protection may be compromised."
+
+      - alert: HighFailedLoginAttempts
+        expr: rate(failed_login_attempts_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High failed login attempts"
+          description: "Failed login attempt rate: {{ $value }} per second."

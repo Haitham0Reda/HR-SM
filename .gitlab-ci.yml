@@ -1,0 +1,282 @@
+# GitLab CI/CD Pipeline for HR-SM Enterprise
+# Alternative to GitHub Actions for GitLab users
+
+stages:
+  - test
+  - build
+  - deploy-staging
+  - deploy-production
+  - rollback
+
+variables:
+  NODE_VERSION: "18"
+  MONGODB_VERSION: "6.0"
+  REDIS_VERSION: "7.0"
+  DOCKER_DRIVER: overlay2
+
+# Test Stage
+test:
+  stage: test
+  image: node:18
+  services:
+    - name: mongo:6.0
+      alias: mongodb
+      command: ["mongod", "--auth"]
+    - name: redis:7.0
+      alias: redis
+  variables:
+    MONGO_INITDB_ROOT_USERNAME: admin
+    MONGO_INITDB_ROOT_PASSWORD: password
+    MONGODB_URI: mongodb://admin:password@mongodb:27017/hrms-test?authSource=admin
+    REDIS_URL: redis://redis:6379
+    NODE_ENV: test
+  before_script:
+    # Install dependencies
+    - npm ci
+    - cd hrsm-license-server && npm ci && cd ..
+    - cd client/platform-admin && npm ci && cd ..
+    - cd client/hr-app && npm ci && cd ..
+    
+    # Generate RSA keys for testing
+    - mkdir -p hrsm-license-server/keys
+    - openssl genrsa -out hrsm-license-server/keys/private.pem 4096
+    - openssl rsa -in hrsm-license-server/keys/private.pem -pubout -out hrsm-license-server/keys/public.pem
+    
+    # Setup environment files
+    - cp .env.example .env
+    - cp hrsm-license-server/.env.example hrsm-license-server/.env
+    - echo "NODE_ENV=test" >> .env
+    - echo "MONGODB_URI=$MONGODB_URI" >> .env
+    - echo "REDIS_URL=$REDIS_URL" >> .env
+    - echo "NODE_ENV=test" >> hrsm-license-server/.env
+    - echo "MONGODB_URI=mongodb://admin:password@mongodb:27017/hrsm-licenses-test?authSource=admin" >> hrsm-license-server/.env
+  script:
+    # Run main backend tests
+    - npm test
+    
+    # Run license server tests
+    - cd hrsm-license-server && npm test && cd ..
+    
+    # Run frontend tests
+    - cd client/platform-admin && npm test -- --watchAll=false && cd ../..
+    - cd client/hr-app && npm test -- --watchAll=false && cd ../..
+    
+    # Run integration tests
+    - npm run test:integration
+    
+    # Run property tests
+    - npm run test:property
+  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+    paths:
+      - coverage/
+    expire_in: 1 week
+
+# Build Stage
+build:
+  stage: build
+  image: node:18
+  needs: ["test"]
+  before_script:
+    - npm ci
+    - cd hrsm-license-server && npm ci && cd ..
+    - cd client/platform-admin && npm ci && cd ..
+    - cd client/hr-app && npm ci && cd ..
+  script:
+    # Build frontend applications
+    - cd client/platform-admin && npm run build && cd ../..
+    - cd client/hr-app && npm run build && cd ../..
+  artifacts:
+    paths:
+      - client/platform-admin/build/
+      - client/hr-app/build/
+    expire_in: 1 week
+
+# Deploy to Staging
+deploy-staging:
+  stage: deploy-staging
+  image: alpine:latest
+  needs: ["test", "build"]
+  only:
+    - develop
+  environment:
+    name: staging
+    url: https://staging.hrms.company.com
+  before_script:
+    - apk add --no-cache openssh-client curl
+    - eval $(ssh-agent -s)
+    - echo "$STAGING_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $STAGING_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - |
+      ssh $STAGING_USER@$STAGING_HOST << 'EOF'
+        cd /opt/hrms-staging
+        git pull origin develop
+        
+        # Stop services
+        pm2 stop hrms-main || true
+        pm2 stop hrms-license-server || true
+        
+        # Update dependencies
+        npm ci --production
+        cd hrsm-license-server && npm ci --production && cd ..
+        
+        # Run database migrations
+        npm run migrate
+        cd hrsm-license-server && npm run migrate && cd ..
+        
+        # Start services
+        pm2 start ecosystem.config.js --env staging
+        
+        # Health check
+        sleep 10
+        curl -f http://localhost:5000/health || exit 1
+        curl -f http://localhost:4000/health || exit 1
+      EOF
+
+# Deploy to Production (Blue-Green)
+deploy-production:
+  stage: deploy-production
+  image: alpine:latest
+  needs: ["test", "build"]
+  only:
+    - main
+  environment:
+    name: production
+    url: https://hrms.company.com
+  before_script:
+    - apk add --no-cache openssh-client curl
+    - eval $(ssh-agent -s)
+    - echo "$PRODUCTION_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $PRODUCTION_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - |
+      ssh $PRODUCTION_USER@$PRODUCTION_HOST << 'EOF'
+        cd /opt/hrms-production
+        
+        # Determine current and next environments
+        if pm2 list | grep -q "hrms-main-blue"; then
+          CURRENT="blue"
+          NEXT="green"
+        else
+          CURRENT="green"
+          NEXT="blue"
+        fi
+        
+        echo "Deploying to $NEXT environment"
+        
+        # Prepare next environment
+        cd /opt/hrms-production-$NEXT
+        git pull origin main
+        
+        # Update dependencies
+        npm ci --production
+        cd hrsm-license-server && npm ci --production && cd ..
+        
+        # Run database migrations (with backup)
+        npm run backup:pre-migration
+        npm run migrate
+        cd hrsm-license-server && npm run migrate && cd ..
+        
+        # Start services in next environment
+        pm2 start ecosystem.config.js --env production-$NEXT
+        
+        # Health check for next environment
+        sleep 15
+        curl -f http://localhost:5001/health || exit 1
+        curl -f http://localhost:4001/health || exit 1
+        
+        # Switch load balancer to next environment
+        sudo nginx -s reload -c /etc/nginx/nginx-$NEXT.conf
+        
+        # Wait for traffic to drain from current environment
+        sleep 30
+        
+        # Stop current environment
+        pm2 stop hrms-main-$CURRENT || true
+        pm2 stop hrms-license-server-$CURRENT || true
+        
+        echo "Deployment to $NEXT completed successfully"
+      EOF
+  when: manual
+
+# Rollback Production
+rollback-production:
+  stage: rollback
+  image: alpine:latest
+  environment:
+    name: production
+    url: https://hrms.company.com
+  before_script:
+    - apk add --no-cache openssh-client curl
+    - eval $(ssh-agent -s)
+    - echo "$PRODUCTION_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $PRODUCTION_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - |
+      ssh $PRODUCTION_USER@$PRODUCTION_HOST << 'EOF'
+        cd /opt/hrms-production
+        
+        # Determine environments
+        if pm2 list | grep -q "hrms-main-blue"; then
+          CURRENT="blue"
+          PREVIOUS="green"
+        else
+          CURRENT="green"
+          PREVIOUS="blue"
+        fi
+        
+        echo "Rolling back to $PREVIOUS environment"
+        
+        # Start previous environment
+        cd /opt/hrms-production-$PREVIOUS
+        pm2 start ecosystem.config.js --env production-$PREVIOUS
+        
+        # Health check
+        sleep 10
+        curl -f http://localhost:5000/health || exit 1
+        curl -f http://localhost:4000/health || exit 1
+        
+        # Switch load balancer back
+        sudo nginx -s reload -c /etc/nginx/nginx-$PREVIOUS.conf
+        
+        # Stop failed environment
+        pm2 stop hrms-main-$CURRENT || true
+        pm2 stop hrms-license-server-$CURRENT || true
+        
+        # Restore database if needed
+        npm run backup:restore-latest
+        
+        echo "Rollback to $PREVIOUS completed"
+      EOF
+  when: manual
+  only:
+    - main
+
+# Notification job
+notify:
+  stage: .post
+  image: alpine:latest
+  script:
+    - |
+      if [ "$CI_JOB_STATUS" = "success" ]; then
+        echo "✅ Deployment successful!"
+        # Add Slack/email notification here
+      else
+        echo "❌ Deployment failed!"
+        # Add failure notification here
+      fi
+  when: always
