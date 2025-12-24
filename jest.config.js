@@ -18,6 +18,8 @@ export default {
   verbose: false,
   moduleNameMapper: {
     '^(\.{1,2}/.*)\.js$': '$1',
+    // Mock PDFKit to avoid module resolution issues
+    '^pdfkit$': '<rootDir>/server/testing/__mocks__/pdfkit.js',
     // Mock frontend logger to avoid window object issues
     '^.*client/hr-app/src/utils/logger.js$': '<rootDir>/server/testing/__mocks__/frontendLogger.js',
     // Mock frontend security detection service

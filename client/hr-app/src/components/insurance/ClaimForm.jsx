@@ -404,6 +404,7 @@ const ClaimForm = ({
                                             edge="end"
                                             onClick={() => handleRemoveFile(file.id)}
                                             color="error"
+                                            aria-label="delete"
                                         >
                                             <DeleteIcon />
                                         </IconButton>

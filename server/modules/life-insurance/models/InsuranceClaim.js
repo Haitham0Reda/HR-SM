@@ -225,16 +225,44 @@ insuranceClaimSchema.pre('save', function(next) {
 
 // Pre-save middleware to track status changes
 insuranceClaimSchema.pre('save', function(next) {
-    if (this.isModified('status') && !this.isNew) {
-        // Add to workflow history
-        const previousStatus = this.getChanges().$set?.status ? 
-            this.get('status', null, { getters: false }) : null;
+    // Check if we have workflow data to add (from updateStatus, approve, or reject methods)
+    if (this._workflowPerformedBy && !this.isNew) {
+        // Use the stored previous status or current status if no change
+        const previousStatus = this._previousStatus || this.status;
+            
+        // Use the performedBy and notes from updateStatus method
+        const performedBy = this._workflowPerformedBy;
+        const notes = this._workflowNotes || '';
             
         this.workflow.push({
             status: this.status,
-            performedBy: this.reviewedBy || this.employeeId,
+            performedBy: performedBy,
             timestamp: new Date(),
+            notes: notes,
             previousStatus: previousStatus
+        });
+        
+        // Clean up temporary fields
+        delete this._workflowNotes;
+        delete this._workflowPerformedBy;
+        delete this._previousStatus;
+        
+        // Set review timestamp if status changed to reviewed states
+        if (['approved', 'rejected'].includes(this.status) && !this.reviewedAt) {
+            this.reviewedAt = new Date();
+        }
+    } 
+    // Also track direct status changes (when status is modified but no method was used)
+    else if (this.isModified('status') && !this.isNew) {
+        // For direct status changes, use a default performer
+        const performedBy = this.reviewedBy || this.employeeId;
+        
+        this.workflow.push({
+            status: this.status,
+            performedBy: performedBy,
+            timestamp: new Date(),
+            notes: '',
+            previousStatus: 'pending' // Default since we don't have the previous status
         });
         
         // Set review timestamp if status changed to reviewed states
@@ -256,57 +284,50 @@ insuranceClaimSchema.methods.addDocument = function(documentData) {
 
 // Method to update status with workflow tracking
 insuranceClaimSchema.methods.updateStatus = function(newStatus, performedBy, notes = '') {
-    const previousStatus = this.status;
+    // Store the previous status before changing it
+    this._previousStatus = this.status;
     this.status = newStatus;
     
     if (performedBy) {
         this.reviewedBy = performedBy;
     }
     
-    this.workflow.push({
-        status: newStatus,
-        performedBy: performedBy || this.employeeId,
-        timestamp: new Date(),
-        notes,
-        previousStatus
-    });
+    // Store notes for the pre-save middleware to use
+    this._workflowNotes = notes;
+    this._workflowPerformedBy = performedBy;
     
     return this.save();
 };
 
 // Method to approve claim
 insuranceClaimSchema.methods.approve = function(approvedAmount, performedBy, notes = '') {
+    // Store the previous status before changing it
+    this._previousStatus = this.status;
     this.status = 'approved';
     this.approvedAmount = approvedAmount;
     this.reviewedBy = performedBy;
     this.reviewedAt = new Date();
     this.reviewNotes = notes;
     
-    this.workflow.push({
-        status: 'approved',
-        performedBy,
-        timestamp: new Date(),
-        notes: `Approved for amount: ${approvedAmount}. ${notes}`,
-        previousStatus: this.status
-    });
+    // Store notes for the pre-save middleware to use
+    this._workflowNotes = `Approved for amount: ${approvedAmount}. ${notes}`;
+    this._workflowPerformedBy = performedBy;
     
     return this.save();
 };
 
 // Method to reject claim
 insuranceClaimSchema.methods.reject = function(performedBy, reason) {
+    // Store the previous status before changing it
+    this._previousStatus = this.status;
     this.status = 'rejected';
     this.reviewedBy = performedBy;
     this.reviewedAt = new Date();
     this.reviewNotes = reason;
     
-    this.workflow.push({
-        status: 'rejected',
-        performedBy,
-        timestamp: new Date(),
-        notes: `Rejected: ${reason}`,
-        previousStatus: this.status
-    });
+    // Store notes for the pre-save middleware to use
+    this._workflowNotes = `Rejected: ${reason}`;
+    this._workflowPerformedBy = performedBy;
     
     return this.save();
 };
