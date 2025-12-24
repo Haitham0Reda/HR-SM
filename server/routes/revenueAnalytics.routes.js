@@ -15,7 +15,7 @@ import {
   getAnalyticsDashboard,
   exportAnalytics
 } from '../controllers/revenueAnalytics.controller.js';
-import { authenticateToken } from '../middleware/auth.middleware.js';
+import { authenticateJWT as authenticateToken } from '../middleware/auth.middleware.js';
 import { requirePlatformAdmin } from '../middleware/platformAuth.middleware.js';
 import { validateRequest } from '../middleware/validation.middleware.js';
 import { body, query, param } from 'express-validator';

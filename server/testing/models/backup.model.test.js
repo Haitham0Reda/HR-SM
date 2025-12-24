@@ -29,7 +29,7 @@ describe('Backup Model', () => {
       },
       sources: {
         databases: [{
-          name: 'hrsm_db',
+          name: 'hrms',
           collections: []
         }],
         filePaths: [],

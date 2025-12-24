@@ -271,7 +271,7 @@ Each company database is automatically created as:
 
 ### Environment Variables
 ```env
-MONGODB_URI=mongodb+srv://user:pass@cluster/hrsm_db?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://user:pass@cluster/hrms?retryWrites=true&w=majority
 JWT_SECRET=your_jwt_secret
 NODE_ENV=production
 ```

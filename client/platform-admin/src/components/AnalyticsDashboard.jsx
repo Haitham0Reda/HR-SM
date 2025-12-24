@@ -53,6 +53,7 @@ const AnalyticsDashboard = () => {
     setActiveTab(newValue);
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getTabIcon = (index) => {
     switch (index) {
       case 0:

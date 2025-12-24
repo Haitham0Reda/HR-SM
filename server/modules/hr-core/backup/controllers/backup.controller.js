@@ -304,7 +304,7 @@ async function performDatabaseBackup(backup, backupDir, timestamp) {
     
     const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/hrms';
     const dbName = mongoUri.includes('mongodb+srv') 
-        ? mongoUri.split('/')[3]?.split('?')[0] || 'hrsm_db'
+        ? mongoUri.split('/')[3]?.split('?')[0] || 'hrms'
         : mongoUri.split('/').pop().split('?')[0];
 
     let command = `${mongodumpPath} --uri="${mongoUri}" --archive="${backupPath}" --gzip`;

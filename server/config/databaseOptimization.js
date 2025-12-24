@@ -47,8 +47,10 @@ export const getOptimizedConnectionOptions = () => {
     heartbeatFrequencyMS: 10000, // Send heartbeat every 10 seconds
     
     // Write concern for performance vs durability balance
-    w: 'majority',
-    j: true, // Enable journaling for durability
+    writeConcern: {
+      w: 'majority',
+      journal: true // Enable journaling for durability (replaces deprecated 'j' option)
+    },
     
     // Read preference for analytics queries
     readPreference: 'primaryPreferred', // Allow reads from secondaries when available
@@ -68,8 +70,7 @@ export const getOptimizedConnectionOptions = () => {
     // Connection pool monitoring
     maxConnecting: 2, // Maximum number of connections being established
     
-    // Server discovery settings
-    serverSelectionRetryFrequencyMS: 2000,
+    // Server discovery settings (removed deprecated serverSelectionRetryFrequencyMS)
     
     // Socket keep-alive (removed deprecated keepAlive option)
     keepAliveInitialDelay: 300000, // 5 minutes
@@ -95,7 +96,15 @@ export const configureSlowQueryLogging = async () => {
   try {
     const db = mongoose.connection.db;
     
-    // Enable profiling for slow operations (>100ms)
+    // Check if we're running on MongoDB Atlas
+    const isAtlas = process.env.MONGODB_URI && process.env.MONGODB_URI.includes('mongodb.net');
+    
+    if (isAtlas) {
+      logger.warn('⚠️  MongoDB Atlas detected - slow query logging managed by Atlas, skipping profiler setup');
+      return true;
+    }
+    
+    // Enable profiling for slow operations (>100ms) - only for self-hosted MongoDB
     await db.admin().command({
       profile: 2, // Profile all operations
       slowms: 100, // Log operations slower than 100ms
@@ -117,7 +126,7 @@ export const configureSlowQueryLogging = async () => {
     
     return true;
   } catch (error) {
-    logger.error('❌ Failed to configure slow query logging:', error.message);
+    logger.warn('⚠️  Could not configure slow query logging (likely Atlas or permission issue):', error.message);
     return false;
   }
 };
@@ -304,15 +313,16 @@ export const configureReadReplicas = async () => {
     if (replicaSetStatus.ok) {
       logger.info('✅ MongoDB replica set detected');
       
-      // Configure read preference for analytics
-      mongoose.connection.db.readPreference = 'secondaryPreferred';
+      // Configure read preference for analytics using mongoose connection
+      mongoose.connection.readPreference = 'secondaryPreferred';
       
       // Create a separate connection for analytics with secondary read preference
       const analyticsConnectionOptions = {
         ...getOptimizedConnectionOptions(),
         readPreference: 'secondary',
         readConcern: { level: 'available' }, // Faster reads, eventual consistency
-        maxStalenessSeconds: 120 // Allow up to 2 minutes of staleness
+        maxStalenessSeconds: 120, // Allow up to 2 minutes of staleness
+        autoIndex: false // Disable auto-index creation for secondary connections
       };
       
       // Store analytics connection for use in analytics queries
@@ -328,8 +338,20 @@ export const configureReadReplicas = async () => {
       return false;
     }
   } catch (error) {
-    logger.warn('⚠️  Could not configure read replicas:', error.message);
-    return false;
+    // Check if it's an Atlas cluster (which has replica sets but may not allow replSetGetStatus)
+    const isAtlas = process.env.MONGODB_URI && process.env.MONGODB_URI.includes('mongodb.net');
+    
+    if (isAtlas) {
+      logger.info('ℹ️  MongoDB Atlas detected - replica set configuration managed by Atlas');
+      
+      // Configure read preference for Atlas using mongoose connection
+      mongoose.connection.readPreference = 'secondaryPreferred';
+      logger.info('✅ Read preference set to secondaryPreferred for Atlas');
+      return true;
+    } else {
+      logger.warn('⚠️  Could not configure read replicas:', error.message);
+      return false;
+    }
   }
 };
 
@@ -428,7 +450,7 @@ export const analyzePerformance = async () => {
     // Get database statistics
     const dbStats = await db.stats();
     
-    // Get collection statistics
+    // Get collection statistics (handle Atlas permission issues)
     const collections = await db.listCollections().toArray();
     const collectionStats = {};
     
@@ -444,22 +466,40 @@ export const analyzePerformance = async () => {
           indexSize: stats.totalIndexSize
         };
       } catch (error) {
-        // Some collections might not support stats
-        logger.warn(`Could not get stats for collection ${collection.name}`);
+        // Some collections might not support stats or have permission issues
+        if (error.code === 8000 || error.codeName === 'AtlasError') {
+          // Atlas permission issue - use basic info
+          collectionStats[collection.name] = {
+            count: 'N/A (Atlas)',
+            size: 'N/A (Atlas)',
+            avgObjSize: 'N/A (Atlas)',
+            storageSize: 'N/A (Atlas)',
+            indexes: 'N/A (Atlas)',
+            indexSize: 'N/A (Atlas)'
+          };
+        } else {
+          logger.warn(`Could not get stats for collection ${collection.name}: ${error.message}`);
+        }
       }
     }
     
-    // Get slow queries from profiler
+    // Get slow queries from profiler (skip for Atlas)
     let slowQueries = [];
     try {
-      const profilerCollection = db.collection('system.profile');
-      slowQueries = await profilerCollection
-        .find({ ts: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }) // Last 24 hours
-        .sort({ ts: -1 })
-        .limit(10)
-        .toArray();
+      const isAtlas = process.env.MONGODB_URI && process.env.MONGODB_URI.includes('mongodb.net');
+      
+      if (!isAtlas) {
+        const profilerCollection = db.collection('system.profile');
+        slowQueries = await profilerCollection
+          .find({ ts: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }) // Last 24 hours
+          .sort({ ts: -1 })
+          .limit(10)
+          .toArray();
+      } else {
+        logger.info('ℹ️  Slow query analysis skipped for MongoDB Atlas (use Atlas Performance Advisor)');
+      }
     } catch (error) {
-      logger.warn('Could not retrieve slow queries from profiler');
+      logger.warn('⚠️  Could not retrieve slow queries from profiler (likely Atlas or permission issue)');
     }
     
     const performanceReport = {

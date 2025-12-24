@@ -437,8 +437,7 @@ tenantSchema.pre('save', function(next) {
 });
 
 // Indexes for performance
-tenantSchema.index({ tenantId: 1 }, { unique: true });
-tenantSchema.index({ domain: 1 }, { unique: true, sparse: true });
+// Note: tenantId and domain already have unique: true in field definitions
 tenantSchema.index({ status: 1 });
 tenantSchema.index({ 'subscription.status': 1 });
 tenantSchema.index({ 'subscription.expiresAt': 1 });

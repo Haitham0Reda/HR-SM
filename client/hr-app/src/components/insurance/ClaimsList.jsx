@@ -24,12 +24,10 @@ import {
 import {
     Add as AddIcon,
     Refresh as RefreshIcon,
-    Edit as EditIcon,
     Visibility as ViewIcon,
     RateReview as ReviewIcon
 } from '@mui/icons-material';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useDialogs } from '../../hooks/useDialogs/useDialogs';
 import { useClaims } from '../../hooks/useInsurance';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useAuth } from '../../hooks/useAuth';
@@ -42,7 +40,7 @@ const ClaimsList = () => {
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { user, isHR, isAdmin } = useAuth();
+    const { isHR, isAdmin } = useAuth();
     
     const {
         claims,

@@ -6,9 +6,10 @@
   "scripts": {
     "start": "node server/index.js",
     "server": "nodemon server/index.js",
+    "license-server": "cd hrsm-license-server && npm run dev",
     "client": "npm run storybook --prefix client",
     "client:apps": "npm run start:both --prefix client",
-    "dev": "concurrently --names \"SERVER,HR-APP,PLATFORM\" --prefix-colors \"green,cyan,magenta\" \"npm run server\" \"npm run client:apps\"",
+    "dev": "concurrently --names \"SERVER,HR-APP,PLATFORM,LICENSE\" --prefix-colors \"green,cyan,orange,yellow\" \"npm run server\" \"npm run client:apps\" \"npm run license-server\"",
     "dev:apps": "concurrently \"npm run server\" \"npm run client:apps\" ",
     "dev:storybook": "concurrently \"npm run server\" \"npm run client\" ",
     "test": "node --max-old-space-size=8192 --experimental-vm-modules --no-warnings=ExperimentalWarning node_modules/jest/bin/jest.js",

@@ -1,0 +1,187 @@
+# Alertmanager Configuration for HRMS Enterprise System
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@your-domain.com'
+  smtp_auth_username: 'alerts@your-domain.com'
+  smtp_auth_password: 'your-smtp-password'
+
+# Routing configuration
+route:
+  group_by: ['alertname', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'default-receiver'
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 5m
+    
+    # License server specific alerts
+    - match:
+        service: license-server
+      receiver: 'license-alerts'
+      group_wait: 30s
+      repeat_interval: 30m
+    
+    # Main backend alerts
+    - match:
+        service: hrms-backend
+      receiver: 'backend-alerts'
+      group_wait: 30s
+      repeat_interval: 30m
+    
+    # System resource alerts
+    - match:
+        service: system
+      receiver: 'system-alerts'
+      group_wait: 1m
+      repeat_interval: 1h
+    
+    # Database alerts
+    - match:
+        service: database
+      receiver: 'database-alerts'
+      group_wait: 30s
+      repeat_interval: 15m
+    
+    # Business logic alerts
+    - match:
+        service: business
+      receiver: 'business-alerts'
+      group_wait: 5m
+      repeat_interval: 4h
+
+# Receivers configuration
+receivers:
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'admin@your-domain.com'
+        subject: '[HRMS Alert] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Service: {{ .Labels.service }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'admin@your-domain.com,ops@your-domain.com'
+        subject: '[CRITICAL] HRMS System Alert - {{ .GroupLabels.alertname }}'
+        body: |
+          🚨 CRITICAL ALERT 🚨
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Time: {{ .StartsAt }}
+          
+          Immediate action required!
+          {{ end }}
+    # Add Slack webhook for critical alerts
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-critical'
+        title: 'HRMS Critical Alert'
+        text: |
+          {{ range .Alerts }}
+          🚨 {{ .Annotations.summary }}
+          Service: {{ .Labels.service }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+  - name: 'license-alerts'
+    email_configs:
+      - to: 'admin@your-domain.com'
+        subject: '[License Server] {{ .GroupLabels.alertname }}'
+        body: |
+          License Server Alert
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt }}
+          
+          This may affect license validation for all tenants.
+          {{ end }}
+
+  - name: 'backend-alerts'
+    email_configs:
+      - to: 'dev@your-domain.com'
+        subject: '[Main Backend] {{ .GroupLabels.alertname }}'
+        body: |
+          Main Backend Alert
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+
+  - name: 'system-alerts'
+    email_configs:
+      - to: 'ops@your-domain.com'
+        subject: '[System Resources] {{ .GroupLabels.alertname }}'
+        body: |
+          System Resource Alert
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt }}
+          
+          Please check system resources and capacity.
+          {{ end }}
+
+  - name: 'database-alerts'
+    email_configs:
+      - to: 'dba@your-domain.com,admin@your-domain.com'
+        subject: '[Database] {{ .GroupLabels.alertname }}'
+        body: |
+          Database Alert
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt }}
+          
+          Database connectivity or performance issue detected.
+          {{ end }}
+
+  - name: 'business-alerts'
+    email_configs:
+      - to: 'admin@your-domain.com,business@your-domain.com'
+        subject: '[Business Logic] {{ .GroupLabels.alertname }}'
+        body: |
+          Business Logic Alert
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt }}
+          
+          This may affect business operations.
+          {{ end }}
+
+# Inhibition rules
+inhibit_rules:
+  # Inhibit warning alerts if critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service']
+
+  # Inhibit individual service alerts if the entire system is down
+  - source_match:
+      alertname: 'SystemDown'
+    target_match_re:
+      alertname: '.*Down'
+    equal: ['instance']

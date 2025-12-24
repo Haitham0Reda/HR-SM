@@ -34,6 +34,7 @@ import systemService from '../services/systemService';
 import { useTheme } from '../contexts/ThemeContext';
 
 const PlatformDashboard = () => {
+  // eslint-disable-next-line no-unused-vars
   const { theme } = useTheme();
   const [dashboardData, setDashboardData] = useState({
     companies: [],

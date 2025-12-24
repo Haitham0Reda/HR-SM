@@ -1,0 +1,283 @@
+version: '3.8'
+
+services:
+  # MongoDB Replica Set
+  mongodb-primary:
+    image: mongo:7.0
+    container_name: hrms-mongodb-primary
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: hrms
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./config/mongodb/replica-set.conf:/etc/mongod.conf
+      - ./scripts/mongodb/init-replica-set.js:/docker-entrypoint-initdb.d/init-replica-set.js
+    command: mongod --config /etc/mongod.conf --replSet hrms-replica-set
+    networks:
+      - hrms-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: hrms-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - hrms-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # License Server
+  license-server:
+    build:
+      context: ./hrsm-license-server
+      dockerfile: Dockerfile
+    container_name: hrms-license-server
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      MONGODB_URI: mongodb://admin:${MONGODB_ROOT_PASSWORD}@mongodb-primary:27017/hrsm_license_db?authSource=admin&replicaSet=hrms-replica-set
+      JWT_PRIVATE_KEY_PATH: /app/keys/private.pem
+      JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
+      ADMIN_API_KEY: ${LICENSE_SERVER_API_KEY}
+      ALLOWED_ORIGINS: ${CORS_ORIGIN}
+      RATE_LIMIT_WINDOW: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+      LOG_LEVEL: info
+    volumes:
+      - license_keys:/app/keys
+      - license_logs:/app/logs
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+    networks:
+      - hrms-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Main HRMS Backend
+  hrms-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hrms-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+      - "9090:9090" # Prometheus metrics
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:${MONGODB_ROOT_PASSWORD}@mongodb-primary:27017/hrms?authSource=admin&replicaSet=hrms-replica-set
+      REDIS_URL: redis://redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DB: 0
+      LICENSE_SERVER_URL: http://license-server:4000
+      LICENSE_SERVER_API_KEY: ${LICENSE_SERVER_API_KEY}
+      SESSION_SECRET: ${SESSION_SECRET}
+      SESSION_STORE: redis
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      RATE_LIMIT_WINDOW: 900000
+      RATE_LIMIT_MAX_REQUESTS: 1000
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      MAX_FILE_SIZE: 10485760
+      UPLOAD_PATH: /app/uploads
+      PROMETHEUS_ENABLED: true
+      PROMETHEUS_PORT: 9090
+      LOG_LEVEL: info
+      BACKUP_ENABLED: true
+      BACKUP_SCHEDULE: "0 2 * * *"
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+    volumes:
+      - hrms_uploads:/app/uploads
+      - hrms_logs:/app/logs
+      - hrms_backups:/app/backups
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      license-server:
+        condition: service_healthy
+    networks:
+      - hrms-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # HR App Frontend
+  hr-app:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.hr-app
+    container_name: hrms-hr-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      REACT_APP_API_URL: https://your-domain.com/api
+      REACT_APP_WS_URL: wss://your-domain.com/ws
+    depends_on:
+      - hrms-backend
+    networks:
+      - hrms-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Platform Admin Frontend
+  platform-admin:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.platform-admin
+    container_name: hrms-platform-admin
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      REACT_APP_PLATFORM_API_URL: https://admin.your-domain.com/platform
+      REACT_APP_LICENSE_API_URL: https://admin.your-domain.com/license-api
+      REACT_APP_WS_URL: wss://admin.your-domain.com/ws
+    depends_on:
+      - hrms-backend
+      - license-server
+    networks:
+      - hrms-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: hrms-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx/hrms.conf:/etc/nginx/conf.d/default.conf
+      - ./config/ssl:/etc/ssl
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - hrms-backend
+      - license-server
+      - hr-app
+      - platform-admin
+    networks:
+      - hrms-network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: hrms-prometheus
+    restart: unless-stopped
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - hrms-network
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: hrms-grafana
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - hrms-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  redis_data:
+    driver: local
+  license_keys:
+    driver: local
+  license_logs:
+    driver: local
+  hrms_uploads:
+    driver: local
+  hrms_logs:
+    driver: local
+  hrms_backups:
+    driver: local
+  nginx_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  hrms-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

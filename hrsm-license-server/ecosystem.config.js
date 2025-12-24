@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'hrsm-license-server',
     script: 'src/server.js',
-    cwd: '/path/to/hrsm-license-server',
+    cwd: '/var/www/hr-sm/hrsm-license-server',
     instances: 1, // Single instance for license server to avoid conflicts
     exec_mode: 'fork', // Fork mode for single instance
     

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Paper,
   Typography,
@@ -24,7 +24,7 @@ import {
   Refresh as RefreshIcon,
   GetApp as ExportIcon
 } from '@mui/icons-material';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Line, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -75,11 +75,7 @@ const RevenueAnalytics = () => {
 
   const { api, status } = useApi();
 
-  useEffect(() => {
-    loadRevenueData();
-  }, [timeRange]);
-
-  const loadRevenueData = async () => {
+  const loadRevenueData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -128,7 +124,11 @@ const RevenueAnalytics = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, timeRange]);
+
+  useEffect(() => {
+    loadRevenueData();
+  }, [loadRevenueData]);
 
   const getPeriodFromTimeRange = (range) => {
     switch (range) {
@@ -145,6 +145,7 @@ const RevenueAnalytics = () => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getDateRange = (range) => {
     const now = new Date();
     const start = new Date();

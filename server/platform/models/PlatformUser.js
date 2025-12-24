@@ -69,9 +69,6 @@ const platformUserSchema = new mongoose.Schema({
   collection: 'platform_users'
 });
 
-// Index for faster email lookups
-platformUserSchema.index({ email: 1 });
-
 // Index for role-based queries
 platformUserSchema.index({ role: 1, status: 1 });
 

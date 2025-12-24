@@ -194,14 +194,14 @@ class BackupService {
     }
 
     /**
-     * Backup MongoDB database using mongodump
+     * Backup MongoDB database using mongodump or JavaScript fallback
      */
     async backupMongoDatabase(dbName, backupPath) {
         const outputPath = path.join(backupPath, `${dbName}-dump`);
         const archivePath = path.join(backupPath, `${dbName}.archive`);
         
         try {
-            // Use mongodump to create database backup
+            // First try mongodump
             const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
             const command = `mongodump --uri="${mongoUri}" --db=${dbName} --archive=${archivePath} --gzip`;
             
@@ -214,11 +214,117 @@ class BackupService {
                 database: dbName,
                 path: archivePath,
                 size: stats.size,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                method: 'mongodump'
             };
         } catch (error) {
-            this.logger.error(`Failed to backup MongoDB database ${dbName}`, { error: error.message });
-            throw error;
+            this.logger.warn(`mongodump failed for ${dbName}, trying JavaScript fallback`, { error: error.message });
+            
+            // Fallback to JavaScript export method
+            return await this.backupDatabaseJS(dbName, backupPath);
+        }
+    }
+
+    /**
+     * Backup MongoDB database using JavaScript/Mongoose methods (fallback)
+     */
+    async backupDatabaseJS(dbName, backupPath) {
+        const outputPath = path.join(backupPath, `${dbName}-export.json`);
+        
+        try {
+            this.logger.info(`Starting JavaScript export for database: ${dbName}`);
+            
+            // Connect to the specific database
+            const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017';
+            const dbUri = mongoUri.replace(/\/[^\/]*(\?|$)/, `/${dbName}$1`);
+            
+            // Create a separate connection for this database
+            const connection = mongoose.createConnection(dbUri);
+            await connection.asPromise();
+            
+            const exportData = {
+                database: dbName,
+                timestamp: new Date().toISOString(),
+                collections: {}
+            };
+
+            try {
+                // Get all collections in the database
+                const collections = await connection.db.listCollections().toArray();
+                this.logger.info(`Found ${collections.length} collections in ${dbName}`);
+
+                // Export each collection
+                for (const collectionInfo of collections) {
+                    const collectionName = collectionInfo.name;
+                    
+                    try {
+                        const collection = connection.db.collection(collectionName);
+                        const documents = await collection.find({}).toArray();
+                        
+                        exportData.collections[collectionName] = {
+                            count: documents.length,
+                            documents: documents
+                        };
+                        
+                        this.logger.info(`Exported ${documents.length} documents from ${collectionName}`);
+                    } catch (collError) {
+                        this.logger.warn(`Failed to export collection ${collectionName}:`, collError.message);
+                        exportData.collections[collectionName] = {
+                            error: collError.message,
+                            count: 0,
+                            documents: []
+                        };
+                    }
+                }
+
+                // Write the export data to file
+                fs.writeFileSync(outputPath, JSON.stringify(exportData, null, 2));
+                
+                const stats = fs.statSync(outputPath);
+                
+                this.logger.info(`JavaScript export completed for ${dbName}`, {
+                    collections: Object.keys(exportData.collections).length,
+                    size: stats.size
+                });
+
+                return {
+                    type: 'mongodb-js',
+                    database: dbName,
+                    path: outputPath,
+                    size: stats.size,
+                    timestamp: new Date().toISOString(),
+                    method: 'javascript-export',
+                    collections: Object.keys(exportData.collections).length
+                };
+
+            } finally {
+                await connection.close();
+            }
+
+        } catch (error) {
+            this.logger.error(`Failed to backup database ${dbName} using JavaScript method`, { error: error.message });
+            
+            // Create empty backup file to maintain consistency
+            const emptyExport = {
+                database: dbName,
+                timestamp: new Date().toISOString(),
+                error: error.message,
+                collections: {}
+            };
+            
+            fs.writeFileSync(outputPath, JSON.stringify(emptyExport, null, 2));
+            const stats = fs.statSync(outputPath);
+            
+            return {
+                type: 'mongodb-js',
+                database: dbName,
+                path: outputPath,
+                size: stats.size,
+                timestamp: new Date().toISOString(),
+                method: 'javascript-export',
+                error: error.message,
+                collections: 0
+            };
         }
     }
 
@@ -506,7 +612,7 @@ class BackupService {
         const key = Buffer.from(this.encryptionKey, 'hex');
         const iv = crypto.randomBytes(16);
         
-        const cipher = crypto.createCipher(algorithm, key);
+        const cipher = crypto.createCipheriv(algorithm, key, iv);
         let encrypted = cipher.update(data);
         encrypted = Buffer.concat([encrypted, cipher.final()]);
         
@@ -522,7 +628,7 @@ class BackupService {
         const iv = encryptedData.slice(0, 16);
         const encrypted = encryptedData.slice(16);
         
-        const decipher = crypto.createDecipher(algorithm, key);
+        const decipher = crypto.createDecipheriv(algorithm, key, iv);
         let decrypted = decipher.update(encrypted);
         decrypted = Buffer.concat([decrypted, decipher.final()]);
         

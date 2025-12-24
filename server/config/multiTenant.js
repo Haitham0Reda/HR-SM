@@ -156,7 +156,7 @@ class MultiTenantDB {
             const result = await adminDb.listDatabases();
             
             const companyDbs = result.databases
-                .filter(db => db.name.startsWith('hrsm_') && db.name !== 'hrsm_db')
+                .filter(db => db.name.startsWith('hrsm_') && db.name !== 'hrms')
                 .map(db => db.name.replace('hrsm_', ''));
 
             await mainConnection.close();
@@ -166,7 +166,7 @@ class MultiTenantDB {
             
             // Fallback: check if we have any connections in our map
             const existingCompanies = Array.from(this.connections.keys())
-                .filter(dbName => dbName.startsWith('hrsm_') && dbName !== 'hrsm_db')
+                .filter(dbName => dbName.startsWith('hrsm_') && dbName !== 'hrms')
                 .map(dbName => dbName.replace('hrsm_', ''));
             
             return existingCompanies;
