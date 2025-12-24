@@ -91,6 +91,7 @@
     "jest": "^30.2.0",
     "mongodb-memory-server": "^10.3.0",
     "nodemon": "^3.1.10",
+    "pdf-parse": "^2.4.5",
     "rate-limit-redis": "^4.3.1",
     "supertest": "^7.1.4",
     "test-exclude": "^7.0.1"

@@ -435,7 +435,8 @@ Convert the comprehensive HR-SM enterprise enhancement design into a series of a
     - Create routes following existing document management patterns
     - _Requirements: 5.3, 9.4_
 
-  - [ ]* 10.4 Write property test for file upload validation
+  - [x] 10.4 Write property test for file upload validation
+
     - **Property 33: File Upload Validation**
     - **Validates: Requirements 9.4**
 
@@ -448,7 +449,8 @@ Convert the comprehensive HR-SM enterprise enhancement design into a series of a
     - Follow existing report metadata storage patterns
     - _Requirements: 5.5_
 
-  - [ ]* 10.6 Write property test for insurance report completeness
+  - [x] 10.6 Write property test for insurance report completeness
+
     - **Property 20: Insurance Report Completeness**
     - **Validates: Requirements 5.5**
 
@@ -484,7 +486,8 @@ Convert the comprehensive HR-SM enterprise enhancement design into a series of a
     - Follow existing navigation and routing patterns
     - _Requirements: 5.5_
 
-  - [ ]* 11.4 Write React component tests for insurance module
+  - [x] 11.4 Write React component tests for insurance module
+
     - Test PolicyForm validation and submission
     - Test ClaimForm file upload and workflow
     - Test ReportsPanel filtering and export
@@ -507,7 +510,8 @@ Convert the comprehensive HR-SM enterprise enhancement design into a series of a
     - **Add validation for license API endpoints**
     - _Requirements: 6.3_
 
-  - [ ]* 12.2 Write property test for input sanitization effectiveness
+  - [x] 12.2 Write property test for input sanitization effectiveness
+
     - **Property 21: Input Sanitization Effectiveness**
     - **Validates: Requirements 6.3**
 
@@ -522,7 +526,8 @@ Convert the comprehensive HR-SM enterprise enhancement design into a series of a
     - Configure Redis persistence with both RDB snapshots and AOF logging
     - _Requirements: 6.2_
 
-  - [ ]* 12.4 Write property test for rate limiting by license type
+  - [x] 12.4 Write property test for rate limiting by license type
+
     - **Property 22: Rate Limiting by License Type**
     - **Validates: Requirements 6.2**
 
@@ -536,7 +541,8 @@ Convert the comprehensive HR-SM enterprise enhancement design into a series of a
     - **Secure license server with API key authentication**
     - _Requirements: 6.4, 9.1_
 
-  - [ ]* 12.6 Write property test for password policy enforcement
+  - [x] 12.6 Write property test for password policy enforcement
+
     - **Property 23: Password Policy Enforcement**
     - **Validates: Requirements 6.4**
 
@@ -556,11 +562,13 @@ Convert the comprehensive HR-SM enterprise enhancement design into a series of a
     - **Add license usage analytics** (active licenses, revenue by license type)
     - _Requirements: 7.1, 7.2, 7.3_
 
-  - [ ]* 13.2 Write property test for revenue calculation accuracy
+  - [x] 13.2 Write property test for revenue calculation accuracy
+
     - **Property 24: Revenue Calculation Accuracy**
     - **Validates: Requirements 7.1**
 
-  - [ ]* 13.3 Write property test for usage tracking accuracy
+  - [x] 13.3 Write property test for usage tracking accuracy
+
     - **Property 25: Usage Tracking Accuracy**
     - **Validates: Requirements 7.2**
 
@@ -574,7 +582,8 @@ Convert the comprehensive HR-SM enterprise enhancement design into a series of a
     - **Monitor license server performance separately**
     - _Requirements: 7.4, 9.5_
 
-  - [ ]* 13.5 Write property test for security event documentation
+  - [x] 13.5 Write property test for security event documentation
+
     - **Property 26: Security Event Documentation**
     - **Validates: Requirements 7.3**
 
@@ -596,7 +605,8 @@ Convert the comprehensive HR-SM enterprise enhancement design into a series of a
     - Implement backup encryption key rotation
     - _Requirements: 8.1_
 
-  - [ ]* 14.2 Write property test for backup content integrity
+  - [x] 14.2 Write property test for backup content integrity
+
     - **Property 27: Backup Content Integrity**
     - **Validates: Requirements 8.1**
 
@@ -612,7 +622,8 @@ Convert the comprehensive HR-SM enterprise enhancement design into a series of a
     - **Ensure license server database and keys are backed up to S3**
     - _Requirements: 8.4_
 
-  - [ ]* 14.4 Write property test for cloud storage integration
+  - [x] 14.4 Write property test for cloud storage integration
+
     - **Property 29: Cloud Storage Integration**
     - **Validates: Requirements 8.4**
 

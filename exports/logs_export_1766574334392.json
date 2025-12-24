@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "exportedAt": "2025-12-24T11:05:34.392Z",
+    "totalRecords": 0,
+    "query": {
+      "tenantId": "export-tenant-7"
+    },
+    "format": "json",
+    "processingTime": 409
+  },
+  "data": []
+}
