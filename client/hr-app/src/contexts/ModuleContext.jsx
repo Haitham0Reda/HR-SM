@@ -1,13 +1,13 @@
 /**
  * Module Context
  * 
- * Manages enabled modules for the current tenant.
+ * Manages enabled modules for the current tenant with license validation.
  * Fetches module configuration on login and provides module status checks.
+ * Integrates with license server for feature-based access control.
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
-import axios from 'axios';
 import { useAuth } from './AuthContext';
 
 const ModuleContext = createContext(null);
@@ -22,17 +22,19 @@ export const useModules = () => {
 
 export const ModuleProvider = ({ children }) => {
     const { isAuthenticated, companySlug, user } = useAuth();
-    const [enabledModules, setEnabledModules] = useState([]);
-    const [moduleDetails, setModuleDetails] = useState({});
+    const [moduleAvailability, setModuleAvailability] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [lastFetch, setLastFetch] = useState(null);
 
-    // Fetch enabled modules when user logs in
+    // Cache duration in milliseconds (5 minutes)
+    const CACHE_DURATION = 5 * 60 * 1000;
+
+    // Fetch module availability when user logs in
     useEffect(() => {
-        const fetchEnabledModules = async () => {
-            if (!companySlug) {
-                setEnabledModules([]);
-                setModuleDetails({});
+        const fetchModuleAvailability = async () => {
+            if (!isAuthenticated) {
+                setModuleAvailability(null);
                 setLoading(false);
                 return;
             }
@@ -41,53 +43,153 @@ export const ModuleProvider = ({ children }) => {
                 setLoading(true);
                 setError(null);
 
-                console.log('Fetching modules for company:', companySlug);
+                console.log('Fetching module availability for tenant');
 
-                // Use the platform API to get company modules
-                const baseURL = process.env.REACT_APP_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
-                const response = await axios.get(`${baseURL}/api/platform/companies/${companySlug}/modules`);
+                // Use the new module availability API endpoint
+                const response = await api.get('/modules/availability');
                 
                 if (response.data.success) {
-                    const modules = response.data.data.availableModules || {};
+                    const availability = response.data.data;
                     
-                    // Extract enabled module names
-                    const enabledModulesList = Object.entries(modules)
-                        .filter(([key, module]) => module.enabled)
-                        .map(([key]) => key);
+                    console.log('Module availability loaded:', {
+                        tenant: availability.tenant.name,
+                        totalAvailable: availability.modules.total,
+                        availableModules: [...availability.modules.core, ...availability.modules.available],
+                        licenseValid: availability.license.valid
+                    });
                     
-                    console.log('Enabled modules loaded:', enabledModulesList);
-                    
-                    setEnabledModules(enabledModulesList);
-                    setModuleDetails(modules);
+                    setModuleAvailability(availability);
+                    setLastFetch(Date.now());
                 } else {
-                    throw new Error(response.data.message || 'Failed to load modules');
+                    throw new Error(response.data.message || 'Failed to load module availability');
                 }
             } catch (err) {
-                console.error('Failed to fetch enabled modules:', err);
+                console.error('Failed to fetch module availability:', err);
                 
-                // In development, provide default enabled modules
+                // In development, provide default configuration
                 if (process.env.NODE_ENV === 'development') {
                     console.warn('Using default module configuration for development');
-                    setEnabledModules(['hr-core', 'attendance', 'leave', 'documents', 'reports', 'tasks']);
+                    setModuleAvailability({
+                        tenant: { id: 'dev', name: 'Development', enabledModules: [] },
+                        license: { valid: true, features: ['life-insurance'], licenseType: 'development' },
+                        modules: {
+                            core: ['hr-core'],
+                            available: ['tasks', 'documents', 'reports', 'life-insurance'],
+                            unavailable: [],
+                            total: 5
+                        }
+                    });
                 } else {
-                    setError(err.message || 'Failed to load modules');
-                    setEnabledModules(['hr-core']);
+                    setError(err.message || 'Failed to load module availability');
+                    // Fallback to core modules only
+                    setModuleAvailability({
+                        tenant: { id: null, name: null, enabledModules: [] },
+                        license: { valid: false, features: [], licenseType: null },
+                        modules: {
+                            core: ['hr-core'],
+                            available: [],
+                            unavailable: [],
+                            total: 1
+                        }
+                    });
                 }
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchEnabledModules();
-    }, [companySlug]);
+        fetchModuleAvailability();
+    }, [isAuthenticated]);
+
+    // Auto-refresh every 5 minutes if data is stale
+    useEffect(() => {
+        if (!isAuthenticated || !moduleAvailability) return;
+
+        const fetchModuleAvailability = async () => {
+            if (!isAuthenticated) {
+                setModuleAvailability(null);
+                setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+                setError(null);
+
+                console.log('Fetching module availability for tenant');
+
+                // Use the new module availability API endpoint
+                const response = await api.get('/modules/availability');
+                
+                if (response.data.success) {
+                    const availability = response.data.data;
+                    
+                    console.log('Module availability loaded:', {
+                        tenant: availability.tenant.name,
+                        totalAvailable: availability.modules.total,
+                        availableModules: [...availability.modules.core, ...availability.modules.available],
+                        licenseValid: availability.license.valid
+                    });
+                    
+                    setModuleAvailability(availability);
+                    setLastFetch(Date.now());
+                } else {
+                    throw new Error(response.data.message || 'Failed to load module availability');
+                }
+            } catch (err) {
+                console.error('Failed to fetch module availability:', err);
+                
+                // In development, provide default configuration
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('Using default module configuration for development');
+                    setModuleAvailability({
+                        tenant: { id: 'dev', name: 'Development', enabledModules: [] },
+                        license: { valid: true, features: ['life-insurance'], licenseType: 'development' },
+                        modules: {
+                            core: ['hr-core'],
+                            available: ['tasks', 'documents', 'reports', 'life-insurance'],
+                            unavailable: [],
+                            total: 5
+                        }
+                    });
+                } else {
+                    setError(err.message || 'Failed to load module availability');
+                    // Fallback to core modules only
+                    setModuleAvailability({
+                        tenant: { id: null, name: null, enabledModules: [] },
+                        license: { valid: false, features: [], licenseType: null },
+                        modules: {
+                            core: ['hr-core'],
+                            available: [],
+                            unavailable: [],
+                            total: 1
+                        }
+                    });
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const interval = setInterval(() => {
+            const isStale = lastFetch && (Date.now() - lastFetch) > CACHE_DURATION;
+            if (isStale) {
+                console.log('Module availability cache is stale, refreshing...');
+                // Re-fetch without showing loading state
+                fetchModuleAvailability();
+            }
+        }, CACHE_DURATION);
+
+        return () => clearInterval(interval);
+    }, [isAuthenticated, moduleAvailability, lastFetch]);
 
     /**
      * Check if a module is enabled for the current tenant
-     * @param {string} moduleId - Module identifier (e.g., 'tasks', 'email-service')
-     * @returns {boolean} - Whether the module is enabled
+     * @param {string} moduleId - Module identifier (e.g., 'tasks', 'life-insurance')
+     * @returns {boolean} - Whether the module is enabled and licensed
      */
     const isModuleEnabled = (moduleId) => {
-        // Admin users have access to all modules
+        // Admin users have access to all modules (bypass license checks)
         if (user && user.role === 'admin') {
             return true;
         }
@@ -97,7 +199,30 @@ export const ModuleProvider = ({ children }) => {
             return true;
         }
 
-        return enabledModules.includes(moduleId);
+        if (!moduleAvailability) {
+            return false;
+        }
+
+        const { core, available } = moduleAvailability.modules;
+        return core.includes(moduleId) || available.includes(moduleId);
+    };
+
+    /**
+     * Get the reason why a module is unavailable
+     * @param {string} moduleId - Module identifier
+     * @returns {string|null} - Unavailability reason or null if available
+     */
+    const getModuleUnavailabilityReason = (moduleId) => {
+        if (isModuleEnabled(moduleId)) {
+            return null;
+        }
+
+        if (!moduleAvailability) {
+            return 'loading';
+        }
+
+        const unavailable = moduleAvailability.modules.unavailable.find(m => m.name === moduleId);
+        return unavailable ? unavailable.reason : 'module_not_found';
     };
 
     /**
@@ -125,21 +250,75 @@ export const ModuleProvider = ({ children }) => {
     const getEnabledModules = () => {
         // Admin users get all available modules
         if (user && user.role === 'admin') {
-            const allModules = Object.keys(moduleDetails);
-            return allModules.length > 0 ? allModules : ['hr-core', 'attendance', 'leave', 'payroll', 'documents', 'reports', 'tasks', 'surveys', 'announcements', 'events'];
+            return ['hr-core', 'tasks', 'documents', 'reports', 'payroll', 'life-insurance', 'clinic'];
         }
         
-        return ['hr-core', ...enabledModules];
+        if (!moduleAvailability) {
+            return ['hr-core'];
+        }
+
+        const { core, available } = moduleAvailability.modules;
+        return [...core, ...available];
+    };
+
+    /**
+     * Check if license is valid
+     * @returns {boolean} - Whether the license is valid
+     */
+    const isLicenseValid = () => {
+        return moduleAvailability?.license?.valid || false;
+    };
+
+    /**
+     * Get license features
+     * @returns {string[]} - Array of licensed features
+     */
+    const getLicenseFeatures = () => {
+        return moduleAvailability?.license?.features || [];
+    };
+
+    /**
+     * Check if a specific license feature is available
+     * @param {string} featureName - Feature name to check
+     * @returns {boolean} - Whether the feature is licensed
+     */
+    const hasLicenseFeature = (featureName) => {
+        const features = getLicenseFeatures();
+        return features.includes(featureName);
+    };
+
+    /**
+     * Refresh module availability data
+     */
+    const refresh = async () => {
+        if (isAuthenticated) {
+            await fetchModuleAvailability();
+        }
     };
 
     const value = {
+        // Legacy compatibility
         enabledModules: getEnabledModules(),
-        moduleDetails,
+        moduleDetails: moduleAvailability?.modules || {},
         loading,
         error,
+        
+        // Module availability functions
         isModuleEnabled,
+        getModuleUnavailabilityReason,
         areModulesEnabled,
         isAnyModuleEnabled,
+        
+        // License functions
+        isLicenseValid,
+        getLicenseFeatures,
+        hasLicenseFeature,
+        
+        // Utility functions
+        refresh,
+        
+        // Raw data
+        moduleAvailability
     };
 
     return (
@@ -148,5 +327,12 @@ export const ModuleProvider = ({ children }) => {
         </ModuleContext.Provider>
     );
 };
+
+    return (
+        <ModuleContext.Provider value={value}>
+            {children}
+        </ModuleContext.Provider>
+    );
+
 
 export default ModuleContext;

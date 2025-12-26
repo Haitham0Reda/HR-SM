@@ -100,6 +100,15 @@ export const ApiProvider = ({ children }) => {
   const apiWrapper = {
     // Platform API methods
     platform: {
+      async getTenant(tenantId) {
+        try {
+          return await platformService.getTenant(tenantId);
+        } catch (error) {
+          setPlatformStatus(prev => ({ ...prev, error: error.message }));
+          throw error;
+        }
+      },
+
       async getTenants() {
         try {
           return await platformService.getTenants();
@@ -285,18 +294,21 @@ export const ApiProvider = ({ children }) => {
           // Then create the license
           const licenseResponse = await this.license.createLicense({
             ...licenseData,
-            tenantId: tenantResponse.data._id,
+            tenantId: tenantResponse.data.tenantId || tenantResponse.data._id,
             tenantName: tenantResponse.data.name
           });
 
           if (licenseResponse.success) {
             // Update tenant with license information
-            await this.platform.updateTenant(tenantResponse.data._id, {
-              'license.licenseKey': licenseResponse.data.token,
-              'license.licenseNumber': licenseResponse.data.licenseNumber,
-              'license.licenseType': licenseData.type,
-              'license.expiresAt': licenseData.expiresAt,
-              'license.activatedAt': new Date()
+            await this.platform.updateTenant(tenantResponse.data.tenantId || tenantResponse.data._id, {
+              license: {
+                licenseKey: licenseResponse.data.token,
+                licenseNumber: licenseResponse.data.licenseNumber,
+                licenseType: licenseData.type,
+                licenseExpiresAt: licenseData.expiresAt,
+                licenseStatus: 'active',
+                activatedAt: new Date()
+              }
             });
           }
 

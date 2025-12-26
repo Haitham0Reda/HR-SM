@@ -48,6 +48,9 @@
     "test-platform-companies": "node server/scripts/testPlatformCompanies.js",
     "create-platform-admin": "node server/scripts/createPlatformAdmin.js",
     "test-platform-login": "node server/scripts/testPlatformLogin.js",
+    "test-backup-restoration": "node scripts/test-backup-restoration.js",
+    "test-backup-restoration:full": "node scripts/test-backup-restoration.js --full",
+    "test-backup-restoration:report": "node scripts/test-backup-restoration.js --report-only",
     "logs:stats": "node server/scripts/manageCompanyLogs.js stats",
     "logs:list": "node server/scripts/manageCompanyLogs.js list",
     "logs:cleanup": "node server/scripts/manageCompanyLogs.js cleanup-all",
@@ -94,6 +97,7 @@
     "nodemon": "^3.1.10",
     "pdf-parse": "^2.4.5",
     "rate-limit-redis": "^4.3.1",
+    "socket.io-client": "^4.8.3",
     "supertest": "^7.1.4",
     "test-exclude": "^7.0.1"
   },

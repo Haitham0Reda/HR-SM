@@ -237,11 +237,17 @@ class RevenueAnalyticsService {
   async getLicenseUsageAnalytics() {
     try {
       // Call license server API for analytics
+      const apiKey = process.env.LICENSE_SERVER_API_KEY;
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+
+      if (apiKey) {
+        headers['X-API-Key'] = apiKey;
+      }
+
       const response = await axios.get(`${this.licenseServerUrl}/api/licenses/analytics`, {
-        headers: {
-          'Authorization': `Bearer ${process.env.LICENSE_SERVER_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
+        headers,
         timeout: 5000
       });
 

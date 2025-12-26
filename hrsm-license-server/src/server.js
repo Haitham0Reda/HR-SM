@@ -57,21 +57,37 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Security middleware
+// Enhanced security middleware for license server
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "https:", "data:"],
+      connectSrc: ["'self'", "https:"],
+      mediaSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: []
     },
   },
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
     preload: true
-  }
+  },
+  crossOriginEmbedderPolicy: { policy: "require-corp" },
+  crossOriginOpenerPolicy: { policy: "same-origin" },
+  crossOriginResourcePolicy: { policy: "same-origin" },
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  xssFilter: true,
+  noSniff: true,
+  frameguard: { action: 'deny' },
+  permittedCrossDomainPolicies: false
 }));
 
 // CORS configuration
@@ -96,8 +112,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Enhanced rate limiting with Redis support
-import { generalRateLimit } from './middleware/rateLimiting.middleware.js';
-app.use(generalRateLimit);
+import { licenseServerRateLimit } from '../../server/middleware/enhancedRateLimit.middleware.js';
+app.use(licenseServerRateLimit());
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

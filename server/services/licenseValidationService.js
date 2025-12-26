@@ -431,15 +431,27 @@ class LicenseValidationService {
    */
   async callLicenseServer(licenseToken, machineId) {
     try {
+      // Get API key from environment
+      const apiKey = process.env.LICENSE_SERVER_API_KEY;
+      
+      const headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'HR-SM-Background-Validator/1.0'
+      };
+
+      // Add API key authentication if available
+      if (apiKey) {
+        headers['X-API-Key'] = apiKey;
+      } else {
+        logger.warn('LICENSE_SERVER_API_KEY not configured for background validation');
+      }
+
       const response = await axios.post(`${this.licenseServerUrl}/licenses/validate`, {
         token: licenseToken,
         machineId: machineId
       }, {
         timeout: 10000, // 10 second timeout for background validation
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'HR-SM-Background-Validator/1.0'
-        }
+        headers
       });
 
       return {

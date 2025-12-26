@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
 import { requireModule } from '../../../middleware/licenseFeatureGuard.middleware.js';
+import { requireModuleAvailability } from '../../../middleware/dynamicModuleLoader.middleware.js';
 import { validateRequest } from '../../../core/middleware/validation.js';
 import { requireRole } from '../../../shared/middleware/auth.js';
 import insuranceController from '../controllers/insuranceController.js';
@@ -10,6 +11,9 @@ import reportController from '../controllers/reportController.js';
 import { insuranceUpload } from '../config/multer.config.js';
 
 const router = express.Router();
+
+// Apply module availability check first (checks if module is enabled and licensed)
+router.use(requireModuleAvailability('life-insurance'));
 
 // Apply license feature guard to all routes in this module
 router.use(requireModule('life-insurance'));

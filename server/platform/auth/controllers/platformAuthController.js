@@ -2,12 +2,6 @@ import platformAuthService from '../services/platformAuthService.js';
 import { generatePlatformToken } from '../../middleware/platformAuth.js';
 import logger from '../../../utils/logger.js';
 import platformLogger from '../../../utils/platformLogger.js';
-import { 
-    logControllerAction, 
-    logControllerError, 
-    logAuthenticationEvent,
-    logSecurityEvent 
-} from '../../../utils/controllerLogger.js';
 
 /**
  * Platform Authentication Controller
@@ -25,15 +19,18 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Log platform login attempt
-    logControllerAction(req, 'platform_login_attempt', {
-      controller: 'PlatformAuthController',
-      userEmail: email
+    // Log platform login attempt using platform logger (no tenant context needed)
+    platformLogger.info('Platform login attempt', {
+      correlationId: req.correlationId,
+      userEmail: email,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
     });
 
     if (!email || !password) {
-      logSecurityEvent(req, 'incomplete_platform_login', {
-        severity: 'medium',
+      platformLogger.warn('Incomplete platform login attempt', {
+        correlationId: req.correlationId,
+        userEmail: email,
         missingFields: !email ? 'email' : 'password'
       });
       return res.status(400).json({
@@ -45,22 +42,13 @@ export const login = async (req, res) => {
     const { user, token } = await platformAuthService.login(email, password);
 
     // Log successful platform authentication
-    logAuthenticationEvent(req, 'platform_login_success', {
-      success: true,
+    platformLogger.info('Platform login successful', {
+      correlationId: req.correlationId,
       userId: user.id,
       userEmail: email,
       userRole: user.role,
-      platformAccess: true
-    });
-    
-    // Log to platform logger
-    platformLogger.adminAction('platform_login', user.id, {
-      correlationId: req.correlationId,
-      userEmail: email,
-      userRole: user.role,
       ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      timestamp: new Date().toISOString()
+      userAgent: req.get('User-Agent')
     });
 
     res.status(200).json({
@@ -76,18 +64,13 @@ export const login = async (req, res) => {
   } catch (error) {
     logger.error('Platform login failed', { error: error.message, email: req.body.email });
     
-    // Enhanced error logging for platform authentication
-    logAuthenticationEvent(req, 'platform_login_failed', {
-      success: false,
+    // Log failed platform authentication
+    platformLogger.error('Platform login failed', {
+      correlationId: req.correlationId,
       userEmail: req.body.email,
-      reason: error.message,
-      platformAccess: true
-    });
-    
-    logControllerError(req, error, {
-      controller: 'PlatformAuthController',
-      action: 'login',
-      userEmail: req.body.email
+      error: error.message,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
     });
     
     res.status(401).json({

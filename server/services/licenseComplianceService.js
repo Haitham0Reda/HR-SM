@@ -178,10 +178,19 @@ class LicenseComplianceService {
       }
 
       // Validate license with license server
+      const apiKey = process.env.LICENSE_SERVER_API_KEY;
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+
+      if (apiKey) {
+        headers['X-API-Key'] = apiKey;
+      }
+
       const response = await axios.post(`${this.licenseServerUrl}/licenses/validate`, {
         token: tenant.license.licenseKey,
         machineId: tenant.license.machineId
-      });
+      }, { headers });
 
       if (!response.data.valid) {
         throw new Error('Invalid license');
@@ -190,11 +199,7 @@ class LicenseComplianceService {
       // Get detailed license information
       const licenseResponse = await axios.get(
         `${this.licenseServerUrl}/licenses/tenant/${tenantId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${process.env.LICENSE_SERVER_API_KEY}`
-          }
-        }
+        { headers }
       );
 
       return licenseResponse.data.license;

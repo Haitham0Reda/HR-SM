@@ -9,15 +9,16 @@
 
 import request from 'supertest';
 import mongoose from 'mongoose';
-import app from '../../app.js';
+import app, { initializeRoutes } from '../../app.js';
 import Tenant from '../../platform/tenants/models/Tenant.js';
-import { licenseService } from '../../../client/platform-admin/src/services/licenseApi.js';
-import { platformService } from '../../../client/platform-admin/src/services/platformApi.js';
+import PlatformUser from '../../platform/models/PlatformUser.js';
+import { generatePlatformToken } from '../../platform/middleware/platformAuth.js';
 
 describe('Platform Administration Features Integration', () => {
     let testTenantId;
     let testLicenseNumber;
     let platformAdminToken;
+    let testPlatformUser;
 
     beforeAll(async () => {
         // Connect to test database
@@ -25,14 +26,34 @@ describe('Platform Administration Features Integration', () => {
             await mongoose.connect(process.env.MONGODB_URI_TEST || 'mongodb://localhost:27017/hrms_test');
         }
 
-        // Create platform admin token for testing
-        platformAdminToken = 'test-platform-admin-token';
+        // Initialize routes to ensure platform routes are available
+        await initializeRoutes();
+
+        // Create a test platform user
+        testPlatformUser = new PlatformUser({
+            email: 'admin@test.com',
+            password: 'testpassword123',
+            firstName: 'Test',
+            lastName: 'Admin',
+            role: 'super-admin',
+            permissions: ['manage_companies', 'manage_licenses', 'manage_modules'],
+            status: 'active'
+        });
+        await testPlatformUser.save();
+
+        // Generate platform admin token for testing
+        platformAdminToken = generatePlatformToken(testPlatformUser);
     });
 
     afterAll(async () => {
         // Clean up test data
         if (testTenantId) {
             await Tenant.findByIdAndDelete(testTenantId);
+        }
+        
+        // Clean up test platform user
+        if (testPlatformUser) {
+            await PlatformUser.findByIdAndDelete(testPlatformUser._id);
         }
         
         // Close database connection
@@ -43,11 +64,23 @@ describe('Platform Administration Features Integration', () => {
         test('should create a new company (tenant) successfully', async () => {
             const companyData = {
                 name: 'Test Company Ltd',
-                subdomain: 'testcompany',
-                plan: 'professional',
-                modules: ['hr-core', 'tasks'],
-                maxUsers: 100,
-                contactEmail: 'admin@testcompany.com'
+                domain: 'testcompany.hrms.com',
+                deploymentMode: 'saas',
+                contactInfo: {
+                    adminEmail: 'admin@testcompany.com',
+                    adminName: 'Test Admin',
+                    phone: '+1234567890'
+                },
+                adminUser: {
+                    email: 'admin@testcompany.com',
+                    password: 'testpassword123',
+                    firstName: 'Test',
+                    lastName: 'Admin'
+                },
+                metadata: {
+                    industry: 'Technology',
+                    companySize: '11-50'
+                }
             };
 
             const response = await request(app)
@@ -57,19 +90,19 @@ describe('Platform Administration Features Integration', () => {
                 .expect(201);
 
             expect(response.body.success).toBe(true);
-            expect(response.body.data).toHaveProperty('_id');
-            expect(response.body.data.name).toBe(companyData.name);
-            expect(response.body.data.subdomain).toBe(companyData.subdomain);
-            expect(response.body.data.billing.currentPlan).toBe(companyData.plan);
+            expect(response.body.data).toHaveProperty('tenant');
+            expect(response.body.data.tenant).toHaveProperty('_id');
+            expect(response.body.data.tenant.name).toBe(companyData.name);
+            expect(response.body.data.tenant.domain).toBe(companyData.domain);
 
             // Store for cleanup
-            testTenantId = response.body.data._id;
+            testTenantId = response.body.data.tenant._id;
         });
 
         test('should validate required fields when creating company', async () => {
             const invalidCompanyData = {
                 name: '', // Missing required name
-                subdomain: 'invalid-company'
+                domain: 'invalid-company.com'
             };
 
             const response = await request(app)
@@ -79,14 +112,20 @@ describe('Platform Administration Features Integration', () => {
                 .expect(400);
 
             expect(response.body.success).toBe(false);
-            expect(response.body.error).toContain('name');
+            expect(response.body.message).toContain('name');
         });
 
-        test('should prevent duplicate subdomains', async () => {
+        test('should prevent duplicate domains', async () => {
             const duplicateCompanyData = {
                 name: 'Another Test Company',
-                subdomain: 'testcompany', // Same subdomain as first test
-                plan: 'basic'
+                domain: 'testcompany.hrms.com', // Same domain as first test
+                deploymentMode: 'saas',
+                adminUser: {
+                    email: 'admin2@testcompany.com',
+                    password: 'testpassword123',
+                    firstName: 'Test2',
+                    lastName: 'Admin2'
+                }
             };
 
             const response = await request(app)
@@ -96,7 +135,7 @@ describe('Platform Administration Features Integration', () => {
                 .expect(400);
 
             expect(response.body.success).toBe(false);
-            expect(response.body.error).toContain('subdomain');
+            expect(response.body.message).toContain('domain');
         });
     });
 
@@ -211,7 +250,7 @@ describe('Platform Administration Features Integration', () => {
 
             // Enable life-insurance module
             const response = await request(app)
-                .post(`/api/platform/tenants/${testTenantId}/modules/life-insurance/enable`)
+                .post(`/api/platform/modules/tenants/${testTenantId}/modules/life-insurance/enable`)
                 .set('Authorization', `Bearer ${platformAdminToken}`)
                 .expect(200);
 
@@ -234,7 +273,7 @@ describe('Platform Administration Features Integration', () => {
 
             // Disable life-insurance module
             const response = await request(app)
-                .post(`/api/platform/tenants/${testTenantId}/modules/life-insurance/disable`)
+                .delete(`/api/platform/modules/tenants/${testTenantId}/modules/life-insurance/disable`)
                 .set('Authorization', `Bearer ${platformAdminToken}`)
                 .expect(200);
 
@@ -257,7 +296,7 @@ describe('Platform Administration Features Integration', () => {
 
             // Try to enable non-existent module
             const response = await request(app)
-                .post(`/api/platform/tenants/${testTenantId}/modules/non-existent-module/enable`)
+                .post(`/api/platform/modules/tenants/${testTenantId}/modules/non-existent-module/enable`)
                 .set('Authorization', `Bearer ${platformAdminToken}`)
                 .expect(400);
 
@@ -273,7 +312,7 @@ describe('Platform Administration Features Integration', () => {
             // Try to enable life-insurance module without proper license
             // This should fail if license validation is properly implemented
             const response = await request(app)
-                .post(`/api/platform/tenants/${testTenantId}/modules/life-insurance/enable`)
+                .post(`/api/platform/modules/tenants/${testTenantId}/modules/life-insurance/enable`)
                 .set('Authorization', `Bearer ${platformAdminToken}`)
                 .send();
 
@@ -339,7 +378,7 @@ describe('Platform Administration Features Integration', () => {
 
             // Step 4: Enable modules
             const moduleResponse = await request(app)
-                .post(`/api/platform/tenants/${workflowTenantId}/modules/life-insurance/enable`)
+                .post(`/api/platform/modules/tenants/${workflowTenantId}/modules/life-insurance/enable`)
                 .set('Authorization', `Bearer ${platformAdminToken}`)
                 .expect(200);
 

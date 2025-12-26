@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticatePlatformUser } from '../../middleware/platformAuth.js';
 import { validatePlatformPermission } from '../../middleware/platformPermissions.js';
+import * as tenantController from '../controllers/tenantController.js';
 
 const router = express.Router();
 
@@ -13,43 +14,35 @@ const router = express.Router();
 router.get('/', 
   authenticatePlatformUser,
   validatePlatformPermission('manage_companies'),
-  async (req, res) => {
-    try {
-      // TODO: Implement tenant listing
-      res.json({
-        success: true,
-        data: {
-          tenants: [],
-          total: 0
-        }
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Failed to get tenants'
-      });
-    }
-  }
+  tenantController.listTenants
+);
+
+// Get tenant by ID
+router.get('/:id', 
+  authenticatePlatformUser,
+  validatePlatformPermission('manage_companies'),
+  tenantController.getTenant
 );
 
 // Create tenant
 router.post('/', 
   authenticatePlatformUser,
   validatePlatformPermission('manage_companies'),
-  async (req, res) => {
-    try {
-      // TODO: Implement tenant creation
-      res.json({
-        success: true,
-        message: 'Tenant creation not yet implemented'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Failed to create tenant'
-      });
-    }
-  }
+  tenantController.createTenant
+);
+
+// Update tenant
+router.put('/:id', 
+  authenticatePlatformUser,
+  validatePlatformPermission('manage_companies'),
+  tenantController.updateTenant
+);
+
+// Create tenant with license integration
+router.post('/with-license', 
+  authenticatePlatformUser,
+  validatePlatformPermission('manage_companies'),
+  tenantController.createTenantWithLicense
 );
 
 export default router;

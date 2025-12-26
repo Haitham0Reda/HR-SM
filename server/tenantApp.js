@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
-import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './core/errors/errorHandler.js';
@@ -10,9 +9,17 @@ import { authRoutes } from './modules/hr-core/auth/routes/authRoutes.js';
 import { tenantContext } from './core/middleware/tenantContext.js';
 import { moduleGuard } from './core/middleware/moduleGuard.js';
 import { moduleRegistry } from './core/registry/moduleRegistry.js';
+import { dynamicModuleLoader } from './middleware/dynamicModuleLoader.middleware.js';
 import hardcopyRoutes from './modules/documents/routes/hardcopy.routes.js';
 import { setupCompanyLogging, logResponseCompletion, logCompanyErrors, trackUserActivity } from './middleware/companyLogging.js';
 import companyLogsRoutes from './routes/companyLogs.js';
+// Enhanced rate limiting middleware
+import { 
+    authRateLimit, 
+    apiRateLimit, 
+    publicRateLimit,
+    globalRateLimit 
+} from './middleware/enhancedRateLimit.middleware.js';
 
 const app = express();
 
@@ -28,16 +35,18 @@ app.use(cookieParser());
 app.use(mongoSanitize());
 app.use(compression());
 
-// Rate limiting
-const limiter = rateLimit({
-    max: 1000, // Higher limit for authenticated users
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    message: 'Too many requests from this IP, please try again in 15 minutes!',
-    keyGenerator: (req) => {
-        return req.tenantId || req.ip;
-    }
-});
-app.use('/api', limiter);
+// Enhanced rate limiting with Redis support and license-based limits
+// Global rate limiter as fallback
+app.use(globalRateLimit());
+
+// Authentication endpoints - very strict rate limiting
+app.use('/api/v1/auth', authRateLimit);
+
+// General API routes - license-based rate limiting
+app.use('/api/v1', apiRateLimit);
+
+// Public routes - lenient rate limiting
+app.use('/api', publicRateLimit);
 
 // Public routes (no auth required) - BEFORE tenant context
 app.use('/api/v1/auth', authRoutes);
@@ -49,12 +58,20 @@ app.use(logResponseCompletion);
 // Tenant context middleware (for protected routes)
 app.use(tenantContext);
 
+// Dynamic module loader (determines available modules per tenant)
+// This should be after tenant context and license validation
+app.use(dynamicModuleLoader);
+
 // User activity tracking middleware (after auth context is available)
 // This will be applied to all routes that come after this point
 app.use('/api/v1', trackUserActivity);
 
 // Company logs routes (protected) - after tenant context
 app.use('/api/company-logs', companyLogsRoutes);
+
+// Module availability routes (protected) - after tenant context
+import moduleAvailabilityRoutes from './routes/moduleAvailability.routes.js';
+app.use('/api/v1/modules', moduleAvailabilityRoutes);
 
 // Hardcopies routes (part of documents module)
 app.use('/api/v1/hardcopies', hardcopyRoutes);

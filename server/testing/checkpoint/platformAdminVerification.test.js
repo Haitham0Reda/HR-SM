@@ -162,7 +162,7 @@ describe('Platform Administration Checkpoint Verification', () => {
 
             // Test module enable endpoint
             const enableResponse = await request('http://localhost:5000')
-                .post('/api/platform/tenants/test-tenant/modules/life-insurance/enable');
+                .post('/api/platform/modules/tenants/test-tenant/modules/life-insurance/enable');
 
             // Should get 401 (unauthorized) not 404 (not found)
             expect([401, 404, 500]).toContain(enableResponse.status);

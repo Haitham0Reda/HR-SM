@@ -14,7 +14,6 @@ import {
     validateJsonStructure,
     handleValidationErrors
 } from '../middleware/validation.middleware.js';
-import { adminRateLimit, validationRateLimit, readRateLimit } from '../middleware/rateLimiting.middleware.js';
 import LicenseGenerator from '../services/licenseGenerator.js';
 import ValidationService from '../services/validationService.js';
 import License from '../models/License.js';
@@ -25,9 +24,11 @@ const router = express.Router();
 router.use(preventInjection);
 router.use(validateJsonStructure);
 
+// Note: Rate limiting is applied globally in server.js using licenseServerRateLimit()
+// Individual route-level rate limiting is not needed as the license server has its own global limits
+
 // Create License (Platform Admin only)
 router.post('/create', 
-  adminRateLimit, // Strict rate limiting for admin operations
   authenticatePlatformAdmin,
   validateLicenseCreate,
   asyncHandler(async (req, res) => {
@@ -53,7 +54,7 @@ router.post('/create',
 
 // Validate License (HR-SM Backend calls this)
 router.post('/validate',
-  validationRateLimit, // Frequent validation requests allowed
+  authenticateHRSMBackend,
   validateLicenseValidation,
   asyncHandler(async (req, res) => {
     const { token, machineId, ipAddress } = req.validatedData;
@@ -74,7 +75,6 @@ router.post('/validate',
 
 // Get License Details
 router.get('/:licenseNumber',
-  readRateLimit, // Lenient for read operations
   authenticatePlatformAdmin,
   validateLicenseNumber,
   asyncHandler(async (req, res) => {
@@ -100,7 +100,6 @@ router.get('/:licenseNumber',
 
 // Renew License
 router.patch('/:licenseNumber/renew',
-  adminRateLimit, // Strict for admin operations
   authenticatePlatformAdmin,
   validateLicenseNumber,
   validateLicenseRenewal,
@@ -145,7 +144,6 @@ router.patch('/:licenseNumber/renew',
 
 // Revoke License
 router.delete('/:licenseNumber',
-  adminRateLimit, // Strict for admin operations
   authenticatePlatformAdmin,
   validateLicenseNumber,
   validateLicenseRevocation,
@@ -169,7 +167,6 @@ router.delete('/:licenseNumber',
 
 // Get Tenant's License
 router.get('/tenant/:tenantId',
-  readRateLimit, // Lenient for read operations
   authenticatePlatformAdmin,
   validateTenantId,
   asyncHandler(async (req, res) => {
@@ -194,7 +191,6 @@ router.get('/tenant/:tenantId',
 
 // List All Licenses (with pagination)
 router.get('/',
-  readRateLimit, // Lenient for read operations
   authenticatePlatformAdmin,
   validatePagination,
   asyncHandler(async (req, res) => {
@@ -255,6 +251,7 @@ router.get('/',
 
 // Update License Usage (HR-SM Backend calls this)
 router.patch('/:licenseNumber/usage',
+  authenticateHRSMBackend,
   validateLicenseNumber,
   [
     body('currentUsers')

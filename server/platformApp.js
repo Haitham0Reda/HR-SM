@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
-import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './core/errors/errorHandler.js';
@@ -12,6 +11,13 @@ import { subscriptionRoutes } from './platform/subscriptions/routes/subscription
 import { moduleRoutes } from './platform/modules/routes/moduleRoutes.js';
 import { systemRoutes } from './platform/system/routes/systemRoutes.js';
 import companyLogsRoutes from './routes/companyLogs.js';
+// Enhanced rate limiting middleware
+import { 
+    authRateLimit, 
+    sensitiveRateLimit, 
+    publicRateLimit,
+    globalRateLimit 
+} from './middleware/enhancedRateLimit.middleware.js';
 
 const app = express();
 
@@ -27,13 +33,21 @@ app.use(cookieParser());
 app.use(mongoSanitize());
 app.use(compression());
 
-// Rate limiting
-const limiter = rateLimit({
-  max: 100,
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  message: 'Too many requests from this IP, please try again in 15 minutes!'
-});
-app.use('/api', limiter);
+// Enhanced rate limiting with Redis support and license-based limits
+// Global rate limiter as fallback for platform admin
+app.use(globalRateLimit());
+
+// Authentication endpoints - very strict rate limiting
+app.use('/api/v1/platform/auth', authRateLimit);
+
+// Sensitive platform operations - strict rate limiting
+app.use('/api/v1/platform/tenants', sensitiveRateLimit);
+app.use('/api/v1/platform/subscriptions', sensitiveRateLimit);
+app.use('/api/v1/platform/modules', sensitiveRateLimit);
+app.use('/api/v1/platform/system', sensitiveRateLimit);
+
+// General platform routes - moderate rate limiting
+app.use('/api', publicRateLimit);
 
 // Routes
 app.use('/api/v1/platform/auth', platformAuthRoutes);

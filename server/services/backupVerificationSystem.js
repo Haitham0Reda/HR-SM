@@ -782,13 +782,45 @@ class BackupVerificationSystem {
         };
 
         try {
-            // For now, simulate restoration test
-            test.status = 'passed';
-            test.message = 'Database restoration test completed';
+            // Import and use the comprehensive restoration test service
+            const BackupRestorationTest = (await import('./backupRestorationTest.js')).default;
+            const restorationTest = new BackupRestorationTest();
+            
+            // Run a focused database restoration test
+            const testReport = await restorationTest.runRestorationTest(backupId, {
+                testApplicationFunctionality: false // Skip app functionality for verification
+            });
+            
+            // Extract database-specific results
+            const databasePhases = testReport.phases.filter(phase => 
+                phase.name.includes('Database') || phase.name.includes('Data Integrity')
+            );
+            
+            const allDatabaseTestsPassed = databasePhases.every(phase => 
+                phase.status === 'passed'
+            );
+            
+            if (allDatabaseTestsPassed) {
+                test.status = 'passed';
+                test.message = `Database restoration verified: ${databasePhases.length} phases passed`;
+            } else {
+                const failedPhases = databasePhases.filter(phase => phase.status === 'failed');
+                test.status = 'failed';
+                test.message = `Database restoration failed: ${failedPhases.length} phases failed`;
+            }
+            
+            test.details = {
+                testId: testReport.testId,
+                phases: databasePhases.map(phase => ({
+                    name: phase.name,
+                    status: phase.status,
+                    message: phase.message
+                }))
+            };
 
         } catch (error) {
             test.status = 'failed';
-            test.message = error.message;
+            test.message = `Database restoration test failed: ${error.message}`;
         }
 
         test.endTime = new Date();
