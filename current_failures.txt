@@ -1,5 +1,4 @@
 server/testing/checkpoint/platformAdminVerification.test.js
-server/testing/controllers/moduleConfiguration.controller.test.js
 server/testing/integration/enhanced-tenant-model.test.js
 server/testing/integration/licenseControlledLogging.integration.test.js
 server/testing/integration/platformAdminFeatures.integration.test.js

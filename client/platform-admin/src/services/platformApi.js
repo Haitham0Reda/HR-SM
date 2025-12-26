@@ -109,12 +109,12 @@ export const platformService = {
   },
 
   async enableModule(tenantId, moduleId) {
-    const response = await platformApi.post(`/tenants/${tenantId}/modules/${moduleId}/enable`);
+    const response = await platformApi.post(`/modules/tenants/${tenantId}/modules/${moduleId}/enable`);
     return response.data;
   },
 
   async disableModule(tenantId, moduleId) {
-    const response = await platformApi.post(`/tenants/${tenantId}/modules/${moduleId}/disable`);
+    const response = await platformApi.delete(`/modules/tenants/${tenantId}/modules/${moduleId}/disable`);
     return response.data;
   },
 

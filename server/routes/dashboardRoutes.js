@@ -1,10 +1,25 @@
 import express from 'express';
+import { query } from 'express-validator';
+import { handleValidationErrors } from '../middleware/validation.middleware.js';
 import { requireAuth } from '../shared/middleware/auth.js';
 
 const router = express.Router();
 
 // Apply authentication to all routes
 router.use(requireAuth);
+
+// Validation for query parameters
+const validateDateRange = [
+    query('startDate')
+        .optional()
+        .isISO8601()
+        .withMessage('Start date must be a valid ISO 8601 date'),
+    query('endDate')
+        .optional()
+        .isISO8601()
+        .withMessage('End date must be a valid ISO 8601 date'),
+    handleValidationErrors
+];
 
 // Get employee of the month
 router.get('/employee-of-month', async (req, res) => {
@@ -33,7 +48,7 @@ router.get('/employee-of-month', async (req, res) => {
 });
 
 // Get dashboard statistics
-router.get('/stats', async (req, res) => {
+router.get('/stats', validateDateRange, async (req, res) => {
     try {
         res.json({
             success: true,
@@ -53,7 +68,7 @@ router.get('/stats', async (req, res) => {
 });
 
 // Get recent activities
-router.get('/activities', async (req, res) => {
+router.get('/activities', validateDateRange, async (req, res) => {
     try {
         res.json({
             success: true,

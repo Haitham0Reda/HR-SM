@@ -1063,4 +1063,13 @@ class ModuleConfigurationController {
     }
 }
 
-export default new ModuleConfigurationController();
+const moduleConfigurationController = new ModuleConfigurationController();
+
+// Bind all methods to maintain 'this' context
+Object.getOwnPropertyNames(ModuleConfigurationController.prototype)
+    .filter(name => name !== 'constructor' && typeof moduleConfigurationController[name] === 'function')
+    .forEach(name => {
+        moduleConfigurationController[name] = moduleConfigurationController[name].bind(moduleConfigurationController);
+    });
+
+export default moduleConfigurationController;

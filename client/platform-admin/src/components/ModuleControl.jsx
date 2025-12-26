@@ -101,7 +101,7 @@ const AVAILABLE_MODULES = [
   }
 ];
 
-const ModuleControl = ({ open, onClose, tenantId, tenantName, currentLicense }) => {
+const ModuleControl = ({ open, onClose, tenantId, tenantName, currentLicense, onSuccess }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modules, setModules] = useState([]);
@@ -212,6 +212,11 @@ const ModuleControl = ({ open, onClose, tenantId, tenantName, currentLicense }) 
       
       setEnabledModules(newEnabledModules);
       setChanges({});
+      
+      // Call success callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
       
     } catch (error) {
       setError(error.message);

@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 const router = express.Router();
 
@@ -188,7 +189,7 @@ router.get('/detailed', async (req, res) => {
       },
       uptime: {
         process: process.uptime(),
-        system: require('os').uptime(),
+        system: os.uptime(),
         unit: 'seconds'
       }
     };

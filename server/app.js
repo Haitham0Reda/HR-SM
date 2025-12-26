@@ -101,6 +101,10 @@ app.use(mongoSanitize());
 app.use(preventInjection);
 app.use(validateJsonSchema());
 
+// Comprehensive input validation and sanitization
+import { comprehensiveValidation } from './middleware/globalValidation.middleware.js';
+app.use(comprehensiveValidation);
+
 // Compression
 app.use(compression());
 
@@ -271,7 +275,7 @@ export const initializeRoutes = async () => {
         app.use('/api/platform/subscriptions', subscriptionRoutes.default);
         
         // Module management
-        const moduleRoutes = await import('./platform/routes/moduleRoutes.js');
+        const moduleRoutes = await import('./platform/modules/routes/moduleRoutes.js');
         app.use('/api/platform/modules', moduleRoutes.default);
         
         // System health and metrics
@@ -296,12 +300,16 @@ export const initializeRoutes = async () => {
     // Load core HR module (always enabled)
     await loadCoreRoutes(app);
 
-    // Load optional modules (checked by moduleGuard middleware)
+    // Load optional modules conditionally (checked by moduleGuard middleware)
+    // Note: These modules are loaded globally but access is controlled by middleware
     await loadModuleRoutes(app, MODULES.TASKS);
     await loadModuleRoutes(app, MODULES.COMMUNICATION);
     await loadModuleRoutes(app, MODULES.DOCUMENTS);
     await loadModuleRoutes(app, MODULES.REPORTING);
     await loadModuleRoutes(app, MODULES.PAYROLL);
+    
+    // Life Insurance module - loaded conditionally with enhanced guards
+    // The module routes include both availability and license checks
     await loadModuleRoutes(app, MODULES.LIFE_INSURANCE);
 
     // Ensure forget-checks route is loaded (temporary fix until module registry is fully working)

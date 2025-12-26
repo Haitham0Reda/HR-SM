@@ -1,4 +1,5 @@
 import Tenant from '../models/Tenant.js';
+import Plan from '../../subscriptions/models/Plan.js';
 import AppError from '../../../core/errors/AppError.js';
 import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
 

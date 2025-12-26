@@ -313,8 +313,12 @@ describe('ModuleConfigurationController', () => {
 
     describe('Authorization', () => {
         it('should allow platform admin to access any company', async () => {
+            // Create a new app with platform admin middleware
+            const adminApp = express();
+            adminApp.use(express.json());
+            
             // Mock platform admin user
-            app.use((req, res, next) => {
+            adminApp.use((req, res, next) => {
                 req.user = {
                     id: 'platform-admin-123',
                     companyId: 'platform',
@@ -322,6 +326,9 @@ describe('ModuleConfigurationController', () => {
                 };
                 next();
             });
+
+            // Add routes to admin app
+            adminApp.get('/module/:companyId', moduleConfigurationController.getModuleConfig);
 
             const mockConfig = {
                 companyId: 'other-company-456',
@@ -332,7 +339,7 @@ describe('ModuleConfigurationController', () => {
             loggingModuleService.getConfig.mockResolvedValue(mockConfig);
             loggingModuleService.getPlatformRequiredLogs.mockReturnValue([]);
 
-            const response = await request(app)
+            const response = await request(adminApp)
                 .get('/module/other-company-456')
                 .expect(200);
 

@@ -64,7 +64,7 @@ const licenseSchema = new mongoose.Schema({
     currentStorage: { type: Number, default: 0 }
   },
   
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
+  createdBy: { type: String, default: 'Platform-Admin' },
   notes: String
 }, { 
   timestamps: true,

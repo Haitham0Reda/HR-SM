@@ -295,10 +295,131 @@ export const requireModule = (moduleName, options = {}) => {
     
     const requiredFeature = moduleFeatureMap[moduleName];
     
-    return licenseModuleGuard(moduleName, {
-        ...options,
-        requiredFeature
-    });
+    return async (req, res, next) => {
+        try {
+            // First check if module exists in registry (same as original moduleGuard)
+            const moduleRegistry = await import('../core/registry/moduleRegistry.js');
+            if (!moduleRegistry.default.hasModule(moduleName)) {
+                logger.error(`Module guard: Module not found in registry: ${moduleName}`);
+                return res.status(404).json({
+                    success: false,
+                    error: 'MODULE_NOT_FOUND',
+                    message: `Module not found: ${moduleName}`,
+                    moduleName
+                });
+            }
+
+            // Check tenant context
+            const tenant = req.tenant;
+            if (!tenant) {
+                logger.warn(`No tenant found for module ${moduleName} access`);
+                return res.status(401).json({
+                    success: false,
+                    error: 'TENANT_REQUIRED',
+                    message: 'Valid tenant context required',
+                    moduleName
+                });
+            }
+
+            // Check if module is enabled at tenant level
+            const isModuleEnabled = tenant.enabledModules && tenant.enabledModules.includes(moduleName);
+            if (!isModuleEnabled) {
+                logger.warn(`Module ${moduleName} not enabled for tenant`, {
+                    tenantId: tenant.id,
+                    enabledModules: tenant.enabledModules
+                });
+                
+                return res.status(403).json({
+                    success: false,
+                    error: 'MODULE_DISABLED',
+                    message: `Module ${moduleName} is not enabled for your organization`,
+                    moduleName,
+                    enabledModules: tenant.enabledModules
+                });
+            }
+
+            // For hr-core module, always allow access (it's the base module)
+            if (moduleName === 'hr-core') {
+                req.moduleAvailable = true;
+                return next();
+            }
+
+            // Check license requirements for other modules
+            const licenseInfo = req.licenseInfo;
+            
+            // If no license info available, deny access to premium modules
+            if (!licenseInfo || !licenseInfo.valid) {
+                logger.warn(`Module ${moduleName} requires valid license`, {
+                    tenantId: tenant.id,
+                    moduleName,
+                    licenseValid: licenseInfo?.valid
+                });
+                
+                return res.status(403).json({
+                    success: false,
+                    error: 'LICENSE_REQUIRED',
+                    message: `Module ${moduleName} requires a valid license`,
+                    moduleName,
+                    upgradeUrl: `/pricing?module=${moduleName}`
+                });
+            }
+            
+            // Check if specific feature is required and licensed
+            if (requiredFeature) {
+                const hasFeature = licenseInfo.features && licenseInfo.features.includes(requiredFeature);
+                
+                if (!hasFeature) {
+                    logger.warn(`Module ${moduleName} requires license feature ${requiredFeature}`, {
+                        tenantId: tenant.id,
+                        moduleName,
+                        requiredFeature,
+                        availableFeatures: licenseInfo.features
+                    });
+                    
+                    return res.status(403).json({
+                        success: false,
+                        error: 'FEATURE_NOT_LICENSED',
+                        message: `Feature ${requiredFeature} is not included in your license`,
+                        moduleName,
+                        requiredFeature,
+                        availableFeatures: licenseInfo.features,
+                        upgradeUrl: `/pricing?feature=${requiredFeature}`
+                    });
+                }
+            }
+            
+            // Module access granted
+            req.moduleAvailable = true;
+            req.licenseRestricted = false;
+            
+            // Add license info to module context
+            req.module = {
+                name: moduleName,
+                enabled: true,
+                licenseInfo: {
+                    valid: licenseInfo.valid,
+                    features: licenseInfo.features,
+                    licenseType: licenseInfo.licenseType,
+                    expiresAt: licenseInfo.expiresAt
+                }
+            };
+            
+            next();
+            
+        } catch (error) {
+            logger.error('Module access control error', {
+                moduleName,
+                error: error.message,
+                stack: error.stack
+            });
+            
+            return res.status(500).json({
+                success: false,
+                error: 'MODULE_ACCESS_ERROR',
+                message: 'An error occurred while checking module access'
+            });
+        }
+    };
 };
 
 /**

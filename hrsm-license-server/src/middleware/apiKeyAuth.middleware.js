@@ -134,15 +134,57 @@ export const listApiKeys = () => {
  * Initialize default API keys
  */
 export const initializeDefaultApiKeys = () => {
-    // Generate default API key for HR-SM backend
-    const hrsmBackendKey = generateApiKey('HRSM-Backend', ['validate', 'usage']);
-    console.log(`🔑 HRSM Backend API Key: ${hrsmBackendKey.key}`);
-    console.log('   Add this to your HR-SM backend .env file as LICENSE_SERVER_API_KEY');
+    // For development, use fixed API keys to avoid regeneration issues
+    const isDevelopment = process.env.NODE_ENV === 'development';
     
-    // Generate default API key for platform admin
-    const platformAdminKey = generateApiKey('Platform-Admin', ['admin', 'read', 'write']);
-    console.log(`🔑 Platform Admin API Key: ${platformAdminKey.key}`);
-    console.log('   Use this for platform admin operations');
+    let hrsmBackendKey, platformAdminKey;
+    
+    if (isDevelopment) {
+        // Use fixed API keys for development (exactly 64 characters total)
+        const fixedHrsmKey = 'hrsm_dev_backend_key_1234567890123456789012345678901234567890123';
+        const fixedAdminKey = 'hrsm_dev_admin_key_1234567890123456789012345678901234567890123';
+        
+        // Manually add the fixed keys to the store
+        const hrsmKeyHash = crypto.createHash(API_KEY_CONFIG.hashAlgorithm).update(fixedHrsmKey).digest('hex');
+        const adminKeyHash = crypto.createHash(API_KEY_CONFIG.hashAlgorithm).update(fixedAdminKey).digest('hex');
+        
+        const keyData = {
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + (API_KEY_CONFIG.expirationDays * 24 * 60 * 60 * 1000)).toISOString(),
+            lastUsed: null,
+            usageCount: 0
+        };
+        
+        apiKeys.set(hrsmKeyHash, {
+            name: 'HRSM-Backend',
+            permissions: ['validate', 'usage'],
+            ...keyData
+        });
+        
+        apiKeys.set(adminKeyHash, {
+            name: 'Platform-Admin',
+            permissions: ['admin', 'read', 'write'],
+            ...keyData
+        });
+        
+        hrsmBackendKey = { key: fixedHrsmKey };
+        platformAdminKey = { key: fixedAdminKey };
+        
+        console.log(`🔑 HRSM Backend API Key (DEV): ${fixedHrsmKey}`);
+        console.log('   Add this to your HR-SM backend .env file as LICENSE_SERVER_API_KEY');
+        console.log(`🔑 Platform Admin API Key (DEV): ${fixedAdminKey}`);
+        console.log('   Use this for platform admin operations');
+        
+    } else {
+        // Generate random API keys for production
+        hrsmBackendKey = generateApiKey('HRSM-Backend', ['validate', 'usage']);
+        console.log(`🔑 HRSM Backend API Key: ${hrsmBackendKey.key}`);
+        console.log('   Add this to your HR-SM backend .env file as LICENSE_SERVER_API_KEY');
+        
+        platformAdminKey = generateApiKey('Platform-Admin', ['admin', 'read', 'write']);
+        console.log(`🔑 Platform Admin API Key: ${platformAdminKey.key}`);
+        console.log('   Use this for platform admin operations');
+    }
     
     return {
         hrsmBackendKey: hrsmBackendKey.key,

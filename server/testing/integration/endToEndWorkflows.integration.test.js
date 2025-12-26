@@ -407,7 +407,7 @@ describe('End-to-End Integration Tests', () => {
             mockedAxios.post.mockResolvedValueOnce(mockModuleEnableResponse);
 
             const moduleEnableResult = await mockedAxios.post(
-                `http://localhost:5000/platform/tenants/${testTenantId}/modules/enable`,
+                `http://localhost:5000/api/platform/modules/tenants/${testTenantId}/modules/life-insurance/enable`,
                 {
                     moduleKey: 'life-insurance'
                 }
@@ -454,13 +454,10 @@ describe('End-to-End Integration Tests', () => {
                 }
             };
 
-            mockedAxios.post.mockResolvedValueOnce(mockModuleDisableResponse);
+            mockedAxios.delete.mockResolvedValueOnce(mockModuleDisableResponse);
 
-            const moduleDisableResult = await mockedAxios.post(
-                `http://localhost:5000/platform/tenants/${testTenantId}/modules/disable`,
-                {
-                    moduleKey: 'life-insurance'
-                }
+            const moduleDisableResult = await mockedAxios.delete(
+                `http://localhost:5000/api/platform/modules/tenants/${testTenantId}/modules/life-insurance/disable`
             );
 
             expect(moduleDisableResult.data.success).toBe(true);
@@ -948,7 +945,7 @@ describe('End-to-End Integration Tests', () => {
             mockedAxios.post.mockResolvedValueOnce(mockModuleEnableFailure);
 
             const moduleEnableResult = await mockedAxios.post(
-                `http://localhost:5000/platform/tenants/${testTenantId}/modules/enable`,
+                `http://localhost:5000/api/platform/modules/tenants/${testTenantId}/modules/life-insurance/enable`,
                 {
                     moduleKey: 'life-insurance'
                 }
@@ -1004,7 +1001,7 @@ describe('End-to-End Integration Tests', () => {
             mockedAxios.post.mockResolvedValueOnce(mockModuleEnableSuccess);
 
             const moduleEnableSuccessResult = await mockedAxios.post(
-                `http://localhost:5000/platform/tenants/${testTenantId}/modules/enable`,
+                `http://localhost:5000/api/platform/modules/tenants/${testTenantId}/modules/life-insurance/enable`,
                 {
                     moduleKey: 'life-insurance'
                 }
@@ -1033,13 +1030,10 @@ describe('End-to-End Integration Tests', () => {
                 }
             };
 
-            mockedAxios.post.mockResolvedValueOnce(mockModuleDisableResponse);
+            mockedAxios.delete.mockResolvedValueOnce(mockModuleDisableResponse);
 
-            const moduleDisableResult = await mockedAxios.post(
-                `http://localhost:5000/platform/tenants/${testTenantId}/modules/disable`,
-                {
-                    moduleKey: 'life-insurance'
-                }
+            const moduleDisableResult = await mockedAxios.delete(
+                `http://localhost:5000/api/platform/modules/tenants/${testTenantId}/modules/life-insurance/disable`
             );
 
             expect(moduleDisableResult.data.success).toBe(true);

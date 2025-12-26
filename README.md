@@ -1,4 +1,4 @@
-# HR Management System (HRMS) - Enterprise SaaS Platform
+# HR Management System (HRMS) - Enterprise Multi-Tenant SaaS Platform
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-production%20ready-green.svg)
@@ -9,23 +9,110 @@
 ![Architecture](https://img.shields.io/badge/multi--tenant-SaaS-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![MongoDB](https://img.shields.io/badge/mongodb-%3E%3D6.0.0-green.svg)
-![React](https://img.shields.io/badge/react-18%2B-blue.svg)
+![React](https://img.shields.io/badge/react-19%2B-blue.svg)
 ![Security](https://img.shields.io/badge/security-A+-green.svg)
 ![Uptime](https://img.shields.io/badge/uptime-99.9%25-brightgreen.svg)
+![Modules](https://img.shields.io/badge/modules-14+-orange.svg)
+![Multi-App](https://img.shields.io/badge/frontend-multi--app-purple.svg)
 
 ## 🎯 What is HRMS?
 
-**A modular, multi-tenant HR management platform supporting attendance, payroll, leave, tasks, and reporting for businesses of all sizes.**
+**A comprehensive, production-ready multi-tenant HR management platform with modular architecture, dual-namespace API design, and independent frontend applications supporting unlimited tenants with complete data isolation.**
 
-HRMS automates HR workflows for **HR teams**, **enterprises**, and **developers** who need a scalable, secure, and customizable solution. Whether you're managing 10 employees or 10,000+, HRMS grows with your business while maintaining enterprise-grade security and performance.
+HRMS is an enterprise-grade SaaS platform that automates HR workflows for **HR teams**, **enterprises**, and **platform providers** who need a scalable, secure, and fully customizable solution. Whether you're managing 10 employees or serving 10,000+ companies as a SaaS provider, HRMS scales infinitely while maintaining enterprise-grade security and performance.
+
+### 🏗️ Complete System Architecture Overview
+
+**Multi-Tenant SaaS Platform** with sophisticated architecture:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           HRMS ENTERPRISE PLATFORM                              │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                              FRONTEND LAYER                                     │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  HR Application (Port 3000)          │  Platform Admin (Port 3001)            │
+│  ├── Employee Management             │  ├── Tenant Management                 │
+│  ├── Attendance Tracking             │  ├── Subscription Management           │
+│  ├── Task Management                 │  ├── Module Control                    │
+│  ├── Payroll Processing              │  ├── System Monitoring                 │
+│  ├── Document Management             │  ├── Usage Analytics                   │
+│  ├── Leave Management                │  └── License Management                │
+│  ├── Reporting & Analytics           │                                         │
+│  └── 14+ Business Modules            │  API: /api/platform/*                  │
+│                                       │  Auth: Platform JWT                    │
+│  API: /api/v1/*                      │  Users: Platform Admins                │
+│  Auth: Tenant JWT                    │                                         │
+│  Users: Employees, HR, Managers      │                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                               API LAYER                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  DUAL NAMESPACE ARCHITECTURE                                                    │
+│                                                                                 │
+│  Tenant API (/api/v1/*)              │  Platform API (/api/platform/*)        │
+│  ├── Tenant-scoped operations        │  ├── System-wide administration        │
+│  ├── Automatic tenant filtering      │  ├── Tenant CRUD operations            │
+│  ├── Module-based routing            │  ├── Subscription management           │
+│  ├── Role-based access control       │  ├── Module enable/disable             │
+│  ├── License validation              │  ├── System health monitoring          │
+│  └── Rate limiting by subscription   │  └── Usage analytics                   │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                            BUSINESS LOGIC LAYER                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  MODULAR ARCHITECTURE (14+ MODULES)                                            │
+│                                                                                 │
+│  Core Module (Always Enabled)        │  Optional Modules (Feature-Flagged)    │
+│  ├── HR Core                         │  ├── Tasks & Work Reporting            │
+│  │   ├── User Management             │  ├── Document Management               │
+│  │   ├── Authentication              │  ├── Payroll Processing                │
+│  │   ├── Attendance Tracking         │  ├── Communication & Notifications     │
+│  │   ├── Leave Management            │  ├── Reporting & Analytics             │
+│  │   ├── Holiday Management          │  ├── Life Insurance Management         │
+│  │   ├── Mission Tracking            │  ├── Medical Clinic Services           │
+│  │   ├── Overtime Management         │  ├── Survey & Feedback System          │
+│  │   └── Request Management          │  ├── Event Management                  │
+│                                       │  ├── Dashboard Customization           │
+│  Platform Administration             │  ├── Theme & Branding                  │
+│  ├── Tenant Management               │  ├── Email Service Integration         │
+│  ├── Subscription Management         │  └── Advanced Analytics                │
+│  ├── Module Management               │                                         │
+│  └── System Monitoring               │                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                              DATA LAYER                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  MULTI-TENANT DATABASE ARCHITECTURE                                            │
+│                                                                                 │
+│  MongoDB with Tenant Isolation       │  Redis Caching Layer                   │
+│  ├── Automatic tenant scoping        │  ├── Feature flag caching              │
+│  ├── Tenant-specific collections     │  ├── Session management                │
+│  ├── Data isolation & security       │  ├── Performance optimization          │
+│  ├── Backup & recovery per tenant    │  └── Real-time data sync               │
+│  └── Usage tracking & analytics      │                                         │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ### 🚀 Why Choose HRMS?
 
-- **💰 Cost Effective**: One platform for all HR needs - reduce software costs by 60%
+**For Organizations:**
+- **💰 Cost Effective**: Single platform for all HR needs - reduce software costs by 60%
 - **⚡ Quick Setup**: Get running in under 10 minutes with our one-command installation
-- **🔧 Fully Customizable**: 14+ modules you can enable/disable based on your needs
+- **🔧 Fully Modular**: 14+ modules you can enable/disable based on your needs
 - **🛡️ Enterprise Security**: Bank-level security with multi-tenant data isolation
 - **📈 Scales Infinitely**: From startup to enterprise - handles 100K+ employees seamlessly
+
+**For Platform Providers:**
+- **🏢 Ready-to-Deploy SaaS**: Complete multi-tenant platform out of the box
+- **💼 Subscription Management**: Built-in billing and plan management
+- **📊 Usage Analytics**: Comprehensive tenant usage tracking and reporting
+- **🔧 White-Label Ready**: Customizable branding and themes per tenant
+- **🌍 Global Scale**: Support for unlimited tenants worldwide with regional deployment
+
+**For Developers:**
+- **🏗️ Clean Architecture**: Modular monolith with clear boundaries and dependencies
+- **🧪 Comprehensive Testing**: 85% test coverage with unit, integration, and property-based tests
+- **📚 Complete Documentation**: Extensive docs and architectural guides
+- **🔄 Modern Stack**: Latest versions of proven technologies (Node.js 18+, React 19+, MongoDB 6+)
+- **🚀 DevOps Ready**: Production deployment, monitoring, and scaling included
 
 ## 🎬 See It In Action
 
@@ -40,46 +127,262 @@ HRMS automates HR workflows for **HR teams**, **enterprises**, and **developers*
 | **Attendance Tracking** | *Screenshot coming soon* |
 | **Task Management** | *Screenshot coming soon* |
 
-## 🏢 Enterprise Multi-Tenant SaaS Platform
+## 🏢 Complete System Architecture & Frontend-Backend Relationships
 
-A comprehensive, production-ready Human Resources Management System built with modern enterprise architecture principles. This platform serves as a **complete SaaS solution** supporting unlimited tenants with full data isolation, modular business capabilities, and scalable infrastructure.
+### 🎯 Architectural Overview
 
-### 🎯 Platform Overview
+HRMS implements a **modular monolith architecture** with **dual-namespace API design** and **multi-app frontend architecture**, providing the flexibility of microservices with the simplicity of monolithic deployment.
 
-**HRMS** is designed as an enterprise-grade multi-tenant SaaS platform that provides comprehensive HR management capabilities to organizations of all sizes. Built with a **modular monolith architecture**, it offers the flexibility of microservices with the simplicity of a monolithic deployment.
+### 🔄 Frontend-Backend Architecture Diagram
 
-### 🌟 Key Differentiators
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              FRONTEND APPLICATIONS                              │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────────────────────────┐    ┌─────────────────────────────────┐    │
+│  │        HR APPLICATION           │    │      PLATFORM ADMIN APP        │    │
+│  │         (Port 3000)             │    │         (Port 3001)             │    │
+│  │                                 │    │                                 │    │
+│  │  👥 Users: Employees, HR,       │    │  👤 Users: Platform Admins      │    │
+│  │           Managers, Admins      │    │                                 │    │
+│  │                                 │    │  🎯 Purpose: System Admin       │    │
+│  │  🎯 Purpose: Daily HR Ops       │    │  - Tenant Management            │    │
+│  │  - Employee Management          │    │  - Subscription Control         │    │
+│  │  - Attendance Tracking          │    │  - Module Enable/Disable        │    │
+│  │  - Task Management              │    │  - System Monitoring            │    │
+│  │  - Leave Requests               │    │  - Usage Analytics              │    │
+│  │  - Payroll Processing           │    │  - License Management           │    │
+│  │  - Document Management          │    │                                 │    │
+│  │  - Reporting & Analytics        │    │  🔗 API Endpoint:               │    │
+│  │                                 │    │     /api/platform/*             │    │
+│  │  🔗 API Endpoint:               │    │                                 │    │
+│  │     /api/v1/*                   │    │  🔐 Auth: Platform JWT          │    │
+│  │                                 │    │                                 │    │
+│  │  🔐 Auth: Tenant JWT            │    │  📱 Tech Stack:                 │    │
+│  │                                 │    │  - React 19+                    │    │
+│  │  📱 Tech Stack:                 │    │  - Material-UI                  │    │
+│  │  - React 19+                    │    │  - Axios (Platform API)         │    │
+│  │  - Material-UI                  │    │  - React Router                 │    │
+│  │  - Axios (Tenant API)           │    │  - Chart.js                     │    │
+│  │  - React Router                 │    │                                 │    │
+│  │  - Date-fns                     │    │                                 │    │
+│  └─────────────────────────────────┘    └─────────────────────────────────┘    │
+│                    │                                        │                   │
+│                    │                                        │                   │
+│              ┌─────────────────────────────────────────────────────────┐       │
+│              │              SHARED COMPONENT LIBRARY                   │       │
+│              │  - Common UI Components (Button, Modal, DataTable)      │       │
+│              │  - Shared Utilities & Helpers                           │       │
+│              │  - Theme Configuration                                   │       │
+│              │  - Constants & Enums                                     │       │
+│              └─────────────────────────────────────────────────────────┘       │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         │ HTTP/HTTPS
+                                         │ WebSocket (Real-time)
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                               BACKEND SERVER                                    │
+│                              (Port 5000)                                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│                        DUAL NAMESPACE API ARCHITECTURE                         │
+│                                                                                 │
+│  ┌─────────────────────────────────┐    ┌─────────────────────────────────┐    │
+│  │         TENANT API              │    │        PLATFORM API             │    │
+│  │       (/api/v1/*)               │    │      (/api/platform/*)          │    │
+│  │                                 │    │                                 │    │
+│  │  🎯 Purpose: Business Ops       │    │  🎯 Purpose: System Admin       │    │
+│  │                                 │    │                                 │    │
+│  │  📋 Endpoints:                  │    │  📋 Endpoints:                  │    │
+│  │  - /api/v1/auth                 │    │  - /platform/auth               │    │
+│  │  - /api/v1/users                │    │  - /platform/tenants            │    │
+│  │  - /api/v1/attendance           │    │  - /platform/subscriptions      │    │
+│  │  - /api/v1/tasks                │    │  - /platform/modules            │    │
+│  │  - /api/v1/documents            │    │  - /platform/system             │    │
+│  │  - /api/v1/payroll              │    │  - /platform/companies          │    │
+│  │  - /api/v1/reports              │    │                                 │    │
+│  │  - /api/v1/analytics            │    │  🔐 Auth: Platform JWT          │    │
+│  │  - /api/v1/[module-name]        │    │                                 │    │
+│  │                                 │    │  🛡️ Security:                   │    │
+│  │  🔐 Auth: Tenant JWT            │    │  - Platform admin permissions   │    │
+│  │                                 │    │  - System-wide access           │    │
+│  │  🛡️ Security:                   │    │  - Strict rate limiting         │    │
+│  │  - Automatic tenant filtering   │    │                                 │    │
+│  │  - Role-based access control    │    │  ⚡ Features:                   │    │
+│  │  - Module guards                │    │  - Tenant CRUD operations       │    │
+│  │  - License validation           │    │  - Module enable/disable        │    │
+│  │                                 │    │  - Usage monitoring             │    │
+│  │  ⚡ Features:                   │    │  - System health checks         │    │
+│  │  - Multi-tenant data isolation  │    │                                 │    │
+│  │  - Dynamic module loading       │    │                                 │    │
+│  │  - Feature flag support         │    │                                 │    │
+│  │  - Rate limiting by license     │    │                                 │    │
+│  └─────────────────────────────────┘    └─────────────────────────────────┘    │
+│                    │                                        │                   │
+│                    └────────────────┬───────────────────────┘                   │
+│                                     │                                           │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                            MIDDLEWARE LAYER                                     │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  🔒 Security Middleware              🏢 Multi-Tenant Middleware                 │
+│  - Helmet (HTTP headers)             - Tenant Context Injection                │
+│  - CORS (namespace-aware)            - Automatic Data Scoping                  │
+│  - Rate Limiting (tiered)            - License Validation                      │
+│  - Input Sanitization                - Usage Tracking                          │
+│  - Authentication (dual JWT)                                                   │
+│                                      🚦 Module System Middleware               │
+│  📊 Monitoring Middleware            - Dynamic Module Loading                   │
+│  - Request Logging                   - Feature Flag Evaluation                 │
+│  - Performance Metrics               - Module Guards                           │
+│  - Audit Trail                       - Dependency Resolution                   │
+│  - Error Tracking                                                              │
+│                                                                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                           MODULAR BUSINESS LAYER                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│                           14+ SELF-CONTAINED MODULES                           │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                          CORE MODULE (Always Enabled)                   │   │
+│  │                                                                         │   │
+│  │  📁 HR Core (/server/modules/hr-core/)                                 │   │
+│  │  ├── 👥 User Management        ├── 📅 Holiday Management               │   │
+│  │  ├── 🔐 Authentication         ├── ✈️ Mission Tracking                 │   │
+│  │  ├── ⏰ Attendance Tracking    ├── ⏱️ Overtime Management              │   │
+│  │  ├── 🏖️ Leave Management       ├── 📝 Request Management               │   │
+│  │  └── 💾 Backup Operations      └── 🏢 Tenant Configuration             │   │
+│  │                                                                         │   │
+│  │  🔗 Routes: /api/v1/users, /api/v1/attendance, /api/v1/vacations       │   │
+│  │  📊 Models: User, Department, Position, Attendance, Vacation            │   │
+│  │  🎯 Services: AuthService, AttendanceService, UserService              │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                      OPTIONAL MODULES (Feature-Flagged)                 │   │
+│  │                                                                         │   │
+│  │  📋 Tasks (/server/modules/tasks/)                                     │   │
+│  │  - Task Management & Work Reporting                                    │   │
+│  │  - Routes: /api/v1/tasks, /api/v1/task-reports                        │   │
+│  │                                                                         │   │
+│  │  📄 Documents (/server/modules/documents/)                             │   │
+│  │  - Document Management & Templates                                     │   │
+│  │  - Routes: /api/v1/documents, /api/v1/document-templates              │   │
+│  │                                                                         │   │
+│  │  💰 Payroll (/server/modules/payroll/)                                │   │
+│  │  - Salary Processing & Payslip Generation                             │   │
+│  │  - Routes: /api/v1/payroll                                            │   │
+│  │                                                                         │   │
+│  │  📢 Communication (/server/modules/announcements/, notifications/)     │   │
+│  │  - Announcements & Notifications                                       │   │
+│  │  - Routes: /api/v1/announcements, /api/v1/notifications               │   │
+│  │                                                                         │   │
+│  │  📊 Reporting (/server/modules/reports/, analytics/)                   │   │
+│  │  - Custom Reports & Analytics                                          │   │
+│  │  - Routes: /api/v1/reports, /api/v1/analytics                         │   │
+│  │                                                                         │   │
+│  │  🏥 Life Insurance (/server/modules/life-insurance/)                   │   │
+│  │  - Insurance Policies, Claims, Beneficiaries                          │   │
+│  │  - Routes: /api/v1/life-insurance                                     │   │
+│  │                                                                         │   │
+│  │  🏥 Medical Clinic (/server/modules/clinic/)                          │   │
+│  │  - Medical Services & Health Records                                   │   │
+│  │                                                                         │   │
+│  │  📧 Email Service (/server/modules/email-service/)                     │   │
+│  │  - Multi-provider Email Delivery                                       │   │
+│  │                                                                         │   │
+│  │  📋 Surveys (/server/modules/surveys/)                                 │   │
+│  │  - Employee Surveys & Feedback                                         │   │
+│  │                                                                         │   │
+│  │  📅 Events (/server/modules/events/)                                   │   │
+│  │  - Event Management & Calendar                                         │   │
+│  │                                                                         │   │
+│  │  📊 Dashboard (/server/modules/dashboard/)                             │   │
+│  │  - Customizable Dashboard Widgets                                      │   │
+│  │                                                                         │   │
+│  │  🎨 Theme (/server/modules/theme/)                                     │   │
+│  │  - UI Customization & Branding                                         │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                      PLATFORM ADMINISTRATION                            │   │
+│  │                                                                         │   │
+│  │  📁 Platform Layer (/server/platform/)                                 │   │
+│  │  ├── 🏢 Tenant Management      ├── 🔧 Module Management                │   │
+│  │  ├── 💳 Subscription Mgmt      ├── 📊 System Monitoring               │   │
+│  │  └── 🔐 Platform Auth          └── 📈 Usage Analytics                 │   │
+│  │                                                                         │   │
+│  │  🔗 Routes: /platform/tenants, /platform/subscriptions                │   │
+│  │  📊 Models: Tenant, Company, PlatformUser, Subscription                │   │
+│  │  🎯 Services: TenantService, SubscriptionService                       │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                              DATA LAYER                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────────────────────────┐    ┌─────────────────────────────────┐    │
+│  │         MONGODB DATABASE        │    │         REDIS CACHE             │    │
+│  │                                 │    │                                 │    │
+│  │  🏢 Multi-Tenant Architecture   │    │  ⚡ Performance Layer           │    │
+│  │  - Automatic tenant scoping     │    │  - Feature flag caching         │    │
+│  │  - Data isolation per tenant    │    │  - Session management           │    │
+│  │  - Tenant-specific collections  │    │  - Query result caching         │    │
+│  │  - Usage tracking & analytics   │    │  - Real-time data sync          │    │
+│  │                                 │    │                                 │    │
+│  │  📊 Core Collections:           │    │  🔑 Cache Keys:                 │    │
+│  │  - users (tenant-scoped)        │    │  - tenant_{id}_features         │    │
+│  │  - departments (tenant-scoped)  │    │  - user_{id}_permissions        │    │
+│  │  - attendance (tenant-scoped)   │    │  - module_{name}_config         │    │
+│  │  - tasks (tenant-scoped)        │    │  - session_{id}_data            │    │
+│  │  - documents (tenant-scoped)    │    │                                 │    │
+│  │  - tenants (platform-level)     │    │  ⏱️ TTL: 5-300 seconds         │    │
+│  │  - companies (platform-level)   │    │                                 │    │
+│  │                                 │    │                                 │    │
+│  │  🔒 Security Features:          │    │                                 │    │
+│  │  - Automatic tenant filtering   │    │                                 │    │
+│  │  - Encrypted sensitive data     │    │                                 │    │
+│  │  - Audit trail logging          │    │                                 │    │
+│  │  - Backup & recovery            │    │                                 │    │
+│  └─────────────────────────────────┘    └─────────────────────────────────┘    │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
 
-- **🏗️ True Multi-Tenancy**: Complete tenant isolation with automatic data scoping
-- **🧩 Modular Architecture**: 14+ self-contained business modules with clean boundaries  
-- **🔄 Dual API Namespace**: Separate tenant (`/api/v1/*`) and platform (`/platform/*`) APIs
-- **🎨 Multi-App Frontend**: Independent React applications for different user types
-- **📊 Enterprise Features**: Advanced analytics, reporting, and monitoring capabilities
-- **🔒 Security First**: Comprehensive security layers with RBAC and audit logging
-- **🚀 Production Ready**: 100% architecture alignment with enterprise standards
+### 🔄 Data Flow & Request Lifecycle
 
-### 🎯 Business Value Proposition
+#### 1. **HR Application Request Flow**
+```
+User Action (HR App) → Axios Request → /api/v1/* → Tenant Context Middleware 
+→ Authentication (Tenant JWT) → Module Guard → Business Logic → Database Query 
+→ Tenant-Scoped Data → Response → HR App UI Update
+```
 
-**For Organizations:**
-- **💰 Cost Effective**: Single platform serving multiple business units
-- **📈 Scalable Growth**: Support from 10 to 10,000+ employees
-- **🔧 Customizable**: Modular approach allows feature selection
-- **🛡️ Secure & Compliant**: Enterprise-grade security and audit trails
-- **⚡ Fast Deployment**: One-command setup and integration
+#### 2. **Platform Admin Request Flow**
+```
+Admin Action (Platform App) → Axios Request → /api/platform/* → Platform Auth 
+→ Platform Permissions → System Logic → Database Query → Platform Data 
+→ Response → Platform Admin UI Update
+```
 
-**For Developers:**
-- **🏗️ Clean Architecture**: Well-structured, maintainable codebase
-- **🧪 Comprehensive Testing**: 85% test coverage with multiple test types
-- **📚 Complete Documentation**: Extensive docs and architectural guides
-- **🔄 Modern Stack**: Latest versions of proven technologies
-- **🚀 DevOps Ready**: Production deployment and monitoring included
+#### 3. **Module Loading Flow**
+```
+System Startup → Module Discovery → Dependency Validation → Feature Flag Check 
+→ Dynamic Route Registration → Module Availability → Frontend Module Guards
+```
 
-**For Platform Providers:**
-- **🏢 Multi-Tenant SaaS**: Ready-to-deploy SaaS platform
-- **💼 Subscription Management**: Built-in billing and plan management
-- **📊 Usage Analytics**: Comprehensive tenant usage tracking
-- **🔧 White-Label Ready**: Customizable branding and themes
-- **🌍 Global Scale**: Support for unlimited tenants worldwide
+### 🏗️ Key Architectural Principles
+
+1. **Separation of Concerns**: Clear boundaries between tenant operations and platform administration
+2. **Multi-Tenancy**: Complete data isolation with automatic tenant scoping
+3. **Modularity**: Self-contained modules with clean dependencies
+4. **Scalability**: Horizontal scaling support with Redis caching
+5. **Security**: Multiple layers of authentication, authorization, and data protection
+6. **Flexibility**: Feature flags and subscription-based module control
+7. **Maintainability**: Clean code organization with comprehensive testing
 
 ---
 
@@ -515,154 +818,420 @@ The HRMS platform includes comprehensive visual documentation covering every asp
 | **Security Teams** | Security Architecture, Database Schema | Security assessment and compliance |
 | **Database Administrators** | Database Schema, API Flow | Data management and optimization |
 
-## 🛠️ Technology Stack
+## 🛠️ Complete Technology Stack & Project Structure
 
-### 📁 Project Structure Overview
+### 📁 Comprehensive Project Structure
 
-The project follows a **modular monolith architecture** with complete physical file restructuring:
+The project follows a **modular monolith architecture** with complete physical file restructuring and multi-app frontend design:
 
 ```
-HR-SM/
-├── 📁 server/                          # Backend Server
-│   ├── 📁 core/                        # Core Infrastructure
-│   │   ├── 📁 auth/                    # Authentication systems
-│   │   ├── 📁 config/                  # Configuration management
-│   │   ├── 📁 errors/                  # Error handling
-│   │   ├── 📁 logging/                 # Centralized logging
-│   │   ├── 📁 middleware/              # Core middleware
-│   │   ├── 📁 registry/                # Module registry & loading
-│   │   ├── 📁 services/                # Core services
-│   │   └── 📁 utils/                   # Core utilities
+HR-SM/                                          # Root Directory
+├── 📁 server/                                  # Backend Server (Node.js + Express)
+│   ├── 📁 core/                                # Core Infrastructure
+│   │   ├── 📁 auth/                            # Authentication systems
+│   │   ├── 📁 config/                          # Configuration management
+│   │   ├── 📁 errors/                          # Error handling & types
+│   │   ├── 📁 logging/                         # Centralized logging (Winston)
+│   │   ├── 📁 middleware/                      # Core middleware
+│   │   ├── 📁 registry/                        # Module registry & loading
+│   │   │   ├── moduleInitializer.js            # Module system initialization
+│   │   │   ├── moduleRegistry.js               # Module registration
+│   │   │   ├── moduleLoader.js                 # Dynamic module loading
+│   │   │   └── featureFlagService.js           # Feature flag management
+│   │   ├── 📁 services/                        # Core services (Redis, etc.)
+│   │   └── 📁 utils/                           # Core utilities
 │   │
-│   ├── 📁 modules/                     # Business Modules
-│   │   ├── 📁 hr-core/                 # Core HR Module (Always Enabled)
-│   │   │   ├── 📁 attendance/          # Attendance management
-│   │   │   ├── 📁 auth/                # Authentication
-│   │   │   ├── 📁 backup/              # Backup operations
-│   │   │   ├── 📁 holidays/            # Holiday management
-│   │   │   ├── 📁 missions/            # Mission tracking
-│   │   │   ├── 📁 overtime/            # Overtime management
-│   │   │   ├── 📁 requests/            # Request management
-│   │   │   ├── 📁 users/               # User management
-│   │   │   ├── 📁 vacations/           # Vacation management
-│   │   │   └── 📁 services/            # Shared HR services
-│   │   ├── 📁 tasks/                   # Task Management Module
-│   │   ├── 📁 clinic/                  # Medical Clinic Module
-│   │   ├── 📁 email-service/           # Email Service Module
-│   │   ├── 📁 payroll/                 # Payroll Module
-│   │   ├── 📁 reports/                 # Reporting Module
-│   │   ├── 📁 documents/               # Document Management
-│   │   ├── 📁 announcements/           # Announcements Module
-│   │   ├── 📁 surveys/                 # Survey Module
-│   │   ├── 📁 notifications/           # Notifications Module
-│   │   ├── 📁 events/                  # Events Module
-│   │   ├── 📁 analytics/               # Analytics Module
-│   │   ├── 📁 dashboard/               # Dashboard Module
-│   │   └── 📁 theme/                   # Theme Module
+│   ├── 📁 modules/                             # Business Modules (14+ Modules)
+│   │   ├── 📁 hr-core/                         # Core HR Module (Always Enabled)
+│   │   │   ├── 📁 attendance/                  # Attendance management
+│   │   │   │   ├── controllers/                # Attendance controllers
+│   │   │   │   ├── models/                     # Attendance models
+│   │   │   │   ├── routes/                     # Attendance routes
+│   │   │   │   └── services/                   # Attendance services
+│   │   │   ├── 📁 auth/                        # Authentication
+│   │   │   ├── 📁 backup/                      # Backup operations
+│   │   │   ├── 📁 holidays/                    # Holiday management
+│   │   │   ├── 📁 missions/                    # Mission tracking
+│   │   │   ├── 📁 overtime/                    # Overtime management
+│   │   │   ├── 📁 requests/                    # Request management
+│   │   │   ├── 📁 users/                       # User management
+│   │   │   │   ├── controllers/                # User controllers
+│   │   │   │   ├── models/                     # User, Department, Position models
+│   │   │   │   ├── routes/                     # User routes
+│   │   │   │   └── services/                   # User services
+│   │   │   ├── 📁 vacations/                   # Vacation management
+│   │   │   └── 📁 services/                    # Shared HR services
+│   │   │
+│   │   ├── 📁 tasks/                           # Task Management Module
+│   │   │   ├── controllers/                    # Task controllers
+│   │   │   ├── models/                         # Task, TaskReport models
+│   │   │   ├── routes/                         # Task routes
+│   │   │   └── services/                       # Task services
+│   │   │
+│   │   ├── 📁 documents/                       # Document Management
+│   │   │   ├── controllers/                    # Document controllers
+│   │   │   ├── models/                         # Document, Template models
+│   │   │   ├── routes/                         # Document routes
+│   │   │   └── services/                       # Document services
+│   │   │
+│   │   ├── 📁 payroll/                         # Payroll Module
+│   │   ├── 📁 life-insurance/                  # Life Insurance Module
+│   │   ├── 📁 clinic/                          # Medical Clinic Module
+│   │   ├── 📁 email-service/                   # Email Service Module
+│   │   ├── 📁 reports/                         # Reporting Module
+│   │   ├── 📁 analytics/                       # Analytics Module
+│   │   ├── 📁 announcements/                   # Announcements Module
+│   │   ├── 📁 notifications/                   # Notifications Module
+│   │   ├── 📁 surveys/                         # Survey Module
+│   │   ├── 📁 events/                          # Events Module
+│   │   ├── 📁 dashboard/                       # Dashboard Module
+│   │   └── 📁 theme/                           # Theme Module
 │   │
-│   ├── 📁 platform/                    # Platform Administration
-│   │   ├── 📁 auth/                    # Platform authentication
-│   │   ├── 📁 tenants/                 # Tenant management
-│   │   ├── 📁 subscriptions/           # Subscription management
-│   │   ├── 📁 modules/                 # Module management
-│   │   └── 📁 system/                  # System management
+│   ├── 📁 platform/                            # Platform Administration
+│   │   ├── 📁 auth/                            # Platform authentication
+│   │   │   ├── controllers/                    # Platform auth controllers
+│   │   │   ├── models/                         # PlatformUser model
+│   │   │   └── routes/                         # Platform auth routes
+│   │   ├── 📁 tenants/                         # Tenant management
+│   │   │   ├── controllers/                    # Tenant controllers
+│   │   │   ├── models/                         # Tenant, Company models
+│   │   │   └── routes/                         # Tenant routes
+│   │   ├── 📁 subscriptions/                   # Subscription management
+│   │   ├── 📁 modules/                         # Module management
+│   │   └── 📁 system/                          # System monitoring
 │   │
-│   ├── 📁 shared/                      # Shared Infrastructure
-│   ├── 📁 config/                      # Configuration
-│   ├── 📁 scripts/                     # Utility Scripts
-│   ├── 📁 testing/                     # Test Suites
-│   └── 📁 uploads/                     # File Storage
+│   ├── 📁 shared/                              # Shared Infrastructure
+│   │   ├── 📁 middleware/                      # Shared middleware
+│   │   │   ├── tenantContext.js                # Tenant context injection
+│   │   │   ├── moduleGuard.js                  # Module access control
+│   │   │   └── enhancedRateLimit.js            # Rate limiting
+│   │   ├── 📁 constants/                       # Shared constants
+│   │   │   └── modules.js                      # Module definitions
+│   │   ├── 📁 utils/                           # Shared utilities
+│   │   └── 📁 models/                          # Shared models
+│   │
+│   ├── 📁 config/                              # Configuration
+│   │   ├── database.js                         # MongoDB configuration
+│   │   ├── moduleRegistry.js                   # Module registry config
+│   │   └── environment.js                      # Environment setup
+│   │
+│   ├── 📁 scripts/                             # Utility Scripts
+│   ├── 📁 testing/                             # Test Suites
+│   ├── 📁 uploads/                             # File Storage
+│   ├── app.js                                  # Main Express app
+│   ├── tenantApp.js                            # Tenant-specific app
+│   ├── platformApp.js                          # Platform admin app
+│   └── index.js                                # Server entry point
 │
-├── 📁 client/                          # Frontend Applications
-│   ├── 📁 hr-app/                      # HR Application (Tenant-facing)
-│   ├── 📁 platform-admin/              # Platform Admin Application
-│   ├── 📁 shared/                      # Shared Frontend Components
-│   └── 📁 .storybook/                  # Storybook Configuration
+├── 📁 client/                                  # Frontend Applications
+│   ├── 📁 hr-app/                              # HR Application (Port 3000)
+│   │   ├── 📁 public/                          # Static assets
+│   │   ├── 📁 src/                             # Source code
+│   │   │   ├── 📁 components/                  # React components (50+ components)
+│   │   │   │   ├── 📁 attendance/              # Attendance UI components
+│   │   │   │   ├── 📁 common/                  # Shared UI components
+│   │   │   │   ├── 📁 layout/                  # Layout components
+│   │   │   │   ├── 📁 tasks/                   # Task management UI
+│   │   │   │   ├── 📁 users/                   # User management UI
+│   │   │   │   ├── 📁 payroll/                 # Payroll UI components
+│   │   │   │   ├── 📁 documents/               # Document UI components
+│   │   │   │   └── 📁 insurance/               # Insurance module UI
+│   │   │   ├── 📁 pages/                       # Page components (30+ pages)
+│   │   │   │   ├── 📁 attendance/              # Attendance pages
+│   │   │   │   ├── 📁 dashboard/               # Dashboard pages
+│   │   │   │   ├── 📁 tasks/                   # Task pages
+│   │   │   │   ├── 📁 users/                   # User management pages
+│   │   │   │   ├── 📁 payroll/                 # Payroll pages
+│   │   │   │   ├── 📁 documents/               # Document pages
+│   │   │   │   └── 📁 reports/                 # Reporting pages
+│   │   │   ├── 📁 services/                    # API service layer (40+ services)
+│   │   │   │   ├── api.js                      # Axios configuration
+│   │   │   │   ├── auth.service.js             # Authentication service
+│   │   │   │   ├── attendance.service.js       # Attendance API calls
+│   │   │   │   ├── task.service.js             # Task API calls
+│   │   │   │   ├── user.service.js             # User API calls
+│   │   │   │   ├── payroll.service.js          # Payroll API calls
+│   │   │   │   └── document.service.js         # Document API calls
+│   │   │   ├── 📁 contexts/                    # React Context for state
+│   │   │   │   ├── AuthContext.jsx             # Authentication state
+│   │   │   │   ├── ModuleContext.jsx           # Module availability
+│   │   │   │   ├── ThemeContext.jsx            # Theme configuration
+│   │   │   │   └── ApiContext.jsx              # API state management
+│   │   │   ├── 📁 hooks/                       # Custom React hooks (20+ hooks)
+│   │   │   │   ├── useAuth.js                  # Authentication hook
+│   │   │   │   ├── useApi.js                   # API calls hook
+│   │   │   │   ├── useModuleAccess.js          # Module access check
+│   │   │   │   ├── useAttendance.js            # Attendance operations
+│   │   │   │   ├── useTasks.js                 # Task operations
+│   │   │   │   └── useUsers.js                 # User operations
+│   │   │   ├── 📁 config/                      # Configuration
+│   │   │   │   ├── axios.js                    # Axios interceptors
+│   │   │   │   ├── modules.js                  # Module configuration
+│   │   │   │   └── commercialModuleConfigs.js  # Commercial module configs
+│   │   │   ├── 📁 utils/                       # Utility functions
+│   │   │   └── App.js                          # Main App component
+│   │   ├── package.json                        # HR App dependencies
+│   │   └── craco.config.js                     # Create React App override
+│   │
+│   ├── 📁 platform-admin/                      # Platform Admin App (Port 3001)
+│   │   ├── 📁 public/                          # Static assets
+│   │   ├── 📁 src/                             # Source code
+│   │   │   ├── 📁 components/                  # Admin UI components
+│   │   │   │   ├── 📁 tenants/                 # Tenant management UI
+│   │   │   │   ├── 📁 subscriptions/           # Subscription management UI
+│   │   │   │   ├── 📁 modules/                 # Module control UI
+│   │   │   │   ├── 📁 system/                  # System monitoring UI
+│   │   │   │   ├── 📁 analytics/               # Analytics UI
+│   │   │   │   └── 📁 layout/                  # Admin layout components
+│   │   │   ├── 📁 pages/                       # Admin pages
+│   │   │   │   ├── TenantsPage.jsx             # Tenant management page
+│   │   │   │   ├── SubscriptionsPage.jsx       # Subscription management
+│   │   │   │   ├── ModulesPage.jsx             # Module control page
+│   │   │   │   ├── SystemPage.jsx              # System monitoring
+│   │   │   │   ├── AnalyticsPage.jsx           # Platform analytics
+│   │   │   │   └── DashboardPage.jsx           # Admin dashboard
+│   │   │   ├── 📁 services/                    # Platform API services
+│   │   │   │   ├── platformApi.js              # Platform API client
+│   │   │   │   ├── tenantService.js            # Tenant operations
+│   │   │   │   ├── subscriptionService.js      # Subscription operations
+│   │   │   │   ├── moduleService.js            # Module operations
+│   │   │   │   └── systemService.js            # System operations
+│   │   │   ├── 📁 contexts/                    # Platform state management
+│   │   │   │   ├── PlatformAuthContext.jsx     # Platform authentication
+│   │   │   │   ├── ApiContext.jsx              # API state
+│   │   │   │   └── ThemeContext.jsx            # Theme configuration
+│   │   │   ├── 📁 hooks/                       # Admin hooks
+│   │   │   │   ├── usePlatformAuth.js          # Platform authentication
+│   │   │   │   ├── useTenants.js               # Tenant operations
+│   │   │   │   ├── useSubscriptions.js         # Subscription operations
+│   │   │   │   └── useRealtime.js              # Real-time updates
+│   │   │   └── App.js                          # Platform Admin App
+│   │   ├── package.json                        # Platform Admin dependencies
+│   │   └── craco.config.js                     # CRA override
+│   │
+│   ├── 📁 shared/                              # Shared Component Library
+│   │   ├── 📁 components/                      # Common UI components
+│   │   │   ├── Button/                         # Reusable button component
+│   │   │   ├── Modal/                          # Modal component
+│   │   │   ├── DataTable/                      # Data table component
+│   │   │   ├── TextField/                      # Text field component
+│   │   │   ├── DatePicker/                     # Date picker component
+│   │   │   └── Charts/                         # Chart components
+│   │   ├── 📁 utils/                           # Shared utilities
+│   │   ├── 📁 constants/                       # Shared constants
+│   │   ├── 📁 hooks/                           # Shared hooks
+│   │   └── 📁 styles/                          # Shared styles
+│   │
+│   ├── 📁 .storybook/                          # Storybook Configuration
+│   │   ├── main.js                             # Storybook main config
+│   │   ├── preview.js                          # Storybook preview config
+│   │   └── stories/                            # Component stories
+│   │
+│   └── package.json                            # Client workspace config
 │
-├── 📁 docs/                            # Documentation
-├── 📁 logs/                            # Application Logs
-├── 📁 uploads/                         # Global Upload Directory
-└── 📄 Configuration Files              # Root Configuration
+├── 📁 docs/                                    # Documentation
+│   ├── START_HERE.md                           # Quick start guide
+│   ├── ARCHITECTURE.md                         # System architecture
+│   ├── API_DOCUMENTATION.md                    # Complete API reference
+│   ├── DEPLOYMENT_GUIDE.md                     # Production deployment
+│   ├── SYSTEM_ARCHITECTURE_DIAGRAM.md          # Visual architecture
+│   ├── PROJECT_STRUCTURE_DIAGRAM.md            # Project structure
+│   ├── DATABASE_SCHEMA_DIAGRAM.md              # Database design
+│   ├── API_FLOW_DIAGRAM.md                     # API flow patterns
+│   ├── FRONTEND_ARCHITECTURE_DIAGRAM.md        # Frontend architecture
+│   ├── SECURITY_ARCHITECTURE_DIAGRAM.md        # Security design
+│   └── DEPLOYMENT_INFRASTRUCTURE_DIAGRAM.md    # Infrastructure design
+│
+├── 📁 logs/                                    # Application Logs
+├── 📁 uploads/                                 # Global Upload Directory
+├── 📁 backups/                                 # Backup Storage
+├── 📁 keys/                                    # License Keys (On-Premise)
+├── 📁 config/                                  # Global Configuration
+├── 📁 scripts/                                 # Utility Scripts
+├── 📁 .github/                                 # GitHub Actions
+├── 📁 .vscode/                                 # VS Code Configuration
+├── 📁 .kiro/                                   # Kiro IDE Configuration
+│
+├── package.json                                # Root package.json
+├── .env.example                                # Environment template
+├── .gitignore                                  # Git ignore rules
+├── docker-compose.production.yml               # Docker production config
+├── ecosystem.config.js                         # PM2 configuration
+├── jest.config.js                              # Jest testing config
+├── babel.config.cjs                            # Babel configuration
+├── eslint.config.js                            # ESLint configuration
+└── README.md                                   # This file
 ```
 
-### Backend (Multi-Tenant SaaS)
+### 🔧 Backend Technology Stack
 
-- **Runtime**: Node.js 18+ with ES Modules
-- **Framework**: Express.js 4.x with dual-namespace routing
-- **Database**: MongoDB 6.0+ with Mongoose ODM and tenant scoping
-- **Architecture Pattern**: Modular monolith with complete module isolation
-- **Authentication**: 
-  - Dual JWT systems (tenant + platform)
-  - Role-based access control (RBAC)
-  - Module-based permissions
-- **Multi-Tenancy**:
-  - Tenant context middleware
-  - Automatic data isolation
-  - Tenant-scoped queries
-- **Module System**:
-  - Dynamic module loading
-  - Dependency resolution
-  - Feature flag service
-  - Module registry
-- **Security**:
-  - Helmet.js (HTTP headers)
-  - Express Rate Limit
-  - Express Mongo Sanitize
-  - HPP (HTTP Parameter Pollution)
-  - CORS with namespace-aware configuration
-- **Logging**: Winston with structured logging and correlation IDs
-- **Monitoring**: 
-  - Prometheus metrics
-  - Health checks
-  - Usage tracking
-  - Alert system
-- **File Handling**: Multer 2.x with tenant-scoped storage
-- **Email**: Nodemailer with multiple provider support (SES, SMTP, SendGrid)
-- **Caching**: Redis for feature flags and session storage
-- **Validation**: Express Validator with custom rules
+**Runtime & Framework:**
+- **Node.js 18+** with ES Modules support
+- **Express.js 4.x** with dual-namespace routing architecture
+- **Modular Monolith** pattern with 14+ self-contained modules
 
-### Frontend (Multi-App Architecture)
+**Database & Caching:**
+- **MongoDB 6.0+** with Mongoose ODM for data persistence
+- **Redis** (optional) for caching, sessions, and feature flags
+- **Multi-tenant data isolation** with automatic tenant scoping
 
-- **Framework**: React 18+ with independent applications
-- **Applications**:
-  - **HR App**: Tenant-facing application (port 3000)
-  - **Platform Admin**: Platform administration (port 3001)
-  - **Shared Library**: Common components and utilities
-- **Build System**: CRACO for custom webpack configuration
-- **Routing**: React Router v6 with protected routes
-- **State Management**: 
-  - Context API for global state
-  - Custom hooks for business logic
-  - Separate auth contexts per app
-- **HTTP Client**: Axios with interceptors and namespace routing
-- **UI Framework**: Material-UI (MUI) with custom theme
-- **Styling**: CSS-in-JS with MUI styling solution
-- **Components**: 
-  - Shared UI kit (Button, Modal, DataTable, TextField)
-  - Module guards for feature access
-  - Layout components
-- **Forms**: Formik with Yup validation
-- **Date Handling**: date-fns for date manipulation
-- **Development Tools**: Storybook for component development
+**Authentication & Security:**
+- **Dual JWT Systems**: Separate tokens for tenant and platform operations
+- **Role-Based Access Control (RBAC)**: 4 user roles with granular permissions
+- **Module Guards**: Feature-based access control per subscription
+- **Security Middleware**: Helmet.js, CORS, rate limiting, input sanitization
 
-### Testing & Quality
+**Module System:**
+- **Dynamic Module Loading**: Runtime module discovery and registration
+- **Feature Flag Service**: Redis-backed feature flag management
+- **Dependency Resolution**: Automatic module dependency validation
+- **Module Registry**: Centralized module configuration and loading
 
-- **Unit Testing**: Jest 30.x
-- **API Testing**: Supertest
-- **Property-Based Testing**: fast-check
-- **Test Database**: MongoDB Memory Server
-- **Code Coverage**: Jest coverage reports
-- **Linting**: ESLint (configured)
+**Monitoring & Logging:**
+- **Winston**: Structured logging with multiple transports
+- **Prometheus**: Metrics collection and monitoring
+- **Health Checks**: Comprehensive system health monitoring
+- **Audit Logging**: Complete audit trail for all critical operations
 
-### DevOps & Tools
+**File Handling & Communication:**
+- **Multer 2.x**: File upload handling with tenant-scoped storage
+- **Nodemailer**: Multi-provider email support (SES, SMTP, SendGrid)
+- **WebSocket**: Real-time notifications and updates
 
-- **Process Manager**: PM2 (production)
-- **Development**: Nodemon, Concurrently
-- **Version Control**: Git
-- **Package Manager**: npm
-- **CLI Tools**: Commander, Yargs, Chalk
-- **File Processing**: Archiver, XLSX
-- **API Documentation**: Swagger/OpenAPI (planned)
+**Development & Testing:**
+- **Jest 30.x**: Unit and integration testing
+- **Supertest**: API endpoint testing
+- **Fast-check**: Property-based testing for critical paths
+- **ESLint**: Code quality and consistency
+
+### 🎨 Frontend Technology Stack
+
+**Framework & Build System:**
+- **React 19+** with latest features and optimizations
+- **CRACO**: Custom webpack configuration for both apps
+- **Create React App**: Base build system with ejection-free customization
+
+**UI Framework & Styling:**
+- **Material-UI (MUI) v7+**: Complete component library
+- **Emotion**: CSS-in-JS styling solution
+- **Roboto Font**: Google Fonts integration
+- **Responsive Design**: Mobile-first approach with breakpoints
+
+**State Management:**
+- **React Context API**: Global state management
+- **Custom Hooks**: Business logic encapsulation
+- **Separate Auth Contexts**: Independent authentication for each app
+
+**HTTP Client & API Integration:**
+- **Axios 1.x**: HTTP client with interceptors
+- **Namespace-aware routing**: Automatic API endpoint selection
+- **Token Management**: Automatic JWT handling and refresh
+- **Error Handling**: Centralized error processing and user feedback
+
+**Data Handling & Utilities:**
+- **Date-fns**: Modern date manipulation library
+- **Formik**: Form handling and validation
+- **Yup**: Schema validation for forms
+- **React Router v7**: Client-side routing with protected routes
+
+**Development Tools:**
+- **Storybook**: Component development and documentation
+- **React Testing Library**: Component testing
+- **Jest**: Unit testing for frontend components
+
+### 🔄 Frontend-Backend Integration Architecture
+
+#### **API Communication Pattern:**
+
+```javascript
+// HR App API Configuration
+const hrApiClient = axios.create({
+  baseURL: 'http://localhost:5000/api/v1',
+  headers: {
+    'Authorization': `Bearer ${tenantJWT}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+// Platform Admin API Configuration
+const platformApiClient = axios.create({
+  baseURL: 'http://localhost:5000/api/platform',
+  headers: {
+    'Authorization': `Bearer ${platformJWT}`,
+    'Content-Type': 'application/json'
+  }
+});
+```
+
+#### **Module-Based Frontend Routing:**
+
+```javascript
+// HR App Module Routes
+const moduleRoutes = {
+  'hr-core': [
+    { path: '/users', component: UserManagement },
+    { path: '/attendance', component: AttendanceTracking },
+    { path: '/vacations', component: VacationManagement }
+  ],
+  'tasks': [
+    { path: '/tasks', component: TaskManagement },
+    { path: '/task-reports', component: TaskReporting }
+  ],
+  'payroll': [
+    { path: '/payroll', component: PayrollProcessing },
+    { path: '/payslips', component: PayslipGeneration }
+  ]
+  // Routes loaded based on enabled modules
+};
+```
+
+#### **Real-time Communication:**
+
+```javascript
+// WebSocket Integration
+const wsClient = new WebSocket('ws://localhost:5000');
+wsClient.onmessage = (event) => {
+  const { type, data } = JSON.parse(event.data);
+  // Handle real-time updates (notifications, attendance, etc.)
+};
+```
+
+### 📊 Module Dependency Matrix
+
+| Module | Dependencies | Provides | Frontend Routes | Backend Routes |
+|--------|--------------|----------|-----------------|----------------|
+| **HR Core** | None (Always Enabled) | User Management, Auth, Attendance | `/users`, `/attendance`, `/vacations` | `/api/v1/users`, `/api/v1/attendance` |
+| **Tasks** | HR Core | Task Management, Work Reporting | `/tasks`, `/task-reports` | `/api/v1/tasks`, `/api/v1/task-reports` |
+| **Documents** | HR Core | Document Management, Templates | `/documents`, `/templates` | `/api/v1/documents`, `/api/v1/document-templates` |
+| **Payroll** | HR Core, Attendance | Salary Processing, Payslips | `/payroll`, `/payslips` | `/api/v1/payroll` |
+| **Communication** | HR Core | Announcements, Notifications | `/announcements`, `/notifications` | `/api/v1/announcements`, `/api/v1/notifications` |
+| **Reporting** | HR Core | Custom Reports, Analytics | `/reports`, `/analytics` | `/api/v1/reports`, `/api/v1/analytics` |
+| **Life Insurance** | HR Core | Insurance Policies, Claims | `/insurance`, `/claims` | `/api/v1/life-insurance` |
+
+### 🔧 Development Workflow
+
+#### **Backend Development:**
+1. Create module in `/server/modules/[module-name]/`
+2. Define models, controllers, routes, and services
+3. Register module in `moduleRegistry.js`
+4. Add feature flags and dependencies
+5. Write comprehensive tests
+6. Update API documentation
+
+#### **Frontend Development:**
+1. Create components in `/client/hr-app/src/components/[module-name]/`
+2. Add pages in `/client/hr-app/src/pages/[module-name]/`
+3. Create API services in `/client/hr-app/src/services/`
+4. Add routes to module configuration
+5. Implement module guards for access control
+6. Write component tests and stories
+
+#### **Integration Testing:**
+1. Test API endpoints with Supertest
+2. Test frontend components with React Testing Library
+3. End-to-end testing with real database
+4. Performance testing with load simulation
+5. Security testing with penetration tools
 
 ## 📦 Installation & Setup
 

@@ -74,15 +74,27 @@ function generateMachineId() {
  */
 async function callLicenseServer(licenseToken, machineId, attempt = 1) {
   try {
+    // Get API key from environment
+    const apiKey = process.env.LICENSE_SERVER_API_KEY;
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'HR-SM-Backend/1.0'
+    };
+
+    // Add API key authentication if available
+    if (apiKey) {
+      headers['X-API-Key'] = apiKey;
+    } else {
+      logger.warn('LICENSE_SERVER_API_KEY not configured, license validation may fail');
+    }
+
     const response = await axios.post(`${LICENSE_SERVER_URL}/licenses/validate`, {
       token: licenseToken,
       machineId: machineId
     }, {
       timeout: 5000, // 5 second timeout
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'HR-SM-Backend/1.0'
-      }
+      headers
     });
 
     return {
@@ -95,7 +107,8 @@ async function callLicenseServer(licenseToken, machineId, attempt = 1) {
       error: error.message,
       code: error.code,
       status: error.response?.status,
-      attempt
+      attempt,
+      hasApiKey: !!process.env.LICENSE_SERVER_API_KEY
     });
 
     // Retry logic

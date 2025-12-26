@@ -24,7 +24,7 @@ export const authenticatePlatformUser = async (req, res, next) => {
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.PLATFORM_JWT_SECRET);
     
     // Check if it's a platform user token
     if (decoded.type !== 'platform') {
@@ -99,7 +99,7 @@ export const generatePlatformToken = (user) => {
     type: 'platform'
   };
 
-  return jwt.sign(payload, process.env.JWT_SECRET, {
+  return jwt.sign(payload, process.env.PLATFORM_JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'
   });
 };
@@ -116,7 +116,7 @@ export const optionalPlatformAuth = async (req, res, next) => {
     }
 
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.PLATFORM_JWT_SECRET);
     
     if (decoded.type === 'platform') {
       const user = await PlatformUser.findById(decoded.userId).select('+permissions');

@@ -21,8 +21,17 @@ import {
   List,
   ListItem,
   ListItemText,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import {
+  Extension as ExtensionIcon,
+  Security as SecurityIcon,
+} from '@mui/icons-material';
 import tenantService from '../../services/tenantService';
+import ModuleControl from '../ModuleControl';
+import LicenseManager from '../LicenseManager';
+import { useApi } from '../../contexts/ApiContext';
 
 const TabPanel = ({ children, value, index }) => {
   return (
@@ -47,6 +56,11 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isEditMode, setIsEditMode] = useState(mode === 'edit');
+  const [moduleControlOpen, setModuleControlOpen] = useState(false);
+  const [licenseManagerOpen, setLicenseManagerOpen] = useState(false);
+  const [tenantLicense, setTenantLicense] = useState(null);
+
+  const { api } = useApi();
 
   useEffect(() => {
     if (tenant) {
@@ -60,8 +74,25 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
         phone: tenant.contactInfo?.phone || '',
         address: tenant.contactInfo?.address || '',
       });
+      
+      // Load tenant license information
+      loadTenantLicense();
     }
   }, [tenant]);
+
+  const loadTenantLicense = async () => {
+    if (!tenant?.tenantId) return;
+    
+    try {
+      const response = await api.license.getTenantLicense(tenant.tenantId);
+      if (response.success) {
+        setTenantLicense(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load tenant license:', error);
+      // Don't show error to user as license might not exist yet
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -101,7 +132,17 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
     setTabValue(0);
     setIsEditMode(mode === 'edit');
     setError('');
+    setModuleControlOpen(false);
+    setLicenseManagerOpen(false);
     onClose();
+  };
+
+  const handleModuleControlSuccess = () => {
+    // Refresh tenant data after module changes
+    if (onSuccess) {
+      onSuccess();
+    }
+    loadTenantLicense(); // Refresh license data as well
   };
 
   if (!tenant) return null;
@@ -279,25 +320,101 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={3}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="subtitle2">
+              Module Management
+            </Typography>
+            <Box display="flex" gap={1}>
+              <Tooltip title="Manage License">
+                <IconButton
+                  size="small"
+                  onClick={() => setLicenseManagerOpen(true)}
+                  color="primary"
+                >
+                  <SecurityIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Manage Modules">
+                <IconButton
+                  size="small"
+                  onClick={() => setModuleControlOpen(true)}
+                  color="primary"
+                >
+                  <ExtensionIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
+
+          {/* License Status */}
+          {tenantLicense && (
+            <Box mb={3}>
+              <Typography variant="subtitle2" gutterBottom>
+                License Status
+              </Typography>
+              <Box display="flex" gap={2} alignItems="center">
+                <Chip
+                  label={tenantLicense.status?.toUpperCase() || 'UNKNOWN'}
+                  color={tenantLicense.status === 'active' ? 'success' : 'error'}
+                  size="small"
+                />
+                <Chip
+                  label={tenantLicense.type?.toUpperCase() || 'UNKNOWN'}
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                />
+                <Typography variant="caption" color="text.secondary">
+                  Expires: {tenantLicense.expiresAt ? new Date(tenantLicense.expiresAt).toLocaleDateString() : 'Unknown'}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
+          {/* Enabled Modules */}
           <Typography variant="subtitle2" gutterBottom>
             Enabled Modules
           </Typography>
           {tenant.enabledModules && tenant.enabledModules.length > 0 ? (
             <List>
               {tenant.enabledModules.map((module) => (
-                <ListItem key={module.moduleId}>
+                <ListItem key={module.moduleId || module}>
                   <ListItemText
-                    primary={module.moduleId}
-                    secondary={`Enabled: ${new Date(module.enabledAt).toLocaleDateString()}`}
+                    primary={typeof module === 'string' ? module : module.moduleId}
+                    secondary={
+                      typeof module === 'object' && module.enabledAt
+                        ? `Enabled: ${new Date(module.enabledAt).toLocaleDateString()}`
+                        : 'Module enabled'
+                    }
                   />
                   <Chip label="Active" color="success" size="small" />
                 </ListItem>
               ))}
             </List>
           ) : (
-            <Typography variant="body2" color="text.secondary">
-              No modules enabled
-            </Typography>
+            <Alert severity="info">
+              No modules enabled. Click the module management button to enable modules for this tenant.
+            </Alert>
+          )}
+
+          {/* License Features */}
+          {tenantLicense?.features && (
+            <Box mt={3}>
+              <Typography variant="subtitle2" gutterBottom>
+                Licensed Features
+              </Typography>
+              <Box display="flex" flexWrap="wrap" gap={1}>
+                {tenantLicense.features.modules?.map((module) => (
+                  <Chip
+                    key={module}
+                    label={module}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                ))}
+              </Box>
+            </Box>
           )}
         </TabPanel>
       </DialogContent>
@@ -323,6 +440,24 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
           </Button>
         )}
       </DialogActions>
+
+      {/* Module Control Dialog */}
+      <ModuleControl
+        open={moduleControlOpen}
+        onClose={() => setModuleControlOpen(false)}
+        tenantId={tenant?.tenantId}
+        tenantName={tenant?.name}
+        currentLicense={tenantLicense}
+        onSuccess={handleModuleControlSuccess}
+      />
+
+      {/* License Manager Dialog */}
+      <LicenseManager
+        open={licenseManagerOpen}
+        onClose={() => setLicenseManagerOpen(false)}
+        tenantId={tenant?.tenantId}
+        tenantName={tenant?.name}
+      />
     </Dialog>
   );
 };
