@@ -264,61 +264,61 @@ HRMS implements a **modular monolith architecture** with **dual-namespace API de
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
 │  │                      OPTIONAL MODULES (Feature-Flagged)                 │   │
 │  │                                                                         │   │
-│  │  📋 Tasks (/server/modules/tasks/)                                     │   │
-│  │  - Task Management & Work Reporting                                    │   │
-│  │  - Routes: /api/v1/tasks, /api/v1/task-reports                        │   │
+│  │  📋 Tasks (/server/modules/tasks/)                                      │   │
+│  │  - Task Management & Work Reporting                                     │   │
+│  │  - Routes: /api/v1/tasks, /api/v1/task-reports                          │   │
 │  │                                                                         │   │
-│  │  📄 Documents (/server/modules/documents/)                             │   │
-│  │  - Document Management & Templates                                     │   │
-│  │  - Routes: /api/v1/documents, /api/v1/document-templates              │   │
+│  │  📄 Documents (/server/modules/documents/)                              │   │
+│  │  - Document Management & Templates                                      │   │
+│  │  - Routes: /api/v1/documents, /api/v1/document-templates                │   │
 │  │                                                                         │   │
-│  │  💰 Payroll (/server/modules/payroll/)                                │   │
-│  │  - Salary Processing & Payslip Generation                             │   │
-│  │  - Routes: /api/v1/payroll                                            │   │
+│  │  💰 Payroll (/server/modules/payroll/)                                  │   │
+│  │  - Salary Processing & Payslip Generation                               │   │
+│  │  - Routes: /api/v1/payroll                                              │   │
 │  │                                                                         │   │
 │  │  📢 Communication (/server/modules/announcements/, notifications/)     │   │
-│  │  - Announcements & Notifications                                       │   │
-│  │  - Routes: /api/v1/announcements, /api/v1/notifications               │   │
+│  │  - Announcements & Notifications                                        │   │
+│  │  - Routes: /api/v1/announcements, /api/v1/notifications                 │   │
 │  │                                                                         │   │
-│  │  📊 Reporting (/server/modules/reports/, analytics/)                   │   │
-│  │  - Custom Reports & Analytics                                          │   │
-│  │  - Routes: /api/v1/reports, /api/v1/analytics                         │   │
+│  │  📊 Reporting (/server/modules/reports/, analytics/)                    │   │
+│  │  - Custom Reports & Analytics                                           │   │
+│  │  - Routes: /api/v1/reports, /api/v1/analytics                           │   │
 │  │                                                                         │   │
-│  │  🏥 Life Insurance (/server/modules/life-insurance/)                   │   │
-│  │  - Insurance Policies, Claims, Beneficiaries                          │   │
-│  │  - Routes: /api/v1/life-insurance                                     │   │
+│  │  🏥 Life Insurance (/server/modules/life-insurance/)                    │   │
+│  │  - Insurance Policies, Claims, Beneficiaries                            │   │
+│  │  - Routes: /api/v1/life-insurance                                       │   │
 │  │                                                                         │   │
-│  │  🏥 Medical Clinic (/server/modules/clinic/)                          │   │
-│  │  - Medical Services & Health Records                                   │   │
+│  │  🏥 Medical Clinic (/server/modules/clinic/)                           │   │
+│  │  - Medical Services & Health Records                                    │   │
 │  │                                                                         │   │
 │  │  📧 Email Service (/server/modules/email-service/)                     │   │
-│  │  - Multi-provider Email Delivery                                       │   │
+│  │  - Multi-provider Email Delivery                                        │   │
 │  │                                                                         │   │
-│  │  📋 Surveys (/server/modules/surveys/)                                 │   │
-│  │  - Employee Surveys & Feedback                                         │   │
+│  │  📋 Surveys (/server/modules/surveys/)                                  │   │
+│  │  - Employee Surveys & Feedback                                          │   │
 │  │                                                                         │   │
-│  │  📅 Events (/server/modules/events/)                                   │   │
-│  │  - Event Management & Calendar                                         │   │
+│  │  📅 Events (/server/modules/events/)                                    │   │
+│  │  - Event Management & Calendar                                          │   │
 │  │                                                                         │   │
-│  │  📊 Dashboard (/server/modules/dashboard/)                             │   │
-│  │  - Customizable Dashboard Widgets                                      │   │
+│  │  📊 Dashboard (/server/modules/dashboard/)                              │   │
+│  │  - Customizable Dashboard Widgets                                       │   │
 │  │                                                                         │   │
-│  │  🎨 Theme (/server/modules/theme/)                                     │   │
-│  │  - UI Customization & Branding                                         │   │
+│  │  🎨 Theme (/server/modules/theme/)                                      │   │
+│  │  - UI Customization & Branding                                          │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                 │
+│                                                                                │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
 │  │                      PLATFORM ADMINISTRATION                            │   │
 │  │                                                                         │   │
-│  │  📁 Platform Layer (/server/platform/)                                 │   │
+│  │  📁 Platform Layer (/server/platform/)                                  │   │
 │  │  ├── 🏢 Tenant Management      ├── 🔧 Module Management                │   │
-│  │  ├── 💳 Subscription Mgmt      ├── 📊 System Monitoring               │   │
-│  │  └── 🔐 Platform Auth          └── 📈 Usage Analytics                 │   │
+│  │  ├── 💳 Subscription Mgmt      ├── 📊 System Monitoring                │   │
+│  │  └── 🔐 Platform Auth          └── 📈 Usage Analytics                  │   │
 │  │                                                                         │   │
-│  │  🔗 Routes: /platform/tenants, /platform/subscriptions                │   │
-│  │  📊 Models: Tenant, Company, PlatformUser, Subscription                │   │
-│  │  🎯 Services: TenantService, SubscriptionService                       │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
+│  │  🔗 Routes: /platform/tenants, /platform/subscriptions                  │   │
+│  │  📊 Models: Tenant, Company, PlatformUser, Subscription                 │   │
+│  │  🎯 Services: TenantService, SubscriptionService                        │   │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
 │                                                                                 │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                              DATA LAYER                                         │
@@ -327,19 +327,19 @@ HRMS implements a **modular monolith architecture** with **dual-namespace API de
 │  ┌─────────────────────────────────┐    ┌─────────────────────────────────┐    │
 │  │         MONGODB DATABASE        │    │         REDIS CACHE             │    │
 │  │                                 │    │                                 │    │
-│  │  🏢 Multi-Tenant Architecture   │    │  ⚡ Performance Layer           │    │
+│  │  🏢 Multi-Tenant Architecture   │    │  ⚡ Performance Layer          │    │
 │  │  - Automatic tenant scoping     │    │  - Feature flag caching         │    │
 │  │  - Data isolation per tenant    │    │  - Session management           │    │
 │  │  - Tenant-specific collections  │    │  - Query result caching         │    │
 │  │  - Usage tracking & analytics   │    │  - Real-time data sync          │    │
 │  │                                 │    │                                 │    │
-│  │  📊 Core Collections:           │    │  🔑 Cache Keys:                 │    │
+│  │  📊 Core Collections:           │    │  🔑 Cache Keys:                │    │
 │  │  - users (tenant-scoped)        │    │  - tenant_{id}_features         │    │
 │  │  - departments (tenant-scoped)  │    │  - user_{id}_permissions        │    │
 │  │  - attendance (tenant-scoped)   │    │  - module_{name}_config         │    │
 │  │  - tasks (tenant-scoped)        │    │  - session_{id}_data            │    │
 │  │  - documents (tenant-scoped)    │    │                                 │    │
-│  │  - tenants (platform-level)     │    │  ⏱️ TTL: 5-300 seconds         │    │
+│  │  - tenants (platform-level)     │    │  ⏱️ TTL: 5-300 seconds          │    │
 │  │  - companies (platform-level)   │    │                                 │    │
 │  │                                 │    │                                 │    │
 │  │  🔒 Security Features:          │    │                                 │    │
@@ -348,8 +348,8 @@ HRMS implements a **modular monolith architecture** with **dual-namespace API de
 │  │  - Audit trail logging          │    │                                 │    │
 │  │  - Backup & recovery            │    │                                 │    │
 │  └─────────────────────────────────┘    └─────────────────────────────────┘    │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 🔄 Data Flow & Request Lifecycle
