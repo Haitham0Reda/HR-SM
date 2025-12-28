@@ -1,0 +1,362 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "HRMS License Management Dashboard",
+    "tags": ["license", "monitoring", "hrms"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "License Validation Success Rate",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "expr": "rate(license_validation_total{result=\"success\"}[5m]) / rate(license_validation_total[5m]) * 100",
+            "legendFormat": "Success Rate %",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "percent",
+            "label": "Success Rate",
+            "min": 0,
+            "max": 100
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 95,
+            "colorMode": "critical",
+            "op": "lt"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "License Validation Duration",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(license_validation_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(license_validation_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile (median)",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "s",
+            "label": "Duration"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "License Validation Errors by Type",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+        "targets": [
+          {
+            "expr": "rate(license_validation_errors_total[5m])",
+            "legendFormat": "{{error_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "short",
+            "label": "Errors per second"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Active Licenses by Module",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+        "targets": [
+          {
+            "expr": "active_licenses_count",
+            "legendFormat": "{{module_key}} ({{tier}})",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "short",
+            "label": "Count"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Licenses Expiring Soon (30 days)",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
+        "targets": [
+          {
+            "expr": "sum(license_expiring_count{days_until_expiration=\"30\"})",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 1, "color": "yellow" },
+                { "value": 5, "color": "orange" }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Licenses Expiring Critical (7 days)",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
+        "targets": [
+          {
+            "expr": "sum(license_expiring_count{days_until_expiration=\"7\"})",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 1, "color": "red" }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Expired Licenses",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
+        "targets": [
+          {
+            "expr": "sum(license_expired_count)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 1, "color": "red" }
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Cache Hit Rate",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 16 },
+        "targets": [
+          {
+            "expr": "rate(license_cache_hits_total[5m]) / (rate(license_cache_hits_total[5m]) + rate(license_cache_misses_total[5m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 50, "color": "yellow" },
+                { "value": 80, "color": "green" }
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Usage Limit Warnings",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+        "targets": [
+          {
+            "expr": "rate(usage_limit_warnings_total[5m])",
+            "legendFormat": "{{module_key}} - {{limit_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "short",
+            "label": "Warnings per second"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Usage Limit Exceeded Events",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+        "targets": [
+          {
+            "expr": "rate(usage_limit_exceeded_total[5m])",
+            "legendFormat": "{{module_key}} - {{limit_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "short",
+            "label": "Exceeded events per second"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Usage Limit Percentage by Module",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 28 },
+        "targets": [
+          {
+            "expr": "usage_limit_percentage",
+            "legendFormat": "{{tenant_id}} - {{module_key}} - {{limit_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "percent",
+            "label": "Usage %",
+            "min": 0,
+            "max": 100
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [80],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "Usage Limit Warning",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 12,
+        "title": "Module Activations/Deactivations",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+        "targets": [
+          {
+            "expr": "rate(module_activations_total[5m])",
+            "legendFormat": "Activations - {{module_key}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(module_deactivations_total[5m])",
+            "legendFormat": "Deactivations - {{module_key}}",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "short",
+            "label": "Events per second"
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Audit Log Entries by Type",
+        "type": "graph",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+        "targets": [
+          {
+            "expr": "rate(audit_log_entries_total[5m])",
+            "legendFormat": "{{event_type}} ({{severity}})",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "short",
+            "label": "Entries per second"
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    },
+    "schemaVersion": 30,
+    "version": 1,
+    "links": []
+  }
+}

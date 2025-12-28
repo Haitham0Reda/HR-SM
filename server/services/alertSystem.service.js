@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import mongoose from 'mongoose';
+import os from 'os';
 import systemMetricsService from './systemMetrics.service.js';
 import mongoMetricsService from './mongoMetrics.service.js';
 
@@ -57,7 +58,7 @@ class AlertSystemService {
       // Only create transporter if SMTP is configured
       if (emailConfig.auth.user && emailConfig.auth.pass) {
         this.emailTransporter = nodemailer.createTransporter(emailConfig);
-        
+
         // Verify connection
         await this.emailTransporter.verify();
         console.log('Alert system email transporter configured successfully');
@@ -188,7 +189,7 @@ class AlertSystemService {
   isInCooldown(alertKey, cooldownMinutes = 15) {
     const lastSent = this.alertCooldowns.get(alertKey);
     if (!lastSent) return false;
-    
+
     const cooldownMs = cooldownMinutes * 60 * 1000;
     return (Date.now() - lastSent) < cooldownMs;
   }
@@ -222,7 +223,7 @@ class AlertSystemService {
       metrics: alertData.metrics || {},
       source: {
         component: alertData.source?.component || 'alert-system',
-        hostname: alertData.source?.hostname || require('os').hostname(),
+        hostname: alertData.source?.hostname || os.hostname(),
         service: alertData.source?.service || 'hr-sm-platform'
       },
       tags: alertData.tags || [],
@@ -230,7 +231,7 @@ class AlertSystemService {
     });
 
     await alert.save();
-    
+
     // Add to in-memory history (keep last 100)
     this.alertHistory.unshift(alert);
     if (this.alertHistory.length > 100) {
@@ -267,11 +268,11 @@ class AlertSystemService {
       try {
         const emailResult = await this.sendEmailNotification(alert);
         results.channels.email = emailResult;
-        
+
         if (emailResult.success) {
           results.success = true;
           this.setCooldown(alertKey);
-          
+
           // Update alert with notification info
           alert.notificationsSent.push({
             channel: 'email',
@@ -281,7 +282,7 @@ class AlertSystemService {
           await alert.save();
         } else {
           results.errors.push(`Email: ${emailResult.error}`);
-          
+
           // Update alert with failed notification
           alert.notificationsSent.push({
             channel: 'email',
@@ -396,7 +397,7 @@ Alert ID: ${alert.alertId}
       };
 
       const info = await this.emailTransporter.sendMail(mailOptions);
-      
+
       return {
         success: true,
         messageId: info.messageId,
@@ -424,7 +425,7 @@ Alert ID: ${alert.alertId}
     try {
       // Get system metrics
       const systemHealth = await systemMetricsService.getSystemHealth();
-      
+
       // Process system alerts
       for (const alert of systemHealth.alerts) {
         const systemAlert = await this.createAlert({
@@ -456,7 +457,7 @@ Alert ID: ${alert.alertId}
 
       // Get MongoDB metrics
       const mongoHealth = await mongoMetricsService.getMongoHealth();
-      
+
       // Process MongoDB alerts
       for (const alert of mongoHealth.alerts || []) {
         const mongoAlert = await this.createAlert({
@@ -489,7 +490,7 @@ Alert ID: ${alert.alertId}
 
     } catch (error) {
       console.error('Error processing system health alerts:', error);
-      
+
       // Create an alert about the alert system failure
       const systemAlert = await this.createAlert({
         type: 'system',
@@ -520,19 +521,19 @@ Alert ID: ${alert.alertId}
     }
 
     const query = { status: 'active' };
-    
+
     if (filters.severity) {
       query.severity = filters.severity;
     }
-    
+
     if (filters.type) {
       query.type = filters.type;
     }
-    
+
     if (filters.category) {
       query.category = filters.category;
     }
-    
+
     if (filters.tenantId) {
       query.tenantId = filters.tenantId;
     }
