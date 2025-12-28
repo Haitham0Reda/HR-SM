@@ -10,7 +10,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel } from '@mui/icons-material';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import permissionService from '../../services/permission.service';
 import Loading from '../../components/common/Loading';
@@ -368,3 +368,4 @@ const PermissionForm = () => {
 };
 
 export default PermissionForm;
+

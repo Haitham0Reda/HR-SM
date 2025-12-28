@@ -31,10 +31,10 @@ import AttendanceDashboard from './AttendanceDashboard';
 import DeviceManagement from './DeviceManagement';
 import AttendanceImport from './AttendanceImport';
 import AttendancePage from './AttendancePage';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import attendanceService from '../../services/attendance.service';
 import userService from '../../services/user.service';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 
 function TabPanel({ children, value, index, ...other }) {
     return (
@@ -940,3 +940,5 @@ const AttendanceManagementPage = () => {
 };
 
 export default AttendanceManagementPage;
+
+

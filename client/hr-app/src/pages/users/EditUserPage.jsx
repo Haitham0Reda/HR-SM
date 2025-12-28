@@ -24,7 +24,7 @@ import userService from '../../services/user.service';
 import departmentService from '../../services/department.service';
 import positionService from '../../services/position.service';
 import { getUserProfilePicture } from '../../utils/profilePicture';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 
 const EditUserPage = () => {
     const { id } = useParams();
@@ -908,3 +908,4 @@ const EditUserPage = () => {
 };
 
 export default EditUserPage;
+

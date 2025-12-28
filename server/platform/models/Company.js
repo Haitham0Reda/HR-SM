@@ -64,6 +64,15 @@ const companySchema = new mongoose.Schema({
     autoRenew: {
       type: Boolean,
       default: false
+    },
+    scheduledUpgrade: {
+      plan: {
+        type: String,
+        enum: ['starter', 'business', 'enterprise', 'trial']
+      },
+      effectiveDate: {
+        type: Date
+      }
     }
   },
   modules: {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -29,101 +29,63 @@ import {
   Dashboard as DashboardIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import companyService from '../services/companyService';
-import systemService from '../services/systemService';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchTenantsAsync } from '../store/slices/tenantManagementSlice';
+import { fetchSystemHealthAsync, fetchSystemStatsAsync } from '../store/slices/systemSettingsSlice';
 import { useTheme } from '../contexts/ThemeContext';
 
 const PlatformDashboard = () => {
   // eslint-disable-next-line no-unused-vars
   const { theme } = useTheme();
-  const [dashboardData, setDashboardData] = useState({
-    companies: [],
-    systemHealth: null,
-    totalUsers: 0,
-    totalDepartments: 0,
-    activeCompanies: 0,
-    loading: true,
-    error: null
-  });
+  const dispatch = useAppDispatch();
+  
+  // Redux selectors
+  const { tenants, loading: tenantsLoading, error: tenantsError } = useAppSelector(state => state.tenantManagement);
+  const { systemHealth, systemStats, loading: systemLoading, error: systemError } = useAppSelector(state => state.systemSettings);
+  
+  // Combined loading and error states
+  const loading = tenantsLoading || systemLoading;
+  const error = tenantsError?.message || systemError?.message;
 
   useEffect(() => {
     loadDashboardData();
     // Refresh dashboard data every 2 minutes
     const interval = setInterval(loadDashboardData, 120000);
     return () => clearInterval(interval);
-  }, []);
+  }, [dispatch]);
 
   const loadDashboardData = async () => {
     try {
-      setDashboardData(prev => ({ ...prev, error: null }));
-
-      // Load companies data with fallback
-      let companies = [];
-      let systemHealth = null;
-
-      try {
-        const companiesResponse = await companyService.getAllCompanies();
-        console.log('Companies response:', companiesResponse); // Debug log
-        companies = companiesResponse?.data?.companies || companiesResponse?.companies || [];
-        
-        // Ensure companies is always an array
-        if (!Array.isArray(companies)) {
-          console.warn('Companies is not an array:', companies);
-          companies = [];
-        }
-      } catch (companyError) {
-        console.warn('Failed to load companies:', companyError);
-        companies = [];
-      }
-
-      // Load system health with fallback
-      try {
-        const healthResponse = await systemService.getHealth();
-        systemHealth = healthResponse?.data || null;
-      } catch (healthError) {
-        console.warn('Failed to load system health:', healthError);
-        systemHealth = { status: 'unknown', message: 'Health check failed' };
-      }
-
-      // Calculate aggregated statistics with defensive programming
-      const safeCompanies = Array.isArray(companies) ? companies : [];
-      
-      const totalUsers = safeCompanies.reduce((sum, company) => {
-        if (!company) return sum;
-        const employees = company.usage?.employees || company.statistics?.users || 0;
-        return sum + employees;
-      }, 0);
-      
-      const totalDepartments = safeCompanies.reduce((sum, company) => {
-        if (!company) return sum;
-        const departments = company.usage?.departments || company.statistics?.departments || 0;
-        return sum + departments;
-      }, 0);
-      
-      const activeCompanies = safeCompanies.filter(company => {
-        if (!company) return false;
-        return company.status === 'active' || company.metadata?.isActive !== false;
-      }).length;
-
-      setDashboardData({
-        companies: safeCompanies,
-        systemHealth,
-        totalUsers,
-        totalDepartments,
-        activeCompanies,
-        loading: false,
-        error: null
-      });
-
+      // Load tenants and system data using Redux
+      await Promise.all([
+        dispatch(fetchTenantsAsync({ limit: 100 })), // Get all tenants for dashboard
+        dispatch(fetchSystemHealthAsync()),
+        dispatch(fetchSystemStatsAsync()),
+      ]);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
-      setDashboardData(prev => ({
-        ...prev,
-        loading: false,
-        error: 'Failed to load dashboard data: ' + (error.response?.data?.message || error.message)
-      }));
     }
   };
+
+  // Calculate aggregated statistics from Redux state
+  const companies = Array.isArray(tenants) ? tenants : [];
+  
+  const totalUsers = companies.reduce((sum, company) => {
+    if (!company) return sum;
+    const employees = company.usage?.employees || company.statistics?.users || 0;
+    return sum + employees;
+  }, 0);
+  
+  const totalDepartments = companies.reduce((sum, company) => {
+    if (!company) return sum;
+    const departments = company.usage?.departments || company.statistics?.departments || 0;
+    return sum + departments;
+  }, 0);
+  
+  const activeCompanies = companies.filter(company => {
+    if (!company) return false;
+    return company.status === 'active' || company.metadata?.isActive !== false;
+  }).length;
 
   const getHealthColor = (status) => {
     switch (status) {
@@ -144,7 +106,6 @@ const PlatformDashboard = () => {
   };
 
   const getTopCompanies = () => {
-    const companies = Array.isArray(dashboardData.companies) ? dashboardData.companies : [];
     return companies
       .filter(company => company) // Filter out null/undefined companies
       .sort((a, b) => {
@@ -157,7 +118,6 @@ const PlatformDashboard = () => {
 
   const getModuleUsage = () => {
     const moduleCount = {};
-    const companies = Array.isArray(dashboardData.companies) ? dashboardData.companies : [];
     
     companies.forEach(company => {
       try {
@@ -189,7 +149,7 @@ const PlatformDashboard = () => {
       .slice(0, 8);
   };
 
-  if (dashboardData.loading) {
+  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
         <CircularProgress />
@@ -272,7 +232,7 @@ const PlatformDashboard = () => {
         </Box>
       </Paper>
 
-      {dashboardData.error && (
+      {error && (
         <Alert 
           severity="error" 
           sx={{ 
@@ -280,9 +240,12 @@ const PlatformDashboard = () => {
             borderRadius: 2,
             '& .MuiAlert-message': { fontSize: '1rem' }
           }} 
-          onClose={() => setDashboardData(prev => ({ ...prev, error: null }))}
+          onClose={() => {
+            // Clear errors in Redux state
+            // Note: We would need to add clearError actions to the slices
+          }}
         >
-          {dashboardData.error}
+          {error}
         </Alert>
       )}
 
@@ -334,7 +297,7 @@ const PlatformDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
                   >
-                    {dashboardData.companies.length}
+                    {companies.length}
                   </Typography>
                 </Box>
               </Box>
@@ -383,7 +346,7 @@ const PlatformDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
                   >
-                    {dashboardData.activeCompanies}
+                    {activeCompanies}
                   </Typography>
                 </Box>
               </Box>
@@ -432,7 +395,7 @@ const PlatformDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
                   >
-                    {dashboardData.totalUsers}
+                    {totalUsers}
                   </Typography>
                 </Box>
               </Box>
@@ -456,9 +419,9 @@ const PlatformDashboard = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
                 <Avatar 
                   sx={{ 
-                    bgcolor: dashboardData.systemHealth?.status === 'healthy' 
+                    bgcolor: systemHealth?.status === 'healthy' 
                       ? 'success.main'
-                      : dashboardData.systemHealth?.status === 'degraded' 
+                      : systemHealth?.status === 'degraded' 
                       ? 'warning.main'
                       : 'error.main',
                     width: { xs: 40, sm: 48 }, 
@@ -466,7 +429,7 @@ const PlatformDashboard = () => {
                     flexShrink: 0
                   }}
                 >
-                  {getHealthIcon(dashboardData.systemHealth?.status)}
+                  {getHealthIcon(systemHealth?.status)}
                 </Avatar>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
                   <Typography 
@@ -484,13 +447,13 @@ const PlatformDashboard = () => {
                   <Typography 
                     variant="h5" 
                     fontWeight="700"
-                    color={getHealthColor(dashboardData.systemHealth?.status)}
+                    color={getHealthColor(systemHealth?.status)}
                     sx={{ 
                       textTransform: 'capitalize',
                       fontSize: { xs: '1.25rem', sm: '1.5rem' }
                     }}
                   >
-                    {dashboardData.systemHealth?.status || 'Degraded'}
+                    {systemHealth?.status || 'Degraded'}
                   </Typography>
                 </Box>
               </Box>
@@ -537,21 +500,21 @@ const PlatformDashboard = () => {
                 </Typography>
               </Box>
               
-              {dashboardData.systemHealth && (
+              {systemHealth && (
                 <Box>
                   <Box sx={{ mb: 3 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                       <Typography variant="body1" fontWeight="500">Memory Usage</Typography>
                       <Typography variant="h6" fontWeight="bold" color="primary">
-                        {dashboardData.systemHealth.checks?.memory?.usagePercent || 0}%
+                        {systemHealth.checks?.memory?.usagePercent || 0}%
                       </Typography>
                     </Box>
                     <LinearProgress
                       variant="determinate"
-                      value={dashboardData.systemHealth.checks?.memory?.usagePercent || 0}
-                      color={(dashboardData.systemHealth.checks?.memory?.usagePercent || 0) > 80
+                      value={systemHealth.checks?.memory?.usagePercent || 0}
+                      color={(systemHealth.checks?.memory?.usagePercent || 0) > 80
                         ? 'error'
-                        : (dashboardData.systemHealth.checks?.memory?.usagePercent || 0) > 60
+                        : (systemHealth.checks?.memory?.usagePercent || 0) > 60
                         ? 'warning'
                         : 'success'}
                       sx={{ 
@@ -560,18 +523,18 @@ const PlatformDashboard = () => {
                       }}
                     />
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      {dashboardData.systemHealth.checks?.memory?.heapUsed || 0} MB / {dashboardData.systemHealth.checks?.memory?.heapTotal || 0} MB
+                      {systemHealth.checks?.memory?.heapUsed || 0} MB / {systemHealth.checks?.memory?.heapTotal || 0} MB
                     </Typography>
                   </Box>
 
                   <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
                     <Chip
-                      label={`Database: ${dashboardData.systemHealth.checks?.database?.status || 'Unknown'}`}
-                      color={dashboardData.systemHealth.checks?.database?.status === 'healthy' ? 'success' : 'error'}
+                      label={`Database: ${systemHealth.checks?.database?.status || 'Unknown'}`}
+                      color={systemHealth.checks?.database?.status === 'healthy' ? 'success' : 'error'}
                       sx={{ fontWeight: 500 }}
                     />
                     <Chip
-                      label={`Uptime: ${Math.floor((dashboardData.systemHealth.uptime || 0) / 3600)}h ${Math.floor(((dashboardData.systemHealth.uptime || 0) % 3600) / 60)}m`}
+                      label={`Uptime: ${Math.floor((systemHealth.uptime || 0) / 3600)}h ${Math.floor(((systemHealth.uptime || 0) % 3600) / 60)}m`}
                       variant="outlined"
                       sx={{ fontWeight: 500 }}
                     />
@@ -629,7 +592,7 @@ const PlatformDashboard = () => {
                     Total Departments
                   </Typography>
                   <Typography variant="h4" fontWeight="700" color="primary.main">
-                    {dashboardData.totalDepartments}
+                    {totalDepartments}
                   </Typography>
                 </Box>
                 
@@ -647,8 +610,8 @@ const PlatformDashboard = () => {
                     Average per Company
                   </Typography>
                   <Typography variant="h5" fontWeight="700" color="info.main">
-                    {dashboardData.companies.length > 0 
-                      ? Math.round(dashboardData.totalDepartments / dashboardData.companies.length) 
+                    {companies.length > 0 
+                      ? Math.round(totalDepartments / companies.length) 
                       : 0}
                   </Typography>
                 </Box>
@@ -805,7 +768,7 @@ const PlatformDashboard = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 120 }}>
                         <LinearProgress
                           variant="determinate"
-                          value={dashboardData.companies.length > 0 ? (count / dashboardData.companies.length) * 100 : 0}
+                          value={companies.length > 0 ? (count / companies.length) * 100 : 0}
                           color="info"
                           sx={{ 
                             width: 80, 
@@ -814,7 +777,7 @@ const PlatformDashboard = () => {
                           }}
                         />
                         <Typography variant="body2" fontWeight="600" color="secondary.main">
-                          {dashboardData.companies.length > 0 ? Math.round((count / dashboardData.companies.length) * 100) : 0}%
+                          {companies.length > 0 ? Math.round((count / companies.length) * 100) : 0}%
                         </Typography>
                       </Box>
                     </ListItem>

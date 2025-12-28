@@ -1,22 +1,29 @@
 // Document Controller
-import Document from '../models/document.model.js';
+import DocumentService from '../services/DocumentService.js';
+
+const documentService = new DocumentService();
+
+// Helper function to get tenant ID from request
+const getTenantId = (req) => {
+    return req.tenantId || req.user?.tenantId || 'default-tenant';
+};
 
 export const getAllDocuments = async (req, res) => {
     try {
-        // Base query with tenant isolation
-        let query = { tenantId: req.tenantId };
-
-        // Role-based filtering
+        const tenantId = getTenantId(req);
+        
+        // Build filter based on user role
+        let filter = {};
         if (req.user.role === 'employee') {
             // Employees only see their own documents or non-confidential ones
-            query.$or = [
+            filter.$or = [
                 { employee: req.user.id },
                 { uploadedBy: req.user.id },
                 { isConfidential: false }
             ];
         } else if (req.user.role === 'manager') {
             // Managers see documents for their department or non-confidential ones
-            query.$or = [
+            filter.$or = [
                 { department: req.user.department },
                 { uploadedBy: req.user.id },
                 { isConfidential: false }
@@ -24,11 +31,17 @@ export const getAllDocuments = async (req, res) => {
         }
         // HR and Admin see all documents (no additional filtering needed)
 
-        const documents = await Document.find(query)
-            .populate('employee', 'email firstName lastName role employeeId')
-            .populate('uploadedBy', 'email firstName lastName role employeeId')
-            .populate('department', 'name code')
-            .sort({ createdAt: -1 });
+        const options = {
+            filter,
+            populate: [
+                { path: 'employee', select: 'email firstName lastName role employeeId' },
+                { path: 'uploadedBy', select: 'email firstName lastName role employeeId' },
+                { path: 'department', select: 'name code' }
+            ],
+            sort: { createdAt: -1 }
+        };
+
+        const documents = await documentService.getAllDocuments(tenantId, options);
 
         res.json({
             success: true,
@@ -45,17 +58,13 @@ export const getAllDocuments = async (req, res) => {
 
 export const createDocument = async (req, res) => {
     try {
+        const tenantId = getTenantId(req);
         const documentData = {
             ...req.body,
-            uploadedBy: req.user.id,
-            tenantId: req.tenantId
+            uploadedBy: req.user.id
         };
 
-        const document = await Document.create(documentData);
-        
-        await document.populate('employee', 'email firstName lastName role employeeId');
-        await document.populate('uploadedBy', 'email firstName lastName role employeeId');
-        await document.populate('department', 'name code');
+        const document = await documentService.createDocument(documentData, tenantId);
 
         res.status(201).json({
             success: true,
@@ -71,13 +80,8 @@ export const createDocument = async (req, res) => {
 
 export const getDocumentById = async (req, res) => {
     try {
-        const document = await Document.findOne({
-            _id: req.params.id,
-            tenantId: req.tenantId
-        })
-            .populate('employee', 'email firstName lastName role employeeId')
-            .populate('uploadedBy', 'email firstName lastName role employeeId')
-            .populate('department', 'name code');
+        const tenantId = getTenantId(req);
+        const document = await documentService.getDocumentById(req.params.id, tenantId);
 
         if (!document) {
             return res.status(404).json({
@@ -114,14 +118,10 @@ export const getDocumentById = async (req, res) => {
 
 export const updateDocument = async (req, res) => {
     try {
-        const document = await Document.findOneAndUpdate(
-            { _id: req.params.id, tenantId: req.tenantId },
-            { ...req.body, updatedBy: req.user.id },
-            { new: true }
-        )
-            .populate('employee', 'email firstName lastName role employeeId')
-            .populate('uploadedBy', 'email firstName lastName role employeeId')
-            .populate('department', 'name code');
+        const tenantId = getTenantId(req);
+        const updateData = { ...req.body, updatedBy: req.user.id };
+        
+        const document = await documentService.updateDocument(req.params.id, updateData, tenantId);
 
         if (!document) {
             return res.status(404).json({
@@ -144,12 +144,10 @@ export const updateDocument = async (req, res) => {
 
 export const deleteDocument = async (req, res) => {
     try {
-        const document = await Document.findOneAndDelete({
-            _id: req.params.id,
-            tenantId: req.tenantId
-        });
+        const tenantId = getTenantId(req);
+        const result = await documentService.deleteDocument(req.params.id, tenantId);
 
-        if (!document) {
+        if (!result) {
             return res.status(404).json({
                 success: false,
                 message: 'Document not found'

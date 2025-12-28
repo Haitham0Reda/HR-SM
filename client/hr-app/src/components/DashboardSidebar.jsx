@@ -50,8 +50,8 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import { matchPath, useLocation } from 'react-router';
-import { useAuth } from '../hooks/useAuth';
-import { useModules } from '../contexts/ModuleContext';
+import { useAuth } from '../store/providers/ReduxAuthProvider';
+import { useModules } from '../store/providers/ReduxModuleProvider';
 import { useCompanyRouting } from '../hooks/useCompanyRouting';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
 import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
@@ -1272,5 +1272,7 @@ DashboardSidebar.propTypes = {
 };
 
 export default DashboardSidebar;
+
+
 
 

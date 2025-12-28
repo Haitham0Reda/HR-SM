@@ -17,7 +17,7 @@ import {
     IconButton,
 } from '@mui/material';
 import { PhotoCamera, Save, Close } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import userService from '../../services/user.service';
 import { getUserProfilePicture } from '../../utils/profilePicture';
 
@@ -413,3 +413,4 @@ export default function ProfilePage() {
         </Box>
     );
 }
+

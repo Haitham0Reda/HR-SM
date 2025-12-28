@@ -24,7 +24,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import Stack from '@mui/material/Stack';
 import { Link, useNavigate } from 'react-router-dom';
 import ThemeSwitcher from './ThemeSwitcher';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../store/providers/ReduxAuthProvider';
 import { useCompanyRouting } from '../hooks/useCompanyRouting';
 import { designTokens } from '../theme/designTokens';
 import { getUserProfilePicture, getUserInitials } from '../utils/profilePicture';

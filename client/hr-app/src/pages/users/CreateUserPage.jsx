@@ -41,7 +41,7 @@ import {
 import userService from '../../services/user.service';
 import departmentService from '../../services/department.service';
 import positionService from '../../services/position.service';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 
 const steps = ['Account', 'Personal Info', 'Employment'];
 
@@ -867,3 +867,4 @@ const CreateUserPage = () => {
 };
 
 export default CreateUserPage;
+

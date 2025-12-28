@@ -29,8 +29,8 @@ import {
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import DocumentViewer from '../../components/common/DocumentViewer';
-import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import documentService from '../../services/document.service';
 import userService from '../../services/user.service';
 
@@ -680,3 +680,5 @@ const DocumentsPage = () => {
 };
 
 export default DocumentsPage;
+
+

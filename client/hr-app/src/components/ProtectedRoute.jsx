@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useModules } from '../contexts/ModuleContext';
+import { useAuth } from '../store/providers/ReduxAuthProvider';
+import { useModules } from '../store/providers/ReduxModuleProvider';
 
 const ProtectedRoute = ({ children, requiredRole, requiredModule }) => {
     const { isAuthenticated, user, hasRole, loading: authLoading } = useAuth();

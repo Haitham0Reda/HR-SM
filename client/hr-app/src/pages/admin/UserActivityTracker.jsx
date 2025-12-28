@@ -39,7 +39,7 @@ import {
     Timeline as TimelineIcon,
     Search as SearchIcon
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 
 /**
  * User Activity Tracker Page

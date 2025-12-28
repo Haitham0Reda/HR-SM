@@ -38,7 +38,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useThemeConfig } from '../../context/ThemeContext';
 import { themeService } from '../../services';
 
@@ -565,3 +565,4 @@ const ThemeEditorPage = () => {
 };
 
 export default ThemeEditorPage;
+

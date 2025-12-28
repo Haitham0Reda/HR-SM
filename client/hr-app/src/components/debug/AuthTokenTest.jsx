@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, Typography, Alert, Card, CardContent } from '@mui/material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 
 const AuthTokenTest = () => {
     const [tokenInfo, setTokenInfo] = useState(null);

@@ -28,7 +28,7 @@ import {
     AutoAwesome as AutoAwesomeIcon,
     Tune as TuneIcon
 } from '@mui/icons-material';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 
 const SEASONS = [
     { value: 'none', label: 'None' },
@@ -808,3 +808,4 @@ function SeasonCard({ seasonKey, config, settings, enabled, onChange, messageFie
 }
 
 export default SeasonalSettingsPage;
+

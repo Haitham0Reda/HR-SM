@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useNotification } from '../context/NotificationContext';
+import { useAuth } from '../store/providers/ReduxAuthProvider';
+import { useNotification } from '../store/providers/ReduxNotificationProvider';
 import { useCompanyRouting } from '../hooks/useCompanyRouting';
 import surveyService from '../services/survey.service';
 
@@ -45,3 +45,4 @@ const SurveyRedirect = () => {
 };
 
 export default SurveyRedirect;
+

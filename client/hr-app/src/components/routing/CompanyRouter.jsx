@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import PrivateRoute from '../../routes/PrivateRoute';
 import DashboardLayout from '../DashboardLayout';

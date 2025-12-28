@@ -13,8 +13,8 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel, EventAvailable } from '@mui/icons-material';
-import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import vacationService from '../../services/vacation.service';
 import Loading from '../../components/common/Loading';
@@ -449,3 +449,4 @@ const VacationRequestForm = () => {
 };
 
 export default VacationRequestForm;
+

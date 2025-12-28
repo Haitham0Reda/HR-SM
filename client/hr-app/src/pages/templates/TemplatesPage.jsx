@@ -16,7 +16,7 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, FileCopy } from
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import templateService from '../../services/template.service';
 
 const TemplatesPage = () => {
@@ -332,3 +332,4 @@ const TemplatesPage = () => {
 };
 
 export default TemplatesPage;
+

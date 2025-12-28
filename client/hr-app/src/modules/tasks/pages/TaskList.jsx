@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../store/providers/ReduxAuthProvider';
 import { Link } from 'react-router-dom';
 
 const TaskList = () => {
@@ -167,3 +167,4 @@ const TaskList = () => {
 };
 
 export default TaskList;
+

@@ -32,7 +32,7 @@ import roleService from '../../services/role.service';
 import PermissionCategoryAccordion from '../../components/roles/PermissionCategoryAccordion';
 import RoleViewSkeleton from '../../components/roles/RoleViewSkeleton';
 import RoleTypeBadge from '../../components/roles/RoleTypeBadge';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 
 const RoleViewPage = () => {
     const { id } = useParams();
@@ -680,3 +680,4 @@ const RoleViewPage = () => {
 };
 
 export default RoleViewPage;
+

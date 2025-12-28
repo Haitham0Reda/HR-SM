@@ -1,6 +1,8 @@
 // Vacation Controller - Moved to HR-Core module
-import Vacation from '../models/vacation.model.js';
+import VacationService from '../services/VacationService.js';
 import logger from '../../../../utils/logger.js';
+
+const vacationService = new VacationService();
 
 export const getAllVacations = async (req, res) => {
     try {
@@ -9,12 +11,7 @@ export const getAllVacations = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const vacations = await Vacation.find({ tenantId })
-            .populate('employee', 'username email employeeId personalInfo')
-            .populate('department', 'name code')
-            .populate('approvedBy', 'username email')
-            .sort({ startDate: -1 });
-            
+        const vacations = await vacationService.getAllVacations(tenantId);
         res.json({ success: true, data: vacations });
     } catch (err) {
         logger.error('Error fetching vacations:', err);
@@ -29,11 +26,7 @@ export const createVacation = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const vacationData = { ...req.body, tenantId };
-        const vacation = new Vacation(vacationData);
-        await vacation.save();
-        await vacation.populate('employee', 'username email employeeId personalInfo');
-        
+        const vacation = await vacationService.createVacation(req.body, tenantId);
         res.status(201).json({ success: true, data: vacation });
     } catch (err) {
         logger.error('Error creating vacation:', err);
@@ -48,17 +41,12 @@ export const getVacationById = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const vacation = await Vacation.findOne({ _id: req.params.id, tenantId })
-            .populate('employee', 'username email employeeId personalInfo')
-            .populate('department', 'name code')
-            .populate('approvedBy', 'username email');
-            
-        if (!vacation) return res.status(404).json({ error: 'Vacation not found' });
-        
+        const vacation = await vacationService.getVacationById(req.params.id, tenantId);
         res.json({ success: true, data: vacation });
     } catch (err) {
         logger.error('Error fetching vacation:', err);
-        res.status(500).json({ error: err.message });
+        const statusCode = err.message === 'Vacation request not found' ? 404 : 500;
+        res.status(statusCode).json({ error: err.message });
     }
 };
 
@@ -69,21 +57,12 @@ export const updateVacation = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const vacation = await Vacation.findOneAndUpdate(
-            { _id: req.params.id, tenantId },
-            req.body,
-            { new: true }
-        )
-            .populate('employee', 'username email employeeId personalInfo')
-            .populate('department', 'name code')
-            .populate('approvedBy', 'username email');
-            
-        if (!vacation) return res.status(404).json({ error: 'Vacation not found' });
-        
+        const vacation = await vacationService.updateVacation(req.params.id, req.body, tenantId);
         res.json({ success: true, data: vacation });
     } catch (err) {
         logger.error('Error updating vacation:', err);
-        res.status(400).json({ error: err.message });
+        const statusCode = err.message === 'Vacation request not found' ? 404 : 400;
+        res.status(statusCode).json({ error: err.message });
     }
 };
 
@@ -94,12 +73,11 @@ export const deleteVacation = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const vacation = await Vacation.findOneAndDelete({ _id: req.params.id, tenantId });
-        if (!vacation) return res.status(404).json({ error: 'Vacation not found' });
-        
-        res.json({ success: true, message: 'Vacation deleted' });
+        const result = await vacationService.deleteVacation(req.params.id, tenantId);
+        res.json({ success: true, message: result.message });
     } catch (err) {
         logger.error('Error deleting vacation:', err);
-        res.status(500).json({ error: err.message });
+        const statusCode = err.message === 'Vacation request not found' ? 404 : 500;
+        res.status(statusCode).json({ error: err.message });
     }
 };

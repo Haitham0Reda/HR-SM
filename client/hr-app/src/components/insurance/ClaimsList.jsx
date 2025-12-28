@@ -30,7 +30,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClaims } from '../../hooks/useInsurance';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import PageContainer from '../PageContainer';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 

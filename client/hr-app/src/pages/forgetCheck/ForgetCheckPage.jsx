@@ -22,8 +22,8 @@ import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import forgetCheckService from '../../services/forgetCheck.service';
 import userService from '../../services/user.service';
 
@@ -552,3 +552,5 @@ const ForgetCheckPage = () => {
 };
 
 export default ForgetCheckPage;
+
+

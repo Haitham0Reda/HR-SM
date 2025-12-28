@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
   Tabs,
   Tab,
 } from '@mui/material';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { 
+  fetchSystemHealthAsync, 
+  fetchSystemStatsAsync, 
+  fetchSystemSettingsAsync,
+  clearError 
+} from '../store/slices/systemSettingsSlice';
 import SystemHealth from '../components/system/SystemHealth';
 import UsageMetrics from '../components/system/UsageMetrics';
 import ThemeSettings from '../components/theme/ThemeSettings';
@@ -18,7 +25,25 @@ const TabPanel = ({ children, value, index }) => {
 };
 
 const SystemPage = () => {
+  const dispatch = useAppDispatch();
+  const { systemHealth, systemStats, settings, loading, error } = useAppSelector(state => state.systemSettings);
+  
   const [tabValue, setTabValue] = useState(0);
+
+  useEffect(() => {
+    // Load system data when component mounts
+    dispatch(fetchSystemHealthAsync());
+    dispatch(fetchSystemStatsAsync());
+    dispatch(fetchSystemSettingsAsync());
+  }, [dispatch]);
+
+  // Handle Redux errors
+  useEffect(() => {
+    if (error) {
+      console.error('System page error:', error.message);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   return (
     <Box>
@@ -33,15 +58,24 @@ const SystemPage = () => {
       </Tabs>
 
       <TabPanel value={tabValue} index={0}>
-        <SystemHealth />
+        <SystemHealth 
+          systemHealth={systemHealth}
+          loading={loading}
+        />
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
-        <UsageMetrics />
+        <UsageMetrics 
+          systemStats={systemStats}
+          loading={loading}
+        />
       </TabPanel>
 
       <TabPanel value={tabValue} index={2}>
-        <ThemeSettings />
+        <ThemeSettings 
+          settings={settings}
+          loading={loading}
+        />
       </TabPanel>
     </Box>
   );

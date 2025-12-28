@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useModule } from '../hooks/useModuleAccess';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../store/providers/ReduxAuthProvider';
 import { Box, Alert, CircularProgress, Button } from '@mui/material';
 import { Lock as LockIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 

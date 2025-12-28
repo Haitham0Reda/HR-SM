@@ -66,7 +66,7 @@ import {
     ResponsiveContainer,
     ComposedChart
 } from 'recharts';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import reportService from '../../services/report.service';
 import analyticsService from '../../services/analytics.service';
 import dashboardService from '../../services/dashboard.service';
@@ -981,3 +981,4 @@ const ReportsPage = () => {
 };
 
 export default ReportsPage;
+

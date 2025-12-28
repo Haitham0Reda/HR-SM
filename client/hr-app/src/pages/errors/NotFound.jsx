@@ -17,7 +17,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 /**
@@ -232,3 +232,4 @@ const NotFound = () => {
 };
 
 export default NotFound;
+

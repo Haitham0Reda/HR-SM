@@ -10,7 +10,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { usePlatformAuth } from '../contexts/PlatformAuthContext';
+import { usePlatformAuth } from '../store/providers/ReduxPlatformAuthProvider';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');

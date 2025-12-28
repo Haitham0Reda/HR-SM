@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, Button, Alert } from '@mui/material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useLocation } from 'react-router-dom';
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { usePlatformAuth } from '../contexts/PlatformAuthContext';
+import { usePlatformAuth } from '../store/providers/ReduxPlatformAuthProvider';
 import { CircularProgress, Box } from '@mui/material';
 
 // Pages

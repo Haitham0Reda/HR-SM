@@ -19,8 +19,8 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import announcementService from '../../services/announcement.service';
 import notificationService from '../../services/notification.service';
 
@@ -851,3 +851,4 @@ const AnnouncementsPage = () => {
 };
 
 export default AnnouncementsPage;
+

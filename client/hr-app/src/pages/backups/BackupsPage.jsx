@@ -38,7 +38,7 @@ import {
     Close
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import backupService from '../../services/backup.service';
 
 const BackupsPage = () => {
@@ -763,3 +763,4 @@ const BackupsPage = () => {
 };
 
 export default BackupsPage;
+

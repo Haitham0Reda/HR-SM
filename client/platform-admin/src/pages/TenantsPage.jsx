@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -15,29 +15,46 @@ import {
   Chip,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { 
+  fetchTenantsAsync, 
+  suspendTenantAsync, 
+  activateTenantAsync,
+  clearError 
+} from '../store/slices/tenantManagementSlice';
 import TenantList from '../components/tenants/TenantList';
 import TenantCreate from '../components/tenants/TenantCreate';
 import TenantDetails from '../components/tenants/TenantDetails';
-import tenantService from '../services/tenantService';
+import { useState } from 'react';
 
 const TenantsPage = () => {
+  const dispatch = useAppDispatch();
+  const { tenants, loading, error } = useAppSelector(state => state.tenantManagement);
+  
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [detailsMode, setDetailsMode] = useState('view');
   const [confirmAction, setConfirmAction] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [stats, setStats] = useState(null);
+  
+  // Calculate stats from Redux state
+  const stats = {
+    total: tenants.length,
+    active: tenants.filter(t => t.status === 'active').length,
+    trial: tenants.filter(t => t.status === 'trial').length,
+    suspended: tenants.filter(t => t.status === 'suspended').length,
+    cancelled: tenants.filter(t => t.status === 'cancelled').length,
+  };
 
   const handleCreateSuccess = () => {
-    setRefreshKey((prev) => prev + 1);
+    dispatch(fetchTenantsAsync());
     showSnackbar('Tenant created successfully', 'success');
   };
 
   const handleUpdateSuccess = () => {
-    setRefreshKey((prev) => prev + 1);
+    dispatch(fetchTenantsAsync());
     showSnackbar('Tenant updated successfully', 'success');
   };
 
@@ -68,16 +85,15 @@ const TenantsPage = () => {
   const handleConfirmAction = async () => {
     try {
       if (confirmAction === 'suspend') {
-        await tenantService.suspendTenant(selectedTenant.tenantId);
+        await dispatch(suspendTenantAsync(selectedTenant.tenantId || selectedTenant._id)).unwrap();
         showSnackbar('Tenant suspended successfully', 'success');
       } else if (confirmAction === 'reactivate') {
-        await tenantService.reactivateTenant(selectedTenant.tenantId);
+        await dispatch(activateTenantAsync(selectedTenant.tenantId || selectedTenant._id)).unwrap();
         showSnackbar('Tenant reactivated successfully', 'success');
       }
-      setRefreshKey((prev) => prev + 1);
     } catch (error) {
       showSnackbar(
-        error.response?.data?.error?.message || 'Action failed',
+        error || 'Action failed',
         'error'
       );
     } finally {
@@ -96,17 +112,16 @@ const TenantsPage = () => {
   };
 
   useEffect(() => {
-    loadStats();
-  }, [refreshKey]);
+    dispatch(fetchTenantsAsync());
+  }, [dispatch]);
 
-  const loadStats = async () => {
-    try {
-      const response = await tenantService.getTenantStats();
-      setStats(response.data.statistics);
-    } catch (error) {
-      console.error('Failed to load tenant statistics:', error);
+  // Clear Redux errors when component unmounts or errors change
+  useEffect(() => {
+    if (error) {
+      showSnackbar(error.message || 'An error occurred', 'error');
+      dispatch(clearError());
     }
-  };
+  }, [error, dispatch]);
 
   return (
     <Box sx={{ 
@@ -212,7 +227,7 @@ const TenantsPage = () => {
       )}
 
       <TenantList
-        refreshKey={refreshKey}
+        refreshKey={Date.now()} // Use timestamp to force refresh when needed
         onView={handleView}
         onEdit={handleEdit}
         onSuspend={handleSuspend}

@@ -38,7 +38,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import Loading from '../../components/common/Loading';
 import { userService, dashboardService } from '../../services';
 import { getUserProfilePicture, getUserInitials } from '../../utils/profilePicture';
@@ -495,3 +495,4 @@ const DashboardEditPage = () => {
 };
 
 export default DashboardEditPage;
+

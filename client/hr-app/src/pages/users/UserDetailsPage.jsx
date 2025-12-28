@@ -31,7 +31,7 @@ import {
 import Loading from '../../components/common/Loading';
 import userService from '../../services/user.service';
 import { getUserProfilePicture, getUserInitials } from '../../utils/profilePicture';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { generateUserIDCard } from '../../components/users/UserIDCard';
 
 const UserDetailsPage = () => {
@@ -578,3 +578,4 @@ const DetailRow = ({ icon, label, value }) => (
 );
 
 export default UserDetailsPage;
+
