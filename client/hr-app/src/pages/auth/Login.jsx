@@ -26,8 +26,8 @@ import {
     Security as SecurityIcon,
     CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { generateCompanyRoute } from '../../utils/companySlug';
 
 const Login = () => {
@@ -601,3 +601,5 @@ const Login = () => {
 };
 
 export default Login;
+
+

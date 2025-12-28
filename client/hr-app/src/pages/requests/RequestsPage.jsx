@@ -16,8 +16,8 @@ import {
 } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
-import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../hooks/useAuth';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import vacationService from '../../services/vacation.service';
 import missionService from '../../services/mission.service';
 import sickLeaveService from '../../services/sickLeave.service';
@@ -359,3 +359,5 @@ const RequestsPage = () => {
 };
 
 export default RequestsPage;
+
+

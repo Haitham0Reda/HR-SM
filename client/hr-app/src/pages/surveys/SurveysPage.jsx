@@ -30,8 +30,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import surveyService from '../../services/survey.service';
 import SurveyForm from '../../components/surveys/SurveyForm';
 
@@ -991,3 +991,4 @@ const SurveysPage = () => {
 };
 
 export default SurveysPage;
+

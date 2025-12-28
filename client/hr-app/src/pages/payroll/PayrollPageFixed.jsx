@@ -22,7 +22,7 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as V
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import payrollService from '../../services/payroll.service';
 import userService from '../../services/user.service';
 

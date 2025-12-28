@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -9,6 +9,8 @@ import {
   Alert,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchSubscriptionPlansAsync, clearError } from '../store/slices/subscriptionSlice';
 import PlanList from '../components/subscriptions/PlanList';
 
 const TabPanel = ({ children, value, index }) => {
@@ -20,10 +22,23 @@ const TabPanel = ({ children, value, index }) => {
 };
 
 const SubscriptionsPage = () => {
+  const dispatch = useAppDispatch();
+  const { plans, loading, error } = useAppSelector(state => state.subscription);
+  
   const [tabValue, setTabValue] = useState(0);
-  // eslint-disable-next-line no-unused-vars
-  const [refreshKey, setRefreshKey] = useState(0);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  useEffect(() => {
+    dispatch(fetchSubscriptionPlansAsync());
+  }, [dispatch]);
+
+  // Handle Redux errors
+  useEffect(() => {
+    if (error) {
+      showSnackbar(error.message || 'An error occurred', 'error');
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   const handleEditPlan = (plan) => {
     // TODO: Implement plan editing
@@ -59,7 +74,11 @@ const SubscriptionsPage = () => {
       </Tabs>
 
       <TabPanel value={tabValue} index={0}>
-        <PlanList key={refreshKey} onEdit={handleEditPlan} />
+        <PlanList 
+          plans={plans}
+          loading={loading}
+          onEdit={handleEditPlan} 
+        />
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>

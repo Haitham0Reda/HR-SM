@@ -30,7 +30,8 @@ import {
   DarkMode as DarkModeIcon,
   Analytics as AnalyticsIcon,
 } from '@mui/icons-material';
-import { usePlatformAuth } from '../../contexts/PlatformAuthContext';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { logoutAsync } from '../../store/slices/platformAuthSlice';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const drawerWidth = 240;
@@ -49,7 +50,8 @@ const PlatformLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [themeMenuAnchor, setThemeMenuAnchor] = useState(null);
-  const { platformUser, logout } = usePlatformAuth();
+  const dispatch = useAppDispatch();
+  const { user: platformUser } = useAppSelector(state => state.platformAuth);
   const { currentTheme, changeTheme, getAvailableThemes } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -66,9 +68,10 @@ const PlatformLayout = () => {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     handleMenuClose();
-    logout();
+    await dispatch(logoutAsync());
+    navigate('/login');
   };
 
   const handleThemeMenuOpen = (event) => {

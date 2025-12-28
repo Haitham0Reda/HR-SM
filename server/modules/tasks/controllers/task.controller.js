@@ -1,5 +1,6 @@
-import Task from '../models/task.model.js';
+import TaskService from '../services/TaskService.js';
 import TaskReport from '../models/taskReport.model.js';
+import Task from '../models/task.model.js';
 import User from '../../hr-core/users/models/user.model.js';
 import path from 'path';
 import fs from 'fs/promises';
@@ -8,6 +9,8 @@ import { fileURLToPath } from 'url';
 // Get the directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const taskService = new TaskService();
 
 // Helper function to get tenant ID from request (in a real system, this would come from auth middleware)
 const getTenantId = (req) => {
@@ -19,16 +22,14 @@ const getTenantId = (req) => {
 export const getUserTasks = async (req, res) => {
     try {
         const tenantId = getTenantId(req);
-        const tasks = await Task.find({
-            $or: [
-                { assignee: req.user._id },
-                { assigner: req.user._id }
-            ],
-            tenantId
-        })
-            .populate('assignee', 'username personalInfo')
-            .populate('assigner', 'username personalInfo')
-            .sort({ createdAt: -1 });
+        const tasks = await taskService.getAllTasks(tenantId, {
+            filter: {
+                $or: [
+                    { assignedTo: req.user._id },
+                    { assignedBy: req.user._id }
+                ]
+            }
+        });
 
         res.json(tasks);
     } catch (err) {
@@ -40,20 +41,11 @@ export const getUserTasks = async (req, res) => {
 export const getTaskById = async (req, res) => {
     try {
         const tenantId = getTenantId(req);
-        const task = await Task.findOne({
-            _id: req.params.id,
-            tenantId
-        })
-            .populate('assignee', 'username personalInfo')
-            .populate('assigner', 'username personalInfo');
-
-        if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
-        }
-
+        const task = await taskService.getTaskById(req.params.id, tenantId);
         res.json(task);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        const statusCode = err.message === 'Task not found' ? 404 : 500;
+        res.status(statusCode).json({ error: err.message });
     }
 };
 
@@ -75,23 +67,17 @@ export const createTask = async (req, res) => {
             return res.status(404).json({ error: 'Assignee not found' });
         }
 
-        const task = new Task({
+        const taskData = {
             title,
             description,
             priority,
-            assignee,
-            assigner: req.user._id,
+            assignedTo: assignee,
+            assignedBy: req.user._id,
             startDate,
-            dueDate,
-            tenantId
-        });
+            dueDate
+        };
 
-        await task.save();
-
-        // Populate references
-        await task.populate('assignee', 'username personalInfo');
-        await task.populate('assigner', 'username personalInfo');
-
+        const task = await taskService.createTask(taskData, tenantId);
         res.status(201).json(task);
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -103,17 +89,10 @@ export const updateTask = async (req, res) => {
     try {
         const tenantId = getTenantId(req);
 
-        const task = await Task.findOne({
-            _id: req.params.id,
-            tenantId
-        });
-
-        if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
-        }
+        const existingTask = await taskService.getTaskById(req.params.id, tenantId);
 
         // Only the assigner or admins can update the task
-        if (task.assigner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (existingTask.assignedBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
             return res.status(403).json({ error: 'Not authorized to update this task' });
         }
 
@@ -127,24 +106,20 @@ export const updateTask = async (req, res) => {
             }
         }
 
-        // Update allowed fields
-        if (title) task.title = title;
-        if (description) task.description = description;
-        if (priority) task.priority = priority;
-        if (assignee) task.assignee = assignee;
-        if (startDate) task.startDate = startDate;
-        if (dueDate) task.dueDate = dueDate;
-        if (status) task.status = status;
+        const updateData = {};
+        if (title) updateData.title = title;
+        if (description) updateData.description = description;
+        if (priority) updateData.priority = priority;
+        if (assignee) updateData.assignedTo = assignee;
+        if (startDate) updateData.startDate = startDate;
+        if (dueDate) updateData.dueDate = dueDate;
+        if (status) updateData.status = status;
 
-        await task.save();
-
-        // Populate references
-        await task.populate('assignee', 'username personalInfo');
-        await task.populate('assigner', 'username personalInfo');
-
+        const task = await taskService.updateTask(req.params.id, updateData, tenantId);
         res.json(task);
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        const statusCode = err.message === 'Task not found' ? 404 : 400;
+        res.status(statusCode).json({ error: err.message });
     }
 };
 
@@ -153,24 +128,18 @@ export const deleteTask = async (req, res) => {
     try {
         const tenantId = getTenantId(req);
 
-        const task = await Task.findOne({
-            _id: req.params.id,
-            tenantId
-        });
-
-        if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
-        }
+        const existingTask = await taskService.getTaskById(req.params.id, tenantId);
 
         // Only the assigner or admins can delete the task
-        if (task.assigner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (existingTask.assignedBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
             return res.status(403).json({ error: 'Not authorized to delete this task' });
         }
 
-        await task.remove();
-        res.json({ message: 'Task deleted' });
+        const result = await taskService.deleteTask(req.params.id, tenantId);
+        res.json(result);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        const statusCode = err.message === 'Task not found' ? 404 : 500;
+        res.status(statusCode).json({ error: err.message });
     }
 };
 
@@ -180,10 +149,7 @@ export const updateTaskStatus = async (req, res) => {
         const tenantId = getTenantId(req);
         const { status } = req.body;
 
-        const task = await Task.findOne({
-            _id: req.params.id,
-            tenantId
-        });
+        const task = await taskService.getTaskById(req.params.id, tenantId);
 
         if (!task) {
             return res.status(404).json({ error: 'Task not found' });
@@ -200,29 +166,23 @@ export const updateTaskStatus = async (req, res) => {
         };
 
         // Check if the user is authorized to make this status change
-        const isAssignee = task.assignee.toString() === req.user._id.toString();
-        const isAssigner = task.assigner.toString() === req.user._id.toString();
+        const isAssignee = task.assignedTo.toString() === req.user._id.toString();
+        const isAssigner = task.assignedBy.toString() === req.user._id.toString();
 
         // Assignee can move from assigned -> in-progress -> submitted
         // Assigner can move from submitted -> reviewed -> completed/rejected
         // Assigner can also reject from reviewed back to in-progress
         if (isAssignee && ['assigned', 'in-progress', 'submitted'].includes(task.status) &&
             validTransitions[task.status].includes(status)) {
-            task.status = status;
+            const updatedTask = await taskService.updateTask(req.params.id, { status }, tenantId);
+            res.json(updatedTask);
         } else if (isAssigner && ['submitted', 'reviewed'].includes(task.status) &&
             validTransitions[task.status].includes(status)) {
-            task.status = status;
+            const updatedTask = await taskService.updateTask(req.params.id, { status }, tenantId);
+            res.json(updatedTask);
         } else {
             return res.status(403).json({ error: 'Not authorized to change task status' });
         }
-
-        await task.save();
-
-        // Populate references
-        await task.populate('assignee', 'username personalInfo');
-        await task.populate('assigner', 'username personalInfo');
-
-        res.json(task);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -253,13 +213,8 @@ export const upsertTaskReport = async (req, res) => {
         const { reportText, timeSpent } = req.body;
 
         // Check if task exists and user is the assignee
-        const task = await Task.findOne({
-            _id: req.params.id,
-            assignee: req.user._id,
-            tenantId
-        });
-
-        if (!task) {
+        const task = await taskService.getTaskById(req.params.id, tenantId);
+        if (!task || task.assignedTo.toString() !== req.user._id.toString()) {
             return res.status(404).json({ error: 'Task not found or not assigned to you' });
         }
 
@@ -301,13 +256,8 @@ export const submitTaskReport = async (req, res) => {
         const tenantId = getTenantId(req);
 
         // Check if task exists and user is the assignee
-        const task = await Task.findOne({
-            _id: req.params.id,
-            assignee: req.user._id,
-            tenantId
-        });
-
-        if (!task) {
+        const task = await taskService.getTaskById(req.params.id, tenantId);
+        if (!task || task.assignedTo.toString() !== req.user._id.toString()) {
             return res.status(404).json({ error: 'Task not found or not assigned to you' });
         }
 
@@ -322,8 +272,7 @@ export const submitTaskReport = async (req, res) => {
         }
 
         // Update task status to submitted
-        task.status = 'submitted';
-        await task.save();
+        const updatedTask = await taskService.updateTask(req.params.id, { status: 'submitted' }, tenantId);
 
         // Submit report
         report.status = 'submitted';
@@ -332,7 +281,7 @@ export const submitTaskReport = async (req, res) => {
 
         await report.populate('reviewedBy', 'username personalInfo');
 
-        res.json({ task, report });
+        res.json({ task: updatedTask, report });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -345,13 +294,8 @@ export const reviewTaskReport = async (req, res) => {
         const { status, reviewComments } = req.body; // status: 'approved' or 'rejected'
 
         // Check if task exists and user is the assigner
-        const task = await Task.findOne({
-            _id: req.params.id,
-            assigner: req.user._id,
-            tenantId
-        });
-
-        if (!task) {
+        const task = await taskService.getTaskById(req.params.id, tenantId);
+        if (!task || task.assignedBy.toString() !== req.user._id.toString()) {
             return res.status(404).json({ error: 'Task not found or not assigned by you' });
         }
 
@@ -373,16 +317,18 @@ export const reviewTaskReport = async (req, res) => {
         await report.save();
 
         // Update task status based on review
+        let taskStatus;
         if (status === 'approved') {
-            task.status = 'completed';
+            taskStatus = 'completed';
         } else if (status === 'rejected') {
-            task.status = 'rejected';
+            taskStatus = 'rejected';
         }
-        await task.save();
+        
+        const updatedTask = await taskService.updateTask(req.params.id, { status: taskStatus }, tenantId);
 
         await report.populate('reviewedBy', 'username personalInfo');
 
-        res.json({ task, report });
+        res.json({ task: updatedTask, report });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -398,13 +344,8 @@ export const uploadReportFile = async (req, res) => {
         }
 
         // Check if task exists and user is the assignee
-        const task = await Task.findOne({
-            _id: req.params.id,
-            assignee: req.user._id,
-            tenantId
-        });
-
-        if (!task) {
+        const task = await taskService.getTaskById(req.params.id, tenantId);
+        if (!task || task.assignedTo.toString() !== req.user._id.toString()) {
             return res.status(404).json({ error: 'Task not found or not assigned to you' });
         }
 
@@ -475,10 +416,10 @@ export const downloadReportFile = async (req, res) => {
         }
 
         // Check if user has access to this report
-        const task = await Task.findById(report.taskId);
+        const task = await taskService.getTaskById(report.taskId, tenantId);
         if (!task ||
-            (req.user._id.toString() !== task.assignee.toString() &&
-                req.user._id.toString() !== task.assigner.toString() &&
+            (req.user._id.toString() !== task.assignedTo.toString() &&
+                req.user._id.toString() !== task.assignedBy.toString() &&
                 !['admin', 'hr'].includes(req.user.role))) {
             return res.status(403).json({ error: 'Not authorized to access this file' });
         }

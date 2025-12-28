@@ -35,7 +35,7 @@ import ModuleGuard from '../../components/ModuleGuard';
 import PageContainer from '../../components/PageContainer';
 import ClaimReviewModal from '../../components/insurance/ClaimReviewModal';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useClaims } from '../../hooks/useInsurance';
 import insuranceService from '../../services/insurance.service';
 import { formatCurrency, formatDate } from '../../utils/formatters';

@@ -27,8 +27,8 @@ import {
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import hardCopyService from '../../services/hardcopy.service';
 
 const HardCopiesPage = () => {
@@ -624,3 +624,4 @@ const HardCopiesPage = () => {
 };
 
 export default HardCopiesPage;
+

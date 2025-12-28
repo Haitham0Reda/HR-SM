@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../store/providers/ReduxAuthProvider';
 import { useCompanyRouting } from '../../../hooks/useCompanyRouting';
 import TaskReportForm from '../components/TaskReportForm';
 import TaskReportList from '../components/TaskReportList';
@@ -172,3 +172,4 @@ const getPriorityColor = (priority) => {
 };
 
 export default TaskDetail;
+

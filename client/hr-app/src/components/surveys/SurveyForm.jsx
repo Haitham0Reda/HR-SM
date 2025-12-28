@@ -23,8 +23,8 @@ import {
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import surveyService from '../../services/survey.service';
-import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 
 const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
@@ -434,3 +434,4 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
 };
 
 export default SurveyForm;
+

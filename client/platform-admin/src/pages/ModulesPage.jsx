@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -6,6 +6,8 @@ import {
   Tab,
   Alert,
 } from '@mui/material';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchAvailableModulesAsync, clearError } from '../store/slices/moduleManagementSlice';
 import ModuleRegistry from '../components/modules/ModuleRegistry';
 
 const TabPanel = ({ children, value, index }) => {
@@ -17,7 +19,22 @@ const TabPanel = ({ children, value, index }) => {
 };
 
 const ModulesPage = () => {
+  const dispatch = useAppDispatch();
+  const { availableModules, loading, error } = useAppSelector(state => state.moduleManagement);
+  
   const [tabValue, setTabValue] = useState(0);
+
+  useEffect(() => {
+    dispatch(fetchAvailableModulesAsync());
+  }, [dispatch]);
+
+  // Handle Redux errors
+  useEffect(() => {
+    if (error) {
+      console.error('Module management error:', error.message);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   return (
     <Box>
@@ -31,7 +48,10 @@ const ModulesPage = () => {
       </Tabs>
 
       <TabPanel value={tabValue} index={0}>
-        <ModuleRegistry />
+        <ModuleRegistry 
+          modules={availableModules}
+          loading={loading}
+        />
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, Typography, Alert, Card, CardContent, Divider } from '@mui/material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import announcementService from '../../services/announcement.service';
 import axios from 'axios';
 

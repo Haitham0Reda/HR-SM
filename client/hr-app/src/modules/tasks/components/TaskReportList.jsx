@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../store/providers/ReduxAuthProvider';
 
 const TaskReportList = ({ taskId }) => {
     const [reports, setReports] = useState([]);
@@ -180,3 +180,4 @@ const getStatusColor = (status) => {
 };
 
 export default TaskReportList;
+

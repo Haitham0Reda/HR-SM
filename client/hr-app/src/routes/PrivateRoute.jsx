@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../store/providers/ReduxAuthProvider';
 import { CircularProgress, Box } from '@mui/material';
 
 const PrivateRoute = ({ children, requiredRole }) => {
@@ -53,3 +53,4 @@ const checkRoleAccess = (userRole, requiredRole) => {
 };
 
 export default PrivateRoute;
+

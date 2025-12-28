@@ -10,10 +10,10 @@ import '@testing-library/jest-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import ModuleGuard from '../../ModuleGuard';
 
-// Mock the ModuleContext
+// Mock the Redux ModuleProvider
 const mockUseModules = jest.fn();
 
-jest.mock('../../../contexts/ModuleContext', () => ({
+jest.mock('../../../store/providers/ReduxModuleProvider', () => ({
     useModules: () => mockUseModules()
 }));
 
@@ -51,6 +51,7 @@ describe('ModuleGuard Component', () => {
         beforeEach(() => {
             mockUseModules.mockReturnValue({
                 isModuleEnabled: jest.fn().mockReturnValue(true),
+                getModuleUnavailabilityReason: jest.fn().mockReturnValue(null),
                 loading: false
             });
         });
@@ -70,6 +71,7 @@ describe('ModuleGuard Component', () => {
             const mockIsModuleEnabled = jest.fn().mockReturnValue(true);
             mockUseModules.mockReturnValue({
                 isModuleEnabled: mockIsModuleEnabled,
+                getModuleUnavailabilityReason: jest.fn().mockReturnValue(null),
                 loading: false
             });
 
@@ -99,6 +101,7 @@ describe('ModuleGuard Component', () => {
         beforeEach(() => {
             mockUseModules.mockReturnValue({
                 isModuleEnabled: jest.fn().mockReturnValue(false),
+                getModuleUnavailabilityReason: jest.fn().mockReturnValue('feature_not_licensed'),
                 loading: false
             });
         });
@@ -111,9 +114,9 @@ describe('ModuleGuard Component', () => {
             );
 
             expect(screen.queryByTestId('test-content')).not.toBeInTheDocument();
-            expect(screen.getByText('Module Not Available')).toBeInTheDocument();
-            expect(screen.getByText(/This feature is not enabled for your organization/)).toBeInTheDocument();
-            expect(screen.getByText(/contact your administrator to enable the life-insurance module/)).toBeInTheDocument();
+            expect(screen.getByText('License Upgrade Required')).toBeInTheDocument();
+            expect(screen.getByText(/The life-insurance module requires a license upgrade/)).toBeInTheDocument();
+            expect(screen.getByText(/Upgrade your license to access this feature/)).toBeInTheDocument();
         });
 
         it('should show custom fallback when provided', () => {
@@ -127,7 +130,7 @@ describe('ModuleGuard Component', () => {
             );
 
             expect(screen.queryByTestId('test-content')).not.toBeInTheDocument();
-            expect(screen.queryByText('Module Not Available')).not.toBeInTheDocument();
+            expect(screen.queryByText('License Upgrade Required')).not.toBeInTheDocument();
             expect(screen.getByTestId('custom-fallback')).toBeInTheDocument();
             expect(screen.getByText('Custom fallback content')).toBeInTheDocument();
         });
@@ -143,7 +146,7 @@ describe('ModuleGuard Component', () => {
             );
 
             expect(screen.queryByTestId('test-content')).not.toBeInTheDocument();
-            expect(screen.queryByText('Module Not Available')).not.toBeInTheDocument();
+            expect(screen.queryByText('License Upgrade Required')).not.toBeInTheDocument();
             expect(container.firstChild).toBeNull();
         });
 
@@ -159,7 +162,7 @@ describe('ModuleGuard Component', () => {
             );
 
             expect(screen.queryByTestId('test-content')).not.toBeInTheDocument();
-            expect(screen.queryByText('Module Not Available')).not.toBeInTheDocument();
+            expect(screen.queryByText('License Upgrade Required')).not.toBeInTheDocument();
             expect(screen.getByTestId('custom-fallback')).toBeInTheDocument();
         });
     });
@@ -206,9 +209,11 @@ describe('ModuleGuard Component', () => {
             const mockIsModuleEnabled = jest.fn().mockImplementation((moduleId) => {
                 return moduleId === 'tasks' || moduleId === 'reports';
             });
+            const mockGetModuleUnavailabilityReason = jest.fn().mockReturnValue('feature_not_licensed');
 
             mockUseModules.mockReturnValue({
                 isModuleEnabled: mockIsModuleEnabled,
+                getModuleUnavailabilityReason: mockGetModuleUnavailabilityReason,
                 loading: false
             });
 
@@ -231,7 +236,7 @@ describe('ModuleGuard Component', () => {
             );
 
             expect(screen.queryByTestId('test-content')).not.toBeInTheDocument();
-            expect(screen.getByText('Module Not Available')).toBeInTheDocument();
+            expect(screen.getByText('License Upgrade Required')).toBeInTheDocument();
 
             // Test another enabled module
             rerender(
@@ -250,6 +255,7 @@ describe('ModuleGuard Component', () => {
         beforeEach(() => {
             mockUseModules.mockReturnValue({
                 isModuleEnabled: jest.fn().mockReturnValue(false),
+                getModuleUnavailabilityReason: jest.fn().mockReturnValue('feature_not_licensed'),
                 loading: false
             });
         });
@@ -263,7 +269,7 @@ describe('ModuleGuard Component', () => {
 
             // Check for lock icon (MUI LockIcon)
             const lockIcon = document.querySelector('[data-testid="LockIcon"]');
-            expect(lockIcon || screen.getByText('Module Not Available')).toBeInTheDocument();
+            expect(lockIcon || screen.getByText('License Upgrade Required')).toBeInTheDocument();
         });
 
         it('should include module name in default fallback message', () => {
@@ -273,7 +279,7 @@ describe('ModuleGuard Component', () => {
                 </ModuleGuard>
             );
 
-            expect(screen.getByText(/enable the custom-module module/)).toBeInTheDocument();
+            expect(screen.getByText(/The custom-module module requires a license upgrade/)).toBeInTheDocument();
         });
 
         it('should have proper styling classes for default fallback', () => {
@@ -283,7 +289,7 @@ describe('ModuleGuard Component', () => {
                 </ModuleGuard>
             );
 
-            const fallbackContainer = screen.getByText('Module Not Available').closest('div');
+            const fallbackContainer = screen.getByText('License Upgrade Required').closest('div');
             expect(fallbackContainer).toBeInTheDocument();
         });
     });
@@ -307,8 +313,10 @@ describe('ModuleGuard Component', () => {
 
         it('should handle undefined moduleId gracefully', () => {
             const mockIsModuleEnabled = jest.fn().mockReturnValue(false);
+            const mockGetModuleUnavailabilityReason = jest.fn().mockReturnValue('feature_not_licensed');
             mockUseModules.mockReturnValue({
                 isModuleEnabled: mockIsModuleEnabled,
+                getModuleUnavailabilityReason: mockGetModuleUnavailabilityReason,
                 loading: false
             });
 
@@ -319,7 +327,7 @@ describe('ModuleGuard Component', () => {
             );
 
             expect(mockIsModuleEnabled).toHaveBeenCalledWith(undefined);
-            expect(screen.getByText('Module Not Available')).toBeInTheDocument();
+            expect(screen.getByText('License Upgrade Required')).toBeInTheDocument();
         });
 
         it('should handle null fallback prop', () => {
@@ -359,9 +367,11 @@ describe('ModuleGuard Component', () => {
             const mockIsModuleEnabled = jest.fn().mockImplementation((moduleId) => {
                 return moduleId !== 'life-insurance'; // life-insurance is disabled
             });
+            const mockGetModuleUnavailabilityReason = jest.fn().mockReturnValue('feature_not_licensed');
 
             mockUseModules.mockReturnValue({
                 isModuleEnabled: mockIsModuleEnabled,
+                getModuleUnavailabilityReason: mockGetModuleUnavailabilityReason,
                 loading: false
             });
 
@@ -374,17 +384,19 @@ describe('ModuleGuard Component', () => {
             );
 
             expect(screen.queryByTestId('insurance-content')).not.toBeInTheDocument();
-            expect(screen.getByText('Module Not Available')).toBeInTheDocument();
-            expect(screen.getByText(/enable the life-insurance module/)).toBeInTheDocument();
+            expect(screen.getByText('License Upgrade Required')).toBeInTheDocument();
+            expect(screen.getByText(/The life-insurance module requires a license upgrade/)).toBeInTheDocument();
         });
 
         it('should allow access when life-insurance module is enabled', () => {
             const mockIsModuleEnabled = jest.fn().mockImplementation((moduleId) => {
                 return moduleId === 'life-insurance'; // life-insurance is enabled
             });
+            const mockGetModuleUnavailabilityReason = jest.fn().mockReturnValue(null);
 
             mockUseModules.mockReturnValue({
                 isModuleEnabled: mockIsModuleEnabled,
+                getModuleUnavailabilityReason: mockGetModuleUnavailabilityReason,
                 loading: false
             });
 
@@ -398,7 +410,7 @@ describe('ModuleGuard Component', () => {
 
             expect(screen.getByTestId('insurance-content')).toBeInTheDocument();
             expect(screen.getByText('Insurance Policy Management')).toBeInTheDocument();
-            expect(screen.queryByText('Module Not Available')).not.toBeInTheDocument();
+            expect(screen.queryByText('License Upgrade Required')).not.toBeInTheDocument();
         });
     });
 });

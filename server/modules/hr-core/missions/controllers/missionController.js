@@ -1,6 +1,8 @@
 // Mission Controller - Moved to HR-Core module
-import Mission from '../models/mission.model.js';
+import MissionService from '../services/MissionService.js';
 import logger from '../../../../utils/logger.js';
+
+const missionService = new MissionService();
 
 export const getAllMissions = async (req, res) => {
     try {
@@ -9,12 +11,7 @@ export const getAllMissions = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const missions = await Mission.find({ tenantId })
-            .populate('employee', 'username email employeeId personalInfo')
-            .populate('department', 'name code')
-            .populate('approvedBy', 'username email')
-            .sort({ startDate: -1 });
-            
+        const missions = await missionService.getAllMissions(tenantId);
         res.json({ success: true, data: missions });
     } catch (err) {
         logger.error('Error fetching missions:', err);
@@ -29,11 +26,7 @@ export const createMission = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const missionData = { ...req.body, tenantId };
-        const mission = new Mission(missionData);
-        await mission.save();
-        await mission.populate('employee', 'username email employeeId personalInfo');
-        
+        const mission = await missionService.createMission(req.body, tenantId);
         res.status(201).json({ success: true, data: mission });
     } catch (err) {
         logger.error('Error creating mission:', err);
@@ -48,17 +41,12 @@ export const getMissionById = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const mission = await Mission.findOne({ _id: req.params.id, tenantId })
-            .populate('employee', 'username email employeeId personalInfo')
-            .populate('department', 'name code')
-            .populate('approvedBy', 'username email');
-            
-        if (!mission) return res.status(404).json({ error: 'Mission not found' });
-        
+        const mission = await missionService.getMissionById(req.params.id, tenantId);
         res.json({ success: true, data: mission });
     } catch (err) {
         logger.error('Error fetching mission:', err);
-        res.status(500).json({ error: err.message });
+        const statusCode = err.message === 'Mission not found' ? 404 : 500;
+        res.status(statusCode).json({ error: err.message });
     }
 };
 
@@ -69,21 +57,12 @@ export const updateMission = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const mission = await Mission.findOneAndUpdate(
-            { _id: req.params.id, tenantId },
-            req.body,
-            { new: true }
-        )
-            .populate('employee', 'username email employeeId personalInfo')
-            .populate('department', 'name code')
-            .populate('approvedBy', 'username email');
-            
-        if (!mission) return res.status(404).json({ error: 'Mission not found' });
-        
+        const mission = await missionService.updateMission(req.params.id, req.body, tenantId);
         res.json({ success: true, data: mission });
     } catch (err) {
         logger.error('Error updating mission:', err);
-        res.status(400).json({ error: err.message });
+        const statusCode = err.message === 'Mission not found' ? 404 : 400;
+        res.status(statusCode).json({ error: err.message });
     }
 };
 
@@ -94,12 +73,11 @@ export const deleteMission = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const mission = await Mission.findOneAndDelete({ _id: req.params.id, tenantId });
-        if (!mission) return res.status(404).json({ error: 'Mission not found' });
-        
-        res.json({ success: true, message: 'Mission deleted' });
+        const result = await missionService.deleteMission(req.params.id, tenantId);
+        res.json({ success: true, message: result.message });
     } catch (err) {
         logger.error('Error deleting mission:', err);
-        res.status(500).json({ error: err.message });
+        const statusCode = err.message === 'Mission not found' ? 404 : 500;
+        res.status(statusCode).json({ error: err.message });
     }
 };

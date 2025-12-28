@@ -43,7 +43,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import RolesTableSkeleton from '../../components/roles/RolesTableSkeleton';
 import RoleTypeBadge from '../../components/roles/RoleTypeBadge';
 import roleService from '../../services/role.service';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 
 const RolesPage = () => {
     const navigate = useNavigate();
@@ -919,3 +919,4 @@ const RolesPage = () => {
 };
 
 export default RolesPage;
+

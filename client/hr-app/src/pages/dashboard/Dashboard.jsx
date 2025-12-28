@@ -46,7 +46,7 @@ import {
     Person as ProfileIcon,
     Edit as EditIcon
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import CongratulationsEffect from '../../components/effects/CongratulationsEffect';
@@ -926,3 +926,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

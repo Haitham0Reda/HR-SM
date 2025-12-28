@@ -10,7 +10,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Box, Typography, Paper, Button } from '@mui/material';
 import { Lock, Warning, Info } from '@mui/icons-material';
-import { useModules } from '../contexts/ModuleContext';
+import { useModules } from '../store/providers/ReduxModuleProvider';
 
 const ModuleGuard = ({ 
     moduleId, 

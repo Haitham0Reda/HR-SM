@@ -1,6 +1,8 @@
 // Overtime Controller - Moved to HR-Core module
-import Overtime from '../models/overtime.model.js';
+import OvertimeService from '../services/OvertimeService.js';
 import logger from '../../../../utils/logger.js';
+
+const overtimeService = new OvertimeService();
 
 export const getAllOvertime = async (req, res) => {
     try {
@@ -9,12 +11,7 @@ export const getAllOvertime = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const overtime = await Overtime.find({ tenantId })
-            .populate('employee', 'username email employeeId personalInfo')
-            .populate('department', 'name code')
-            .populate('approvedBy', 'username email')
-            .sort({ date: -1 });
-            
+        const overtime = await overtimeService.getAllOvertime(tenantId);
         res.json({ success: true, data: overtime });
     } catch (err) {
         logger.error('Error fetching overtime:', err);
@@ -29,11 +26,7 @@ export const createOvertime = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const overtimeData = { ...req.body, tenantId };
-        const overtime = new Overtime(overtimeData);
-        await overtime.save();
-        await overtime.populate('employee', 'username email employeeId personalInfo');
-        
+        const overtime = await overtimeService.createOvertime(req.body, tenantId);
         res.status(201).json({ success: true, data: overtime });
     } catch (err) {
         logger.error('Error creating overtime:', err);
@@ -48,17 +41,12 @@ export const getOvertimeById = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const overtime = await Overtime.findOne({ _id: req.params.id, tenantId })
-            .populate('employee', 'username email employeeId personalInfo')
-            .populate('department', 'name code')
-            .populate('approvedBy', 'username email');
-            
-        if (!overtime) return res.status(404).json({ error: 'Overtime not found' });
-        
+        const overtime = await overtimeService.getOvertimeById(req.params.id, tenantId);
         res.json({ success: true, data: overtime });
     } catch (err) {
         logger.error('Error fetching overtime:', err);
-        res.status(500).json({ error: err.message });
+        const statusCode = err.message === 'Overtime record not found' ? 404 : 500;
+        res.status(statusCode).json({ error: err.message });
     }
 };
 
@@ -69,21 +57,12 @@ export const updateOvertime = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const overtime = await Overtime.findOneAndUpdate(
-            { _id: req.params.id, tenantId },
-            req.body,
-            { new: true }
-        )
-            .populate('employee', 'username email employeeId personalInfo')
-            .populate('department', 'name code')
-            .populate('approvedBy', 'username email');
-            
-        if (!overtime) return res.status(404).json({ error: 'Overtime not found' });
-        
+        const overtime = await overtimeService.updateOvertime(req.params.id, req.body, tenantId);
         res.json({ success: true, data: overtime });
     } catch (err) {
         logger.error('Error updating overtime:', err);
-        res.status(400).json({ error: err.message });
+        const statusCode = err.message === 'Overtime record not found' ? 404 : 400;
+        res.status(statusCode).json({ error: err.message });
     }
 };
 
@@ -94,12 +73,11 @@ export const deleteOvertime = async (req, res) => {
             return res.status(400).json({ error: 'Tenant context required' });
         }
         
-        const overtime = await Overtime.findOneAndDelete({ _id: req.params.id, tenantId });
-        if (!overtime) return res.status(404).json({ error: 'Overtime not found' });
-        
-        res.json({ success: true, message: 'Overtime deleted' });
+        const result = await overtimeService.deleteOvertime(req.params.id, tenantId);
+        res.json({ success: true, message: result.message });
     } catch (err) {
         logger.error('Error deleting overtime:', err);
-        res.status(500).json({ error: err.message });
+        const statusCode = err.message === 'Overtime record not found' ? 404 : 500;
+        res.status(statusCode).json({ error: err.message });
     }
 };

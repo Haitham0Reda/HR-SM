@@ -29,8 +29,8 @@ import {
     Info as InfoIcon,
     AccessTime as TimeIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import userService from '../../services/user.service';
 import departmentService from '../../services/department.service';
 import Loading from '../../components/common/Loading';
@@ -672,3 +672,5 @@ const VacationManagementPage = () => {
 };
 
 export default VacationManagementPage;
+
+

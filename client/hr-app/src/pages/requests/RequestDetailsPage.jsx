@@ -25,8 +25,8 @@ import {
     Delete as DeleteIcon
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
-import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../hooks/useAuth';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import vacationService from '../../services/vacation.service';
 import missionService from '../../services/mission.service';
 import sickLeaveService from '../../services/sickLeave.service';
@@ -687,3 +687,5 @@ const RequestDetailsPage = () => {
 };
 
 export default RequestDetailsPage;
+
+

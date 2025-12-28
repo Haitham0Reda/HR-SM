@@ -32,8 +32,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
-import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import sickLeaveService from '../../services/sickLeave.service';
 import Loading from '../../components/common/Loading';
@@ -613,3 +613,4 @@ const SickLeaveDetails = () => {
 };
 
 export default SickLeaveDetails;
+

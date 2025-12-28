@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import {
     Box,
     Button,
@@ -54,7 +54,7 @@ import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import userService from '../../services/user.service';
 import { getUserProfilePicture, getUserInitials } from '../../utils/profilePicture';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { generateUserCredentialPDF } from '../../components/users/UserCredentialPDF';
 
 const UsersPage = () => {
@@ -1553,3 +1553,5 @@ const UsersPage = () => {
 };
 
 export default UsersPage;
+
+

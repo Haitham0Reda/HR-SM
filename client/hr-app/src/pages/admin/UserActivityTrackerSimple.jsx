@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Alert } from '@mui/material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 
 /**
  * Simple User Activity Tracker Page for testing

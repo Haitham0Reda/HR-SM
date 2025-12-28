@@ -37,7 +37,7 @@ import {
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import departmentService from '../../services/department.service';
 
 
@@ -747,3 +747,4 @@ const DepartmentsPage = () => {
 };
 
 export default DepartmentsPage;
+

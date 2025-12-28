@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { taskService } from '../../services/task.service';
 import TaskReportForm from '../../components/tasks/TaskReportForm';
 import TaskReviewForm from '../../components/tasks/TaskReviewForm';

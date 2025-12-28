@@ -7,7 +7,7 @@ import { Outlet } from 'react-router';
 import DashboardHeader from './DashboardHeader';
 import DashboardSidebar from './DashboardSidebar';
 import SitemarkIcon from './SitemarkIcon';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../store/providers/ReduxAuthProvider';
 import SurveyRedirect from './SurveyRedirect';
 import { designTokens } from '../theme/designTokens';
 

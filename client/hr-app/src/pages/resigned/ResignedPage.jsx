@@ -17,7 +17,7 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/ico
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import resignedService from '../../services/resigned.service';
 import userService from '../../services/user.service';
 import api from '../../services/api';
@@ -502,3 +502,4 @@ const ResignedPage = () => {
 };
 
 export default ResignedPage;
+

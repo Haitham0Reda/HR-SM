@@ -22,7 +22,7 @@ import {
     Shield as ShieldIcon,
     Save as SaveIcon
 } from '@mui/icons-material';
-import { useNotification } from '../../context/NotificationContext';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import securityService from '../../services/security.service';
 import Loading from '../../components/common/Loading';
 
@@ -445,3 +445,4 @@ const SecurityPage = () => {
 };
 
 export default SecurityPage;
+

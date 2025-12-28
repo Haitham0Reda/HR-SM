@@ -12,7 +12,7 @@ import {
     Paper,
     useTheme
 } from '@mui/material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { taskService } from '../../services/task.service';
 import TaskList from '../../components/tasks/TaskList';
 import TaskForm from '../../components/tasks/TaskForm';
