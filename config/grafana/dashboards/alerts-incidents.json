@@ -1,0 +1,451 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "HRMS Alerts & Incidents Dashboard",
+    "tags": ["alerts", "incidents", "monitoring", "hrms"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Critical Alerts Active",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\",severity=\"critical\"}",
+            "legendFormat": "Critical",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Warning Alerts Active",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\",severity=\"warning\"}",
+            "legendFormat": "Warning",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 1
+                },
+                {
+                  "color": "orange",
+                  "value": 5
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "System Health Score",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "(sum(up{job=~\"hrms-.*\"}) / count(up{job=~\"hrms-.*\"})) * 100",
+            "legendFormat": "Health %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 80
+                },
+                {
+                  "color": "green",
+                  "value": 95
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 4,
+        "title": "Service Availability (24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "avg_over_time(up{job=\"hrms-main-backend\"}[24h]) * 100",
+            "legendFormat": "Main Backend",
+            "refId": "A"
+          },
+          {
+            "expr": "avg_over_time(up{job=\"hrms-license-server\"}[24h]) * 100",
+            "legendFormat": "License Server",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 99
+                },
+                {
+                  "color": "green",
+                  "value": 99.9
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 12,
+          "x": 0,
+          "y": 4
+        }
+      },
+      {
+        "id": 5,
+        "title": "Active Alerts Timeline",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\"}",
+            "legendFormat": "{{alertname}} ({{severity}})",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Alert Status",
+            "min": 0,
+            "max": 1
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 6,
+        "title": "Alert Frequency (Last 6h)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "increase(prometheus_notifications_total[1h])",
+            "legendFormat": "Notifications Sent",
+            "refId": "A"
+          },
+          {
+            "expr": "increase(alertmanager_alerts_received_total[1h])",
+            "legendFormat": "Alerts Received",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 7,
+        "title": "Response Time SLA Violations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"hrms-main-backend\"}[5m])) > 2",
+            "legendFormat": "Main Backend SLA Violation",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"hrms-license-server\"}[5m])) > 1",
+            "legendFormat": "License Server SLA Violation",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Violation (1=Yes, 0=No)",
+            "min": 0,
+            "max": 1
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      },
+      {
+        "id": 8,
+        "title": "Error Rate Threshold Violations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "(rate(http_requests_total{job=\"hrms-main-backend\",status=~\"5..\"}[5m]) / rate(http_requests_total{job=\"hrms-main-backend\"}[5m])) > 0.05",
+            "legendFormat": "Main Backend Error Rate > 5%",
+            "refId": "A"
+          },
+          {
+            "expr": "(rate(http_requests_total{job=\"hrms-license-server\",status=~\"5..\"}[5m]) / rate(http_requests_total{job=\"hrms-license-server\"}[5m])) > 0.05",
+            "legendFormat": "License Server Error Rate > 5%",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Violation (1=Yes, 0=No)",
+            "min": 0,
+            "max": 1
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        }
+      },
+      {
+        "id": 9,
+        "title": "Resource Usage Alerts",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "(100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)) > 80",
+            "legendFormat": "CPU Usage > 80%",
+            "refId": "A"
+          },
+          {
+            "expr": "((1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100) > 85",
+            "legendFormat": "Memory Usage > 85%",
+            "refId": "B"
+          },
+          {
+            "expr": "((1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100) > 90",
+            "legendFormat": "Disk Usage > 90%",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Alert Status (1=Triggered)",
+            "min": 0,
+            "max": 1
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        }
+      },
+      {
+        "id": 10,
+        "title": "License System Health",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "up{job=\"hrms-license-server\"}",
+            "legendFormat": "License Server Status",
+            "refId": "A",
+            "format": "table"
+          },
+          {
+            "expr": "rate(license_validation_errors_total[5m])",
+            "legendFormat": "Validation Errors/sec",
+            "refId": "B",
+            "format": "table"
+          },
+          {
+            "expr": "license_expired_count",
+            "legendFormat": "Expired Licenses",
+            "refId": "C",
+            "format": "table"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 32
+        }
+      },
+      {
+        "id": 11,
+        "title": "Database Health Indicators",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "up{job=\"mongodb-exporter\"}",
+            "legendFormat": "MongoDB Status",
+            "refId": "A",
+            "format": "table"
+          },
+          {
+            "expr": "mongodb_connections_current / mongodb_connections_available",
+            "legendFormat": "Connection Usage %",
+            "refId": "B",
+            "format": "table"
+          },
+          {
+            "expr": "up{job=\"redis-exporter\"}",
+            "legendFormat": "Redis Status",
+            "refId": "C",
+            "format": "table"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 32
+        }
+      },
+      {
+        "id": 12,
+        "title": "Recent Alert History",
+        "type": "logs",
+        "targets": [
+          {
+            "expr": "{job=\"alertmanager\"} |= \"firing\"",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 40
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "severity",
+          "type": "custom",
+          "options": [
+            {
+              "text": "All",
+              "value": ".*",
+              "selected": true
+            },
+            {
+              "text": "Critical",
+              "value": "critical",
+              "selected": false
+            },
+            {
+              "text": "Warning",
+              "value": "warning",
+              "selected": false
+            }
+          ],
+          "includeAll": true,
+          "allValue": ".*"
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": "Prometheus",
+          "expr": "increase(deployment_timestamp[1m])",
+          "titleFormat": "Deployment",
+          "textFormat": "New deployment detected"
+        }
+      ]
+    },
+    "schemaVersion": 30,
+    "version": 1,
+    "links": []
+  }
+}

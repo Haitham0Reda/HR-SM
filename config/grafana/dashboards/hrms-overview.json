@@ -361,7 +361,7 @@
             "refId": "A"
           },
           {
-            "expr": "time() - backup_last_success_timestamp",
+            "expr": "(time() - backup_last_success_timestamp) / 3600",
             "legendFormat": "Hours Since Last Backup",
             "refId": "B"
           }
@@ -379,15 +379,28 @@
                 },
                 {
                   "color": "yellow",
-                  "value": 86400
+                  "value": 24
                 },
                 {
                   "color": "red",
-                  "value": 172800
+                  "value": 48
                 }
               ]
             },
-            "unit": "s"
+            "unit": "h",
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "text": "SUCCESS"
+                  },
+                  "1": {
+                    "text": "FAILED"
+                  }
+                },
+                "type": "value"
+              }
+            ]
           }
         },
         "gridPos": {
@@ -395,6 +408,175 @@
           "w": 6,
           "x": 18,
           "y": 24
+        }
+      },
+      {
+        "id": 12,
+        "title": "License Server Health",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"hrms-license-server\"}",
+            "legendFormat": "License Server",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            },
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "text": "DOWN"
+                  },
+                  "1": {
+                    "text": "UP"
+                  }
+                },
+                "type": "value"
+              }
+            ]
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 28
+        }
+      },
+      {
+        "id": 13,
+        "title": "Total Active Tenants",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "tenant_count_active",
+            "legendFormat": "Active Tenants",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 50
+                },
+                {
+                  "color": "red",
+                  "value": 100
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 28
+        }
+      },
+      {
+        "id": 14,
+        "title": "System Alerts",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\",severity=\"critical\"}",
+            "legendFormat": "Critical Alerts",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 28
+        }
+      },
+      {
+        "id": 15,
+        "title": "License Validation Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(license_validations_total[5m])",
+            "legendFormat": "Validations/sec",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 10
+                },
+                {
+                  "color": "red",
+                  "value": 50
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 28
         }
       }
     ],

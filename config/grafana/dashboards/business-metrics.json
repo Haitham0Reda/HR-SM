@@ -1,0 +1,518 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "HRMS Business Metrics Dashboard",
+    "tags": ["business", "analytics", "hrms", "tenants"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "5m",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Active Tenants",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "count(up{job=\"hrms-main-backend\"} == 1) * tenant_count_active",
+            "legendFormat": "Active Tenants",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 50
+                },
+                {
+                  "color": "red",
+                  "value": 100
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total Users Across All Tenants",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(tenant_user_count)",
+            "legendFormat": "Total Users",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 1000
+                },
+                {
+                  "color": "red",
+                  "value": 5000
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Storage Usage (GB)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(tenant_storage_used_bytes) / 1024 / 1024 / 1024",
+            "legendFormat": "Total Storage (GB)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 100
+                },
+                {
+                  "color": "red",
+                  "value": 500
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 4,
+        "title": "Monthly Revenue (MRR)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(tenant_monthly_revenue)",
+            "legendFormat": "MRR ($)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 10000
+                },
+                {
+                  "color": "green",
+                  "value": 50000
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        }
+      },
+      {
+        "id": 5,
+        "title": "API Calls per Hour",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"hrms-main-backend\"}[1h])",
+            "legendFormat": "Main Backend - {{method}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(http_requests_total{job=\"hrms-license-server\"}[1h])",
+            "legendFormat": "License Server - {{method}}",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/hour",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 4
+        }
+      },
+      {
+        "id": 6,
+        "title": "Tenant Growth Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "increase(tenant_registrations_total[24h])",
+            "legendFormat": "New Tenants (24h)",
+            "refId": "A"
+          },
+          {
+            "expr": "tenant_count_active",
+            "legendFormat": "Total Active Tenants",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Tenants",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 4
+        }
+      },
+      {
+        "id": 7,
+        "title": "Top Tenants by User Count",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, tenant_user_count)",
+            "legendFormat": "{{tenant_name}}",
+            "refId": "A",
+            "format": "table"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 12
+        }
+      },
+      {
+        "id": 8,
+        "title": "Top Tenants by Storage Usage",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, tenant_storage_used_bytes / 1024 / 1024)",
+            "legendFormat": "{{tenant_name}}",
+            "refId": "A",
+            "format": "table"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 8,
+          "y": 12
+        }
+      },
+      {
+        "id": 9,
+        "title": "Top Tenants by API Usage",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, rate(tenant_api_calls_total[24h]))",
+            "legendFormat": "{{tenant_name}}",
+            "refId": "A",
+            "format": "table"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 12
+        }
+      },
+      {
+        "id": 10,
+        "title": "Module Usage Distribution",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (module_key) (module_activations_total)",
+            "legendFormat": "{{module_key}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 20
+        }
+      },
+      {
+        "id": 11,
+        "title": "Revenue by Plan Type",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (plan_type) (tenant_monthly_revenue)",
+            "legendFormat": "{{plan_type}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 20
+        }
+      },
+      {
+        "id": 12,
+        "title": "Churn Rate (Monthly)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(tenant_cancellations_total[30d]) / rate(tenant_registrations_total[30d]) * 100",
+            "legendFormat": "Churn Rate %",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Churn Rate %",
+            "min": 0,
+            "max": 100,
+            "unit": "percent"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 28
+        }
+      },
+      {
+        "id": 13,
+        "title": "Average Revenue Per User (ARPU)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(tenant_monthly_revenue) / sum(tenant_user_count)",
+            "legendFormat": "ARPU ($)",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "ARPU ($)",
+            "min": 0,
+            "unit": "currencyUSD"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 28
+        }
+      },
+      {
+        "id": 14,
+        "title": "Failed Login Attempts (Security)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(failed_login_attempts_total[5m])",
+            "legendFormat": "Failed Logins/min",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Attempts/min",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 36
+        }
+      },
+      {
+        "id": 15,
+        "title": "Backup Success Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "backup_job_success",
+            "legendFormat": "Last Backup Status",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            },
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "text": "FAILED"
+                  },
+                  "1": {
+                    "text": "SUCCESS"
+                  }
+                },
+                "type": "value"
+              }
+            ]
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 36
+        }
+      },
+      {
+        "id": 16,
+        "title": "Hours Since Last Backup",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "(time() - backup_last_success_timestamp) / 3600",
+            "legendFormat": "Hours",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "h",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 24
+                },
+                {
+                  "color": "red",
+                  "value": 48
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 36
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "tenant",
+          "type": "query",
+          "query": "label_values(tenant_user_count, tenant_name)",
+          "refresh": 1,
+          "includeAll": true,
+          "allValue": ".*"
+        }
+      ]
+    },
+    "annotations": {
+      "list": []
+    },
+    "schemaVersion": 30,
+    "version": 1,
+    "links": []
+  }
+}
