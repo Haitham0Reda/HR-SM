@@ -1,197 +1,196 @@
 // Announcement Controller
-import Announcement from '../models/announcement.model.js';
+import AnnouncementService from '../services/AnnouncementService.js';
 import { createAnnouncementNotifications } from '../../../middleware/index.js';
+
+const announcementService = new AnnouncementService();
 
 export const getAllAnnouncements = async (req, res) => {
     try {
-        // Get tenant ID from user or request
         const tenantId = req.user?.tenantId || req.tenantId;
-        
-        // Base query - filter by tenant through createdBy user's tenant
-        let query = {};
-        
-        // If we have tenant ID, filter announcements by users from the same tenant
-        if (tenantId) {
-            // Import User model to get users from same tenant
-            const { default: User } = await import('../../hr-core/users/models/user.model.js');
-            const tenantUsers = await User.find({ tenantId }).select('_id');
-            const tenantUserIds = tenantUsers.map(u => u._id);
-            
-            query.createdBy = { $in: tenantUserIds };
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
         }
+
+        let announcements;
 
         // If user is not HR or Admin, filter announcements based on their role
         if (req.user.role !== 'hr' && req.user.role !== 'admin') {
-            const roleFilter = {
-                $or: [
-                    { targetAudience: 'all' },
-                    { targetAudience: 'employees' },
-                    { targetAudience: req.user.role }
-                ]
-            };
-            
-            // Combine tenant filter with role filter
-            if (query.createdBy) {
-                query = { $and: [{ createdBy: query.createdBy }, roleFilter] };
-            } else {
-                query = roleFilter;
-            }
+            announcements = await announcementService.getAnnouncementsForUser(
+                req.user.id,
+                req.user.role,
+                req.user.department,
+                tenantId
+            );
+        } else {
+            announcements = await announcementService.getAllAnnouncements(tenantId);
         }
 
-        const announcements = await Announcement.find(query)
-            .populate('createdBy', 'username email')
-            .populate('departments', 'name code')
-            .sort({ publishDate: -1 });
-        res.json(announcements);
+        res.json({
+            success: true,
+            data: announcements
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 };
 
 export const getActiveAnnouncements = async (req, res) => {
     try {
-        const now = new Date();
-        
-        // Get tenant ID from user or request
         const tenantId = req.user?.tenantId || req.tenantId;
-        
-        let query = {
-            isActive: true,
-            $or: [
-                // No date restrictions
-                { startDate: null, endDate: null },
-                // Only start date - must have started
-                { startDate: { $lte: now }, endDate: null },
-                // Only end date - must not have expired
-                { startDate: null, endDate: { $gte: now } },
-                // Both dates - must be within range
-                { startDate: { $lte: now }, endDate: { $gte: now } }
-            ]
-        };
 
-        // Filter by tenant through createdBy user's tenant
-        if (tenantId) {
-            const { default: User } = await import('../../hr-core/users/models/user.model.js');
-            const tenantUsers = await User.find({ tenantId }).select('_id');
-            const tenantUserIds = tenantUsers.map(u => u._id);
-            
-            query.createdBy = { $in: tenantUserIds };
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
         }
+
+        let announcements;
 
         // If user is not HR or Admin, filter announcements based on their role
         if (req.user.role !== 'hr' && req.user.role !== 'admin') {
-            const roleFilter = {
-                $or: [
-                    { targetAudience: 'all' },
-                    { targetAudience: 'employees' },
-                    { targetAudience: req.user.role }
-                ]
-            };
-            
-            // Combine existing query with role filter
-            query = { $and: [query, roleFilter] };
+            announcements = await announcementService.getAnnouncementsForUser(
+                req.user.id,
+                req.user.role,
+                req.user.department,
+                tenantId
+            );
+        } else {
+            announcements = await announcementService.getActiveAnnouncements(tenantId);
         }
 
-        const announcements = await Announcement.find(query)
-            .populate('createdBy', 'username email')
-            .populate('departments', 'name code')
-            .sort({ publishDate: -1 });
-        res.json(announcements);
+        res.json({
+            success: true,
+            data: announcements
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 };
 
 export const createAnnouncement = async (req, res) => {
     try {
-        const announcement = new Announcement(req.body);
-        const savedAnnouncement = await announcement.save();
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const announcementData = {
+            ...req.body,
+            createdBy: req.user.id
+        };
+
+        const announcement = await announcementService.createAnnouncement(announcementData, tenantId);
 
         // Create notifications for targeted audience
-        await createAnnouncementNotifications(savedAnnouncement);
+        await createAnnouncementNotifications(announcement);
 
-        res.status(201).json(savedAnnouncement);
+        res.status(201).json({
+            success: true,
+            data: announcement
+        });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        res.status(400).json({
+            success: false,
+            error: err.message
+        });
     }
 };
 
 export const getAnnouncementById = async (req, res) => {
     try {
-        const announcement = await Announcement.findById(req.params.id)
-            .populate('createdBy', 'username email')
-            .populate('departments', 'name code')
-            .populate('employees', 'username email');
-        if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
-        res.json(announcement);
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const announcement = await announcementService.getAnnouncementById(req.params.id, tenantId);
+
+        res.json({
+            success: true,
+            data: announcement
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        const statusCode = err.message === 'Announcement not found' ? 404 : 500;
+        res.status(statusCode).json({
+            success: false,
+            error: err.message
+        });
     }
 };
 
 export const updateAnnouncement = async (req, res) => {
     try {
-        const announcement = await Announcement.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
-        res.json(announcement);
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const announcement = await announcementService.updateAnnouncement(req.params.id, req.body, tenantId);
+
+        res.json({
+            success: true,
+            data: announcement
+        });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        const statusCode = err.message === 'Announcement not found' ? 404 : 400;
+        res.status(statusCode).json({
+            success: false,
+            error: err.message
+        });
     }
 };
 
 export const deleteAnnouncement = async (req, res) => {
     try {
-        const announcement = await Announcement.findByIdAndDelete(req.params.id);
-        if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
-        res.json({ message: 'Announcement deleted' });
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const result = await announcementService.deleteAnnouncement(req.params.id, tenantId);
+
+        res.json({
+            success: true,
+            message: result.message
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        const statusCode = err.message === 'Announcement not found' ? 404 : 500;
+        res.status(statusCode).json({
+            success: false,
+            error: err.message
+        });
     }
 };
 
 export const getAnnouncementsByStatus = async (req, res) => {
     try {
-        const { status } = req.params; // upcoming, active, expired
-        const now = new Date();
-        let query = {};
+        const tenantId = req.user?.tenantId || req.tenantId;
 
-        switch (status) {
-            case 'upcoming':
-                query = {
-                    isActive: true,
-                    startDate: { $gt: now }
-                };
-                break;
-            case 'active':
-                query = {
-                    isActive: true,
-                    $or: [
-                        { startDate: null, endDate: null },
-                        { startDate: { $lte: now }, endDate: null },
-                        { startDate: null, endDate: { $gte: now } },
-                        { startDate: { $lte: now }, endDate: { $gte: now } }
-                    ]
-                };
-                break;
-            case 'expired':
-                query = {
-                    $or: [
-                        { isActive: false },
-                        { endDate: { $lt: now } }
-                    ]
-                };
-                break;
-            default:
-                return res.status(400).json({ error: 'Invalid status. Use: upcoming, active, or expired' });
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
-        const announcements = await Announcement.find(query)
-            .populate('createdBy', 'username email')
-            .populate('departments', 'name code')
-            .sort({ publishDate: -1 });
+        const { status } = req.params; // upcoming, active, expired
 
-        res.json(announcements);
+        const announcements = await announcementService.getAnnouncementsByStatus(status, tenantId);
+
+        res.json({
+            success: true,
+            data: announcements
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 };

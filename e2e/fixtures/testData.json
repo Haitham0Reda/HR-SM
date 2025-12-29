@@ -1,0 +1,75 @@
+{
+  "departments": [
+    {
+      "name": "Engineering",
+      "description": "Software development and technical operations",
+      "manager": "manager@testcompany.com"
+    },
+    {
+      "name": "Human Resources",
+      "description": "HR operations and employee management",
+      "manager": "hr@testcompany.com"
+    },
+    {
+      "name": "Sales",
+      "description": "Sales and business development",
+      "manager": "manager@testcompany.com"
+    }
+  ],
+  "positions": [
+    {
+      "title": "Software Engineer",
+      "department": "Engineering",
+      "level": "mid",
+      "salary": 75000
+    },
+    {
+      "title": "HR Manager",
+      "department": "Human Resources",
+      "level": "senior",
+      "salary": 85000
+    },
+    {
+      "title": "Sales Representative",
+      "department": "Sales",
+      "level": "junior",
+      "salary": 45000
+    }
+  ],
+  "leaveTypes": [
+    {
+      "name": "Annual Leave",
+      "code": "AL",
+      "maxDays": 25,
+      "carryOver": true
+    },
+    {
+      "name": "Sick Leave",
+      "code": "SL",
+      "maxDays": 10,
+      "carryOver": false
+    },
+    {
+      "name": "Personal Leave",
+      "code": "PL",
+      "maxDays": 5,
+      "carryOver": false
+    }
+  ],
+  "sampleTasks": [
+    {
+      "title": "Complete project documentation",
+      "description": "Write comprehensive documentation for the new feature",
+      "priority": "high",
+      "dueDate": "2025-01-15",
+      "estimatedHours": 8
+    },
+    {
+      "title": "Code review",
+      "description": "Review pull requests from team members",
+      "priority": "medium",
+      "dueDate": "2025-01-10",
+      "estimatedHours": 4
+    }
+  ]
+}

@@ -1,0 +1,328 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run E2E tests daily at 2 AM UTC
+    - cron: "0 2 * * *"
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        browser: [chrome, firefox]
+        node-version: [18.x, 20.x]
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7.0
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd client && npm ci
+          cd ../hrsm-license-server && npm ci
+
+      - name: Setup test environment
+        run: |
+          cp .env.test .env
+          mkdir -p e2e/uploads
+          mkdir -p e2e/screenshots
+          mkdir -p e2e/videos
+          mkdir -p keys
+
+      - name: Generate test keys
+        run: |
+          openssl genrsa -out keys/private.pem 2048
+          openssl rsa -in keys/private.pem -pubout -out keys/public.pem
+
+      - name: Wait for services
+        run: |
+          # Wait for MongoDB
+          timeout 60 bash -c 'until mongosh --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do sleep 2; done'
+          # Wait for Redis
+          timeout 60 bash -c 'until redis-cli ping > /dev/null 2>&1; do sleep 2; done'
+
+      - name: Setup test database
+        run: |
+          node -e "
+            import('./e2e/support/database.js').then(db => {
+              db.connectToTestDB().then(() => {
+                console.log('Test database connected');
+                return db.createTestIndexes();
+              }).then(() => {
+                console.log('Test indexes created');
+                return db.disconnectFromTestDB();
+              }).catch(console.error);
+            });
+          "
+
+      - name: Build applications
+        run: |
+          # Build client applications
+          cd client && npm run build:hr-app && npm run build:platform-admin
+          cd ..
+
+      - name: Start applications in background
+        run: |
+          # Start main server
+          npm run server &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+
+          # Start license server
+          cd hrsm-license-server && npm run dev &
+          LICENSE_PID=$!
+          echo "LICENSE_PID=$LICENSE_PID" >> $GITHUB_ENV
+          cd ..
+
+          # Start client applications
+          cd client && npm run start:hr-app &
+          HR_APP_PID=$!
+          echo "HR_APP_PID=$HR_APP_PID" >> $GITHUB_ENV
+
+          npm run start:platform-admin &
+          PLATFORM_PID=$!
+          echo "PLATFORM_PID=$PLATFORM_PID" >> $GITHUB_ENV
+          cd ..
+
+      - name: Wait for applications to start
+        run: |
+          # Wait for main server
+          timeout 120 bash -c 'until curl -f http://localhost:5000/api/health > /dev/null 2>&1; do sleep 2; done'
+
+          # Wait for license server
+          timeout 60 bash -c 'until curl -f http://localhost:4000/health > /dev/null 2>&1; do sleep 2; done'
+
+          # Wait for HR app
+          timeout 120 bash -c 'until curl -f http://localhost:3000 > /dev/null 2>&1; do sleep 2; done'
+
+          # Wait for Platform admin
+          timeout 120 bash -c 'until curl -f http://localhost:3001 > /dev/null 2>&1; do sleep 2; done'
+
+      - name: Run E2E tests
+        run: |
+          if [ "${{ matrix.browser }}" = "firefox" ]; then
+            npx cypress run --browser firefox --config video=true,screenshotOnRunFailure=true
+          else
+            npx cypress run --browser chrome --config video=true,screenshotOnRunFailure=true
+          fi
+        env:
+          CYPRESS_baseUrl: http://localhost:3000
+          CYPRESS_apiUrl: http://localhost:5000
+          CYPRESS_platformUrl: http://localhost:3001
+          CYPRESS_licenseServerUrl: http://localhost:4000
+          CYPRESS_isTestEnvironment: true
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-artifacts-${{ matrix.browser }}-node${{ matrix.node-version }}
+          path: |
+            e2e/screenshots/
+            e2e/videos/
+            cypress/reports/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-results-${{ matrix.browser }}-node${{ matrix.node-version }}
+          path: |
+            cypress/reports/
+            e2e/reports/
+          retention-days: 30
+
+      - name: Cleanup processes
+        if: always()
+        run: |
+          # Kill all background processes
+          [ ! -z "$SERVER_PID" ] && kill $SERVER_PID || true
+          [ ! -z "$LICENSE_PID" ] && kill $LICENSE_PID || true
+          [ ! -z "$HR_APP_PID" ] && kill $HR_APP_PID || true
+          [ ! -z "$PLATFORM_PID" ] && kill $PLATFORM_PID || true
+
+          # Wait for processes to terminate
+          sleep 5
+
+          # Force kill if still running
+          pkill -f "node.*server" || true
+          pkill -f "npm.*start" || true
+
+      - name: Cleanup test data
+        if: always()
+        run: |
+          node -e "
+            import('./e2e/support/database.js').then(db => {
+              db.cleanupDatabase().then(() => {
+                console.log('Test data cleaned up');
+                return db.disconnectFromTestDB();
+              }).catch(console.error);
+            });
+          "
+
+  # Job to run E2E tests on different environments
+  e2e-cross-environment:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    strategy:
+      matrix:
+        environment: [staging, production-like]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run E2E tests against ${{ matrix.environment }}
+        run: |
+          if [ "${{ matrix.environment }}" = "staging" ]; then
+            npx cypress run --config baseUrl=https://staging.hrms.com
+          else
+            npx cypress run --config baseUrl=https://demo.hrms.com
+          fi
+        env:
+          CYPRESS_isTestEnvironment: false
+          CYPRESS_record: true
+          CYPRESS_key: ${{ secrets.CYPRESS_RECORD_KEY }}
+
+  # Job to generate and publish test reports
+  test-report:
+    runs-on: ubuntu-latest
+    needs: [e2e-tests]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: test-artifacts/
+
+      - name: Generate test report
+        run: |
+          # Create consolidated test report
+          mkdir -p reports
+
+          # Combine all test results
+          find test-artifacts/ -name "*.json" -exec cat {} \; > reports/combined-results.json
+
+          # Generate HTML report
+          npx mochawesome-merge reports/combined-results.json > reports/merged-report.json
+          npx marge reports/merged-report.json --reportDir reports --inline
+
+      - name: Publish test report
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./reports
+          destination_dir: e2e-reports
+
+      - name: Comment PR with test results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'reports/merged-report.json';
+
+            if (fs.existsSync(path)) {
+              const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+              const { stats } = report;
+              
+              const comment = `## E2E Test Results
+              
+              - **Total Tests**: ${stats.tests}
+              - **Passed**: ${stats.passes}
+              - **Failed**: ${stats.failures}
+              - **Skipped**: ${stats.skipped}
+              - **Duration**: ${stats.duration}ms
+              
+              ${stats.failures > 0 ? '❌ Some tests failed' : '✅ All tests passed'}
+              
+              [View detailed report](https://your-org.github.io/hr-sm/e2e-reports/)
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  # Job for performance testing
+  e2e-performance:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run performance tests
+        run: |
+          npx cypress run --spec "e2e/specs/performance/**/*.cy.js" --config video=false
+        env:
+          CYPRESS_enablePerformanceMonitoring: true
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: e2e/reports/performance/

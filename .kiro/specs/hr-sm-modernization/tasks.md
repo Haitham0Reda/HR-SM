@@ -180,7 +180,7 @@ Implement four critical modernization and hardening improvements to the HR-SM en
   - _Dependencies: Task 7, 8, 9_
   - _Requirements: All services use repositories, no direct model access_
 
-- [ ] 11. Update controllers to use repository-backed services
+- [x] 11. Update controllers to use repository-backed services
 
   - Verify all controllers in server/modules/\*/controllers/ use updated services
   - Ensure no direct model access from controllers
@@ -192,7 +192,8 @@ Implement four critical modernization and hardening improvements to the HR-SM en
   - _Dependencies: Task 10_
   - _Requirements: All controllers properly use service layer_
 
-- [ ] 12. Checkpoint - Repository Pattern implementation complete
+- [x] 12. Checkpoint - Repository Pattern implementation complete
+
   - Verify all database operations go through repositories
   - Run full test suite including unit and integration tests (npm test)
   - Confirm no performance regression (compare query times before/after)
@@ -206,7 +207,7 @@ Implement four critical modernization and hardening improvements to the HR-SM en
 
 ## Phase 3: End-to-End Testing Implementation
 
-- [ ] 13. Set up E2E testing framework
+- [x] 13. Set up E2E testing framework
 
   - Install Cypress or Playwright as dev dependency in root package.json
   - Create E2E test configuration files (cypress.config.js or playwright.config.js)
@@ -219,7 +220,7 @@ Implement four critical modernization and hardening improvements to the HR-SM en
   - _Dependencies: None_
   - _Requirements: E2E framework ready for test writing_
 
-- [ ] 14. Write E2E tests for authentication flows
+- [x] 14. Write E2E tests for authentication flows
 
   - Test tenant user login flow with valid credentials (HR App)
   - Test tenant user login failure with invalid credentials
@@ -234,7 +235,7 @@ Implement four critical modernization and hardening improvements to the HR-SM en
   - _Dependencies: Task 13_
   - _Requirements: Authentication flows fully tested_
 
-- [ ] 15. Write E2E tests for core HR workflows
+- [x] 15. Write E2E tests for core HR workflows
 
   - Test employee profile management (view, edit, update)
   - Test leave request submission and approval workflow (employee → manager → HR)
@@ -249,7 +250,7 @@ Implement four critical modernization and hardening improvements to the HR-SM en
   - _Dependencies: Task 13, 14_
   - _Requirements: Core HR workflows fully tested_
 
-- [ ] 16. Write E2E tests for platform administration workflows
+- [x] 16. Write E2E tests for platform administration workflows
 
   - Test tenant creation and initial configuration
   - Test subscription plan selection and changes
@@ -263,7 +264,7 @@ Implement four critical modernization and hardening improvements to the HR-SM en
   - _Dependencies: Task 13, 14_
   - _Requirements: Platform admin workflows fully tested_
 
-- [ ] 17. Write E2E tests for multi-tenant data isolation
+- [x] 17. Write E2E tests for multi-tenant data isolation
 
   - Test that Tenant A users cannot access Tenant B data via API
   - Test that Tenant A users cannot access Tenant B UI routes
