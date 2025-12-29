@@ -1,0 +1,83 @@
+{
+  "tenantAdmin": {
+    "email": "admin@testcompany.com",
+    "password": "TestAdmin123!",
+    "name": "Test Admin",
+    "role": "admin",
+    "permissions": ["all"]
+  },
+  "hrManager": {
+    "email": "hr@testcompany.com",
+    "password": "HRManager123!",
+    "name": "HR Manager",
+    "role": "hr",
+    "permissions": ["hr_management", "employee_management", "reports"]
+  },
+  "employee": {
+    "email": "employee@testcompany.com",
+    "password": "Employee123!",
+    "name": "Test Employee",
+    "role": "employee",
+    "permissions": ["profile_view", "attendance", "leave_request"]
+  },
+  "manager": {
+    "email": "manager@testcompany.com",
+    "password": "Manager123!",
+    "name": "Test Manager",
+    "role": "manager",
+    "permissions": ["team_management", "approval", "reports"]
+  },
+  "platformAdmin": {
+    "email": "platform@hrms.com",
+    "password": "PlatformAdmin123!",
+    "name": "Platform Administrator",
+    "role": "platform_admin",
+    "permissions": ["platform_management", "tenant_management", "system_config"]
+  },
+  "invalidUser": {
+    "email": "invalid@test.com",
+    "password": "wrongpassword",
+    "name": "Invalid User"
+  },
+  "multiTenantUser": {
+    "email": "multi@example.com",
+    "password": "MultiTenant123!",
+    "name": "Multi Tenant User",
+    "role": "manager",
+    "permissions": ["team_management", "approval", "reports"],
+    "tenantAccess": ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"],
+    "primaryTenant": "507f1f77bcf86cd799439011"
+  },
+  "tenantAEmployee": {
+    "email": "emp.a@acme.com",
+    "password": "TenantA123!",
+    "name": "Acme Employee",
+    "role": "employee",
+    "tenantId": "507f1f77bcf86cd799439011",
+    "permissions": ["profile_view", "attendance", "leave_request"]
+  },
+  "tenantBEmployee": {
+    "email": "emp.b@techstart.com",
+    "password": "TenantB123!",
+    "name": "TechStart Employee",
+    "role": "employee",
+    "tenantId": "507f1f77bcf86cd799439012",
+    "permissions": ["profile_view", "attendance", "leave_request"]
+  },
+  "tenantAManager": {
+    "email": "mgr.a@acme.com",
+    "password": "TenantAMgr123!",
+    "name": "Acme Manager",
+    "role": "manager",
+    "tenantId": "507f1f77bcf86cd799439011",
+    "permissions": ["team_management", "approval", "reports"]
+  },
+  "tenantBManager": {
+    "email": "mgr.b@techstart.com",
+    "password": "TenantBMgr123!",
+    "name": "TechStart Manager",
+    "role": "manager",
+    "tenantId": "507f1f77bcf86cd799439012",
+    "permissions": ["team_management", "approval", "reports"]
+  }
+}

@@ -1,0 +1,6 @@
+title,description,assignedTo,project,category,priority,dueDate,estimatedHours
+"Implement login API","Create secure login endpoint with JWT","Test Employee","Website Redesign","Development","High","2024-03-01","8"
+"Design user dashboard","Create wireframes and mockups for dashboard","Test Employee","Website Redesign","Design","Medium","2024-03-05","12"
+"Write unit tests","Create comprehensive test suite for authentication","Test Employee","Website Redesign","Testing","High","2024-03-03","6"
+"Update documentation","Document new API endpoints and usage","Test Employee","Website Redesign","Documentation","Low","2024-03-10","4"
+"Code review","Review and approve pull requests","Test Employee","Website Redesign","Review","Medium","2024-03-07","3"

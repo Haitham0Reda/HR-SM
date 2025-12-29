@@ -1,0 +1,165 @@
+{
+  "tenantA": {
+    "_id": "507f1f77bcf86cd799439011",
+    "name": "Acme Corporation",
+    "domain": "acme",
+    "email": "admin@acme.com",
+    "phone": "+1-555-0101",
+    "address": {
+      "street": "123 Business Ave",
+      "city": "New York",
+      "state": "NY",
+      "zipCode": "10001",
+      "country": "USA"
+    },
+    "subscription": {
+      "plan": "enterprise",
+      "status": "active",
+      "enabledModules": [
+        "attendance",
+        "leave",
+        "payroll",
+        "tasks",
+        "documents",
+        "reports"
+      ],
+      "maxUsers": 500,
+      "expiryDate": "2025-12-31T23:59:59Z"
+    },
+    "settings": {
+      "timezone": "America/New_York",
+      "dateFormat": "MM/DD/YYYY",
+      "currency": "USD",
+      "workingDays": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00"
+      },
+      "leavePolicies": {
+        "annualLeave": 20,
+        "sickLeave": 10,
+        "personalLeave": 5
+      }
+    },
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  "tenantB": {
+    "_id": "507f1f77bcf86cd799439012",
+    "name": "TechStart Inc",
+    "domain": "techstart",
+    "email": "admin@techstart.com",
+    "phone": "+1-555-0202",
+    "address": {
+      "street": "456 Innovation Blvd",
+      "city": "San Francisco",
+      "state": "CA",
+      "zipCode": "94105",
+      "country": "USA"
+    },
+    "subscription": {
+      "plan": "professional",
+      "status": "active",
+      "enabledModules": ["attendance", "leave", "tasks", "documents"],
+      "maxUsers": 100,
+      "expiryDate": "2025-06-30T23:59:59Z"
+    },
+    "settings": {
+      "timezone": "America/Los_Angeles",
+      "dateFormat": "YYYY-MM-DD",
+      "currency": "USD",
+      "workingDays": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "workingHours": {
+        "start": "08:30",
+        "end": "16:30"
+      },
+      "leavePolicies": {
+        "annualLeave": 15,
+        "sickLeave": 8,
+        "personalLeave": 3
+      }
+    },
+    "isActive": true,
+    "createdAt": "2024-01-15T00:00:00Z",
+    "updatedAt": "2024-01-15T00:00:00Z"
+  },
+  "tenantC": {
+    "_id": "507f1f77bcf86cd799439013",
+    "name": "Global Solutions Ltd",
+    "domain": "globalsolutions",
+    "email": "admin@globalsolutions.com",
+    "phone": "+44-20-7946-0958",
+    "address": {
+      "street": "789 International Way",
+      "city": "London",
+      "state": "England",
+      "zipCode": "SW1A 1AA",
+      "country": "UK"
+    },
+    "subscription": {
+      "plan": "basic",
+      "status": "active",
+      "enabledModules": ["attendance", "leave"],
+      "maxUsers": 50,
+      "expiryDate": "2025-03-31T23:59:59Z"
+    },
+    "settings": {
+      "timezone": "Europe/London",
+      "dateFormat": "DD/MM/YYYY",
+      "currency": "GBP",
+      "workingDays": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:30"
+      },
+      "leavePolicies": {
+        "annualLeave": 25,
+        "sickLeave": 12,
+        "personalLeave": 2
+      }
+    },
+    "isActive": true,
+    "createdAt": "2024-02-01T00:00:00Z",
+    "updatedAt": "2024-02-01T00:00:00Z"
+  },
+  "inactiveTenant": {
+    "_id": "507f1f77bcf86cd799439014",
+    "name": "Inactive Company",
+    "domain": "inactive",
+    "email": "admin@inactive.com",
+    "phone": "+1-555-0404",
+    "address": {
+      "street": "999 Closed St",
+      "city": "Nowhere",
+      "state": "XX",
+      "zipCode": "00000",
+      "country": "USA"
+    },
+    "subscription": {
+      "plan": "basic",
+      "status": "suspended",
+      "enabledModules": [],
+      "maxUsers": 10,
+      "expiryDate": "2023-12-31T23:59:59Z"
+    },
+    "settings": {
+      "timezone": "America/New_York",
+      "dateFormat": "MM/DD/YYYY",
+      "currency": "USD",
+      "workingDays": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00"
+      },
+      "leavePolicies": {
+        "annualLeave": 10,
+        "sickLeave": 5,
+        "personalLeave": 2
+      }
+    },
+    "isActive": false,
+    "createdAt": "2023-01-01T00:00:00Z",
+    "updatedAt": "2023-12-31T23:59:59Z"
+  }
+}

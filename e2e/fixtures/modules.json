@@ -1,0 +1,89 @@
+{
+  "availableModules": [
+    {
+      "id": "hr-core",
+      "name": "HR Core",
+      "description": "Core HR functionality including employee management",
+      "required": true,
+      "category": "core"
+    },
+    {
+      "id": "attendance",
+      "name": "Attendance Management",
+      "description": "Track employee attendance and working hours",
+      "required": false,
+      "category": "time"
+    },
+    {
+      "id": "payroll",
+      "name": "Payroll Management",
+      "description": "Manage employee salaries and payroll processing",
+      "required": false,
+      "category": "finance"
+    },
+    {
+      "id": "vacation",
+      "name": "Leave Management",
+      "description": "Handle vacation requests and leave balances",
+      "required": false,
+      "category": "time"
+    },
+    {
+      "id": "tasks",
+      "name": "Task Management",
+      "description": "Assign and track employee tasks and projects",
+      "required": false,
+      "category": "productivity"
+    },
+    {
+      "id": "documents",
+      "name": "Document Management",
+      "description": "Store and manage employee documents",
+      "required": false,
+      "category": "storage"
+    },
+    {
+      "id": "missions",
+      "name": "Mission Management",
+      "description": "Track business trips and missions",
+      "required": false,
+      "category": "travel"
+    },
+    {
+      "id": "overtime",
+      "name": "Overtime Management",
+      "description": "Manage overtime requests and approvals",
+      "required": false,
+      "category": "time"
+    }
+  ],
+  "subscriptionPlans": {
+    "basic": {
+      "name": "Basic Plan",
+      "maxUsers": 10,
+      "includedModules": ["hr-core"],
+      "price": 29.99
+    },
+    "professional": {
+      "name": "Professional Plan",
+      "maxUsers": 50,
+      "includedModules": ["hr-core", "attendance", "vacation"],
+      "price": 99.99
+    },
+    "enterprise": {
+      "name": "Enterprise Plan",
+      "maxUsers": 500,
+      "includedModules": [
+        "hr-core",
+        "attendance",
+        "payroll",
+        "vacation",
+        "tasks",
+        "documents",
+        "missions",
+        "overtime"
+      ],
+      "price": 299.99
+    }
+  }
+}
