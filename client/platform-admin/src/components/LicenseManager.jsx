@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -14,13 +14,10 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   TextField,
   Alert,
-  Divider,
   LinearProgress,
-  Tooltip,
   FormControl,
   InputLabel,
   Select,
@@ -32,7 +29,6 @@ import {
   Edit as EditIcon,
   Block as BlockIcon,
   CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
   Error as ErrorIcon,
   Schedule as ScheduleIcon,
   Computer as ComputerIcon,
@@ -61,15 +57,7 @@ const LicenseManager = ({ open, onClose, tenantId, tenantName }) => {
   });
   const [revokeReason, setRevokeReason] = useState('');
 
-  const { api } = useApi();
-
-  useEffect(() => {
-    if (open && tenantId) {
-      loadLicenseData();
-    }
-  }, [open, tenantId]);
-
-  const loadLicenseData = async () => {
+  const loadLicenseData = useCallback(async () => {
     try {
       await dispatch(fetchTenantLicenseAsync(tenantId));
       
@@ -84,7 +72,13 @@ const LicenseManager = ({ open, onClose, tenantId, tenantName }) => {
     } catch (error) {
       console.error('Failed to load license data:', error);
     }
-  };
+  }, [dispatch, tenantId, license]);
+
+  useEffect(() => {
+    if (open && tenantId) {
+      loadLicenseData();
+    }
+  }, [open, tenantId, loadLicenseData]);
 
   const handleRenewLicense = async () => {
     try {

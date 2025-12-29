@@ -13,7 +13,7 @@ import {
     ATTENDANCE_STATUS,
     PRIORITY_LEVELS,
     DATE_FORMATS
-} from '../../shared-constants.js';
+} from '../../../shared-constants.js';
 
 // Re-export shared constants
 export { ROLES, REQUEST_STATUS, LEAVE_TYPES, ATTENDANCE_STATUS, PRIORITY_LEVELS, DATE_FORMATS };

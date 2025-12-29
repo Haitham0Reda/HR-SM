@@ -582,6 +582,94 @@ export const requireFeature = (featureName) => {
 };
 
 /**
+ * Middleware to check if specific module is licensed
+ * @param {string} moduleKey - Module key from MODULES constant
+ * @returns {Function} Express middleware function
+ */
+export const requireModuleLicense = (moduleKey) => {
+  return async (req, res, next) => {
+    try {
+      // Skip validation for platform admin routes
+      if (req.path.startsWith('/api/platform/')) {
+        return next();
+      }
+
+      // Extract tenant information
+      const tenantId = req.tenantId || 
+                      req.tenant?.id || 
+                      req.tenant?._id?.toString() || 
+                      req.user?.tenant?.toString() ||
+                      req.headers['x-tenant-id'];
+
+      if (!tenantId) {
+        logger.warn('Module license validation skipped: No tenant ID found', {
+          path: req.path,
+          method: req.method,
+          module: moduleKey
+        });
+        return res.status(400).json({
+          success: false,
+          error: 'TENANT_REQUIRED',
+          message: 'Tenant identification required for module access'
+        });
+      }
+
+      // First run general license validation
+      await new Promise((resolve, reject) => {
+        validateLicense(req, res, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      // Check if the specific module is licensed
+      const licenseInfo = req.licenseInfo;
+      
+      if (!licenseInfo || !licenseInfo.valid) {
+        return res.status(403).json({
+          success: false,
+          error: 'LICENSE_REQUIRED',
+          message: 'Valid license required to access this module',
+          module: moduleKey
+        });
+      }
+
+      // Check if module is included in licensed features
+      if (!licenseInfo.features.includes(moduleKey)) {
+        return res.status(403).json({
+          success: false,
+          error: 'MODULE_NOT_LICENSED',
+          message: `Module '${moduleKey}' is not included in your license`,
+          module: moduleKey,
+          licensedFeatures: licenseInfo.features
+        });
+      }
+
+      logger.debug('Module license validation successful', {
+        tenantId,
+        module: moduleKey
+      });
+
+      next();
+
+    } catch (error) {
+      logger.error('Module license validation error', {
+        error: error.message,
+        stack: error.stack,
+        path: req.path,
+        module: moduleKey
+      });
+
+      return res.status(500).json({
+        success: false,
+        error: 'MODULE_LICENSE_VALIDATION_ERROR',
+        message: 'An error occurred during module license validation'
+      });
+    }
+  };
+};
+
+/**
  * Get license validation statistics
  * @returns {Object} Validation statistics
  */
@@ -650,6 +738,7 @@ initializeBackgroundValidation();
 export default {
   validateLicense,
   requireFeature,
+  requireModuleLicense,
   getLicenseValidationStats,
   clearLicenseValidationCache,
   triggerBackgroundValidation
