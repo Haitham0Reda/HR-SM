@@ -182,11 +182,11 @@ app.use(tenantContext);
 
 // License validation middleware (applies to tenant routes, skips platform routes)
 try {
-    const { validateLicense } = await import('./middleware/licenseServerValidation.middleware.js');
+    const { validateLicense } = await import('./middleware/licenseValidation.middleware.js');
     app.use('/api/v1', validateLicense);
-    console.log('✓ License validation middleware loaded');
+    console.log('✓ Enhanced license validation middleware loaded');
 } catch (error) {
-    console.warn('⚠️  License validation middleware not available:', error.message);
+    console.warn('⚠️  Enhanced license validation middleware not available:', error.message);
 }
 
 // Company logging middleware (basic setup)

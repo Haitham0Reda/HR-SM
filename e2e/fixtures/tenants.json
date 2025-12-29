@@ -1,4 +1,50 @@
 {
+  "testCompany": {
+    "_id": "507f1f77bcf86cd799439010",
+    "name": "Test Company",
+    "domain": "testcompany",
+    "email": "admin@testcompany.com",
+    "phone": "+1-555-0100",
+    "address": {
+      "street": "100 Test Street",
+      "city": "Test City",
+      "state": "TC",
+      "zipCode": "12345",
+      "country": "USA"
+    },
+    "subscription": {
+      "plan": "enterprise",
+      "status": "active",
+      "enabledModules": [
+        "attendance",
+        "leave",
+        "payroll",
+        "tasks",
+        "documents",
+        "reports"
+      ],
+      "maxUsers": 1000,
+      "expiryDate": "2025-12-31T23:59:59Z"
+    },
+    "settings": {
+      "timezone": "America/New_York",
+      "dateFormat": "MM/DD/YYYY",
+      "currency": "USD",
+      "workingDays": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00"
+      },
+      "leavePolicies": {
+        "annualLeave": 20,
+        "sickLeave": 10,
+        "personalLeave": 5
+      }
+    },
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
   "tenantA": {
     "_id": "507f1f77bcf86cd799439011",
     "name": "Acme Corporation",

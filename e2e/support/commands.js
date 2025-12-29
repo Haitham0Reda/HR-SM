@@ -6,6 +6,9 @@
 Cypress.Commands.add('loginAsTenantUser', (userType = 'employee', tenantDomain = 'testcompany') => {
     cy.fixture('users').then((users) => {
         const user = users[userType];
+        if (!user) {
+            throw new Error(`User type '${userType}' not found in users fixture`);
+        }
         cy.visit(`http://localhost:3000/${tenantDomain}/login`);
         cy.get('[data-cy="email-input"]').type(user.email);
         cy.get('[data-cy="password-input"]').type(user.password);
@@ -18,6 +21,9 @@ Cypress.Commands.add('loginAsTenantUser', (userType = 'employee', tenantDomain =
 Cypress.Commands.add('loginAsPlatformAdmin', () => {
     cy.fixture('users').then((users) => {
         const user = users.platformAdmin;
+        if (!user) {
+            throw new Error(`Platform admin user not found in users fixture`);
+        }
         cy.visit('http://localhost:3001/login');
         cy.get('[data-cy="email-input"]').type(user.email);
         cy.get('[data-cy="password-input"]').type(user.password);
@@ -194,6 +200,9 @@ Cypress.Commands.add('apiRequest', (method, url, body = null, headers = {}) => {
 Cypress.Commands.add('apiLogin', (userType = 'employee', tenantDomain = 'testcompany') => {
     cy.fixture('users').then((users) => {
         const user = users[userType];
+        if (!user) {
+            throw new Error(`User type '${userType}' not found in users fixture`);
+        }
         return cy.apiRequest('POST', `/auth/login`, {
             email: user.email,
             password: user.password,
