@@ -147,6 +147,26 @@ export const licenseService = {
     }
   },
 
+  // Get all licenses with pagination and filters
+  async getLicenses(queryParams = '') {
+    try {
+      const response = await licenseApi.get(`/licenses${queryParams ? `?${queryParams}` : ''}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get licenses: ${error.response?.data?.error || error.message}`);
+    }
+  },
+
+  // Get license audit trail
+  async getLicenseAuditTrail(licenseNumber, { page = 1, limit = 20 } = {}) {
+    try {
+      const response = await licenseApi.get(`/licenses/${licenseNumber}/audit?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get license audit trail: ${error.response?.data?.error || error.message}`);
+    }
+  },
+
   // Health check for license server
   async healthCheck() {
     try {

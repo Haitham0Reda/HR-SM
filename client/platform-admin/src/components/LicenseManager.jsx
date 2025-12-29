@@ -40,11 +40,18 @@ import {
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useApi } from '../contexts/ApiContext';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { 
+  fetchTenantLicenseAsync, 
+  renewLicenseAsync, 
+  revokeLicenseAsync,
+  clearError 
+} from '../store/slices/licenseManagementSlice';
 
 const LicenseManager = ({ open, onClose, tenantId, tenantName }) => {
-  const [loading, setLoading] = useState(true);
-  const [license, setLicense] = useState(null);
-  const [error, setError] = useState(null);
+  const dispatch = useAppDispatch();
+  const { currentLicense: license, loading, error } = useAppSelector(state => state.licenseManagement);
+  
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [renewalData, setRenewalData] = useState({
@@ -64,63 +71,47 @@ const LicenseManager = ({ open, onClose, tenantId, tenantName }) => {
 
   const loadLicenseData = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      await dispatch(fetchTenantLicenseAsync(tenantId));
       
-      const response = await api.license.getTenantLicense(tenantId);
-      if (response.success) {
-        setLicense(response.data);
-        
-        // Initialize renewal data with current license info
+      // Initialize renewal data with current license info
+      if (license) {
         setRenewalData({
-          expiresAt: new Date(new Date(response.data.expiresAt).getTime() + 365 * 24 * 60 * 60 * 1000),
-          type: response.data.type,
-          maxUsers: response.data.features?.maxUsers || 50
+          expiresAt: new Date(new Date(license.expiresAt).getTime() + 365 * 24 * 60 * 60 * 1000),
+          type: license.type,
+          maxUsers: license.features?.maxUsers || 50
         });
       }
     } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
+      console.error('Failed to load license data:', error);
     }
   };
 
   const handleRenewLicense = async () => {
     try {
-      setLoading(true);
-      
-      const response = await api.license.renewLicense(license.licenseNumber, {
-        expiresAt: renewalData.expiresAt.toISOString(),
-        type: renewalData.type,
-        maxUsers: renewalData.maxUsers
-      });
-      
-      if (response.success) {
-        setLicense(response.data);
-        setRenewDialogOpen(false);
-      }
+      await dispatch(renewLicenseAsync({
+        licenseNumber: license.licenseNumber,
+        renewalData: {
+          expiresAt: renewalData.expiresAt.toISOString(),
+          type: renewalData.type,
+          maxUsers: renewalData.maxUsers
+        }
+      }));
+      setRenewDialogOpen(false);
     } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
+      console.error('Failed to renew license:', error);
     }
   };
 
   const handleRevokeLicense = async () => {
     try {
-      setLoading(true);
-      
-      const response = await api.license.revokeLicense(license.licenseNumber, revokeReason);
-      
-      if (response.success) {
-        setLicense({ ...license, status: 'revoked' });
-        setRevokeDialogOpen(false);
-        setRevokeReason('');
-      }
+      await dispatch(revokeLicenseAsync({
+        licenseNumber: license.licenseNumber,
+        reason: revokeReason
+      }));
+      setRevokeDialogOpen(false);
+      setRevokeReason('');
     } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
+      console.error('Failed to revoke license:', error);
     }
   };
 
@@ -208,8 +199,8 @@ const LicenseManager = ({ open, onClose, tenantId, tenantName }) => {
           {loading && <LinearProgress sx={{ mb: 2 }} />}
           
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => dispatch(clearError())}>
+              {error.message}
             </Alert>
           )}
 
