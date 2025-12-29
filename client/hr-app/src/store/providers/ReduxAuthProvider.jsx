@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, createContext, useContext } from 'react';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import {
@@ -34,8 +34,6 @@ const ROLE_HIERARCHY = {
 };
 
 // Create a context for backward compatibility
-import { createContext, useContext } from 'react';
-
 const ReduxAuthContext = createContext(null);
 
 export const useAuth = () => {

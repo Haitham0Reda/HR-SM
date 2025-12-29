@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,13 +15,9 @@ import {
   Chip,
   List,
   ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   Alert,
   LinearProgress,
-  Tooltip,
   IconButton,
-  Divider,
   Accordion,
   AccordionSummary,
   AccordionDetails
@@ -30,7 +26,6 @@ import {
   Extension as ExtensionIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
-  Warning as WarningIcon,
   Info as InfoIcon,
   Refresh as RefreshIcon,
   ExpandMore as ExpandMoreIcon,
@@ -111,13 +106,7 @@ const ModuleControl = ({ open, onClose, tenantId, tenantName, currentLicense, on
 
   const { api } = useApi();
 
-  useEffect(() => {
-    if (open && tenantId) {
-      loadModuleData();
-    }
-  }, [open, tenantId]);
-
-  const loadModuleData = async () => {
+  const loadModuleData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -136,7 +125,13 @@ const ModuleControl = ({ open, onClose, tenantId, tenantName, currentLicense, on
     } finally {
       setLoading(false);
     }
-  };
+  }, [api.platform, tenantId]);
+
+  useEffect(() => {
+    if (open && tenantId) {
+      loadModuleData();
+    }
+  }, [open, tenantId, loadModuleData]);
 
   const isModuleAllowedByLicense = (moduleId) => {
     if (!currentLicense) return false;

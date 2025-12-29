@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks';
 import { checkAuthAsync, logoutAsync, loginAsync } from '../slices/platformAuthSlice';
@@ -6,30 +6,11 @@ import { checkAuthAsync, logoutAsync, loginAsync } from '../slices/platformAuthS
 // Redux-based Platform Auth Provider that maintains the same interface as the original context
 export const ReduxPlatformAuthProvider = ({ children }) => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const { user, isAuthenticated, loading } = useAppSelector(state => state.platformAuth);
 
   // Check for existing platform token on mount
   useEffect(() => {
     dispatch(checkAuthAsync());
   }, [dispatch]);
-
-  const login = async (email, password) => {
-    try {
-      const result = await dispatch(loginAsync({ email, password })).unwrap();
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error,
-      };
-    }
-  };
-
-  const logout = async () => {
-    await dispatch(logoutAsync());
-    navigate('/login');
-  };
 
   // This provider doesn't render anything - it just initializes auth state
   // The actual auth state is accessed through Redux selectors
@@ -60,12 +41,12 @@ export const usePlatformAuth = () => {
   };
 
   return {
-    platformUser: user,
+    user,
+    isAuthenticated,
     loading,
     login,
     logout,
-    isAuthenticated,
-    error,
+    error
   };
 };
 

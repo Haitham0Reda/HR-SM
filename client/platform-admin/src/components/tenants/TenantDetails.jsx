@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -78,9 +78,9 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
       // Load tenant license information
       loadTenantLicense();
     }
-  }, [tenant]);
+  }, [tenant, loadTenantLicense]);
 
-  const loadTenantLicense = async () => {
+  const loadTenantLicense = useCallback(async () => {
     if (!tenant?.tenantId) return;
     
     try {
@@ -92,7 +92,7 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
       console.error('Failed to load tenant license:', error);
       // Don't show error to user as license might not exist yet
     }
-  };
+  }, [tenant?.tenantId, api.license]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

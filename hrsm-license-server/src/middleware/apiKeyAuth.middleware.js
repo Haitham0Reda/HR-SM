@@ -37,7 +37,7 @@ const apiKeys = new Map();
  */
 let publicKey = null;
 try {
-    const publicKeyPath = path.resolve(process.env.JWT_PUBLIC_KEY_PATH || '../../../keys/public.pem');
+    const publicKeyPath = path.resolve(process.env.JWT_PUBLIC_KEY_PATH || './keys/public.pem');
     publicKey = fs.readFileSync(publicKeyPath, 'utf8');
 } catch (error) {
     console.warn('⚠️  Public key not found for JWT verification:', error.message);
