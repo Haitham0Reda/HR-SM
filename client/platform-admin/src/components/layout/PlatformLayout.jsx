@@ -29,6 +29,7 @@ import {
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
   Analytics as AnalyticsIcon,
+  Security as SecurityIcon,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logoutAsync } from '../../store/slices/platformAuthSlice';
@@ -42,6 +43,7 @@ const menuItems = [
   { text: 'Tenants', icon: <BusinessIcon />, path: '/tenants' },
   { text: 'Subscriptions', icon: <CardMembershipIcon />, path: '/subscriptions' },
   { text: 'Modules', icon: <ExtensionIcon />, path: '/modules' },
+  { text: 'Licenses', icon: <SecurityIcon />, path: '/licenses' },
   { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
   { text: 'System', icon: <SettingsIcon />, path: '/system' },
 ];

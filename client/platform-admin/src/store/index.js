@@ -9,6 +9,7 @@ import tenantManagementSlice from './slices/tenantManagementSlice';
 import subscriptionSlice from './slices/subscriptionSlice';
 import moduleManagementSlice from './slices/moduleManagementSlice';
 import systemSettingsSlice from './slices/systemSettingsSlice';
+import licenseManagementSlice from './slices/licenseManagementSlice';
 
 // Combine reducers
 const rootReducer = combineReducers({
@@ -17,6 +18,7 @@ const rootReducer = combineReducers({
   subscription: subscriptionSlice,
   moduleManagement: moduleManagementSlice,
   systemSettings: systemSettingsSlice,
+  licenseManagement: licenseManagementSlice,
 });
 
 // Persist configuration

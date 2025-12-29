@@ -280,6 +280,26 @@ class AuditService {
   }
 
   /**
+   * Log license operation (alias for logOperation with different parameter format)
+   */
+  async logLicenseOperation({ operation, licenseNumber, tenantId, performedBy, details, ipAddress, userAgent }) {
+    const metadata = {
+      ipAddress,
+      userAgent
+    };
+    
+    await this.logOperation(
+      operation.toLowerCase(),
+      licenseNumber,
+      tenantId,
+      'success', // Assume success unless error is thrown
+      details,
+      metadata,
+      performedBy
+    );
+  }
+
+  /**
    * Get audit statistics
    */
   async getAuditStatistics(startDate, endDate) {
