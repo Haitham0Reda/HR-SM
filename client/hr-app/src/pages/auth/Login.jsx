@@ -28,12 +28,10 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
-import { generateCompanyRoute } from '../../utils/companySlug';
 import QuickLoginHelper from '../../components/QuickLoginHelper';
 
 const Login = () => {
     const navigate = useNavigate();
-    const { getCompanyRoute } = useCompanyRouting();
     const { login } = useAuth();
     const { showSuccess, showError } = useNotification();
 

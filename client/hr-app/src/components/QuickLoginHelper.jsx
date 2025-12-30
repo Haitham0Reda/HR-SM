@@ -5,7 +5,6 @@ import {
     Typography,
     Collapse,
     IconButton,
-    Stack,
     Chip,
     Divider,
     Paper,
@@ -18,7 +17,6 @@ import {
     AdminPanelSettings as AdminIcon,
     SupervisorAccount as ManagerIcon,
     Work as EmployeeIcon,
-    Business as BusinessIcon,
     Speed as QuickIcon,
 } from '@mui/icons-material';
 
