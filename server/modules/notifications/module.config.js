@@ -4,6 +4,7 @@
 
 export default {
   name: 'notifications',
+  displayName: 'Notifications',
   version: '1.0.0',
   description: 'Notification management module',
   dependencies: ['hr-core'],

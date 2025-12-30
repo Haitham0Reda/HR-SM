@@ -4,6 +4,7 @@
 
 export default {
   name: 'reports',
+  displayName: 'Reports',
   version: '1.0.0',
   description: 'Reporting and analytics module',
   dependencies: ['hr-core'],
