@@ -213,6 +213,7 @@ export const auditLogger = (options = {}) => {
           resource,
           resourceId,
           userId: userInfo.userId,
+          tenantId: userInfo.tenantId || 'system', // Provide default tenantId for system operations
           category,
           severity: isError ? 'high' : severity,
           status: isSuccess ? 'success' : 'failure',

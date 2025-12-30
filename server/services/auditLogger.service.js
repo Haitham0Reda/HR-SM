@@ -90,7 +90,7 @@ class AuditLoggerService {
         resource: logData.resource,
         resourceId: logData.resourceId,
         userId: logData.userId,
-        tenantId: logData.tenantId, // Add tenantId field for baseSchemaPlugin
+        tenantId: logData.tenantId || logData.licenseInfo?.tenantId || 'system', // Ensure tenantId is always provided
         changes: logData.changes,
         category: logData.category || 'data_modification',
         severity: logData.severity || 'medium',
