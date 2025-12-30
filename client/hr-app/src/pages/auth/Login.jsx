@@ -29,6 +29,7 @@ import {
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { generateCompanyRoute } from '../../utils/companySlug';
+import QuickLoginHelper from '../../components/QuickLoginHelper';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -52,6 +53,14 @@ const Login = () => {
         setError('');
     };
 
+    const handleQuickLogin = (email, password) => {
+        setFormData({
+            email,
+            password,
+        });
+        setError('');
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -63,14 +72,14 @@ const Login = () => {
         try {
             setLoading(true);
             setError('');
-            
+
             // For now, use TechCorp tenant ID since the login form doesn't have tenant selection
             // TODO: Add tenant selection to login form if needed
             const result = await login(formData.email, formData.password, '693db0e2ccc5ea08aeee120c');
-            
+
             if (result.success) {
                 showSuccess('Login successful!');
-                
+
                 // Always redirect to TechCorp company route after login
                 // The CompanyRouteHandler will handle any further redirects if needed
                 const companyRoute = '/company/techcorp-solutions/dashboard';
@@ -306,6 +315,14 @@ const Login = () => {
 
                         {/* Form */}
                         <Box sx={{ px: { xs: 3, sm: 5 }, pb: { xs: 4, sm: 5 } }}>
+                            {/* Quick Login Helper - Development Only */}
+                            {process.env.NODE_ENV === 'development' && (
+                                <QuickLoginHelper
+                                    onCredentialSelect={handleQuickLogin}
+                                    type="hr"
+                                />
+                            )}
+
                             {error && (
                                 <Alert
                                     severity="error"
