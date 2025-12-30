@@ -176,12 +176,15 @@ auditLogSchema.pre('save', function (next) {
 
 // Static method for creating audit logs with validation
 auditLogSchema.statics.createAuditLog = async function (logData) {
+    // Ensure tenantId is always provided, use 'system' for system-level operations
+    const tenantId = logData.tenantId || logData.licenseInfo?.tenantId || 'system';
+    
     const auditLog = new this({
         action: logData.action,
         resource: logData.resource,
         resourceId: logData.resourceId,
         userId: logData.userId,
-        tenantId: logData.tenantId, // Add tenantId field for baseSchemaPlugin
+        tenantId: tenantId, // Ensure tenantId is always set
         changes: logData.changes,
         ipAddress: logData.ipAddress,
         userAgent: logData.userAgent,
