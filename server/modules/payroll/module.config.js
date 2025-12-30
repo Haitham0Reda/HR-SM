@@ -4,6 +4,7 @@
 
 export default {
   name: 'payroll',
+  displayName: 'Payroll',
   version: '1.0.0',
   description: 'Payroll management module',
   dependencies: ['hr-core'],
