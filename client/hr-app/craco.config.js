@@ -55,7 +55,7 @@ module.exports = {
         };
 
         // Configure dev server for hr-app
-        devServerConfig.port = process.env.PORT || 3000;
+        devServerConfig.port = 3000; // Force port 3000
         devServerConfig.open = false; // Don't auto-open browser
         devServerConfig.hot = true;
         devServerConfig.historyApiFallback = true;

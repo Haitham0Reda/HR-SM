@@ -55,7 +55,7 @@ module.exports = {
         };
 
         // Configure dev server for platform-admin
-        devServerConfig.port = process.env.PORT || 3001;
+        devServerConfig.port = 3001; // Force port 3001
         devServerConfig.open = false; // Don't auto-open browser
         devServerConfig.hot = true;
         devServerConfig.historyApiFallback = true;
