@@ -574,12 +574,19 @@ const generatePerformanceRecommendations = (dbStats, collectionStats, slowQuerie
     }
   }
   
-  // Check index to data ratio
-  if (dbStats.indexSize > dbStats.dataSize * 0.5) {
+  // Check index to data ratio (only warn if significant data exists)
+  if (dbStats.indexSize > dbStats.dataSize * 0.5 && dbStats.dataSize > 1024 * 1024) { // Only warn if data > 1MB
     recommendations.push({
       type: 'indexing',
       priority: 'medium',
       message: 'Index size is more than 50% of data size. Review and remove unused indexes.'
+    });
+  } else if (dbStats.indexSize > dbStats.dataSize * 0.5) {
+    // For small datasets, this is normal - just log as info
+    logger.info('Index size ratio is high but normal for small datasets', {
+      indexSize: dbStats.indexSize,
+      dataSize: dbStats.dataSize,
+      ratio: ((dbStats.indexSize / dbStats.dataSize) * 100).toFixed(1) + '%'
     });
   }
   

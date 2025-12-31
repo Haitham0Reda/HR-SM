@@ -119,7 +119,6 @@ function getModelTTL(modelName, defaultTTL) {
         
         // Payroll data - medium TTL
         'Payroll': 600, // 10 minutes
-        'VacationBalance': 600, // 10 minutes
         
         // Documents - medium TTL
         'Document': 600, // 10 minutes

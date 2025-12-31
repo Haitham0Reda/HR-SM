@@ -71,7 +71,7 @@ class CloudStorageService {
         }
 
         if (this.providers.size === 0) {
-            this.logger.warn('No cloud storage providers configured');
+            this.logger.info('No cloud storage providers configured - backups will be stored locally only');
         }
     }
 

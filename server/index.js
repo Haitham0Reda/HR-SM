@@ -84,7 +84,7 @@ const startServer = async () => {
                 'User', 'Department', 'Position', 'Tenant', 'License',
                 'InsurancePolicy', 'InsuranceClaim', 'FamilyMember',
                 'Attendance', 'Vacation', 'SickLeave', 'Mission',
-                'Payroll', 'VacationBalance', 'Document', 'Announcement',
+                'Payroll', 'Document', 'Announcement',
                 'Task', 'Request', 'Report', 'AuditLog'
             ];
             
