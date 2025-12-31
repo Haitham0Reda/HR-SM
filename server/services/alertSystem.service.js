@@ -85,8 +85,7 @@ class AlertSystemService {
       alertId: {
         type: String,
         required: true,
-        unique: true,
-        index: true
+        unique: true
       },
       type: {
         type: String,

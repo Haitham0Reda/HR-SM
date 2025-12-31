@@ -16,7 +16,7 @@ import path from 'path';
 import InsurancePolicy from '../models/InsurancePolicy.js';
 import InsuranceClaim from '../models/InsuranceClaim.js';
 import FamilyMember from '../models/FamilyMember.js';
-import User from '../../hr-core/models/User.js';
+import User from '../../hr-core/users/models/user.model.js';
 import logger from '../../../utils/logger.js';
 
 class InsuranceReportService {

@@ -1,8 +1,12 @@
 import axios from 'axios';
+import SecureLS from 'secure-ls';
+
+// Secure local storage for platform tokens
+const ls = new SecureLS({ encodingType: 'aes' });
 
 // Create axios instance for main HR-SM backend API
 const platformApi = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api/platform',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5005/api/platform',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -13,7 +17,7 @@ const platformApi = axios.create({
 platformApi.interceptors.request.use(
   (config) => {
     // Add authentication token if available
-    const token = localStorage.getItem('platformToken');
+    const token = ls.get('platformToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -37,7 +41,7 @@ platformApi.interceptors.response.use(
 
       if (status === 401) {
         // Unauthorized - redirect to login
-        localStorage.removeItem('platformToken');
+        ls.remove('platformToken');
         window.location.href = '/login';
       } else if (status === 403) {
         // Forbidden

@@ -27,6 +27,9 @@ router.use(requireModuleLicense(MODULES.REPORTING));
 // Apply common middleware to all routes
 router.use(hrOrAdmin, canViewReports);
 
+// Root analytics route
+router.get('/', getHRDashboard);
+
 // Route configurations
 const routes = [
     { path: '/dashboard', method: 'get', handler: getHRDashboard },

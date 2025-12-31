@@ -12,7 +12,7 @@ const router = express.Router();
 
 /**
  * Get company modules and their status
- * GET /api/company/modules
+ * GET /api/v1/company/modules
  */
 router.get('/modules', requireAuth, async (req, res) => {
   try {
@@ -44,7 +44,7 @@ router.get('/modules', requireAuth, async (req, res) => {
 
 /**
  * Check access to a specific module
- * GET /api/company/modules/:moduleKey/access
+ * GET /api/v1/company/modules/:moduleKey/access
  */
 router.get('/modules/:moduleKey/access', requireAuth, async (req, res) => {
   try {
@@ -82,7 +82,7 @@ router.get('/modules/:moduleKey/access', requireAuth, async (req, res) => {
 
 /**
  * Check access to multiple modules
- * POST /api/company/modules/check-access
+ * POST /api/v1/company/modules/check-access
  */
 router.post('/modules/check-access', requireAuth, async (req, res) => {
   try {
@@ -122,7 +122,7 @@ router.post('/modules/check-access', requireAuth, async (req, res) => {
 
 /**
  * Update company usage statistics
- * PUT /api/company/usage
+ * PUT /api/v1/company/usage
  */
 router.put('/usage', requireAuth, async (req, res) => {
   try {
@@ -162,7 +162,7 @@ router.put('/usage', requireAuth, async (req, res) => {
 
 /**
  * Track API call usage
- * POST /api/company/usage/api-call
+ * POST /api/v1/company/usage/api-call
  */
 router.post('/usage/api-call', requireAuth, async (req, res) => {
   try {
@@ -198,7 +198,7 @@ router.post('/usage/api-call', requireAuth, async (req, res) => {
 
 /**
  * Get available modules (public information)
- * GET /api/company/available-modules
+ * GET /api/v1/company/available-modules
  */
 router.get('/available-modules', async (req, res) => {
   try {

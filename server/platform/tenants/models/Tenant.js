@@ -280,7 +280,6 @@ const tenantSchema = new mongoose.Schema({
     },
     licenseNumber: {
       type: String,
-      sparse: true,
       description: 'Human-readable license number (e.g., HRSM-ABC123-DEF456)'
     },
     licenseType: {

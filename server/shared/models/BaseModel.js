@@ -7,7 +7,7 @@ export const baseSchemaPlugin = (schema) => {
         tenantId: {
             type: String,
             required: true,
-            index: true
+            index: true // Add index here to prevent duplicates
         },
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,

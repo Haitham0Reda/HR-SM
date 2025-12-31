@@ -2,12 +2,21 @@ import AttendanceDevice from '../models/attendanceDevice.model.js';
 import attendanceDeviceService from '../services/attendanceDevice.service.js';
 import logger from '../../../../utils/logger.js';
 import xlsx from 'xlsx';
+import mongoose from 'mongoose';
 
 /**
  * Get all attendance devices (tenant-aware)
  */
 export const getAllDevices = async (req, res) => {
     try {
+        // Use tenantId directly as string
+        if (!req.tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+        
         const devices = await AttendanceDevice.find({ tenantId: req.tenantId })
             .populate('departments', 'name code')
             .populate('createdBy', 'username employeeId')

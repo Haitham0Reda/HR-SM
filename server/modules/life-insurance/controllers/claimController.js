@@ -2,7 +2,7 @@ import asyncHandler from '../../../core/utils/asyncHandler.js';
 import InsuranceClaim from '../models/InsuranceClaim.js';
 import InsurancePolicy from '../models/InsurancePolicy.js';
 import FamilyMember from '../models/FamilyMember.js';
-import User from '../../hr-core/models/User.js';
+import User from '../../hr-core/users/models/user.model.js';
 import { sendSuccess, sendError } from '../../../core/utils/response.js';
 import logger from '../../../utils/logger.js';
 import path from 'path';

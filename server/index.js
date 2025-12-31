@@ -14,11 +14,12 @@ import BackupIntegration from './services/backupIntegration.js';
 import { enhanceSpecificModels } from './utils/modelCacheEnhancer.js';
 import cachePerformanceMonitor from './services/cachePerformanceMonitor.js';
 import mongoose from 'mongoose';
+import initializeSystemCollections from './utils/initializeSystemCollections.js';
 
 // Load environment variables
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5005;
 
 // Initialize backup system
 const backupIntegration = new BackupIntegration();
@@ -36,6 +37,9 @@ const startServer = async () => {
     try {
         // Connect to database
         await connectDatabase();
+
+        // Initialize system collections (performance metrics, security events, system alerts)
+        await initializeSystemCollections();
 
         // Connect to Redis (if enabled)
         await redisService.connect();

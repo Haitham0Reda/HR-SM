@@ -15,21 +15,18 @@ const backupLogSchema = new mongoose.Schema({
     type: {
         type: String,
         enum: ['daily', 'weekly', 'monthly', 'manual', 'emergency'],
-        required: true,
-        index: true
+        required: true
     },
     
     status: {
         type: String,
         enum: ['in_progress', 'completed', 'failed', 'partial'],
-        default: 'in_progress',
-        index: true
+        default: 'in_progress'
     },
     
     startTime: {
         type: Date,
-        default: Date.now,
-        index: true
+        default: Date.now
     },
     
     endTime: {

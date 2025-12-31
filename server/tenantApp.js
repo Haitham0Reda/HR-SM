@@ -67,7 +67,7 @@ app.use(dynamicModuleLoader);
 app.use('/api/v1', trackUserActivity);
 
 // Company logs routes (protected) - after tenant context
-app.use('/api/company-logs', companyLogsRoutes);
+app.use('/api/v1/platform/company-logs', companyLogsRoutes);
 
 // Module availability routes (protected) - after tenant context
 import moduleAvailabilityRoutes from './routes/moduleAvailability.routes.js';

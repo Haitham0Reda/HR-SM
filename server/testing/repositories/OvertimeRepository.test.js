@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import OvertimeRepository from '../../repositories/modules/OvertimeRepository.js';
 import Overtime from '../../modules/hr-core/overtime/models/overtime.model.js';
-import User from '../../modules/hr-core/models/User.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
 import Department from '../../modules/hr-core/models/Department.js';
 
 describe('OvertimeRepository', () => {

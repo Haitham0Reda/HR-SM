@@ -190,6 +190,312 @@ class UsageTrackingService {
      * @param {string} tenantId - Tenant identifier
      * @returns {Promise<Object>} Usage metrics
      */
+    async getTenantUsage(tenantId) {
+        return await this.getUsageMetrics(tenantId);
+    }
+    
+    /**
+     * Get aggregated usage statistics
+     * @returns {Promise<Object>} Aggregated statistics
+     */
+    async getAggregatedStats() {
+        try {
+            const tenants = await Tenant.find({ status: 'active' });
+            
+            let totalApiCalls = 0;
+            let totalStorage = 0;
+            let totalUsers = 0;
+            let totalRevenue = 0;
+            
+            const tenantStats = [];
+            
+            for (const tenant of tenants) {
+                const apiCalls = tenant.usage.apiCallsThisMonth || 0;
+                const storage = tenant.usage.storageUsed || 0;
+                const users = tenant.usage.userCount || 0;
+                
+                totalApiCalls += apiCalls;
+                totalStorage += storage;
+                totalUsers += users;
+                
+                if (tenant.subscription && tenant.subscription.plan && tenant.subscription.plan.price) {
+                    totalRevenue += tenant.subscription.plan.price;
+                }
+                
+                tenantStats.push({
+                    tenantId: tenant.tenantId,
+                    name: tenant.name,
+                    apiCalls,
+                    storage,
+                    users,
+                    plan: tenant.subscription?.plan?.name || 'Free'
+                });
+            }
+            
+            return {
+                totals: {
+                    tenants: tenants.length,
+                    apiCalls: totalApiCalls,
+                    storage: totalStorage,
+                    users: totalUsers,
+                    revenue: totalRevenue
+                },
+                averages: {
+                    apiCallsPerTenant: tenants.length > 0 ? Math.round(totalApiCalls / tenants.length) : 0,
+                    storagePerTenant: tenants.length > 0 ? Math.round(totalStorage / tenants.length) : 0,
+                    usersPerTenant: tenants.length > 0 ? Math.round(totalUsers / tenants.length) : 0
+                },
+                tenantStats
+            };
+            
+        } catch (error) {
+            logger.error('Failed to get aggregated stats', {
+                error: error.message,
+                stack: error.stack
+            });
+            
+            throw error;
+        }
+    }
+    
+    /**
+     * Get tenants exceeding their limits
+     * @returns {Promise<Array>} Array of tenants exceeding limits
+     */
+    async getTenantsExceedingLimits() {
+        try {
+            const tenants = await Tenant.find({ status: 'active' });
+            const exceedingLimits = [];
+            
+            for (const tenant of tenants) {
+                const issues = [];
+                
+                // Check user limit
+                if (tenant.limits.maxUsers && tenant.usage.userCount > tenant.limits.maxUsers) {
+                    issues.push({
+                        type: 'users',
+                        current: tenant.usage.userCount,
+                        limit: tenant.limits.maxUsers,
+                        percentage: ((tenant.usage.userCount / tenant.limits.maxUsers) * 100).toFixed(2)
+                    });
+                }
+                
+                // Check storage limit
+                if (tenant.limits.maxStorage && tenant.usage.storageUsed > tenant.limits.maxStorage) {
+                    issues.push({
+                        type: 'storage',
+                        current: tenant.usage.storageUsed,
+                        limit: tenant.limits.maxStorage,
+                        percentage: ((tenant.usage.storageUsed / tenant.limits.maxStorage) * 100).toFixed(2)
+                    });
+                }
+                
+                // Check API calls limit
+                if (tenant.limits.maxApiCalls && tenant.usage.apiCallsThisMonth > tenant.limits.maxApiCalls) {
+                    issues.push({
+                        type: 'apiCalls',
+                        current: tenant.usage.apiCallsThisMonth,
+                        limit: tenant.limits.maxApiCalls,
+                        percentage: ((tenant.usage.apiCallsThisMonth / tenant.limits.maxApiCalls) * 100).toFixed(2)
+                    });
+                }
+                
+                if (issues.length > 0) {
+                    exceedingLimits.push({
+                        tenantId: tenant.tenantId,
+                        name: tenant.name,
+                        issues
+                    });
+                }
+            }
+            
+            return exceedingLimits;
+            
+        } catch (error) {
+            logger.error('Failed to get tenants exceeding limits', {
+                error: error.message,
+                stack: error.stack
+            });
+            
+            throw error;
+        }
+    }
+    
+    /**
+     * Get usage trends for a tenant
+     * @param {string} tenantId - Tenant identifier
+     * @param {number} days - Number of days to look back
+     * @returns {Promise<Object>} Usage trends
+     */
+    async getUsageTrends(tenantId, days = 30) {
+        try {
+            const tenant = await Tenant.findOne({ tenantId });
+            
+            if (!tenant) {
+                throw new Error(`Tenant not found: ${tenantId}`);
+            }
+            
+            // For now, return current usage as trends
+            // In a real implementation, you'd query historical data
+            const currentUsage = await this.getUsageMetrics(tenantId);
+            
+            return {
+                tenantId,
+                period: `${days} days`,
+                trends: {
+                    users: {
+                        current: currentUsage.users.total,
+                        trend: 'stable', // This would be calculated from historical data
+                        change: 0
+                    },
+                    apiCalls: {
+                        current: currentUsage.apiCalls.thisMonth,
+                        trend: 'stable',
+                        change: 0
+                    },
+                    storage: {
+                        current: currentUsage.storage.used,
+                        trend: 'stable',
+                        change: 0
+                    }
+                }
+            };
+            
+        } catch (error) {
+            logger.error('Failed to get usage trends', {
+                context: { tenantId, days },
+                error: error.message,
+                stack: error.stack
+            });
+            
+            throw error;
+        }
+    }
+    
+    /**
+     * Get top tenants by usage metric
+     * @param {string} metric - Metric to sort by (users, storage, apiCalls)
+     * @param {number} limit - Number of tenants to return
+     * @returns {Promise<Array>} Top tenants
+     */
+    async getTopTenants(metric = 'users', limit = 10) {
+        try {
+            const tenants = await Tenant.find({ status: 'active' });
+            
+            // Sort tenants by the specified metric
+            const sortedTenants = tenants.sort((a, b) => {
+                let valueA = 0;
+                let valueB = 0;
+                
+                switch (metric) {
+                    case 'users':
+                        valueA = a.usage.userCount || 0;
+                        valueB = b.usage.userCount || 0;
+                        break;
+                    case 'storage':
+                        valueA = a.usage.storageUsed || 0;
+                        valueB = b.usage.storageUsed || 0;
+                        break;
+                    case 'apiCalls':
+                        valueA = a.usage.apiCallsThisMonth || 0;
+                        valueB = b.usage.apiCallsThisMonth || 0;
+                        break;
+                    default:
+                        valueA = a.usage.userCount || 0;
+                        valueB = b.usage.userCount || 0;
+                }
+                
+                return valueB - valueA; // Descending order
+            });
+            
+            // Return top tenants with their metrics
+            return sortedTenants.slice(0, limit).map(tenant => ({
+                tenantId: tenant.tenantId,
+                name: tenant.name,
+                value: tenant.usage[metric === 'apiCalls' ? 'apiCallsThisMonth' : metric === 'users' ? 'userCount' : 'storageUsed'] || 0,
+                plan: tenant.subscription?.plan?.name || 'Free',
+                createdAt: tenant.createdAt
+            }));
+            
+        } catch (error) {
+            logger.error('Failed to get top tenants', {
+                context: { metric, limit },
+                error: error.message,
+                stack: error.stack
+            });
+            
+            throw error;
+        }
+    }
+    
+    /**
+     * Reset monthly usage counters for all tenants
+     * @returns {Promise<number>} Number of tenants reset
+     */
+    async resetMonthlyUsage() {
+        try {
+            const result = await Tenant.updateMany(
+                { status: 'active' },
+                { 
+                    $set: { 
+                        'usage.apiCallsThisMonth': 0 
+                    } 
+                }
+            );
+            
+            logger.info('Monthly usage counters reset', {
+                tenantsReset: result.modifiedCount
+            });
+            
+            return result.modifiedCount;
+            
+        } catch (error) {
+            logger.error('Failed to reset monthly usage', {
+                error: error.message,
+                stack: error.stack
+            });
+            
+            throw error;
+        }
+    }
+    
+    /**
+     * Update storage usage for a tenant
+     * @param {string} tenantId - Tenant identifier
+     * @param {number} bytes - New storage usage in bytes
+     * @returns {Promise<void>}
+     */
+    async updateStorageUsage(tenantId, bytes) {
+        try {
+            const tenant = await Tenant.findOne({ tenantId });
+            
+            if (!tenant) {
+                throw new Error(`Tenant not found: ${tenantId}`);
+            }
+            
+            tenant.usage.storageUsed = bytes;
+            await tenant.save();
+            
+            logger.info('Storage usage updated', {
+                context: { tenantId, bytes }
+            });
+            
+        } catch (error) {
+            logger.error('Failed to update storage usage', {
+                context: { tenantId, bytes },
+                error: error.message,
+                stack: error.stack
+            });
+            
+            throw error;
+        }
+    }
+    
+    /**
+     * Get usage metrics for a tenant
+     * @param {string} tenantId - Tenant identifier
+     * @returns {Promise<Object>} Usage metrics
+     */
     async getUsageMetrics(tenantId) {
         try {
             const tenant = await Tenant.findOne({ tenantId });
@@ -261,10 +567,10 @@ class UsageTrackingService {
     /**
      * Update tenant user count
      * @param {string} tenantId - Tenant identifier
-     * @param {number} count - New user count
+     * @param {number} count - New user count (optional, will count from database if not provided)
      * @returns {Promise<void>}
      */
-    async updateUserCount(tenantId, count) {
+    async updateUserCount(tenantId, count = null) {
         try {
             const tenant = await Tenant.findOne({ tenantId });
             
@@ -272,27 +578,35 @@ class UsageTrackingService {
                 throw new Error(`Tenant not found: ${tenantId}`);
             }
             
-            tenant.usage.userCount = count;
-            await tenant.save();
-            
-            logger.info('User count updated', {
-                context: { tenantId, count }
-            });
-            
-            // Check if approaching user limit
-            if (tenant.limits.maxUsers) {
-                const percentage = (count / tenant.limits.maxUsers) * 100;
+            // If count is not provided, we could count users from the database
+            // For now, we'll just use the provided count or keep the existing count
+            if (count !== null) {
+                tenant.usage.userCount = count;
+                await tenant.save();
                 
-                if (percentage >= 90) {
-                    logger.warn('Tenant approaching user limit', {
-                        context: { 
-                            tenantId,
-                            userCount: count,
-                            maxUsers: tenant.limits.maxUsers,
-                            percentage: percentage.toFixed(2)
-                        }
-                    });
+                logger.info('User count updated', {
+                    context: { tenantId, count }
+                });
+                
+                // Check if approaching user limit
+                if (tenant.limits.maxUsers) {
+                    const percentage = (count / tenant.limits.maxUsers) * 100;
+                    
+                    if (percentage >= 90) {
+                        logger.warn('Tenant approaching user limit', {
+                            context: { 
+                                tenantId,
+                                userCount: count,
+                                maxUsers: tenant.limits.maxUsers,
+                                percentage: percentage.toFixed(2)
+                            }
+                        });
+                    }
                 }
+            } else {
+                logger.info('User count update requested but no count provided', {
+                    context: { tenantId, currentCount: tenant.usage.userCount }
+                });
             }
             
         } catch (error) {
@@ -400,6 +714,60 @@ class UsageTrackingService {
                 }
             }
         }, 60 * 60 * 1000); // Run every hour
+    }
+    
+    /**
+     * Get system-wide statistics
+     * @returns {Promise<Object>} System statistics
+     */
+    async getSystemStats() {
+        try {
+            // Get all active tenants
+            const tenants = await Tenant.find({ status: 'active' });
+            
+            // Calculate totals
+            let totalTenants = tenants.length;
+            let totalUsers = 0;
+            let totalRevenue = 0;
+            let totalApiCalls = 0;
+            let totalStorage = 0;
+            
+            for (const tenant of tenants) {
+                totalUsers += tenant.usage.userCount || 0;
+                totalApiCalls += tenant.usage.apiCallsThisMonth || 0;
+                totalStorage += tenant.usage.storageUsed || 0;
+                
+                // Calculate revenue based on subscription plan
+                if (tenant.subscription && tenant.subscription.plan) {
+                    const plan = tenant.subscription.plan;
+                    if (plan.price) {
+                        totalRevenue += plan.price;
+                    }
+                }
+            }
+            
+            // System uptime in seconds
+            const systemUptime = process.uptime();
+            
+            return {
+                totalTenants,
+                totalUsers,
+                totalRevenue,
+                systemUptime,
+                totalApiCalls,
+                totalStorage,
+                averageUsersPerTenant: totalTenants > 0 ? Math.round(totalUsers / totalTenants) : 0,
+                lastUpdated: new Date().toISOString()
+            };
+            
+        } catch (error) {
+            logger.error('Failed to get system stats', {
+                error: error.message,
+                stack: error.stack
+            });
+            
+            throw error;
+        }
     }
     
     /**

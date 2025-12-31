@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import TaskRepository from '../../repositories/modules/TaskRepository.js';
 import Task from '../../modules/tasks/models/Task.js';
-import User from '../../modules/hr-core/models/User.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
 
 describe('TaskRepository', () => {
     let taskRepository;

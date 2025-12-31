@@ -21,7 +21,7 @@ import correlationIdService from '../services/correlationId.service.js';
  * @param {Object} res - Express response object
  * @param {Function} next - Express next function
  */
-export function authenticateJWT(req, res, next) {
+export async function authenticateJWT(req, res, next) {
     try {
         // Get token from Authorization header
         const authHeader = req.headers.authorization;
@@ -35,8 +35,8 @@ export function authenticateJWT(req, res, next) {
             });
         }
 
-        // Verify JWT token
-        const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+        // Verify JWT token - use TENANT_JWT_SECRET for tenant tokens
+        const jwtSecret = process.env.TENANT_JWT_SECRET || process.env.JWT_SECRET || 'your-secret-key';
         const decoded = jwt.verify(token, jwtSecret);
 
         // Extract user information
@@ -140,7 +140,7 @@ export function optionalAuth(req, res, next) {
 
     // Try to authenticate, but don't fail if token is invalid
     try {
-        const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+        const jwtSecret = process.env.TENANT_JWT_SECRET || process.env.JWT_SECRET || 'your-secret-key';
         const decoded = jwt.verify(token, jwtSecret);
 
         req.user = {

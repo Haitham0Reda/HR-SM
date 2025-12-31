@@ -25,11 +25,16 @@ export const fetchModuleAvailability = createAsyncThunk(
         throw new Error('User not authenticated');
       }
 
+      // Additional check for token presence
+      if (!auth.tenantToken) {
+        throw new Error('No authentication token available');
+      }
+
       console.log('Fetching module availability for tenant');
 
       const response = await api.get('/modules/availability');
       
-      if (response.data.success) {
+      if (response.data && response.data.success) {
         const availability = response.data.data;
         
         console.log('Module availability loaded:', {
@@ -40,8 +45,20 @@ export const fetchModuleAvailability = createAsyncThunk(
         });
         
         return availability;
+      } else if (response.success) {
+        // Handle case where response is already unwrapped by axios interceptor
+        const availability = response.data || response;
+        
+        console.log('Module availability loaded:', {
+          tenant: availability.tenant?.name || 'Unknown',
+          totalAvailable: availability.modules?.total || 0,
+          availableModules: [...(availability.modules?.core || []), ...(availability.modules?.available || [])],
+          licenseValid: availability.license?.valid || false
+        });
+        
+        return availability;
       } else {
-        throw new Error(response.data.message || 'Failed to load module availability');
+        throw new Error(response.message || 'Failed to load module availability');
       }
     } catch (error) {
       console.error('Failed to fetch module availability:', error);

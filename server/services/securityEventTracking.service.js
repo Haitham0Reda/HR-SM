@@ -5,7 +5,7 @@ import Tenant from '../platform/tenants/models/Tenant.js';
  * Security Event Schema for MongoDB storage
  */
 const securityEventSchema = new mongoose.Schema({
-  tenantId: { type: String, required: true, index: true },
+  tenantId: { type: String, required: true },
   eventType: { 
     type: String, 
     required: true,

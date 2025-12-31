@@ -70,9 +70,9 @@ const Login = () => {
             setLoading(true);
             setError('');
 
-            // For now, use TechCorp tenant ID since the login form doesn't have tenant selection
+            // Use TechCorp Solutions tenant ID that matches the seed data
             // TODO: Add tenant selection to login form if needed
-            const result = await login(formData.email, formData.password, '693db0e2ccc5ea08aeee120c');
+            const result = await login(formData.email, formData.password, 'techcorp_solutions');
 
             if (result.success) {
                 showSuccess('Login successful!');
@@ -313,7 +313,7 @@ const Login = () => {
                         {/* Form */}
                         <Box sx={{ px: { xs: 3, sm: 5 }, pb: { xs: 4, sm: 5 } }}>
                             {/* Quick Login Helper - Development Only */}
-                            {process.env.NODE_ENV === 'development' && (
+                            {(process.env.NODE_ENV === 'development' || process.env.REACT_APP_ENV === 'development' || !process.env.NODE_ENV) && (
                                 <QuickLoginHelper
                                     onCredentialSelect={handleQuickLogin}
                                     type="hr"

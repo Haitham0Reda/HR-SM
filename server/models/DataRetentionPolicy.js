@@ -4,8 +4,7 @@ const dataRetentionPolicySchema = new mongoose.Schema({
   tenantId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Tenant', 
-    required: true, 
-    index: true 
+    required: true
   },
   
   // Policy identification

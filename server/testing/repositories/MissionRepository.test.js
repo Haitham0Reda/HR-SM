@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import MissionRepository from '../../repositories/modules/MissionRepository.js';
 import Mission from '../../modules/hr-core/missions/models/Mission.js';
-import User from '../../modules/hr-core/models/User.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
 import Department from '../../modules/hr-core/models/Department.js';
 
 describe('MissionRepository', () => {

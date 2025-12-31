@@ -1,4 +1,4 @@
-import { asyncHandler } from '../core/utils/asyncHandler.js';
+import asyncHandler from '../core/utils/asyncHandler.js';
 import dataRetentionService from '../services/dataRetentionService.js';
 import complianceReportingService from '../services/complianceReportingService.js';
 import userAccessAnalyticsService from '../services/userAccessAnalytics.service.js';

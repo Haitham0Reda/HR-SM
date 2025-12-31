@@ -44,14 +44,15 @@ export const ReduxModuleProvider = ({ children }) => {
 
   // Fetch module availability when user logs in
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
+      // Only fetch if we have both authentication and user data
       dispatch(fetchModuleAvailability());
     }
-  }, [isAuthenticated, dispatch]);
+  }, [isAuthenticated, user, dispatch]);
 
   // Auto-refresh every 5 minutes if data is stale
   useEffect(() => {
-    if (!isAuthenticated || !moduleAvailability) return;
+    if (!isAuthenticated || !moduleAvailability || !user) return;
 
     const interval = setInterval(() => {
       if (isCacheStale) {
@@ -61,7 +62,19 @@ export const ReduxModuleProvider = ({ children }) => {
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, moduleAvailability, isCacheStale, dispatch]);
+  }, [isAuthenticated, moduleAvailability, isCacheStale, user, dispatch]);
+
+  // Retry failed requests after a delay
+  useEffect(() => {
+    if (error && isAuthenticated && user) {
+      console.log('Module availability failed, retrying in 10 seconds...');
+      const retryTimeout = setTimeout(() => {
+        dispatch(fetchModuleAvailability());
+      }, 10000); // 10 seconds
+
+      return () => clearTimeout(retryTimeout);
+    }
+  }, [error, isAuthenticated, user, dispatch]);
 
   /**
    * Check if a module is enabled for the current tenant

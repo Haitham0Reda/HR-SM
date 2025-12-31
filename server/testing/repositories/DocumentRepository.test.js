@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import DocumentRepository from '../../repositories/modules/DocumentRepository.js';
 import Document from '../../modules/documents/models/document.model.js';
-import User from '../../modules/hr-core/models/User.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
 import Department from '../../modules/hr-core/models/Department.js';
 
 describe('DocumentRepository', () => {

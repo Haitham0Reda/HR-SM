@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
     Box,
     Button,
@@ -23,12 +23,12 @@ import {
 const QuickLoginHelper = ({ onCredentialSelect, type = 'hr' }) => {
     const [expanded, setExpanded] = useState(false);
 
-    // User credentials based on type - ACTUAL DATABASE USERS
+    // User credentials for TechCorp Solutions (hrsm_techcorp_solutions) - ACTUAL DATABASE USERS
     const credentials = {
         hr: [
             {
                 label: 'Admin',
-                email: 'admin@company.com',
+                email: 'admin@techcorp.com',
                 password: 'admin123',
                 role: 'System Administrator',
                 realName: 'System Administrator',
@@ -38,7 +38,7 @@ const QuickLoginHelper = ({ onCredentialSelect, type = 'hr' }) => {
             },
             {
                 label: 'HR Manager',
-                email: 'hr@company.com',
+                email: 'hr@techcorp.com',
                 password: 'hr123',
                 role: 'HR Manager',
                 realName: 'Sarah Ahmed',
@@ -48,7 +48,7 @@ const QuickLoginHelper = ({ onCredentialSelect, type = 'hr' }) => {
             },
             {
                 label: 'Manager',
-                email: 'manager@company.com',
+                email: 'manager@techcorp.com',
                 password: 'manager123',
                 role: 'Department Manager',
                 realName: 'Mohamed Hassan',
@@ -58,7 +58,7 @@ const QuickLoginHelper = ({ onCredentialSelect, type = 'hr' }) => {
             },
             {
                 label: 'Employee',
-                email: 'john.doe@company.com',
+                email: 'john.doe@techcorp.com',
                 password: 'employee123',
                 role: 'Employee',
                 realName: 'John Michael Doe',
@@ -68,7 +68,7 @@ const QuickLoginHelper = ({ onCredentialSelect, type = 'hr' }) => {
             },
             {
                 label: 'Employee 2',
-                email: 'jane.smith@company.com',
+                email: 'jane.smith@techcorp.com',
                 password: 'employee123',
                 role: 'Employee',
                 realName: 'Jane Smith',
@@ -78,7 +78,7 @@ const QuickLoginHelper = ({ onCredentialSelect, type = 'hr' }) => {
             },
             {
                 label: 'Employee 3',
-                email: 'ahmed.ali@company.com',
+                email: 'ahmed.ali@techcorp.com',
                 password: 'employee123',
                 role: 'Employee',
                 realName: 'Ahmed Ali',
@@ -88,7 +88,7 @@ const QuickLoginHelper = ({ onCredentialSelect, type = 'hr' }) => {
             },
             {
                 label: 'Employee 4',
-                email: 'fatma.mohamed@company.com',
+                email: 'fatma.mohamed@techcorp.com',
                 password: 'employee123',
                 role: 'Employee',
                 realName: 'Fatma Mohamed',
@@ -98,7 +98,7 @@ const QuickLoginHelper = ({ onCredentialSelect, type = 'hr' }) => {
             },
             {
                 label: 'Employee 5',
-                email: 'omar.ibrahim@company.com',
+                email: 'omar.ibrahim@techcorp.com',
                 password: 'employee123',
                 role: 'Employee',
                 realName: 'Omar Ibrahim',

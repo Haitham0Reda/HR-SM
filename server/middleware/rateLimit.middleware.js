@@ -52,7 +52,7 @@ export function rateLimitByCompany(options = {}) {
         },
         
         // Custom handler for rate limit exceeded
-        handler: (req, res) => {
+        handler: async (req, res) => {
             const companyId = req.tenant?.tenantId || req.user?.tenantId || 'unknown';
             const companyName = req.tenant?.companyName || 'Unknown Company';
             

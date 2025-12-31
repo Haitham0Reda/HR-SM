@@ -3,6 +3,7 @@ import User from '../users/models/user.model.js';
 import TenantConfig from '../models/TenantConfig.js';
 import AuditLog from '../models/AuditLog.js';
 import { generateTenantToken } from '../../../core/auth/tenantAuth.js';
+import multiTenantDB from '../../../config/multiTenant.js';
 
 // Generate JWT token using tenant auth system
 const generateToken = (user) => {
@@ -85,8 +86,11 @@ export const register = async (req, res) => {
 
 // Login
 export const login = async (req, res) => {
+    console.log('🚀 AUTH CONTROLLER: Login function called');
     try {
         const { email, password, tenantId } = req.body;
+
+        console.log('🔍 Login attempt:', { email, tenantId, hasPassword: !!password });
 
         if (!email || !password) {
             return res.status(400).json({
@@ -95,13 +99,37 @@ export const login = async (req, res) => {
             });
         }
 
-        // Find user with password field
-        const user = await User.findOne({ email, tenantId }).select('+password');
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide tenant ID'
+            });
+        }
+
+        // Get tenant-specific database connection
+        console.log('🔗 Getting tenant database connection for:', tenantId);
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Get User model for this tenant's database
+        const TenantUser = tenantConnection.model('User', User.schema);
+
+        // Find user with password field in tenant-specific database
+        const user = await TenantUser.findOne({ email, tenantId }).select('+password');
+        console.log('👤 User found:', !!user, user ? { email: user.email, tenantId: user.tenantId, status: user.status } : 'No user');
+
+        // Debug: List all users to see what's in the database
+        if (!user) {
+            const allUsers = await TenantUser.find({}).select('email tenantId role').limit(10);
+            console.log('📋 All users in tenant database (first 10):');
+            allUsers.forEach(u => console.log(`   - ${u.email} (tenant: ${u.tenantId}, role: ${u.role})`));
+        }
 
         if (!user || !(await user.comparePassword(password))) {
             // Log failed attempt
             if (user) {
-                await AuditLog.create({
+                console.log('❌ Password comparison failed for user:', user.email);
+                const TenantAuditLog = tenantConnection.model('AuditLog', AuditLog.schema);
+                await TenantAuditLog.create({
                     action: 'login',
                     resource: 'User',
                     resourceId: user._id,
@@ -112,6 +140,8 @@ export const login = async (req, res) => {
                     ipAddress: req.ip,
                     userAgent: req.headers['user-agent']
                 });
+            } else {
+                console.log('❌ No user found with email:', email, 'and tenantId:', tenantId);
             }
 
             return res.status(401).json({
@@ -129,7 +159,7 @@ export const login = async (req, res) => {
 
         // Validate tenant license
         const tenant = await TenantConfig.findOne({ tenantId });
-        if (tenant.deploymentMode === 'on-premise' && !tenant.validateLicense()) {
+        if (tenant && tenant.deploymentMode === 'on-premise' && !tenant.validateLicense()) {
             return res.status(403).json({
                 success: false,
                 message: 'License expired or invalid'
@@ -139,7 +169,8 @@ export const login = async (req, res) => {
         const token = generateToken(user);
 
         // Log successful login
-        await AuditLog.create({
+        const TenantAuditLog = tenantConnection.model('AuditLog', AuditLog.schema);
+        await TenantAuditLog.create({
             action: 'login',
             resource: 'User',
             resourceId: user._id,
@@ -161,6 +192,7 @@ export const login = async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('🚨 Login error:', error);
         res.status(500).json({
             success: false,
             message: error.message
@@ -171,12 +203,14 @@ export const login = async (req, res) => {
 // Get current user
 export const getCurrentUser = async (req, res) => {
     try {
-        const user = await User.findOne({
+        // Get tenant-specific database connection
+        const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
+        const TenantUser = tenantConnection.model('User', User.schema);
+        
+        const user = await TenantUser.findOne({
             _id: req.user.id,
             tenantId: req.tenantId
-        })
-            .populate('department', 'name code')
-            .populate('position', 'title level');
+        });
 
         if (!user) {
             return res.status(404).json({

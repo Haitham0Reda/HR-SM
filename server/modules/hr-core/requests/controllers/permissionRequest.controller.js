@@ -3,12 +3,21 @@ import Permission from '../models/permission.model.js';
 import Notification from '../../../notifications/models/notification.model.js';
 import { sendEmail, getEmployeeManager } from '../../../email-service/services/email.service.js';
 import User from '../../users/models/user.model.js';
+import mongoose from 'mongoose';
 
 /**
  * Get all permission requests with optional filtering
  */
 export const getAllPermissionRequests = async (req, res) => {
     try {
+        // Use tenantId directly as string
+        if (!req.tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+        
         const query = { tenantId: req.tenantId };
 
         // Filter by user/employee if provided

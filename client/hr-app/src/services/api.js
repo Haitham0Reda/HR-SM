@@ -6,10 +6,70 @@
  * - Global error handling
  * - Request/response logging
  * - Automatic token refresh on 401 errors
+ * - Circuit breaker for network failures
  */
 
 import axios from 'axios';
 import logger from '../utils/logger';
+import errorThrottle from '../utils/errorThrottle';
+
+// Circuit breaker state
+let circuitBreakerActive = false;
+let circuitBreakerUntil = 0;
+let consecutiveNetworkFailures = 0;
+let circuitBreakerNotificationShown = false;
+
+/**
+ * Check if circuit breaker should be activated
+ */
+const shouldActivateCircuitBreaker = () => {
+    return consecutiveNetworkFailures >= 3;
+};
+
+/**
+ * Show circuit breaker notification to user
+ */
+const showCircuitBreakerNotification = () => {
+    if (circuitBreakerNotificationShown) return;
+    
+    // Try to show notification using Redux store if available
+    try {
+        const { store } = require('../store');
+        const { showWarning } = require('../store/slices/notificationSlice');
+        
+        store.dispatch(showWarning({
+            message: 'Server connection lost. Retrying in background...',
+            duration: 5000
+        }));
+        
+        circuitBreakerNotificationShown = true;
+    } catch (error) {
+        // Fallback to console if Redux store not available
+        console.warn('🔌 Server connection lost. Retrying in background...');
+        circuitBreakerNotificationShown = true;
+    }
+};
+
+/**
+ * Activate circuit breaker for network failures
+ */
+const activateCircuitBreaker = () => {
+    const backoffTime = Math.min(30000 * consecutiveNetworkFailures, 120000); // Max 2 minutes
+    circuitBreakerUntil = Date.now() + backoffTime;
+    circuitBreakerActive = true;
+    console.warn(`API circuit breaker activated for ${backoffTime/1000}s due to network failures`);
+    showCircuitBreakerNotification();
+};
+
+/**
+ * Reset circuit breaker on successful request
+ */
+const resetCircuitBreaker = () => {
+    consecutiveNetworkFailures = 0;
+    circuitBreakerActive = false;
+    circuitBreakerUntil = 0;
+    circuitBreakerNotificationShown = false;
+};
 
 /**
  * Create axios instance with default configuration
@@ -28,9 +88,28 @@ const api = axios.create({
  * Request Interceptor
  * Automatically adds authentication token to all requests
  * Logs all outgoing requests for debugging
+ * Implements circuit breaker for network failures
  */
 api.interceptors.request.use(
     (config) => {
+        // Check circuit breaker
+        if (circuitBreakerActive && Date.now() < circuitBreakerUntil) {
+            const errorKey = errorThrottle.createCircuitBreakerKey();
+            if (errorThrottle.shouldLog(errorKey, 'API circuit breaker active')) {
+                console.warn('🔌 API circuit breaker active - server appears to be down');
+            }
+            return Promise.reject({
+                message: 'API circuit breaker active - server appears to be down',
+                circuitBreaker: true
+            });
+        }
+
+        // Reset circuit breaker if time has passed
+        if (circuitBreakerActive && Date.now() >= circuitBreakerUntil) {
+            console.log('🔌 API circuit breaker reset - attempting requests again');
+            circuitBreakerActive = false;
+        }
+
         logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
 
         // Add Tenant JWT authentication token if available
@@ -60,14 +139,25 @@ api.interceptors.response.use(
     (response) => {
         logger.debug(`API Response: ${response.config.method?.toUpperCase()} ${response.config.url} - Status: ${response.status}`);
 
+        // Reset circuit breaker on successful response
+        resetCircuitBreaker();
+
         // Extract data from response for cleaner usage
         return response.data !== undefined ? response.data : response;
     },
     (error) => {
+        // Handle circuit breaker errors
+        if (error.circuitBreaker) {
+            return Promise.reject(error);
+        }
+
         // Handle different error scenarios
         if (error.response) {
             // Server responded with error status (4xx, 5xx)
             const { status, data } = error.response;
+
+            // Reset circuit breaker if we got a response (server is up)
+            resetCircuitBreaker();
 
             // Only log errors that aren't expected 403s (permission denied)
             // 403s are expected for users accessing restricted endpoints
@@ -106,10 +196,22 @@ api.interceptors.response.use(
             });
         } else if (error.request) {
             // Request was made but no response received (network error)
-            logger.error('Network error - no response received', {
-                url: error.config?.url,
-                method: error.config?.method
-            });
+            consecutiveNetworkFailures++;
+            
+            if (shouldActivateCircuitBreaker()) {
+                activateCircuitBreaker();
+            }
+
+            // Throttle network error logging
+            const errorKey = errorThrottle.createNetworkErrorKey(error.config?.url, error.config?.method);
+            if (errorThrottle.shouldLog(errorKey, 'Network error - no response received')) {
+                logger.error('Network error - no response received', {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    consecutiveFailures: consecutiveNetworkFailures
+                });
+            }
+
             return Promise.reject({
                 message: 'Network error. Please check your connection.',
                 request: error.request

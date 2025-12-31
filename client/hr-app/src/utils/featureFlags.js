@@ -5,10 +5,8 @@
  * in the frontend based on backend configuration.
  */
 
-import axios from 'axios';
+import api from '../services/api';
 import { getAuthToken } from './auth';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 /**
  * Get feature flags from backend
@@ -16,10 +14,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:500
  */
 export const getFeatureFlags = async () => {
     try {
-        const token = getAuthToken();
-        const response = await axios.get(`${API_BASE_URL}/feature-flags`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
+        const response = await api.get('/feature-flags');
         return response.data;
     } catch (error) {
         console.error('Failed to fetch feature flags:', error);

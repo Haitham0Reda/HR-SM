@@ -1,0 +1,26 @@
+{
+  "enabled": true,
+  "features": {
+    "auditLogging": true,
+    "securityLogging": true,
+    "performanceLogging": true,
+    "userActionLogging": false,
+    "frontendLogging": true,
+    "detailedErrorLogging": true
+  },
+  "retentionPolicies": {
+    "auditLogs": 2555,
+    "securityLogs": 365,
+    "performanceLogs": 90,
+    "errorLogs": 180
+  },
+  "alerting": {
+    "enabled": true,
+    "criticalErrors": true,
+    "securityEvents": true,
+    "performanceThresholds": false
+  },
+  "companyId": "test",
+  "lastModified": "2025-12-30T16:47:56.785Z",
+  "modifiedBy": "system"
+}

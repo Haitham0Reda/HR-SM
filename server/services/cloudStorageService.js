@@ -1,4 +1,4 @@
-import AWS from 'aws-sdk';
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -38,14 +38,16 @@ class CloudStorageService {
     initializeProviders() {
         // AWS S3 Provider
         if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-            const s3 = new AWS.S3({
-                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            const s3Client = new S3Client({
+                credentials: {
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+                },
                 region: process.env.AWS_REGION || 'us-east-1'
             });
 
             this.providers.set('aws-s3', {
-                client: s3,
+                client: s3Client,
                 bucket: process.env.AWS_S3_BACKUP_BUCKET || 'hrsm-backups',
                 upload: this.uploadToS3.bind(this),
                 download: this.downloadFromS3.bind(this),
@@ -149,7 +151,7 @@ class CloudStorageService {
         const fileStream = fs.createReadStream(filePath);
         const stats = fs.statSync(filePath);
 
-        const uploadParams = {
+        const uploadCommand = new PutObjectCommand({
             Bucket: provider.bucket,
             Key: key,
             Body: fileStream,
@@ -161,13 +163,13 @@ class CloudStorageService {
                 'created-at': new Date().toISOString(),
                 'original-size': stats.size.toString()
             }
-        };
+        });
 
-        const result = await provider.client.upload(uploadParams).promise();
+        const result = await provider.client.send(uploadCommand);
 
         return {
             key: key,
-            url: result.Location,
+            url: `https://${provider.bucket}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${key}`,
             etag: result.ETag,
             size: stats.size
         };
@@ -179,13 +181,20 @@ class CloudStorageService {
     async downloadFromS3(key, downloadPath) {
         const provider = this.providers.get('aws-s3');
 
-        const downloadParams = {
+        const downloadCommand = new GetObjectCommand({
             Bucket: provider.bucket,
             Key: key
-        };
+        });
 
-        const result = await provider.client.getObject(downloadParams).promise();
-        fs.writeFileSync(downloadPath, result.Body);
+        const result = await provider.client.send(downloadCommand);
+        
+        // Convert stream to buffer for writing
+        const chunks = [];
+        for await (const chunk of result.Body) {
+            chunks.push(chunk);
+        }
+        const buffer = Buffer.concat(chunks);
+        fs.writeFileSync(downloadPath, buffer);
 
         return {
             size: result.ContentLength,
@@ -202,12 +211,12 @@ class CloudStorageService {
 
         try {
             // Get object metadata
-            const headParams = {
+            const headCommand = new HeadObjectCommand({
                 Bucket: provider.bucket,
                 Key: key
-            };
+            });
 
-            const result = await provider.client.headObject(headParams).promise();
+            const result = await provider.client.send(headCommand);
             const originalStats = fs.statSync(originalPath);
 
             // Verify size matches
@@ -243,12 +252,12 @@ class CloudStorageService {
     async deleteFromS3(key) {
         const provider = this.providers.get('aws-s3');
 
-        const deleteParams = {
+        const deleteCommand = new DeleteObjectCommand({
             Bucket: provider.bucket,
             Key: key
-        };
+        });
 
-        await provider.client.deleteObject(deleteParams).promise();
+        await provider.client.send(deleteCommand);
         
         this.logger.info('Backup deleted from S3', { key });
     }
@@ -345,15 +354,15 @@ class CloudStorageService {
     async listS3Backups(prefix) {
         const provider = this.providers.get('aws-s3');
 
-        const listParams = {
+        const listCommand = new ListObjectsV2Command({
             Bucket: provider.bucket,
             Prefix: prefix,
             MaxKeys: 1000
-        };
+        });
 
-        const result = await provider.client.listObjectsV2(listParams).promise();
+        const result = await provider.client.send(listCommand);
 
-        return result.Contents.map(object => ({
+        return (result.Contents || []).map(object => ({
             key: object.Key,
             size: object.Size,
             lastModified: object.LastModified,
@@ -416,12 +425,12 @@ class CloudStorageService {
         try {
             if (providerName === 'aws-s3') {
                 // Test S3 connection by listing bucket
-                const listParams = {
+                const listCommand = new ListObjectsV2Command({
                     Bucket: provider.bucket,
                     MaxKeys: 1
-                };
+                });
 
-                await provider.client.listObjectsV2(listParams).promise();
+                await provider.client.send(listCommand);
             }
 
             this.logger.info('Cloud storage connection test successful', { provider: providerName });

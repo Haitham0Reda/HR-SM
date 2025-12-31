@@ -81,6 +81,25 @@ export const protect = async (req, res, next) => {
 
             req.user = await User.findById(decoded.id || decoded.userId).select('-password').populate('department position');
 
+            // If user not found in main database and we have a tenantId, try tenant-specific database
+            if (!req.user && decoded.tenantId) {
+                try {
+                    const { default: multiTenantDB } = await import('../config/multiTenant.js');
+                    const tenantConnection = await multiTenantDB.getCompanyConnection(decoded.tenantId);
+                    const TenantUser = tenantConnection.model('User', User.schema);
+                    
+                    // Try with populate first, fall back to without populate if it fails
+                    try {
+                        req.user = await TenantUser.findById(decoded.id || decoded.userId).select('-password').populate('department position');
+                    } catch (populateError) {
+                        console.warn('Populate failed, trying without populate:', populateError.message);
+                        req.user = await TenantUser.findById(decoded.id || decoded.userId).select('-password');
+                    }
+                } catch (error) {
+                    console.warn('Failed to get user from tenant database:', error.message);
+                }
+            }
+
             if (!req.user) {
                 logAuthEvent('UNAUTHORIZED_ACCESS', null, req, {
                     reason: 'User not found',

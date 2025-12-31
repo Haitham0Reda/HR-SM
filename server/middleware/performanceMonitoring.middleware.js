@@ -5,8 +5,8 @@ import os from 'os';
  * Performance Metrics Schema for MongoDB storage
  */
 const performanceMetricSchema = new mongoose.Schema({
-  tenantId: { type: String, index: true },
-  requestId: { type: String, index: true },
+  tenantId: { type: String },
+  requestId: { type: String },
   method: { type: String, required: true },
   path: { type: String, required: true },
   statusCode: { type: Number, required: true },
@@ -40,7 +40,7 @@ const performanceMetricSchema = new mongoose.Schema({
     code: String
   },
 
-  timestamp: { type: Date, default: Date.now, index: true }
+  timestamp: { type: Date, default: Date.now }
 }, {
   timestamps: true,
   collection: 'performance_metrics'

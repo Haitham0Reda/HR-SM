@@ -17,6 +17,7 @@ import {
 } from '../services/logStorage.service.js';
 import loggingModuleService from '../services/loggingModule.service.js';
 import configurationChangeHandler from '../services/configurationChangeHandler.service.js';
+import logger from './logger.js';
 
 // Mock __filename and __dirname for Jest compatibility
 const __filename = 'companyLogger.js';
@@ -772,13 +773,18 @@ export async function getLoggerForTenant(tenantId, companyName = null) {
 /**
  * Middleware to add company logger to request object
  */
-export function companyLoggerMiddleware(req, res, next) {
+export async function companyLoggerMiddleware(req, res, next) {
     // Extract tenant info from various possible sources
     const tenantId = req.tenantId || req.tenant?.tenantId || req.headers['x-tenant-id'];
     const companyName = req.tenant?.name || req.headers['x-company-name'];
     
     if (tenantId) {
-        req.companyLogger = getLoggerForTenant(tenantId, companyName);
+        try {
+            req.companyLogger = await getLoggerForTenant(tenantId, companyName);
+        } catch (error) {
+            console.warn('Failed to get company logger:', error.message);
+            req.companyLogger = logger; // Fallback to global logger
+        }
     }
     
     next();

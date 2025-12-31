@@ -10,14 +10,14 @@ import licenseValidationCacheService from '../services/licenseValidationCacheSer
 import sessionService from '../services/sessionService.js';
 import redisService from '../core/services/redis.service.js';
 import cachePerformanceMonitor from '../services/cachePerformanceMonitor.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { authenticateToken, requireRole } from '../shared/middleware/auth.js';
+import asyncHandler from '../utils/asyncHandler.js';
+import { requireAuth, requireRole } from '../shared/middleware/auth.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
 
 // Apply authentication and admin role requirement to all routes
-router.use(authenticateToken);
+router.use(requireAuth);
 router.use(requireRole(['Admin', 'SuperAdmin']));
 
 /**

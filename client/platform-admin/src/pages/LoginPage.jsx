@@ -11,6 +11,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { usePlatformAuth } from '../store/providers/ReduxPlatformAuthProvider';
+import QuickLoginHelper from '../components/QuickLoginHelper';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -40,6 +41,12 @@ const LoginPage = () => {
     }
   };
 
+  const handleQuickLogin = (quickEmail, quickPassword) => {
+    setEmail(quickEmail);
+    setPassword(quickPassword);
+    if (error) setError('');
+  };
+
   return (
     <Container maxWidth="sm">
       <Box
@@ -57,6 +64,14 @@ const LoginPage = () => {
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
             Sign in to manage tenants and system configuration
           </Typography>
+
+          {/* Quick Login Helper - Development Only */}
+          {process.env.NODE_ENV === 'development' && (
+            <QuickLoginHelper
+              onCredentialSelect={handleQuickLogin}
+              type="platform"
+            />
+          )}
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>

@@ -11,7 +11,8 @@
     "start": "npm run storybook",
     "start:hr": "cd hr-app && npm start",
     "start:platform": "cd platform-admin && npm start",
-    "start:both": "concurrently --names \"HR-APP,PLATFORM\" --prefix-colors \"cyan,magenta\" \"npm run start:hr\" \"npm run start:platform\"",
+    "start:both": "cross-env NODE_NO_WARNINGS=1 concurrently --names \"HR-APP,PLATFORM\" --prefix-colors \"cyan,magenta\" \"npm run start:hr\" \"npm run start:platform\"",
+    "start:both-alt": "npm-run-all --parallel start:hr start:platform",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "dev": "npm run storybook",
@@ -31,18 +32,19 @@
     "lint:all": "npm run lint:hr && npm run lint:platform"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "cross-env": "^7.0.3",
-    "rimraf": "^5.0.5",
+    "@storybook/addon-docs": "^8.6.14",
     "@storybook/addon-essentials": "^8.6.14",
     "@storybook/addon-interactions": "^8.6.14",
     "@storybook/addon-links": "^8.6.14",
-    "@storybook/addon-docs": "^8.6.14",
     "@storybook/blocks": "^8.6.14",
     "@storybook/react": "^8.6.14",
     "@storybook/react-webpack5": "^8.6.14",
     "@storybook/test": "^8.6.14",
-    "storybook": "^8.6.14",
-    "babel-loader": "^10.0.0"
+    "babel-loader": "^10.0.0",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^5.0.5",
+    "storybook": "^8.6.14"
   }
 }

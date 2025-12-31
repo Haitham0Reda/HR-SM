@@ -88,7 +88,7 @@ const UserActivityTracker = () => {
             if (filters.activityType) params.append('activityType', filters.activityType);
             if (filters.userId) params.append('userId', filters.userId);
             
-            const response = await fetch(`/api/company-logs/${tenant.tenantId}/user-activities?${params}`, {
+            const response = await fetch(`/api/v1/platform/company-logs/${tenant.tenantId}/user-activities?${params}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
@@ -144,7 +144,7 @@ const UserActivityTracker = () => {
         if (!tenant?.tenantId) return;
         
         try {
-            const response = await fetch(`/api/company-logs/${tenant.tenantId}/real-time-sessions`, {
+            const response = await fetch(`/api/v1/platform/company-logs/${tenant.tenantId}/real-time-sessions`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
@@ -196,7 +196,7 @@ const UserActivityTracker = () => {
         
         try {
             setLoading(true);
-            const response = await fetch(`/api/company-logs/${tenant.tenantId}/user-timeline/${userId}?days=${days}`, {
+            const response = await fetch(`/api/v1/platform/company-logs/${tenant.tenantId}/user-timeline/${userId}?days=${days}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
