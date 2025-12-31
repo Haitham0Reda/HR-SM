@@ -20,7 +20,10 @@ export const configureRedisSession = () => {
     const redisStats = redisService.getStats();
     
     if (!redisStats.enabled || !redisStats.connected) {
-        logger.warn('Redis not available, using memory store for sessions (not recommended for production)');
+        logger.info('Redis not configured - using memory store for sessions (development mode)');
+        if (process.env.NODE_ENV === 'production') {
+            logger.warn('⚠️  Redis recommended for production sessions');
+        }
         return {
             secret: process.env.SESSION_SECRET || 'hrms-session-secret-change-in-production',
             resave: false,

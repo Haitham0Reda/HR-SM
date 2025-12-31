@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Tenant ID is required'],
         trim: true
+        // Removed index: true to avoid duplicate with compound indexes below
     },
     employeeId: {
         type: String,
