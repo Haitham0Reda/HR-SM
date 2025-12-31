@@ -18,11 +18,14 @@ import {
 } from '@mui/material';
 import { PhotoCamera, Save, Close } from '@mui/icons-material';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
+import { useAppDispatch } from '../../store/hooks/useAppDispatch';
+import { loadUserProfile } from '../../store/slices/authSlice';
 import userService from '../../services/user.service';
 import { getUserProfilePicture } from '../../utils/profilePicture';
 
 export default function ProfilePage() {
     const { user, updateUser } = useAuth();
+    const dispatch = useAppDispatch();
     const [formData, setFormData] = useState({
         name: user?.personalInfo?.fullName || user?.name || '',
         email: user?.email || '',
@@ -104,9 +107,25 @@ export default function ProfilePage() {
             // Update local user state and localStorage
             const updatedUser = {
                 ...user,
-                ...updateData,
+                personalInfo: {
+                    ...user?.personalInfo,
+                    ...updateData.personalInfo,
+                },
+                // Also update the top-level profilePicture for compatibility
+                profilePicture: profilePictureUrl,
             };
+            
             updateUser(updatedUser);
+
+            // Force update the preview URL to reflect the new image
+            setPreviewUrl(profilePictureUrl);
+
+            // Also reload user profile from server to ensure consistency
+            try {
+                await dispatch(loadUserProfile()).unwrap();
+            } catch (reloadError) {
+                console.warn('Failed to reload user profile:', reloadError);
+            }
 
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
         } catch (error) {

@@ -37,6 +37,7 @@ import {
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import AuthStatus from '../../components/debug/AuthStatus';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import departmentService from '../../services/department.service';
 
@@ -65,15 +66,27 @@ const DepartmentsPage = () => {
     const fetchDepartments = async () => {
         try {
             setLoading(true);
+            console.log('🔄 Fetching departments...');
             const response = await departmentService.getAll();
+            console.log('📦 Raw response:', response);
+            
             // Handle the response format { success: true, data: departments }
             const departments = response?.data || response || [];
+            console.log('📁 Processed departments:', departments);
+            console.log('📊 Departments count:', Array.isArray(departments) ? departments.length : 'Not an array');
+            
             setDepartments(Array.isArray(departments) ? departments : []);
         } catch (error) {
-            console.error('Failed to fetch departments:', error);
+            console.error('❌ Failed to fetch departments:', error);
+            console.error('❌ Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
             showNotification('Failed to fetch departments', 'error');
             setDepartments([]); // Ensure departments is always an array
         } finally {
+            console.log('✅ Fetch departments completed');
             setLoading(false);
         }
     };
@@ -161,6 +174,14 @@ const DepartmentsPage = () => {
         };
     }, [departments]);
 
+    console.log('🎨 DepartmentsPage render:', {
+        loading,
+        departmentsCount: Array.isArray(departments) ? departments.length : 'Not an array',
+        departments: departments,
+        filteredCount: filteredDepartments.length,
+        stats
+    });
+
     if (loading) return <Loading />;
 
     return (
@@ -169,6 +190,9 @@ const DepartmentsPage = () => {
             bgcolor: 'background.default',
             p: { xs: 2, sm: 3, md: 4 }
         }}>
+            {/* Debug Component - Remove in production */}
+            {process.env.NODE_ENV === 'development' && <AuthStatus />}
+            
             {/* Header Section */}
             <Paper
                 elevation={0}

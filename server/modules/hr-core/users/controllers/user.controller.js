@@ -61,6 +61,9 @@ export const getAllUsers = async (req, res) => {
         }
         
         console.log('🔍 Fetching users with query:', query);
+        console.log('🔍 Request tenantId:', req.tenantId);
+        console.log('🔍 User tenantId:', req.user?.tenantId);
+        console.log('🔍 User object:', req.user);
         
         const users = await User.find(query)
             .populate({
@@ -74,6 +77,15 @@ export const getAllUsers = async (req, res) => {
             
         console.log(`✓ Found ${users.length} users for tenant ${query.tenantId || 'unknown'}`);
         
+        // If no users found, let's check if there are any users at all
+        if (users.length === 0) {
+            const allUsers = await User.find({});
+            console.log(`🔍 Total users in database: ${allUsers.length}`);
+            if (allUsers.length > 0) {
+                console.log('🔍 Sample user tenantIds:', allUsers.slice(0, 3).map(u => u.tenantId));
+            }
+        }
+        
         // Log sensitive data access
         logDataAccess(req, 'users', {
             operation: 'read',
@@ -82,7 +94,10 @@ export const getAllUsers = async (req, res) => {
             filters: req.query
         });
         
-        res.json(users.map(sanitizeUser));
+        res.json({
+            success: true,
+            data: users.map(sanitizeUser)
+        });
     } catch (err) {
         console.error('❌ Error fetching users:', err);
         logControllerError(req, err, {
@@ -95,34 +110,101 @@ export const getAllUsers = async (req, res) => {
 
 export const getUserById = async (req, res) => {
     try {
-        // Build query with tenant filtering
-        const query = { _id: req.params.id };
+        const userId = req.params.id;
+        const currentUserId = req.user._id.toString();
         
-        // Apply tenant filtering if tenantId is available
-        if (req.tenantId) {
-            query.tenantId = req.tenantId;
-        } else if (req.user?.tenantId) {
-            query.tenantId = req.user.tenantId;
+        // Get the tenant ID from multiple sources
+        const tenantId = req.tenantId || req.user?.tenantId || req.headers['x-tenant-id'];
+        
+        console.log(`🔍 Fetching user ${userId}, tenant: ${tenantId}, current user: ${currentUserId}`);
+        console.log(`🔍 req.tenantId: ${req.tenantId}`);
+        console.log(`🔍 req.user.tenantId: ${req.user?.tenantId}`);
+        console.log(`🔍 req.headers['x-tenant-id']: ${req.headers['x-tenant-id']}`);
+        console.log(`🔍 req.user:`, JSON.stringify(req.user, null, 2));
+        
+        let user;
+        
+        // Strategy 1: Try with tenant filtering if tenant ID is available
+        if (tenantId) {
+            const query = { _id: userId, tenantId: tenantId };
+            user = await User.findOne(query)
+                .populate({
+                    path: 'department',
+                    populate: {
+                        path: 'parentDepartment',
+                        select: 'name code'
+                    }
+                })
+                .populate('position');
+            
+            if (user) {
+                console.log(`✓ Found user with tenant filtering: ${user.email} (tenant: ${tenantId})`);
+            }
         }
         
-        console.log('🔍 Fetching user by ID with query:', query);
-        
-        const user = await User.findOne(query)
-            .populate({
-                path: 'department',
-                populate: {
-                    path: 'parentDepartment',
-                    select: 'name code'
+        // Strategy 2: If tenant filtering failed, try without tenant filter for own profile
+        if (!user && userId === currentUserId) {
+            console.log('⚠️  Tenant filtering failed, trying without tenant filter for own profile');
+            user = await User.findById(userId)
+                .populate({
+                    path: 'department',
+                    populate: {
+                        path: 'parentDepartment',
+                        select: 'name code'
+                    }
+                })
+                .populate('position');
+            
+            // Security check: verify the user belongs to the same tenant as the authenticated user
+            if (user) {
+                if (req.user.tenantId && user.tenantId !== req.user.tenantId) {
+                    console.log(`❌ Security check failed: user tenant (${user.tenantId}) != auth tenant (${req.user.tenantId})`);
+                    return res.status(403).json({ error: 'Not authorized - tenant mismatch' });
                 }
-            })
-            .populate('position');
+                console.log(`✓ Found own profile without tenant filter: ${user.email} (tenant: ${user.tenantId})`);
+            }
+        }
+        
+        // Strategy 3: For admins, allow cross-tenant access if explicitly authorized
+        if (!user && req.user.role === 'admin') {
+            console.log('⚠️  Admin attempting cross-tenant user access');
+            user = await User.findById(userId)
+                .populate({
+                    path: 'department',
+                    populate: {
+                        path: 'parentDepartment',
+                        select: 'name code'
+                    }
+                })
+                .populate('position');
+            
+            if (user) {
+                console.log(`✓ Admin accessed user: ${user.email} (tenant: ${user.tenantId})`);
+            }
+        }
             
         if (!user) {
-            console.log(`❌ User not found with ID ${req.params.id} for tenant ${query.tenantId || 'unknown'}`);
-            return res.status(404).json({ error: 'User not found' });
+            console.log(`❌ User ${userId} not found with any strategy`);
+            return res.status(404).json({ 
+                error: 'User not found',
+                debug: {
+                    userId,
+                    currentUserId,
+                    tenantId,
+                    reqTenantId: req.tenantId,
+                    userTenantId: req.user?.tenantId,
+                    headerTenantId: req.headers['x-tenant-id'],
+                    userRole: req.user?.role,
+                    strategies: {
+                        tenantFiltering: !!tenantId,
+                        ownProfile: userId === currentUserId,
+                        adminAccess: req.user?.role === 'admin'
+                    }
+                }
+            });
         }
         
-        console.log(`✓ Found user ${user.email} for tenant ${query.tenantId || 'unknown'}`);
+        console.log(`✅ Successfully retrieved user ${user.email} (${user.tenantId})`);
         res.json(sanitizeUser(user));
     } catch (err) {
         console.error('❌ Error fetching user by ID:', err);
@@ -385,11 +467,17 @@ export const loginUser = async (req, res) => {
 // Get current user profile
 export const getUserProfile = async (req, res) => {
     try {
+        console.log('🔍 getUserProfile called');
+        console.log('   req.user._id:', req.user?._id);
+        console.log('   req.tenantId:', req.tenantId);
+        console.log('   req.user.tenantId:', req.user?.tenantId);
+        
         // req.user is set by the protect middleware, but we need to fetch fresh data
         // from the tenant-specific database to ensure we have the latest information
         let user;
         
         if (req.tenantId) {
+            console.log('   Trying tenant-specific database...');
             // Use tenant-specific database
             try {
                 const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
@@ -398,23 +486,51 @@ export const getUserProfile = async (req, res) => {
                 
                 try {
                     user = await TenantUser.findById(req.user._id).populate('department position');
+                    if (user) {
+                        console.log('   ✅ Found user in tenant database with populate');
+                    } else {
+                        console.log('   ❌ User not found in tenant database with populate');
+                    }
                 } catch (populateError) {
-                    console.warn('Populate failed in getUserProfile, trying without populate:', populateError.message);
+                    console.warn('   ⚠️ Populate failed in getUserProfile, trying without populate:', populateError.message);
                     user = await TenantUser.findById(req.user._id);
+                    if (user) {
+                        console.log('   ✅ Found user in tenant database without populate');
+                    } else {
+                        console.log('   ❌ User not found in tenant database without populate');
+                    }
                 }
             } catch (error) {
-                console.warn('Failed to get user from tenant database in getUserProfile:', error.message);
+                console.warn('   ❌ Failed to get user from tenant database in getUserProfile:', error.message);
                 // Fall back to main database
+                console.log('   Falling back to main database...');
                 user = await User.findById(req.user._id).populate('department position');
+                if (user) {
+                    console.log('   ✅ Found user in main database');
+                } else {
+                    console.log('   ❌ User not found in main database either');
+                }
             }
         } else {
+            console.log('   Using main database directly...');
             // Use main database
             user = await User.findById(req.user._id).populate('department position');
+            if (user) {
+                console.log('   ✅ Found user in main database');
+            } else {
+                console.log('   ❌ User not found in main database');
+            }
         }
         
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!user) {
+            console.log('   ❌ Final result: User not found');
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        console.log('   ✅ Final result: User found:', user.email);
         res.json(sanitizeUser(user));
     } catch (err) {
+        console.error('   ❌ Error in getUserProfile:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -472,27 +588,74 @@ export const uploadProfilePicture = async (req, res) => {
         // Create the profile picture URL
         const profilePictureUrl = `/uploads/profile-pictures/${req.file.filename}`;
 
-        // Update user's profile picture
-        const user = await User.findByIdAndUpdate(
-            userId,
-            { 
-                'personalInfo.profilePicture': profilePictureUrl 
-            },
-            { new: true, runValidators: true }
-        ).populate('department position');
+        // FIXED: Enhanced tenant filtering with better fallback logic
+        let user;
+        
+        // Get the tenant ID from multiple sources
+        const tenantId = req.tenantId || req.user?.tenantId || req.headers['x-tenant-id'];
+        
+        console.log(`🔍 Profile picture upload for user ${userId}, tenant: ${tenantId} [UPDATED]`);
+        
+        // Strategy 1: Try with tenant filtering if tenant ID is available
+        if (tenantId) {
+            const query = { _id: userId, tenantId: tenantId };
+            user = await User.findOneAndUpdate(
+                query,
+                { 'personalInfo.profilePicture': profilePictureUrl },
+                { new: true, runValidators: true }
+            ).populate('department position');
+            
+            if (user) {
+                console.log(`✓ Profile picture updated with tenant filtering (tenant: ${tenantId})`);
+            }
+        }
+
+        // Strategy 2: If tenant filtering failed or no tenant ID, try without tenant filter for own profile
+        if (!user && userId === currentUserId) {
+            console.log('⚠️  Tenant filtering failed or no tenant ID, trying without tenant filter for own profile');
+            user = await User.findByIdAndUpdate(
+                userId,
+                { 'personalInfo.profilePicture': profilePictureUrl },
+                { new: true, runValidators: true }
+            ).populate('department position');
+            
+            // Security check: verify the user belongs to the same tenant as the authenticated user
+            if (user) {
+                if (req.user.tenantId && user.tenantId !== req.user.tenantId) {
+                    console.log(`❌ Security check failed: user tenant (${user.tenantId}) != auth tenant (${req.user.tenantId})`);
+                    return res.status(403).json({ error: 'Not authorized - tenant mismatch' });
+                }
+                console.log(`✓ Profile picture updated without tenant filter (verified tenant: ${user.tenantId})`);
+            }
+        }
+
+        // Strategy 3: For admins, allow cross-tenant updates if explicitly authorized
+        if (!user && req.user.role === 'admin') {
+            console.log('⚠️  Admin attempting cross-tenant profile picture update');
+            user = await User.findByIdAndUpdate(
+                userId,
+                { 'personalInfo.profilePicture': profilePictureUrl },
+                { new: true, runValidators: true }
+            ).populate('department position');
+            
+            if (user) {
+                console.log(`✓ Admin updated profile picture for user in tenant: ${user.tenantId}`);
+            }
+        }
 
         if (!user) {
+            console.log(`❌ User ${userId} not found with any strategy`);
             return res.status(404).json({ error: 'User not found' });
         }
 
-        console.log('Profile picture uploaded successfully:', profilePictureUrl);
+        console.log(`✅ Profile picture uploaded successfully for user ${user.email} (${user.tenantId})`);
         res.json({
             message: 'Profile picture uploaded successfully',
             profilePicture: profilePictureUrl,
             user: sanitizeUser(user)
         });
     } catch (err) {
-        console.error('Error uploading profile picture:', err);
+        console.error('❌ Error uploading profile picture:', err);
         res.status(500).json({ error: 'Failed to upload profile picture' });
     }
 };

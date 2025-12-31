@@ -92,8 +92,15 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
     const [notifications, setNotifications] = React.useState([]);
     const [currentTime, setCurrentTime] = React.useState(new Date());
+    const [userProfilePicture, setUserProfilePicture] = React.useState(getUserProfilePicture(user));
     const profileMenuOpen = Boolean(anchorEl);
     const notificationMenuOpen = Boolean(notificationAnchorEl);
+
+    // Update profile picture when user prop changes
+    React.useEffect(() => {
+        const newProfilePicture = getUserProfilePicture(user);
+        setUserProfilePicture(newProfilePicture);
+    }, [user]);
 
     // Update time every second
     React.useEffect(() => {
@@ -331,7 +338,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                 }}
                             >
                                 <Avatar
-                                    src={getUserProfilePicture(user)}
+                                    src={userProfilePicture}
                                     alt={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User'}
                                     sx={{
                                         width: 36,
@@ -345,7 +352,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                                         },
                                     }}
                                 >
-                                    {!getUserProfilePicture(user) && getUserInitials(user)}
+                                    {!userProfilePicture && getUserInitials(user)}
                                 </Avatar >
                             </IconButton >
                         </Tooltip >

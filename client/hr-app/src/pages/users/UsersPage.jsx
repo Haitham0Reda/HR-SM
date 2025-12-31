@@ -83,8 +83,19 @@ const UsersPage = () => {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const data = await userService.getAll();
-            setUsers(Array.isArray(data) ? data : []);
+            const response = await userService.getAll();
+            console.log('UsersPage: Received response:', response);
+            
+            // Handle the response structure { success: true, data: [...] }
+            if (response && response.success && Array.isArray(response.data)) {
+                setUsers(response.data);
+            } else if (Array.isArray(response)) {
+                // Fallback for direct array response
+                setUsers(response);
+            } else {
+                console.warn('UsersPage: Unexpected response format:', response);
+                setUsers([]);
+            }
         } catch (error) {
             console.error('Error fetching users:', error);
             showNotification('Failed to fetch users', 'error');

@@ -17,7 +17,8 @@ import {
   selectIsHR,
   selectIsManager,
   selectIsEmployee,
-  selectHasRole
+  selectHasRole,
+  updateUser as updateUserAction
 } from '../slices/authSlice';
 import {
   loadTenantInfo,
@@ -93,7 +94,7 @@ export const ReduxAuthProvider = ({ children }) => {
         // Auto-login in development if no token exists
         try {
           console.log('🔧 Development mode: Attempting auto-login...');
-          const response = await fetch('/api/dev/auto-login');
+          const response = await fetch('/api/v1/dev/auto-login');
           const data = await response.json();
           
           if (data.success) {
@@ -150,9 +151,8 @@ export const ReduxAuthProvider = ({ children }) => {
   };
 
   const updateUser = (updatedUserData) => {
-    // This would be handled by a Redux action
-    // For now, we'll dispatch the updateUser action from authSlice
-    dispatch({ type: 'auth/updateUser', payload: updatedUserData });
+    // Use the proper action creator
+    dispatch(updateUserAction(updatedUserData));
   };
 
   // Generate company slug from tenant info (backward compatibility)

@@ -305,8 +305,10 @@ export const initializeRoutes = async () => {
     // Tenant-scoped routes - require Tenant JWT and automatic tenant filtering
     
     // NEW MODULAR SYSTEM ROUTES
-    // Load core HR module (always enabled)
+// Load core HR module (always enabled)
+    console.log('🔧 Loading core HR routes...');
     await loadCoreRoutes(app);
+    console.log('✓ Core HR routes loaded');
 
     // Load optional modules conditionally (checked by moduleGuard middleware)
     // Note: These modules are loaded globally but access is controlled by middleware
@@ -413,6 +415,15 @@ export const initializeRoutes = async () => {
     app.use('/api/v1/theme', themeRoutes);
     app.use('/api/v1/feature-flags', featureFlagRoutes);
     app.use('/api/v1/logs', logsRoutes);
+    
+    // System Settings (Admin only)
+    try {
+        const systemSettingsRoutes = await import('./routes/systemSettings.routes.js');
+        app.use('/api/v1/system-settings', systemSettingsRoutes.default);
+        console.log('✓ System settings routes loaded (/api/v1/system-settings/*)');
+    } catch (error) {
+        console.warn('⚠️  System settings routes not available:', error.message);
+    }
     
     // HR Auth routes
     const hrAuthRoutes = await import('./modules/hr-core/routes/authRoutes.js');

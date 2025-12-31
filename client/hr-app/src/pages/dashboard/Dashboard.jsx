@@ -125,6 +125,9 @@ const Dashboard = () => {
     // State for real-time clock
     const [currentTime, setCurrentTime] = useState(new Date());
 
+    // State for user profile picture
+    const [userProfilePicture, setUserProfilePicture] = useState(getUserProfilePicture(user));
+
     // State for Employee of the Month
     const [employeeOfMonth, setEmployeeOfMonth] = useState(null);
 
@@ -140,6 +143,12 @@ const Dashboard = () => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
+
+    // Update profile picture when user changes
+    useEffect(() => {
+        const newProfilePicture = getUserProfilePicture(user);
+        setUserProfilePicture(newProfilePicture);
+    }, [user]);
 
     // Fetch today's attendance data using the dedicated today endpoint
     useEffect(() => {
@@ -346,7 +355,7 @@ const Dashboard = () => {
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 3 }}>
                             <Zoom in={true} timeout={800}>
                                 <Avatar
-                                    src={getUserProfilePicture(user)}
+                                    src={userProfilePicture}
                                     alt={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User'}
                                     sx={{
                                         width: 72,
@@ -359,7 +368,7 @@ const Dashboard = () => {
                                         boxShadow: 4,
                                     }}
                                 >
-                                    {!getUserProfilePicture(user) && getUserInitials(user)}
+                                    {!userProfilePicture && getUserInitials(user)}
                                 </Avatar>
                             </Zoom>
                             <Box sx={{ flex: '1 1 200px' }}>
