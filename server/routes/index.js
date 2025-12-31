@@ -57,13 +57,19 @@ import documentRoutesImport from '../modules/documents/routes/document.routes.js
 import documentTemplateRoutesImport from '../modules/documents/routes/documentTemplate.routes.js';
 
 // Legacy routes that don't exist yet - use placeholder routers
-export const featureFlagRoutes = createPlaceholderRouter('Feature Flag');
+// Import real feature flag routes
+import featureFlagRoutesImport from './featureFlags.routes.js';
+export const featureFlagRoutes = featureFlagRoutesImport;
 export const documentRoutes = documentRoutesImport;
 export const documentTemplateRoutes = documentTemplateRoutesImport;
-export const eventRoutes = createPlaceholderRouter('Event');
+// Import real event routes
+import eventRoutesImport from './events.routes.js';
+export const eventRoutes = eventRoutesImport;
 export const payrollRoutes = payrollRoutesImport; // Use real payroll routes
 export const reportRoutes = createPlaceholderRouter('Report');
-export const surveyRoutes = createPlaceholderRouter('Survey');
+// Import real survey routes
+import surveyRoutesImport from './surveys.routes.js';
+export const surveyRoutes = surveyRoutesImport;
 // Import theme routes from the theme module
 import themeRoutesImport from '../modules/theme/routes/theme.routes.js';
 export const themeRoutes = themeRoutesImport;
@@ -73,9 +79,13 @@ import departmentRoutesImport from '../modules/hr-core/users/routes/department.r
 import positionRoutesImport from '../modules/hr-core/users/routes/position.routes.js';
 import resignedEmployeeRoutesImport from '../modules/hr-core/users/routes/resignedEmployee.routes.js';
 
-// Legacy routes that don't exist yet - use placeholder routers
-export const analyticsRoutes = createPlaceholderRouter('Analytics');
-export const announcementRoutes = createPlaceholderRouter('Announcement');
+// Import real analytics routes
+import analyticsRoutesImport from '../modules/analytics/routes/analytics.routes.js';
+export const analyticsRoutes = analyticsRoutesImport;
+
+// Import real announcement routes
+import announcementRoutesImport from '../modules/announcements/routes/announcement.routes.js';
+export const announcementRoutes = announcementRoutesImport;
 // Import hardcopy routes
 import hardcopyRoutesImport from '../modules/documents/routes/hardcopy.routes.js';
 export const hardcopyRoutes = hardcopyRoutesImport;
@@ -90,6 +100,8 @@ export const resignedEmployeeRoutes = resignedEmployeeRoutesImport;
 export const backupRoutes = createPlaceholderRouter('Backup');
 export const backupExecutionRoutes = createPlaceholderRouter('Backup Execution');
 export const departmentRoutes = departmentRoutesImport;
-export const authRoutes = createPlaceholderRouter('Auth');
+// Import real auth routes
+import authRoutesImport from '../modules/hr-core/routes/authRoutes.js';
+export const authRoutes = authRoutesImport;
 export const userRoutes = createPlaceholderRouter('User');
 export const attendanceRoutes = createPlaceholderRouter('Attendance');

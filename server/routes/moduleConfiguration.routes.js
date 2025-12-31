@@ -9,7 +9,7 @@ import express from 'express';
 import moduleConfigurationController from '../controllers/moduleConfiguration.controller.js';
 import { authenticateJWT as authenticateToken } from '../middleware/auth.middleware.js';
 import { setupCompanyLogging } from '../middleware/companyLogging.js';
-import { rateLimitMiddleware } from '../middleware/rateLimit.middleware.js';
+import { rateLimitByCompany } from '../middleware/rateLimit.middleware.js';
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.use(authenticateToken);
 router.use(setupCompanyLogging);
 
 // Apply rate limiting for configuration changes
-const configChangeRateLimit = rateLimitMiddleware({
+const configChangeRateLimit = rateLimitByCompany({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 20, // Limit each IP to 20 configuration requests per windowMs
     message: 'Too many configuration requests, please try again later'

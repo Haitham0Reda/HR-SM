@@ -23,7 +23,7 @@ import {
     verifyMFA
 } from '../middleware/enhancedAuth.middleware.js';
 import { authRateLimit } from '../middleware/enhancedRateLimit.middleware.js';
-import User from '../modules/hr-core/models/User.js';
+import User from '../modules/hr-core/users/models/user.model.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();

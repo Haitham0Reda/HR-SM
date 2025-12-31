@@ -12,8 +12,13 @@ export const getTheme = async (req, res) => {
     try {
         const tenantId = req.user?.tenantId || req.tenantId;
 
+        // For public access (login page), return default theme if no tenant context
         if (!tenantId) {
-            return res.status(400).json({ error: 'Tenant ID is required' });
+            const defaultTheme = await themeService.getDefaultTheme();
+            return res.json({
+                success: true,
+                data: defaultTheme
+            });
         }
 
         const theme = await themeService.getActiveTheme(tenantId);

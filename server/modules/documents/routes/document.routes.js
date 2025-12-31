@@ -6,15 +6,16 @@ import {
     updateDocument,
     deleteDocument
 } from '../controllers/document.controller.js';
-import { requireAuth, requireRole } from '../../../shared/middleware/auth.js';
-import { requireModule } from '../../../shared/middleware/moduleGuard.js';
+import { protect } from '../../../middleware/authMiddleware.js';
+import { requireRole } from '../../../shared/middleware/auth.js';
+import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
 import { MODULES, ROLES } from '../../../shared/constants/modules.js';
 
 const router = express.Router();
 
-// All routes require authentication and documents module
-router.use(requireAuth);
-router.use(requireModule(MODULES.DOCUMENTS));
+// All routes require authentication and documents module license
+router.use(protect);
+router.use(requireModuleLicense(MODULES.DOCUMENTS));
 
 // Get all documents - All authenticated users (filtered by role in controller)
 router.get('/', getAllDocuments);

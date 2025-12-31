@@ -31,8 +31,8 @@ const PERFORMANCE_METRIC_TYPES = {
 class EnhancedFrontendLogger {
     constructor() {
         this.logQueue = [];
-        this.batchSize = 10;
-        this.batchTimeout = 5000; // 5 seconds
+        this.batchSize = 20; // Increased batch size
+        this.batchTimeout = 15000; // Increased to 15 seconds to reduce frequency
         this.maxRetries = 3;
         this.retryDelay = 1000; // 1 second
         this.correlationId = null;
@@ -45,6 +45,10 @@ class EnhancedFrontendLogger {
         this.moduleConfig = null;
         this.moduleConfigLastFetch = 0;
         this.moduleConfigCacheDuration = 300000; // 5 minutes
+        
+        // Circuit breaker for rate limiting
+        this.rateLimitedUntil = 0;
+        this.consecutiveFailures = 0;
         
         // Start batch processing
         this.startBatchProcessor();
@@ -337,24 +341,37 @@ class EnhancedFrontendLogger {
     }
 
     setupPerformanceMonitoring() {
-        // Performance Observer for navigation timing
+        // Performance Observer for navigation timing (with throttling)
         if ('PerformanceObserver' in window) {
             try {
+                let lastLogTime = 0;
+                const LOG_THROTTLE_MS = 10000; // Only log performance metrics every 10 seconds
+                
                 this.performanceObserver = new PerformanceObserver((list) => {
+                    const now = Date.now();
+                    if (now - lastLogTime < LOG_THROTTLE_MS) {
+                        return; // Skip logging if too frequent
+                    }
+                    lastLogTime = now;
+                    
+                    // Only log significant performance entries
                     for (const entry of list.getEntries()) {
-                        this.logPerformanceMetric(entry);
+                        if (entry.entryType === 'navigation' || 
+                            (entry.entryType === 'measure' && entry.duration > 100)) {
+                            this.logPerformanceMetric(entry);
+                        }
                     }
                 });
                 
                 this.performanceObserver.observe({ 
-                    entryTypes: ['navigation', 'measure', 'paint'] 
+                    entryTypes: ['navigation', 'measure'] // Removed 'paint' to reduce noise
                 });
             } catch (error) {
                 console.warn('Performance monitoring not available:', error);
             }
         }
         
-        // Page load performance
+        // Page load performance (only once per page)
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const navigation = performance.getEntriesByType('navigation')[0];
@@ -451,6 +468,22 @@ class EnhancedFrontendLogger {
     }
 
     async sendBatchToBackend(batch, retryCount = 0) {
+        // Check circuit breaker
+        if (Date.now() < this.rateLimitedUntil) {
+            console.warn('Logging circuit breaker active, skipping batch');
+            this.storeFailedLogs(batch);
+            return;
+        }
+
+        // If we have too many consecutive failures, activate circuit breaker
+        if (this.consecutiveFailures >= 3) {
+            const backoffTime = Math.min(30000 * this.consecutiveFailures, 180000); // Max 3 minutes
+            this.rateLimitedUntil = Date.now() + backoffTime;
+            console.warn(`Too many consecutive failures (${this.consecutiveFailures}), circuit breaker active for ${backoffTime/1000}s`);
+            this.storeFailedLogs(batch);
+            return;
+        }
+        
         try {
             const token = localStorage.getItem('token');
             const headers = {
@@ -477,10 +510,41 @@ class EnhancedFrontendLogger {
             });
 
             if (!response.ok) {
+                // Handle rate limiting specifically
+                if (response.status === 429) {
+                    this.consecutiveFailures++;
+                    // Activate circuit breaker for increasing durations
+                    const backoffTime = Math.min(60000 * this.consecutiveFailures, 300000); // Max 5 minutes
+                    this.rateLimitedUntil = Date.now() + backoffTime;
+                    console.warn(`Rate limited, circuit breaker active for ${backoffTime/1000}s`);
+                    return;
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
+            
+            // Reset circuit breaker on success
+            this.consecutiveFailures = 0;
+            this.rateLimitedUntil = 0;
 
         } catch (error) {
+            this.consecutiveFailures++;
+            
+            // Check if it's a network error (server not available)
+            const isNetworkError = error.message.includes('fetch') || 
+                                 error.message.includes('NetworkError') ||
+                                 error.message.includes('ERR_CONNECTION_REFUSED') ||
+                                 error.name === 'TypeError' ||
+                                 !navigator.onLine;
+
+            if (isNetworkError && this.consecutiveFailures >= 2) {
+                // For network errors, activate circuit breaker faster
+                const backoffTime = 60000; // 1 minute for network errors
+                this.rateLimitedUntil = Date.now() + backoffTime;
+                console.warn(`Network error detected, circuit breaker active for ${backoffTime/1000}s`);
+                this.storeFailedLogs(batch);
+                return;
+            }
+
             if (retryCount < this.maxRetries) {
                 // Exponential backoff retry
                 setTimeout(() => {

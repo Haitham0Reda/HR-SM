@@ -14,7 +14,7 @@ const router = express.Router();
 router.use(protect);
 
 /**
- * GET /api/company-logs/stats
+ * GET /api/v1/platform/company-logs/stats
  * Get log statistics for all companies (admin only)
  */
 router.get('/stats', admin, async (req, res) => {
@@ -33,7 +33,7 @@ router.get('/stats', admin, async (req, res) => {
 });
 
 /**
- * GET /api/company-logs/:tenantId/files
+ * GET /api/v1/platform/company-logs/:tenantId/files
  * Get log files for a specific company
  */
 router.get('/:tenantId/files', async (req, res) => {
@@ -62,7 +62,7 @@ router.get('/:tenantId/files', async (req, res) => {
 });
 
 /**
- * GET /api/company-logs/:tenantId/files/:fileName
+ * GET /api/v1/platform/company-logs/:tenantId/files/:fileName
  * Read content of a specific log file
  */
 router.get('/:tenantId/files/:fileName', async (req, res) => {
@@ -97,7 +97,7 @@ router.get('/:tenantId/files/:fileName', async (req, res) => {
 });
 
 /**
- * GET /api/company-logs/:tenantId/summary
+ * GET /api/v1/platform/company-logs/:tenantId/summary
  * Get log summary for a company
  */
 router.get('/:tenantId/summary', async (req, res) => {
@@ -127,7 +127,7 @@ router.get('/:tenantId/summary', async (req, res) => {
 });
 
 /**
- * POST /api/company-logs/:tenantId/search
+ * POST /api/v1/platform/company-logs/:tenantId/search
  * Search through company logs
  */
 router.post('/:tenantId/search', async (req, res) => {
@@ -170,7 +170,7 @@ router.post('/:tenantId/search', async (req, res) => {
 });
 
 /**
- * POST /api/company-logs/:tenantId/archive
+ * POST /api/v1/platform/company-logs/:tenantId/archive
  * Archive company logs
  */
 router.post('/:tenantId/archive', admin, async (req, res) => {
@@ -208,7 +208,7 @@ router.post('/:tenantId/archive', admin, async (req, res) => {
 });
 
 /**
- * DELETE /api/company-logs/:tenantId/cleanup
+ * DELETE /api/v1/platform/company-logs/:tenantId/cleanup
  * Clean up old log files
  */
 router.delete('/:tenantId/cleanup', admin, async (req, res) => {
@@ -252,7 +252,7 @@ router.delete('/:tenantId/cleanup', admin, async (req, res) => {
 });
 
 /**
- * GET /api/company-logs/:tenantId/routing-analytics
+ * GET /api/v1/platform/company-logs/:tenantId/routing-analytics
  * Get routing analytics for a company
  */
 router.get('/:tenantId/routing-analytics', async (req, res) => {
@@ -282,7 +282,7 @@ router.get('/:tenantId/routing-analytics', async (req, res) => {
 });
 
 /**
- * GET /api/company-logs/:tenantId/feature-usage
+ * GET /api/v1/platform/company-logs/:tenantId/feature-usage
  * Get feature usage report for a company
  */
 router.get('/:tenantId/feature-usage', async (req, res) => {
@@ -312,7 +312,7 @@ router.get('/:tenantId/feature-usage', async (req, res) => {
 });
 
 /**
- * GET /api/company-logs/:tenantId/user-activities
+ * GET /api/v1/platform/company-logs/:tenantId/user-activities
  * Get detailed user activity tracking for a company
  */
 router.get('/:tenantId/user-activities', async (req, res) => {
@@ -355,7 +355,7 @@ router.get('/:tenantId/user-activities', async (req, res) => {
 });
 
 /**
- * GET /api/company-logs/:tenantId/real-time-sessions
+ * GET /api/v1/platform/company-logs/:tenantId/real-time-sessions
  * Get real-time user sessions for a company
  */
 router.get('/:tenantId/real-time-sessions', async (req, res) => {
@@ -384,7 +384,7 @@ router.get('/:tenantId/real-time-sessions', async (req, res) => {
 });
 
 /**
- * GET /api/company-logs/:tenantId/user-timeline/:userId
+ * GET /api/v1/platform/company-logs/:tenantId/user-timeline/:userId
  * Get activity timeline for a specific user
  */
 router.get('/:tenantId/user-timeline/:userId', async (req, res) => {
@@ -414,7 +414,7 @@ router.get('/:tenantId/user-timeline/:userId', async (req, res) => {
 });
 
 /**
- * POST /api/company-logs/:tenantId/test
+ * POST /api/v1/platform/company-logs/:tenantId/test
  * Test logging for a company (development/testing endpoint)
  */
 router.post('/:tenantId/test', admin, async (req, res) => {

@@ -17,7 +17,7 @@ describe('Alert Generation and Notification Property-Based Tests', () => {
         
         // Create a separate test model with unique collection
         const testAlertSchema = new mongoose.Schema({
-            alertId: { type: String, required: true, unique: true, index: true },
+            alertId: { type: String, required: true, unique: true },
             type: { type: String, required: true, enum: ['system', 'database', 'application', 'security', 'performance'], index: true },
             category: { type: String, required: true, enum: ['cpu', 'memory', 'disk', 'network', 'mongodb', 'license', 'tenant', 'custom'], index: true },
             severity: { type: String, required: true, enum: ['info', 'warning', 'critical', 'emergency'], index: true },

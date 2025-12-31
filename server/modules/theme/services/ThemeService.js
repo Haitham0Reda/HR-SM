@@ -17,6 +17,51 @@ class ThemeService {
     }
 
     /**
+     * Get default theme configuration (for public access)
+     */
+    async getDefaultTheme() {
+        // Return a default theme configuration without tenant context
+        return {
+            isActive: true,
+            light: {
+                primary: { main: '#007bff', light: '#4da3ff', dark: '#0056b3' },
+                secondary: { main: '#6c757d', light: '#9ca3a8', dark: '#495057' },
+                success: { main: '#28a745', light: '#5cb85c', dark: '#1e7e34' },
+                error: { main: '#dc3545', light: '#e4606d', dark: '#bd2130' },
+                warning: { main: '#ffc107', light: '#ffcd39', dark: '#d39e00' },
+                info: { main: '#17a2b8', light: '#45b5c6', dark: '#117a8b' },
+                background: { default: '#f8f9fa', paper: '#ffffff' },
+                text: { primary: '#212529', secondary: '#6c757d' },
+            },
+            dark: {
+                primary: { main: '#4da3ff', light: '#80bdff', dark: '#007bff' },
+                secondary: { main: '#9ca3a8', light: '#c1c6ca', dark: '#6c757d' },
+                success: { main: '#5cb85c', light: '#7ec87e', dark: '#28a745' },
+                error: { main: '#e4606d', light: '#ea8089', dark: '#dc3545' },
+                warning: { main: '#ffcd39', light: '#ffd966', dark: '#ffc107' },
+                info: { main: '#45b5c6', light: '#6dc5d3', dark: '#17a2b8' },
+                background: { default: '#121212', paper: '#1e1e1e' },
+                text: { primary: '#ffffff', secondary: '#b0b0b0' },
+            },
+            typography: {
+                fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+                h1: { fontSize: '2.5rem', fontWeight: 300 },
+                h2: { fontSize: '2rem', fontWeight: 400 },
+                h3: { fontSize: '1.75rem', fontWeight: 400 },
+                h4: { fontSize: '1.5rem', fontWeight: 500 },
+                h5: { fontSize: '1.25rem', fontWeight: 500 },
+                h6: { fontSize: '1rem', fontWeight: 500 },
+                body1: { fontSize: '1rem', lineHeight: 1.5 },
+                body2: { fontSize: '0.875rem', lineHeight: 1.43 },
+            },
+            shape: { borderRadius: 8 },
+            spacing: 8,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+    }
+
+    /**
      * Update theme configuration
      */
     async updateTheme(tenantId, updateData, updatedBy) {

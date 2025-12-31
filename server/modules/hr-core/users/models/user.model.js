@@ -8,7 +8,6 @@ const userSchema = new mongoose.Schema({
     tenantId: {
         type: String,
         required: [true, 'Tenant ID is required'],
-        index: true,
         trim: true
     },
     employeeId: {

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import VacationRepository from '../../repositories/modules/VacationRepository.js';
 import Vacation from '../../modules/hr-core/vacations/models/vacation.model.js';
-import User from '../../modules/hr-core/models/User.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
 import Department from '../../modules/hr-core/models/Department.js';
 
 describe('VacationRepository', () => {

@@ -52,7 +52,7 @@ function slugToCompanyName(slug) {
  * 
  * Requirements: 1.2, 4.2, 4.3
  */
-export function setupCompanyLogging(req, res, next) {
+export async function setupCompanyLogging(req, res, next) {
     try {
         // Generate or extract correlation ID first
         let correlationId = req.headers['x-correlation-id'] || 
@@ -101,8 +101,26 @@ export function setupCompanyLogging(req, res, next) {
         const isCompanyRoute = !!companySlugFromPath;
         
         if (tenantId || isCompanyRoute) {
-            // Add company logger to request
-            req.companyLogger = getLoggerForTenant(tenantId || companySlugFromPath, companyName);
+            try {
+                // Add company logger to request
+                req.companyLogger = await getLoggerForTenant(tenantId || companySlugFromPath, companyName);
+                
+                // Verify the logger has the expected methods and wrap if needed
+                if (!req.companyLogger || typeof req.companyLogger.info !== 'function') {
+                    console.warn('Company logger missing info method, using fallback');
+                    req.companyLogger = logger;
+                }
+                
+                // Ensure all required methods exist
+                if (!req.companyLogger.info) req.companyLogger.info = logger.info.bind(logger);
+                if (!req.companyLogger.warn) req.companyLogger.warn = logger.warn.bind(logger);
+                if (!req.companyLogger.error) req.companyLogger.error = logger.error.bind(logger);
+                if (!req.companyLogger.debug) req.companyLogger.debug = logger.debug.bind(logger);
+                
+            } catch (error) {
+                console.warn('Failed to get company logger, using fallback:', error.message);
+                req.companyLogger = logger;
+            }
             
             // Add routing context to request for easy access
             if (!req.tenantId && tenantId) req.tenantId = tenantId;
@@ -138,7 +156,7 @@ export function setupCompanyLogging(req, res, next) {
                         moduleAware: true
                     };
                     
-                    if (req.companyLogger) {
+                    if (req.companyLogger && typeof req.companyLogger.security === 'function') {
                         req.companyLogger.security('Critical security threat detected - request blocked', threatLog);
                     }
                     
@@ -166,7 +184,7 @@ export function setupCompanyLogging(req, res, next) {
                     moduleAware: true
                 };
                 
-                if (req.companyLogger) {
+                if (req.companyLogger && typeof req.companyLogger.security === 'function') {
                     req.companyLogger.security('Security threats detected', threatLog);
                 }
             }
@@ -214,7 +232,9 @@ export function setupCompanyLogging(req, res, next) {
                 };
             }
             
-            req.companyLogger.info('Request received', logData);
+            if (req.companyLogger && typeof req.companyLogger.info === 'function') {
+                req.companyLogger.info('Request received', logData);
+            }
         }
         
         // Store request start time for performance monitoring
@@ -253,8 +273,7 @@ export function logResponseCompletion(req, res, next) {
             // Ensure we have the correct company logger for authenticated requests
             if (req.user?.tenantId) {
                 req.tenantId = req.user.tenantId;
-                // Re-create company logger with correct tenant info to ensure file logging
-                req.companyLogger = getLoggerForTenant(req.user.tenantId, req.companyName || 'TechCorp Solutions');
+                // Keep using existing logger - don't recreate in response handler
             }
             
             const responseTime = Date.now() - (req.startTime || Date.now());
@@ -303,12 +322,14 @@ export function logResponseCompletion(req, res, next) {
             };
             
             // Log with appropriate level based on response
-            if (isError) {
-                req.companyLogger.warn('Request completed with error', logData);
-            } else if (isSlowRequest) {
-                req.companyLogger.warn('Slow request completed', logData);
-            } else {
-                req.companyLogger.info('Request completed', logData);
+            if (req.companyLogger && typeof req.companyLogger.info === 'function') {
+                if (isError) {
+                    req.companyLogger.warn('Request completed with error', logData);
+                } else if (isSlowRequest) {
+                    req.companyLogger.warn('Slow request completed', logData);
+                } else {
+                    req.companyLogger.info('Request completed', logData);
+                }
             }
             
             // Log performance metrics to platform logger if slow
@@ -355,7 +376,9 @@ export function logResponseCompletion(req, res, next) {
                     queryParams: req.query
                 };
                 
-                req.companyLogger.info('User activity tracked', activityData);
+                if (req.companyLogger && typeof req.companyLogger.info === 'function') {
+                    req.companyLogger.info('User activity tracked', activityData);
+                }
                 
                 // Log authentication events if this is an auth-related endpoint
                 if (req.originalUrl.includes('/auth/') || req.originalUrl.includes('/login') || req.originalUrl.includes('/logout')) {
@@ -370,13 +393,15 @@ export function logResponseCompletion(req, res, next) {
                         );
                         
                         if (authThreats.length > 0) {
-                            req.companyLogger.security('Authentication security threats detected', {
-                                correlationId: req.correlationId,
-                                authEventType,
+                            if (req.companyLogger && typeof req.companyLogger.security === 'function') {
+                                req.companyLogger.security('Authentication security threats detected', {
+                                    correlationId: req.correlationId,
+                                    authEventType,
                                 threats: authThreats,
                                 userId: req.user.id,
                                 ip: req.ip
                             });
+                            }
                         }
                     }
                 }
@@ -457,7 +482,11 @@ export function logCompanyErrors(err, req, res, next) {
         if (isCriticalError) {
             req.companyLogger.error('Critical request error', logData);
         } else if (isSecurityError) {
-            req.companyLogger.security('Security-related request error', logData);
+            if (req.companyLogger && typeof req.companyLogger.security === 'function') {
+                req.companyLogger.security('Security-related request error', logData);
+            } else {
+                req.companyLogger.warn('Security-related request error', logData);
+            }
         } else {
             req.companyLogger.warn('Request error', logData);
         }
@@ -495,7 +524,7 @@ export function logCompanyErrors(err, req, res, next) {
             );
             
             if (securityThreats.length > 0) {
-                if (req.companyLogger) {
+                if (req.companyLogger && typeof req.companyLogger.security === 'function') {
                     req.companyLogger.security('Security threats detected from error analysis', {
                         correlationId: req.correlationId,
                         threats: securityThreats,
@@ -585,7 +614,11 @@ export function logSecurityEvent(eventType, details = {}) {
                 riskScore: details.riskScore || 0
             };
             
-            req.companyLogger.security(`Security event: ${eventType}`, logData);
+            if (req.companyLogger && typeof req.companyLogger.security === 'function') {
+                req.companyLogger.security(`Security event: ${eventType}`, logData);
+            } else {
+                req.companyLogger.warn(`Security event: ${eventType}`, logData);
+            }
             
             // Log to platform logger for high/critical security events
             if (details.severity === 'high' || details.severity === 'critical') {
@@ -683,7 +716,7 @@ export function logAuditEvent(eventType, details = {}) {
  * Tracks user navigation within company-scoped routes
  */
 export function logCompanyNavigation(req, res, next) {
-    if (req.isCompanyRoute && req.companyLogger) {
+    if (req.isCompanyRoute && req.companyLogger && typeof req.companyLogger.info === 'function') {
         const navigationData = {
             eventType: 'navigation',
             companySlug: req.companySlug,
@@ -698,6 +731,9 @@ export function logCompanyNavigation(req, res, next) {
         };
         
         req.companyLogger.info('Company navigation', navigationData);
+    } else {
+        // Fallback to global logger if company logger not available
+        logger.info('Company navigation', navigationData);
     }
     next();
 }
@@ -707,7 +743,7 @@ export function logCompanyNavigation(req, res, next) {
  * Helps track which company features are being used
  */
 export function logRouteAccess(req, res, next) {
-    if (req.isCompanyRoute && req.companyLogger) {
+    if (req.isCompanyRoute && req.companyLogger && typeof req.companyLogger.info === 'function') {
         // Determine the feature/module being accessed
         const pathSegments = req.internalPath.split('/').filter(Boolean);
         const primaryFeature = pathSegments[0] || 'dashboard';
@@ -727,6 +763,9 @@ export function logRouteAccess(req, res, next) {
         };
         
         req.companyLogger.info('Route access', accessData);
+    } else {
+        // Fallback to global logger if company logger not available
+        logger.info('Route access', accessData);
     }
     next();
 }
@@ -738,7 +777,7 @@ export function logRouteAccess(req, res, next) {
  * @param {Object} details - Additional event details
  */
 export function logCompanyEvent(req, eventType, details = {}) {
-    if (req.companyLogger) {
+    if (req.companyLogger && typeof req.companyLogger.info === 'function') {
         const eventData = {
             eventType,
             ...details,
@@ -751,6 +790,9 @@ export function logCompanyEvent(req, eventType, details = {}) {
         };
         
         req.companyLogger.info(`Company event: ${eventType}`, eventData);
+    } else {
+        // Fallback to global logger if company logger not available
+        logger.info(`Company event: ${eventType}`, eventData);
     }
 }
 
@@ -790,7 +832,12 @@ export function trackUserActivity(req, res, next) {
             queryParams: req.query
         };
         
-        req.companyLogger.info('User activity tracked', activityData);
+        if (req.companyLogger && typeof req.companyLogger.info === 'function') {
+            req.companyLogger.info('User activity tracked', activityData);
+        } else {
+            // Fallback to global logger if company logger not available
+            logger.info('User activity tracked', activityData);
+        }
         
         // Store activity data in request for potential use by controllers
         req.userActivity = activityData;
@@ -895,7 +942,7 @@ function sanitizeRequestBody(body, activityType) {
  * Track user session events (login, logout, session timeout)
  */
 export function trackUserSession(eventType, req, additionalData = {}) {
-    if (req.companyLogger && req.user) {
+    if (req.companyLogger && req.user && typeof req.companyLogger.info === 'function') {
         const sessionData = {
             eventType: 'user_session',
             sessionEventType: eventType,
@@ -911,7 +958,12 @@ export function trackUserSession(eventType, req, additionalData = {}) {
             ...additionalData
         };
         
-        req.companyLogger.info(`User session: ${eventType}`, sessionData);
+        if (req.companyLogger && typeof req.companyLogger.info === 'function') {
+            req.companyLogger.info(`User session: ${eventType}`, sessionData);
+        } else {
+            // Fallback to global logger if company logger not available
+            logger.info(`User session: ${eventType}`, sessionData);
+        }
     }
 }
 

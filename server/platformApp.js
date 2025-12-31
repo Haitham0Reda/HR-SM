@@ -51,7 +51,7 @@ app.use('/api', publicRateLimit);
 
 // Routes
 app.use('/api/v1/platform/auth', platformAuthRoutes);
-app.use('/api/company-logs', companyLogsRoutes);
+app.use('/api/v1/platform/company-logs', companyLogsRoutes);
 app.use('/api/v1/platform/tenants', tenantRoutes);
 app.use('/api/v1/platform/subscriptions', subscriptionRoutes);
 app.use('/api/v1/platform/modules', moduleRoutes);

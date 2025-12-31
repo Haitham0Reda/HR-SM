@@ -456,14 +456,15 @@ export const analyzePerformance = async () => {
     
     for (const collection of collections) {
       try {
-        const stats = await db.collection(collection.name).stats();
+        // Use collStats command instead of stats() method
+        const stats = await db.command({ collStats: collection.name });
         collectionStats[collection.name] = {
-          count: stats.count,
-          size: stats.size,
-          avgObjSize: stats.avgObjSize,
-          storageSize: stats.storageSize,
-          indexes: stats.nindexes,
-          indexSize: stats.totalIndexSize
+          count: stats.count || 0,
+          size: stats.size || 0,
+          avgObjSize: stats.avgObjSize || 0,
+          storageSize: stats.storageSize || 0,
+          indexes: stats.nindexes || 0,
+          indexSize: stats.totalIndexSize || 0
         };
       } catch (error) {
         // Some collections might not support stats or have permission issues
@@ -477,6 +478,9 @@ export const analyzePerformance = async () => {
             indexes: 'N/A (Atlas)',
             indexSize: 'N/A (Atlas)'
           };
+        } else if (error.code === 26 || error.message.includes('not found')) {
+          // Collection doesn't exist or is empty - skip silently
+          continue;
         } else {
           logger.warn(`Could not get stats for collection ${collection.name}: ${error.message}`);
         }

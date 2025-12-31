@@ -16,8 +16,7 @@ import mongoose from 'mongoose';
 const permissionSchema = new mongoose.Schema({
   // Tenant ID for multi-tenant data isolation
   tenantId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Tenant',
+    type: String,
     required: true,
     index: true
   },

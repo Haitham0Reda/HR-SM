@@ -127,7 +127,6 @@ const planSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-planSchema.index({ name: 1 }, { unique: true });
 planSchema.index({ tier: 1, isActive: 1 });
 planSchema.index({ isActive: 1, isPublic: 1 });
 

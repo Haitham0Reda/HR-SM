@@ -393,6 +393,21 @@ export const validateLicense = async (req, res, next) => {
       return next();
     }
 
+    // Skip validation in development mode if LICENSE_VALIDATION_ENABLED is false
+    if (process.env.NODE_ENV === 'development' && process.env.LICENSE_VALIDATION_ENABLED === 'false') {
+      logger.debug('License validation skipped in development mode');
+      req.licenseInfo = {
+        valid: true,
+        features: ['hr-core', 'attendance', 'vacations', 'documents', 'surveys', 'notifications', 'payroll', 'reports', 'dashboard', 'theme', 'holidays', 'requests', 'announcements', 'missions', 'communication', 'tasks', 'logging', 'reporting', 'life-insurance'],
+        licenseType: 'development',
+        maxUsers: 1000,
+        maxStorage: 100 * 1024 * 1024 * 1024,
+        maxAPI: 1000000,
+        cached: false
+      };
+      return next();
+    }
+
     // Extract tenant information
     const tenantId = req.tenantId || 
                     req.tenant?.id || 

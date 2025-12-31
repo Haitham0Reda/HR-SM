@@ -1,8 +1,9 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import { requireAuth, requireRole } from '../../../shared/middleware/auth.js';
-import { requireModule } from '../../../shared/middleware/moduleGuard.js';
+import { protect } from '../../../middleware/authMiddleware.js';
+import { requireRole } from '../../../shared/middleware/auth.js';
+import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
 import { MODULES, ROLES } from '../../../shared/constants/modules.js';
 import {
     submitTaskReport,
@@ -14,6 +15,10 @@ import {
 } from '../controllers/taskReportController.js';
 
 const router = express.Router();
+
+// Apply authentication and module license validation to all routes
+router.use(protect);
+router.use(requireModuleLicense(MODULES.TASKS));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -43,10 +48,6 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
     fileFilter
 });
-
-// All routes require authentication and tasks module
-router.use(requireAuth);
-router.use(requireModule(MODULES.TASKS));
 
 // Report routes
 router.post('/task/:taskId', upload.array('files', 5), submitTaskReport);

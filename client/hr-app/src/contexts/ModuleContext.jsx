@@ -8,7 +8,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../store/providers/ReduxAuthProvider';
 
 const ModuleContext = createContext(null);
 

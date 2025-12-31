@@ -246,3 +246,10 @@ export default {
     OPTIONAL_MODULES,
     MODULE_LICENSE_REQUIREMENTS
 };
+
+// Named exports for direct import
+export {
+    CORE_MODULES,
+    OPTIONAL_MODULES,
+    MODULE_LICENSE_REQUIREMENTS
+};

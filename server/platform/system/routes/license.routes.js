@@ -17,6 +17,45 @@ const router = express.Router();
  * All routes require authentication and admin privileges
  */
 
+// Get all licenses - GET /api/v1/licenses
+router.get('/', protect, admin, async (req, res) => {
+    try {
+        // Mock response for all licenses
+        const licenses = [
+            {
+                tenantId: 'techcorp_solutions',
+                licenseType: 'enterprise',
+                status: 'active',
+                expiryDate: '2025-12-31',
+                modules: ['hr-core', 'payroll', 'reports', 'analytics'],
+                maxUsers: 500,
+                currentUsers: 150
+            },
+            {
+                tenantId: 'demo_company',
+                licenseType: 'standard',
+                status: 'active',
+                expiryDate: '2025-06-30',
+                modules: ['hr-core', 'payroll'],
+                maxUsers: 100,
+                currentUsers: 45
+            }
+        ];
+
+        res.json({
+            success: true,
+            data: licenses,
+            message: 'Licenses retrieved successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve licenses',
+            error: error.message
+        });
+    }
+});
+
 // Query audit logs - GET /api/v1/licenses/audit
 // This must come before /:tenantId routes to avoid matching "audit" as a tenantId
 router.get('/audit', protect, admin, queryAuditLogs);

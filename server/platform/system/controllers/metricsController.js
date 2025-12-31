@@ -194,6 +194,38 @@ export const updateStorageUsage = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get system statistics
+ * GET /api/platform/system/stats
+ */
+export const getSystemStats = asyncHandler(async (req, res) => {
+  try {
+    const stats = await usageTrackingService.getSystemStats();
+
+    res.status(200).json({
+      success: true,
+      data: stats,
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: req.id
+      }
+    });
+  } catch (error) {
+    console.error('Failed to fetch system stats:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'SYSTEM_STATS_ERROR',
+        message: 'Failed to fetch system statistics'
+      },
+      meta: {
+        timestamp: new Date().toISOString(),
+        requestId: req.id
+      }
+    });
+  }
+});
+
+/**
  * Update user count for tenant
  * POST /api/platform/system/metrics/tenants/:tenantId/update-user-count
  */

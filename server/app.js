@@ -51,6 +51,14 @@ import {
     metricsRoutes
 } from './routes/index.js';
 
+// Import logs route
+import logsRoutes from './routes/logs.routes.js';
+
+// Import system models to ensure collections are created
+import './models/performanceMetrics.model.js';
+import './models/securityEvents.model.js';
+import './models/systemAlerts.model.js';
+
 const app = express();
 
 // Security middleware with relaxed policies for development
@@ -368,7 +376,7 @@ export const initializeRoutes = async () => {
 
     // Communication (legacy - not yet moved)
     app.use('/api/v1/announcements', announcementRoutes);
-    app.use('/api/v1/notifications', notificationRoutes);
+    // NOTE: notifications are now handled by the COMMUNICATION module
     app.use('/api/v1/surveys', surveyRoutes);
 
     // Events (legacy - not yet moved)
@@ -376,6 +384,24 @@ export const initializeRoutes = async () => {
 
     // Reports (legacy - not yet moved)
     app.use('/api/v1/reports', reportRoutes);
+
+    // Task Reports (new implementation)
+    try {
+        const taskReportsRoutes = await import('./routes/taskReports.routes.js');
+        app.use('/api/v1/task-reports', taskReportsRoutes.default);
+        console.log('✓ Task reports routes loaded (/api/v1/task-reports/*)');
+    } catch (error) {
+        console.warn('⚠️  Task reports routes not available:', error.message);
+    }
+
+    // Holidays (new implementation)
+    try {
+        const holidaysRoutes = await import('./routes/holidays.routes.js');
+        app.use('/api/v1/holidays', holidaysRoutes.default);
+        console.log('✓ Holidays routes loaded (/api/v1/holidays/*)');
+    } catch (error) {
+        console.warn('⚠️  Holidays routes not available:', error.message);
+    }
 
     // Security & Permissions (legacy - not yet moved)
     app.use('/api/v1/permissions', permissionRoutes);
@@ -386,6 +412,7 @@ export const initializeRoutes = async () => {
     // System Management (legacy - not yet moved)
     app.use('/api/v1/theme', themeRoutes);
     app.use('/api/v1/feature-flags', featureFlagRoutes);
+    app.use('/api/v1/logs', logsRoutes);
     
     // HR Auth routes
     const hrAuthRoutes = await import('./modules/hr-core/routes/authRoutes.js');
@@ -395,11 +422,11 @@ export const initializeRoutes = async () => {
     const tenantRoutes = await import('./modules/hr-core/routes/tenantRoutes.js');
     app.use('/api/v1/tenant', tenantRoutes.default);
 
-    // Company logs routes (user activity tracking)
+    // Company logs routes (user activity tracking) - moved to platform namespace
     try {
         const companyLogsRoutes = await import('./routes/companyLogs.js');
-        app.use('/api/company-logs', companyLogsRoutes.default);
-        console.log('✓ Company logs routes loaded (/api/company-logs/*)');
+        app.use('/api/v1/platform/company-logs', companyLogsRoutes.default);
+        console.log('✓ Company logs routes loaded (/api/v1/platform/company-logs/*)');
     } catch (error) {
         console.warn('⚠️  Company logs routes not available:', error.message);
     }
@@ -407,10 +434,19 @@ export const initializeRoutes = async () => {
     // Company module routes (for HR applications to check module access)
     try {
         const companyModuleRoutes = await import('./routes/companyModuleRoutes.js');
-        app.use('/api/company', companyModuleRoutes.default);
-        console.log('✓ Company module routes loaded (/api/company/*)');
+        app.use('/api/v1/company', companyModuleRoutes.default);
+        console.log('✓ Company module routes loaded (/api/v1/company/*)');
     } catch (error) {
         console.warn('⚠️  Company module routes not available:', error.message);
+    }
+
+    // Module availability routes (for checking module availability)
+    try {
+        const moduleAvailabilityRoutes = await import('./routes/moduleAvailability.routes.js');
+        app.use('/api/v1/modules', moduleAvailabilityRoutes.default);
+        console.log('✓ Module availability routes loaded (/api/v1/modules/*)');
+    } catch (error) {
+        console.warn('⚠️  Module availability routes not available:', error.message);
     }
 
     // Logging module configuration routes
@@ -434,6 +470,15 @@ export const initializeRoutes = async () => {
     // License Management (legacy - not yet moved)
     app.use('/api/v1/licenses', licenseRoutes);
     app.use('/api/v1/licenses/audit', licenseAuditRoutes);
+
+    // Life Insurance Module
+    try {
+        const lifeInsuranceRoutes = await import('./modules/life-insurance/routes.js');
+        app.use('/api/v1/life-insurance', lifeInsuranceRoutes.default);
+        console.log('✓ Life insurance routes loaded (/api/v1/life-insurance/*)');
+    } catch (error) {
+        console.warn('⚠️  Life insurance routes not available:', error.message);
+    }
 
     // Pricing & Quotes (legacy - not yet moved)
     app.use('/api/v1/pricing', pricingRoutes);
@@ -466,6 +511,16 @@ export const initializeRoutes = async () => {
         console.log('✓ Cache management routes loaded (/api/v1/cache/*)');
     } catch (error) {
         console.warn('⚠️  Cache management routes not available:', error.message);
+    }
+
+    // Development auto-login (development only)
+    if (process.env.NODE_ENV === 'development') {
+        try {
+            const { createAutoLoginRoute } = await import('./utils/devAutoLogin.js');
+            createAutoLoginRoute(app);
+        } catch (error) {
+            console.warn('⚠️  Development auto-login not available:', error.message);
+        }
     }
 
     console.log('✓ Tenant routes loaded (/api/v1/*)');

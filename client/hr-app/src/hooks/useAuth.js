@@ -1,7 +1,7 @@
-import { useAuth as useAuthFromContext } from '../contexts/AuthContext';
+import { useAuth as useAuthFromRedux } from '../store/providers/ReduxAuthProvider';
 
 export const useAuth = () => {
-    return useAuthFromContext();
+    return useAuthFromRedux();
 };
 
 export default useAuth;

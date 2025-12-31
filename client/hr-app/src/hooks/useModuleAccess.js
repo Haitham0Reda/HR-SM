@@ -1,30 +1,9 @@
 import { useState, useEffect, useContext, createContext } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../store/providers/ReduxAuthProvider';
 import api from '../services/api';
-import axios from 'axios';
 
 // Module Access Context
 const ModuleAccessContext = createContext();
-
-// Helper function to create company API instance
-const createCompanyApi = (companySlug) => {
-  const companyApi = axios.create({
-    baseURL: process.env.REACT_APP_API_URL?.replace('/api/v1', '') || 'http://localhost:5000',
-    timeout: 10000,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-company-slug': companySlug
-    }
-  });
-
-  // Add authentication token
-  const tenantToken = localStorage.getItem('tenant_token') || localStorage.getItem('token');
-  if (tenantToken) {
-    companyApi.defaults.headers.Authorization = `Bearer ${tenantToken}`;
-  }
-
-  return companyApi;
-};
 
 // Module Access Provider
 export function ModuleAccessProvider({ children }) {
@@ -45,10 +24,10 @@ export function ModuleAccessProvider({ children }) {
       setError(null);
 
       // Get company modules from the platform API (no auth required)
-      const response = await axios.get(`${process.env.REACT_APP_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'}/api/platform/companies/${companySlug}/modules`);
+      const response = await api.get(`/platform/companies/${companySlug}/modules`);
       
-      if (response.data.success) {
-        const modules = response.data.data.availableModules || {};
+      if (response.success) {
+        const modules = response.data.availableModules || {};
         const accessMap = {};
         
         // Create access map for easy checking
@@ -69,7 +48,7 @@ export function ModuleAccessProvider({ children }) {
 
         setModuleAccess(accessMap);
       } else {
-        throw new Error(response.data.message || 'Failed to load module access');
+        throw new Error(response.message || 'Failed to load module access');
       }
     } catch (err) {
       console.error('Failed to load module access:', err);
@@ -260,8 +239,7 @@ export function useUsageTracking() {
 
   const trackUsage = async (moduleKey, usageData) => {
     try {
-      const companyApi = createCompanyApi(companySlug);
-      await companyApi.post('/api/company/usage', {
+      await api.post('/company/usage', {
         module: moduleKey,
         usage: usageData
       });
@@ -272,8 +250,7 @@ export function useUsageTracking() {
 
   const trackEmployeeCount = async (count) => {
     try {
-      const companyApi = createCompanyApi(companySlug);
-      await companyApi.put('/api/company/usage', {
+      await api.put('/company/usage', {
         employees: count
       });
     } catch (error) {
@@ -283,8 +260,7 @@ export function useUsageTracking() {
 
   const trackStorageUsage = async (bytes) => {
     try {
-      const companyApi = createCompanyApi(companySlug);
-      await companyApi.put('/api/company/usage', {
+      await api.put('/company/usage', {
         storage: bytes
       });
     } catch (error) {
@@ -294,8 +270,7 @@ export function useUsageTracking() {
 
   const trackApiCall = async (moduleKey) => {
     try {
-      const companyApi = createCompanyApi(companySlug);
-      await companyApi.post('/api/company/usage/api-call', {
+      await api.post('/company/usage/api-call', {
         module: moduleKey
       });
     } catch (error) {

@@ -18,7 +18,7 @@ import mongoose from 'mongoose';
 import emailIntegrationService from '../../../modules/hr-core/services/emailIntegrationService.js';
 import requestService from '../../../modules/hr-core/requests/services/requestService.js';
 import Request from '../../../modules/hr-core/requests/models/request.model.js';
-import User from '../../../modules/hr-core/models/User.js';
+import User from '../../../modules/hr-core/users/models/user.model.js';
 import Department from '../../../modules/hr-core/models/Department.js';
 
 describe('Email Service Integration Tests', () => {

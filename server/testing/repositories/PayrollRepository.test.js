@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import PayrollRepository from '../../repositories/modules/PayrollRepository.js';
 import Payroll from '../../modules/payroll/models/payroll.model.js';
-import User from '../../modules/hr-core/models/User.js';
+import User from '../../modules/hr-core/users/models/user.model.js';
 
 describe('PayrollRepository', () => {
     let payrollRepository;

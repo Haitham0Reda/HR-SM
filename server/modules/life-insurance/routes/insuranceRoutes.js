@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import { requireModule } from '../../../middleware/licenseFeatureGuard.middleware.js';
-import { requireModuleAvailability } from '../../../middleware/dynamicModuleLoader.middleware.js';
+import { protect } from '../../../middleware/authMiddleware.js';
+import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
 import { validateRequest } from '../../../core/middleware/validation.js';
 import { requireRole } from '../../../shared/middleware/auth.js';
 import insuranceController from '../controllers/insuranceController.js';
@@ -9,14 +9,43 @@ import familyMemberController from '../controllers/familyMemberController.js';
 import claimController from '../controllers/claimController.js';
 import reportController from '../controllers/reportController.js';
 import { insuranceUpload } from '../config/multer.config.js';
+import { MODULES } from '../../../shared/constants/modules.js';
 
 const router = express.Router();
 
-// Apply module availability check first (checks if module is enabled and licensed)
-router.use(requireModuleAvailability('life-insurance'));
+// Apply authentication first
+router.use(protect);
 
-// Apply license feature guard to all routes in this module
-router.use(requireModule('life-insurance'));
+// Apply license validation for life insurance module
+router.use(requireModuleLicense(MODULES.LIFE_INSURANCE));
+
+// Root route for life insurance
+router.get('/', async (req, res) => {
+    try {
+        res.json({
+            success: true,
+            message: 'Life Insurance module is available',
+            data: {
+                module: 'life-insurance',
+                version: '1.0.0',
+                features: ['policies', 'claims', 'family-members', 'reports'],
+                endpoints: [
+                    'GET /policies - List all policies',
+                    'POST /policies - Create new policy',
+                    'GET /claims - List all claims',
+                    'POST /claims - Create new claim',
+                    'GET /family-members - List family members'
+                ]
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to access life insurance module',
+            error: error.message
+        });
+    }
+});
 
 // Policy Management Routes
 router.route('/policies')

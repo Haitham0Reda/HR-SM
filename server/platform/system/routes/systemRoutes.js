@@ -40,4 +40,7 @@ router.get('/status', authenticatePlatformUser, (req, res) => {
   });
 });
 
+// System statistics (protected)
+router.get('/stats', authenticatePlatformUser, metricsController.getSystemStats);
+
 export default router;

@@ -91,23 +91,37 @@ class MongoMetricsService {
       }
 
       const db = mongoose.connection.db;
-      const stats = await db.collection(collectionName).stats();
+      
+      // First check if collection exists
+      const collections = await db.listCollections({ name: collectionName }).toArray();
+      if (collections.length === 0) {
+        return {
+          collection: collectionName,
+          exists: false,
+          error: 'Collection does not exist'
+        };
+      }
+
+      // Use collStats command instead of stats() method
+      const stats = await db.command({ collStats: collectionName });
       
       return {
         collection: collectionName,
-        count: stats.count,
-        size: stats.size,
-        avgObjSize: stats.avgObjSize,
-        storageSize: stats.storageSize,
-        indexes: stats.nindexes,
-        totalIndexSize: stats.totalIndexSize,
-        indexSizes: stats.indexSizes,
+        exists: true,
+        count: stats.count || 0,
+        size: stats.size || 0,
+        avgObjSize: stats.avgObjSize || 0,
+        storageSize: stats.storageSize || 0,
+        indexes: stats.nindexes || 0,
+        totalIndexSize: stats.totalIndexSize || 0,
+        indexSizes: stats.indexSizes || {},
         capped: stats.capped || false,
         maxSize: stats.maxSize || null
       };
     } catch (error) {
       return {
         collection: collectionName,
+        exists: false,
         error: error.message
       };
     }

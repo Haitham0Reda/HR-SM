@@ -2,7 +2,7 @@ import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app, { initializeRoutes } from '../../../app.js';
-import User from '../../hr-core/models/User.js';
+import User from '../../hr-core/users/models/user.model.js';
 import TenantConfig from '../../hr-core/models/TenantConfig.js';
 import Task from '../models/Task.js';
 import TaskReport from '../models/TaskReport.js';

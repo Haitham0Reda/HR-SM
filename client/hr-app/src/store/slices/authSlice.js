@@ -62,14 +62,19 @@ export const loadUserProfile = createAsyncThunk(
       }
 
       const userResponse = await api.get('/auth/me');
-      return userResponse.data;
+      const userData = userResponse.data || userResponse;
+      
+      return userData;
     } catch (error) {
+      console.error('Failed to load user profile:', error);
+      
       // Clear auth state for authentication errors
-      if (error.status === 401 || error.status === 404) {
+      if (error.status === 401 || error.status === 404 || error.message?.includes('401') || error.message?.includes('Unauthorized')) {
         localStorage.removeItem('tenant_token');
         localStorage.removeItem('tenant_id');
         localStorage.removeItem('token');
       }
+      
       return rejectWithValue(error.message || 'Failed to load user profile');
     }
   }

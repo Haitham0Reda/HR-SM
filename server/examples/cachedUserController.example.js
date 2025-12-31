@@ -4,11 +4,11 @@
  * This is an example implementation showing best practices
  */
 
-import User from '../modules/hr-core/models/User.js';
+import User from '../modules/hr-core/users/models/user.model.js';
 import { getCachedQueryBuilder } from '../utils/modelCacheEnhancer.js';
 import cacheService from '../services/cacheService.js';
 import cacheInvalidationService from '../services/cacheInvalidationService.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
+import asyncHandler from '../utils/asyncHandler.js';
 import logger from '../utils/logger.js';
 
 /**

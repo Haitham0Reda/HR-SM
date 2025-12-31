@@ -92,6 +92,7 @@ function DashboardSidebar({
     const theme = useTheme();
 
     const { pathname } = useLocation();
+    const { getCompanyRoute } = useCompanyRouting();
 
     // State for expanded menu items
     const [expandedItemIds, setExpandedItemIds] = React.useState([]);
@@ -168,7 +169,6 @@ function DashboardSidebar({
     const { user } = useAuth();
     const userRole = user?.role || 'employee';
     const { isModuleEnabled } = useModules();
-    const { getCompanyRoute } = useCompanyRouting();
 
     // Map menu item IDs to module keys
     const getModuleKeyForMenuItem = React.useCallback((itemId) => {

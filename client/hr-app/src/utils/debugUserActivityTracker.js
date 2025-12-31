@@ -26,7 +26,7 @@ export const debugUserActivityTracker = () => {
     
     // Test API endpoint
     if (token) {
-        fetch('/api/company-logs/techcorp-solutions-d8f0689c/real-time-sessions', {
+        fetch('/api/v1/platform/company-logs/techcorp-solutions-d8f0689c/real-time-sessions', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'

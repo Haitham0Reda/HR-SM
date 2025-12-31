@@ -385,8 +385,33 @@ export const loginUser = async (req, res) => {
 // Get current user profile
 export const getUserProfile = async (req, res) => {
     try {
-        // req.user is set by the protect middleware
-        const user = await User.findById(req.user._id).populate('department position');
+        // req.user is set by the protect middleware, but we need to fetch fresh data
+        // from the tenant-specific database to ensure we have the latest information
+        let user;
+        
+        if (req.tenantId) {
+            // Use tenant-specific database
+            try {
+                const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
+                const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
+                const TenantUser = tenantConnection.model('User', User.schema);
+                
+                try {
+                    user = await TenantUser.findById(req.user._id).populate('department position');
+                } catch (populateError) {
+                    console.warn('Populate failed in getUserProfile, trying without populate:', populateError.message);
+                    user = await TenantUser.findById(req.user._id);
+                }
+            } catch (error) {
+                console.warn('Failed to get user from tenant database in getUserProfile:', error.message);
+                // Fall back to main database
+                user = await User.findById(req.user._id).populate('department position');
+            }
+        } else {
+            // Use main database
+            user = await User.findById(req.user._id).populate('department position');
+        }
+        
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(sanitizeUser(user));
     } catch (err) {

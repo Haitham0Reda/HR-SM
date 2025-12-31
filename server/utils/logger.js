@@ -73,6 +73,11 @@ logger.forCompany = function(tenantId, companyName = null) {
     return getLoggerForTenant(tenantId, companyName);
 };
 
+// Add audit logging method
+logger.audit = function(message, meta = {}) {
+    return this.info(message, { ...meta, type: 'audit' });
+};
+
 // Add correlation ID generation method
 logger.generateCorrelationId = generateCorrelationId;
 

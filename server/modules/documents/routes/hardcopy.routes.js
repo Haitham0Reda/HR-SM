@@ -8,14 +8,16 @@ import {
     uploadHardCopy,
     upload
 } from '../controllers/hardcopy.controller.js';
-import { requireAuth, requireRole } from '../../../shared/middleware/auth.js';
-import { requireModule } from '../../../shared/middleware/moduleGuard.js';
+import { protect } from '../../../middleware/authMiddleware.js';
+import { requireRole } from '../../../shared/middleware/auth.js';
+import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
+import { MODULES } from '../../../shared/constants/modules.js';
 
 const router = express.Router();
 
-// Apply authentication and module guard to all routes
-router.use(requireAuth);
-router.use(requireModule('documents'));
+// Apply authentication and module license validation to all routes
+router.use(protect);
+router.use(requireModuleLicense(MODULES.DOCUMENTS));
 
 // Get all hard copies - All authenticated users
 router.get('/', getAllHardCopies);
