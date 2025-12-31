@@ -7,6 +7,7 @@ import { logAuthEvent, logAccessControl } from './activityLogger.js';
  * Also checks tenant status for multi-tenancy support
  */
 export const protect = async (req, res, next) => {
+    console.log('🔐 protect middleware called for:', req.method, req.path);
     let token;
     if (
         req.headers.authorization &&
@@ -14,6 +15,7 @@ export const protect = async (req, res, next) => {
     ) {
         try {
             token = req.headers.authorization.split(' ')[1];
+            console.log('🔐 Token extracted, length:', token?.length);
             
             // Try tenant JWT first (for multi-tenant architecture)
             let decoded;
@@ -101,12 +103,17 @@ export const protect = async (req, res, next) => {
             }
 
             if (!req.user) {
+                console.log('🔐 User not found after all attempts');
                 logAuthEvent('UNAUTHORIZED_ACCESS', null, req, {
                     reason: 'User not found',
                     userId: decoded.id || decoded.userId
                 });
                 return res.status(401).json({ message: 'User not found' });
             }
+
+            console.log('🔐 User authenticated successfully:', req.user.email);
+            console.log('🔐 User tenantId:', req.user.tenantId);
+            console.log('🔐 Request tenantId:', req.tenantId);
 
             // Ensure tenantId is always set for license validation
             if (!req.tenantId && decoded.tenantId) {
@@ -116,6 +123,7 @@ export const protect = async (req, res, next) => {
                 req.tenantId = req.user.tenantId;
             }
 
+            console.log('🔐 Final tenantId:', req.tenantId);
             next();
         } catch (error) {
             if (error.name === 'TokenExpiredError') {

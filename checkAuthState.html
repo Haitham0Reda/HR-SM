@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Auth State</title>
+</head>
+<body>
+    <h1>Authentication State Checker</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function checkAuthState() {
+            const results = document.getElementById('results');
+            
+            // Check localStorage
+            const tenantToken = localStorage.getItem('tenant_token');
+            const tenantId = localStorage.getItem('tenant_id');
+            const user = localStorage.getItem('user');
+            
+            results.innerHTML += `<h2>LocalStorage:</h2>`;
+            results.innerHTML += `<p>tenant_token: ${tenantToken ? 'Present (' + tenantToken.substring(0, 20) + '...)' : 'Missing'}</p>`;
+            results.innerHTML += `<p>tenant_id: ${tenantId || 'Missing'}</p>`;
+            results.innerHTML += `<p>user: ${user ? 'Present' : 'Missing'}</p>`;
+            
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    results.innerHTML += `<p>User Email: ${userData.email}</p>`;
+                    results.innerHTML += `<p>User Role: ${userData.role}</p>`;
+                } catch (e) {
+                    results.innerHTML += `<p>User data parse error: ${e.message}</p>`;
+                }
+            }
+            
+            // Test auto-login endpoint
+            results.innerHTML += `<h2>Testing Auto-Login:</h2>`;
+            try {
+                const response = await fetch('/api/v1/dev/auto-login');
+                const data = await response.json();
+                
+                if (data.success) {
+                    results.innerHTML += `<p style="color: green;">✅ Auto-login successful</p>`;
+                    results.innerHTML += `<p>User: ${data.data.user.email}</p>`;
+                    results.innerHTML += `<p>Tenant: ${data.data.user.tenantId}</p>`;
+                    
+                    // Store the token
+                    localStorage.setItem('tenant_token', data.data.token);
+                    localStorage.setItem('tenant_id', data.data.user.tenantId);
+                    localStorage.setItem('user', JSON.stringify(data.data.user));
+                    
+                    results.innerHTML += `<p style="color: blue;">🔄 Tokens stored in localStorage</p>`;
+                } else {
+                    results.innerHTML += `<p style="color: red;">❌ Auto-login failed: ${data.message}</p>`;
+                }
+            } catch (error) {
+                results.innerHTML += `<p style="color: red;">❌ Auto-login error: ${error.message}</p>`;
+            }
+            
+            // Test departments API
+            results.innerHTML += `<h2>Testing Departments API:</h2>`;
+            const token = localStorage.getItem('tenant_token');
+            if (token) {
+                try {
+                    const response = await fetch('http://localhost:5000/api/v1/departments', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        results.innerHTML += `<p style="color: green;">✅ Departments API successful</p>`;
+                        results.innerHTML += `<p>Departments count: ${data.data?.length || 0}</p>`;
+                        
+                        if (data.data && data.data.length > 0) {
+                            results.innerHTML += `<h3>Departments:</h3>`;
+                            data.data.forEach((dept, index) => {
+                                results.innerHTML += `<p>${index + 1}. ${dept.name} (${dept.code})</p>`;
+                            });
+                        }
+                    } else {
+                        results.innerHTML += `<p style="color: red;">❌ Departments API failed: ${response.status} ${response.statusText}</p>`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<p style="color: red;">❌ Departments API error: ${error.message}</p>`;
+                }
+            } else {
+                results.innerHTML += `<p style="color: orange;">⚠️ No token available for API test</p>`;
+            }
+        }
+        
+        // Run the check when page loads
+        checkAuthState();
+    </script>
+</body>
+</html>

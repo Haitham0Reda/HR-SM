@@ -6,7 +6,7 @@ const ls = new SecureLS({ encodingType: 'aes' });
 
 // Create axios instance for main HR-SM backend API
 const platformApi = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5005/api/platform',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api/platform',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

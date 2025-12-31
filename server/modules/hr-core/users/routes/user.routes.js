@@ -73,12 +73,27 @@ const profilePictureUpload = multer({
 // Login route - Public (no auth required)
 router.post('/login', loginUser);
 
+console.log('🔍 Registering profile routes...');
+
 // IMPORTANT: Profile routes must come BEFORE /:id routes to avoid matching "profile" as an ID
 // Get current user profile - Protected
-router.get('/profile', protect, getUserProfile);
+try {
+    router.get('/profile', (req, res, next) => {
+        console.log('🛣️ Profile route matched!');
+        next();
+    }, protect, getUserProfile);
+    console.log('✅ GET /profile route registered');
+} catch (error) {
+    console.error('❌ Error registering GET /profile route:', error);
+}
 
 // Update current user profile - Protected (users can update their own profile)
-router.put('/profile', protect, updateUserProfile);
+try {
+    router.put('/profile', protect, updateUserProfile);
+    console.log('✅ PUT /profile route registered');
+} catch (error) {
+    console.error('❌ Error registering PUT /profile route:', error);
+}
 
 // Get all users - Protected, all authenticated users can view
 router.get('/', protect, getAllUsers);

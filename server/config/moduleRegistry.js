@@ -87,6 +87,17 @@ export const loadModuleRoutes = async (app, moduleName) => {
             app.use(routePath, router);
 
             console.log(`✓ Loaded route: ${routePath}`);
+            
+            // Debug: Log the actual routes in the router
+            if (routeName === 'users') {
+                console.log('🔍 User routes loaded:');
+                router.stack?.forEach(layer => {
+                    if (layer.route) {
+                        const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+                        console.log(`   ${methods} ${routePath}${layer.route.path}`);
+                    }
+                });
+            }
         }
     } catch (error) {
         console.error(`Error loading module ${moduleName}:`, error);

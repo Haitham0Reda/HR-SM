@@ -10,7 +10,7 @@ import { generateTenantToken } from '../core/auth/tenantAuth.js';
  */
 export function generateTestToken() {
     const testUser = {
-        userId: "693c9ac2c99e484cf80f9338",
+        userId: "69554f0f74966f1694bcbbec",
         tenantId: "techcorp_solutions",
         role: "admin"
     };

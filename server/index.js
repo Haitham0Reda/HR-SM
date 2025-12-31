@@ -19,7 +19,7 @@ import initializeSystemCollections from './utils/initializeSystemCollections.js'
 // Load environment variables
 dotenv.config();
 
-const PORT = process.env.PORT || 5005;
+const PORT = process.env.PORT || 5000;
 
 // Initialize backup system
 const backupIntegration = new BackupIntegration();
