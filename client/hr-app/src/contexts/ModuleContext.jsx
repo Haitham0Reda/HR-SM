@@ -6,7 +6,7 @@
  * Integrates with license server for feature-based access control.
  */
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { useAuth } from '../store/providers/ReduxAuthProvider';
 
@@ -30,158 +30,93 @@ export const ModuleProvider = ({ children }) => {
     // Cache duration in milliseconds (5 minutes)
     const CACHE_DURATION = 5 * 60 * 1000;
 
+    // Memoized function to fetch module availability
+    const fetchModuleAvailability = useCallback(async (showLoading = true) => {
+        if (!isAuthenticated) {
+            setModuleAvailability(null);
+            setLoading(false);
+            return;
+        }
+
+        try {
+            if (showLoading) setLoading(true);
+            setError(null);
+
+            console.log('Fetching module availability for tenant');
+
+            // Use the new module availability API endpoint
+            const response = await api.get('/modules/availability');
+            
+            if (response.data.success) {
+                const availability = response.data.data;
+                
+                console.log('Module availability loaded:', {
+                    tenant: availability.tenant.name,
+                    totalAvailable: availability.modules.total,
+                    availableModules: [...availability.modules.core, ...availability.modules.available],
+                    licenseValid: availability.license.valid
+                });
+                
+                setModuleAvailability(availability);
+                setLastFetch(Date.now());
+            } else {
+                throw new Error(response.data.message || 'Failed to load module availability');
+            }
+        } catch (err) {
+            console.error('Failed to fetch module availability:', err);
+            
+            // In development, provide default configuration
+            if (process.env.NODE_ENV === 'development') {
+                console.warn('Using default module configuration for development');
+                setModuleAvailability({
+                    tenant: { id: 'dev', name: 'Development', enabledModules: [] },
+                    license: { valid: true, features: ['life-insurance'], licenseType: 'development' },
+                    modules: {
+                        core: ['hr-core'],
+                        available: ['tasks', 'documents', 'reports', 'life-insurance'],
+                        unavailable: [],
+                        total: 5
+                    }
+                });
+            } else {
+                setError(err.message || 'Failed to load module availability');
+                // Fallback to core modules only
+                setModuleAvailability({
+                    tenant: { id: null, name: null, enabledModules: [] },
+                    license: { valid: false, features: [], licenseType: null },
+                    modules: {
+                        core: ['hr-core'],
+                        available: [],
+                        unavailable: [],
+                        total: 1
+                    }
+                });
+            }
+        } finally {
+            if (showLoading) setLoading(false);
+        }
+    }, [isAuthenticated]);
+
     // Fetch module availability when user logs in
     useEffect(() => {
-        const fetchModuleAvailability = async () => {
-            if (!isAuthenticated) {
-                setModuleAvailability(null);
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-                setError(null);
-
-                console.log('Fetching module availability for tenant');
-
-                // Use the new module availability API endpoint
-                const response = await api.get('/modules/availability');
-                
-                if (response.data.success) {
-                    const availability = response.data.data;
-                    
-                    console.log('Module availability loaded:', {
-                        tenant: availability.tenant.name,
-                        totalAvailable: availability.modules.total,
-                        availableModules: [...availability.modules.core, ...availability.modules.available],
-                        licenseValid: availability.license.valid
-                    });
-                    
-                    setModuleAvailability(availability);
-                    setLastFetch(Date.now());
-                } else {
-                    throw new Error(response.data.message || 'Failed to load module availability');
-                }
-            } catch (err) {
-                console.error('Failed to fetch module availability:', err);
-                
-                // In development, provide default configuration
-                if (process.env.NODE_ENV === 'development') {
-                    console.warn('Using default module configuration for development');
-                    setModuleAvailability({
-                        tenant: { id: 'dev', name: 'Development', enabledModules: [] },
-                        license: { valid: true, features: ['life-insurance'], licenseType: 'development' },
-                        modules: {
-                            core: ['hr-core'],
-                            available: ['tasks', 'documents', 'reports', 'life-insurance'],
-                            unavailable: [],
-                            total: 5
-                        }
-                    });
-                } else {
-                    setError(err.message || 'Failed to load module availability');
-                    // Fallback to core modules only
-                    setModuleAvailability({
-                        tenant: { id: null, name: null, enabledModules: [] },
-                        license: { valid: false, features: [], licenseType: null },
-                        modules: {
-                            core: ['hr-core'],
-                            available: [],
-                            unavailable: [],
-                            total: 1
-                        }
-                    });
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchModuleAvailability();
-    }, [isAuthenticated]);
+    }, [fetchModuleAvailability]);
 
     // Auto-refresh every 5 minutes if data is stale
     useEffect(() => {
-        if (!isAuthenticated || !moduleAvailability) return;
-
-        const fetchModuleAvailability = async () => {
-            if (!isAuthenticated) {
-                setModuleAvailability(null);
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-                setError(null);
-
-                console.log('Fetching module availability for tenant');
-
-                // Use the new module availability API endpoint
-                const response = await api.get('/modules/availability');
-                
-                if (response.data.success) {
-                    const availability = response.data.data;
-                    
-                    console.log('Module availability loaded:', {
-                        tenant: availability.tenant.name,
-                        totalAvailable: availability.modules.total,
-                        availableModules: [...availability.modules.core, ...availability.modules.available],
-                        licenseValid: availability.license.valid
-                    });
-                    
-                    setModuleAvailability(availability);
-                    setLastFetch(Date.now());
-                } else {
-                    throw new Error(response.data.message || 'Failed to load module availability');
-                }
-            } catch (err) {
-                console.error('Failed to fetch module availability:', err);
-                
-                // In development, provide default configuration
-                if (process.env.NODE_ENV === 'development') {
-                    console.warn('Using default module configuration for development');
-                    setModuleAvailability({
-                        tenant: { id: 'dev', name: 'Development', enabledModules: [] },
-                        license: { valid: true, features: ['life-insurance'], licenseType: 'development' },
-                        modules: {
-                            core: ['hr-core'],
-                            available: ['tasks', 'documents', 'reports', 'life-insurance'],
-                            unavailable: [],
-                            total: 5
-                        }
-                    });
-                } else {
-                    setError(err.message || 'Failed to load module availability');
-                    // Fallback to core modules only
-                    setModuleAvailability({
-                        tenant: { id: null, name: null, enabledModules: [] },
-                        license: { valid: false, features: [], licenseType: null },
-                        modules: {
-                            core: ['hr-core'],
-                            available: [],
-                            unavailable: [],
-                            total: 1
-                        }
-                    });
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
+        if (!isAuthenticated || !moduleAvailability || !lastFetch) return;
 
         const interval = setInterval(() => {
-            const isStale = lastFetch && (Date.now() - lastFetch) > CACHE_DURATION;
+            const isStale = (Date.now() - lastFetch) > CACHE_DURATION;
             if (isStale) {
                 console.log('Module availability cache is stale, refreshing...');
                 // Re-fetch without showing loading state
-                fetchModuleAvailability();
+                fetchModuleAvailability(false);
             }
         }, CACHE_DURATION);
 
         return () => clearInterval(interval);
-    }, [isAuthenticated, moduleAvailability, lastFetch]);
+    }, [isAuthenticated, moduleAvailability, lastFetch, fetchModuleAvailability, CACHE_DURATION]);
 
     /**
      * Check if a module is enabled for the current tenant
@@ -290,11 +225,11 @@ export const ModuleProvider = ({ children }) => {
     /**
      * Refresh module availability data
      */
-    const refresh = async () => {
+    const refresh = useCallback(async () => {
         if (isAuthenticated) {
             await fetchModuleAvailability();
         }
-    };
+    }, [isAuthenticated, fetchModuleAvailability]);
 
     const value = {
         // Legacy compatibility
@@ -327,12 +262,5 @@ export const ModuleProvider = ({ children }) => {
         </ModuleContext.Provider>
     );
 };
-
-    return (
-        <ModuleContext.Provider value={value}>
-            {children}
-        </ModuleContext.Provider>
-    );
-
 
 export default ModuleContext;

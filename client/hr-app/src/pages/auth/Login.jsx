@@ -27,7 +27,6 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
-import QuickLoginHelper from '../../components/QuickLoginHelper';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -46,14 +45,6 @@ const Login = () => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value,
-        });
-        setError('');
-    };
-
-    const handleQuickLogin = (email, password) => {
-        setFormData({
-            email,
-            password,
         });
         setError('');
     };
@@ -312,14 +303,6 @@ const Login = () => {
 
                         {/* Form */}
                         <Box sx={{ px: { xs: 3, sm: 5 }, pb: { xs: 4, sm: 5 } }}>
-                            {/* Quick Login Helper - Development Only */}
-                            {(process.env.NODE_ENV === 'development' || process.env.REACT_APP_ENV === 'development' || !process.env.NODE_ENV) && (
-                                <QuickLoginHelper
-                                    onCredentialSelect={handleQuickLogin}
-                                    type="hr"
-                                />
-                            )}
-
                             {error && (
                                 <Alert
                                     severity="error"
@@ -354,6 +337,7 @@ const Login = () => {
                                             Username or Email Address
                                         </Typography>
                                         <TextField
+                                            id="login-email"
                                             fullWidth
                                             name="email"
                                             type="text"
@@ -442,6 +426,7 @@ const Login = () => {
                                             </Button>
                                         </Box>
                                         <TextField
+                                            id="login-password"
                                             fullWidth
                                             name="password"
                                             type={showPassword ? 'text' : 'password'}

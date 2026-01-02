@@ -232,8 +232,9 @@ const AttendanceDashboard = () => {
                                         <TableRow key={record._id}>
                                             <TableCell>{record.employee?.employeeId}</TableCell>
                                             <TableCell>
-                                                {record.employee?.firstName}{' '}
-                                                {record.employee?.lastName}
+                                                {record.employee?.personalInfo?.firstName || record.employee?.personalInfo?.fullName || record.employee?.username || record.employee?.employeeId}
+                                                {record.employee?.personalInfo?.firstName && record.employee?.personalInfo?.lastName && ' '}
+                                                {record.employee?.personalInfo?.lastName}
                                             </TableCell>
                                             <TableCell>{record.department?.name || '-'}</TableCell>
                                             <TableCell>{formatTime(record.checkIn?.time)}</TableCell>

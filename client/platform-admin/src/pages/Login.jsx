@@ -28,7 +28,6 @@ import {
   Email as EmailIcon,
   Lock as LockIcon
 } from '@mui/icons-material';
-import QuickLoginHelper from '../components/QuickLoginHelper';
 
 
 
@@ -47,14 +46,6 @@ const Login = () => {
       ...prev,
       [field]: event.target.value
     }));
-    if (error) setError('');
-  };
-
-  const handleQuickLogin = (email, password) => {
-    setFormData({
-      email,
-      password,
-    });
     if (error) setError('');
   };
 
@@ -189,14 +180,6 @@ const Login = () => {
                   Sign in to your admin account
                 </Typography>
               </Box>
-
-              {/* Quick Login Helper - Development Only */}
-              {process.env.NODE_ENV === 'development' && (
-                <QuickLoginHelper
-                  onCredentialSelect={handleQuickLogin}
-                  type="platform"
-                />
-              )}
 
               {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>

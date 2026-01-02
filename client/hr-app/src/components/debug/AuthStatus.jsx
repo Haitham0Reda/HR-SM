@@ -9,26 +9,6 @@ import { useAuth } from '../../store/providers/ReduxAuthProvider';
 const AuthStatus = () => {
     const { user, tenant, loading, isAuthenticated } = useAuth();
     
-    const handleAutoLogin = async () => {
-        try {
-            const response = await fetch('http://localhost:5000/api/v1/dev/auto-login');
-            const data = await response.json();
-            
-            if (data.success) {
-                localStorage.setItem('tenant_token', data.data.token);
-                localStorage.setItem('tenant_id', data.data.user.tenantId);
-                localStorage.setItem('user', JSON.stringify(data.data.user));
-                
-                console.log('✅ Auto-login successful, reloading...');
-                window.location.reload();
-            } else {
-                console.error('❌ Auto-login failed:', data.message);
-            }
-        } catch (error) {
-            console.error('❌ Auto-login error:', error);
-        }
-    };
-    
     const handleClearAuth = () => {
         localStorage.removeItem('tenant_token');
         localStorage.removeItem('tenant_id');
@@ -87,14 +67,6 @@ const AuthStatus = () => {
             )}
             
             <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
-                <Button 
-                    size="small" 
-                    variant="contained" 
-                    onClick={handleAutoLogin}
-                    color="primary"
-                >
-                    🔄 Auto Login
-                </Button>
                 <Button 
                     size="small" 
                     variant="outlined" 

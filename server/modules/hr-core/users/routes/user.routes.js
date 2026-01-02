@@ -28,6 +28,7 @@ import {
     validateNationalID,
     validatePassword
 } from '../../../../middleware/index.js';
+import { requireAuth, requireRole } from '../../../../shared/middleware/auth.js';
 
 const router = express.Router();
 
@@ -81,7 +82,7 @@ try {
     router.get('/profile', (req, res, next) => {
         console.log('🛣️ Profile route matched!');
         next();
-    }, protect, getUserProfile);
+    }, requireAuth, getUserProfile);
     console.log('✅ GET /profile route registered');
 } catch (error) {
     console.error('❌ Error registering GET /profile route:', error);
@@ -89,21 +90,21 @@ try {
 
 // Update current user profile - Protected (users can update their own profile)
 try {
-    router.put('/profile', protect, updateUserProfile);
+    router.put('/profile', requireAuth, updateUserProfile);
     console.log('✅ PUT /profile route registered');
 } catch (error) {
     console.error('❌ Error registering PUT /profile route:', error);
 }
 
 // Get all users - Protected, all authenticated users can view
-router.get('/', protect, getAllUsers);
+router.get('/', requireAuth, getAllUsers);
 
 // Bulk download user photos - Protected (supports both POST and GET)
-router.post('/bulk-download-photos', protect, bulkDownloadPhotos);
+router.post('/bulk-download-photos', requireAuth, bulkDownloadPhotos);
 router.get('/bulk-download-photos', bulkDownloadPhotos); // GET with token in query
 
 // Test photo download endpoint
-router.get('/test-photo-download', protect, async (req, res) => {
+router.get('/test-photo-download', requireAuth, async (req, res) => {
     res.json({
         message: 'Photo download endpoint is working',
         timestamp: new Date().toISOString()
@@ -112,8 +113,8 @@ router.get('/test-photo-download', protect, async (req, res) => {
 
 // Create user - Admin only with full validation
 router.post('/',
-    protect,
-    admin,
+    requireAuth,
+    requireRole('admin'),
     checkEmailUnique,
     checkUsernameUnique,
     validateHireDate,
@@ -125,27 +126,27 @@ router.post('/',
 );
 
 // Get user by ID - Protected
-router.get('/:id', protect, getUserById);
+router.get('/:id', requireAuth, getUserById);
 
 // Upload profile picture - Protected (users can upload their own, admins can upload for others)
-router.post('/:id/profile-picture', protect, profilePictureUpload.single('profilePicture'), uploadProfilePicture);
+router.post('/:id/profile-picture', requireAuth, profilePictureUpload.single('profilePicture'), uploadProfilePicture);
 
 // Get user plain password - Admin only (for credential generation)
-router.get('/:id/plain-password', protect, admin, getUserPlainPassword);
+router.get('/:id/plain-password', requireAuth, requireRole('admin'), getUserPlainPassword);
 
 // Update vacation balance - Admin/HR only
-router.put('/:id/vacation-balance', protect, admin, updateVacationBalance);
+router.put('/:id/vacation-balance', requireAuth, requireRole('admin', 'hr'), updateVacationBalance);
 
 // Bulk update vacation balances - Admin/HR only
-router.post('/bulk-update-vacation-balances', protect, admin, bulkUpdateVacationBalances);
+router.post('/bulk-update-vacation-balances', requireAuth, requireRole('admin', 'hr'), bulkUpdateVacationBalances);
 
 // Bulk create users from Excel - Admin only
-router.post('/bulk-create', protect, admin, upload.single('file'), bulkCreateUsers);
+router.post('/bulk-create', requireAuth, requireRole('admin'), upload.single('file'), bulkCreateUsers);
 
 // Update user - Admin only with validation
 router.put('/:id',
-    protect,
-    admin,
+    requireAuth,
+    requireRole('admin'),
     checkEmailUnique,
     checkUsernameUnique,
     validateHireDate,
@@ -156,6 +157,6 @@ router.put('/:id',
 );
 
 // Delete user - Admin only
-router.delete('/:id', protect, admin, deleteUser);
+router.delete('/:id', requireAuth, requireRole('admin'), deleteUser);
 
 export default router;

@@ -6,7 +6,18 @@ const attendanceService = new AttendanceService();
 
 export const getAllAttendance = async (req, res) => {
     try {
-        const attendance = await attendanceService.getAllAttendance(req.tenantId);
+        // Extract query parameters for filtering
+        const { startDate, endDate, employee, status, department } = req.query;
+
+        // Build filters object
+        const filters = {};
+        if (startDate) filters.startDate = startDate;
+        if (endDate) filters.endDate = endDate;
+        if (employee) filters.employee = employee;
+        if (status) filters.status = status;
+        if (department) filters.department = department;
+
+        const attendance = await attendanceService.getAllAttendance(req.tenantId, filters);
         res.json(attendance);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -58,7 +69,7 @@ export const deleteAttendance = async (req, res) => {
 export const getTodayAttendance = async (req, res) => {
     try {
         const result = await attendanceService.getTodayAttendance(req.tenantId);
-        
+
         res.json({
             success: true,
             ...result
@@ -78,9 +89,9 @@ export const getTodayAttendance = async (req, res) => {
 export const getMonthlyAttendance = async (req, res) => {
     try {
         const { year, month } = req.query;
-        
+
         const result = await attendanceService.getMonthlyAttendance(year, month, req.tenantId);
-        
+
         res.json({
             success: true,
             ...result
@@ -100,16 +111,16 @@ export const getMonthlyAttendance = async (req, res) => {
 export const manualCheckIn = async (req, res) => {
     try {
         const { employeeId, date, time, notes } = req.body;
-        
+
         const attendance = await attendanceService.manualCheckIn(
-            employeeId, 
-            date, 
-            time, 
-            notes, 
-            req.user._id, 
+            employeeId,
+            date,
+            time,
+            notes,
+            req.user._id,
             req.tenantId
         );
-        
+
         res.json({
             success: true,
             message: 'Manual check-in recorded successfully',
@@ -130,16 +141,16 @@ export const manualCheckIn = async (req, res) => {
 export const manualCheckOut = async (req, res) => {
     try {
         const { employeeId, date, time, notes } = req.body;
-        
+
         const attendance = await attendanceService.manualCheckOut(
-            employeeId, 
-            date, 
-            time, 
-            notes, 
-            req.user._id, 
+            employeeId,
+            date,
+            time,
+            notes,
+            req.user._id,
             req.tenantId
         );
-        
+
         res.json({
             success: true,
             message: 'Manual check-out recorded successfully',

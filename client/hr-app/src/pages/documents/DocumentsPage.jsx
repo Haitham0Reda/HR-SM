@@ -112,9 +112,12 @@ const DocumentsPage = () => {
     const fetchUsers = async () => {
         try {
             const data = await userService.getAll();
-            setUsers(data);
+            // Handle both array response and object with data property
+            const usersArray = Array.isArray(data) ? data : (data?.data || []);
+            setUsers(usersArray);
         } catch (error) {
             console.error('Error fetching users:', error);
+            setUsers([]); // Set empty array on error to prevent map error
         }
     };
 
@@ -561,7 +564,7 @@ const DocumentsPage = () => {
                                 fullWidth
                             >
                                 <MenuItem value="">None</MenuItem>
-                                {users.map((user) => (
+                                {Array.isArray(users) && users.map((user) => (
                                     <MenuItem key={user._id} value={user._id}>
                                         {user.name} - {user.email}
                                     </MenuItem>

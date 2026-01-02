@@ -16,8 +16,7 @@ import mongoose from 'mongoose';
 const vacationBalanceSchema = new mongoose.Schema({
     // Multi-tenant support
     tenantId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Tenant',
+        type: String,
         required: true,
         index: true
     },

@@ -1,0 +1,166 @@
+{
+  "description": "Sample Forget Check Data for HR-SM System",
+  "tenantId": "techcorp_solutions",
+  "data": [
+    {
+      "employee": "john.doe@techcorpsolutions.com",
+      "date": "2025-01-01",
+      "requestType": "check-in",
+      "requestedTime": "08:30",
+      "reason": "Forgot to check in due to urgent meeting with client. I arrived at the office at 8:30 AM but had to immediately attend to a client call that lasted until 9:15 AM.",
+      "status": "pending"
+    },
+    {
+      "employee": "jane.smith@techcorpsolutions.com",
+      "date": "2025-01-01",
+      "requestType": "check-out",
+      "requestedTime": "17:45",
+      "reason": "Left for urgent doctor appointment, forgot to check out. Had to leave immediately at 5:45 PM for a medical emergency and forgot to complete the check-out procedure.",
+      "status": "approved",
+      "approvedBy": "hr@techcorpsolutions.com",
+      "approvedAt": "2025-01-02T09:30:00Z"
+    },
+    {
+      "employee": "mike.wilson@techcorpsolutions.com",
+      "date": "2024-12-31",
+      "requestType": "check-in",
+      "requestedTime": "09:15",
+      "reason": "System was down when I arrived at the office. The card reader and mobile app were both experiencing technical difficulties during my arrival time.",
+      "status": "rejected",
+      "rejectedBy": "hr@techcorpsolutions.com",
+      "rejectedAt": "2025-01-02T14:20:00Z",
+      "rejectionReason": "Request submitted too late (beyond 7-day limit). Please submit forget check requests within 7 days of the incident."
+    },
+    {
+      "employee": "john.doe@techcorpsolutions.com",
+      "date": "2024-12-30",
+      "requestType": "check-out",
+      "requestedTime": "18:30",
+      "reason": "Had to leave immediately for family emergency. Received urgent call about family member's hospitalization and had to rush to the hospital.",
+      "status": "approved",
+      "approvedBy": "admin@techcorpsolutions.com",
+      "approvedAt": "2024-12-31T10:15:00Z"
+    },
+    {
+      "employee": "jane.smith@techcorpsolutions.com",
+      "date": "2024-12-29",
+      "requestType": "check-in",
+      "requestedTime": "07:45",
+      "reason": "Arrived early for project deadline, forgot to check in. Was focused on preparing for important presentation and overlooked the check-in procedure.",
+      "status": "pending"
+    },
+    {
+      "employee": "mike.wilson@techcorpsolutions.com",
+      "date": "2024-12-29",
+      "requestType": "check-out",
+      "requestedTime": "16:20",
+      "reason": "Left early due to illness, forgot check-out procedure. Started feeling unwell during the afternoon and had to leave early for medical attention.",
+      "status": "approved",
+      "approvedBy": "hr@techcorpsolutions.com",
+      "approvedAt": "2024-12-30T08:45:00Z"
+    },
+    {
+      "employee": "john.doe@techcorpsolutions.com",
+      "date": "2024-12-28",
+      "requestType": "check-in",
+      "requestedTime": "08:45",
+      "reason": "Had to rush to emergency meeting, forgot to check in. Manager called for urgent client issue resolution meeting immediately upon my arrival.",
+      "status": "pending"
+    },
+    {
+      "employee": "jane.smith@techcorpsolutions.com",
+      "date": "2024-12-28",
+      "requestType": "check-out",
+      "requestedTime": "19:10",
+      "reason": "Forgot to check out after working late on project. Was working on critical project deliverable and lost track of time, left without checking out.",
+      "status": "approved",
+      "approvedBy": "admin@techcorpsolutions.com",
+      "approvedAt": "2024-12-29T11:30:00Z"
+    },
+    {
+      "employee": "mike.wilson@techcorpsolutions.com",
+      "date": "2024-12-27",
+      "requestType": "check-in",
+      "requestedTime": "09:00",
+      "reason": "Card reader was not working at main entrance. Tried multiple times but the system was not responding, had to use alternative entrance without check-in facility.",
+      "status": "rejected",
+      "rejectedBy": "hr@techcorpsolutions.com",
+      "rejectedAt": "2024-12-28T13:15:00Z",
+      "rejectionReason": "Conflicting attendance record already exists. System shows you were already checked in at 8:55 AM through the side entrance."
+    },
+    {
+      "employee": "john.doe@techcorpsolutions.com",
+      "date": "2024-12-26",
+      "requestType": "check-out",
+      "requestedTime": "17:00",
+      "reason": "Left with manager for client meeting, forgot check-out. Accompanied manager to important client presentation at their office location.",
+      "status": "approved",
+      "approvedBy": "hr@techcorpsolutions.com",
+      "approvedAt": "2024-12-27T09:20:00Z"
+    },
+    {
+      "employee": "jane.smith@techcorpsolutions.com",
+      "date": "2024-12-25",
+      "requestType": "check-in",
+      "requestedTime": "08:15",
+      "reason": "Had to attend to family emergency, forgot check-in procedure. Received urgent call from family member and was distracted during arrival process.",
+      "status": "pending"
+    },
+    {
+      "employee": "mike.wilson@techcorpsolutions.com",
+      "date": "2024-12-24",
+      "requestType": "check-out",
+      "requestedTime": "15:30",
+      "reason": "Had to rush to catch last bus, forgot to check out. Public transport schedule was changed due to holiday season and had to leave earlier than usual.",
+      "status": "approved",
+      "approvedBy": "admin@techcorpsolutions.com",
+      "approvedAt": "2024-12-25T10:45:00Z"
+    },
+    {
+      "employee": "john.doe@techcorpsolutions.com",
+      "date": "2024-12-23",
+      "requestType": "check-in",
+      "requestedTime": "07:30",
+      "reason": "Network issues prevented mobile check-in. Office WiFi and mobile data were both experiencing connectivity problems during arrival time.",
+      "status": "rejected",
+      "rejectedBy": "hr@techcorpsolutions.com",
+      "rejectedAt": "2024-12-24T14:30:00Z",
+      "rejectionReason": "Multiple similar requests in short period. This is your third network-related forget check request this month."
+    },
+    {
+      "employee": "jane.smith@techcorpsolutions.com",
+      "date": "2024-12-22",
+      "requestType": "check-out",
+      "requestedTime": "18:45",
+      "reason": "Attended off-site meeting, forgot to check out first. Was called to urgent meeting at client location and left directly from office without checking out.",
+      "status": "approved",
+      "approvedBy": "hr@techcorpsolutions.com",
+      "approvedAt": "2024-12-23T08:15:00Z"
+    },
+    {
+      "employee": "mike.wilson@techcorpsolutions.com",
+      "date": "2024-12-21",
+      "requestType": "check-in",
+      "requestedTime": "08:50",
+      "reason": "Was helping colleague with urgent task, missed check-in. Colleague needed immediate assistance with system issue and I got involved right after arriving.",
+      "status": "pending"
+    }
+  ],
+  "statistics": {
+    "totalRecords": 15,
+    "checkInRequests": 8,
+    "checkOutRequests": 7,
+    "pendingRequests": 5,
+    "approvedRequests": 7,
+    "rejectedRequests": 3
+  },
+  "notes": [
+    "All dates are in YYYY-MM-DD format",
+    "Times are in 24-hour HH:MM format",
+    "Reasons must be at least 10 characters long",
+    "Employee references should match existing user emails",
+    "ApprovedBy and RejectedBy should reference HR or Admin users",
+    "Status can be: pending, approved, rejected",
+    "RequestType can be: check-in, check-out"
+  ]
+}

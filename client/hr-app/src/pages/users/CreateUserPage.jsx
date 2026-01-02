@@ -309,11 +309,11 @@ const CreateUserPage = () => {
                                         <input
                                             accept="image/*"
                                             style={{ display: 'none' }}
-                                            id="profile-picture-upload"
+                                            id="create-user-profile-picture-upload"
                                             type="file"
                                             onChange={handleProfilePictureChange}
                                         />
-                                        <label htmlFor="profile-picture-upload">
+                                        <label htmlFor="create-user-profile-picture-upload">
                                             <IconButton
                                                 component="span"
                                                 sx={{
@@ -336,6 +336,7 @@ const CreateUserPage = () => {
                                 </Box>
 
                                 <TextField 
+                                    id="create-user-username"
                                     label="Username" 
                                     value={formData.username} 
                                     onChange={(e) => handleChange('username', e.target.value)} 
@@ -352,6 +353,7 @@ const CreateUserPage = () => {
                                 />
                                 
                                 <TextField 
+                                    id="create-user-email"
                                     label="Email Address" 
                                     type="email" 
                                     value={formData.email} 
@@ -362,6 +364,7 @@ const CreateUserPage = () => {
                                 />
                                 
                                 <TextField 
+                                    id="create-user-password"
                                     label="Password" 
                                     type={showPassword ? 'text' : 'password'} 
                                     value={formData.password} 
@@ -382,6 +385,7 @@ const CreateUserPage = () => {
                                 />
                                 
                                 <TextField 
+                                    id="create-user-role"
                                     select 
                                     label="Role" 
                                     value={formData.role} 
@@ -414,6 +418,7 @@ const CreateUserPage = () => {
                         <Box>
                             <Stack spacing={3}>
                                 <TextField 
+                                    id="create-user-full-name"
                                     label="Full Name" 
                                     value={formData.personalInfo.fullName} 
                                     onChange={(e) => handleChange('personalInfo.fullName', e.target.value)} 
@@ -425,6 +430,7 @@ const CreateUserPage = () => {
                                 <Grid container spacing={2}>
                                     <Grid size={{ xs: 12, sm: 4 }}>
                                         <TextField 
+                                            id="create-user-first-name"
                                             label="First Name" 
                                             value={formData.personalInfo.firstName} 
                                             onChange={(e) => handleChange('personalInfo.firstName', e.target.value)} 
@@ -434,6 +440,7 @@ const CreateUserPage = () => {
                                     </Grid>
                                     <Grid size={{ xs: 12, sm: 4 }}>
                                         <TextField 
+                                            id="create-user-middle-name"
                                             label="Middle Name" 
                                             value={formData.personalInfo.medName} 
                                             onChange={(e) => handleChange('personalInfo.medName', e.target.value)} 
@@ -443,6 +450,7 @@ const CreateUserPage = () => {
                                     </Grid>
                                     <Grid size={{ xs: 12, sm: 4 }}>
                                         <TextField 
+                                            id="create-user-last-name"
                                             label="Last Name" 
                                             value={formData.personalInfo.lastName} 
                                             onChange={(e) => handleChange('personalInfo.lastName', e.target.value)} 
@@ -453,6 +461,7 @@ const CreateUserPage = () => {
                                 </Grid>
 
                                 <TextField 
+                                    id="create-user-arabic-name"
                                     label="Arabic Name" 
                                     value={formData.personalInfo.arabicName} 
                                     onChange={(e) => handleChange('personalInfo.arabicName', e.target.value)} 
@@ -463,6 +472,7 @@ const CreateUserPage = () => {
                                 <Grid container spacing={2}>
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField 
+                                            id="create-user-national-id"
                                             label="National ID" 
                                             value={formData.personalInfo.nationalId} 
                                             onChange={(e) => handleChange('personalInfo.nationalId', e.target.value)} 
@@ -480,6 +490,7 @@ const CreateUserPage = () => {
                                     </Grid>
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField 
+                                            id="create-user-date-of-birth"
                                             label="Date of Birth" 
                                             type="date" 
                                             value={formData.personalInfo.dateOfBirth} 
@@ -500,6 +511,7 @@ const CreateUserPage = () => {
                                 <Grid container spacing={2}>
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField 
+                                            id="create-user-gender"
                                             select 
                                             label="Gender" 
                                             value={formData.personalInfo.gender} 
@@ -513,6 +525,7 @@ const CreateUserPage = () => {
                                     </Grid>
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField 
+                                            id="create-user-marital-status"
                                             select 
                                             label="Marital Status" 
                                             value={formData.personalInfo.maritalStatus} 
@@ -529,6 +542,7 @@ const CreateUserPage = () => {
                                 </Grid>
 
                                 <TextField 
+                                    id="create-user-nationality"
                                     select 
                                     label="Nationality" 
                                     value={formData.personalInfo.nationality} 
@@ -543,6 +557,7 @@ const CreateUserPage = () => {
                                 </TextField>
 
                                 <TextField 
+                                    id="create-user-phone"
                                     label="Phone Number" 
                                     value={formData.personalInfo.phone} 
                                     onChange={(e) => handleChange('personalInfo.phone', e.target.value)} 
@@ -558,6 +573,7 @@ const CreateUserPage = () => {
                                 />
 
                                 <TextField 
+                                    id="create-user-address"
                                     label="Address" 
                                     value={formData.personalInfo.address} 
                                     onChange={(e) => handleChange('personalInfo.address', e.target.value)} 
@@ -583,6 +599,7 @@ const CreateUserPage = () => {
                         <Box>
                             <Stack spacing={3}>
                                 <TextField 
+                                    id="create-user-main-department"
                                     select 
                                     label="Main Department" 
                                     value={formData.department} 
@@ -618,6 +635,7 @@ const CreateUserPage = () => {
                                     (typeof dept.parentDepartment === 'object' ? dept.parentDepartment._id : dept.parentDepartment) === formData.department
                                 ).length > 0 && (
                                     <TextField
+                                        id="create-user-sub-department"
                                         select
                                         label="Sub-Department (Optional)"
                                         value={formData.subDepartment || ''}
@@ -651,6 +669,7 @@ const CreateUserPage = () => {
                                 )}
 
                                 <TextField 
+                                    id="create-user-position"
                                     select 
                                     label="Position" 
                                     value={formData.position} 
@@ -671,6 +690,7 @@ const CreateUserPage = () => {
                                 </TextField>
 
                                 <TextField 
+                                    id="create-user-hire-date"
                                     label="Hire Date" 
                                     type="date" 
                                     value={formData.employment.hireDate} 
@@ -687,6 +707,7 @@ const CreateUserPage = () => {
                                 />
 
                                 <TextField 
+                                    id="create-user-contract-type"
                                     select 
                                     label="Contract Type" 
                                     value={formData.employment.contractType} 
@@ -701,6 +722,7 @@ const CreateUserPage = () => {
                                 </TextField>
 
                                 <TextField 
+                                    id="create-user-employment-status"
                                     select 
                                     label="Employment Status" 
                                     value={formData.employment.employmentStatus} 

@@ -1,9 +1,17 @@
 // Department Controller
 import Department from '../models/department.model.js';
+import multiTenantDB from '../../../../config/multiTenant.js';
+
+// Helper function to get tenant-specific Department model
+const getTenantDepartmentModel = async (tenantId) => {
+    const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+    return tenantConnection.model('Department', Department.schema);
+};
 
 export const getAllDepartments = async (req, res) => {
     try {
-        const departments = await Department.find({ tenantId: req.tenantId })
+        const TenantDepartment = await getTenantDepartmentModel(req.tenantId);
+        const departments = await TenantDepartment.find({ tenantId: req.tenantId })
             .populate('manager', 'username email');
         res.json({
             success: true,
@@ -19,7 +27,8 @@ export const getAllDepartments = async (req, res) => {
 
 export const createDepartment = async (req, res) => {
     try {
-        const department = new Department({
+        const TenantDepartment = await getTenantDepartmentModel(req.tenantId);
+        const department = new TenantDepartment({
             ...req.body,
             tenantId: req.tenantId
         });
@@ -38,7 +47,8 @@ export const createDepartment = async (req, res) => {
 
 export const getDepartmentById = async (req, res) => {
     try {
-        const department = await Department.findOne({ 
+        const TenantDepartment = await getTenantDepartmentModel(req.tenantId);
+        const department = await TenantDepartment.findOne({ 
             _id: req.params.id, 
             tenantId: req.tenantId 
         }).populate('manager', 'username email');
@@ -64,7 +74,8 @@ export const getDepartmentById = async (req, res) => {
 
 export const updateDepartment = async (req, res) => {
     try {
-        const department = await Department.findOneAndUpdate(
+        const TenantDepartment = await getTenantDepartmentModel(req.tenantId);
+        const department = await TenantDepartment.findOneAndUpdate(
             { _id: req.params.id, tenantId: req.tenantId },
             req.body,
             { new: true }
@@ -91,7 +102,8 @@ export const updateDepartment = async (req, res) => {
 
 export const deleteDepartment = async (req, res) => {
     try {
-        const department = await Department.findOneAndDelete({ 
+        const TenantDepartment = await getTenantDepartmentModel(req.tenantId);
+        const department = await TenantDepartment.findOneAndDelete({ 
             _id: req.params.id, 
             tenantId: req.tenantId 
         });
