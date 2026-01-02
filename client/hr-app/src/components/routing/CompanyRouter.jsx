@@ -123,16 +123,21 @@ const CompanyRouter = () => {
     const shouldAllowRoute = !!user;
 
     if (!shouldAllowRoute) {
-        console.log('CompanyRouter: No user, redirecting to login');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('CompanyRouter: No user, redirecting to login');
+        }
         return <Navigate to="/" replace />;
     }
 
-    console.log('CompanyRouter: Rendering routes', { 
-        user: user?.email, 
-        companySlug, 
-        isValidCompanyRoute,
-        tenant: tenant?.name
-    });
+    // Only log in development mode to reduce console noise
+    if (process.env.NODE_ENV === 'development') {
+        console.log('CompanyRouter: Rendering routes', { 
+            user: user?.email, 
+            companySlug, 
+            isValidCompanyRoute,
+            tenant: tenant?.name
+        });
+    }
 
     return (
         <Routes>

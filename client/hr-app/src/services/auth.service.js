@@ -5,9 +5,9 @@ const authService = {
     // Login user
     login: async (credentials) => {
         const response = await api.post('/auth/login', credentials);
-        if (response?.data?.token) {
-            localStorage.setItem('tenant_token', response.data.token);
-            localStorage.setItem('tenant_id', response.data.user?.tenantId);
+        if (response?.data?.data?.token) {
+            localStorage.setItem('tenant_token', response.data.data.token);
+            localStorage.setItem('tenant_id', response.data.data.user?.tenantId);
             // Remove old token format
             localStorage.removeItem('token');
         }

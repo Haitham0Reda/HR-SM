@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router';
+import { useCompanyRouting } from '../hooks/useCompanyRouting';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import {
     createOne as createEmployee,
@@ -100,29 +101,47 @@ export default function EmployeeCreate() {
         setFormErrors({});
 
         try {
-            await createEmployee(formValues);
-            notifications.show('Employee created successfully.', {
+            const response = await createEmployee(formValues);
+            
+            // Check if email was auto-generated
+            let successMessage = 'Employee created successfully.';
+            if (response.message && response.message.includes('Email auto-generated')) {
+                const emailMatch = response.message.match(/Email auto-generated: (.+)/);
+                if (emailMatch) {
+                    successMessage = `Employee created successfully. Email auto-generated: ${emailMatch[1]}`;
+                }
+            }
+            
+            notifications.show(successMessage, {
                 severity: 'success',
-                autoHideDuration: 3000,
+                autoHideDuration: 5000, // Longer duration for auto-generated email message
             });
 
             navigate(getCompanyRoute('/users'));
         } catch (createError) {
-            notifications.show(
-                `Failed to create employee. Reason: ${createError.message}`,
-                {
-                    severity: 'error',
-                    autoHideDuration: 3000,
-                },
-            );
+            let errorMessage = `Failed to create employee. Reason: ${createError.message}`;
+            
+            // Handle specific email generation errors
+            if (createError.message.includes('email domain not configured')) {
+                errorMessage = 'Failed to create employee: Company email domain not configured. Please contact administrator.';
+            } else if (createError.message.includes('Failed to generate email')) {
+                errorMessage = 'Failed to create employee: Unable to generate unique email address. Please provide an email manually.';
+            }
+            
+            notifications.show(errorMessage, {
+                severity: 'error',
+                autoHideDuration: 6000,
+            });
             throw createError;
         }
     }, [formValues, navigate, notifications, setFormErrors]);
 
     const handleCancel = () => {
-    const { getCompanyRoute } = useCompanyRouting();
+        const { getCompanyRoute } = useCompanyRouting();
         navigate(getCompanyRoute('/users'));
     };
+
+    const { getCompanyRoute } = useCompanyRouting();
 
     return (
         <PageContainer

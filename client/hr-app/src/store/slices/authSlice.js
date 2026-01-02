@@ -30,9 +30,9 @@ export const loginUser = createAsyncThunk(
         tenantId
       });
 
-      // The auth controller returns { success: true, token, user }
+      // The auth controller returns { success: true, data: { token, user } }
       // API interceptor already extracts response.data, so response is the actual data
-      const { user, token } = response;
+      const { user, token } = response.data;
 
       // Store tokens in localStorage
       localStorage.setItem('tenant_token', token);

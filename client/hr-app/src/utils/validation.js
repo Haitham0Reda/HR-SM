@@ -8,7 +8,14 @@ import { z } from 'zod';
  * User validation schemas
  */
 export const userSchema = z.object({
-    email: z.string().email('Invalid email address'),
+    username: z.string()
+        .min(2, 'Username must be at least 2 characters')
+        .max(50, 'Username must not exceed 50 characters')
+        .regex(/^[a-zA-Z0-9._-]+$/, 'Username can only contain letters, numbers, dots, underscores, and hyphens'),
+    email: z.string()
+        .email('Invalid email address')
+        .optional()
+        .or(z.literal('')), // Allow empty string for auto-generation
     password: z.string()
         .min(8, 'Password must be at least 8 characters')
         .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 
@@ -31,6 +38,30 @@ export const loginSchema = z.object({
 });
 
 export const updateUserSchema = userSchema.partial().omit({ password: true });
+
+/**
+ * Company validation schemas
+ */
+export const emailDomainSchema = z.object({
+    emailDomain: z.string()
+        .min(1, 'Email domain is required')
+        .regex(
+            /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])*$/,
+            'Invalid domain format (e.g., company.com)'
+        )
+        .refine(
+            (domain) => !domain.startsWith('.') && !domain.endsWith('.'),
+            'Domain cannot start or end with a dot'
+        )
+});
+
+/**
+ * Email generation validation
+ */
+export const usernameForEmailSchema = z.string()
+    .min(1, 'Username is required for email generation')
+    .max(64, 'Username too long for email generation')
+    .regex(/^[a-zA-Z0-9._-]+$/, 'Username contains invalid characters for email generation');
 
 /**
  * Leave validation schemas

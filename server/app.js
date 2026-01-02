@@ -72,7 +72,9 @@ app.use(cors({
         process.env.CLIENT_URL || 'http://localhost:3000',
         'http://localhost:3001', // Platform admin
         'http://localhost:3002', // Platform admin (alternative port)
-        'http://localhost:6006' // Storybook
+        'http://localhost:6006', // Storybook
+        'http://127.0.0.1:5500', // Live Server
+        'http://localhost:5500'  // Live Server alternative
     ],
     credentials: true
 }));
@@ -101,6 +103,11 @@ app.use('/api/v1', apiRateLimit);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// JSON error handling middleware
+import { jsonErrorHandler, requestBodyLogger } from './middleware/jsonErrorHandler.js';
+app.use(requestBodyLogger); // Log problematic requests in development
+app.use(jsonErrorHandler);  // Handle JSON parsing errors
 
 // Data sanitization and security
 app.use(mongoSanitize());
@@ -449,6 +456,15 @@ export const initializeRoutes = async () => {
         console.log('✓ Company module routes loaded (/api/v1/company/*)');
     } catch (error) {
         console.warn('⚠️  Company module routes not available:', error.message);
+    }
+
+    // Company routes (for email domain and company settings)
+    try {
+        const companyRoutes = await import('./routes/company.routes.js');
+        app.use('/api/v1/companies', companyRoutes.default);
+        console.log('✓ Company routes loaded (/api/v1/companies/*)');
+    } catch (error) {
+        console.warn('⚠️  Company routes not available:', error.message);
     }
 
     // Module availability routes (for checking module availability)

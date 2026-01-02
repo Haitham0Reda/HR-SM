@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test</title>
+</head>
+<body>
+    <h1>Login Test</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <div id="result"></div>
+
+    <script>
+        async function testLogin() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing login...';
+            
+            try {
+                console.log('Testing login with CORS...');
+                const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@techcorp.com',
+                        password: 'admin123',
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+                
+                console.log('Response received:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <h3>✅ Login Success</h3>
+                        <p>Status: ${response.status}</p>
+                        <p>Response structure: ${JSON.stringify(Object.keys(data), null, 2)}</p>
+                        <p>Has token: ${!!data.data?.token}</p>
+                        <p>Has user: ${!!data.data?.user}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    
+                    // Test /auth/me
+                    if (data.data?.token) {
+                        console.log('Testing /auth/me...');
+                        const meResponse = await fetch('http://localhost:5000/api/v1/auth/me', {
+                            headers: {
+                                'Authorization': `Bearer ${data.data.token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        const meData = await meResponse.json();
+                        console.log('/auth/me response:', meData);
+                        resultDiv.innerHTML += `
+                            <h3>✅ /auth/me Success</h3>
+                            <p>Status: ${meResponse.status}</p>
+                            <pre>${JSON.stringify(meData, null, 2)}</pre>
+                        `;
+                    }
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3>❌ Login Failed</h3>
+                        <p>Status: ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('Login test error:', error);
+                resultDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                    <p>Check browser console for details</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -31,6 +31,13 @@ const companySchema = new mongoose.Schema({
     trim: true,
     match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
   },
+  emailDomain: {
+    type: String,
+    required: [true, 'Email domain is required'],
+    lowercase: true,
+    trim: true,
+    match: [/^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9])*$/, 'Please provide a valid domain name']
+  },
   phone: {
     type: String,
     trim: true

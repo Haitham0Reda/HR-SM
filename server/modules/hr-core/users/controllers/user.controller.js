@@ -50,22 +50,42 @@ export const getAllUsers = async (req, res) => {
             filters: req.query
         });
 
-        // Build query with tenant filtering
-        const query = {};
+        // Get tenant ID
+        const tenantId = req.tenantId || req.user?.tenantId;
         
-        // Apply tenant filtering if tenantId is available
-        if (req.tenantId) {
-            query.tenantId = req.tenantId;
-        } else if (req.user?.tenantId) {
-            query.tenantId = req.user.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
         }
-        
-        console.log('🔍 Fetching users with query:', query);
+
+        console.log('🔍 Fetching users for tenant:', tenantId);
         console.log('🔍 Request tenantId:', req.tenantId);
         console.log('🔍 User tenantId:', req.user?.tenantId);
-        console.log('🔍 User object:', req.user);
         
-        const users = await User.find(query)
+        // Use tenant-specific database connection
+        const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register models on tenant connection using utility
+        let models;
+        try {
+            const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
+            models = await registerHRModels(tenantConnection);
+        } catch (modelError) {
+            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Database model registration error',
+                error: process.env.NODE_ENV === 'development' ? modelError.message : undefined
+            });
+        }
+        
+        // Build query with tenant filtering
+        const query = { tenantId: tenantId };
+        
+        const users = await models.User.find(query)
             .populate({
                 path: 'department',
                 populate: {
@@ -75,16 +95,7 @@ export const getAllUsers = async (req, res) => {
             })
             .populate('position');
             
-        console.log(`✓ Found ${users.length} users for tenant ${query.tenantId || 'unknown'}`);
-        
-        // If no users found, let's check if there are any users at all
-        if (users.length === 0) {
-            const allUsers = await User.find({});
-            console.log(`🔍 Total users in database: ${allUsers.length}`);
-            if (allUsers.length > 0) {
-                console.log('🔍 Sample user tenantIds:', allUsers.slice(0, 3).map(u => u.tenantId));
-            }
-        }
+        console.log(`✓ Found ${users.length} users for tenant ${tenantId}`);
         
         // Log sensitive data access
         logDataAccess(req, 'users', {
@@ -104,111 +115,98 @@ export const getAllUsers = async (req, res) => {
             controller: 'UserController',
             action: 'getAllUsers'
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
     }
 };
 
 export const getUserById = async (req, res) => {
     try {
         const userId = req.params.id;
-        const currentUserId = req.user._id.toString();
+        
+        // Safely get current user ID - auth middleware sets req.user.id, not req.user._id
+        const currentUserId = req.user?.id || 'unknown';
         
         // Get the tenant ID from multiple sources
         const tenantId = req.tenantId || req.user?.tenantId || req.headers['x-tenant-id'];
         
-        console.log(`🔍 Fetching user ${userId}, tenant: ${tenantId}, current user: ${currentUserId}`);
-        console.log(`🔍 req.tenantId: ${req.tenantId}`);
-        console.log(`🔍 req.user.tenantId: ${req.user?.tenantId}`);
-        console.log(`🔍 req.headers['x-tenant-id']: ${req.headers['x-tenant-id']}`);
-        console.log(`🔍 req.user:`, JSON.stringify(req.user, null, 2));
-        
-        let user;
-        
-        // Strategy 1: Try with tenant filtering if tenant ID is available
-        if (tenantId) {
-            const query = { _id: userId, tenantId: tenantId };
-            user = await User.findOne(query)
-                .populate({
-                    path: 'department',
-                    populate: {
-                        path: 'parentDepartment',
-                        select: 'name code'
-                    }
-                })
-                .populate('position');
-            
-            if (user) {
-                console.log(`✓ Found user with tenant filtering: ${user.email} (tenant: ${tenantId})`);
-            }
-        }
-        
-        // Strategy 2: If tenant filtering failed, try without tenant filter for own profile
-        if (!user && userId === currentUserId) {
-            console.log('⚠️  Tenant filtering failed, trying without tenant filter for own profile');
-            user = await User.findById(userId)
-                .populate({
-                    path: 'department',
-                    populate: {
-                        path: 'parentDepartment',
-                        select: 'name code'
-                    }
-                })
-                .populate('position');
-            
-            // Security check: verify the user belongs to the same tenant as the authenticated user
-            if (user) {
-                if (req.user.tenantId && user.tenantId !== req.user.tenantId) {
-                    console.log(`❌ Security check failed: user tenant (${user.tenantId}) != auth tenant (${req.user.tenantId})`);
-                    return res.status(403).json({ error: 'Not authorized - tenant mismatch' });
-                }
-                console.log(`✓ Found own profile without tenant filter: ${user.email} (tenant: ${user.tenantId})`);
-            }
-        }
-        
-        // Strategy 3: For admins, allow cross-tenant access if explicitly authorized
-        if (!user && req.user.role === 'admin') {
-            console.log('⚠️  Admin attempting cross-tenant user access');
-            user = await User.findById(userId)
-                .populate({
-                    path: 'department',
-                    populate: {
-                        path: 'parentDepartment',
-                        select: 'name code'
-                    }
-                })
-                .populate('position');
-            
-            if (user) {
-                console.log(`✓ Admin accessed user: ${user.email} (tenant: ${user.tenantId})`);
-            }
-        }
-            
-        if (!user) {
-            console.log(`❌ User ${userId} not found with any strategy`);
-            return res.status(404).json({ 
-                error: 'User not found',
-                debug: {
-                    userId,
-                    currentUserId,
-                    tenantId,
-                    reqTenantId: req.tenantId,
-                    userTenantId: req.user?.tenantId,
-                    headerTenantId: req.headers['x-tenant-id'],
-                    userRole: req.user?.role,
-                    strategies: {
-                        tenantFiltering: !!tenantId,
-                        ownProfile: userId === currentUserId,
-                        adminAccess: req.user?.role === 'admin'
-                    }
-                }
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
             });
         }
         
-        console.log(`✅ Successfully retrieved user ${user.email} (${user.tenantId})`);
-        res.json(sanitizeUser(user));
+        console.log(`🔍 Fetching user ${userId}, tenant: ${tenantId}, current user: ${currentUserId}`);
+        console.log(`🔍 Request details:`, {
+            'req.user': req.user,
+            'req.tenantId': req.tenantId,
+            'req.headers.authorization': req.headers.authorization ? 'Bearer [REDACTED]' : 'None'
+        });
+        
+        // Use tenant-specific database connection
+        const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register models on tenant connection using utility
+        let models;
+        try {
+            const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
+            models = await registerHRModels(tenantConnection);
+        } catch (modelError) {
+            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Database model registration error',
+                error: process.env.NODE_ENV === 'development' ? modelError.message : undefined
+            });
+        }
+        
+        // Find user in tenant database
+        const user = await models.User.findOne({ _id: userId, tenantId: tenantId })
+            .populate({
+                path: 'department',
+                populate: {
+                    path: 'parentDepartment',
+                    select: 'name code'
+                }
+            })
+            .populate('position');
+            
+        if (!user) {
+            console.log(`❌ User ${userId} not found in tenant ${tenantId}`);
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        console.log(`✓ Found user: ${user.email} (tenant: ${tenantId})`);
+        
+        // Log sensitive data access
+        logDataAccess(req, 'user', {
+            operation: 'read',
+            resourceId: userId,
+            sensitiveData: true
+        });
+
+        res.json({
+            success: true,
+            data: sanitizeUser(user)
+        });
     } catch (err) {
         console.error('❌ Error fetching user by ID:', err);
-        res.status(500).json({ error: err.message });
+        logControllerError(req, err, {
+            controller: 'UserController',
+            action: 'getUserById'
+        });
+        res.status(500).json({ 
+            success: false,
+            message: 'Internal server error',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 };
 
@@ -220,35 +218,99 @@ export const createUser = async (req, res) => {
         // Remove employeeId from request body if provided (it will be auto-generated)
         delete req.body.employeeId;
 
-        // Check for duplicate username/email within the same tenant
+        // Get tenant context
         const tenantId = req.tenantId || req.user?.tenantId;
+        
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get company email domain
+        const CompanyService = (await import('../../../../services/CompanyService.js')).default;
+        const companyService = new CompanyService();
+        const emailDomain = await companyService.getCompanyEmailDomain(tenantId);
+        
+        if (!emailDomain) {
+            return res.status(400).json({
+                success: false,
+                message: 'Company email domain not configured. Please contact administrator.'
+            });
+        }
+
+        // Use tenant-specific database connection
+        const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register models on tenant connection using utility
+        let models;
+        try {
+            const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
+            models = await registerHRModels(tenantConnection);
+        } catch (modelError) {
+            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Database model registration error',
+                error: process.env.NODE_ENV === 'development' ? modelError.message : undefined
+            });
+        }
+
+        // Auto-generate email if not provided
+        let email = req.body.email;
+        if (!email) {
+            const { generateUniqueEmail } = await import('../../../../utils/emailGenerator.js');
+            try {
+                // Pass the complete user data for name-based email generation
+                const userDataForEmail = {
+                    firstName: req.body.personalInfo?.firstName || req.body.firstName,
+                    lastName: req.body.personalInfo?.lastName || req.body.lastName,
+                    username: req.body.username,
+                    personalInfo: req.body.personalInfo
+                };
+                
+                email = await generateUniqueEmail(models.User, userDataForEmail, emailDomain, tenantId);
+                console.log(`📧 Auto-generated email: ${email} for user: ${userDataForEmail.firstName} ${userDataForEmail.lastName} (${userDataForEmail.username})`);
+            } catch (emailError) {
+                console.error('❌ Error generating email:', emailError);
+                return res.status(400).json({
+                    success: false,
+                    message: `Failed to generate email: ${emailError.message}`
+                });
+            }
+        }
+
+        // Check for duplicate username/email within the same tenant
         const conditions = [
-            { email: req.body.email, tenantId },
+            { email: email, tenantId },
             { username: req.body.username, tenantId }
         ];
 
-        const existing = await User.findOne({ $or: conditions });
+        const existing = await models.User.findOne({ $or: conditions });
 
         if (existing) {
-            if (existing.email === req.body.email) {
-                return res.status(409).json({ error: 'Email already exists' });
+            if (existing.email === email) {
+                return res.status(409).json({ 
+                    success: false,
+                    message: 'Email already exists' 
+                });
             }
             if (existing.username === req.body.username) {
-                return res.status(409).json({ error: 'Username already exists' });
+                return res.status(409).json({ 
+                    success: false,
+                    message: 'Username already exists' 
+                });
             }
         }
 
-        // Ensure tenantId is set from the authenticated user context
-        const userData = { ...req.body };
-        if (req.tenantId) {
-            userData.tenantId = req.tenantId;
-        } else if (req.user?.tenantId) {
-            userData.tenantId = req.user.tenantId;
-        }
+        // Ensure tenantId and generated email are set
+        const userData = { ...req.body, tenantId, email };
         
-        console.log('👤 Creating user with tenant context:', { email: userData.email, tenantId: userData.tenantId });
+        console.log('👤 Creating user with tenant context:', { email: userData.email, username: userData.username, tenantId: userData.tenantId });
 
-        const user = new User(userData);
+        const user = new models.User(userData);
         await user.save();
         await user.populate({
             path: 'department',
@@ -258,29 +320,65 @@ export const createUser = async (req, res) => {
             }
         });
         await user.populate('position');
-        res.status(201).json(sanitizeUser(user));
+        
+        res.status(201).json({
+            success: true,
+            data: sanitizeUser(user),
+            message: email !== req.body.email ? `Email auto-generated: ${email}` : undefined
+        });
     } catch (err) {
+        console.error('❌ Error creating user:', err);
         // Handle MongoDB duplicate key errors
         if (err.code === 11000) {
             const field = Object.keys(err.keyPattern)[0];
             return res.status(409).json({
-                error: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
+                success: false,
+                message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
             });
         }
-        res.status(400).json({ error: err.message });
+        res.status(500).json({ 
+            success: false,
+            message: 'Internal server error',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 };
 
 export const updateUser = async (req, res) => {
     try {
         // For profile updates (no params.id), use the logged-in user's ID
-        const userId = req.params.id || req.user._id;
+        const userId = req.params.id || req.user.id;
 
         const error = validateUserInput(req.body, true);
         if (error) return res.status(400).json({ error });
 
         // Get tenant context
         const tenantId = req.tenantId || req.user?.tenantId;
+        
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Use tenant-specific database connection
+        const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register models on tenant connection using utility
+        let models;
+        try {
+            const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
+            models = await registerHRModels(tenantConnection);
+        } catch (modelError) {
+            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Database model registration error',
+                error: process.env.NODE_ENV === 'development' ? modelError.message : undefined
+            });
+        }
         
         // Prevent updating unique fields to existing values within the same tenant
         if (req.body.email || req.body.username || req.body.employeeId) {
@@ -289,7 +387,7 @@ export const updateUser = async (req, res) => {
             if (req.body.username) conditions.push({ username: req.body.username, tenantId });
             if (req.body.employeeId) conditions.push({ employeeId: req.body.employeeId, tenantId });
 
-            const conflict = await User.findOne({
+            const conflict = await models.User.findOne({
                 $or: conditions,
                 _id: { $ne: userId }
             });
@@ -308,14 +406,11 @@ export const updateUser = async (req, res) => {
         }
 
         // Build query with tenant filtering for update
-        const query = { _id: userId };
-        if (tenantId) {
-            query.tenantId = tenantId;
-        }
+        const query = { _id: userId, tenantId: tenantId };
         
         console.log('✏️ Updating user with query:', query);
         
-        const user = await User.findOneAndUpdate(query, req.body, { new: true })
+        const user = await models.User.findOneAndUpdate(query, req.body, { new: true })
             .populate({
                 path: 'department',
                 populate: {
@@ -326,46 +421,85 @@ export const updateUser = async (req, res) => {
             .populate('position');
             
         if (!user) {
-            console.log(`❌ User not found for update with ID ${userId} for tenant ${tenantId || 'unknown'}`);
-            return res.status(404).json({ error: 'User not found' });
+            console.log(`❌ User not found for update with ID ${userId} for tenant ${tenantId}`);
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
         }
         
-        console.log(`✓ Updated user ${user.email} for tenant ${tenantId || 'unknown'}`);
-        res.json(sanitizeUser(user));
+        console.log(`✓ Updated user ${user.email} for tenant ${tenantId}`);
+        res.json({
+            success: true,
+            data: sanitizeUser(user)
+        });
     } catch (err) {
+        console.error('❌ Error updating user:', err);
         // Handle MongoDB duplicate key errors
         if (err.code === 11000) {
             const field = Object.keys(err.keyPattern)[0];
             return res.status(409).json({
-                error: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
+                success: false,
+                message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
             });
         }
-        res.status(400).json({ error: err.message });
+        res.status(500).json({ 
+            success: false,
+            message: 'Internal server error',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 };
 
 export const deleteUser = async (req, res) => {
     try {
-        // Build query with tenant filtering
-        const query = { _id: req.params.id };
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
         
-        // Apply tenant filtering if tenantId is available
-        if (req.tenantId) {
-            query.tenantId = req.tenantId;
-        } else if (req.user?.tenantId) {
-            query.tenantId = req.user.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
         }
+
+        // Use tenant-specific database connection
+        const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register models on tenant connection using utility
+        let models;
+        try {
+            const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
+            models = await registerHRModels(tenantConnection);
+        } catch (modelError) {
+            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Database model registration error',
+                error: process.env.NODE_ENV === 'development' ? modelError.message : undefined
+            });
+        }
+        
+        // Build query with tenant filtering
+        const query = { _id: req.params.id, tenantId: tenantId };
         
         console.log('🗑️ Deleting user with query:', query);
         
-        const user = await User.findOneAndDelete(query);
+        const user = await models.User.findOneAndDelete(query);
         if (!user) {
-            console.log(`❌ User not found for deletion with ID ${req.params.id} for tenant ${query.tenantId || 'unknown'}`);
-            return res.status(404).json({ error: 'User not found' });
+            console.log(`❌ User not found for deletion with ID ${req.params.id} for tenant ${tenantId}`);
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
         }
         
-        console.log(`✓ Deleted user ${user.email} for tenant ${query.tenantId || 'unknown'}`);
-        res.json({ message: 'User deleted' });
+        console.log(`✓ Deleted user ${user.email} for tenant ${tenantId}`);
+        res.json({ 
+            success: true,
+            message: 'User deleted successfully' 
+        });
     } catch (err) {
         console.error('❌ Error deleting user:', err);
         res.status(500).json({ error: err.message });
@@ -477,70 +611,69 @@ export const loginUser = async (req, res) => {
 export const getUserProfile = async (req, res) => {
     try {
         console.log('🔍 getUserProfile called');
-        console.log('   req.user._id:', req.user?._id);
+        console.log('   req.user.id:', req.user?.id);
         console.log('   req.tenantId:', req.tenantId);
         console.log('   req.user.tenantId:', req.user?.tenantId);
         
-        // req.user is set by the protect middleware, but we need to fetch fresh data
-        // from the tenant-specific database to ensure we have the latest information
-        let user;
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
         
-        if (req.tenantId) {
-            console.log('   Trying tenant-specific database...');
-            // Use tenant-specific database
-            try {
-                const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
-                const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
-                const TenantUser = tenantConnection.model('User', User.schema);
-                
-                try {
-                    user = await TenantUser.findById(req.user._id).populate('department position');
-                    if (user) {
-                        console.log('   ✅ Found user in tenant database with populate');
-                    } else {
-                        console.log('   ❌ User not found in tenant database with populate');
-                    }
-                } catch (populateError) {
-                    console.warn('   ⚠️ Populate failed in getUserProfile, trying without populate:', populateError.message);
-                    user = await TenantUser.findById(req.user._id);
-                    if (user) {
-                        console.log('   ✅ Found user in tenant database without populate');
-                    } else {
-                        console.log('   ❌ User not found in tenant database without populate');
-                    }
-                }
-            } catch (error) {
-                console.warn('   ❌ Failed to get user from tenant database in getUserProfile:', error.message);
-                // Fall back to main database
-                console.log('   Falling back to main database...');
-                user = await User.findById(req.user._id).populate('department position');
-                if (user) {
-                    console.log('   ✅ Found user in main database');
-                } else {
-                    console.log('   ❌ User not found in main database either');
-                }
-            }
-        } else {
-            console.log('   Using main database directly...');
-            // Use main database
-            user = await User.findById(req.user._id).populate('department position');
-            if (user) {
-                console.log('   ✅ Found user in main database');
-            } else {
-                console.log('   ❌ User not found in main database');
-            }
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
         }
+
+        // Use tenant-specific database connection
+        const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register models on tenant connection using utility
+        let models;
+        try {
+            const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
+            models = await registerHRModels(tenantConnection);
+        } catch (modelError) {
+            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Database model registration error',
+                error: process.env.NODE_ENV === 'development' ? modelError.message : undefined
+            });
+        }
+        
+        // Find user in tenant database
+        const user = await models.User.findOne({ _id: req.user.id, tenantId: tenantId })
+            .populate({
+                path: 'department',
+                populate: {
+                    path: 'parentDepartment',
+                    select: 'name code'
+                }
+            })
+            .populate('position');
         
         if (!user) {
-            console.log('   ❌ Final result: User not found');
-            return res.status(404).json({ error: 'User not found' });
+            console.log(`❌ User profile not found for ID ${req.user.id} in tenant ${tenantId}`);
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
         }
         
-        console.log('   ✅ Final result: User found:', user.email);
-        res.json(sanitizeUser(user));
+        console.log(`✅ User profile found: ${user.email} (tenant: ${tenantId})`);
+        res.json({
+            success: true,
+            data: sanitizeUser(user)
+        });
     } catch (err) {
-        console.error('   ❌ Error in getUserProfile:', err);
-        res.status(500).json({ error: err.message });
+        console.error('❌ Error in getUserProfile:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Internal server error',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 };
 
@@ -549,7 +682,7 @@ export const updateUserProfile = async (req, res) => {
         console.log('updateUserProfile called - User:', req.user?._id);
         console.log('Request body:', req.body);
 
-        const userId = req.user._id;
+        const userId = req.user.id;
 
         // Build the update object - profilePicture should be inside personalInfo
         const allowedUpdates = {};
@@ -583,110 +716,131 @@ export const updateUserProfile = async (req, res) => {
 export const uploadProfilePicture = async (req, res) => {
     try {
         const userId = req.params.id;
-        const currentUserId = req.user._id.toString();
+        const currentUserId = req.user.id;
         
         // Check if user can upload (own profile or admin)
         if (userId !== currentUserId && req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Not authorized to upload profile picture for this user' });
+            return res.status(403).json({ 
+                success: false,
+                message: 'Not authorized to upload profile picture for this user' 
+            });
         }
 
         if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+            return res.status(400).json({ 
+                success: false,
+                message: 'No file uploaded' 
+            });
         }
 
         // Create the profile picture URL
         const profilePictureUrl = `/uploads/profile-pictures/${req.file.filename}`;
 
-        // FIXED: Enhanced tenant filtering with better fallback logic
-        let user;
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
         
-        // Get the tenant ID from multiple sources
-        const tenantId = req.tenantId || req.user?.tenantId || req.headers['x-tenant-id'];
-        
-        console.log(`🔍 Profile picture upload for user ${userId}, tenant: ${tenantId} [UPDATED]`);
-        
-        // Strategy 1: Try with tenant filtering if tenant ID is available
-        if (tenantId) {
-            const query = { _id: userId, tenantId: tenantId };
-            user = await User.findOneAndUpdate(
-                query,
-                { 'personalInfo.profilePicture': profilePictureUrl },
-                { new: true, runValidators: true }
-            ).populate('department position');
-            
-            if (user) {
-                console.log(`✓ Profile picture updated with tenant filtering (tenant: ${tenantId})`);
-            }
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
         }
 
-        // Strategy 2: If tenant filtering failed or no tenant ID, try without tenant filter for own profile
-        if (!user && userId === currentUserId) {
-            console.log('⚠️  Tenant filtering failed or no tenant ID, trying without tenant filter for own profile');
-            user = await User.findByIdAndUpdate(
-                userId,
-                { 'personalInfo.profilePicture': profilePictureUrl },
-                { new: true, runValidators: true }
-            ).populate('department position');
-            
-            // Security check: verify the user belongs to the same tenant as the authenticated user
-            if (user) {
-                if (req.user.tenantId && user.tenantId !== req.user.tenantId) {
-                    console.log(`❌ Security check failed: user tenant (${user.tenantId}) != auth tenant (${req.user.tenantId})`);
-                    return res.status(403).json({ error: 'Not authorized - tenant mismatch' });
-                }
-                console.log(`✓ Profile picture updated without tenant filter (verified tenant: ${user.tenantId})`);
-            }
+        console.log(`🔍 Profile picture upload for user ${userId}, tenant: ${tenantId}`);
+
+        // Use tenant-specific database connection
+        const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register models on tenant connection using utility
+        let models;
+        try {
+            const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
+            models = await registerHRModels(tenantConnection);
+        } catch (modelError) {
+            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Database model registration error',
+                error: process.env.NODE_ENV === 'development' ? modelError.message : undefined
+            });
         }
 
-        // Strategy 3: For admins, allow cross-tenant updates if explicitly authorized
-        if (!user && req.user.role === 'admin') {
-            console.log('⚠️  Admin attempting cross-tenant profile picture update');
-            user = await User.findByIdAndUpdate(
-                userId,
-                { 'personalInfo.profilePicture': profilePictureUrl },
-                { new: true, runValidators: true }
-            ).populate('department position');
-            
-            if (user) {
-                console.log(`✓ Admin updated profile picture for user in tenant: ${user.tenantId}`);
+        // Update user profile picture in tenant database
+        const user = await models.User.findOneAndUpdate(
+            { _id: userId, tenantId: tenantId },
+            { 'personalInfo.profilePicture': profilePictureUrl },
+            { new: true, runValidators: true }
+        ).populate({
+            path: 'department',
+            populate: {
+                path: 'parentDepartment',
+                select: 'name code'
             }
-        }
+        }).populate('position');
 
         if (!user) {
-            console.log(`❌ User ${userId} not found with any strategy`);
-            return res.status(404).json({ error: 'User not found' });
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
         }
 
-        console.log(`✅ Profile picture uploaded successfully for user ${user.email} (${user.tenantId})`);
+        console.log(`✅ Profile picture uploaded successfully for user ${user.email} (${tenantId})`);
         res.json({
+            success: true,
             message: 'Profile picture uploaded successfully',
             profilePicture: profilePictureUrl,
-            user: sanitizeUser(user)
+            data: sanitizeUser(user)
         });
     } catch (err) {
         console.error('❌ Error uploading profile picture:', err);
-        res.status(500).json({ error: 'Failed to upload profile picture' });
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to upload profile picture',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 };
 
 // Get user plain password (for credential generation - Admin only)
 export const getUserPlainPassword = async (req, res) => {
     try {
-        // Build query with tenant filtering
-        const query = { _id: req.params.id };
+        // Get tenant ID from request
+        const tenantId = req.tenantId || req.user?.tenantId;
         
-        // Apply tenant filtering if tenantId is available
-        if (req.tenantId) {
-            query.tenantId = req.tenantId;
-        } else if (req.user?.tenantId) {
-            query.tenantId = req.user.tenantId;
+        if (!tenantId) {
+            console.log('❌ No tenant ID available for plain password request');
+            return res.status(400).json({ error: 'Tenant ID required' });
+        }
+
+        // Use tenant-specific database connection
+        const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register models on tenant connection using utility
+        let models;
+        try {
+            const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
+            models = await registerHRModels(tenantConnection);
+        } catch (modelError) {
+            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Database model registration error',
+                error: modelError.message
+            });
         }
         
-        console.log('🔑 Fetching plain password with query:', query);
+        // Build query with tenant filtering
+        const query = { _id: req.params.id, tenantId };
         
-        const user = await User.findOne(query).select('+plainPassword');
+        console.log('🔑 Fetching plain password with query:', query);
+        console.log('🏢 Using tenant connection for:', tenantId);
+        
+        const user = await models.User.findOne(query).select('+plainPassword');
         if (!user) {
-            console.log(`❌ User not found for plain password with ID ${req.params.id} for tenant ${query.tenantId || 'unknown'}`);
+            console.log(`❌ User not found for plain password with ID ${req.params.id} for tenant ${tenantId}`);
             return res.status(404).json({ error: 'User not found' });
         }
 
@@ -697,7 +851,7 @@ export const getUserPlainPassword = async (req, res) => {
             });
         }
 
-        console.log(`✓ Retrieved plain password for user ${user.email} for tenant ${query.tenantId || 'unknown'}`);
+        console.log(`✓ Retrieved plain password for user ${user.email} for tenant ${tenantId}`);
         res.json({ plainPassword: user.plainPassword });
     } catch (err) {
         console.error('❌ Error fetching plain password:', err);
@@ -825,6 +979,46 @@ export const bulkCreateUsers = async (req, res) => {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
+        
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get company email domain
+        const CompanyService = (await import('../../../../services/CompanyService.js')).default;
+        const companyService = new CompanyService();
+        const emailDomain = await companyService.getCompanyEmailDomain(tenantId);
+        
+        if (!emailDomain) {
+            return res.status(400).json({
+                success: false,
+                message: 'Company email domain not configured. Please contact administrator.'
+            });
+        }
+
+        // Use tenant-specific database connection
+        const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register models on tenant connection using utility
+        let models;
+        try {
+            const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
+            models = await registerHRModels(tenantConnection);
+        } catch (modelError) {
+            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Database model registration error',
+                error: process.env.NODE_ENV === 'development' ? modelError.message : undefined
+            });
+        }
+
         // Parse Excel file
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
@@ -835,16 +1029,95 @@ export const bulkCreateUsers = async (req, res) => {
             return res.status(400).json({ error: 'Excel file is empty' });
         }
 
+        // Prepare users data for bulk email generation
+        const usersForEmailGeneration = data.map(row => ({
+            firstName: row.firstName || row.FirstName || row['First Name'],
+            lastName: row.lastName || row.LastName || row['Last Name'],
+            username: row.username || row.Username,
+            email: row.email || row.Email, // Keep existing email if provided
+            personalInfo: {
+                firstName: row.firstName || row.FirstName || row['First Name'],
+                lastName: row.lastName || row.LastName || row['Last Name']
+            }
+        })).filter(user => 
+            (user.firstName && user.lastName) || user.username // Must have name or username
+        );
+
+        // Generate emails for users that don't have one
+        const { generateBulkUniqueEmails } = await import('../../../../utils/emailGenerator.js');
+        let usersWithEmails;
+        try {
+            const usersNeedingEmails = usersForEmailGeneration.filter(user => !user.email);
+            if (usersNeedingEmails.length > 0) {
+                const generatedEmailUsers = await generateBulkUniqueEmails(models.User, usersNeedingEmails, emailDomain, tenantId);
+                
+                // Create a map of user identifier to generated email
+                const emailMap = new Map();
+                generatedEmailUsers.forEach(user => {
+                    const key = user.firstName && user.lastName 
+                        ? `${user.firstName}_${user.lastName}` 
+                        : user.username;
+                    emailMap.set(key, user.email);
+                });
+                
+                // Apply generated emails to original data
+                usersWithEmails = usersForEmailGeneration.map(user => {
+                    if (user.email) return user; // Keep existing email
+                    
+                    const key = user.firstName && user.lastName 
+                        ? `${user.firstName}_${user.lastName}` 
+                        : user.username;
+                    
+                    return {
+                        ...user,
+                        email: emailMap.get(key) || user.email
+                    };
+                });
+            } else {
+                usersWithEmails = usersForEmailGeneration;
+            }
+        } catch (emailError) {
+            console.error('❌ Error generating bulk emails:', emailError);
+            return res.status(400).json({
+                success: false,
+                message: `Failed to generate emails: ${emailError.message}`
+            });
+        }
+
         const results = [];
         const errors = [];
 
         for (let i = 0; i < data.length; i++) {
             const row = data[i];
             try {
+                // Get the email for this user (either provided or generated)
+                const firstName = row.firstName || row.FirstName || row['First Name'];
+                const lastName = row.lastName || row.LastName || row['Last Name'];
+                const username = row.username || row.Username;
+                
+                const userKey = firstName && lastName 
+                    ? `${firstName}_${lastName}` 
+                    : username;
+                    
+                const userWithEmail = usersWithEmails.find(u => {
+                    const uKey = u.firstName && u.lastName 
+                        ? `${u.firstName}_${u.lastName}` 
+                        : u.username;
+                    return uKey === userKey;
+                });
+                
+                const email = userWithEmail?.email;
+
+                if (!email) {
+                    errors.push({ row: i + 2, error: 'First name + last name or username is required for email generation' });
+                    continue;
+                }
+
                 // Map Excel columns to user fields (support multiple column name formats)
                 const userData = {
+                    tenantId,
                     username: row.username || row.Username,
-                    email: row.email || row.Email,
+                    email: email,
                     password: row.password || row.Password || 'DefaultPassword123',
                     role: row.role || row.Role || 'employee',
                     status: row.status || row.Status || 'active',
@@ -889,16 +1162,12 @@ export const bulkCreateUsers = async (req, res) => {
                     errors.push({ row: i + 2, error: 'Username is required' });
                     continue;
                 }
-                if (!userData.email) {
-                    errors.push({ row: i + 2, error: 'Email is required' });
-                    continue;
-                }
 
-                // Check for duplicates
-                const existing = await User.findOne({
+                // Check for duplicates within tenant
+                const existing = await models.User.findOne({
                     $or: [
-                        { email: userData.email },
-                        { username: userData.username }
+                        { email: userData.email, tenantId },
+                        { username: userData.username, tenantId }
                     ]
                 });
 
@@ -912,12 +1181,13 @@ export const bulkCreateUsers = async (req, res) => {
                 }
 
                 // Create user
-                const user = new User(userData);
+                const user = new models.User(userData);
                 await user.save();
                 results.push({
                     row: i + 2,
                     username: userData.username,
                     email: userData.email,
+                    emailGenerated: userData.email !== (row.email || row.Email),
                     success: true
                 });
             } catch (err) {
@@ -938,6 +1208,11 @@ export const bulkCreateUsers = async (req, res) => {
             errors
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('❌ Error in bulk create users:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Internal server error',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 };

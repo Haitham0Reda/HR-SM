@@ -3,7 +3,7 @@ import { connectDatabase } from './core/config/database.js';
 import { logger } from './core/logging/logger.js';
 import app from './app.js';
 import platformApp from './platformApp.js';
-import tenantApp from './tenantApp.js';
+import tenantApp, { initializeTenantApp } from './tenantApp.js';
 import { initializeModuleSystem, initializeRoutes } from './app.js';
 
 const PORT = process.env.PORT || 5000;
@@ -23,6 +23,10 @@ const startServer = async () => {
         // Initialize routes
         await initializeRoutes();
         logger.info('✅ Routes initialized');
+
+        // Initialize tenant app routes
+        await initializeTenantApp();
+        logger.info('✅ Tenant app routes initialized');
 
         // Create HTTP servers
         const server = http.createServer(app);

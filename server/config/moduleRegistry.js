@@ -5,7 +5,7 @@ export const moduleRegistry = {
     [MODULES.HR_CORE]: {
         routes: {
             auth: () => import('../modules/hr-core/routes/authRoutes.js'),
-            users: () => import('../modules/hr-core/users/routes/user.routes.js'),
+            users: () => import('../modules/hr-core/users/routes.js'),
             departments: () => import('../modules/hr-core/users/routes/department.routes.js'),
             positions: () => import('../modules/hr-core/users/routes/position.routes.js'),
             roles: () => import('../modules/hr-core/users/routes/role.routes.js'),

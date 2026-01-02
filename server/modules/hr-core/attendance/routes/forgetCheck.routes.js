@@ -23,10 +23,10 @@ router.get('/', getAllForgetChecks);
 router.post('/', createForgetCheck);
 
 // Approve forget check request - HR/Admin only
-router.post('/:id/approve', requireRole([ROLES.ADMIN, ROLES.HR]), approveForgetCheck);
+router.post('/:id/approve', requireRole(ROLES.ADMIN, ROLES.HR), approveForgetCheck);
 
 // Reject forget check request - HR/Admin only
-router.post('/:id/reject', requireRole([ROLES.ADMIN, ROLES.HR]), rejectForgetCheck);
+router.post('/:id/reject', requireRole(ROLES.ADMIN, ROLES.HR), rejectForgetCheck);
 
 // Get forget check by ID - All authenticated users
 router.get('/:id', getForgetCheckById);

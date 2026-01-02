@@ -2,10 +2,22 @@
 import Department from '../models/department.model.js';
 import multiTenantDB from '../../../../config/multiTenant.js';
 
-// Helper function to get tenant-specific Department model
+// Helper function to get tenant-specific Department model with safe registration
 const getTenantDepartmentModel = async (tenantId) => {
-    const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
-    return tenantConnection.model('Department', Department.schema);
+    try {
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Check if model is already registered to avoid re-registration errors
+        if (tenantConnection.models.Department) {
+            return tenantConnection.models.Department;
+        }
+        
+        // Register new model
+        return tenantConnection.model('Department', Department.schema);
+    } catch (error) {
+        console.error(`Error getting tenant Department model for ${tenantId}:`, error.message);
+        throw new Error(`Failed to get Department model: ${error.message}`);
+    }
 };
 
 export const getAllDepartments = async (req, res) => {

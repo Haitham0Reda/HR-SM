@@ -18,13 +18,13 @@ router.use(requireAuth);
 router.get('/', getAllPositions);
 
 // Create position - Admin/HR only
-router.post('/', requireRole([ROLES.ADMIN, ROLES.HR]), createPosition);
+router.post('/', requireRole(ROLES.ADMIN, ROLES.HR), createPosition);
 
 // Get position by ID - All authenticated users
 router.get('/:id', getPositionById);
 
 // Update position - Admin/HR only
-router.put('/:id', requireRole([ROLES.ADMIN, ROLES.HR]), updatePosition);
+router.put('/:id', requireRole(ROLES.ADMIN, ROLES.HR), updatePosition);
 
 // Delete position - Admin only
 router.delete('/:id', requireRole(ROLES.ADMIN), deletePosition);

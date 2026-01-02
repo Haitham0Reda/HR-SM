@@ -85,11 +85,16 @@ export default function ProfilePage() {
 
             // Upload profile picture if a new file was selected
             if (profilePictureFile) {
+                console.log('📤 Uploading profile picture...');
                 const formData = new FormData();
                 formData.append('profilePicture', profilePictureFile);
                 
                 const uploadResponse = await userService.uploadProfilePicture(user._id, formData);
-                profilePictureUrl = uploadResponse.profilePicture;
+                console.log('✅ Profile picture upload response:', uploadResponse);
+                
+                // Extract the profile picture URL from the response
+                profilePictureUrl = uploadResponse.data?.profilePicture || uploadResponse.profilePicture;
+                console.log('🖼️ New profile picture URL:', profilePictureUrl);
             }
 
             // Prepare data for update - only send fields that can be updated
@@ -115,6 +120,12 @@ export default function ProfilePage() {
                 profilePicture: profilePictureUrl,
             };
             
+            console.log('🔄 Updating local user state:', {
+                oldProfilePicture: user?.personalInfo?.profilePicture,
+                newProfilePicture: profilePictureUrl,
+                updatedUser: updatedUser
+            });
+            
             updateUser(updatedUser);
 
             // Force update the preview URL to reflect the new image
@@ -122,7 +133,9 @@ export default function ProfilePage() {
 
             // Also reload user profile from server to ensure consistency
             try {
-                await dispatch(loadUserProfile()).unwrap();
+                console.log('🔄 Reloading user profile from server...');
+                const reloadResult = await dispatch(loadUserProfile()).unwrap();
+                console.log('✅ User profile reloaded:', reloadResult);
             } catch (reloadError) {
                 console.warn('Failed to reload user profile:', reloadError);
             }

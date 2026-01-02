@@ -5,7 +5,8 @@ import mongoSanitize from 'express-mongo-sanitize';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './core/errors/errorHandler.js';
-import { authRoutes } from './modules/hr-core/auth/routes/authRoutes.js';
+import authRoutes from './modules/hr-core/routes/authRoutes.js';
+import companyRoutes from './routes/company.routes.js';
 import { tenantContext } from './core/middleware/tenantContext.js';
 import { moduleGuard } from './core/middleware/moduleGuard.js';
 import { moduleRegistry } from './core/registry/moduleRegistry.js';
@@ -13,6 +14,7 @@ import { dynamicModuleLoader } from './middleware/dynamicModuleLoader.middleware
 import hardcopyRoutes from './modules/documents/routes/hardcopy.routes.js';
 import { setupCompanyLogging, logResponseCompletion, logCompanyErrors, trackUserActivity } from './middleware/companyLogging.js';
 import companyLogsRoutes from './routes/companyLogs.js';
+import { loadCoreRoutes } from './config/moduleRegistry.js';
 // Enhanced rate limiting middleware
 import { 
     authRateLimit, 
@@ -32,6 +34,11 @@ app.use(cors({
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
+
+// JSON error handling middleware
+import { jsonErrorHandler, requestBodyLogger } from './middleware/jsonErrorHandler.js';
+app.use(requestBodyLogger); // Log problematic requests in development
+app.use(jsonErrorHandler);  // Handle JSON parsing errors
 app.use(mongoSanitize());
 app.use(compression());
 
@@ -69,6 +76,9 @@ app.use('/api/v1', trackUserActivity);
 // Company logs routes (protected) - after tenant context
 app.use('/api/v1/platform/company-logs', companyLogsRoutes);
 
+// Company routes (protected) - after tenant context
+app.use('/api/v1/companies', companyRoutes);
+
 // Module availability routes (protected) - after tenant context
 import moduleAvailabilityRoutes from './routes/moduleAvailability.routes.js';
 app.use('/api/v1/modules', moduleAvailabilityRoutes);
@@ -95,5 +105,18 @@ app.use(logCompanyErrors);
 
 // Error handling middleware
 app.use(errorHandler);
+
+// Initialize tenant app with routes
+export const initializeTenantApp = async () => {
+    try {
+        console.log('🔧 Loading core HR routes for tenant app...');
+        await loadCoreRoutes(app);
+        console.log('✓ Core HR routes loaded for tenant app');
+        return app;
+    } catch (error) {
+        console.error('❌ Error initializing tenant app:', error);
+        throw error;
+    }
+};
 
 export default app;
