@@ -36,11 +36,14 @@ import {
     NavigateNext as NextIcon,
     NavigateBefore as BackIcon,
     Check as CheckIcon,
-    CameraAlt as CameraIcon
+    CameraAlt as CameraIcon,
+    AutoAwesome as AutoAwesomeIcon,
+    Email as EmailIcon
 } from '@mui/icons-material';
 import userService from '../../services/user.service';
 import departmentService from '../../services/department.service';
 import positionService from '../../services/position.service';
+import companyService from '../../services/company.service';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 
 const steps = ['Account', 'Personal Info', 'Employment'];
@@ -55,6 +58,7 @@ const CreateUserPage = () => {
     const [positions, setPositions] = useState([]);
     const [profilePicture, setProfilePicture] = useState(null); // eslint-disable-line no-unused-vars
     const [profilePicturePreview, setProfilePicturePreview] = useState('');
+    const [emailDomain, setEmailDomain] = useState('');
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -86,6 +90,7 @@ const CreateUserPage = () => {
 
     useEffect(() => {
         fetchData();
+        fetchEmailDomain();
     }, []);
 
     const fetchData = async () => {
@@ -134,6 +139,17 @@ const CreateUserPage = () => {
             console.error('Error fetching data:', error);
             setDepartments([]);
             setPositions([]);
+        }
+    };
+
+    const fetchEmailDomain = async () => {
+        try {
+            const response = await companyService.getEmailDomain();
+            setEmailDomain(response.data.emailDomain);
+        } catch (error) {
+            console.error('Error fetching email domain:', error);
+            // Fallback to default domain for techcorp_solutions
+            setEmailDomain('techcorp.com');
         }
     };
 
@@ -201,7 +217,34 @@ const CreateUserPage = () => {
                 }));
             }
         } else {
-            setFormData(prev => ({ ...prev, [field]: value }));
+            // Handle username change with email auto-generation
+            if (field === 'username') {
+                setFormData(prev => ({ ...prev, [field]: value }));
+                
+                // Auto-generate email if we have domain and username
+                if (emailDomain && value.trim()) {
+                    const userData = { username: value.trim() };
+                    try {
+                        const generatedEmail = companyService.generateEmailPreview(userData, emailDomain);
+                        
+                        if (generatedEmail) {
+                            // Auto-fill email field
+                            setTimeout(() => {
+                                setFormData(prev => ({ ...prev, email: generatedEmail }));
+                            }, 100);
+                        }
+                    } catch (error) {
+                        console.error('Error generating email preview:', error);
+                    }
+                } else if (!value.trim()) {
+                    // Clear email if username is cleared
+                    setTimeout(() => {
+                        setFormData(prev => ({ ...prev, email: '' }));
+                    }, 100);
+                }
+            } else {
+                setFormData(prev => ({ ...prev, [field]: value }));
+            }
         }
     };
 
@@ -343,10 +386,16 @@ const CreateUserPage = () => {
                                     required 
                                     fullWidth
                                     placeholder="john.doe"
+                                    helperText={emailDomain ? 'Email will be auto-generated from username' : 'Email domain not configured'}
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
                                                 <PersonIcon color="action" />
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: emailDomain && formData.username && (
+                                            <InputAdornment position="end">
+                                                <AutoAwesomeIcon color="primary" fontSize="small" />
                                             </InputAdornment>
                                         )
                                     }}
@@ -360,7 +409,81 @@ const CreateUserPage = () => {
                                     onChange={(e) => handleChange('email', e.target.value)} 
                                     required 
                                     fullWidth
-                                    placeholder="john.doe@company.com"
+                                    placeholder={emailDomain ? `Auto-generated from username (@${emailDomain})` : "john.doe@company.com"}
+                                    helperText={
+                                        formData.email && formData.username && emailDomain
+                                            ? (() => {
+                                                try {
+                                                    const expectedEmail = companyService.generateEmailPreview({ username: formData.username }, emailDomain);
+                                                    return expectedEmail === formData.email
+                                                        ? 'Auto-generated from username'
+                                                        : 'Custom email address';
+                                                } catch (error) {
+                                                    return 'Custom email address';
+                                                }
+                                            })()
+                                            : emailDomain 
+                                                ? 'Enter username to auto-generate email'
+                                                : 'Email domain not configured - contact admin'
+                                    }
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <EmailIcon color={formData.email ? 'primary' : 'action'} />
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: formData.username && (
+                                            <InputAdornment position="end">
+                                                <Button
+                                                    size="small"
+                                                    startIcon={<AutoAwesomeIcon />}
+                                                    onClick={() => {
+                                                        if (!formData.username.trim()) {
+                                                            showNotification('Please enter a username first', 'error');
+                                                            return;
+                                                        }
+                                                        
+                                                        const userData = { username: formData.username.trim() };
+                                                        try {
+                                                            const generatedEmail = companyService.generateEmailPreview(userData, emailDomain || 'techcorp.com');
+                                                            
+                                                            if (generatedEmail) {
+                                                                handleChange('email', generatedEmail);
+                                                                showNotification(`Email generated: ${generatedEmail}`, 'success');
+                                                            } else {
+                                                                showNotification('Failed to generate email. Please enter manually.', 'error');
+                                                            }
+                                                        } catch (error) {
+                                                            console.error('Email generation error:', error);
+                                                            showNotification('Failed to generate email. Please enter manually.', 'error');
+                                                        }
+                                                    }}
+                                                    sx={{ 
+                                                        minWidth: 'auto',
+                                                        px: 1,
+                                                        fontSize: '0.75rem'
+                                                    }}
+                                                >
+                                                    Generate
+                                                </Button>
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                    sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                            backgroundColor: (() => {
+                                                if (!formData.email || !formData.username || !emailDomain) return 'transparent';
+                                                try {
+                                                    const expectedEmail = companyService.generateEmailPreview({ username: formData.username }, emailDomain);
+                                                    return expectedEmail === formData.email
+                                                        ? 'rgba(76, 175, 80, 0.1)' 
+                                                        : 'transparent';
+                                                } catch (error) {
+                                                    return 'transparent';
+                                                }
+                                            })()
+                                        }
+                                    }}
                                 />
                                 
                                 <TextField 

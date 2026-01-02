@@ -99,8 +99,14 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     // Update profile picture when user prop changes
     React.useEffect(() => {
         const newProfilePicture = getUserProfilePicture(user);
+        console.log('🖼️ DashboardHeader: User data changed, updating profile picture:', {
+            userId: user?._id,
+            oldPicture: userProfilePicture,
+            newPicture: newProfilePicture,
+            userPersonalInfo: user?.personalInfo
+        });
         setUserProfilePicture(newProfilePicture);
-    }, [user]);
+    }, [user, user?.personalInfo?.profilePicture]); // Add specific dependency
 
     // Update time every second
     React.useEffect(() => {
@@ -115,19 +121,14 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     const fetchNotifications = React.useCallback(async () => {
         // Early return if not authenticated or no user
         if (!isAuthenticated || !user || !user._id) {
-            console.log('🔔 Skipping notification fetch - user not authenticated or no user ID');
             return;
         }
 
         try {
-            console.log('🔔 Fetching notifications...');
             // Fetch notifications from the notification API
             const notificationData = await notificationService.getAll();
-            console.log('📡 Notification response:', notificationData);
 
             const notifications = Array.isArray(notificationData) ? notificationData : (notificationData.data || []);
-            console.log('📊 Processed notifications:', notifications);
-            console.log('📈 Notifications length:', notifications.length);
 
             // Filter to show only unread notifications and sort by date
             const unreadNotifications = notifications
@@ -135,15 +136,12 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .slice(0, 10);
 
-            console.log('🔔 Unread notifications:', unreadNotifications);
             setNotifications(unreadNotifications);
         } catch (error) {
-            console.error('❌ Error fetching notifications:', error);
-            console.error('📋 Error details:', {
-                message: error.message,
-                status: error.status,
-                data: error.data
-            });
+            // Only log in development mode to reduce console noise
+            if (process.env.NODE_ENV === 'development') {
+                console.warn('Notification fetch failed:', error.message);
+            }
 
             // Fallback to empty array if API fails
             setNotifications([]);

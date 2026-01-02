@@ -47,8 +47,8 @@ export const getProfilePictureUrl = (profilePicture) => {
 export const getUserProfilePicture = (user) => {
     // Check the actual User model structure first, then fallbacks for compatibility
     const profilePicture = user?.profilePicture || 
+                          user?.profile?.profilePicture ||
                           user?.personalInfo?.profilePicture || 
-                          user?.profile?.profilePicture || 
                           user?.avatar || 
                           user?.photo;
     
@@ -61,9 +61,9 @@ export const getUserProfilePicture = (user) => {
  * @returns {string} - The user initials
  */
 export const getUserInitials = (user) => {
-    // Use the actual User model structure
-    const firstName = user?.firstName;
-    const lastName = user?.lastName;
+    // Try profile structure first (used in forms)
+    const firstName = user?.profile?.firstName || user?.firstName;
+    const lastName = user?.profile?.lastName || user?.lastName;
     
     if (firstName && lastName) {
         return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();

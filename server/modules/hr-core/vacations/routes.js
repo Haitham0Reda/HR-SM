@@ -27,10 +27,10 @@ router.get('/', getAllVacations);
 router.post('/', createVacation);
 
 // Approve vacation - HR/Admin only
-router.post('/:id/approve', requireRole([ROLES.ADMIN, ROLES.HR]), approveVacation);
+router.post('/:id/approve', requireRole(ROLES.ADMIN, ROLES.HR), approveVacation);
 
 // Reject vacation - HR/Admin only
-router.post('/:id/reject', requireRole([ROLES.ADMIN, ROLES.HR]), rejectVacation);
+router.post('/:id/reject', requireRole(ROLES.ADMIN, ROLES.HR), rejectVacation);
 
 // Cancel vacation - All authenticated users can cancel their own
 router.post('/:id/cancel', cancelVacation);

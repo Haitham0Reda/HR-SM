@@ -30,31 +30,37 @@ export const fetchModuleAvailability = createAsyncThunk(
         throw new Error('No authentication token available');
       }
 
-      console.log('Fetching module availability for tenant');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Fetching module availability for tenant');
+      }
 
       const response = await api.get('/modules/availability');
       
       if (response.data && response.data.success) {
         const availability = response.data.data;
         
-        console.log('Module availability loaded:', {
-          tenant: availability.tenant.name,
-          totalAvailable: availability.modules.total,
-          availableModules: [...availability.modules.core, ...availability.modules.available],
-          licenseValid: availability.license.valid
-        });
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Module availability loaded:', {
+            tenant: availability.tenant.name,
+            totalAvailable: availability.modules.total,
+            availableModules: [...availability.modules.core, ...availability.modules.available],
+            licenseValid: availability.license.valid
+          });
+        }
         
         return availability;
       } else if (response.success) {
         // Handle case where response is already unwrapped by axios interceptor
         const availability = response.data || response;
         
-        console.log('Module availability loaded:', {
-          tenant: availability.tenant?.name || 'Unknown',
-          totalAvailable: availability.modules?.total || 0,
-          availableModules: [...(availability.modules?.core || []), ...(availability.modules?.available || [])],
-          licenseValid: availability.license?.valid || false
-        });
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Module availability loaded:', {
+            tenant: availability.tenant?.name || 'Unknown',
+            totalAvailable: availability.modules?.total || 0,
+            availableModules: [...(availability.modules?.core || []), ...(availability.modules?.available || [])],
+            licenseValid: availability.license?.valid || false
+          });
+        }
         
         return availability;
       } else {

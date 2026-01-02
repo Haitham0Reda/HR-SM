@@ -5,30 +5,40 @@ import {
     Button,
     TextField,
     MenuItem,
-    Grid,
     Typography,
     Paper,
     Avatar,
-    IconButton,
     FormControlLabel,
     Checkbox,
     Stack,
-    Divider
+    Divider,
+    InputAdornment
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import {
     ArrowBack as ArrowBackIcon,
     PhotoCamera as PhotoCameraIcon,
-    Delete as DeleteIcon
+    Delete as DeleteIcon,
+    Email as EmailIcon
 } from '@mui/icons-material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { useNavigate } from 'react-router';
 import dayjs from 'dayjs';
+import { useCompanyRouting } from '../hooks/useCompanyRouting';
 import departmentService from '../services/department.service';
 import positionService from '../services/position.service';
 import userService from '../services/user.service';
 import { getUserProfilePicture, getUserInitials } from '../utils/profilePicture';
+import { 
+    sanitizeFormData, 
+    cleanNameField, 
+    cleanArabicName, 
+    cleanPhoneNumber, 
+    cleanNationalId,
+    isValidInput 
+} from '../utils/inputSanitizer';
 
 const nationalities = [
     'Egyptian', 'Saudi', 'Emirati', 'Kuwaiti', 'Qatari', 'Bahraini', 'Omani',
@@ -79,6 +89,8 @@ function EmployeeForm(props) {
         fetchSupervisors();
     }, []);
 
+
+
     const fetchDepartments = async () => {
         try {
             const data = await departmentService.getAll();
@@ -106,20 +118,99 @@ function EmployeeForm(props) {
         event.preventDefault();
         setIsSubmitting(true);
         try {
-            await onSubmit(formValues);
+            // Sanitize form data before submission to prevent JSON parsing errors
+            const sanitizedFormData = sanitizeFormData(formValues);
+            
+            // Validate critical fields
+            if (!isValidInput(sanitizedFormData.username)) {
+                throw new Error('Username contains invalid characters');
+            }
+            if (!isValidInput(sanitizedFormData.email)) {
+                throw new Error('Email contains invalid characters');
+            }
+            
+            console.log('Submitting sanitized form data:', sanitizedFormData);
+            
+            // First submit the user data
+            const result = await onSubmit(sanitizedFormData);
+            
+            // If there's a profile picture to upload and we have a user ID
+            if (profilePictureFile && result?.userId) {
+                try {
+                    const profilePictureUrl = await uploadProfilePicture(result.userId);
+                    // Update the form values with the uploaded picture URL
+                    if (profilePictureUrl) {
+                        onFieldChange('profile', {
+                            ...formValues.profile,
+                            profilePicture: profilePictureUrl
+                        });
+                    }
+                } catch (uploadError) {
+                    console.error('Profile picture upload failed:', uploadError);
+                    // Don't fail the entire form submission for profile picture upload failure
+                }
+            }
+        } catch (error) {
+            console.error('Form submission error:', error);
+            // Re-throw the error so the parent component can handle it
+            throw error;
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleFieldChange = (field) => (event) => {
-        onFieldChange(field, event.target.value);
+        let value = event.target.value;
+        
+        // Apply field-specific cleaning
+        switch (field) {
+            case 'username':
+                // Basic username cleaning - remove special characters but keep basic ones
+                value = value.toLowerCase().replace(/[^a-z0-9._-]/g, '').trim();
+                break;
+            case 'email':
+                // Basic email cleaning - remove dangerous characters
+                value = value.replace(/[<>'"]/g, '').trim();
+                break;
+            default:
+                // Basic sanitization for other fields
+                if (typeof value === 'string') {
+                    value = value.replace(/[<>]/g, '').trim();
+                }
+        }
+        
+        onFieldChange(field, value);
     };
 
     const handleNestedFieldChange = (parent, field) => (event) => {
+        let value = event.target.value;
+        
+        // Apply field-specific cleaning
+        switch (field) {
+            case 'firstName':
+            case 'lastName':
+            case 'medName':
+                value = cleanNameField(value);
+                break;
+            case 'arabicName':
+                value = cleanArabicName(value);
+                break;
+            case 'phone':
+                value = cleanPhoneNumber(value);
+                break;
+            case 'nationalId':
+                value = cleanNationalId(value);
+                break;
+            default:
+                // Basic sanitization for other fields
+                if (typeof value === 'string') {
+                    value = value.replace(/[<>]/g, '').trim();
+                }
+        }
+        
         onFieldChange(parent, {
             ...formValues[parent],
-            [field]: event.target.value
+            [field]: value
         });
     };
 
@@ -146,7 +237,7 @@ function EmployeeForm(props) {
     };
 
     const handleBack = () => {
-    const { getCompanyRoute } = useCompanyRouting();
+        const { getCompanyRoute } = useCompanyRouting();
         navigate(backButtonPath ?? getCompanyRoute('/users'));
     };
 
@@ -180,8 +271,8 @@ function EmployeeForm(props) {
         setProfilePictureFile(null);
         setProfilePicturePreview('');
         // Update form values
-        onFieldChange('personalInfo', {
-            ...formValues.personalInfo,
+        onFieldChange('profile', {
+            ...formValues.profile,
             profilePicture: ''
         });
     };
@@ -264,7 +355,7 @@ function EmployeeForm(props) {
                                     />
                                 </Grid>
                             )}
-                            <Grid size={{ sm: isEditMode ? 6 : 12 }} size={{ xs: 12 }}>
+                            <Grid size={{ xs: 12, sm: isEditMode ? 6 : 12 }}>
                                 <TextField
                                     label="Username"
                                     value={formValues.username || ''}
@@ -272,7 +363,7 @@ function EmployeeForm(props) {
                                     required
                                     fullWidth
                                     error={!!formErrors.username}
-                                    helperText={formErrors.username}
+                                    helperText={formErrors.username || 'Special characters will be cleaned automatically'}
                                 />
                             </Grid>
                             {!isEditMode && (
@@ -305,7 +396,7 @@ function EmployeeForm(props) {
                                 onChange={handleNestedFieldChange('profile', 'firstName')}
                                 required
                                 fullWidth
-                                helperText="English characters only"
+                                helperText="English letters only (auto-cleaned)"
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 3 }}>
@@ -314,7 +405,7 @@ function EmployeeForm(props) {
                                 value={formValues.profile?.medName || ''}
                                 onChange={handleNestedFieldChange('profile', 'medName')}
                                 fullWidth
-                                helperText="English characters only"
+                                helperText="English letters only (auto-cleaned)"
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 3 }}>
@@ -324,7 +415,7 @@ function EmployeeForm(props) {
                                 onChange={handleNestedFieldChange('profile', 'lastName')}
                                 required
                                 fullWidth
-                                helperText="English characters only"
+                                helperText="English letters only (auto-cleaned)"
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 3 }}>
@@ -335,7 +426,7 @@ function EmployeeForm(props) {
                                 required
                                 fullWidth
                                 dir="rtl"
-                                helperText="Arabic characters only"
+                                helperText="Arabic characters only (auto-cleaned)"
                             />
                         </Grid>
 
@@ -345,17 +436,25 @@ function EmployeeForm(props) {
                                 value={formValues.profile?.phone || ''}
                                 onChange={handleNestedFieldChange('profile', 'phone')}
                                 fullWidth
-                                helperText="Must be exactly 11 digits (optional)"
+                                helperText="Numbers only, 11 digits (auto-cleaned)"
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
                             <TextField
-                                label="Personal Email"
+                                label="Work Email"
                                 type="email"
                                 value={formValues.email || ''}
                                 onChange={handleFieldChange('email')}
                                 fullWidth
-                                helperText="Valid email format required (optional)"
+                                placeholder="Enter work email address"
+                                helperText="Enter the employee's work email address"
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <EmailIcon color={formValues.email ? 'primary' : 'action'} />
+                                        </InputAdornment>
+                                    )
+                                }}
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 4 }}>
@@ -381,7 +480,7 @@ function EmployeeForm(props) {
                                 onChange={handleNestedFieldChange('profile', 'nationalId')}
                                 required
                                 fullWidth
-                                helperText="Must be exactly 14 digits (Required for Egyptian nationality)"
+                                helperText="Numbers only, 14 digits (auto-cleaned)"
                             />
                         </Grid>
 

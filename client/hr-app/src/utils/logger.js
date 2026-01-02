@@ -31,8 +31,8 @@ const PERFORMANCE_METRIC_TYPES = {
 class EnhancedFrontendLogger {
     constructor() {
         this.logQueue = [];
-        this.batchSize = 20; // Increased batch size
-        this.batchTimeout = 15000; // Increased to 15 seconds to reduce frequency
+        this.batchSize = 25; // Increased batch size to reduce frequency
+        this.batchTimeout = 30000; // Increased to 30 seconds to reduce frequency
         this.maxRetries = 3;
         this.retryDelay = 1000; // 1 second
         this.correlationId = null;
@@ -52,6 +52,9 @@ class EnhancedFrontendLogger {
         
         // Start batch processing
         this.startBatchProcessor();
+        
+        // Start periodic connection check for failed logs
+        this.startConnectionChecker();
         
         // Setup performance monitoring
         this.setupPerformanceMonitoring();
@@ -345,7 +348,7 @@ class EnhancedFrontendLogger {
         if ('PerformanceObserver' in window) {
             try {
                 let lastLogTime = 0;
-                const LOG_THROTTLE_MS = 10000; // Only log performance metrics every 10 seconds
+                const LOG_THROTTLE_MS = 30000; // Only log performance metrics every 30 seconds (increased from 10s)
                 
                 this.performanceObserver = new PerformanceObserver((list) => {
                     const now = Date.now();
@@ -354,10 +357,10 @@ class EnhancedFrontendLogger {
                     }
                     lastLogTime = now;
                     
-                    // Only log significant performance entries
+                    // Only log significant performance entries (increased threshold)
                     for (const entry of list.getEntries()) {
                         if (entry.entryType === 'navigation' || 
-                            (entry.entryType === 'measure' && entry.duration > 100)) {
+                            (entry.entryType === 'measure' && entry.duration > 500)) { // Increased from 100ms to 500ms
                             this.logPerformanceMetric(entry);
                         }
                     }
@@ -460,6 +463,13 @@ class EnhancedFrontendLogger {
         }, this.batchTimeout);
     }
 
+    startConnectionChecker() {
+        // Check for failed logs and retry every 5 minutes (reduced frequency)
+        setInterval(() => {
+            this.checkConnectionAndRetry();
+        }, 300000); // 5 minutes instead of 2
+    }
+
     async flushQueue() {
         if (this.logQueue.length === 0) return;
         
@@ -470,7 +480,9 @@ class EnhancedFrontendLogger {
     async sendBatchToBackend(batch, retryCount = 0) {
         // Check circuit breaker
         if (Date.now() < this.rateLimitedUntil) {
-            console.warn('Logging circuit breaker active, skipping batch');
+            if (process.env.NODE_ENV === 'development') {
+                console.warn('Logging circuit breaker active, skipping batch');
+            }
             this.storeFailedLogs(batch);
             return;
         }
@@ -479,7 +491,9 @@ class EnhancedFrontendLogger {
         if (this.consecutiveFailures >= 3) {
             const backoffTime = Math.min(30000 * this.consecutiveFailures, 180000); // Max 3 minutes
             this.rateLimitedUntil = Date.now() + backoffTime;
-            console.warn(`Too many consecutive failures (${this.consecutiveFailures}), circuit breaker active for ${backoffTime/1000}s`);
+            if (process.env.NODE_ENV === 'development') {
+                console.warn(`Too many consecutive failures (${this.consecutiveFailures}), circuit breaker active for ${backoffTime/1000}s`);
+            }
             this.storeFailedLogs(batch);
             return;
         }
@@ -499,15 +513,22 @@ class EnhancedFrontendLogger {
                 headers['X-Correlation-ID'] = this.correlationId;
             }
 
+            // Add timeout to prevent hanging requests
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
             const response = await fetch(`${API_URL}/logs`, {
                 method: 'POST',
                 headers,
+                signal: controller.signal,
                 body: JSON.stringify({
                     logs: batch,
                     batchId: this.generateCorrelationId(),
                     timestamp: new Date().toISOString()
                 })
             });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 // Handle rate limiting specifically
@@ -516,7 +537,9 @@ class EnhancedFrontendLogger {
                     // Activate circuit breaker for increasing durations
                     const backoffTime = Math.min(60000 * this.consecutiveFailures, 300000); // Max 5 minutes
                     this.rateLimitedUntil = Date.now() + backoffTime;
-                    console.warn(`Rate limited, circuit breaker active for ${backoffTime/1000}s`);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.warn(`Rate limited, circuit breaker active for ${backoffTime/1000}s`);
+                    }
                     return;
                 }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -534,25 +557,42 @@ class EnhancedFrontendLogger {
                                  error.message.includes('NetworkError') ||
                                  error.message.includes('ERR_CONNECTION_REFUSED') ||
                                  error.name === 'TypeError' ||
+                                 error.name === 'AbortError' ||
                                  !navigator.onLine;
 
-            if (isNetworkError && this.consecutiveFailures >= 2) {
-                // For network errors, activate circuit breaker faster
-                const backoffTime = 60000; // 1 minute for network errors
+            // For connection refused errors, activate circuit breaker immediately
+            if (error.message.includes('ERR_CONNECTION_REFUSED') || error.name === 'AbortError') {
+                const backoffTime = Math.min(30000 * (this.consecutiveFailures + 1), 120000); // Max 2 minutes
                 this.rateLimitedUntil = Date.now() + backoffTime;
-                console.warn(`Network error detected, circuit breaker active for ${backoffTime/1000}s`);
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn(`Connection refused/timeout detected, circuit breaker active for ${backoffTime/1000}s`);
+                }
                 this.storeFailedLogs(batch);
                 return;
             }
 
-            if (retryCount < this.maxRetries) {
-                // Exponential backoff retry
+            if (isNetworkError && this.consecutiveFailures >= 2) {
+                // For other network errors, activate circuit breaker after 2 failures
+                const backoffTime = 60000; // 1 minute for network errors
+                this.rateLimitedUntil = Date.now() + backoffTime;
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn(`Network error detected, circuit breaker active for ${backoffTime/1000}s`);
+                }
+                this.storeFailedLogs(batch);
+                return;
+            }
+
+            if (retryCount < this.maxRetries && !isNetworkError) {
+                // Only retry non-network errors with exponential backoff
                 setTimeout(() => {
                     this.sendBatchToBackend(batch, retryCount + 1);
                 }, this.retryDelay * Math.pow(2, retryCount));
             } else {
                 // Store failed logs in localStorage as fallback
                 this.storeFailedLogs(batch);
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('Storing failed logs locally due to network error:', error.message);
+                }
             }
         }
     }
@@ -562,8 +602,77 @@ class EnhancedFrontendLogger {
             const existingLogs = JSON.parse(localStorage.getItem('failedLogs') || '[]');
             const updatedLogs = [...existingLogs, ...logs].slice(-100); // Keep only last 100
             localStorage.setItem('failedLogs', JSON.stringify(updatedLogs));
+            
+            if (process.env.NODE_ENV === 'development') {
+                console.warn(`Stored ${logs.length} failed logs locally. Total stored: ${updatedLogs.length}`);
+            }
         } catch (error) {
-            // Ignore localStorage errors
+            // Ignore localStorage errors but log in development
+            if (process.env.NODE_ENV === 'development') {
+                console.warn('Failed to store logs in localStorage:', error.message);
+            }
+        }
+    }
+
+    // Method to retry failed logs when connection is restored
+    async retryFailedLogs() {
+        try {
+            const failedLogs = JSON.parse(localStorage.getItem('failedLogs') || '[]');
+            if (failedLogs.length === 0) {
+                return;
+            }
+
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`Attempting to retry ${failedLogs.length} failed logs...`);
+            }
+
+            // Try to send failed logs in smaller batches
+            const batchSize = 10;
+            for (let i = 0; i < failedLogs.length; i += batchSize) {
+                const batch = failedLogs.slice(i, i + batchSize);
+                await this.sendBatchToBackend(batch);
+                
+                // Small delay between batches to avoid overwhelming the server
+                if (i + batchSize < failedLogs.length) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+
+            // Clear failed logs on successful retry
+            localStorage.removeItem('failedLogs');
+            
+            if (process.env.NODE_ENV === 'development') {
+                console.log('✓ Successfully retried all failed logs');
+            }
+
+        } catch (error) {
+            if (process.env.NODE_ENV === 'development') {
+                console.warn('Failed to retry stored logs:', error.message);
+            }
+        }
+    }
+
+    // Method to check connection and retry failed logs
+    async checkConnectionAndRetry() {
+        // Only check if we have failed logs and circuit breaker is not active
+        if (Date.now() >= this.rateLimitedUntil) {
+            try {
+                const failedLogs = JSON.parse(localStorage.getItem('failedLogs') || '[]');
+                if (failedLogs.length > 0) {
+                    // Test connection with a simple health check
+                    const response = await fetch(`${API_URL.replace('/api/v1', '')}/health`, {
+                        method: 'GET',
+                        signal: AbortSignal.timeout(5000) // 5 second timeout
+                    });
+                    
+                    if (response.ok) {
+                        // Connection restored, retry failed logs
+                        await this.retryFailedLogs();
+                    }
+                }
+            } catch (error) {
+                // Connection still not available, ignore
+            }
         }
     }
 
@@ -857,6 +966,8 @@ const logger = {
     getStats: () => enhancedLogger.getStats(),
     clearQueue: () => enhancedLogger.clearQueue(),
     clearModuleConfigCache: () => enhancedLogger.clearModuleConfigCache(),
+    retryFailedLogs: async () => await enhancedLogger.retryFailedLogs(),
+    checkConnectionAndRetry: async () => await enhancedLogger.checkConnectionAndRetry(),
     
     // Constants
     SECURITY_EVENT_TYPES,

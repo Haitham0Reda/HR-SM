@@ -21,7 +21,16 @@ class LicenseSyncService {
   async initialize() {
     logger.info('Initializing License Sync Service');
     
-    // Start periodic sync
+    // Check if we're in multi-tenant mode (no global COMPANY_ID set)
+    const globalCompanyId = process.env.COMPANY_ID;
+    
+    if (!globalCompanyId) {
+      logger.info('Multi-tenant mode detected - skipping global license sync initialization');
+      logger.info('License sync will be handled per-tenant as needed');
+      return;
+    }
+    
+    // Start periodic sync only if we have a global company ID
     this.startPeriodicSync();
     
     // Sync on startup
@@ -32,6 +41,14 @@ class LicenseSyncService {
    * Start periodic synchronization
    */
   startPeriodicSync() {
+    // Only start periodic sync if we have a global company ID
+    const globalCompanyId = process.env.COMPANY_ID;
+    
+    if (!globalCompanyId) {
+      logger.info('Skipping periodic license sync - no global COMPANY_ID configured');
+      return;
+    }
+    
     setInterval(async () => {
       if (!this.syncInProgress) {
         await this.syncLicenseFromServer();
@@ -39,6 +56,18 @@ class LicenseSyncService {
     }, this.syncInterval);
     
     logger.info(`License sync scheduled every ${this.syncInterval / 1000 / 60} minutes`);
+  }
+
+  /**
+   * Sync license for a specific company (multi-tenant support)
+   */
+  async syncLicenseForCompany(companyId) {
+    if (!companyId) {
+      throw new Error('Company ID is required for tenant-specific license sync');
+    }
+    
+    logger.info(`Syncing license for company: ${companyId}`);
+    return await this.syncLicenseFromServer(companyId);
   }
 
   /**

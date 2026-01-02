@@ -23,22 +23,22 @@ router.use(requireAuth);
 router.get('/', getAllSickLeaves);
 
 // Get sick leaves pending doctor review - HR/Admin/Doctor only
-router.get('/pending-doctor-review', requireRole([ROLES.ADMIN, ROLES.HR, 'doctor']), getPendingDoctorReview);
+router.get('/pending-doctor-review', requireRole(ROLES.ADMIN, ROLES.HR, 'doctor'), getPendingDoctorReview);
 
 // Create sick leave - All authenticated users can create
 router.post('/', createSickLeave);
 
 // Approve sick leave by supervisor - HR/Admin only
-router.post('/:id/approve-supervisor', requireRole([ROLES.ADMIN, ROLES.HR]), approveBySupervisor);
+router.post('/:id/approve-supervisor', requireRole(ROLES.ADMIN, ROLES.HR), approveBySupervisor);
 
 // Approve sick leave by doctor - HR/Admin/Doctor only
-router.post('/:id/approve-doctor', requireRole([ROLES.ADMIN, ROLES.HR, 'doctor']), approveByDoctor);
+router.post('/:id/approve-doctor', requireRole(ROLES.ADMIN, ROLES.HR, 'doctor'), approveByDoctor);
 
 // Reject sick leave by supervisor - HR/Admin only
-router.post('/:id/reject-supervisor', requireRole([ROLES.ADMIN, ROLES.HR]), rejectBySupervisor);
+router.post('/:id/reject-supervisor', requireRole(ROLES.ADMIN, ROLES.HR), rejectBySupervisor);
 
 // Reject sick leave by doctor - HR/Admin/Doctor only
-router.post('/:id/reject-doctor', requireRole([ROLES.ADMIN, ROLES.HR, 'doctor']), rejectByDoctor);
+router.post('/:id/reject-doctor', requireRole(ROLES.ADMIN, ROLES.HR, 'doctor'), rejectByDoctor);
 
 // Get sick leave by ID - All authenticated users
 router.get('/:id', getSickLeaveById);

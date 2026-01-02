@@ -12,10 +12,35 @@ import {
     withLogging 
 } from '../../../../utils/controllerLogger.js';
 
-// Helper function to get tenant-specific Attendance model
-const getTenantAttendanceModel = async (tenantId) => {
-    const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
-    return tenantConnection.model('Attendance', Attendance.schema);
+// Helper function to get tenant-specific models with safe registration
+const getTenantModels = async (tenantId) => {
+    try {
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Import the tenant model registry
+        const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
+        
+        // Register all HR models (User, Department, Position)
+        const hrModels = await registerHRModels(tenantConnection);
+        
+        // Register Attendance model
+        let TenantAttendance;
+        if (tenantConnection.models.Attendance) {
+            TenantAttendance = tenantConnection.models.Attendance;
+        } else {
+            TenantAttendance = tenantConnection.model('Attendance', Attendance.schema);
+        }
+        
+        return {
+            Attendance: TenantAttendance,
+            User: hrModels.User,
+            Department: hrModels.Department,
+            Position: hrModels.Position
+        };
+    } catch (error) {
+        console.error(`Error getting tenant models for ${tenantId}:`, error.message);
+        throw new Error(`Failed to get tenant models: ${error.message}`);
+    }
 };
 
 export const getAllAttendance = async (req, res) => {
@@ -41,8 +66,8 @@ export const getAllAttendance = async (req, res) => {
             });
         }
 
-        // Get tenant-specific database connection
-        const TenantAttendance = await getTenantAttendanceModel(tenantId);
+        // Get tenant-specific models
+        const { Attendance: TenantAttendance } = await getTenantModels(tenantId);
 
         // Build query with tenant isolation
         const query = { tenantId };
@@ -245,8 +270,8 @@ export const createAttendance = async (req, res) => {
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
-        // Get tenant-specific Attendance model
-        const TenantAttendance = await getTenantAttendanceModel(tenantId);
+        // Get tenant-specific models
+        const { Attendance: TenantAttendance } = await getTenantModels(tenantId);
 
         const attendanceData = { ...req.body, tenantId };
         

@@ -186,8 +186,10 @@ export const login = async (req, res) => {
 
         res.json({
             success: true,
-            token,
-            user
+            data: {
+                token,
+                user
+            }
         });
     } catch (error) {
         console.error('🚨 Login error:', error);
@@ -201,14 +203,44 @@ export const login = async (req, res) => {
 // Get current user
 export const getCurrentUser = async (req, res) => {
     try {
-        // Get tenant-specific database connection
-        const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
-        const TenantUser = tenantConnection.model('User', User.schema);
+        // Get tenant context
+        const tenantId = req.tenantId || req.user?.tenantId;
         
-        const user = await TenantUser.findOne({
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Use tenant-specific database connection
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register models on tenant connection using utility
+        let models;
+        try {
+            const { registerHRModels } = await import('../../../utils/tenantModelRegistry.js');
+            models = await registerHRModels(tenantConnection);
+        } catch (modelError) {
+            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            return res.status(500).json({
+                success: false,
+                message: 'Database model registration error',
+                error: process.env.NODE_ENV === 'development' ? modelError.message : undefined
+            });
+        }
+        
+        // Find user in tenant database with populated fields
+        const user = await models.User.findOne({
             _id: req.user.id,
-            tenantId: req.tenantId
-        });
+            tenantId: tenantId
+        }).populate({
+            path: 'department',
+            populate: {
+                path: 'parentDepartment',
+                select: 'name code'
+            }
+        }).populate('position');
 
         if (!user) {
             return res.status(404).json({
@@ -217,14 +249,20 @@ export const getCurrentUser = async (req, res) => {
             });
         }
 
+        // Remove sensitive fields
+        const sanitizedUser = user.toObject();
+        delete sanitizedUser.password;
+
         res.json({
             success: true,
-            data: user
+            data: sanitizedUser
         });
     } catch (error) {
+        console.error('❌ Error in getCurrentUser:', error);
         res.status(500).json({
             success: false,
-            message: error.message
+            message: 'Internal server error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };

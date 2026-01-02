@@ -23,10 +23,10 @@ router.get('/', getAllMissions);
 router.post('/', createMission);
 
 // Approve mission - HR/Admin only
-router.post('/:id/approve', requireRole([ROLES.ADMIN, ROLES.HR]), approveMission);
+router.post('/:id/approve', requireRole(ROLES.ADMIN, ROLES.HR), approveMission);
 
 // Reject mission - HR/Admin only
-router.post('/:id/reject', requireRole([ROLES.ADMIN, ROLES.HR]), rejectMission);
+router.post('/:id/reject', requireRole(ROLES.ADMIN, ROLES.HR), rejectMission);
 
 // Get mission by ID - All authenticated users
 router.get('/:id', getMissionById);

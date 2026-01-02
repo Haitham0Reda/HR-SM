@@ -401,9 +401,10 @@ export const generateUserCredentialPDF = (user, tempPassword = null) => {
 
         // Wait for the content to load, then trigger print
         printWindow.onload = () => {
-            setTimeout(() => {
+            // Use requestAnimationFrame for better performance instead of setTimeout
+            requestAnimationFrame(() => {
                 printWindow.print();
-            }, 500);
+            });
         };
 
         return true;
