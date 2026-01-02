@@ -186,10 +186,8 @@ export const login = async (req, res) => {
 
         res.json({
             success: true,
-            data: {
-                user,
-                token
-            }
+            token,
+            user
         });
     } catch (error) {
         console.error('🚨 Login error:', error);

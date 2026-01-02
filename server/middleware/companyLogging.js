@@ -134,68 +134,73 @@ export async function setupCompanyLogging(req, res, next) {
         }
         
         // Perform security analysis on the request (module-aware)
-        try {
-            const securityThreats = await backendSecurityDetectionService.analyzeRequest(req, tenantId);
-            
-            // If threats detected, log them and potentially block request
-            if (securityThreats.length > 0) {
-                const criticalThreats = securityThreats.filter(threat => threat.severity === 'critical');
+        // Skip security analysis in development mode with license validation disabled
+        if (!(process.env.NODE_ENV === 'development' && process.env.LICENSE_VALIDATION_ENABLED === 'false')) {
+            try {
+                const securityThreats = await backendSecurityDetectionService.analyzeRequest(req, tenantId);
                 
-                if (criticalThreats.length > 0) {
-                    // Log critical security threat
+                // If threats detected, log them and potentially block request
+                if (securityThreats.length > 0) {
+                    const criticalThreats = securityThreats.filter(threat => threat.severity === 'critical');
+                    
+                    if (criticalThreats.length > 0) {
+                        // Log critical security threat
+                        const threatLog = {
+                            correlationId,
+                            securityThreats: criticalThreats,
+                            method: req.method,
+                            url: req.originalUrl,
+                            ip: req.ip,
+                            userAgent: req.get('User-Agent'),
+                            userId: req.user?.id,
+                            tenantId,
+                            blocked: true,
+                            moduleAware: true
+                        };
+                        
+                        if (req.companyLogger && typeof req.companyLogger.security === 'function') {
+                            req.companyLogger.security('Critical security threat detected - request blocked', threatLog);
+                        }
+                        
+                        platformLogger.platformSecurity('critical_threat_blocked', threatLog);
+                        
+                        // Block the request for critical threats
+                        return res.status(403).json({
+                            success: false,
+                            error: 'Request blocked due to security policy violation',
+                            correlationId: correlationId
+                        });
+                    }
+                    
+                    // Log non-critical threats but allow request to continue
                     const threatLog = {
                         correlationId,
-                        securityThreats: criticalThreats,
+                        securityThreats,
                         method: req.method,
                         url: req.originalUrl,
                         ip: req.ip,
                         userAgent: req.get('User-Agent'),
                         userId: req.user?.id,
                         tenantId,
-                        blocked: true,
+                        blocked: false,
                         moduleAware: true
                     };
                     
                     if (req.companyLogger && typeof req.companyLogger.security === 'function') {
-                        req.companyLogger.security('Critical security threat detected - request blocked', threatLog);
+                        req.companyLogger.security('Security threats detected', threatLog);
                     }
-                    
-                    platformLogger.platformSecurity('critical_threat_blocked', threatLog);
-                    
-                    // Block the request for critical threats
-                    return res.status(403).json({
-                        success: false,
-                        error: 'Request blocked due to security policy violation',
-                        correlationId: correlationId
-                    });
                 }
-                
-                // Log non-critical threats but allow request to continue
-                const threatLog = {
+            } catch (securityError) {
+                // Don't block request if security analysis fails, but log the error
+                platformLogger.error('Security analysis failed', {
                     correlationId,
-                    securityThreats,
-                    method: req.method,
-                    url: req.originalUrl,
-                    ip: req.ip,
-                    userAgent: req.get('User-Agent'),
-                    userId: req.user?.id,
-                    tenantId,
-                    blocked: false,
-                    moduleAware: true
-                };
-                
-                if (req.companyLogger && typeof req.companyLogger.security === 'function') {
-                    req.companyLogger.security('Security threats detected', threatLog);
-                }
+                    error: securityError.message,
+                    stack: securityError.stack,
+                    url: req.originalUrl
+                });
             }
-        } catch (securityError) {
-            // Don't block request if security analysis fails, but log the error
-            platformLogger.error('Security analysis failed', {
-                correlationId,
-                error: securityError.message,
-                stack: securityError.stack,
-                url: req.originalUrl
-            });
+        } else {
+            console.log('🔒 Security analysis skipped in development mode');
         }
         
         // Enhanced request logging with correlation ID and security context (module-aware)

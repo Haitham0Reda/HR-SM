@@ -383,7 +383,7 @@ const HardCopiesPage = () => {
                                         </Typography>
                                         <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
                                             By: {hardCopy.uploadedBy ? 
-                                                `${hardCopy.uploadedBy.firstName} ${hardCopy.uploadedBy.lastName}` : 
+                                                `${hardCopy.uploadedBy.personalInfo?.firstName || ''} ${hardCopy.uploadedBy.personalInfo?.lastName || ''}`.trim() || hardCopy.uploadedBy.personalInfo?.fullName || hardCopy.uploadedBy.username : 
                                                 'N/A'}
                                         </Typography>
                                     </Box>
@@ -468,12 +468,12 @@ const HardCopiesPage = () => {
                         }}>
                             <input
                                 type="file"
-                                id="file-upload"
+                                id="hardcopies-file-upload"
                                 style={{ display: 'none' }}
                                 onChange={handleFileSelect}
                                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
                             />
-                            <label htmlFor="file-upload" style={{ cursor: 'pointer', width: '100%', display: 'block' }}>
+                            <label htmlFor="hardcopies-file-upload" style={{ cursor: 'pointer', width: '100%', display: 'block' }}>
                                 <UploadIcon sx={{ fontSize: 48, color: theme.palette.primary.main, mb: 1 }} />
                                 <Typography variant="h6" sx={{ color: theme.palette.primary.main, mb: 1 }}>
                                     {selectedFile ? selectedFile.name : 'Click to select file'}

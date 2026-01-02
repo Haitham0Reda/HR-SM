@@ -218,11 +218,11 @@ export default function ProfilePage() {
                                 <input
                                     accept="image/*"
                                     style={{ display: 'none' }}
-                                    id="profile-picture-upload"
+                                    id="profile-page-picture-upload"
                                     type="file"
                                     onChange={handleImageChange}
                                 />
-                                <label htmlFor="profile-picture-upload" style={{ width: '100%' }}>
+                                <label htmlFor="profile-page-picture-upload" style={{ width: '100%' }}>
                                     <Button
                                         variant="outlined"
                                         component="span"

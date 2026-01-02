@@ -93,7 +93,14 @@
     "verify:auto": "node server/scripts/backupVerification.js auto",
     "verify:list": "node server/scripts/backupVerification.js list",
     "verify:status": "node server/scripts/backupVerification.js status",
-    "verify:schedule": "node server/scripts/backupVerification.js schedule"
+    "verify:schedule": "node server/scripts/backupVerification.js schedule",
+    "db:clear": "node server/scripts/clearDatabase.js",
+    "db:nuke": "node server/scripts/nukeDatabaseCompletely.js",
+    "db:nuke-all": "node server/scripts/nukeAllDatabases.js",
+    "db:seed": "node server/seed.js",
+    "db:seed-companies": "node server/scripts/seedFullCompanies.js",
+    "license:sync": "node server/scripts/syncLicenses.js",
+    "license:validate": "node server/scripts/validateLicenses.js"
   },
   "keywords": [],
   "author": "",

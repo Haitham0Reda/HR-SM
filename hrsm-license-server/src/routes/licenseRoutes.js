@@ -1,103 +1,64 @@
 import express from 'express';
-import { body } from 'express-validator';
-import { asyncHandler } from '../middleware/errorHandler.js';
-import { authenticatePlatformAdmin, authenticateHRSMBackend } from '../middleware/apiKeyAuth.middleware.js';
-import {
-    validateLicenseCreate,
-    validateLicenseValidation,
-    validateLicenseNumber,
-    validateTenantId,
-    validateLicenseRenewal,
-    validateLicenseRevocation,
-    validatePagination,
-    preventInjection,
-    validateJsonStructure,
-    handleValidationErrors
-} from '../middleware/validation.middleware.js';
-import LicenseController from '../controllers/LicenseController.js';
+import licenseController from '../controllers/licenseController.js';
+import { authenticateAPI, authorizeRole } from '../middleware/auth.js';
+import { validateLicenseCreate as validateLicenseCreation, validateLicenseRenewal as validateLicenseUpdate } from '../middleware/validation.middleware.js';
+import { generalRateLimit, validationRateLimit } from '../middleware/rateLimiting.middleware.js';
 
 const router = express.Router();
 
-// Apply security middleware to all routes
-router.use(preventInjection);
-router.use(validateJsonStructure);
+/**
+ * License Management Routes - License Server
+ */
 
-// Note: Rate limiting is applied globally in server.js using licenseServerRateLimit()
-// Individual route-level rate limiting is not needed as the license server has its own global limits
-
-// Create License (Platform Admin only)
-router.post('/create', 
-  authenticatePlatformAdmin,
-  validateLicenseCreate,
-  asyncHandler(LicenseController.createLicense)
+// Public routes (with rate limiting)
+router.post('/validate/:licenseId', 
+  validationRateLimit, // License validation rate limiting
+  licenseController.validateLicense
 );
 
-// Validate License (HR-SM Backend calls this)
-router.post('/validate',
-  authenticateHRSMBackend,
-  validateLicenseValidation,
-  asyncHandler(LicenseController.validateLicense)
+// API Key protected routes
+router.use(authenticateAPI);
+
+// Company-specific routes (with company-based rate limiting)
+router.get('/company/:companyId',
+  generalRateLimit, // General rate limiting
+  licenseController.getLicenseByCompany
 );
 
-// Get License Statistics (Platform Admin only) - Must come before /:licenseNumber
-router.get('/stats',
-  authenticatePlatformAdmin,
-  asyncHandler(LicenseController.getLicenseStatistics)
+router.put('/:licenseId/usage',
+  generalRateLimit, // General rate limiting for usage updates
+  licenseController.updateUsage
 );
 
-// Get Tenant's License - Must come before /:licenseNumber
-router.get('/tenant/:tenantId',
-  authenticatePlatformAdmin,
-  validateTenantId,
-  asyncHandler(LicenseController.getTenantLicenses)
+// Admin routes (require admin role)
+router.use(authorizeRole(['admin', 'super-admin']));
+
+// License CRUD operations
+router.post('/',
+  validateLicenseCreation,
+  licenseController.createLicense
 );
 
-// List All Licenses (with pagination) - Must come before /:licenseNumber
-router.get('/',
-  authenticatePlatformAdmin,
-  validatePagination,
-  asyncHandler(LicenseController.listLicenses)
+router.put('/:licenseId/status',
+  validateLicenseUpdate,
+  licenseController.updateLicenseStatus
 );
 
-// Get License Details - Must come after specific routes
-router.get('/:licenseNumber',
-  authenticatePlatformAdmin,
-  validateLicenseNumber,
-  asyncHandler(LicenseController.getLicenseDetails)
+router.put('/:licenseId/renew',
+  licenseController.renewLicense
 );
 
-// Renew License
-router.patch('/:licenseNumber/renew',
-  authenticatePlatformAdmin,
-  validateLicenseNumber,
-  validateLicenseRenewal,
-  asyncHandler(LicenseController.renewLicense)
+// Audit and monitoring routes
+router.get('/:licenseId/audit',
+  licenseController.getLicenseAudit
 );
 
-// Update License Usage (HR-SM Backend calls this)
-router.patch('/:licenseNumber/usage',
-  authenticateHRSMBackend,
-  validateLicenseNumber,
-  [
-    body('currentUsers')
-      .optional()
-      .isInt({ min: 0 })
-      .withMessage('Current users must be a non-negative integer'),
-    body('currentStorage')
-      .optional()
-      .isInt({ min: 0 })
-      .withMessage('Current storage must be a non-negative integer')
-  ],
-  handleValidationErrors,
-  asyncHandler(LicenseController.updateLicenseUsage)
+router.get('/expiring',
+  licenseController.getExpiringLicenses
 );
 
-// Revoke License
-router.delete('/:licenseNumber',
-  authenticatePlatformAdmin,
-  validateLicenseNumber,
-  validateLicenseRevocation,
-  asyncHandler(LicenseController.revokeLicense)
+router.get('/statistics',
+  licenseController.getLicenseStatistics
 );
 
 export default router;

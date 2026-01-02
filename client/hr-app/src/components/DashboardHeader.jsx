@@ -87,7 +87,7 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     const theme = useTheme();
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
-    const { logout } = useAuth();
+    const { logout, isAuthenticated } = useAuth();
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
     const [notifications, setNotifications] = React.useState([]);
@@ -113,6 +113,12 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
 
     // Define fetchNotifications before useEffect that uses it
     const fetchNotifications = React.useCallback(async () => {
+        // Early return if not authenticated or no user
+        if (!isAuthenticated || !user || !user._id) {
+            console.log('🔔 Skipping notification fetch - user not authenticated or no user ID');
+            return;
+        }
+
         try {
             console.log('🔔 Fetching notifications...');
             // Fetch notifications from the notification API
@@ -142,17 +148,18 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
             // Fallback to empty array if API fails
             setNotifications([]);
         }
-    }, []);
+    }, [isAuthenticated, user]);
 
     // Fetch notifications
     React.useEffect(() => {
-        if (user && user._id) {
+        // Only fetch notifications if user is authenticated and has an ID
+        if (user && user._id && isAuthenticated) {
             fetchNotifications();
             // Refresh notifications every 60 seconds
             const interval = setInterval(fetchNotifications, 60000);
             return () => clearInterval(interval);
         }
-    }, [user, fetchNotifications]);
+    }, [user, fetchNotifications, isAuthenticated]);
 
     const notificationCount = notifications.length;
 

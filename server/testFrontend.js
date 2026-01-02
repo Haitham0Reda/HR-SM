@@ -68,7 +68,7 @@ async function testFrontendEndpoints() {
         console.log('⚠️  Some endpoints may have module configuration issues');
         console.log('\n🎉 Main authentication and authorization issues are RESOLVED!');
         console.log('\n📱 You can now use the frontend application at http://localhost:3000');
-        console.log('   Use the QuickLoginHelper to test different user roles');
+        console.log('   Use the provided login credentials to test different user roles');
 
     } catch (error) {
         if (error.response) {

@@ -56,6 +56,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
     const [departments, setDepartments] = useState([]);
     const [departmentStats, setDepartmentStats] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isFetching, setIsFetching] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedAttendance, setSelectedAttendance] = useState(null);
@@ -68,12 +69,23 @@ const AttendancePage = ({ viewMode = 'my' }) => {
         notes: ''
     });
 
-    const [startDate, setStartDate] = useState(() => {
-        const date = new Date();
-        date.setDate(date.getDate() - 7);
-        return date.toISOString().split('T')[0];
-    });
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    // Set default date range to capture available data
+    const getCurrentMonthRange = () => {
+        // Use dynamic current month range
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const start = new Date(year, month, 1);
+        const end = new Date(year, month + 1, 0); // Last day of current month
+        return {
+            start: start.toISOString().split('T')[0],
+            end: end.toISOString().split('T')[0]
+        };
+    };
+
+    const { start: defaultStart, end: defaultEnd } = getCurrentMonthRange();
+    const [startDate, setStartDate] = useState(defaultStart);
+    const [endDate, setEndDate] = useState(defaultEnd);
     const [filterEmployee, setFilterEmployee] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
     const [filterDepartment, setFilterDepartment] = useState('');
@@ -86,54 +98,84 @@ const AttendancePage = ({ viewMode = 'my' }) => {
 
     const fetchAttendances = async () => {
         try {
+            // Prevent multiple simultaneous requests
+            if (isFetching) {
+                console.log('⏸️ Already fetching, skipping duplicate request');
+                return;
+            }
+
+            setIsFetching(true);
             setLoading(true);
-            console.log('Fetching attendance records...');
-            
+            console.log('🔄 Fetching attendance data...');
+
+            // Don't fetch if user is not loaded yet
+            if (!user || !(user._id || user.id)) {
+                console.log('⏳ User not loaded yet, skipping fetch');
+                setLoading(false);
+                setIsFetching(false);
+                return;
+            }
+
+            console.log('👤 User loaded:', user.email, 'ID:', user._id || user.id);
+
             // Build query parameters for filtering
             const params = {};
             if (startDate) params.startDate = startDate;
             if (endDate) params.endDate = endDate;
+
+            // Add employee filter for 'my' view mode - ensures backend filtering
+            if (viewMode === 'my' && (user._id || user.id)) {
+                params.employee = user._id || user.id;
+                console.log('🔍 My Attendance mode: filtering by employee ID:', params.employee);
+            }
+
             if (filterEmployee) params.employee = filterEmployee;
             if (filterStatus) params.status = filterStatus;
             if (filterDepartment) params.department = filterDepartment;
-            
+
             const response = await attendanceService.getAll(params);
-            console.log('Attendance API response:', response);
 
             // The API interceptor should have already extracted the data
             // Handle different response formats
             let attendanceArray = [];
             if (Array.isArray(response)) {
                 attendanceArray = response;
+                console.log('📊 Response is array, length:', attendanceArray.length);
             } else if (response?.data && Array.isArray(response.data)) {
                 attendanceArray = response.data;
+                console.log('📊 Response.data is array, length:', attendanceArray.length);
             } else if (response?.attendances && Array.isArray(response.attendances)) {
                 attendanceArray = response.attendances;
+                console.log('📊 Response.attendances is array, length:', attendanceArray.length);
+            } else {
+                console.log('❌ Unexpected response format:', typeof response, Object.keys(response || {}));
             }
 
-            console.log('Processed attendance array:', attendanceArray);
-            console.log('Current user:', user);
-            console.log('Can manage:', canManage);
-
-            // Filter to show only current user's attendance if not HR/Admin
-            const filteredData = canManage
+            // Filter based on viewMode prop
+            // viewMode='all' shows all attendance (for HR/Admin)
+            // viewMode='my' shows only current user's attendance
+            const filteredData = viewMode === 'all'
                 ? attendanceArray
                 : attendanceArray.filter(att => {
                     const employeeId = att.employee?._id || att.employee;
-                    const userId = user?._id;
-                    console.log('Comparing:', employeeId, 'with', userId);
-                    return employeeId === userId;
+                    const userId = user?._id || user?.id;
+                    const match = employeeId === userId;
+                    if (!match && attendanceArray.length < 20) { // Only log for small datasets
+                        console.log('🔍 Filter check:', employeeId, '===', userId, '=', match);
+                    }
+                    return match;
                 });
 
-            console.log('Filtered attendance data:', filteredData);
+            console.log(`✅ Attendance loaded: ${filteredData.length} records (viewMode: ${viewMode})`);
+            console.log('📊 Setting attendances state with', filteredData.length, 'records');
             setAttendances(filteredData);
         } catch (error) {
             console.error('Error fetching attendance:', error);
-            console.error('Error details:', error.response?.data);
             showNotification(error.response?.data?.message || 'Failed to fetch attendance records', 'error');
             setAttendances([]);
         } finally {
             setLoading(false);
+            setIsFetching(false);
         }
     };
 
@@ -160,20 +202,30 @@ const AttendancePage = ({ viewMode = 'my' }) => {
     };
 
     useEffect(() => {
-        if (user) {
+        console.log('🔄 Initial useEffect triggered - user:', !!user, 'userID:', user?._id || user?.id);
+        if (user && (user._id || user.id)) {
+            console.log('✅ User loaded, fetching initial data for:', user.email || user._id || user.id);
             fetchAttendances();
             if (canManage) {
                 fetchUsers();
                 fetchDepartments();
             }
+        } else {
+            console.log('⏳ User not loaded yet, waiting...');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?._id, canManage]);
+    }, [user?._id || user?.id]); // Removed canManage to prevent extra re-renders
 
-    // Refetch attendance when filters change
+    // Refetch attendance when filters change (with debouncing)
     useEffect(() => {
-        if (user) {
-            fetchAttendances();
+        if (user && (user._id || user.id)) {
+            // Debounce the API calls to prevent rapid requests
+            const timeoutId = setTimeout(() => {
+                console.log('🔄 Filter changed, fetching attendance...');
+                fetchAttendances();
+            }, 300); // 300ms debounce
+
+            return () => clearTimeout(timeoutId);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [startDate, endDate, filterEmployee, filterStatus, filterDepartment]);
@@ -303,7 +355,25 @@ const AttendancePage = ({ viewMode = 'my' }) => {
         ...(canManage ? [{
             id: 'employee',
             label: 'Employee',
-            render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A'
+            render: (row) => {
+                const employee = row.employee;
+                if (!employee) return 'N/A';
+
+                // Try different name formats
+                if (employee.personalInfo?.fullName) {
+                    return employee.personalInfo.fullName;
+                }
+                if (employee.personalInfo?.firstName && employee.personalInfo?.lastName) {
+                    return `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`;
+                }
+                if (employee.username) {
+                    return employee.username;
+                }
+                if (employee.email) {
+                    return employee.email.split('@')[0]; // Use email prefix as fallback
+                }
+                return 'N/A';
+            }
         }] : []),
         {
             id: 'date',
@@ -353,8 +423,8 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                 />
             )
         },
-        { 
-            id: 'notes', 
+        {
+            id: 'notes',
             label: 'Notes',
             render: (row) => row.notes || '-'
         },
@@ -683,6 +753,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
                         <Box sx={{ flex: '1 1 calc(33.33% - 16px)', minWidth: '200px' }}>
                             <TextField
+                                id="employee-start-date"
                                 label="Start Date"
                                 type="date"
                                 value={startDate}
@@ -693,6 +764,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                         </Box>
                         <Box sx={{ flex: '1 1 calc(33.33% - 16px)', minWidth: '200px' }}>
                             <TextField
+                                id="employee-end-date"
                                 label="End Date"
                                 type="date"
                                 value={endDate}
@@ -989,17 +1061,17 @@ const AttendancePage = ({ viewMode = 'my' }) => {
         const start = new Date(startDate);
         const end = new Date(endDate);
         const dateMatch = attDate >= start && attDate <= end;
-        
-        const employeeMatch = !filterEmployee || 
-            att.employee?._id === filterEmployee || 
+
+        const employeeMatch = !filterEmployee ||
+            att.employee?._id === filterEmployee ||
             att.employee === filterEmployee;
-        
+
         const statusMatch = !filterStatus || att.status === filterStatus;
-        
-        const departmentMatch = !filterDepartment || 
+
+        const departmentMatch = !filterDepartment ||
             att.employee?.department?._id === filterDepartment ||
             att.employee?.department === filterDepartment;
-        
+
         return dateMatch && employeeMatch && statusMatch && departmentMatch;
     });
 
@@ -1015,11 +1087,11 @@ const AttendancePage = ({ viewMode = 'my' }) => {
     // Calculate department-wise statistics
     const calculateDepartmentStats = () => {
         const deptStatsMap = new Map();
-        
+
         filteredAllUsersAttendance.forEach(att => {
             const deptId = att.employee?.department?._id || att.department?._id;
             const deptName = att.employee?.department?.name || att.department?.name || 'Unassigned';
-            
+
             if (!deptStatsMap.has(deptId)) {
                 deptStatsMap.set(deptId, {
                     departmentId: deptId,
@@ -1032,10 +1104,10 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                     onTime: 0
                 });
             }
-            
+
             const stats = deptStatsMap.get(deptId);
             stats.total++;
-            
+
             switch (att.status) {
                 case 'present':
                 case 'on-time':
@@ -1059,7 +1131,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                     }
             }
         });
-        
+
         return Array.from(deptStatsMap.values()).sort((a, b) => a.departmentName.localeCompare(b.departmentName));
     };
 
@@ -1121,10 +1193,10 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                 // My Attendance View
                 <Box>
                     <Typography variant="body2" sx={{ mb: 2 }}>
-                        Total records: {attendances.filter(att => att.employee?._id === user?._id || att.employee === user?._id).length}
+                        Total records: {attendances.filter(att => (att.employee?._id || att.employee) === (user?._id || user?.id)).length}
                     </Typography>
                     <DataTable
-                        data={attendances.filter(att => att.employee?._id === user?._id || att.employee === user?._id)}
+                        data={attendances.filter(att => (att.employee?._id || att.employee) === (user?._id || user?.id))}
                         columns={columns}
                     />
                 </Box>
@@ -1137,6 +1209,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                                 <TextField
+                                    id="filter-start-date"
                                     label="Start Date"
                                     type="date"
                                     value={startDate}
@@ -1147,6 +1220,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                                 <TextField
+                                    id="filter-end-date"
                                     label="End Date"
                                     type="date"
                                     value={endDate}
@@ -1158,6 +1232,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                                 <TextField
                                     select
+                                    id="filter-employee"
                                     label="Employee"
                                     value={filterEmployee}
                                     onChange={(e) => setFilterEmployee(e.target.value)}
@@ -1174,6 +1249,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                                 <TextField
                                     select
+                                    id="filter-status"
                                     label="Status"
                                     value={filterStatus}
                                     onChange={(e) => setFilterStatus(e.target.value)}
@@ -1190,6 +1266,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                                 <TextField
                                     select
+                                    id="filter-department"
                                     label="Department"
                                     value={filterDepartment}
                                     onChange={(e) => setFilterDepartment(e.target.value)}
@@ -1211,12 +1288,8 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                                     setFilterEmployee('');
                                     setFilterStatus('');
                                     setFilterDepartment('');
-                                    setStartDate(() => {
-                                        const date = new Date();
-                                        date.setDate(date.getDate() - 7);
-                                        return date.toISOString().split('T')[0];
-                                    });
-                                    setEndDate(new Date().toISOString().split('T')[0]);
+                                    setStartDate('2026-01-01');
+                                    setEndDate('2026-01-31');
                                 }}
                             >
                                 Clear Filters
@@ -1404,6 +1477,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
                         <TextField
                             select
+                            id="employee-select"
                             label="Employee"
                             name="employee"
                             value={formData.employee}
@@ -1419,6 +1493,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                         </TextField>
                         <TextField
                             type="date"
+                            id="attendance-date"
                             label="Date"
                             name="date"
                             value={formData.date}
@@ -1431,6 +1506,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="time"
+                                    id="check-in-time"
                                     label="Check In"
                                     name="checkIn"
                                     value={formData.checkIn}
@@ -1442,6 +1518,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             <Grid size={{ xs: 6 }}>
                                 <TextField
                                     type="time"
+                                    id="check-out-time"
                                     label="Check Out"
                                     name="checkOut"
                                     value={formData.checkOut}
@@ -1453,6 +1530,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                         </Grid>
                         <TextField
                             select
+                            id="attendance-status"
                             label="Status"
                             name="status"
                             value={formData.status}
@@ -1467,6 +1545,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             ))}
                         </TextField>
                         <TextField
+                            id="attendance-notes"
                             label="Notes"
                             name="notes"
                             value={formData.notes}

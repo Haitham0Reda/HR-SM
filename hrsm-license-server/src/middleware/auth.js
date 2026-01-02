@@ -1,5 +1,63 @@
 import { asyncHandler } from './errorHandler.js';
 
+// Generic API authentication (works for both admin and backend)
+export const authenticateAPI = asyncHandler(async (req, res, next) => {
+  const apiKey = req.header('X-API-Key') || req.header('Authorization')?.replace('Bearer ', '');
+  
+  if (!apiKey) {
+    return res.status(401).json({
+      success: false,
+      error: 'Access denied. No API key provided.'
+    });
+  }
+
+  const validApiKey = process.env.ADMIN_API_KEY;
+  
+  if (!validApiKey) {
+    return res.status(500).json({
+      success: false,
+      error: 'Server configuration error. API key not configured.'
+    });
+  }
+
+  if (apiKey !== validApiKey) {
+    return res.status(401).json({
+      success: false,
+      error: 'Access denied. Invalid API key.'
+    });
+  }
+
+  // Add user info to request (default to admin for now)
+  req.user = {
+    id: 'api-user',
+    role: 'admin',
+    permissions: ['create_license', 'revoke_license', 'view_licenses', 'validate_license', 'update_usage']
+  };
+
+  next();
+});
+
+// Role-based authorization
+export const authorizeRole = (allowedRoles) => {
+  return asyncHandler(async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required.'
+      });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: `Access denied. Required role: ${allowedRoles.join(' or ')}`
+      });
+    }
+
+    next();
+  });
+};
+
 export const authenticatePlatformAdmin = asyncHandler(async (req, res, next) => {
   const apiKey = req.header('X-API-Key') || req.header('Authorization')?.replace('Bearer ', '');
   

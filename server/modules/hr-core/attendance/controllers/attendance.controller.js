@@ -2,6 +2,7 @@
 import Attendance from '../models/attendance.model.js';
 import { getHolidayInfo } from '../../holidays/utils/holidayChecker.js';
 import logger from '../../../../utils/logger.js';
+import multiTenantDB from '../../../../config/multiTenant.js';
 import { 
     logControllerAction, 
     logControllerError, 
@@ -10,6 +11,12 @@ import {
     logAdminAction,
     withLogging 
 } from '../../../../utils/controllerLogger.js';
+
+// Helper function to get tenant-specific Attendance model
+const getTenantAttendanceModel = async (tenantId) => {
+    const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+    return tenantConnection.model('Attendance', Attendance.schema);
+};
 
 export const getAllAttendance = async (req, res) => {
     try {
@@ -33,6 +40,9 @@ export const getAllAttendance = async (req, res) => {
                 error: 'Tenant ID is required' 
             });
         }
+
+        // Get tenant-specific database connection
+        const TenantAttendance = await getTenantAttendanceModel(tenantId);
 
         // Build query with tenant isolation
         const query = { tenantId };
@@ -97,20 +107,20 @@ export const getAllAttendance = async (req, res) => {
 
         // Execute query with pagination
         const [attendance, totalCount] = await Promise.all([
-            Attendance.find(query)
-                .populate('employee', 'firstName lastName email employeeId')
+            TenantAttendance.find(query)
+                .populate('employee', 'username email employeeId personalInfo')
                 .populate('department', 'name code')
                 .populate('position', 'title')
                 .populate('device', 'deviceName deviceType')
-                .populate('approvedBy', 'firstName lastName email')
+                .populate('approvedBy', 'username email personalInfo')
                 .sort(sort)
                 .skip(skip)
                 .limit(parseInt(limit)),
-            Attendance.countDocuments(query)
+            TenantAttendance.countDocuments(query)
         ]);
 
         // Calculate summary statistics for the filtered results
-        const summary = await Attendance.aggregate([
+        const summary = await TenantAttendance.aggregate([
             { $match: query },
             {
                 $group: {
@@ -125,7 +135,7 @@ export const getAllAttendance = async (req, res) => {
         let departmentSummary = null;
         if (department || departments) {
             const deptQuery = { ...query };
-            departmentSummary = await Attendance.aggregate([
+            departmentSummary = await TenantAttendance.aggregate([
                 { $match: deptQuery },
                 {
                     $lookup: {
@@ -235,6 +245,9 @@ export const createAttendance = async (req, res) => {
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
+        // Get tenant-specific Attendance model
+        const TenantAttendance = await getTenantAttendanceModel(tenantId);
+
         const attendanceData = { ...req.body, tenantId };
         
         // Get holiday information for the date
@@ -250,9 +263,9 @@ export const createAttendance = async (req, res) => {
             delete attendanceData.checkOut;
         }
         
-        const attendance = new Attendance(attendanceData);
+        const attendance = new TenantAttendance(attendanceData);
         await attendance.save();
-        await attendance.populate('employee', 'firstName lastName email employeeId');
+        await attendance.populate('employee', 'username email employeeId personalInfo');
         await attendance.populate('department', 'name code');
         await attendance.populate('position', 'title');
         
@@ -285,7 +298,7 @@ export const getAttendanceById = async (req, res) => {
         }
 
         const attendance = await Attendance.findOne({ _id: req.params.id, tenantId })
-            .populate('employee', 'firstName lastName email employeeId')
+            .populate('employee', 'username email employeeId personalInfo')
             .populate('department', 'name code')
             .populate('position', 'title');
         if (!attendance) return res.status(404).json({ error: 'Attendance not found' });
@@ -315,7 +328,7 @@ export const updateAttendance = async (req, res) => {
         }
         
         const attendance = await Attendance.findByIdAndUpdate(req.params.id, updateData, { new: true })
-            .populate('employee', 'firstName lastName email employeeId')
+            .populate('employee', 'username email employeeId personalInfo')
             .populate('department', 'name code')
             .populate('position', 'title');
         if (!attendance) return res.status(404).json({ error: 'Attendance not found' });
@@ -384,7 +397,7 @@ export const getTodayAttendance = async (req, res) => {
         }
         
         const attendance = await Attendance.find(query)
-            .populate('employee', 'firstName lastName email employeeId')
+            .populate('employee', 'username email employeeId personalInfo')
             .populate('department', 'name code')
             .populate('position', 'title')
             .populate('device', 'deviceName deviceType')
@@ -576,7 +589,7 @@ export const getMonthlyAttendance = async (req, res) => {
         }
         
         const attendance = await Attendance.find(query)
-            .populate('employee', 'firstName lastName email employeeId')
+            .populate('employee', 'username email employeeId personalInfo')
             .populate('department', 'name code')
             .populate('position', 'title')
             .populate('device', 'deviceName deviceType')
@@ -832,11 +845,6 @@ export const manualCheckIn = async (req, res) => {
         attendance.approvedBy = req.user._id;
         attendance.approvedAt = new Date();
         
-        await attendance.save();
-        await attendance.populate('employee', 'firstName lastName email employeeId');
-        await attendance.populate('department', 'name code');
-        await attendance.populate('position', 'title');
-        
         // Log admin action for manual check-in
         logAdminAction(req, 'manual_check_in', {
             employeeId,
@@ -845,6 +853,11 @@ export const manualCheckIn = async (req, res) => {
             notes,
             attendanceId: attendance._id.toString()
         });
+        
+        await attendance.save();
+        await attendance.populate('employee', 'username email employeeId personalInfo');
+        await attendance.populate('department', 'name code');
+        await attendance.populate('position', 'title');
         
         logger.info(`Manual check-in recorded by ${req.user.firstName || req.user.email} for employee ${employeeId}`);
         
@@ -1128,7 +1141,7 @@ export const manualCheckOut = async (req, res) => {
         attendance.approvedAt = new Date();
         
         await attendance.save();
-        await attendance.populate('employee', 'firstName lastName email employeeId');
+        await attendance.populate('employee', 'username email employeeId personalInfo');
         await attendance.populate('department', 'name code');
         await attendance.populate('position', 'title');
         

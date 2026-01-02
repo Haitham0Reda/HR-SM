@@ -6,7 +6,6 @@ import {
   logoutUser,
   loadUserProfile,
   setTokensFromStorage,
-  selectAuth,
   selectUser,
   selectIsAuthenticated,
   selectAuthLoading,
@@ -17,7 +16,6 @@ import {
   selectIsHR,
   selectIsManager,
   selectIsEmployee,
-  selectHasRole,
   updateUser as updateUserAction
 } from '../slices/authSlice';
 import {
@@ -49,7 +47,6 @@ export const ReduxAuthProvider = ({ children }) => {
   const dispatch = useAppDispatch();
   
   // Auth selectors
-  const auth = useAppSelector(selectAuth);
   const user = useAppSelector(selectUser);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const loading = useAppSelector(selectAuthLoading);
@@ -89,26 +86,6 @@ export const ReduxAuthProvider = ({ children }) => {
           }
         } catch (error) {
           console.error('Failed to initialize auth:', error);
-        }
-      } else if (process.env.NODE_ENV === 'development') {
-        // Auto-login in development if no token exists
-        try {
-          console.log('🔧 Development mode: Attempting auto-login...');
-          const response = await fetch('/api/v1/dev/auto-login');
-          const data = await response.json();
-          
-          if (data.success) {
-            localStorage.setItem('tenant_token', data.data.token);
-            localStorage.setItem('tenant_id', data.data.user.tenantId);
-            localStorage.setItem('user', JSON.stringify(data.data.user));
-            
-            console.log('✅ Development auto-login successful');
-            
-            // Reload the page to reinitialize with the new token
-            window.location.reload();
-          }
-        } catch (error) {
-          console.warn('⚠️ Development auto-login failed:', error.message);
         }
       }
     };

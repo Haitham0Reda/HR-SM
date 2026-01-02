@@ -170,14 +170,14 @@ const TaskReportForm = ({ open, onClose, onSubmit, task }) => {
                     <input
                         accept=".jpg,.jpeg,.png,.gif,.pdf,.txt,.doc,.docx,.xls,.xlsx"
                         style={{ display: 'none' }}
-                        id="file-upload"
+                        id="task-report-file-upload"
                         type="file"
                         multiple
                         onChange={handleFileChange}
                         disabled={uploading}
                     />
 
-                    <label htmlFor="file-upload">
+                    <label htmlFor="task-report-file-upload">
                         <Button
                             variant="outlined"
                             component="span"

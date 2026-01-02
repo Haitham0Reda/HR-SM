@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Box,
     Button,
@@ -51,13 +51,9 @@ const VacationPage = () => {
         reason: ''
     });
 
-    useEffect(() => {
-        console.log('🔄 VacationPage useEffect triggered');
-        fetchVacationHistory();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    const fetchVacationHistory = useRef(null);
 
-    const fetchVacationHistory = async () => {
+    fetchVacationHistory.current = async () => {
         try {
             setLoading(true);
             console.log('🚀 fetchVacationHistory called!');
@@ -117,6 +113,13 @@ const VacationPage = () => {
         }
     };
 
+    useEffect(() => {
+        console.log('🔄 VacationPage useEffect triggered');
+        if (fetchVacationHistory.current) {
+            fetchVacationHistory.current();
+        }
+    }, [isHR, isAdmin, user, showNotification]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -148,7 +151,7 @@ const VacationPage = () => {
             });
 
             // Refresh history
-            fetchVacationHistory();
+            fetchVacationHistory.current();
         } catch (error) {
             const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to submit request';
             showNotification(errorMessage, 'error');
@@ -198,7 +201,7 @@ const VacationPage = () => {
             await vacationService.approve(leaveId);
             showNotification('Leave request approved successfully', 'success');
             await new Promise(resolve => setTimeout(resolve, 300));
-            await fetchVacationHistory();
+            await fetchVacationHistory.current();
         } catch (error) {
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Approval failed', 'error');
         }
@@ -230,7 +233,7 @@ const VacationPage = () => {
             await vacationService.reject(leaveId, trimmedReason);
             showNotification('Leave request rejected successfully', 'success');
             await new Promise(resolve => setTimeout(resolve, 300));
-            await fetchVacationHistory();
+            await fetchVacationHistory.current();
         } catch (error) {
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Rejection failed', 'error');
         }
@@ -266,7 +269,7 @@ const VacationPage = () => {
             showNotification('Request updated successfully', 'success');
             setEditDialogOpen(false);
             setSelectedRequest(null);
-            await fetchVacationHistory();
+            await fetchVacationHistory.current();
         } catch (error) {
             const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update request';
             showNotification(errorMessage, 'error');
@@ -287,7 +290,7 @@ const VacationPage = () => {
             showNotification('Request deleted successfully', 'success');
             setDeleteDialogOpen(false);
             setSelectedRequest(null);
-            await fetchVacationHistory();
+            await fetchVacationHistory.current();
         } catch (error) {
             showNotification(error.response?.data?.error || error.response?.data?.message || 'Delete failed', 'error');
         } finally {
@@ -436,7 +439,7 @@ const VacationPage = () => {
                     setActiveTab(newValue);
                     if (newValue === 1) { // History tab
                         console.log('📋 Switching to history tab, fetching data...');
-                        fetchVacationHistory();
+                        fetchVacationHistory.current();
                     }
                 }}
                 sx={{ mb: 3 }}
@@ -458,6 +461,7 @@ const VacationPage = () => {
                                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                                     <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
                                         <TextField
+                                            id="vacation-type-select"
                                             select
                                             label="Vacation Type"
                                             name="type"
@@ -474,6 +478,7 @@ const VacationPage = () => {
 
                                     <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
                                         <TextField
+                                            id="days-requested-display"
                                             label="Days Requested"
                                             value={`${calculateDays()} day(s)`}
                                             InputProps={{
@@ -487,6 +492,7 @@ const VacationPage = () => {
                                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                                     <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
                                         <TextField
+                                            id="vacation-start-date"
                                             type="date"
                                             label="Start Date"
                                             name="startDate"
@@ -500,6 +506,7 @@ const VacationPage = () => {
 
                                     <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
                                         <TextField
+                                            id="vacation-end-date"
                                             type="date"
                                             label="End Date"
                                             name="endDate"
@@ -513,6 +520,7 @@ const VacationPage = () => {
                                 </Box>
 
                                 <TextField
+                                    id="vacation-reason"
                                     label="Reason"
                                     name="reason"
                                     value={formData.reason}
@@ -617,6 +625,7 @@ const VacationPage = () => {
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
                         <TextField
+                            id="edit-vacation-type-select"
                             select
                             label="Vacation Type"
                             name="type"
@@ -630,6 +639,7 @@ const VacationPage = () => {
                             <MenuItem value="sick">Sick Leave</MenuItem>
                         </TextField>
                         <TextField
+                            id="edit-vacation-start-date"
                             type="date"
                             label="Start Date"
                             name="startDate"
@@ -640,6 +650,7 @@ const VacationPage = () => {
                             required
                         />
                         <TextField
+                            id="edit-vacation-end-date"
                             type="date"
                             label="End Date"
                             name="endDate"
@@ -650,6 +661,7 @@ const VacationPage = () => {
                             required
                         />
                         <TextField
+                            id="edit-vacation-reason"
                             label="Reason"
                             name="reason"
                             value={formData.reason}

@@ -204,6 +204,7 @@ const ForgotPassword = () => {
                             Email Address
                         </Typography>
                         <TextField
+                            id="forgot-password-email"
                             fullWidth
                             name="email"
                             type="email"

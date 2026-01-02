@@ -366,6 +366,7 @@ const ResetPassword = () => {
                             New Password
                         </Typography>
                         <TextField
+                            id="reset-password-new"
                             fullWidth
                             name="password"
                             type={showPassword ? 'text' : 'password'}
@@ -457,6 +458,7 @@ const ResetPassword = () => {
                             Confirm Password
                         </Typography>
                         <TextField
+                            id="reset-password-confirm"
                             fullWidth
                             name="confirmPassword"
                             type={showConfirmPassword ? 'text' : 'password'}

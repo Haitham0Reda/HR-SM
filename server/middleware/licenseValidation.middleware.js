@@ -609,6 +609,12 @@ export const requireModuleLicense = (moduleKey) => {
         return next();
       }
 
+      // Skip validation in development mode if LICENSE_VALIDATION_ENABLED is false
+      if (process.env.NODE_ENV === 'development' && process.env.LICENSE_VALIDATION_ENABLED === 'false') {
+        logger.debug('Module license validation skipped in development mode', { module: moduleKey });
+        return next();
+      }
+
       // Extract tenant information
       const tenantId = req.tenantId || 
                       req.tenant?.id || 

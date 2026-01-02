@@ -80,10 +80,13 @@ const ForgetCheckPage = () => {
         try {
             if (canManage) {
                 const data = await userService.getAll();
-                setUsers(data);
+                // Handle both array response and object with data property
+                const usersArray = Array.isArray(data) ? data : (data?.data || []);
+                setUsers(usersArray);
             }
         } catch (error) {
-
+            console.error('Error fetching users:', error);
+            setUsers([]); // Set empty array on error to prevent map error
         }
     };
 
@@ -465,7 +468,7 @@ const ForgetCheckPage = () => {
                                 required
                                 fullWidth
                             >
-                                {users.map((u) => (
+                                {Array.isArray(users) && users.map((u) => (
                                     <MenuItem key={u._id} value={u._id}>
                                         {u.name} - {u.email}
                                     </MenuItem>

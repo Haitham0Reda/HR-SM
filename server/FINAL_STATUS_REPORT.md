@@ -123,7 +123,7 @@
 - Authentication system fully functional
 - Module availability endpoint working correctly
 - All core endpoints responding properly
-- QuickLoginHelper can be used for testing
+- Manual login credentials provided for testing
 - Frontend should load without "Failed to fetch module availability" errors
 
 **🔗 Test Credentials:**

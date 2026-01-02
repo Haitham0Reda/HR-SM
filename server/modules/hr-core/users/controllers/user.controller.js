@@ -425,8 +425,17 @@ export const loginUser = async (req, res) => {
         user.lastLogin = new Date();
         await user.save();
 
-        // Generate JWT token with user's role from database
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+        // Generate JWT token with user's role and tenantId from database
+        const token = jwt.sign(
+            { 
+                id: user._id, 
+                userId: user._id,
+                role: user.role, 
+                tenantId: user.tenantId 
+            }, 
+            process.env.TENANT_JWT_SECRET || process.env.JWT_SECRET || 'secret', 
+            { expiresIn: '1d' }
+        );
 
         // Log successful login with detailed information
         logAuthEvent('LOGIN_SUCCESS', user, req, {

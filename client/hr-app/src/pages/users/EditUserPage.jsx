@@ -420,11 +420,11 @@ const EditUserPage = () => {
                                 <input
                                     accept="image/*"
                                     style={{ display: 'none' }}
-                                    id="profile-picture-upload"
+                                    id="edit-user-profile-picture-upload"
                                     type="file"
                                     onChange={handleProfilePictureChange}
                                 />
-                                <label htmlFor="profile-picture-upload">
+                                <label htmlFor="edit-user-profile-picture-upload">
                                     <Button
                                         variant="outlined"
                                         component="span"

@@ -30,8 +30,9 @@ export const loginUser = createAsyncThunk(
         tenantId
       });
 
-      const responseData = response.data || response;
-      const { user, token } = responseData.data || responseData;
+      // The auth controller returns { success: true, token, user }
+      // API interceptor already extracts response.data, so response is the actual data
+      const { user, token } = response;
 
       // Store tokens in localStorage
       localStorage.setItem('tenant_token', token);
@@ -62,7 +63,9 @@ export const loadUserProfile = createAsyncThunk(
       }
 
       const userResponse = await api.get('/auth/me');
-      const userData = userResponse.data || userResponse;
+      // The auth controller returns { success: true, data: user }
+      // API interceptor already extracts response.data, so userResponse is the actual response
+      const userData = userResponse.data;
       
       return userData;
     } catch (error) {

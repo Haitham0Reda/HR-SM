@@ -524,15 +524,7 @@ export const initializeRoutes = async () => {
         console.warn('⚠️  Cache management routes not available:', error.message);
     }
 
-    // Development auto-login (development only)
-    if (process.env.NODE_ENV === 'development') {
-        try {
-            const { createAutoLoginRoute } = await import('./utils/devAutoLogin.js');
-            createAutoLoginRoute(app);
-        } catch (error) {
-            console.warn('⚠️  Development auto-login not available:', error.message);
-        }
-    }
+    // Development auto-login removed for security
 
     console.log('✓ Tenant routes loaded (/api/v1/*)');
     console.log('✓ All routes initialized');

@@ -117,10 +117,9 @@ const RolesPage = () => {
     useEffect(() => {
         fetchRoles();
         fetchStats();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchRoles, fetchStats]);
 
-    const fetchRoles = async () => {
+    const fetchRoles = useCallback(async () => {
         try {
             setLoading(true);
             const data = await roleService.getAll();
@@ -130,16 +129,16 @@ const RolesPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showNotification]);
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
             const data = await roleService.getStats();
             setStats(data);
         } catch (error) {
-
+            // Silent fail for stats
         }
-    };
+    }, []);
 
     const handleDeleteClick = async (role) => {
         setSelectedRole(role);
