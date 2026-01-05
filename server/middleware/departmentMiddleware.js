@@ -4,6 +4,7 @@
  * Validation and business logic for departments
  */
 import mongoose from 'mongoose';
+import multiTenantDB from '../config/multiTenant.js';
 
 /**
  * Validate department code uniqueness
@@ -11,15 +12,22 @@ import mongoose from 'mongoose';
 export const checkDepartmentCodeUnique = async (req, res, next) => {
     try {
         if (req.body.code) {
-            const Department = mongoose.model('Department');
+            // Use tenant-specific model
+            const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
+            const TenantDepartment = tenantConnection.models.Department || 
+                tenantConnection.model('Department', mongoose.model('Department').schema);
+            
             const departmentId = req.params.id;
 
-            const query = { code: req.body.code };
+            const query = { 
+                code: req.body.code,
+                tenantId: req.tenantId 
+            };
             if (departmentId) {
                 query._id = { $ne: departmentId };
             }
 
-            const existingDept = await Department.findOne(query);
+            const existingDept = await TenantDepartment.findOne(query);
 
             if (existingDept) {
                 return res.status(400).json({
@@ -30,7 +38,7 @@ export const checkDepartmentCodeUnique = async (req, res, next) => {
         }
         next();
     } catch (error) {
-
+        console.error('Department code validation error:', error);
         next();
     }
 };
@@ -41,11 +49,18 @@ export const checkDepartmentCodeUnique = async (req, res, next) => {
 export const validateManager = async (req, res, next) => {
     try {
         if (req.body.manager) {
-            const User = mongoose.model('User');
-            const manager = await User.findById(req.body.manager);
+            // Use tenant-specific model
+            const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
+            const TenantUser = tenantConnection.models.User || 
+                tenantConnection.model('User', mongoose.model('User').schema);
+
+            const manager = await TenantUser.findOne({ 
+                _id: req.body.manager,
+                tenantId: req.tenantId 
+            });
 
             if (!manager) {
-                return res.status(404).json({
+                return res.status(400).json({
                     success: false,
                     message: 'Manager not found'
                 });
@@ -60,7 +75,7 @@ export const validateManager = async (req, res, next) => {
         }
         next();
     } catch (error) {
-
+        console.error('Manager validation error:', error);
         next();
     }
 };

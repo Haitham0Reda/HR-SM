@@ -29,16 +29,37 @@ const validateUserInput = (data, isUpdate = false) => {
         if (!data.email || typeof data.email !== 'string') return 'Email is required.';
         if (!data.password || typeof data.password !== 'string') return 'Password is required.';
     }
-    if (data.role && !validRoles.includes(data.role)) return 'Invalid role.';
-    if (data.status && !['active', 'vacation', 'resigned', 'inactive'].includes(data.status)) return 'Invalid status.';
+    
+    // Validate role if provided
+    if (data.role && !validRoles.includes(data.role)) {
+        return `Invalid role '${data.role}'. Valid roles are: ${validRoles.join(', ')}`;
+    }
+    
+    // Validate status if provided
+    if (data.status && !['active', 'vacation', 'resigned', 'inactive'].includes(data.status)) {
+        return `Invalid status '${data.status}'. Valid statuses are: active, vacation, resigned, inactive`;
+    }
+    
+    // Validate profile fields if provided
     if (data.profile) {
-        if (data.profile.gender && !['male', 'female'].includes(data.profile.gender)) return 'Invalid gender.';
-        if (data.profile.maritalStatus && !['single', 'married', 'divorced', 'widowed'].includes(data.profile.maritalStatus)) return 'Invalid marital status.';
+        if (data.profile.gender && !['male', 'female'].includes(data.profile.gender)) {
+            return `Invalid gender '${data.profile.gender}'. Valid genders are: male, female`;
+        }
+        if (data.profile.maritalStatus && !['single', 'married', 'divorced', 'widowed'].includes(data.profile.maritalStatus)) {
+            return `Invalid marital status '${data.profile.maritalStatus}'. Valid statuses are: single, married, divorced, widowed`;
+        }
     }
+    
+    // Validate employment fields if provided
     if (data.employment) {
-        if (data.employment.contractType && !['full-time', 'part-time', 'contract', 'probation'].includes(data.employment.contractType)) return 'Invalid contract type.';
-        if (data.employment.employmentStatus && !['active', 'on-leave', 'vacation', 'inactive', 'terminated', 'resigned'].includes(data.employment.employmentStatus)) return 'Invalid employment status.';
+        if (data.employment.contractType && !['full-time', 'part-time', 'contract', 'probation'].includes(data.employment.contractType)) {
+            return `Invalid contract type '${data.employment.contractType}'. Valid types are: full-time, part-time, contract, probation`;
+        }
+        if (data.employment.employmentStatus && !['active', 'on-leave', 'vacation', 'inactive', 'terminated', 'resigned'].includes(data.employment.employmentStatus)) {
+            return `Invalid employment status '${data.employment.employmentStatus}'. Valid statuses are: active, on-leave, vacation, inactive, terminated, resigned`;
+        }
     }
+    
     return null;
 };
 
@@ -350,7 +371,15 @@ export const updateUser = async (req, res) => {
         const userId = req.params.id || req.user.id;
 
         const error = validateUserInput(req.body, true);
-        if (error) return res.status(400).json({ error });
+        if (error) {
+            console.log('❌ User validation failed:', error);
+            console.log('❌ Request body:', JSON.stringify(req.body, null, 2));
+            return res.status(400).json({ 
+                success: false,
+                message: error,
+                error: error
+            });
+        }
 
         // Get tenant context
         const tenantId = req.tenantId || req.user?.tenantId;
@@ -508,7 +537,7 @@ export const deleteUser = async (req, res) => {
 
 // Login controller
 export const loginUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, tenantId } = req.body;
     if (!email || !password) {
         logSecurityEvent(req, 'incomplete_login_attempt', {
             severity: 'low',
@@ -516,13 +545,20 @@ export const loginUser = async (req, res) => {
         });
         return res.status(400).json({ error: 'Email and password are required.' });
     }
+    
+    if (!tenantId) {
+        return res.status(400).json({ error: 'Tenant ID is required.' });
+    }
+    
     try {
-        const user = await User.findOne({ email }).populate('department position');
+        // Find user by email AND tenantId for proper tenant isolation
+        const user = await User.findOne({ email, tenantId }).populate('department position');
 
         if (!user) {
             // Log failed login attempt - user not found
             logAuthEvent('LOGIN_FAILED', null, req, {
                 email,
+                tenantId,
                 reason: 'User not found'
             });
             
@@ -530,6 +566,7 @@ export const loginUser = async (req, res) => {
             logAuthenticationEvent(req, 'login_failed', {
                 success: false,
                 userEmail: email,
+                tenantId,
                 reason: 'user_not_found'
             });
             
@@ -541,6 +578,7 @@ export const loginUser = async (req, res) => {
         if (!isMatch) {
             // Log failed login attempt - wrong password
             logAuthEvent('LOGIN_FAILED', user, req, {
+                tenantId,
                 reason: 'Invalid password'
             });
             
@@ -549,6 +587,7 @@ export const loginUser = async (req, res) => {
                 success: false,
                 userId: user._id.toString(),
                 userEmail: email,
+                tenantId,
                 reason: 'invalid_password'
             });
             
@@ -573,6 +612,7 @@ export const loginUser = async (req, res) => {
 
         // Log successful login with detailed information
         logAuthEvent('LOGIN_SUCCESS', user, req, {
+            tenantId,
             department: user.department?.name,
             position: user.position?.title,
             lastLogin: user.lastLogin
@@ -584,15 +624,23 @@ export const loginUser = async (req, res) => {
             userId: user._id.toString(),
             userEmail: email,
             userRole: user.role,
+            tenantId,
             department: user.department?.name,
             position: user.position?.title,
             lastLogin: user.lastLogin
         });
 
-        res.json({ user: sanitizeUser(user), token });
+        res.json({ 
+            success: true,
+            data: {
+                user: sanitizeUser(user), 
+                token 
+            }
+        });
     } catch (err) {
         logAuthEvent('LOGIN_FAILED', null, req, {
             email,
+            tenantId,
             reason: 'Server error',
             error: err.message
         });

@@ -83,10 +83,9 @@ const CreatePermissionPage = () => {
 
             showNotification('Permission request created successfully', 'success');
 
-            // Trigger notification refresh for HR/Admin (with small delay)
-            setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('notificationUpdate'));
-            }, 500);
+            // Dispatch custom events to notify other components
+            window.dispatchEvent(new CustomEvent('permissionCreated'));
+            window.dispatchEvent(new CustomEvent('notificationUpdate'));
 
             navigate(getCompanyRoute('/permissions'));
         } catch (error) {

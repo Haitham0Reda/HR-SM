@@ -21,8 +21,9 @@ import {
     Visibility as ViewIcon,
     Person as PersonIcon,
     Group as GroupIcon,
+    Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
@@ -35,6 +36,7 @@ import vacationService from '../../services/vacation.service';
 const VacationRequestsPage = () => {
     useDocumentTitle('Vacation Requests');
     const navigate = useNavigate();
+    const location = useLocation();
     const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
@@ -83,8 +85,48 @@ const VacationRequestsPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters]);
 
+    // Refresh data when navigating back to this page
+    useEffect(() => {
+        // Only refresh if we're on the vacation-requests page and not loading
+        if (location.pathname.includes('/vacation-requests') && !loading) {
+            console.log('🔄 VacationRequestsPage - Location changed, refreshing data');
+            fetchVacations();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.pathname]);
+
+    // Listen for custom events (like from create/edit page)
+    useEffect(() => {
+        const handleRefresh = () => {
+            console.log('🔄 VacationRequestsPage - Custom refresh event received');
+            fetchVacations();
+        };
+
+        const handleVisibilityChange = () => {
+            // Refresh data when user comes back to the tab
+            if (!document.hidden && location.pathname.includes('/vacation-requests')) {
+                console.log('🔄 VacationRequestsPage - Tab became visible, refreshing data');
+                fetchVacations();
+            }
+        };
+
+        window.addEventListener('vacationCreated', handleRefresh);
+        window.addEventListener('vacationUpdated', handleRefresh);
+        window.addEventListener('notificationUpdate', handleRefresh);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('vacationCreated', handleRefresh);
+            window.removeEventListener('vacationUpdated', handleRefresh);
+            window.removeEventListener('notificationUpdate', handleRefresh);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const fetchVacations = async () => {
         try {
+            console.log('🔄 VacationRequestsPage - fetchVacations called');
             setLoading(true);
             const params = {};
             if (filters.status) params.status = filters.status;
@@ -92,12 +134,16 @@ const VacationRequestsPage = () => {
             if (filters.sortBy) params.sortBy = filters.sortBy;
             if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
+            console.log('Fetching vacations with params:', params);
             const response = await vacationService.getAll(params);
             console.log('🏖️ VacationRequestsPage Debug:', response);
+            
             const vacationsArray = response?.data || [];
+            console.log('✅ VacationRequestsPage - Fetched', vacationsArray.length, 'vacations');
             setVacations(vacationsArray);
         } catch (error) {
-
+            console.error('❌ VacationRequestsPage - Error fetching vacations:', error);
+            console.error('Error details:', error.response?.data);
             showNotification('Failed to fetch vacations', 'error');
             setVacations([]);
         } finally {
@@ -351,13 +397,26 @@ const VacationRequestsPage = () => {
                         {canManage ? 'Manage all vacation requests' : 'View and manage your vacation requests'}
                     </Typography>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => navigate(getCompanyRoute('/vacation-requests/create'))}
-                >
-                    New Vacation Request
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<RefreshIcon />}
+                        onClick={() => {
+                            console.log('🔄 Manual refresh button clicked');
+                            fetchVacations();
+                        }}
+                        disabled={loading}
+                    >
+                        Refresh
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => navigate(getCompanyRoute('/vacation-requests/create'))}
+                    >
+                        New Vacation Request
+                    </Button>
+                </Box>
             </Box>
 
             {/* Filters */}

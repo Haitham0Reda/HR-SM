@@ -122,6 +122,22 @@ const DepartmentsPage = () => {
     };
 
     const handleSubmit = async () => {
+        // Frontend validation
+        if (!formData.name || !formData.name.trim()) {
+            showNotification('Department name is required', 'error');
+            return;
+        }
+
+        if (formData.name.length > 100) {
+            showNotification('Department name cannot exceed 100 characters', 'error');
+            return;
+        }
+
+        if (formData.arabicName && formData.arabicName.length > 100) {
+            showNotification('Arabic name cannot exceed 100 characters', 'error');
+            return;
+        }
+
         try {
             if (selectedDepartment) {
                 await departmentService.update(selectedDepartment._id, formData);
@@ -133,7 +149,17 @@ const DepartmentsPage = () => {
             handleCloseDialog();
             fetchDepartments();
         } catch (error) {
-            showNotification(error.response?.data?.message || 'Operation failed', 'error');
+            console.error('Department operation error:', error);
+            
+            // Parse error message from server response
+            let errorMessage = 'Operation failed';
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            showNotification(errorMessage, 'error');
         }
     };
 

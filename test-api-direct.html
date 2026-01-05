@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Direct API Test</h1>
+    
+    <div>
+        <button onclick="testServerHealth()">Test Server Health</button>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testMissionsAPI()">Test Missions API</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            results.innerHTML += `<div class="result ${className}">${message}</div>`;
+            console.log(message);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testServerHealth() {
+            log('🔍 Testing server health...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Server is responding', 'success');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    log('❌ Server responded with error', 'error');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                }
+            } catch (error) {
+                log(`❌ Failed to connect to server: ${error.message}`, 'error');
+                log('💡 Make sure the backend server is running on port 5000');
+            }
+        }
+
+        async function testLogin() {
+            log('🔐 Testing login...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@techcorp.com',
+                        password: 'admin123',
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Login successful', 'success');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                    
+                    // Store token for missions test
+                    window.testToken = data.data?.token;
+                    window.testUser = data.data?.user;
+                } else {
+                    log('❌ Login failed', 'error');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                }
+            } catch (error) {
+                log(`❌ Login request failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMissionsAPI() {
+            log('📋 Testing missions API...');
+            
+            if (!window.testToken) {
+                log('⚠️ No token available. Please login first.', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: {
+                        'Authorization': `Bearer ${window.testToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Missions API working', 'success');
+                    log(`📊 Found ${data.data?.length || 0} missions`);
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                    
+                    // Test filtering
+                    if (data.data && data.data.length > 0) {
+                        const userMissions = data.data.filter(mission => {
+                            const missionUserId = mission.employee?._id || mission.employee;
+                            const currentUserId = window.testUser?._id;
+                            return String(missionUserId) === String(currentUserId);
+                        });
+                        
+                        log(`👤 User has ${userMissions.length} missions (filtered)`);
+                    }
+                } else {
+                    log('❌ Missions API failed', 'error');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                }
+            } catch (error) {
+                log(`❌ Missions request failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            log('🔍 Direct API test loaded');
+            log('💡 Click "Test Server Health" first, then "Test Login", then "Test Missions API"');
+        });
+    </script>
+</body>
+</html>

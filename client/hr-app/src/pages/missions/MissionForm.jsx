@@ -41,6 +41,9 @@ const MissionForm = () => {
     const isEditMode = Boolean(id);
 
     useEffect(() => {
+        console.log('🔍 MissionForm - Current user data:', user);
+        console.log('🔍 MissionForm - User department:', user?.department);
+        
         fetchDepartments();
         if (isEditMode) {
             fetchMission();
@@ -48,12 +51,27 @@ const MissionForm = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
+    // Separate effect for auto-populating department when user data is available
+    useEffect(() => {
+        if (!isEditMode && user?.department && !formData.relatedDepartment) {
+            const departmentId = typeof user.department === 'object' ? user.department._id : user.department;
+            console.log('🏢 Auto-populating department:', departmentId);
+            setFormData(prev => ({
+                ...prev,
+                relatedDepartment: departmentId
+            }));
+        }
+    }, [user, isEditMode, formData.relatedDepartment]);
+
     const fetchDepartments = async () => {
         try {
-            const data = await departmentService.getAll();
-            setDepartments(Array.isArray(data) ? data : []);
+            const response = await departmentService.getAll();
+            const departmentData = response?.data || response || [];
+            console.log('🏢 Fetched departments:', departmentData);
+            setDepartments(Array.isArray(departmentData) ? departmentData : []);
         } catch (error) {
-
+            console.error('❌ Failed to fetch departments:', error);
+            setDepartments([]);
         }
     };
 
@@ -144,6 +162,9 @@ const MissionForm = () => {
                 duration: diffDays, // Add calculated duration
             };
 
+            console.log('🔍 MissionForm - Current user:', user);
+            console.log('🔍 MissionForm - Submit data:', submitData);
+
             // Add optional fields if provided
             if (formData.startTime) submitData.startTime = formData.startTime;
             if (formData.endTime) submitData.endTime = formData.endTime;
@@ -153,13 +174,29 @@ const MissionForm = () => {
             if (isEditMode) {
                 await missionService.update(id, submitData);
                 showNotification('Mission updated successfully', 'success');
+                // Dispatch custom events to notify other components
+                window.dispatchEvent(new CustomEvent('missionUpdated'));
+                window.dispatchEvent(new CustomEvent('notificationUpdate'));
             } else {
                 await missionService.create(submitData);
                 showNotification('Mission created successfully', 'success');
+                // Dispatch custom events to notify other components
+                window.dispatchEvent(new CustomEvent('missionCreated'));
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
 
+            // Navigate first, then dispatch events after a small delay to ensure page is loaded
             navigate(getCompanyRoute('/missions'));
+            
+            // Add a small delay to ensure navigation completes before dispatching events
+            setTimeout(() => {
+                if (isEditMode) {
+                    window.dispatchEvent(new CustomEvent('missionUpdated'));
+                } else {
+                    window.dispatchEvent(new CustomEvent('missionCreated'));
+                }
+                window.dispatchEvent(new CustomEvent('notificationUpdate'));
+            }, 100);
         } catch (error) {
 
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
@@ -305,12 +342,17 @@ const MissionForm = () => {
                             value={formData.relatedDepartment}
                             onChange={handleChange}
                             fullWidth
-                            helperText="Optional: Select the department related to this mission"
+                            helperText={
+                                !isEditMode && formData.relatedDepartment && user?.department 
+                                    ? "Auto-selected based on your department (you can change this if needed)"
+                                    : "Optional: Select the department related to this mission"
+                            }
                         >
                             <MenuItem value="">-- None --</MenuItem>
                             {departments.map((dept) => (
                                 <MenuItem key={dept._id} value={dept._id}>
                                     {dept.name}
+                                    {dept._id === formData.relatedDepartment && !isEditMode && user?.department && " (Your Department)"}
                                 </MenuItem>
                             ))}
                         </TextField>

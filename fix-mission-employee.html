@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Mission Employee Field</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .info { background-color: #d1ecf1; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Fix Mission Employee Field</h1>
+    
+    <div class="result info">
+        <h3>🎯 Problem Identified:</h3>
+        <p>The mission in the database has <code>employee: null</code>, so it doesn't show up for any user.</p>
+        <p><strong>Mission ID:</strong> 6958d9c19952c21fbd1f0da8</p>
+        <p><strong>Location:</strong> Minstry</p>
+        <p><strong>Purpose:</strong> work</p>
+    </div>
+    
+    <div>
+        <button onclick="fixExistingMission()">🔧 Fix Existing Mission</button>
+        <button onclick="createNewMission()">➕ Create New Mission</button>
+        <button onclick="checkMissions()">📋 Check All Missions</button>
+        <button onclick="clearResults()">🧹 Clear</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            results.innerHTML += `<div class="result ${className}">${message}</div>`;
+            console.log(message);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function getAuthToken() {
+            // Get token from localStorage (should be set when logged into HR app)
+            const token = localStorage.getItem('token') || localStorage.getItem('tenant_token');
+            
+            if (!token) {
+                // Try to login
+                try {
+                    const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: 'admin@techcorp.com',
+                            password: 'admin123',
+                            tenantId: 'techcorp_solutions'
+                        })
+                    });
+                    
+                    if (loginResponse.ok) {
+                        const loginData = await loginResponse.json();
+                        const newToken = loginData.data?.token;
+                        if (newToken) {
+                            localStorage.setItem('token', newToken);
+                            localStorage.setItem('tenant_token', newToken);
+                            return { token: newToken, user: loginData.data?.user };
+                        }
+                    }
+                } catch (error) {
+                    log('❌ Login failed: ' + error.message, 'error');
+                    return null;
+                }
+            } else {
+                // Get user info
+                try {
+                    const userResponse = await fetch('http://localhost:5000/api/v1/auth/profile', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (userResponse.ok) {
+                        const userData = await userResponse.json();
+                        return { token, user: userData.data || userData };
+                    }
+                } catch (error) {
+                    log('❌ Failed to get user info: ' + error.message, 'error');
+                }
+            }
+            
+            return null;
+        }
+
+        async function fixExistingMission() {
+            log('🔧 Fixing existing mission...');
+            
+            const auth = await getAuthToken();
+            if (!auth) {
+                log('❌ Authentication failed', 'error');
+                return;
+            }
+            
+            const { token, user } = auth;
+            log(`👤 Current user: ${user.email} (ID: ${user._id})`);
+            
+            try {
+                // Update the existing mission
+                const missionId = '6958d9c19952c21fbd1f0da8';
+                const updateResponse = await fetch(`http://localhost:5000/api/v1/missions/${missionId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        employee: user._id
+                    })
+                });
+                
+                if (updateResponse.ok) {
+                    const updatedMission = await updateResponse.json();
+                    log('✅ Mission updated successfully!', 'success');
+                    log(`<pre>${JSON.stringify(updatedMission, null, 2)}</pre>`);
+                    log('💡 Now refresh the missions page in the HR app to see the mission!', 'success');
+                } else {
+                    const errorData = await updateResponse.json();
+                    log('❌ Failed to update mission', 'error');
+                    log(`<pre>${JSON.stringify(errorData, null, 2)}</pre>`);
+                }
+                
+            } catch (error) {
+                log(`❌ Error updating mission: ${error.message}`, 'error');
+            }
+        }
+
+        async function createNewMission() {
+            log('➕ Creating new mission...');
+            
+            const auth = await getAuthToken();
+            if (!auth) {
+                log('❌ Authentication failed', 'error');
+                return;
+            }
+            
+            const { token, user } = auth;
+            log(`👤 Creating mission for: ${user.email} (ID: ${user._id})`);
+            
+            try {
+                const missionData = {
+                    employee: user._id,  // ← This is the key fix!
+                    location: `Test Location ${Date.now()}`,
+                    purpose: 'Test mission with proper employee assignment',
+                    startDate: new Date().toISOString().split('T')[0],
+                    endDate: new Date().toISOString().split('T')[0],
+                    duration: 1
+                };
+                
+                log(`<pre>Mission data: ${JSON.stringify(missionData, null, 2)}</pre>`);
+                
+                const createResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(missionData)
+                });
+                
+                if (createResponse.ok) {
+                    const createdMission = await createResponse.json();
+                    log('✅ New mission created successfully!', 'success');
+                    log(`<pre>${JSON.stringify(createdMission, null, 2)}</pre>`);
+                    log('💡 Now refresh the missions page in the HR app to see the new mission!', 'success');
+                } else {
+                    const errorData = await createResponse.json();
+                    log('❌ Failed to create mission', 'error');
+                    log(`<pre>${JSON.stringify(errorData, null, 2)}</pre>`);
+                }
+                
+            } catch (error) {
+                log(`❌ Error creating mission: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkMissions() {
+            log('📋 Checking all missions...');
+            
+            const auth = await getAuthToken();
+            if (!auth) {
+                log('❌ Authentication failed', 'error');
+                return;
+            }
+            
+            const { token, user } = auth;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const missions = data.data || [];
+                    
+                    log(`📊 Total missions in database: ${missions.length}`);
+                    log(`<pre>${JSON.stringify(missions, null, 2)}</pre>`);
+                    
+                    // Check filtering
+                    const userMissions = missions.filter(mission => {
+                        const missionUserId = mission.employee?._id || mission.employee;
+                        return String(missionUserId) === String(user._id);
+                    });
+                    
+                    log(`👤 Missions for current user: ${userMissions.length}`, userMissions.length > 0 ? 'success' : 'error');
+                    
+                    if (userMissions.length === 0 && missions.length > 0) {
+                        log('⚠️ No missions match current user - this is why the page shows no data!', 'error');
+                        
+                        missions.forEach((mission, index) => {
+                            log(`Mission ${index + 1}: employee=${mission.employee}, current user=${user._id}`);
+                        });
+                    }
+                    
+                } else {
+                    log('❌ Failed to fetch missions', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error checking missions: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load
+        window.addEventListener('load', () => {
+            log('🔧 Mission fix tool loaded');
+            log('💡 Click "Fix Existing Mission" to assign the existing mission to your user');
+            log('💡 Or click "Create New Mission" to create a new one with proper employee assignment');
+        });
+    </script>
+</body>
+</html>

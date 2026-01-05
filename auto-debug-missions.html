@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto Debug Missions</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .info { background-color: #d1ecf1; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Auto Debug Missions</h1>
+    
+    <div class="result info">
+        <h3>🎯 Debugging Mission Data Automatically...</h3>
+        <p>This will automatically check all missions and user matching.</p>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            results.innerHTML += `<div class="result ${className}">${message}</div>`;
+            console.log(message);
+        }
+
+        async function autoDebug() {
+            log('🔍 Starting automatic mission debug...');
+            
+            try {
+                // Get token from localStorage
+                const token = localStorage.getItem('token') || localStorage.getItem('tenant_token');
+                
+                if (!token) {
+                    log('❌ No authentication token found', 'error');
+                    log('💡 Please make sure you are logged into the HR app first', 'info');
+                    return;
+                }
+                
+                log('✅ Token found, making API request...');
+                
+                // Get all missions
+                const response = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    log(`❌ API request failed: ${response.status}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                log(`📊 API Response received successfully`);
+                log(`<pre>Raw API Response: ${JSON.stringify(data, null, 2)}</pre>`);
+                
+                const missions = data.data || [];
+                log(`📋 Total missions in database: ${missions.length}`, missions.length > 0 ? 'success' : 'error');
+                
+                // Get current user ID from token
+                const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+                const currentUserId = tokenPayload._id || tokenPayload.id || tokenPayload.userId;
+                
+                log(`👤 Current user ID: ${currentUserId}`);
+                log(`👤 Token payload: <pre>${JSON.stringify(tokenPayload, null, 2)}</pre>`);
+                
+                if (missions.length === 0) {
+                    log('⚠️ No missions found in database', 'error');
+                    log('💡 This is why the missions page shows "No missions found"', 'info');
+                    log('💡 Try creating a new mission to test the functionality', 'info');
+                    return;
+                }
+                
+                // Analyze each mission
+                log('🔍 Analyzing each mission:');
+                missions.forEach((mission, index) => {
+                    const missionUserId = mission.employee?._id || mission.employee;
+                    const matches = String(missionUserId) === String(currentUserId);
+                    
+                    log(`Mission ${index + 1}:`, 'info');
+                    log(`  - ID: ${mission._id}`);
+                    log(`  - Location: ${mission.location}`);
+                    log(`  - Purpose: ${mission.purpose}`);
+                    log(`  - Employee field: ${JSON.stringify(mission.employee)}`);
+                    log(`  - Employee ID: ${missionUserId}`);
+                    log(`  - Employee ID type: ${typeof missionUserId}`);
+                    log(`  - Current user ID: ${currentUserId}`);
+                    log(`  - Current user ID type: ${typeof currentUserId}`);
+                    log(`  - Strict match: ${missionUserId === currentUserId}`);
+                    log(`  - String match: ${String(missionUserId) === String(currentUserId)}`);
+                    log(`  - Will show in list: ${matches}`, matches ? 'success' : 'error');
+                    log('---');
+                });
+                
+                // Check matches
+                const matchingMissions = missions.filter(mission => {
+                    const missionUserId = mission.employee?._id || mission.employee;
+                    return String(missionUserId) === String(currentUserId);
+                });
+                
+                log(`🎯 SUMMARY:`, 'info');
+                log(`📊 Total missions: ${missions.length}`);
+                log(`👤 Missions for current user: ${matchingMissions.length}`, matchingMissions.length > 0 ? 'success' : 'error');
+                
+                if (matchingMissions.length === 0 && missions.length > 0) {
+                    log('❌ PROBLEM IDENTIFIED:', 'error');
+                    log('The missions exist but none belong to the current user', 'error');
+                    log('This is why the missions page shows "No missions found"', 'error');
+                    
+                    // Check for common issues
+                    const nullEmployees = missions.filter(m => m.employee === null || m.employee === undefined);
+                    if (nullEmployees.length > 0) {
+                        log(`⚠️ Found ${nullEmployees.length} missions with null/undefined employee field`, 'error');
+                        log('These missions need to be assigned to users to show up', 'error');
+                    }
+                    
+                    const differentUsers = missions.filter(m => m.employee && m.employee !== currentUserId);
+                    if (differentUsers.length > 0) {
+                        log(`⚠️ Found ${differentUsers.length} missions belonging to other users`, 'info');
+                        differentUsers.forEach((mission, index) => {
+                            log(`  Other user mission ${index + 1}: employee=${mission.employee?._id || mission.employee}`);
+                        });
+                    }
+                    
+                } else if (matchingMissions.length > 0) {
+                    log('✅ MISSIONS FOUND FOR USER:', 'success');
+                    log('The missions should be showing in the HR app', 'success');
+                    log('If they are not showing, there might be a frontend rendering issue', 'info');
+                    
+                    matchingMissions.forEach((mission, index) => {
+                        log(`User mission ${index + 1}: ${mission.location} - ${mission.purpose}`);
+                    });
+                }
+                
+            } catch (error) {
+                log(`❌ Debug failed: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        // Auto-run when page loads
+        window.addEventListener('load', () => {
+            log('🔍 Auto debug tool loaded');
+            log('💡 Make sure you are logged into the HR app first');
+            
+            // Wait a moment then run
+            setTimeout(() => {
+                autoDebug();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
@@ -110,17 +111,66 @@ const UsersPage = () => {
     };
 
 
-    const handleDelete = async () => {
-        try {
-            await userService.delete(selectedUser._id);
-            showNotification('User deleted successfully', 'success');
-            setOpenConfirm(false);
-            setSelectedUser(null);
-            fetchUsers();
-        } catch (error) {
-            showNotification(error.response?.data?.message || 'Delete failed', 'error');
+    const handleDelete = useCallback(async () => {
+        if (!selectedUser) {
+            console.error('No user selected for deletion');
+            return;
         }
-    };
+
+        const userToDelete = selectedUser;
+        console.log('🗑️ Starting deletion process for:', userToDelete.email);
+        console.log('📊 Current users count:', users.length);
+        
+        try {
+            // Show loading state
+            setLoading(true);
+            
+            // Call the delete API
+            console.log('🌐 Calling delete API...');
+            await userService.delete(userToDelete._id);
+            console.log('✅ Delete API call successful');
+            
+            // Use flushSync to ensure immediate state update
+            console.log('🔄 Updating UI state with flushSync...');
+            flushSync(() => {
+                setUsers(prevUsers => {
+                    const updatedUsers = prevUsers.filter(user => user._id !== userToDelete._id);
+                    console.log('📊 Users count after update:', updatedUsers.length);
+                    console.log('🚫 Removed user:', userToDelete.email);
+                    return updatedUsers;
+                });
+            });
+            
+            // Close dialogs and clear selection after state update
+            flushSync(() => {
+                setOpenConfirm(false);
+                setSelectedUser(null);
+            });
+            
+            // Show success notification
+            showNotification(`User "${userToDelete.firstName} ${userToDelete.lastName}" deleted successfully`, 'success');
+            
+            console.log('✅ Deletion process completed successfully');
+            
+        } catch (error) {
+            console.error('❌ Delete user error:', error);
+            
+            // Show error notification
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to delete user';
+            showNotification(errorMessage, 'error');
+            
+            // Refresh the list to ensure UI consistency in case of error
+            console.log('🔄 Refreshing user list due to error...');
+            try {
+                await fetchUsers();
+            } catch (fetchError) {
+                console.error('❌ Error refreshing user list:', fetchError);
+            }
+        } finally {
+            setLoading(false);
+            console.log('🏁 Delete operation finished');
+        }
+    }, [selectedUser, users.length, showNotification]);
 
     const handleBulkUpload = async () => {
         if (!uploadFile) {
@@ -263,7 +313,9 @@ const UsersPage = () => {
 
     const stats = useMemo(() => {
         const usersArray = Array.isArray(users) ? users : [];
-        return {
+        console.log('📊 Recalculating stats - users count:', usersArray.length);
+        
+        const calculatedStats = {
             total: usersArray.length,
             admins: usersArray.filter(u => u.role === 'admin').length,
             hr: usersArray.filter(u => u.role === 'hr').length,
@@ -274,6 +326,9 @@ const UsersPage = () => {
             resigned: usersArray.filter(u => u.status === 'resigned').length,
             inactive: usersArray.filter(u => u.status === 'inactive').length
         };
+        
+        console.log('📊 New stats calculated:', calculatedStats);
+        return calculatedStats;
     }, [users]);
 
     if (loading) return <Loading />;
@@ -430,7 +485,7 @@ const UsersPage = () => {
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                                 Total Users
                             </Typography>
-                            <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                            <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }} key={`total-${stats.total}`}>
                                 {stats.total}
                             </Typography>
                         </Box>
@@ -869,7 +924,7 @@ const UsersPage = () => {
                                                 mb: 0.5
                                             }}
                                         >
-                                            {`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
+                                            {user.username}
                                         </Typography>
                                         <Typography
                                             variant="caption"
@@ -880,7 +935,7 @@ const UsersPage = () => {
                                                 fontWeight: 600
                                             }}
                                         >
-                                            ID: {user.employeeId || 'N/A'}
+                                            {user.employeeId || 'N/A'}
                                         </Typography>
                                     </Box>
                                 </Box>

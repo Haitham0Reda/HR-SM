@@ -22,8 +22,9 @@ import {
     Visibility as ViewIcon,
     Person as PersonIcon,
     Group as GroupIcon,
+    Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
@@ -37,6 +38,7 @@ const PermissionsPage = () => {
     useDocumentTitle('Permissions');
     const theme = useTheme();
     const navigate = useNavigate();
+    const location = useLocation();
     const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
@@ -81,8 +83,48 @@ const PermissionsPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters]);
 
+    // Refresh data when navigating back to this page
+    useEffect(() => {
+        // Only refresh if we're on the permissions page and not loading
+        if (location.pathname.includes('/permissions') && !loading) {
+            console.log('🔄 PermissionsPage - Location changed, refreshing data');
+            fetchPermissions();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.pathname]);
+
+    // Listen for custom events (like from create/edit page)
+    useEffect(() => {
+        const handleRefresh = () => {
+            console.log('🔄 PermissionsPage - Custom refresh event received');
+            fetchPermissions();
+        };
+
+        const handleVisibilityChange = () => {
+            // Refresh data when user comes back to the tab
+            if (!document.hidden && location.pathname.includes('/permissions')) {
+                console.log('🔄 PermissionsPage - Tab became visible, refreshing data');
+                fetchPermissions();
+            }
+        };
+
+        window.addEventListener('permissionCreated', handleRefresh);
+        window.addEventListener('permissionUpdated', handleRefresh);
+        window.addEventListener('notificationUpdate', handleRefresh);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('permissionCreated', handleRefresh);
+            window.removeEventListener('permissionUpdated', handleRefresh);
+            window.removeEventListener('notificationUpdate', handleRefresh);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const fetchPermissions = async () => {
         try {
+            console.log('🔄 PermissionsPage - fetchPermissions called');
             setLoading(true);
             const params = {};
             if (filters.status) params.status = filters.status;
@@ -90,13 +132,17 @@ const PermissionsPage = () => {
             if (filters.sortBy) params.sortBy = filters.sortBy;
             if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
+            console.log('Fetching permissions with params:', params);
             const response = await permissionService.getAll(params);
+            console.log('Permissions API response:', response);
 
             // Handle response format
             const permissionsArray = response?.data || [];
+            console.log('✅ PermissionsPage - Fetched', permissionsArray.length, 'permissions');
             setPermissions(permissionsArray);
         } catch (error) {
-            console.error('Error fetching permissions:', error);
+            console.error('❌ PermissionsPage - Error fetching permissions:', error);
+            console.error('Error details:', error.response?.data);
             showNotification('Failed to fetch permissions', 'error');
             setPermissions([]);
         } finally {
@@ -365,13 +411,26 @@ const PermissionsPage = () => {
                         {canManage ? 'Manage all permission requests' : 'View and manage your permission requests'}
                     </Typography>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => navigate(getCompanyRoute('/permissions/create'))}
-                >
-                    New Permission
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<RefreshIcon />}
+                        onClick={() => {
+                            console.log('🔄 Manual refresh button clicked');
+                            fetchPermissions();
+                        }}
+                        disabled={loading}
+                    >
+                        Refresh
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => navigate(getCompanyRoute('/permissions/create'))}
+                    >
+                        New Permission
+                    </Button>
+                </Box>
             </Box>
 
             {/* Filters */}

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Department Duplicate Name Issue</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+        .department-list { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Fix Department Duplicate Name Issue</h1>
+    <div id="output"></div>
+    
+    <div style="margin: 20px 0; padding: 15px; border: 2px solid #007bff; border-radius: 5px;">
+        <h3>Create New Department</h3>
+        <input type="text" id="deptName" placeholder="Department Name" style="width: 200px;">
+        <input type="text" id="deptCode" placeholder="Department Code (optional)" style="width: 150px;">
+        <button onclick="createDepartment()">Create Department</button>
+    </div>
+    
+    <script>
+        const log = (message, type = 'info') => {
+            console.log(message);
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `<p>${message}</p>`;
+            document.getElementById('output').appendChild(div);
+        };
+
+        async function checkExistingDepartments() {
+            log('🔍 Checking existing departments...', 'info');
+            
+            const token = localStorage.getItem('tenant_token');
+            if (!token) {
+                log('❌ No token found in localStorage', 'error');
+                return [];
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/departments', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    log(`📋 Found ${data.data.length} existing departments:`, 'success');
+                    
+                    const departmentList = document.createElement('div');
+                    departmentList.className = 'department-list';
+                    departmentList.innerHTML = '<h4>Existing Departments:</h4>';
+                    
+                    data.data.forEach((dept, i) => {
+                        const deptInfo = `${i + 1}. "${dept.name}" (Code: ${dept.code || 'N/A'}, Active: ${dept.isActive})`;
+                        log(`   ${deptInfo}`, 'info');
+                        
+                        const deptDiv = document.createElement('div');
+                        deptDiv.innerHTML = `<strong>${dept.name}</strong> - Code: ${dept.code || 'N/A'} - Active: ${dept.isActive}`;
+                        departmentList.appendChild(deptDiv);
+                    });
+                    
+                    document.getElementById('output').appendChild(departmentList);
+                    return data.data;
+                } else {
+                    log(`❌ Failed to fetch departments: ${data.message}`, 'error');
+                    return [];
+                }
+                
+            } catch (error) {
+                log(`❌ Network Error: ${error.message}`, 'error');
+                return [];
+            }
+        }
+
+        async function createDepartment() {
+            const name = document.getElementById('deptName').value.trim();
+            const code = document.getElementById('deptCode').value.trim();
+            
+            if (!name) {
+                log('❌ Please enter a department name', 'error');
+                return;
+            }
+            
+            log(`📝 Creating department: "${name}"${code ? ` with code: "${code}"` : ''}`, 'info');
+            
+            const token = localStorage.getItem('tenant_token');
+            if (!token) {
+                log('❌ No token found in localStorage', 'error');
+                return;
+            }
+            
+            const departmentData = {
+                name: name,
+                isActive: true
+            };
+            
+            if (code) {
+                departmentData.code = code;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/departments', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(departmentData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 201) {
+                    log(`✅ Department "${name}" created successfully!`, 'success');
+                    log(`📋 Department ID: ${data.data._id}`, 'success');
+                    
+                    // Clear the form
+                    document.getElementById('deptName').value = '';
+                    document.getElementById('deptCode').value = '';
+                    
+                    // Refresh the list
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                    
+                } else {
+                    log(`❌ Failed to create department: ${data.message}`, 'error');
+                    
+                    if (data.message.includes('already exists')) {
+                        log('💡 Try a different name or code', 'warning');
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function suggestUniqueName() {
+            const departments = await checkExistingDepartments();
+            const baseName = 'Department';
+            let counter = 1;
+            let uniqueName = baseName;
+            
+            while (departments.some(dept => dept.name.toLowerCase() === uniqueName.toLowerCase())) {
+                counter++;
+                uniqueName = `${baseName} ${counter}`;
+            }
+            
+            log(`💡 Suggested unique name: "${uniqueName}"`, 'warning');
+            document.getElementById('deptName').value = uniqueName;
+        }
+
+        // Auto-run on page load
+        window.onload = async () => {
+            await checkExistingDepartments();
+            
+            log('\n💡 SOLUTION:', 'warning');
+            log('The error "Department tenantId already exists" actually means:', 'warning');
+            log('A department with the SAME NAME already exists for your company.', 'warning');
+            log('Each company can only have one department with each name.', 'warning');
+            log('\n🔧 To fix this:', 'info');
+            log('1. Choose a different department name', 'info');
+            log('2. Or update/delete the existing department with the same name', 'info');
+            
+            // Add a button to suggest unique name
+            const suggestBtn = document.createElement('button');
+            suggestBtn.textContent = 'Suggest Unique Name';
+            suggestBtn.onclick = suggestUniqueName;
+            document.getElementById('output').appendChild(suggestBtn);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Mission Page Refresh Issue</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Mission Page Refresh Issue</h1>
+    
+    <div class="step info">
+        <h3>📋 Test Instructions</h3>
+        <p>This test verifies that the mission list refreshes properly after creating or editing a mission.</p>
+        <ol>
+            <li>Open the HR app in your browser: <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+            <li>Login with: admin@techcorp.com / admin123 / techcorp_solutions</li>
+            <li>Navigate to Missions page</li>
+            <li>Note the current number of missions</li>
+            <li>Click "New Mission" and create a new mission</li>
+            <li>After creation, you should be redirected back to the list</li>
+            <li>Verify that the new mission appears in the list immediately</li>
+            <li>Try editing an existing mission and verify the changes appear</li>
+        </ol>
+    </div>
+
+    <div class="step success">
+        <h3>✅ Expected Behavior (After Fix)</h3>
+        <ul>
+            <li>The mission list should automatically refresh when you return from the create/edit page</li>
+            <li>New missions should appear immediately without manual refresh</li>
+            <li>Edited missions should show updated information immediately</li>
+            <li>Console should show refresh logs like "🔄 MissionsPage - Location changed, refreshing data"</li>
+            <li>A "Refresh" button is now available for manual refresh if needed</li>
+        </ul>
+    </div>
+
+    <div class="step warning">
+        <h3>❌ Previous Behavior (Before Fix)</h3>
+        <ul>
+            <li>After creating/editing a mission, you were redirected back to the list</li>
+            <li>The new/updated mission would NOT appear in the list</li>
+            <li>You had to manually refresh the browser to see changes</li>
+        </ul>
+    </div>
+
+    <div class="step info">
+        <h3>🔧 Technical Changes Made</h3>
+        <ul>
+            <li><strong>Added location-based refresh:</strong> MissionsPage now listens to route changes</li>
+            <li><strong>Added custom event listeners:</strong> Listens for 'missionCreated' and 'missionUpdated' events</li>
+            <li><strong>Added visibility API:</strong> Refreshes when tab becomes visible</li>
+            <li><strong>Added cache-busting:</strong> mission.service.js now includes timestamp in requests</li>
+            <li><strong>Added manual refresh button:</strong> Users can manually refresh if needed</li>
+            <li><strong>Enhanced logging:</strong> Better debugging output in console</li>
+            <li><strong>Event dispatching:</strong> MissionForm now dispatches custom events after create/update</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h3>🚀 Quick Test Actions</h3>
+        <button onclick="window.open('http://localhost:3000', '_blank')">Open HR App</button>
+        <button onclick="testAPI()">Test API Directly</button>
+        <button onclick="checkConsole()">Check Console Logs</button>
+    </div>
+
+    <div id="results" style="margin-top: 20px;"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#007bff';
+            results.innerHTML += `<div style="margin: 5px 0; padding: 8px; border-left: 4px solid ${color}; background: #f8f9fa;">${message}</div>`;
+            console.log(message);
+        }
+
+        async function testAPI() {
+            log('🧪 Testing Mission API directly...');
+            
+            try {
+                // Test login
+                const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@techcorp.com',
+                        password: 'admin123',
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+                
+                if (!loginResponse.ok) {
+                    log('❌ Login failed', 'error');
+                    return;
+                }
+                
+                const loginData = await loginResponse.json();
+                const token = loginData.data?.token;
+                log('✅ Login successful', 'success');
+                
+                // Test get missions
+                const getResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (getResponse.ok) {
+                    const data = await getResponse.json();
+                    const count = Array.isArray(data.data) ? data.data.length : 
+                                 Array.isArray(data) ? data.length : 0;
+                    log(`✅ Found ${count} missions`, 'success');
+                } else {
+                    log('❌ Failed to fetch missions', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ API test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function checkConsole() {
+            log('🔍 Check browser console for detailed logs...', 'info');
+            log('Look for messages like:', 'info');
+            log('- "🔄 MissionsPage - fetchMissions called"', 'info');
+            log('- "🔄 MissionsPage - Location changed, refreshing data"', 'info');
+            log('- "✅ MissionsPage - Fetched X missions"', 'info');
+            log('- "🔍 Mission Service - create called"', 'info');
+        }
+
+        // Auto-check console on load
+        window.addEventListener('load', () => {
+            log('📋 Mission refresh test page loaded. Follow the instructions above to test the fix.', 'info');
+        });
+    </script>
+</body>
+</html>

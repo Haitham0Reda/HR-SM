@@ -16,8 +16,8 @@ import {
     Tab,
     Paper
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle, Cancel, Info, Person as PersonIcon, Group as GroupIcon } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle, Cancel, Info, Person as PersonIcon, Group as GroupIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
@@ -30,6 +30,7 @@ import userService from '../../services/user.service';
 const ForgetCheckPage = () => {
     const theme = useTheme();
     const navigate = useNavigate();
+    const location = useLocation();
     const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const [forgetChecks, setForgetChecks] = useState([]);
@@ -61,14 +62,16 @@ const ForgetCheckPage = () => {
 
     const fetchForgetChecks = async () => {
         try {
+            console.log('🔄 ForgetCheckPage - fetchForgetChecks called');
             setLoading(true);
             const response = await forgetCheckService.getAll();
             // Handle both direct array and API response format
             const requestsArray = Array.isArray(response) ? response : 
                                  (response?.data && Array.isArray(response.data)) ? response.data : [];
+            console.log('✅ ForgetCheckPage - Fetched', requestsArray.length, 'forget-check requests');
             setForgetChecks(requestsArray);
         } catch (error) {
-            console.error('Error fetching forget checks:', error);
+            console.error('❌ ForgetCheckPage - Error fetching forget checks:', error);
             showNotification('Failed to fetch requests', 'error');
             setForgetChecks([]);
         } finally {
@@ -93,6 +96,43 @@ const ForgetCheckPage = () => {
     useEffect(() => {
         fetchForgetChecks();
         fetchUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Refresh data when navigating back to this page
+    useEffect(() => {
+        // Only refresh if we're on the forget-checks page and not loading
+        if (location.pathname.includes('/forget-checks') && !loading) {
+            console.log('🔄 ForgetCheckPage - Location changed, refreshing data');
+            fetchForgetChecks();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.pathname]);
+
+    // Listen for custom events (like from create page)
+    useEffect(() => {
+        const handleRefresh = () => {
+            console.log('🔄 ForgetCheckPage - Custom refresh event received');
+            fetchForgetChecks();
+        };
+
+        const handleVisibilityChange = () => {
+            // Refresh data when user comes back to the tab
+            if (!document.hidden && location.pathname.includes('/forget-checks')) {
+                console.log('🔄 ForgetCheckPage - Tab became visible, refreshing data');
+                fetchForgetChecks();
+            }
+        };
+
+        window.addEventListener('forgetCheckCreated', handleRefresh);
+        window.addEventListener('notificationUpdate', handleRefresh);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('forgetCheckCreated', handleRefresh);
+            window.removeEventListener('notificationUpdate', handleRefresh);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -374,13 +414,26 @@ const ForgetCheckPage = () => {
                         Manage forget check requests for missed check-ins and check-outs
                     </Typography>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => navigate(getCompanyRoute('/forget-checks/create'))}
-                >
-                    New Request
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<RefreshIcon />}
+                        onClick={() => {
+                            console.log('🔄 Manual refresh button clicked');
+                            fetchForgetChecks();
+                        }}
+                        disabled={loading}
+                    >
+                        Refresh
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => navigate(getCompanyRoute('/forget-checks/create'))}
+                    >
+                        New Request
+                    </Button>
+                </Box>
             </Box>
 
             {/* Tabs */}

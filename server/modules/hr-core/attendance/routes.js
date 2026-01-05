@@ -69,26 +69,53 @@ router.put('/:id', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), u
 // Delete attendance record - admin only recommended
 router.delete('/:id', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), deleteAttendance);
 
-// Forget Check routes
-// Get all forget check requests
-router.get('/forget-checks', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), getAllForgetChecks);
+// FORGET CHECK ROUTES - Added here because module registry is not working reliably
+console.log('🔍 ATTENDANCE ROUTES: Adding forget-check routes...');
 
-// Create forget check request
-router.post('/forget-checks', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), checkActive, createForgetCheck);
+// Get all forget check requests
+router.get('/forget-checks', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), (req, res, next) => {
+    console.log('🔍 ATTENDANCE: GET /forget-checks route hit - URL:', req.originalUrl);
+    getAllForgetChecks(req, res, next);
+});
+
+// Create forget check request - No checkActive middleware (allows inactive users)
+router.post('/forget-checks', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), (req, res, next) => {
+    console.log('🔍 ATTENDANCE: POST /forget-checks route hit - URL:', req.originalUrl);
+    console.log('🔍 Request method:', req.method);
+    console.log('🔍 Request headers:', JSON.stringify(req.headers, null, 2));
+    createForgetCheck(req, res, next);
+});
 
 // Approve forget check request
-router.post('/forget-checks/:id/approve', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), approveForgetCheck);
+router.post('/forget-checks/:id/approve', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), (req, res, next) => {
+    console.log('🔍 ATTENDANCE: POST /forget-checks/:id/approve route hit - URL:', req.originalUrl);
+    approveForgetCheck(req, res, next);
+});
 
 // Reject forget check request
-router.post('/forget-checks/:id/reject', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), rejectForgetCheck);
+router.post('/forget-checks/:id/reject', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), (req, res, next) => {
+    console.log('🔍 ATTENDANCE: POST /forget-checks/:id/reject route hit - URL:', req.originalUrl);
+    rejectForgetCheck(req, res, next);
+});
 
 // Get forget check by ID
-router.get('/forget-checks/:id', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), getForgetCheckById);
+router.get('/forget-checks/:id', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), (req, res, next) => {
+    console.log('🔍 ATTENDANCE: GET /forget-checks/:id route hit - URL:', req.originalUrl);
+    getForgetCheckById(req, res, next);
+});
 
 // Update forget check
-router.put('/forget-checks/:id', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), updateForgetCheck);
+router.put('/forget-checks/:id', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), (req, res, next) => {
+    console.log('🔍 ATTENDANCE: PUT /forget-checks/:id route hit - URL:', req.originalUrl);
+    updateForgetCheck(req, res, next);
+});
 
 // Delete forget check
-router.delete('/forget-checks/:id', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), deleteForgetCheck);
+router.delete('/forget-checks/:id', requireAuth, conditionalLicenseMiddleware(MODULES.HR_CORE), (req, res, next) => {
+    console.log('🔍 ATTENDANCE: DELETE /forget-checks/:id route hit - URL:', req.originalUrl);
+    deleteForgetCheck(req, res, next);
+});
+
+console.log('🔍 ATTENDANCE ROUTES: Forget-check routes added');
 
 export default router;

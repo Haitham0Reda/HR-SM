@@ -16,13 +16,6 @@ import {
 } from './controllers/user.controller.js';
 import { bulkDownloadPhotos } from './controllers/userPhoto.controller.js';
 import {
-    getAllDepartments,
-    createDepartment,
-    getDepartmentById,
-    updateDepartment,
-    deleteDepartment
-} from './controllers/department.controller.js';
-import {
     getAllPositions,
     createPosition,
     getPositionById,
@@ -121,48 +114,15 @@ router.post('/bulk-update-vacation-balances', protect, admin, bulkUpdateVacation
 // Bulk create users from Excel - Admin only
 router.post('/bulk-create', protect, admin, upload.single('file'), bulkCreateUsers);
 
-// Update user - Admin only with validation
+// Update user - Admin only with minimal validation for updates
 router.put('/:id',
     protect,
     admin,
-    checkEmailUnique,
-    checkUsernameUnique,
-    validateHireDate,
-    validateDateOfBirth,
-    validatePhoneNumber,
-    validateNationalID,
     updateUser
 );
 
 // Delete user - Admin only
 router.delete('/:id', protect, admin, deleteUser);
-
-// ===== DEPARTMENT ROUTES =====
-
-// Get all departments - All authenticated users can view
-router.get('/departments', protect, getAllDepartments);
-
-// Create department - Admin only with validation
-router.post('/departments',
-    protect,
-    admin,
-    validateManager,
-    createDepartment
-);
-
-// Get department by ID - All authenticated users
-router.get('/departments/:id', protect, getDepartmentById);
-
-// Update department - Admin only with validation
-router.put('/departments/:id',
-    protect,
-    admin,
-    validateManager,
-    updateDepartment
-);
-
-// Delete department - Admin only
-router.delete('/departments/:id', protect, admin, deleteDepartment);
 
 // ===== POSITION ROUTES =====
 

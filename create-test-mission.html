@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Test Mission</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Create Test Mission</h1>
+    
+    <div>
+        <button onclick="loginAndCreateMission()">🚀 Login and Create Test Mission</button>
+        <button onclick="checkExistingMissions()">📋 Check Existing Missions</button>
+        <button onclick="clearResults()">🧹 Clear Results</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            results.innerHTML += `<div class="result ${className}">${message}</div>`;
+            console.log(message);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function loginAndCreateMission() {
+            log('🔐 Logging in...');
+            
+            try {
+                // Login first
+                const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@techcorp.com',
+                        password: 'admin123',
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+                
+                if (!loginResponse.ok) {
+                    log('❌ Login failed', 'error');
+                    return;
+                }
+                
+                const loginData = await loginResponse.json();
+                const token = loginData.data?.token;
+                const user = loginData.data?.user;
+                
+                if (!token || !user) {
+                    log('❌ Invalid login response', 'error');
+                    return;
+                }
+                
+                log(`✅ Login successful as ${user.email}`, 'success');
+                log(`👤 User ID: ${user._id}`);
+                
+                // Create test mission
+                log('📝 Creating test mission...');
+                
+                const missionData = {
+                    employee: user._id,
+                    location: `Test Mission Location ${Date.now()}`,
+                    purpose: 'This is a test mission created to verify the missions page functionality',
+                    startDate: new Date().toISOString().split('T')[0],
+                    endDate: new Date().toISOString().split('T')[0],
+                    duration: 1
+                };
+                
+                log(`<pre>Mission data: ${JSON.stringify(missionData, null, 2)}</pre>`);
+                
+                const missionResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(missionData)
+                });
+                
+                if (missionResponse.ok) {
+                    const createdMission = await missionResponse.json();
+                    log('✅ Test mission created successfully!', 'success');
+                    log(`<pre>Created mission: ${JSON.stringify(createdMission, null, 2)}</pre>`);
+                    
+                    // Store token for future use
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('tenant_token', token);
+                    
+                    log('💡 Now refresh the missions page in the HR app to see the new mission', 'success');
+                    
+                } else {
+                    const errorData = await missionResponse.json();
+                    log('❌ Failed to create mission', 'error');
+                    log(`<pre>Error: ${JSON.stringify(errorData, null, 2)}</pre>`);
+                }
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkExistingMissions() {
+            log('📋 Checking existing missions...');
+            
+            const token = localStorage.getItem('token') || localStorage.getItem('tenant_token');
+            
+            if (!token) {
+                log('❌ No token found. Please login first.', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const missions = data.data || [];
+                    
+                    log(`📊 Found ${missions.length} missions in database`, missions.length > 0 ? 'success' : 'error');
+                    
+                    if (missions.length > 0) {
+                        log(`<pre>Missions: ${JSON.stringify(missions, null, 2)}</pre>`);
+                        
+                        // Check user data for filtering
+                        try {
+                            const userResponse = await fetch('http://localhost:5000/api/v1/auth/profile', {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            
+                            if (userResponse.ok) {
+                                const userData = await userResponse.json();
+                                const currentUser = userData.data || userData;
+                                
+                                log(`👤 Current user: ${currentUser.email} (ID: ${currentUser._id})`);
+                                
+                                // Test filtering logic
+                                const userMissions = missions.filter(mission => {
+                                    const missionUserId = mission.employee?._id || mission.employee;
+                                    const currentUserId = currentUser._id;
+                                    
+                                    log(`🔍 Mission ${mission._id}: employee=${missionUserId}, current=${currentUserId}, match=${String(missionUserId) === String(currentUserId)}`);
+                                    
+                                    return String(missionUserId) === String(currentUserId);
+                                });
+                                
+                                log(`👤 User has ${userMissions.length} missions after filtering`);
+                                
+                                if (userMissions.length === 0 && missions.length > 0) {
+                                    log('⚠️ Filtering issue detected: missions exist but none match current user', 'error');
+                                }
+                            }
+                        } catch (userError) {
+                            log(`❌ Failed to get user data: ${userError.message}`, 'error');
+                        }
+                        
+                    } else {
+                        log('💡 No missions in database. Create one using the button above.', 'error');
+                    }
+                    
+                } else {
+                    log('❌ Failed to fetch missions', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error checking missions: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load
+        window.addEventListener('load', () => {
+            log('🧪 Test mission creator loaded');
+            log('💡 Click "Login and Create Test Mission" to add test data');
+        });
+    </script>
+</body>
+</html>

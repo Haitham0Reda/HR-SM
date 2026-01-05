@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Browser Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+        .warning { color: orange; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; max-height: 300px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; width: 300px; }
+        .step { margin: 10px 0; padding: 10px; background: #f9f9f9; border-left: 4px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>Complete Browser Debug for TechCorp Missions</h1>
+    
+    <div class="section">
+        <h3>Step 1: Environment Check</h3>
+        <button onclick="checkEnvironment()">Check Environment</button>
+        <div id="envResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Step 2: Login Test</h3>
+        <input type="email" id="email" placeholder="Email" value="admin@techcorp.com">
+        <input type="password" id="password" placeholder="Password" value="admin123">
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Step 3: Missions API Test</h3>
+        <button onclick="testMissionsAPI()">Test Missions API</button>
+        <div id="missionsResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Step 4: Frontend Simulation</h3>
+        <button onclick="simulateFrontend()">Simulate Frontend Logic</button>
+        <div id="frontendResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Step 5: Network Monitoring</h3>
+        <button onclick="startNetworkMonitoring()">Start Network Monitoring</button>
+        <button onclick="stopNetworkMonitoring()">Stop Network Monitoring</button>
+        <div id="networkResult"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let networkMonitoring = false;
+        let originalFetch = window.fetch;
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            element.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+        }
+
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        function checkEnvironment() {
+            clearLog('envResult');
+            
+            const env = {
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                localStorage: {
+                    token: localStorage.getItem('token'),
+                    tenant_token: localStorage.getItem('tenant_token'),
+                    tenant_id: localStorage.getItem('tenant_id'),
+                    user: localStorage.getItem('user')
+                },
+                cookies: document.cookie,
+                allStorageKeys: Object.keys(localStorage)
+            };
+
+            log('envResult', `Current URL: ${env.url}`, 'info');
+            log('envResult', `User Agent: ${env.userAgent}`, 'info');
+            log('envResult', `<pre>LocalStorage:\n${JSON.stringify(env.localStorage, null, 2)}</pre>`, 'info');
+            log('envResult', `All Storage Keys: ${env.allStorageKeys.join(', ')}`, 'info');
+            log('envResult', `Cookies: ${env.cookies || 'None'}`, 'info');
+        }
+
+        async function testLogin() {
+            clearLog('loginResult');
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                log('loginResult', 'Attempting login...', 'info');
+                
+                const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+
+                log('loginResult', `Response status: ${response.status}`, 'info');
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.data.token;
+                    localStorage.setItem('tenant_token', authToken);
+                    localStorage.setItem('tenant_id', 'techcorp_solutions');
+                    
+                    log('loginResult', '✅ Login successful!', 'success');
+                    log('loginResult', `Token: ${authToken.substring(0, 50)}...`, 'info');
+                    log('loginResult', `User: ${JSON.stringify(data.data.user, null, 2)}`, 'info');
+                } else {
+                    log('loginResult', `❌ Login failed: ${data.message}`, 'error');
+                }
+                
+                log('loginResult', `<pre>Full Response:\n${JSON.stringify(data, null, 2)}</pre>`, 'info');
+
+            } catch (error) {
+                log('loginResult', `❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMissionsAPI() {
+            clearLog('missionsResult');
+            
+            if (!authToken) {
+                log('missionsResult', '❌ No auth token. Please login first.', 'error');
+                return;
+            }
+
+            try {
+                log('missionsResult', 'Testing missions API...', 'info');
+                
+                // Test with cache-busting parameters like the frontend does
+                const params = new URLSearchParams({
+                    _t: Date.now(),
+                    v: 'debug-version',
+                    _r: Math.random().toString(36).substr(2, 9)
+                });
+
+                const response = await fetch(`http://localhost:5000/api/v1/missions?${params}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log('missionsResult', `Response status: ${response.status}`, 'info');
+                log('missionsResult', `Response headers: ${JSON.stringify([...response.headers.entries()])}`, 'info');
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('missionsResult', `✅ API call successful! Found ${data.data.length} missions`, 'success');
+                    
+                    if (data.data.length > 0) {
+                        log('missionsResult', '<h4>Mission Details:</h4>', 'info');
+                        data.data.forEach((mission, i) => {
+                            log('missionsResult', `<strong>Mission ${i + 1}:</strong>`, 'info');
+                            log('missionsResult', `  ID: ${mission._id}`, 'info');
+                            log('missionsResult', `  Employee: ${JSON.stringify(mission.employee)}`, 'info');
+                            log('missionsResult', `  Location: ${mission.location}`, 'info');
+                            log('missionsResult', `  Status: ${mission.status}`, 'info');
+                            log('missionsResult', `  TenantId: ${mission.tenantId}`, 'info');
+                        });
+                    }
+                } else {
+                    log('missionsResult', `❌ API call failed: ${data.message}`, 'error');
+                }
+                
+                log('missionsResult', `<pre>Full Response:\n${JSON.stringify(data, null, 2)}</pre>`, 'info');
+
+            } catch (error) {
+                log('missionsResult', `❌ API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function simulateFrontend() {
+            clearLog('frontendResult');
+            
+            if (!authToken) {
+                log('frontendResult', '❌ No auth token. Please test login first.', 'error');
+                return;
+            }
+
+            try {
+                log('frontendResult', 'Simulating frontend logic...', 'info');
+                
+                // Step 1: Get missions (like the frontend does)
+                const params = new URLSearchParams({
+                    _t: Date.now(),
+                    v: 'frontend-sim',
+                    _r: Math.random().toString(36).substr(2, 9)
+                });
+
+                const response = await fetch(`http://localhost:5000/api/v1/missions?${params}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    log('frontendResult', `❌ API failed: ${data.message}`, 'error');
+                    return;
+                }
+
+                const missions = data.data;
+                log('frontendResult', `📊 Received ${missions.length} missions from API`, 'info');
+
+                // Step 2: Simulate user data (from localStorage or auth state)
+                const storedUser = localStorage.getItem('user');
+                let currentUser = null;
+                
+                if (storedUser) {
+                    try {
+                        currentUser = JSON.parse(storedUser);
+                    } catch (e) {
+                        log('frontendResult', '⚠️ Could not parse stored user data', 'warning');
+                    }
+                }
+
+                // If no stored user, get from login response
+                if (!currentUser) {
+                    // We need to get user info - let's call /auth/me
+                    const userResponse = await fetch('http://localhost:5000/api/v1/auth/me', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const userData = await userResponse.json();
+                    if (userData.success) {
+                        currentUser = userData.data;
+                    }
+                }
+
+                log('frontendResult', `👤 Current user: ${JSON.stringify(currentUser, null, 2)}`, 'info');
+
+                // Step 3: Simulate frontend filtering logic (Tab 0 - My Missions)
+                if (currentUser) {
+                    const filteredMissions = missions.filter(mission => {
+                        const missionUserId = mission.employee?._id || mission.employee;
+                        const currentUserId = currentUser._id;
+                        
+                        log('frontendResult', `🔍 Filtering mission ${mission._id}:`, 'info');
+                        log('frontendResult', `  Mission employee: ${JSON.stringify(mission.employee)}`, 'info');
+                        log('frontendResult', `  Mission user ID: ${missionUserId} (${typeof missionUserId})`, 'info');
+                        log('frontendResult', `  Current user ID: ${currentUserId} (${typeof currentUserId})`, 'info');
+                        log('frontendResult', `  Strict match: ${missionUserId === currentUserId}`, 'info');
+                        log('frontendResult', `  String match: ${String(missionUserId) === String(currentUserId)}`, 'info');
+                        
+                        const matches = missionUserId === currentUserId || String(missionUserId) === String(currentUserId);
+                        log('frontendResult', `  Will show: ${matches}`, matches ? 'success' : 'warning');
+                        
+                        return matches;
+                    });
+
+                    log('frontendResult', `🎯 Filtered missions for current user: ${filteredMissions.length}`, 'success');
+                    
+                    if (filteredMissions.length === 0) {
+                        log('frontendResult', '⚠️ No missions match current user - this explains why frontend shows no data!', 'warning');
+                        
+                        // Provide detailed analysis
+                        log('frontendResult', '<h4>Detailed Analysis:</h4>', 'info');
+                        log('frontendResult', `Total missions: ${missions.length}`, 'info');
+                        log('frontendResult', `Current user ID: ${currentUser._id}`, 'info');
+                        
+                        missions.forEach((mission, i) => {
+                            const missionUserId = mission.employee?._id || mission.employee;
+                            log('frontendResult', `Mission ${i + 1}: Employee ID ${missionUserId} vs User ID ${currentUser._id}`, 'info');
+                        });
+                    } else {
+                        log('frontendResult', '✅ Missions found! Frontend should show data.', 'success');
+                    }
+                } else {
+                    log('frontendResult', '❌ No current user data available', 'error');
+                }
+
+            } catch (error) {
+                log('frontendResult', `❌ Simulation error: ${error.message}`, 'error');
+            }
+        }
+
+        function startNetworkMonitoring() {
+            clearLog('networkResult');
+            networkMonitoring = true;
+            
+            // Override fetch to monitor requests
+            window.fetch = function(...args) {
+                if (networkMonitoring) {
+                    const url = args[0];
+                    const options = args[1] || {};
+                    log('networkResult', `🌐 Network Request: ${options.method || 'GET'} ${url}`, 'info');
+                    
+                    if (options.headers) {
+                        log('networkResult', `  Headers: ${JSON.stringify(options.headers)}`, 'info');
+                    }
+                    
+                    if (options.body) {
+                        log('networkResult', `  Body: ${options.body}`, 'info');
+                    }
+                }
+                
+                return originalFetch.apply(this, args).then(response => {
+                    if (networkMonitoring) {
+                        log('networkResult', `📡 Network Response: ${response.status} ${response.statusText}`, 
+                            response.ok ? 'success' : 'error');
+                    }
+                    return response;
+                }).catch(error => {
+                    if (networkMonitoring) {
+                        log('networkResult', `❌ Network Error: ${error.message}`, 'error');
+                    }
+                    throw error;
+                });
+            };
+            
+            log('networkResult', '✅ Network monitoring started', 'success');
+        }
+
+        function stopNetworkMonitoring() {
+            networkMonitoring = false;
+            window.fetch = originalFetch;
+            log('networkResult', '⏹️ Network monitoring stopped', 'info');
+        }
+
+        // Auto-check environment on load
+        window.onload = checkEnvironment;
+    </script>
+</body>
+</html>

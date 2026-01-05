@@ -1,8 +1,21 @@
 import ForgetCheck from '../models/forgetCheck.model.js';
 import User from '../../users/models/user.model.js';
+import Department from '../../users/models/department.model.js';
+import Position from '../../users/models/position.model.js';
+import mongoose from 'mongoose';
+import multiTenantDB from '../../../../config/multiTenant.js';
 
 export const getAllForgetChecks = async (req, res) => {
     try {
+        // Get tenant-specific database connection
+        const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
+        
+        // Register models on tenant connection
+        const TenantUser = tenantConnection.model('User', User.schema);
+        const TenantForgetCheck = tenantConnection.model('ForgetCheck', ForgetCheck.schema);
+        const TenantDepartment = tenantConnection.model('Department', Department.schema);
+        const TenantPosition = tenantConnection.model('Position', Position.schema);
+
         const query = { tenantId: req.tenantId };
         const { user } = req;
 
@@ -20,7 +33,7 @@ export const getAllForgetChecks = async (req, res) => {
             query.employee = user._id;
         }
 
-        const forgetChecks = await ForgetCheck.find(query)
+        const forgetChecks = await TenantForgetCheck.find(query)
             .populate('employee', 'username email personalInfo')
             .populate('approvedBy rejectedBy', 'username personalInfo')
             .populate('department', 'name')
@@ -42,34 +55,139 @@ export const getAllForgetChecks = async (req, res) => {
 
 export const createForgetCheck = async (req, res) => {
     try {
-
+        console.log('🔍 CREATE FORGET CHECK - START');
         console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('Authenticated user:', JSON.stringify(req.user, null, 2));
+        console.log('Tenant ID:', req.tenantId);
 
-        // Get employee details to populate department and position
-        const employee = await User.findById(req.body.employee || req.body.user)
+        // Get tenant-specific database connection
+        const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
+        
+        // Register models on tenant connection
+        const TenantUser = tenantConnection.model('User', User.schema);
+        const TenantForgetCheck = tenantConnection.model('ForgetCheck', ForgetCheck.schema);
+        const TenantDepartment = tenantConnection.model('Department', Department.schema);
+        const TenantPosition = tenantConnection.model('Position', Position.schema);
+
+        // Determine the employee ID - use from request body or fall back to authenticated user
+        let employeeId = req.body.employee || req.body.user || req.user._id || req.user.id;
+        
+        if (!employeeId) {
+            console.log('❌ No employee ID found');
+            return res.status(400).json({ 
+                error: 'Employee ID is required',
+                details: 'No employee ID provided in request or user context'
+            });
+        }
+
+        console.log('🔍 Using employee ID:', employeeId);
+
+        // Convert string ID to ObjectId if needed
+        let objectId;
+        try {
+            objectId = new mongoose.Types.ObjectId(employeeId);
+        } catch (error) {
+            console.log('❌ Invalid ObjectId format:', employeeId);
+            return res.status(400).json({ 
+                error: 'Invalid employee ID format',
+                details: 'Employee ID must be a valid ObjectId'
+            });
+        }
+
+        // Get employee details from tenant-specific database
+        console.log('🔍 Looking up employee in tenant database...');
+        console.log('🔍 Search criteria:', { _id: objectId, tenantId: req.tenantId });
+        
+        // First, let's try to find all users in this tenant to debug
+        const allUsersInTenant = await TenantUser.find({ tenantId: req.tenantId }).select('_id username email');
+        console.log('🔍 All users in tenant database:', allUsersInTenant);
+        
+        // Try to find the specific user by ID only (no tenant filter since we're already in tenant DB)
+        const userById = await TenantUser.findById(objectId);
+        console.log('🔍 User found by ID in tenant DB:', userById ? { _id: userById._id, tenantId: userById.tenantId, username: userById.username } : 'Not found');
+        
+        const employee = await TenantUser.findOne({ 
+            _id: objectId, 
+            tenantId: req.tenantId 
+        })
             .populate('department')
             .populate('position');
 
         if (!employee) {
-            return res.status(404).json({ error: 'Employee not found' });
+            console.log('❌ Employee not found in tenant database:', employeeId);
+            console.log('🔍 Available user fields:', Object.keys(req.user || {}));
+            console.log('🔍 User ID variations:', {
+                'req.user._id': req.user?._id,
+                'req.user.id': req.user?.id,
+                'req.user.userId': req.user?.userId,
+                'req.body.employee': req.body.employee
+            });
+            console.log('🔍 Tenant context:', {
+                'req.tenantId': req.tenantId,
+                'user.tenantId': req.user?.tenantId
+            });
+            
+            return res.status(404).json({ 
+                error: 'Employee not found',
+                details: `No employee found with ID: ${employeeId} in tenant: ${req.tenantId}`,
+                debug: {
+                    searchedId: employeeId,
+                    tenantId: req.tenantId,
+                    userFields: Object.keys(req.user || {}),
+                    userTenantId: req.user?.tenantId,
+                    databaseName: tenantConnection.name
+                }
+            });
         }
 
-        // Add department and position to request
-        req.body.employee = employee._id;
-        req.body.department = employee.department?._id;
-        req.body.position = employee.position?._id;
+        console.log('✅ Found employee:', employee.username, employee.email);
 
-        const forgetCheck = new ForgetCheck({
-            ...req.body,
+        // Prepare the forget check data
+        const forgetCheckData = {
+            employee: employee._id,
+            department: employee.department?._id,
+            position: employee.position?._id,
+            date: req.body.date,
+            requestType: req.body.requestType,
+            requestedTime: req.body.requestedTime,
+            reason: req.body.reason,
             tenantId: req.tenantId
-        });
+        };
+
+        console.log('🔍 Creating forget check with data:', JSON.stringify(forgetCheckData, null, 2));
+
+        const forgetCheck = new TenantForgetCheck(forgetCheckData);
         const savedForgetCheck = await forgetCheck.save();
+
+        console.log('✅ Forget check created successfully:', savedForgetCheck._id);
 
         res.status(201).json(savedForgetCheck);
     } catch (err) {
-
-        res.status(400).json({
-            error: err.message,
+        console.error('❌ Error creating forget check:', err);
+        console.error('❌ Error stack:', err.stack);
+        
+        // Don't let errors become 404s - return proper error codes
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({
+                error: 'Validation error',
+                message: err.message,
+                details: err.errors ? Object.keys(err.errors).map(key => ({
+                    field: key,
+                    message: err.errors[key].message
+                })) : null
+            });
+        }
+        
+        if (err.name === 'CastError') {
+            return res.status(400).json({
+                error: 'Invalid ID format',
+                message: err.message
+            });
+        }
+        
+        res.status(500).json({
+            error: 'Internal server error',
+            message: err.message,
             details: err.errors ? Object.keys(err.errors).map(key => ({
                 field: key,
                 message: err.errors[key].message
