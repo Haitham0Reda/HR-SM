@@ -3,13 +3,56 @@ import Mission from '../models/mission.model.js';
 import Notification from '../../../notifications/models/notification.model.js';
 import { sendEmail, getEmployeeManager } from '../../../email-service/services/email.service.js';
 import User from '../../users/models/user.model.js';
+import multiTenantDB from '../../../../config/multiTenant.js';
+import { registerHRModels } from '../../../../utils/tenantModelRegistry.js';
+
+// Helper function to get tenant-specific models with safe registration
+const getTenantModels = async (tenantId) => {
+    try {
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+
+        // Register all HR models (User, Department, Position)
+        const hrModels = await registerHRModels(tenantConnection);
+
+        // Register Mission model
+        let TenantMission;
+        if (tenantConnection.models.Mission) {
+            TenantMission = tenantConnection.models.Mission;
+        } else {
+            TenantMission = tenantConnection.model('Mission', Mission.schema);
+        }
+
+        return {
+            Mission: TenantMission,
+            User: hrModels.User,
+            Department: hrModels.Department,
+            Position: hrModels.Position
+        };
+    } catch (error) {
+        console.error(`Error getting tenant models for ${tenantId}:`, error.message);
+        throw new Error(`Failed to get tenant models: ${error.message}`);
+    }
+};
 
 /**
  * Get all missions with optional filtering
  */
 export const getAllMissions = async (req, res) => {
     try {
-        const query = { tenantId: req.tenantId };
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Mission: TenantMission } = await getTenantModels(tenantId);
+
+        const query = { tenantId };
 
         // Filter by user/employee if provided
         if (req.query.user) {
@@ -28,7 +71,7 @@ export const getAllMissions = async (req, res) => {
             query.department = req.query.department;
         }
 
-        const missions = await Mission.find(query)
+        const missions = await TenantMission.find(query)
             .populate('employee', 'username email employeeId personalInfo department position')
             .populate('department', 'name code')
             .populate('position', 'title')
@@ -42,9 +85,9 @@ export const getAllMissions = async (req, res) => {
         });
     } catch (err) {
         console.error('Get missions error:', err);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: err.message 
+            message: err.message
         });
     }
 };
@@ -54,8 +97,20 @@ export const getAllMissions = async (req, res) => {
  */
 export const createMission = async (req, res) => {
     try {
-
         console.log('Request body:', JSON.stringify(req.body, null, 2));
+
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Mission: TenantMission } = await getTenantModels(tenantId);
 
         // Handle file uploads for attachments
         if (req.files && req.files.length > 0) {
@@ -66,24 +121,23 @@ export const createMission = async (req, res) => {
             }));
         }
 
-        const mission = new Mission({
+        const mission = new TenantMission({
             ...req.body,
-            tenantId: req.tenantId
+            tenantId
         });
         const savedMission = await mission.save();
 
         // Create notification for supervisor/manager
-        await createMissionNotification(savedMission, 'submitted');
+        await createMissionNotification(savedMission, 'submitted', tenantId);
 
         // Send email notification to manager
-        await sendMissionRequestNotification(savedMission);
+        await sendMissionRequestNotification(savedMission, tenantId);
 
         res.status(201).json({
             success: true,
             data: savedMission
         });
     } catch (err) {
-
 
         res.status(400).json({
             error: err.message,
@@ -100,7 +154,20 @@ export const createMission = async (req, res) => {
  */
 export const getMissionById = async (req, res) => {
     try {
-        const mission = await Mission.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Mission: TenantMission } = await getTenantModels(tenantId);
+
+        const mission = await TenantMission.findOne({ _id: req.params.id, tenantId })
             .populate('employee', 'username email employeeId personalInfo department position')
             .populate('department', 'name code')
             .populate('position', 'title')
@@ -123,7 +190,20 @@ export const getMissionById = async (req, res) => {
  */
 export const updateMission = async (req, res) => {
     try {
-        const oldMission = await Mission.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Mission: TenantMission } = await getTenantModels(tenantId);
+
+        const oldMission = await TenantMission.findOne({ _id: req.params.id, tenantId });
         if (!oldMission) {
             return res.status(404).json({ error: 'Mission not found' });
         }
@@ -135,7 +215,7 @@ export const updateMission = async (req, res) => {
             });
         }
 
-        const mission = await Mission.findByIdAndUpdate(
+        const mission = await TenantMission.findByIdAndUpdate(
             req.params.id,
             req.body,
             { new: true, runValidators: true }
@@ -153,7 +233,20 @@ export const updateMission = async (req, res) => {
  */
 export const deleteMission = async (req, res) => {
     try {
-        const mission = await Mission.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Mission: TenantMission } = await getTenantModels(tenantId);
+
+        const mission = await TenantMission.findOne({ _id: req.params.id, tenantId });
         if (!mission) {
             return res.status(404).json({ error: 'Mission not found' });
         }
@@ -165,7 +258,7 @@ export const deleteMission = async (req, res) => {
             });
         }
 
-        await Mission.findByIdAndDelete(req.params.id);
+        await TenantMission.findByIdAndDelete(req.params.id);
         res.json({ message: 'Mission deleted successfully' });
     } catch (err) {
 
@@ -178,7 +271,20 @@ export const deleteMission = async (req, res) => {
  */
 export const approveMission = async (req, res) => {
     try {
-        const mission = await Mission.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Mission: TenantMission } = await getTenantModels(tenantId);
+
+        const mission = await TenantMission.findOne({ _id: req.params.id, tenantId })
             .populate('employee', 'username email personalInfo');
 
         if (!mission) {
@@ -207,10 +313,10 @@ export const approveMission = async (req, res) => {
         await mission.approve(userId, notes);
 
         // Create notification for employee
-        await createMissionNotification(mission, 'approved');
+        await createMissionNotification(mission, 'approved', tenantId);
 
         // Send email notification to employee
-        await sendMissionStatusUpdateNotification(mission);
+        await sendMissionStatusUpdateNotification(mission, tenantId);
 
         res.json(mission);
     } catch (err) {
@@ -224,7 +330,20 @@ export const approveMission = async (req, res) => {
  */
 export const rejectMission = async (req, res) => {
     try {
-        const mission = await Mission.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Mission: TenantMission } = await getTenantModels(tenantId);
+
+        const mission = await TenantMission.findOne({ _id: req.params.id, tenantId })
             .populate('employee', 'username email personalInfo');
 
         if (!mission) {
@@ -277,10 +396,10 @@ export const rejectMission = async (req, res) => {
         await mission.reject(userId, trimmedReason);
 
         // Create notification for employee
-        await createMissionNotification(mission, 'rejected');
+        await createMissionNotification(mission, 'rejected', tenantId);
 
         // Send email notification to employee
-        await sendMissionStatusUpdateNotification(mission);
+        await sendMissionStatusUpdateNotification(mission, tenantId);
 
         res.json(mission);
     } catch (err) {
@@ -293,13 +412,16 @@ export const rejectMission = async (req, res) => {
 /**
  * Create notification for mission status change
  */
-async function createMissionNotification(mission, type) {
+async function createMissionNotification(mission, type, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+
         let recipient, message;
 
         if (type === 'submitted') {
             // Notify manager/supervisor
-            const employee = await User.findById(mission.employee).populate('department');
+            const employee = await TenantUser.findById(mission.employee).populate('department');
             if (!employee) return;
 
             const manager = await getEmployeeManager(employee);
@@ -344,10 +466,13 @@ async function createMissionNotification(mission, type) {
 /**
  * Send mission request notification to manager
  */
-async function sendMissionRequestNotification(mission) {
+async function sendMissionRequestNotification(mission, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+
         // Get employee details
-        const employee = await User.findById(mission.employee).select('username email personalInfo');
+        const employee = await TenantUser.findById(mission.employee).select('username email personalInfo');
         if (!employee) {
 
             return { success: false, error: 'Employee not found' };
@@ -486,10 +611,13 @@ This is an automated notification from HR Management System
 /**
  * Send mission status update notification to employee
  */
-async function sendMissionStatusUpdateNotification(mission) {
+async function sendMissionStatusUpdateNotification(mission, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+
         // Get employee details
-        const employee = await User.findById(mission.employee).select('username email personalInfo');
+        const employee = await TenantUser.findById(mission.employee).select('username email personalInfo');
         if (!employee || !employee.email) {
 
             return { success: false, error: 'Employee not found or has no email' };
