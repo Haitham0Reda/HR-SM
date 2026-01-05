@@ -236,7 +236,7 @@ const ClaimForm = ({
                     </Typography>
                     
                     <Grid container spacing={2}>
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <Autocomplete
                                 value={selectedPolicy}
                                 onChange={handlePolicyChange}
@@ -290,7 +290,7 @@ const ClaimForm = ({
                     </Typography>
                     
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Claim Type *"
@@ -308,7 +308,7 @@ const ClaimForm = ({
                             </TextField>
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 label="Claim Amount *"
                                 type="number"
@@ -323,7 +323,7 @@ const ClaimForm = ({
                             />
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <DatePicker
                                 label="Claim Date *"
                                 value={formValues.claimDate ? dayjs(formValues.claimDate) : null}
@@ -338,7 +338,7 @@ const ClaimForm = ({
                             />
                         </Grid>
 
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <TextField
                                 label="Description *"
                                 multiline

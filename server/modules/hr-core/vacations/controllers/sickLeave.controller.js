@@ -3,12 +3,55 @@ import SickLeave from '../models/sickLeave.model.js';
 import Notification from '../../../notifications/models/notification.model.js';
 import { sendEmail, getEmployeeManager } from '../../../email-service/services/email.service.js';
 import User from '../../users/models/user.model.js';
+import multiTenantDB from '../../../../config/multiTenant.js';
+import { registerHRModels } from '../../../../utils/tenantModelRegistry.js';
+
+// Helper function to get tenant-specific models with safe registration
+const getTenantModels = async (tenantId) => {
+    try {
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+
+        // Register all HR models (User, Department, Position)
+        const hrModels = await registerHRModels(tenantConnection);
+
+        // Register SickLeave model
+        let TenantSickLeave;
+        if (tenantConnection.models.SickLeave) {
+            TenantSickLeave = tenantConnection.models.SickLeave;
+        } else {
+            TenantSickLeave = tenantConnection.model('SickLeave', SickLeave.schema);
+        }
+
+        return {
+            SickLeave: TenantSickLeave,
+            User: hrModels.User,
+            Department: hrModels.Department,
+            Position: hrModels.Position
+        };
+    } catch (error) {
+        console.error(`Error getting tenant models for ${tenantId}:`, error.message);
+        throw new Error(`Failed to get tenant models: ${error.message}`);
+    }
+};
 
 /**
  * Get all sick leaves with optional filtering
  */
 export const getAllSickLeaves = async (req, res) => {
     try {
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
+
         const query = { tenantId: req.tenantId };
 
         // Filter by user/employee if provided
@@ -33,7 +76,7 @@ export const getAllSickLeaves = async (req, res) => {
             query['workflow.currentStep'] = req.query.workflowStep;
         }
 
-        const sickLeaves = await SickLeave.find(query)
+        const sickLeaves = await TenantSickLeave.find(query)
             .populate('employee', 'username email employeeId personalInfo department position')
             .populate('department', 'name code')
             .populate('position', 'title')
@@ -67,7 +110,20 @@ export const getPendingDoctorReview = async (req, res) => {
             });
         }
 
-        const sickLeaves = await SickLeave.getPendingDoctorReview();
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
+
+        const sickLeaves = await TenantSickLeave.getPendingDoctorReview();
 
         res.json(sickLeaves);
     } catch (err) {
@@ -81,6 +137,18 @@ export const getPendingDoctorReview = async (req, res) => {
  */
 export const createSickLeave = async (req, res) => {
     try {
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
 
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
@@ -98,7 +166,10 @@ export const createSickLeave = async (req, res) => {
             req.body.medicalDocumentation.provided = true;
         }
 
-        const sickLeave = new SickLeave(req.body);
+        // Set tenantId from authenticated request
+        req.body.tenantId = req.tenantId;
+
+        const sickLeave = new TenantSickLeave(req.body);
         const savedSickLeave = await sickLeave.save();
 
         // Create notification for supervisor
@@ -126,7 +197,23 @@ export const createSickLeave = async (req, res) => {
  */
 export const getSickLeaveById = async (req, res) => {
     try {
-        const sickLeave = await SickLeave.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
+
+        const sickLeave = await TenantSickLeave.findOne({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        })
             .populate('employee', 'username email employeeId personalInfo department position')
             .populate('department', 'name code')
             .populate('position', 'title')
@@ -150,7 +237,23 @@ export const getSickLeaveById = async (req, res) => {
  */
 export const updateSickLeave = async (req, res) => {
     try {
-        const oldSickLeave = await SickLeave.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
+
+        const oldSickLeave = await TenantSickLeave.findOne({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        });
         if (!oldSickLeave) {
             return res.status(404).json({ error: 'Sick leave not found' });
         }
@@ -162,8 +265,8 @@ export const updateSickLeave = async (req, res) => {
             });
         }
 
-        const sickLeave = await SickLeave.findByIdAndUpdate(
-            req.params.id,
+        const sickLeave = await TenantSickLeave.findOneAndUpdate(
+            { _id: req.params.id, tenantId: req.tenantId },
             req.body,
             { new: true, runValidators: true }
         );
@@ -180,7 +283,23 @@ export const updateSickLeave = async (req, res) => {
  */
 export const deleteSickLeave = async (req, res) => {
     try {
-        const sickLeave = await SickLeave.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
+
+        const sickLeave = await TenantSickLeave.findOne({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        });
         if (!sickLeave) {
             return res.status(404).json({ error: 'Sick leave not found' });
         }
@@ -192,7 +311,10 @@ export const deleteSickLeave = async (req, res) => {
             });
         }
 
-        await SickLeave.findByIdAndDelete(req.params.id);
+        await TenantSickLeave.findOneAndDelete({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        });
         res.json({ message: 'Sick leave deleted successfully' });
     } catch (err) {
 
@@ -205,7 +327,23 @@ export const deleteSickLeave = async (req, res) => {
  */
 export const approveBySupervisor = async (req, res) => {
     try {
-        const sickLeave = await SickLeave.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
+
+        const sickLeave = await TenantSickLeave.findOne({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!sickLeave) {
@@ -261,7 +399,23 @@ export const approveBySupervisor = async (req, res) => {
  */
 export const approveByDoctor = async (req, res) => {
     try {
-        const sickLeave = await SickLeave.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
+
+        const sickLeave = await TenantSickLeave.findOne({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!sickLeave) {
@@ -313,7 +467,23 @@ export const approveByDoctor = async (req, res) => {
  */
 export const rejectBySupervisor = async (req, res) => {
     try {
-        const sickLeave = await SickLeave.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
+
+        const sickLeave = await TenantSickLeave.findOne({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!sickLeave) {
@@ -386,7 +556,23 @@ export const rejectBySupervisor = async (req, res) => {
  */
 export const rejectByDoctor = async (req, res) => {
     try {
-        const sickLeave = await SickLeave.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
+
+        const sickLeave = await TenantSickLeave.findOne({ 
+            _id: req.params.id, 
+            tenantId: req.tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!sickLeave) {

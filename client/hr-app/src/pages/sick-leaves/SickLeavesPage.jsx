@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
     Box,
     Button,
@@ -22,8 +22,9 @@ import {
     Visibility as ViewIcon,
     Person as PersonIcon,
     Group as GroupIcon,
+    Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
@@ -37,14 +38,17 @@ const SickLeavesPage = () => {
     useDocumentTitle('Sick Leaves');
     const theme = useTheme();
     const navigate = useNavigate();
+    const location = useLocation();
     const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
     const [sickLeaves, setSickLeaves] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshKey, setRefreshKey] = useState(0); // Add refresh key for forcing re-renders
     const [openConfirm, setOpenConfirm] = useState(false);
     const [selectedSickLeave, setSelectedSickLeave] = useState(null);
     const [currentTab, setCurrentTab] = useState(0);
+    const needsRefreshRef = useRef(false); // Track if we need to refresh
     const [filters, setFilters] = useState({
         status: '',
         workflowStatus: '',
@@ -86,8 +90,73 @@ const SickLeavesPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters]);
 
+    // Refresh data when navigating back to this page
+    useEffect(() => {
+        // Only refresh if we're exactly on the sick leaves list page (not create/edit pages)
+        const isOnSickLeavesListPage = location.pathname.includes('/sick-leaves') && 
+                                      !location.pathname.includes('/create') && 
+                                      !location.pathname.includes('/edit') &&
+                                      !location.pathname.match(/\/sick-leaves\/[^\/]+$/); // Not on detail page
+        
+        if (isOnSickLeavesListPage) {
+            console.log('🔄 SickLeavesPage - Location changed to sick leaves list, refreshing data');
+            console.log('🔄 Current pathname:', location.pathname);
+            
+            // Always refresh when coming back to the list page
+            needsRefreshRef.current = true;
+            setRefreshKey(prev => prev + 1);
+            
+            // Use setTimeout to ensure the page is fully loaded
+            setTimeout(() => {
+                fetchSickLeaves();
+            }, 50);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.pathname]);
+
+    // Listen for custom events (like from create/edit page)
+    useEffect(() => {
+        const handleRefresh = () => {
+            console.log('🔄 SickLeavesPage - Custom refresh event received');
+            needsRefreshRef.current = true;
+            setRefreshKey(prev => prev + 1); // Force re-render
+            
+            // Use setTimeout to ensure proper timing
+            setTimeout(() => {
+                fetchSickLeaves();
+            }, 100);
+        };
+
+        const handleVisibilityChange = () => {
+            // Refresh data when user comes back to the tab
+            if (!document.hidden && location.pathname.includes('/sick-leaves')) {
+                console.log('🔄 SickLeavesPage - Tab became visible, refreshing data');
+                needsRefreshRef.current = true;
+                setRefreshKey(prev => prev + 1); // Force re-render
+                fetchSickLeaves();
+            }
+        };
+
+        console.log('🔄 SickLeavesPage - Setting up event listeners');
+        window.addEventListener('sickLeaveCreated', handleRefresh);
+        window.addEventListener('sickLeaveUpdated', handleRefresh);
+        window.addEventListener('notificationUpdate', handleRefresh);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            console.log('🔄 SickLeavesPage - Cleaning up event listeners');
+            window.removeEventListener('sickLeaveCreated', handleRefresh);
+            window.removeEventListener('sickLeaveUpdated', handleRefresh);
+            window.removeEventListener('notificationUpdate', handleRefresh);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const fetchSickLeaves = async () => {
         try {
+            console.log('🔄 SickLeavesPage - fetchSickLeaves called');
+            console.log('🔄 Current user when fetching:', user);
             setLoading(true);
             const params = {};
             if (filters.status) params.status = filters.status;
@@ -98,8 +167,9 @@ const SickLeavesPage = () => {
             const data = await sickLeaveService.getAll(params);
             const sickLeavesArray = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
             setSickLeaves(sickLeavesArray);
+            console.log('🔄 SickLeavesPage - Fetched sick leaves:', sickLeavesArray.length);
         } catch (error) {
-
+            console.error('🔄 SickLeavesPage - Error fetching sick leaves:', error);
             showNotification('Failed to fetch sick leaves', 'error');
             setSickLeaves([]);
         } finally {
@@ -432,6 +502,17 @@ const SickLeavesPage = () => {
                             Doctor Review Queue
                         </Button>
                     )}
+                    <IconButton
+                        onClick={() => {
+                            console.log('🔄 Manual refresh clicked');
+                            setRefreshKey(prev => prev + 1);
+                            fetchSickLeaves();
+                        }}
+                        sx={{ mr: 1 }}
+                        title="Refresh"
+                    >
+                        <RefreshIcon />
+                    </IconButton>
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
@@ -550,6 +631,7 @@ const SickLeavesPage = () => {
                             🏥 My Sick Leave Requests ({filteredData.length})
                         </Typography>
                         <DataTable
+                            key={refreshKey}
                             data={filteredData}
                             columns={columns}
                             emptyMessage="No sick leaves found. Click 'New Sick Leave' to create one."
@@ -563,6 +645,7 @@ const SickLeavesPage = () => {
                             👥 All Users Sick Leave Requests ({filteredData.length})
                         </Typography>
                         <DataTable
+                            key={refreshKey}
                             data={filteredData}
                             columns={columns}
                             emptyMessage="No sick leave requests found from any employees."

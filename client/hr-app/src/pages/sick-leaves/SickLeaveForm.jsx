@@ -152,9 +152,14 @@ const SickLeaveForm = () => {
             if (isEditMode) {
                 await sickLeaveService.update(id, submitData);
                 showNotification('Sick leave updated successfully', 'success');
+                // Dispatch custom events to notify other components
+                window.dispatchEvent(new CustomEvent('sickLeaveUpdated'));
+                window.dispatchEvent(new CustomEvent('notificationUpdate'));
             } else {
                 await sickLeaveService.create(submitData);
                 showNotification('Sick leave created successfully', 'success');
+                // Dispatch custom events to notify other components
+                window.dispatchEvent(new CustomEvent('sickLeaveCreated'));
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
 

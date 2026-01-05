@@ -157,7 +157,7 @@ const ClaimReviewModal = ({
                     </Typography>
                     
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Claim Number
                             </Typography>
@@ -166,7 +166,7 @@ const ClaimReviewModal = ({
                             </Typography>
                         </Grid>
                         
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Status
                             </Typography>
@@ -175,7 +175,7 @@ const ClaimReviewModal = ({
                             </Box>
                         </Grid>
                         
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Policy Number
                             </Typography>
@@ -184,7 +184,7 @@ const ClaimReviewModal = ({
                             </Typography>
                         </Grid>
                         
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Employee
                             </Typography>
@@ -193,7 +193,7 @@ const ClaimReviewModal = ({
                             </Typography>
                         </Grid>
                         
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Claim Type
                             </Typography>
@@ -202,7 +202,7 @@ const ClaimReviewModal = ({
                             </Typography>
                         </Grid>
                         
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Claim Amount
                             </Typography>
@@ -211,7 +211,7 @@ const ClaimReviewModal = ({
                             </Typography>
                         </Grid>
                         
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Claim Date
                             </Typography>
@@ -220,7 +220,7 @@ const ClaimReviewModal = ({
                             </Typography>
                         </Grid>
                         
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Submitted Date
                             </Typography>
@@ -229,7 +229,7 @@ const ClaimReviewModal = ({
                             </Typography>
                         </Grid>
                         
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Description
                             </Typography>
@@ -249,7 +249,7 @@ const ClaimReviewModal = ({
                     </Typography>
                     
                     <Grid container spacing={2}>
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <Typography variant="body2" sx={{ mb: 1 }}>
                                 Decision *
                             </Typography>
@@ -287,7 +287,7 @@ const ClaimReviewModal = ({
                         </Grid>
 
                         {reviewData.decision === 'approved' && (
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     label="Approved Amount *"
                                     type="number"
@@ -303,7 +303,7 @@ const ClaimReviewModal = ({
                             </Grid>
                         )}
 
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <TextField
                                 label="Review Notes *"
                                 multiline

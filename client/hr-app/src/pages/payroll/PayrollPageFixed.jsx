@@ -364,7 +364,7 @@ const PayrollPage = () => {
                                 <Card key={index} sx={{ mb: 2 }}>
                                     <CardContent>
                                         <Grid container spacing={2}>
-                                            <Grid item xs={12} sm={3}>
+                                            <Grid size={{ xs: 12, sm: 3 }}>
                                                 <TextField
                                                     select
                                                     label="Type"
@@ -380,7 +380,7 @@ const PayrollPage = () => {
                                                     ))}
                                                 </TextField>
                                             </Grid>
-                                            <Grid item xs={12} sm={3}>
+                                            <Grid size={{ xs: 12, sm: 3 }}>
                                                 <TextField
                                                     label="Arabic Name"
                                                     value={deduction.arabicName}
@@ -389,7 +389,7 @@ const PayrollPage = () => {
                                                     size="small"
                                                 />
                                             </Grid>
-                                            <Grid item xs={12} sm={3}>
+                                            <Grid size={{ xs: 12, sm: 3 }}>
                                                 <TextField
                                                     type="number"
                                                     label="Amount"
@@ -400,7 +400,7 @@ const PayrollPage = () => {
                                                     inputProps={{ step: '0.01', min: '0' }}
                                                 />
                                             </Grid>
-                                            <Grid item xs={12} sm={3}>
+                                            <Grid size={{ xs: 12, sm: 3 }}>
                                                 <Button
                                                     onClick={() => handleRemoveDeduction(index)}
                                                     color="error"
@@ -410,7 +410,7 @@ const PayrollPage = () => {
                                                     Remove
                                                 </Button>
                                             </Grid>
-                                            <Grid item xs={12}>
+                                            <Grid size={{ xs: 12 }}>
                                                 <TextField
                                                     label="Description"
                                                     value={deduction.description}
