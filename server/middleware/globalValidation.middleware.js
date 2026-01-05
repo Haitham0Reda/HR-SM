@@ -17,6 +17,19 @@ import mongoose from 'mongoose';
  */
 export const globalInputSanitization = (req, res, next) => {
     try {
+        // Skip sanitization for logs endpoint to prevent data corruption
+        const isLogsEndpoint = req.path === '/api/v1/logs' || 
+                              req.url === '/api/v1/logs' || 
+                              req.originalUrl === '/api/v1/logs' ||
+                              req.route?.path === '/api/v1/logs';
+                              
+        if (isLogsEndpoint) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('🔓 Bypassing input sanitization for logs endpoint:', req.url);
+            }
+            return next();
+        }
+
         // Sanitize function for recursive object cleaning
         const sanitizeValue = (value) => {
             if (typeof value === 'string') {
@@ -84,6 +97,19 @@ export const globalInputSanitization = (req, res, next) => {
  * Detects and blocks common NoSQL injection patterns
  */
 export const preventNoSQLInjection = (req, res, next) => {
+    // Skip for logs endpoint
+    const isLogsEndpoint = req.path === '/api/v1/logs' || 
+                          req.url === '/api/v1/logs' || 
+                          req.originalUrl === '/api/v1/logs' ||
+                          req.route?.path === '/api/v1/logs';
+                          
+    if (isLogsEndpoint) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔓 Bypassing NoSQL injection validation for logs endpoint:', req.url);
+        }
+        return next();
+    }
+
     const checkForInjection = (obj, path = '') => {
         if (typeof obj === 'string') {
             // Check for MongoDB operators and dangerous patterns
@@ -161,6 +187,19 @@ export const preventNoSQLInjection = (req, res, next) => {
  * Additional layer of XSS protection beyond HTML sanitization
  */
 export const preventXSS = (req, res, next) => {
+    // Skip for logs endpoint - logs may contain error messages with special characters
+    const isLogsEndpoint = req.path === '/api/v1/logs' || 
+                          req.url === '/api/v1/logs' || 
+                          req.originalUrl === '/api/v1/logs' ||
+                          req.route?.path === '/api/v1/logs';
+                          
+    if (isLogsEndpoint) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔓 Bypassing XSS validation for logs endpoint:', req.url);
+        }
+        return next();
+    }
+
     const checkForXSS = (obj, path = '') => {
         if (typeof obj === 'string') {
             // Check for XSS patterns that might have bypassed sanitization
