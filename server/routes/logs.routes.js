@@ -2,6 +2,27 @@ import express from 'express';
 
 const router = express.Router();
 
+// Middleware to bypass validation for logs endpoint
+const bypassValidationForLogs = (req, res, next) => {
+    // Mark this request to bypass certain validations
+    req.skipValidation = true;
+    req.isLogsEndpoint = true;
+    next();
+};
+
+/**
+ * Health check for logs endpoint
+ * @route GET /api/v1/logs/health
+ * @access Public
+ */
+router.get('/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Logs endpoint is healthy',
+        timestamp: new Date().toISOString()
+    });
+});
+
 /**
  * Get logs endpoint
  * @route GET /api/v1/logs
@@ -70,7 +91,22 @@ router.get('/', async (req, res) => {
  */
 router.post('/', async (req, res) => {
     try {
-        const { logs, batchId, timestamp } = req.body;
+        // Add more detailed logging for debugging
+        console.log('📥 Logs endpoint called (bypassing validation)');
+        console.log('📥 Content-Type:', req.get('Content-Type'));
+        console.log('📥 Body type:', typeof req.body);
+        console.log('📥 Body keys:', req.body ? Object.keys(req.body) : 'no body');
+        
+        const { logs, batchId, timestamp } = req.body || {};
+        
+        // Validate required fields
+        if (!logs || !Array.isArray(logs)) {
+            console.log('❌ Invalid logs format:', { logs: typeof logs, isArray: Array.isArray(logs) });
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid logs format - logs must be an array'
+            });
+        }
         
         // For now, just log to console in development
         if (process.env.NODE_ENV === 'development') {

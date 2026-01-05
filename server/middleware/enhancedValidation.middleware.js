@@ -436,6 +436,18 @@ export const validateRateLimitByUser = (options = {}) => {
  * SQL/NoSQL injection prevention
  */
 export const preventInjection = (req, res, next) => {
+    // Skip injection detection for logs endpoint - logs may contain error messages with script tags
+    const isLogsEndpoint = req.path === '/api/v1/logs' || 
+                          req.url === '/api/v1/logs' || 
+                          req.originalUrl === '/api/v1/logs';
+                          
+    if (isLogsEndpoint) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔓 Bypassing injection detection for logs endpoint:', req.url);
+        }
+        return next();
+    }
+
     const checkForInjection = (obj, path = '') => {
         if (typeof obj === 'string') {
             // Check for common injection patterns

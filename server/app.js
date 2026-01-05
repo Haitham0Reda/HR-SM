@@ -51,8 +51,8 @@ import {
     metricsRoutes
 } from './routes/index.js';
 
-// Import logs route
-import logsRoutes from './routes/logs.routes.js';
+// Import logs route (moved to early mounting before validation)
+// import logsRoutes from './routes/logs.routes.js';
 
 // Import system models to ensure collections are created
 import './models/performanceMetrics.model.js';
@@ -115,6 +115,10 @@ app.use(mongoSanitize());
 // Enhanced security middleware
 app.use(preventInjection);
 app.use(validateJsonSchema());
+
+// Mount logs routes BEFORE comprehensive validation to avoid content restrictions
+import logsRoutes from './routes/logs.routes.js';
+app.use('/api/v1/logs', logsRoutes);
 
 // Comprehensive input validation and sanitization
 import { comprehensiveValidation } from './middleware/globalValidation.middleware.js';
@@ -412,7 +416,7 @@ export const initializeRoutes = async () => {
     // System Management (legacy - not yet moved)
     app.use('/api/v1/theme', themeRoutes);
     app.use('/api/v1/feature-flags', featureFlagRoutes);
-    app.use('/api/v1/logs', logsRoutes);
+    // Logs routes already mounted before validation middleware
     
     // System Settings (Admin only)
     try {
@@ -476,14 +480,8 @@ export const initializeRoutes = async () => {
         console.warn('⚠️  Logging module configuration routes not available:', error.message);
     }
 
-    // Log ingestion routes
-    try {
-        const logIngestionRoutes = await import('./routes/logs.routes.js');
-        app.use('/api/v1', logIngestionRoutes.default);
-        console.log('✓ Log ingestion routes loaded (/api/v1/logs/*)');
-    } catch (error) {
-        console.warn('⚠️  Log ingestion routes not available:', error.message);
-    }
+    // Log ingestion routes - REMOVED DUPLICATE (already mounted at line 415)
+    // The logs routes are already mounted at /api/v1/logs above
 
     // License Management (legacy - not yet moved)
     app.use('/api/v1/licenses', licenseRoutes);
