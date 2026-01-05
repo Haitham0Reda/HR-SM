@@ -192,14 +192,14 @@ const ClaimDetailsPage = () => {
             >
                 <Grid container spacing={3}>
                     {/* Claim Information */}
-                    <Grid item xs={12} md={8}>
+                    <Grid size={{ xs: 12, md: 8 }}>
                         <Paper sx={{ p: 3, mb: 3 }}>
                             <Typography variant="h6" sx={{ mb: 3 }}>
                                 Claim Information
                             </Typography>
                             
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Claim Number
                                     </Typography>
@@ -208,7 +208,7 @@ const ClaimDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Status
                                     </Typography>
@@ -217,7 +217,7 @@ const ClaimDetailsPage = () => {
                                     </Box>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Claim Type
                                     </Typography>
@@ -226,7 +226,7 @@ const ClaimDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Claim Amount
                                     </Typography>
@@ -235,7 +235,7 @@ const ClaimDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Claim Date
                                     </Typography>
@@ -244,7 +244,7 @@ const ClaimDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Submitted Date
                                     </Typography>
@@ -253,7 +253,7 @@ const ClaimDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Description
                                     </Typography>
@@ -271,7 +271,7 @@ const ClaimDetailsPage = () => {
                             </Typography>
                             
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Policy Number
                                     </Typography>
@@ -280,7 +280,7 @@ const ClaimDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Policy Type
                                     </Typography>
@@ -289,7 +289,7 @@ const ClaimDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Coverage Amount
                                     </Typography>
@@ -298,7 +298,7 @@ const ClaimDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Employee
                                     </Typography>
@@ -341,7 +341,7 @@ const ClaimDetailsPage = () => {
                     </Grid>
 
                     {/* Review History */}
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6" sx={{ mb: 2 }}>

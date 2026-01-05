@@ -239,7 +239,7 @@ const SystemSettingsPage = () => {
             {/* Settings Grid */}
             <Grid container spacing={2}>
                 {settingsCategories.map((setting, index) => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={index}>
                         <Card
                             elevation={2}
                             sx={{

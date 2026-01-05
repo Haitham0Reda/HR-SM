@@ -348,7 +348,7 @@ const UserActivityTracker = () => {
 
             {realTimeSessions && (
                 <Grid container spacing={3} mb={3}>
-                    <Grid item xs={12} md={3}>
+                    <Grid size={{ xs: 12, md: 3 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h4" color="primary">
@@ -360,7 +360,7 @@ const UserActivityTracker = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} md={3}>
+                    <Grid size={{ xs: 12, md: 3 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h4" color="success.main">
@@ -372,7 +372,7 @@ const UserActivityTracker = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="body2" color="textSecondary" gutterBottom>
@@ -520,7 +520,7 @@ const UserActivityTracker = () => {
             <Card sx={{ mb: 3 }}>
                 <CardContent>
                     <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} md={2}>
+                        <Grid size={{ xs: 12, md: 2 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Days</InputLabel>
                                 <Select
@@ -534,7 +534,7 @@ const UserActivityTracker = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} md={3}>
+                        <Grid size={{ xs: 12, md: 3 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Activity Type</InputLabel>
                                 <Select
@@ -550,7 +550,7 @@ const UserActivityTracker = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} md={3}>
+                        <Grid size={{ xs: 12, md: 3 }}>
                             <TextField
                                 fullWidth
                                 size="small"
@@ -562,7 +562,7 @@ const UserActivityTracker = () => {
                                 }}
                             />
                         </Grid>
-                        <Grid item xs={12} md={2}>
+                        <Grid size={{ xs: 12, md: 2 }}>
                             <Button
                                 fullWidth
                                 variant="contained"
@@ -579,7 +579,7 @@ const UserActivityTracker = () => {
             {/* Activity Summary */}
             {userActivities && (
                 <Grid container spacing={3} mb={3}>
-                    <Grid item xs={12} md={3}>
+                    <Grid size={{ xs: 12, md: 3 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h4" color="primary">
@@ -591,7 +591,7 @@ const UserActivityTracker = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} md={3}>
+                    <Grid size={{ xs: 12, md: 3 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h4" color="success.main">
@@ -603,7 +603,7 @@ const UserActivityTracker = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} md={3}>
+                    <Grid size={{ xs: 12, md: 3 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h4" color="warning.main">
@@ -615,7 +615,7 @@ const UserActivityTracker = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} md={3}>
+                    <Grid size={{ xs: 12, md: 3 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h4" color="info.main">
@@ -757,13 +757,13 @@ const UserActivityTracker = () => {
                     <Box>
                         {/* Timeline Summary */}
                         <Grid container spacing={2} mb={3}>
-                            <Grid item xs={6} md={3}>
+                            <Grid size={{ xs: 6, md: 3 }}>
                                 <Typography variant="h6" color="primary">
                                     {userTimeline.summary?.totalActivities || 0}
                                 </Typography>
                                 <Typography variant="caption">Total Activities</Typography>
                             </Grid>
-                            <Grid item xs={6} md={3}>
+                            <Grid size={{ xs: 6, md: 3 }}>
                                 <Typography variant="h6" color="success.main">
                                     {Object.keys(userTimeline.summary?.mostUsedFeatures || {}).length}
                                 </Typography>
@@ -866,3 +866,4 @@ const UserActivityTracker = () => {
 };
 
 export default UserActivityTracker;
+

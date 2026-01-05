@@ -123,7 +123,7 @@ const EmailGenerationTest = () => {
 
                     {/* Name and Username Inputs */}
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 label="First Name"
                                 value={firstName}
@@ -132,7 +132,7 @@ const EmailGenerationTest = () => {
                                 fullWidth
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 label="Last Name"
                                 value={lastName}
@@ -141,7 +141,7 @@ const EmailGenerationTest = () => {
                                 fullWidth
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 label="Username (fallback)"
                                 value={username}

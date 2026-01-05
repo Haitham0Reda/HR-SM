@@ -80,11 +80,11 @@ const EmailSettingsPage = () => {
 
             {/* Settings Content */}
             <Grid container spacing={3}>
-                <Grid item xs={12} lg={8}>
+                <Grid size={{ xs: 12, lg: 8 }}>
                     <CompanyEmailSettings />
                 </Grid>
                 
-                <Grid item xs={12} lg={4}>
+                <Grid size={{ xs: 12, lg: 4 }}>
                     {/* Additional email settings can be added here */}
                     <Paper sx={{ p: 3 }}>
                         <Typography variant="h6" gutterBottom>

@@ -352,12 +352,11 @@ const MissionsPage = () => {
     const filteredData = getFilteredData();
 
     const columns = [
-        // Always show employee name column
-        {
-            id: 'employeeName',
+        // Only show employee column in "All Users Missions" tab and if user can manage
+        ...(currentTab === 1 && canManage ? [{
+            id: 'employee',
             label: 'Employee Name',
-            align: 'left',
-            width: '140px',
+            align: 'center',
             render: (row) => {
                 // Handle both populated and non-populated employee field
                 if (typeof row.employee === 'object' && row.employee !== null) {
@@ -369,81 +368,41 @@ const MissionsPage = () => {
                 // If employee is just an ID string, we can't show the name
                 return 'N/A';
             },
-        },
-        // Only show additional employee details in "All Users" tab (tab 1) and if user can manage
-        ...(currentTab === 1 && canManage ? [{
-            id: 'employee',
-            label: 'Employee Details',
-            align: 'left',
-            width: '160px',
-            render: (row) => {
-                if (typeof row.employee === 'object' && row.employee !== null) {
-                    const name = row.employee.personalInfo?.fullName || row.employee.username || 'N/A';
-                    const email = row.employee.email || '';
-                    return (
-                        <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                {name}
-                            </Typography>
-                            {email && (
-                                <Typography variant="caption" color="text.secondary">
-                                    {email}
-                                </Typography>
-                            )}
-                        </Box>
-                    );
-                }
-                return 'N/A';
-            },
         }] : []),
         {
             id: 'location',
             label: 'Location',
-            align: 'left',
-            width: '120px',
+            align: 'center',
             render: (row) => row.location || '-',
         },
         {
             id: 'purpose',
             label: 'Purpose',
-            align: 'left',
-            width: '200px',
-            render: (row) => (
-                <Box sx={{ 
-                    overflow: 'hidden', 
-                    textOverflow: 'ellipsis', 
-                    whiteSpace: 'nowrap',
-                }}>
-                    {row.purpose || '-'}
-                </Box>
-            ),
+            align: 'center',
+            render: (row) => row.purpose || '-',
         },
         {
             id: 'startDate',
             label: 'Start Date',
             align: 'center',
-            width: '100px',
             render: (row) => new Date(row.startDate).toLocaleDateString(),
         },
         {
             id: 'endDate',
             label: 'End Date',
             align: 'center',
-            width: '100px',
             render: (row) => new Date(row.endDate).toLocaleDateString(),
         },
         {
             id: 'duration',
             label: 'Days',
             align: 'center',
-            width: '60px',
             render: (row) => row.duration || '-',
         },
         {
             id: 'status',
             label: 'Status',
             align: 'center',
-            width: '100px',
             render: (row) => {
                 const statusColor = getStatusColor(row.status);
                 return (
@@ -463,20 +422,16 @@ const MissionsPage = () => {
             id: 'actions',
             label: 'Actions',
             align: 'center',
-            width: '120px',
             render: (row) => {
                 const isPending = row.status === 'pending';
                 const isOwnRequest = row.employee?._id === user?._id || String(row.employee?._id) === String(user?._id);
 
                 const canEdit = isOwnRequest && isPending;
-                // Delete permissions:
-                // - "My Missions" tab (0): Users can delete their own missions
-                // - "All Users" tab (1): HR/Admin can delete any mission
                 const canDelete = isOwnRequest || (canManage && currentTab === 1);
                 const canApprove = canManage && isPending;
 
                 return (
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Box>
                         {canApprove && (
                             <>
                                 <IconButton

@@ -184,14 +184,14 @@ const PolicyDetailsPage = () => {
             >
                 <Grid container spacing={3}>
                     {/* Policy Information */}
-                    <Grid item xs={12} md={8}>
+                    <Grid size={{ xs: 12, md: 8 }}>
                         <Paper sx={{ p: 3, mb: 3 }}>
                             <Typography variant="h6" sx={{ mb: 3 }}>
                                 Policy Information
                             </Typography>
                             
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Policy Number
                                     </Typography>
@@ -200,7 +200,7 @@ const PolicyDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Status
                                     </Typography>
@@ -209,7 +209,7 @@ const PolicyDetailsPage = () => {
                                     </Box>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Policy Type
                                     </Typography>
@@ -218,7 +218,7 @@ const PolicyDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Coverage Amount
                                     </Typography>
@@ -227,7 +227,7 @@ const PolicyDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Monthly Premium
                                     </Typography>
@@ -236,7 +236,7 @@ const PolicyDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Deductible
                                     </Typography>
@@ -245,7 +245,7 @@ const PolicyDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Start Date
                                     </Typography>
@@ -254,7 +254,7 @@ const PolicyDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         End Date
                                     </Typography>
@@ -264,7 +264,7 @@ const PolicyDetailsPage = () => {
                                 </Grid>
                                 
                                 {policy.notes && (
-                                    <Grid item xs={12}>
+                                    <Grid size={{ xs: 12 }}>
                                         <Typography variant="body2" color="text.secondary">
                                             Notes
                                         </Typography>
@@ -283,7 +283,7 @@ const PolicyDetailsPage = () => {
                             </Typography>
                             
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Name
                                     </Typography>
@@ -292,7 +292,7 @@ const PolicyDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Employee Number
                                     </Typography>
@@ -301,7 +301,7 @@ const PolicyDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Department
                                     </Typography>
@@ -310,7 +310,7 @@ const PolicyDetailsPage = () => {
                                     </Typography>
                                 </Grid>
                                 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Position
                                     </Typography>
@@ -323,7 +323,7 @@ const PolicyDetailsPage = () => {
                     </Grid>
 
                     {/* Summary Cards */}
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <Stack spacing={2}>
                             <Card>
                                 <CardContent>

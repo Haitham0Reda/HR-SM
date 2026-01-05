@@ -213,7 +213,7 @@ const PolicyForm = ({
                     </Typography>
                     
                     <Grid container spacing={2}>
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <Autocomplete
                                 value={selectedEmployee}
                                 onChange={handleEmployeeChange}
@@ -267,7 +267,7 @@ const PolicyForm = ({
                     </Typography>
                     
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Policy Type *"
@@ -292,7 +292,7 @@ const PolicyForm = ({
                             </TextField>
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 select
                                 label="Coverage Amount *"
@@ -310,7 +310,7 @@ const PolicyForm = ({
                             </TextField>
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 label="Premium *"
                                 type="number"
@@ -325,7 +325,7 @@ const PolicyForm = ({
                             />
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 label="Deductible"
                                 type="number"
@@ -340,7 +340,7 @@ const PolicyForm = ({
                             />
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <DatePicker
                                 label="Start Date *"
                                 value={formValues.startDate ? dayjs(formValues.startDate) : null}
@@ -355,7 +355,7 @@ const PolicyForm = ({
                             />
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <DatePicker
                                 label="End Date *"
                                 value={formValues.endDate ? dayjs(formValues.endDate) : null}
@@ -370,7 +370,7 @@ const PolicyForm = ({
                             />
                         </Grid>
 
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <TextField
                                 label="Notes"
                                 multiline
@@ -390,7 +390,7 @@ const PolicyForm = ({
                         Policy Summary
                     </Typography>
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Employee
                             </Typography>
@@ -398,7 +398,7 @@ const PolicyForm = ({
                                 {selectedEmployee?.name || 'Not selected'}
                             </Typography>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Policy Type
                             </Typography>
@@ -406,7 +406,7 @@ const PolicyForm = ({
                                 {policyTypes.find(t => t.value === formValues.policyType)?.label || 'N/A'}
                             </Typography>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Coverage Amount
                             </Typography>
@@ -414,7 +414,7 @@ const PolicyForm = ({
                                 {formatCurrency(formValues.coverageAmount)}
                             </Typography>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Monthly Premium
                             </Typography>

@@ -145,7 +145,7 @@ const InsuranceReportsPanel = () => {
 
                 {/* Key Metrics */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6" color="text.secondary">
@@ -160,7 +160,7 @@ const InsuranceReportsPanel = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6" color="text.secondary">
@@ -175,7 +175,7 @@ const InsuranceReportsPanel = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6" color="text.secondary">
@@ -190,7 +190,7 @@ const InsuranceReportsPanel = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6" color="text.secondary">
@@ -214,7 +214,7 @@ const InsuranceReportsPanel = () => {
                     </Typography>
                     
                     <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <TextField
                                 select
                                 label="Report Type"
@@ -230,7 +230,7 @@ const InsuranceReportsPanel = () => {
                             </TextField>
                         </Grid>
 
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <DatePicker
                                 label="Start Date"
                                 value={filters.startDate}
@@ -243,7 +243,7 @@ const InsuranceReportsPanel = () => {
                             />
                         </Grid>
 
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <DatePicker
                                 label="End Date"
                                 value={filters.endDate}
@@ -256,7 +256,7 @@ const InsuranceReportsPanel = () => {
                             />
                         </Grid>
 
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <TextField
                                 select
                                 label="Policy Type"
@@ -272,7 +272,7 @@ const InsuranceReportsPanel = () => {
                             </TextField>
                         </Grid>
 
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <TextField
                                 select
                                 label="Status"
@@ -311,7 +311,7 @@ const InsuranceReportsPanel = () => {
 
                 {/* Charts Section */}
                 <Grid container spacing={3}>
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <Paper sx={{ p: 3 }}>
                             <Typography variant="h6" sx={{ mb: 2 }}>
                                 Policy Distribution by Type
@@ -321,7 +321,7 @@ const InsuranceReportsPanel = () => {
                             </Box>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <Paper sx={{ p: 3 }}>
                             <Typography variant="h6" sx={{ mb: 2 }}>
                                 Monthly Trends
@@ -331,7 +331,7 @@ const InsuranceReportsPanel = () => {
                             </Box>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <Paper sx={{ p: 3 }}>
                             <Typography variant="h6" sx={{ mb: 2 }}>
                                 Premium Collection Trends
