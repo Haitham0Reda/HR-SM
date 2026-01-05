@@ -1,5 +1,9 @@
 import api from './api';
 
+// Force cache bust with unique identifier
+const SERVICE_VERSION = '2026-01-03-vacations-' + Math.random().toString(36).substr(2, 9);
+console.log(`🔄 Vacation Service v${SERVICE_VERSION} loading...`);
+
 /**
  * Vacation Service
  * 
@@ -17,7 +21,14 @@ const vacationService = {
      * @returns {Promise<Object>} Response containing vacations array and metadata
      */
     getAll: async (params) => {
-        const data = await api.get('/vacations', { params });
+        console.log(`🔍 [${SERVICE_VERSION}] Vacation Service - getAll called`);
+        // Add cache-busting parameter to ensure fresh data
+        const cacheBustParams = { 
+            ...params, 
+            _t: Date.now(),
+            v: SERVICE_VERSION 
+        };
+        const data = await api.get('/vacations', { params: cacheBustParams });
         return data;
     },
 
@@ -38,14 +49,23 @@ const vacationService = {
      * @returns {Promise<Object>} Created vacation object
      */
     create: async (data) => {
-        // Check if data is FormData (for file uploads)
-        const config = data instanceof FormData ? {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        } : {};
-        const result = await api.post('/vacations', data, config);
-        return result;
+        console.log(`🔍 [${SERVICE_VERSION}] Vacation Service - create called`);
+        console.log(`🔍 [${SERVICE_VERSION}] Request data:`, data instanceof FormData ? 'FormData' : JSON.stringify(data, null, 2));
+        
+        try {
+            // Check if data is FormData (for file uploads)
+            const config = data instanceof FormData ? {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            } : {};
+            const result = await api.post('/vacations', data, config);
+            console.log(`✅ [${SERVICE_VERSION}] Vacation Service - create successful`);
+            return result;
+        } catch (error) {
+            console.error(`❌ [${SERVICE_VERSION}] Vacation Service - create failed:`, error);
+            throw error;
+        }
     },
 
     /**
@@ -121,5 +141,9 @@ const vacationService = {
         return result;
     },
 };
+
+// Add version identifier
+vacationService._version = SERVICE_VERSION;
+console.log(`✅ Vacation Service v${SERVICE_VERSION} loaded successfully`);
 
 export default vacationService;

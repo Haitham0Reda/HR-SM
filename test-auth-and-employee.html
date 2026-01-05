@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Auth and Employee Lookup</title>
+</head>
+<body>
+    <h1>Test Authentication and Employee Lookup</h1>
+    <div id="results"></div>
+    <button onclick="testAuthFlow()">Test Complete Auth Flow</button>
+    <button onclick="testUserProfile()">Test User Profile</button>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#007bff';
+            results.innerHTML += `<div style="margin: 5px 0; padding: 8px; border-left: 4px solid ${color}; background: #f8f9fa;">${message}</div>`;
+            console.log(message);
+        }
+        
+        function clearResults() {
+            results.innerHTML = '';
+        }
+        
+        async function testUserProfile() {
+            clearResults();
+            log('🔍 Testing User Profile Endpoint');
+            
+            const token = localStorage.getItem('tenant_token');
+            if (!token) {
+                log('❌ No authentication token found. Please log in first.', 'error');
+                return;
+            }
+            
+            try {
+                log('📡 Calling /api/v1/auth/me...');
+                const response = await fetch('http://localhost:5000/api/v1/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`📡 Response Status: ${response.status} ${response.statusText}`);
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    log('✅ User Profile Retrieved:', 'success');
+                    log(`📋 User Data: ${JSON.stringify(userData, null, 2)}`);
+                    
+                    // Check if user has _id field
+                    if (userData.data && userData.data._id) {
+                        log(`✅ User ID found: ${userData.data._id}`, 'success');
+                    } else {
+                        log('❌ No _id field in user data', 'error');
+                    }
+                    
+                    return userData;
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ Failed to get user profile: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAuthFlow() {
+            clearResults();
+            log('🧪 Testing Complete Authentication Flow');
+            
+            // Step 1: Check token
+            const token = localStorage.getItem('tenant_token');
+            const tenantId = localStorage.getItem('tenant_id');
+            
+            if (!token) {
+                log('❌ No authentication token found. Please log in first.', 'error');
+                return;
+            }
+            
+            log(`✅ Token found: ${token.substring(0, 20)}...`);
+            log(`✅ Tenant ID: ${tenantId}`);
+            
+            // Step 2: Test user profile
+            const userData = await testUserProfile();
+            
+            if (!userData || !userData.data) {
+                log('❌ Cannot proceed without user data', 'error');
+                return;
+            }
+            
+            // Step 3: Test forget-check creation with user data
+            log('📡 Testing forget-check creation...');
+            
+            const testData = {
+                date: '2026-01-02',
+                requestType: 'check-in',
+                requestedTime: '09:00',
+                reason: 'Test forget check request with authenticated user'
+            };
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/forget-checks', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                log(`📡 Forget-check Response: ${response.status} ${response.statusText}`);
+                
+                const responseText = await response.text();
+                log(`📄 Response Body: ${responseText}`);
+                
+                if (response.status === 404 && responseText.includes('Employee not found')) {
+                    log('🔍 Employee lookup failed. Check server logs for debug info.', 'error');
+                    log('💡 The user exists but may not be found in the employee lookup.', 'error');
+                } else if (response.ok) {
+                    log('✅ Forget-check created successfully!', 'success');
+                } else {
+                    log(`🔍 Unexpected response: ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Forget-check request failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run user profile test
+        testUserProfile();
+    </script>
+</body>
+</html>

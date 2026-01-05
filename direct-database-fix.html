@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Database Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .result { margin: 10px 0; padding: 12px; border-radius: 4px; border-left: 4px solid #007bff; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .warning { border-left-color: #ffc107; background: #fff3cd; }
+        .info { border-left-color: #17a2b8; background: #d1ecf1; }
+        button { padding: 12px 24px; margin: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #0056b3; }
+        .json { background: #f8f9fa; padding: 12px; border: 1px solid #dee2e6; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; margin: 8px 0; }
+        .highlight { background: yellow; padding: 2px 4px; border-radius: 2px; font-weight: bold; }
+        .critical { background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Direct Database Fix</h1>
+        
+        <div class="result error">
+            <strong>🚨 PROBLEM CONFIRMED:</strong><br>
+            <span class="critical">PUT requests return success but don't actually update the database</span><br>
+            All missions still have employee: null despite "successful" updates.
+        </div>
+
+        <div class="result info">
+            <strong>Possible causes:</strong><br>
+            1. Validation rules preventing employee field updates<br>
+            2. Middleware blocking the update<br>
+            3. Database transaction issues<br>
+            4. Tenant isolation problems
+        </div>
+
+        <div style="margin: 20px 0;">
+            <button onclick="testSingleFieldUpdate()">🧪 Test Single Field Update</button>
+            <button onclick="testWithAllFields()">📝 Test With All Fields</button>
+            <button onclick="createNewMissionCorrectly()">✨ Create New Mission Correctly</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const USER_ID = '6957aaedf166bb9e0c0454c9';
+        const MISSION_IDS = ['695ba70413f73f39a9e1aa15', '695ba6ad13f73f39a9e1a9d9', '695ba5c34335f26ef2e8aee2', '695b913f0ef8bd2f2ad4d72b'];
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            results.innerHTML += `<div class="result ${className}">${message}</div>`;
+        }
+
+        function showJSON(title, data) {
+            const results = document.getElementById('results');
+            results.innerHTML += `
+                <div class="result info">
+                    <strong>${title}</strong>
+                    <div class="json">${JSON.stringify(data, null, 2)}</div>
+                </div>
+            `;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function login() {
+            try {
+                const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@techcorp.com',
+                        password: 'admin123',
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+                
+                if (!loginResponse.ok) {
+                    log(`❌ Login failed: ${loginResponse.status}`, 'error');
+                    return null;
+                }
+                
+                const loginData = await loginResponse.json();
+                const token = loginData.data?.token;
+                const user = loginData.data?.user;
+                
+                log(`✅ Login successful - User: ${user.email} (ID: ${user._id})`, 'success');
+                return { token, user };
+                
+            } catch (error) {
+                log(`❌ Login error: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function testSingleFieldUpdate() {
+            log('🧪 Testing single field update with detailed logging...');
+            clearResults();
+            
+            const auth = await login();
+            if (!auth) return;
+            
+            const { token } = auth;
+            const testMissionId = MISSION_IDS[0];
+            
+            try {
+                // First, get the current mission data
+                log(`📋 Getting current data for mission ${testMissionId}...`);
+                
+                const getMissionResponse = await fetch(`http://localhost:5000/api/v1/missions/${testMissionId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (getMissionResponse.ok) {
+                    const currentMission = await getMissionResponse.json();
+                    log('✅ Current mission data retrieved', 'success');
+                    showJSON('Current Mission Data', currentMission);
+                    
+                    // Now try to update just the employee field
+                    log('🔧 Attempting to update employee field only...');
+                    
+                    const updateData = { employee: USER_ID };
+                    showJSON('Update Request Data', updateData);
+                    
+                    const updateResponse = await fetch(`http://localhost:5000/api/v1/missions/${testMissionId}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updateData)
+                    });
+                    
+                    log(`📡 Update Response Status: ${updateResponse.status}`, updateResponse.ok ? 'success' : 'error');
+                    log(`📄 Response Headers: ${JSON.stringify(Object.fromEntries(updateResponse.headers.entries()), null, 2)}`, 'info');
+                    
+                    const responseText = await updateResponse.text();
+                    
+                    try {
+                        const responseData = JSON.parse(responseText);
+                        showJSON('Update Response Data', responseData);
+                        
+                        if (updateResponse.ok) {
+                            log('✅ Update API call succeeded', 'success');
+                            
+                            // Check if the response shows the employee field was updated
+                            const updatedEmployee = responseData.employee;
+                            log(`📋 Employee field in response: ${JSON.stringify(updatedEmployee)}`, 'info');
+                            
+                            if (updatedEmployee === USER_ID) {
+                                log('✅ Response shows employee field was updated!', 'success');
+                            } else {
+                                log('❌ Response still shows null employee field', 'error');
+                            }
+                            
+                            // Verify by fetching the mission again
+                            log('🔍 Verifying update by fetching mission again...');
+                            
+                            setTimeout(async () => {
+                                const verifyResponse = await fetch(`http://localhost:5000/api/v1/missions/${testMissionId}`, {
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                                
+                                if (verifyResponse.ok) {
+                                    const verifiedMission = await verifyResponse.json();
+                                    showJSON('Verified Mission Data', verifiedMission);
+                                    
+                                    const verifiedEmployee = verifiedMission.employee;
+                                    if (verifiedEmployee === USER_ID) {
+                                        log('🎉 <span class="highlight">SUCCESS! Mission was actually updated in database!</span>', 'success');
+                                    } else {
+                                        log('❌ <span class="highlight">FAILURE! Mission was NOT updated in database</span>', 'error');
+                                        log('💡 The API returns success but the database is not being updated', 'warning');
+                                    }
+                                } else {
+                                    log('❌ Could not verify update', 'error');
+                                }
+                            }, 500);
+                            
+                        } else {
+                            log('❌ Update API call failed', 'error');
+                            if (responseData.error) {
+                                log(`Error: ${responseData.error}`, 'error');
+                            }
+                        }
+                        
+                    } catch (e) {
+                        log(`Raw response: ${responseText}`, 'warning');
+                    }
+                    
+                } else {
+                    log('❌ Could not get current mission data', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testWithAllFields() {
+            log('📝 Testing update with all mission fields...');
+            clearResults();
+            
+            const auth = await login();
+            if (!auth) return;
+            
+            const { token } = auth;
+            const testMissionId = MISSION_IDS[0];
+            
+            try {
+                // Get current mission
+                const getMissionResponse = await fetch(`http://localhost:5000/api/v1/missions/${testMissionId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (getMissionResponse.ok) {
+                    const currentMission = await getMissionResponse.json();
+                    
+                    // Create update data with all fields
+                    const updateData = {
+                        employee: USER_ID,
+                        location: currentMission.location,
+                        purpose: currentMission.purpose,
+                        startDate: currentMission.startDate,
+                        endDate: currentMission.endDate,
+                        duration: currentMission.duration,
+                        status: currentMission.status
+                    };
+                    
+                    log('📤 Updating with complete mission data...');
+                    showJSON('Complete Update Data', updateData);
+                    
+                    const updateResponse = await fetch(`http://localhost:5000/api/v1/missions/${testMissionId}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updateData)
+                    });
+                    
+                    const responseText = await updateResponse.text();
+                    
+                    try {
+                        const responseData = JSON.parse(responseText);
+                        showJSON('Complete Update Response', responseData);
+                        
+                        if (updateResponse.ok) {
+                            log('✅ Complete update succeeded', 'success');
+                            
+                            const updatedEmployee = responseData.employee;
+                            if (updatedEmployee === USER_ID) {
+                                log('✅ Employee field updated in response!', 'success');
+                            } else {
+                                log('❌ Employee field still null in response', 'error');
+                            }
+                        } else {
+                            log('❌ Complete update failed', 'error');
+                        }
+                        
+                    } catch (e) {
+                        log(`Raw response: ${responseText}`, 'warning');
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ Complete update test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function createNewMissionCorrectly() {
+            log('✨ Creating a new mission with correct employee assignment...');
+            clearResults();
+            
+            const auth = await login();
+            if (!auth) return;
+            
+            const { token, user } = auth;
+            
+            const missionData = {
+                employee: user._id,
+                location: `Fixed Mission ${Date.now()}`,
+                purpose: 'Testing correct mission creation with employee assignment',
+                startDate: new Date().toISOString().split('T')[0],
+                endDate: new Date().toISOString().split('T')[0],
+                duration: 1
+            };
+            
+            log('📤 Creating mission with explicit employee assignment:');
+            showJSON('New Mission Data', missionData);
+            
+            try {
+                const createResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(missionData)
+                });
+                
+                const responseText = await createResponse.text();
+                
+                try {
+                    const responseData = JSON.parse(responseText);
+                    showJSON('Creation Response', responseData);
+                    
+                    if (createResponse.ok) {
+                        log('✅ New mission created successfully!', 'success');
+                        
+                        const createdEmployee = responseData.data?.employee;
+                        if (createdEmployee === user._id) {
+                            log('🎉 <span class="highlight">NEW MISSION HAS CORRECT EMPLOYEE!</span>', 'success');
+                            log('💡 This proves mission creation CAN work correctly', 'success');
+                            log('💡 The issue is with updating existing missions', 'info');
+                            
+                            // Verify it shows up in missions list
+                            setTimeout(async () => {
+                                log('🔍 Checking if new mission appears in your missions...');
+                                
+                                const allMissionsResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                                
+                                if (allMissionsResponse.ok) {
+                                    const allMissionsData = await allMissionsResponse.json();
+                                    const missions = allMissionsData.data || [];
+                                    
+                                    const userMissions = missions.filter(mission => {
+                                        const missionUserId = mission.employee?._id || mission.employee;
+                                        return String(missionUserId) === String(user._id);
+                                    });
+                                    
+                                    log(`👤 Your missions now: ${userMissions.length}`, userMissions.length > 0 ? 'success' : 'error');
+                                    
+                                    if (userMissions.length > 0) {
+                                        log('🎉 SUCCESS! You now have missions showing!', 'success');
+                                        log('💡 Refresh your HR app to see the new mission', 'success');
+                                        
+                                        userMissions.forEach((mission, index) => {
+                                            log(`${index + 1}. ${mission.location} - ${mission.purpose}`, 'success');
+                                        });
+                                    }
+                                }
+                            }, 1000);
+                            
+                        } else {
+                            log('❌ New mission also has wrong employee field', 'error');
+                            log('💡 This suggests a deeper issue with mission creation', 'warning');
+                        }
+                        
+                    } else {
+                        log('❌ New mission creation failed', 'error');
+                    }
+                    
+                } catch (e) {
+                    log(`Raw response: ${responseText}`, 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ New mission creation error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load message
+        window.addEventListener('load', () => {
+            log('🔧 Direct database fix tool loaded', 'info');
+            log('💡 This will test different approaches to fix the employee assignment issue', 'info');
+        });
+    </script>
+</body>
+</html>

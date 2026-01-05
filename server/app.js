@@ -329,15 +329,6 @@ export const initializeRoutes = async () => {
     // The module routes include both availability and license checks
     await loadModuleRoutes(app, MODULES.LIFE_INSURANCE);
 
-    // Ensure forget-checks route is loaded (temporary fix until module registry is fully working)
-    try {
-        const forgetCheckRoutes = await import('./modules/hr-core/attendance/routes/forgetCheck.routes.js');
-        app.use('/api/v1/forget-checks', forgetCheckRoutes.default);
-        console.log('✓ Forget-checks route loaded at /api/v1/forget-checks');
-    } catch (error) {
-        console.error('❌ Failed to load forget-checks route:', error);
-    }
-
     // Ensure missions route is loaded (temporary fix until module registry is fully working)
     try {
         const missionRoutes = await import('./modules/hr-core/missions/routes.js');

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login and Forget-Check</title>
+</head>
+<body>
+    <h1>Test Login and Forget-Check Flow</h1>
+    <div id="results"></div>
+    
+    <div style="margin: 20px 0; padding: 15px; border: 1px solid #ccc; background: #f9f9f9;">
+        <h3>Login Form</h3>
+        <input type="email" id="email" placeholder="Email" value="admin@techcorp.com" style="margin: 5px; padding: 8px; width: 200px;">
+        <input type="password" id="password" placeholder="Password" value="admin123" style="margin: 5px; padding: 8px; width: 200px;">
+        <input type="text" id="tenantId" placeholder="Tenant ID" value="techcorp_solutions" style="margin: 5px; padding: 8px; width: 200px;">
+        <button onclick="testLogin()" style="margin: 5px; padding: 8px 15px;">Login</button>
+    </div>
+    
+    <button onclick="testForgetCheck()">Test Forget-Check (after login)</button>
+    <button onclick="checkAuthStatus()">Check Auth Status</button>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#007bff';
+            results.innerHTML += `<div style="margin: 5px 0; padding: 8px; border-left: 4px solid ${color}; background: #f8f9fa;">${message}</div>`;
+            console.log(message);
+        }
+        
+        function clearResults() {
+            results.innerHTML = '';
+        }
+        
+        async function testLogin() {
+            clearResults();
+            log('🔐 Testing Login...');
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const tenantId = document.getElementById('tenantId').value;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        tenantId: tenantId
+                    })
+                });
+                
+                log(`📡 Login Response: ${response.status} ${response.statusText}`);
+                
+                if (response.ok) {
+                    const loginData = await response.json();
+                    log('✅ Login successful!', 'success');
+                    log(`📋 Login Data: ${JSON.stringify(loginData, null, 2)}`);
+                    
+                    // Store tokens like the React app does
+                    if (loginData.data && loginData.data.token) {
+                        localStorage.setItem('tenant_token', loginData.data.token);
+                        localStorage.setItem('tenant_id', loginData.data.user?.tenantId || tenantId);
+                        log('✅ Tokens stored in localStorage', 'success');
+                        
+                        // Now test user profile
+                        await testUserProfile();
+                    } else {
+                        log('❌ No token in login response', 'error');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ Login failed: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Login error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testUserProfile() {
+            log('🔍 Testing User Profile...');
+            
+            const token = localStorage.getItem('tenant_token');
+            if (!token) {
+                log('❌ No token found', 'error');
+                return null;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`📡 Profile Response: ${response.status} ${response.statusText}`);
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    log('✅ User Profile Retrieved:', 'success');
+                    log(`📋 User: ${userData.data?.username} (${userData.data?.email})`);
+                    log(`📋 User ID: ${userData.data?._id}`);
+                    log(`📋 Tenant ID: ${userData.data?.tenantId}`);
+                    log(`📋 Role: ${userData.data?.role}`);
+                    return userData.data;
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ Profile failed: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Profile error: ${error.message}`, 'error');
+            }
+            return null;
+        }
+        
+        async function testForgetCheck() {
+            log('🧪 Testing Forget-Check Creation...');
+            
+            const token = localStorage.getItem('tenant_token');
+            if (!token) {
+                log('❌ Not logged in. Please login first.', 'error');
+                return;
+            }
+            
+            const testData = {
+                date: '2026-01-02',
+                requestType: 'check-in',
+                requestedTime: '09:00',
+                reason: 'Test forget check request from direct login test'
+            };
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/attendance/forget-checks', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                log(`📡 Forget-Check Response: ${response.status} ${response.statusText}`);
+                
+                const responseText = await response.text();
+                log(`📄 Response: ${responseText}`);
+                
+                if (response.ok) {
+                    log('✅ Forget-check created successfully!', 'success');
+                } else if (response.status === 404 && responseText.includes('Employee not found')) {
+                    log('🔍 Employee lookup issue - check server logs', 'error');
+                } else {
+                    log(`❌ Forget-check failed: ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Request error: ${error.message}`, 'error');
+            }
+        }
+        
+        function checkAuthStatus() {
+            clearResults();
+            log('🔍 Checking Authentication Status...');
+            
+            const token = localStorage.getItem('tenant_token');
+            const tenantId = localStorage.getItem('tenant_id');
+            
+            if (token) {
+                log(`✅ Token: ${token.substring(0, 30)}...`);
+                log(`✅ Tenant ID: ${tenantId}`);
+                
+                // Try to decode JWT
+                try {
+                    const parts = token.split('.');
+                    if (parts.length === 3) {
+                        const payload = JSON.parse(atob(parts[1]));
+                        log(`📋 JWT Payload: ${JSON.stringify(payload, null, 2)}`);
+                    }
+                } catch (e) {
+                    log('🔍 Token is not a standard JWT');
+                }
+            } else {
+                log('❌ No authentication token found', 'error');
+            }
+        }
+        
+        // Auto-check auth status on load
+        checkAuthStatus();
+    </script>
+</body>
+</html>

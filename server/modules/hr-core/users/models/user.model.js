@@ -146,12 +146,22 @@ userSchema.pre('save', async function (next) {
     if (this.isNew && !this.employeeId) {
         const User = this.constructor;
         try {
-            // Find all users with employeeId matching the pattern
-            const users = await User.find({ employeeId: /^EMID-\d+$/ }).select('employeeId').lean();
+            // Determine ID prefix based on tenant
+            let idPrefix = 'EMID'; // Default prefix
+            if (this.tenantId === 'techcorp_solutions') {
+                idPrefix = 'TC';
+            }
+            
+            // Find all users with employeeId matching the pattern for this tenant
+            const pattern = new RegExp(`^${idPrefix}-\\d+$`);
+            const users = await User.find({ 
+                tenantId: this.tenantId,
+                employeeId: pattern 
+            }).select('employeeId').lean();
 
             let maxId = 0;
             users.forEach(user => {
-                const match = user.employeeId.match(/EMID-(\d+)/);
+                const match = user.employeeId.match(new RegExp(`${idPrefix}-(\\d+)`));
                 if (match) {
                     const id = parseInt(match[1], 10);
                     if (id > maxId) {
@@ -161,12 +171,12 @@ userSchema.pre('save', async function (next) {
             });
 
             const nextId = maxId + 1;
-            this.employeeId = `EMID-${nextId.toString().padStart(4, '0')}`;
+            this.employeeId = `${idPrefix}-${nextId.toString().padStart(4, '0')}`;
         } catch (err) {
-
             // If there's an error, generate a timestamp-based ID
             const timestamp = Date.now().toString().slice(-4);
-            this.employeeId = `EMID-${timestamp}`;
+            const idPrefix = this.tenantId === 'techcorp_solutions' ? 'TC' : 'EMID';
+            this.employeeId = `${idPrefix}-${timestamp}`;
         }
     }
 

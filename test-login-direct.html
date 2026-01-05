@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Direct Login Test</h1>
+    
+    <div>
+        <button onclick="testLogin()">🚀 Test Login</button>
+        <button onclick="testMissions()">📋 Test Missions (after login)</button>
+        <button onclick="clearResults()">🧹 Clear</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        let authToken = null;
+        let currentUser = null;
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            results.innerHTML += `<div class="result ${className}">${message}</div>`;
+            console.log(message);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testLogin() {
+            log('🔐 Testing login...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@techcorp.com',
+                        password: 'admin123',
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+                
+                log(`Response status: ${response.status}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.data?.token;
+                    currentUser = data.data?.user;
+                    
+                    if (authToken && currentUser) {
+                        log('✅ Login successful!', 'success');
+                        log(`👤 User: ${currentUser.email}`);
+                        log(`🔑 Token: ${authToken.substring(0, 20)}...`);
+                        
+                        // Store in localStorage for the HR app to use
+                        localStorage.setItem('token', authToken);
+                        localStorage.setItem('tenant_token', authToken);
+                        localStorage.setItem('tenant_id', 'techcorp_solutions');
+                        
+                        log('💾 Token stored in localStorage', 'success');
+                    } else {
+                        log('❌ Invalid login response format', 'error');
+                        log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                    }
+                } else {
+                    const errorData = await response.json();
+                    log('❌ Login failed', 'error');
+                    log(`<pre>${JSON.stringify(errorData, null, 2)}</pre>`);
+                }
+                
+            } catch (error) {
+                log(`❌ Login error: ${error.message}`, 'error');
+                log('💡 This might be a CORS issue or server connectivity problem');
+            }
+        }
+
+        async function testMissions() {
+            if (!authToken) {
+                log('❌ Please login first', 'error');
+                return;
+            }
+            
+            log('📋 Testing missions API...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`Missions API status: ${response.status}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const missions = data.data || [];
+                    
+                    log(`✅ Missions API working! Found ${missions.length} missions`, 'success');
+                    
+                    if (missions.length > 0) {
+                        log(`<pre>Missions: ${JSON.stringify(missions, null, 2)}</pre>`);
+                        
+                        // Test filtering
+                        const userMissions = missions.filter(mission => {
+                            const missionUserId = mission.employee?._id || mission.employee;
+                            return String(missionUserId) === String(currentUser._id);
+                        });
+                        
+                        log(`👤 User has ${userMissions.length} missions after filtering`);
+                        
+                        if (userMissions.length === 0 && missions.length > 0) {
+                            log('⚠️ No missions match current user - this is why the page shows no data!', 'error');
+                            log('💡 Need to create missions for this user or check filtering logic');
+                        }
+                    } else {
+                        log('⚠️ No missions in database - this is why the page shows no data!', 'error');
+                        log('💡 Need to create some test missions');
+                    }
+                    
+                } else {
+                    const errorData = await response.json();
+                    log('❌ Missions API failed', 'error');
+                    log(`<pre>${JSON.stringify(errorData, null, 2)}</pre>`);
+                }
+                
+            } catch (error) {
+                log(`❌ Missions API error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load
+        window.addEventListener('load', () => {
+            log('🔐 Direct login test loaded');
+            log('💡 Click "Test Login" first, then "Test Missions"');
+        });
+    </script>
+</body>
+</html>

@@ -25,6 +25,13 @@ import {
     CardContent,
     Tabs,
     Tab,
+    Menu,
+    ListItemIcon,
+    ListItemText,
+    ButtonGroup,
+    ClickAwayListener,
+    Grow,
+    Popper,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -35,7 +42,11 @@ import {
     Assessment as ReportIcon,
     Person as PersonIcon,
     TrendingUp as TrendingUpIcon,
-
+    ArrowDropDown as ArrowDropDownIcon,
+    GetApp as DownloadIcon,
+    PictureAsPdf as PdfIcon,
+    TableChart as ExcelIcon,
+    Description as CsvIcon,
 } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
@@ -89,6 +100,8 @@ const AttendancePage = ({ viewMode = 'my' }) => {
     const [filterEmployee, setFilterEmployee] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
     const [filterDepartment, setFilterDepartment] = useState('');
+    const [reportMenuOpen, setReportMenuOpen] = useState(false);
+    const [reportAnchorRef, setReportAnchorRef] = useState(null);
     const { showNotification } = useNotification();
 
     // Check if user can manage attendance (HR/Admin)
@@ -168,6 +181,15 @@ const AttendancePage = ({ viewMode = 'my' }) => {
 
             console.log(`✅ Attendance loaded: ${filteredData.length} records (viewMode: ${viewMode})`);
             console.log('📊 Setting attendances state with', filteredData.length, 'records');
+            
+            // Show notification if no data found
+            if (filteredData.length === 0) {
+                const dateRange = startDate && endDate ? 
+                    `from ${startDate} to ${endDate}` : 
+                    'for the selected period';
+                showNotification(`No attendance records found ${dateRange}`, 'info');
+            }
+            
             setAttendances(filteredData);
         } catch (error) {
             console.error('Error fetching attendance:', error);
@@ -229,6 +251,117 @@ const AttendancePage = ({ viewMode = 'my' }) => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [startDate, endDate, filterEmployee, filterStatus, filterDepartment]);
+
+    const handleGenerateMonthlyReport = async (format = 'excel') => {
+        console.log(`📊 Generating monthly report in ${format} format`);
+        
+        try {
+            setLoading(true);
+            setReportMenuOpen(false);
+            showNotification(`Generating monthly ${format.toUpperCase()} report...`, 'info');
+            
+            // Set current month range
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            
+            const startDateStr = startOfMonth.toISOString().split('T')[0];
+            const endDateStr = endOfMonth.toISOString().split('T')[0];
+            
+            console.log('📅 Fetching data for date range:', startDateStr, 'to', endDateStr);
+            
+            // Update UI filters
+            setStartDate(startDateStr);
+            setEndDate(endDateStr);
+            setFilterDepartment('');
+            setFilterEmployee('');
+            setFilterStatus('');
+            
+            // Fetch attendance data for the current month
+            const params = {
+                startDate: startDateStr,
+                endDate: endDateStr
+            };
+            
+            // Add employee filter for 'my' view mode
+            if (viewMode === 'my' && (user._id || user.id)) {
+                params.employee = user._id || user.id;
+            }
+            
+            const response = await attendanceService.getAll(params);
+            let reportData = [];
+            
+            if (Array.isArray(response)) {
+                reportData = response;
+            } else if (response?.data && Array.isArray(response.data)) {
+                reportData = response.data;
+            } else if (response?.attendances && Array.isArray(response.attendances)) {
+                reportData = response.attendances;
+            }
+            
+            // Filter data for viewMode
+            const filteredReportData = viewMode === 'all' 
+                ? reportData 
+                : reportData.filter(att => {
+                    const employeeId = att.employee?._id || att.employee;
+                    const userId = user?._id || user?.id;
+                    return employeeId === userId;
+                });
+            
+            if (filteredReportData.length === 0) {
+                showNotification('No attendance data found for the current month', 'warning');
+                return;
+            }
+            
+            // Import report generator functions
+            const reportGenerator = await import('../../utils/reportGenerator');
+            let result;
+            
+            // Generate report based on format
+            switch (format) {
+                case 'excel':
+                    result = reportGenerator.generateMonthlyAttendanceExcel(
+                        filteredReportData, 
+                        now.getMonth() + 1, 
+                        now.getFullYear()
+                    );
+                    break;
+                case 'pdf':
+                    result = await reportGenerator.generateMonthlyAttendancePDF(
+                        filteredReportData, 
+                        now.getMonth() + 1, 
+                        now.getFullYear()
+                    );
+                    break;
+                case 'csv':
+                    result = reportGenerator.generateMonthlyAttendanceCSV(
+                        filteredReportData, 
+                        now.getMonth() + 1, 
+                        now.getFullYear()
+                    );
+                    break;
+                default:
+                    throw new Error(`Unsupported format: ${format}`);
+            }
+            
+            if (result.success) {
+                const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                const message = result.filename 
+                    ? `Monthly ${format.toUpperCase()} report for ${monthName} downloaded: ${result.filename} (${result.recordCount} records)`
+                    : `Monthly ${format.toUpperCase()} report for ${monthName} generated successfully! (${filteredReportData.length} records)`;
+                
+                showNotification(message, 'success');
+            } else {
+                showNotification(`Failed to generate ${format.toUpperCase()} report: ${result.error}`, 'error');
+            }
+            
+        } catch (error) {
+            console.error('Error generating monthly report:', error);
+            showNotification(`Failed to generate monthly ${format.toUpperCase()} report: ${error.message}`, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleOpenDialog = (attendance = null) => {
         if (attendance) {
@@ -1168,23 +1301,68 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                     >
                         Today's Attendance
                     </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<ReportIcon />}
-                        onClick={() => {
-                            // Set current month range
-                            const now = new Date();
-                            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                            setStartDate(startOfMonth.toISOString().split('T')[0]);
-                            setEndDate(endOfMonth.toISOString().split('T')[0]);
-                            setFilterDepartment('');
-                            setFilterEmployee('');
-                            setFilterStatus('');
-                        }}
+                    <ButtonGroup variant="outlined" ref={setReportAnchorRef}>
+                        <Button
+                            startIcon={<ReportIcon />}
+                            disabled={loading || isFetching}
+                            onClick={(event) => handleGenerateMonthlyReport('excel')}
+                        >
+                            {loading || isFetching ? 'Generating...' : 'Monthly Report'}
+                        </Button>
+                        <Button
+                            size="small"
+                            disabled={loading || isFetching}
+                            onClick={() => setReportMenuOpen(!reportMenuOpen)}
+                        >
+                            <ArrowDropDownIcon />
+                        </Button>
+                    </ButtonGroup>
+                    <Popper
+                        open={reportMenuOpen}
+                        anchorEl={reportAnchorRef}
+                        role={undefined}
+                        transition
+                        disablePortal
+                        placement="bottom-start"
                     >
-                        Monthly Report
-                    </Button>
+                        {({ TransitionProps, placement }) => (
+                            <Grow
+                                {...TransitionProps}
+                                style={{
+                                    transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom',
+                                }}
+                            >
+                                <Paper>
+                                    <ClickAwayListener onClickAway={() => setReportMenuOpen(false)}>
+                                        <Menu
+                                            open={reportMenuOpen}
+                                            onClose={() => setReportMenuOpen(false)}
+                                            anchorEl={reportAnchorRef}
+                                        >
+                                            <MenuItem onClick={() => handleGenerateMonthlyReport('excel')}>
+                                                <ListItemIcon>
+                                                    <ExcelIcon fontSize="small" />
+                                                </ListItemIcon>
+                                                <ListItemText>Download Excel</ListItemText>
+                                            </MenuItem>
+                                            <MenuItem onClick={() => handleGenerateMonthlyReport('pdf')}>
+                                                <ListItemIcon>
+                                                    <PdfIcon fontSize="small" />
+                                                </ListItemIcon>
+                                                <ListItemText>Download PDF</ListItemText>
+                                            </MenuItem>
+                                            <MenuItem onClick={() => handleGenerateMonthlyReport('csv')}>
+                                                <ListItemIcon>
+                                                    <CsvIcon fontSize="small" />
+                                                </ListItemIcon>
+                                                <ListItemText>Download CSV</ListItemText>
+                                            </MenuItem>
+                                        </Menu>
+                                    </ClickAwayListener>
+                                </Paper>
+                            </Grow>
+                        )}
+                    </Popper>
                 </Box>
             </Box>
 

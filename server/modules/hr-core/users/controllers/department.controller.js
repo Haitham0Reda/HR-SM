@@ -39,20 +39,109 @@ export const getAllDepartments = async (req, res) => {
 
 export const createDepartment = async (req, res) => {
     try {
+        // Validate required fields
+        if (!req.body.name || !req.body.name.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Department name is required'
+            });
+        }
+
+        // Validate name length
+        if (req.body.name.length > 100) {
+            return res.status(400).json({
+                success: false,
+                message: 'Department name cannot exceed 100 characters'
+            });
+        }
+
         const TenantDepartment = await getTenantDepartmentModel(req.tenantId);
+        
+        // Check if department name already exists for this tenant
+        const existingDepartment = await TenantDepartment.findOne({
+            tenantId: req.tenantId,
+            name: { $regex: new RegExp(`^${req.body.name.trim()}$`, 'i') }
+        });
+        
+        if (existingDepartment) {
+            return res.status(400).json({
+                success: false,
+                message: `Department name '${req.body.name}' already exists`
+            });
+        }
+        
+        // Check if department code already exists (if provided)
+        if (req.body.code) {
+            const existingCode = await TenantDepartment.findOne({
+                tenantId: req.tenantId,
+                code: req.body.code.toUpperCase()
+            });
+            
+            if (existingCode) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Department code '${req.body.code}' already exists`
+                });
+            }
+        }
+        
         const department = new TenantDepartment({
             ...req.body,
-            tenantId: req.tenantId
+            tenantId: req.tenantId,
+            createdBy: req.user._id
         });
+        
         await department.save();
+        
+        // Populate manager info if exists
+        if (department.manager) {
+            await department.populate('manager', 'username email');
+        }
+        
         res.status(201).json({
             success: true,
-            data: department
+            data: department,
+            message: 'Department created successfully'
         });
     } catch (err) {
+        console.error('Create department error:', err);
+        
+        // Handle specific MongoDB errors
+        if (err.code === 11000) {
+            // Parse the duplicate key error
+            const duplicateField = err.message.includes('name_1') ? 'name' : 
+                                  err.message.includes('code_1') ? 'code' : 'field';
+            
+            if (duplicateField === 'name') {
+                return res.status(400).json({ 
+                    success: false,
+                    message: `Department name '${req.body.name}' already exists` 
+                });
+            } else if (duplicateField === 'code') {
+                return res.status(400).json({ 
+                    success: false,
+                    message: `Department code '${req.body.code}' already exists` 
+                });
+            } else {
+                return res.status(400).json({ 
+                    success: false,
+                    message: 'Department with this information already exists' 
+                });
+            }
+        }
+        
+        // Handle validation errors
+        if (err.name === 'ValidationError') {
+            const errors = Object.values(err.errors).map(e => e.message);
+            return res.status(400).json({ 
+                success: false,
+                message: errors.join(', ')
+            });
+        }
+        
         res.status(400).json({ 
             success: false,
-            message: err.message 
+            message: err.message || 'Failed to create department'
         });
     }
 };

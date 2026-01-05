@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Mission Check</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .result { margin: 10px 0; padding: 12px; border-radius: 4px; border-left: 4px solid #007bff; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .warning { border-left-color: #ffc107; background: #fff3cd; }
+        .info { border-left-color: #17a2b8; background: #d1ecf1; }
+        button { padding: 12px 24px; margin: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #0056b3; }
+        .json { background: #f8f9fa; padding: 12px; border: 1px solid #dee2e6; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; margin: 8px 0; }
+        .highlight { background: yellow; padding: 2px 4px; border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Simple Mission Check</h1>
+        
+        <div class="result info">
+            <strong>Purpose:</strong> Quick check to see why your mission isn't showing in "My Missions" tab
+        </div>
+
+        <div style="margin: 20px 0;">
+            <button onclick="runQuickCheck()">🚀 Run Quick Check</button>
+            <button onclick="loginAndCheck()">🔐 Login & Check</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            results.innerHTML += `<div class="result ${className}">${message}</div>`;
+        }
+
+        function showJSON(title, data) {
+            const results = document.getElementById('results');
+            results.innerHTML += `
+                <div class="result info">
+                    <strong>${title}</strong>
+                    <div class="json">${JSON.stringify(data, null, 2)}</div>
+                </div>
+            `;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function runQuickCheck() {
+            log('🔍 Running quick check...');
+            clearResults();
+            
+            // Check for existing token
+            const token = localStorage.getItem('token') || localStorage.getItem('tenant_token');
+            
+            if (!token) {
+                log('❌ No authentication token found in localStorage', 'error');
+                log('💡 You need to be logged into the HR app first, or click "Login & Check"', 'warning');
+                return;
+            }
+            
+            log('✅ Found authentication token', 'success');
+            
+            try {
+                // Decode token to get user info
+                const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+                log(`👤 Current user: ${tokenPayload.email} (ID: ${tokenPayload._id})`, 'info');
+                
+                // Check missions
+                await checkMissions(token, tokenPayload._id);
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loginAndCheck() {
+            log('🔐 Logging in and checking missions...');
+            clearResults();
+            
+            try {
+                const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@techcorp.com',
+                        password: 'admin123',
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+                
+                if (!loginResponse.ok) {
+                    log(`❌ Login failed: ${loginResponse.status}`, 'error');
+                    return;
+                }
+                
+                const loginData = await loginResponse.json();
+                const token = loginData.data?.token;
+                const user = loginData.data?.user;
+                
+                if (!token) {
+                    log('❌ No token received from login', 'error');
+                    return;
+                }
+                
+                log('✅ Login successful', 'success');
+                log(`👤 Logged in as: ${user.email} (ID: ${user._id})`, 'info');
+                
+                await checkMissions(token, user._id);
+                
+            } catch (error) {
+                log(`❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkMissions(token, currentUserId) {
+            log('📡 Fetching missions from API...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    log(`❌ API request failed: ${response.status}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                const missions = data.data || [];
+                
+                log(`📊 Found ${missions.length} total missions in database`, missions.length > 0 ? 'success' : 'warning');
+                
+                if (missions.length === 0) {
+                    log('❌ <span class="highlight">ROOT CAUSE: No missions exist in the database</span>', 'error');
+                    log('💡 This is why "My Missions" shows "No missions found"', 'info');
+                    log('💡 Solution: Create a new mission to test the functionality', 'info');
+                    return;
+                }
+                
+                // Analyze missions for current user
+                const userMissions = [];
+                const otherMissions = [];
+                const nullMissions = [];
+                
+                missions.forEach(mission => {
+                    const missionUserId = mission.employee?._id || mission.employee;
+                    
+                    if (!missionUserId) {
+                        nullMissions.push(mission);
+                    } else if (String(missionUserId) === String(currentUserId)) {
+                        userMissions.push(mission);
+                    } else {
+                        otherMissions.push(mission);
+                    }
+                });
+                
+                log(`👤 Your missions: ${userMissions.length}`, userMissions.length > 0 ? 'success' : 'error');
+                log(`👥 Other users' missions: ${otherMissions.length}`, 'info');
+                log(`❓ Missions with no employee: ${nullMissions.length}`, nullMissions.length > 0 ? 'warning' : 'info');
+                
+                if (userMissions.length === 0) {
+                    log('❌ <span class="highlight">ROOT CAUSE: No missions are assigned to your user ID</span>', 'error');
+                    log('💡 This is why "My Missions" shows "No missions found"', 'info');
+                    
+                    if (nullMissions.length > 0) {
+                        log(`⚠️ Found ${nullMissions.length} missions with no employee assigned`, 'warning');
+                        log('💡 These missions need to be assigned to users to show up', 'warning');
+                    }
+                    
+                    if (otherMissions.length > 0) {
+                        log(`📋 Found ${otherMissions.length} missions belonging to other users`, 'info');
+                        log('💡 Check if missions are being created with the wrong employee ID', 'warning');
+                    }
+                    
+                } else {
+                    log('✅ <span class="highlight">You have missions assigned!</span>', 'success');
+                    log('💡 If they\'re not showing in the UI, there might be a frontend rendering issue', 'warning');
+                    log('💡 Check the browser console on the missions page for React errors', 'info');
+                }
+                
+                // Show recent missions
+                const sortedMissions = missions.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || a.dateCreated || 0);
+                    const dateB = new Date(b.createdAt || b.dateCreated || 0);
+                    return dateB - dateA;
+                });
+                
+                log('📋 Most recent missions:', 'info');
+                sortedMissions.slice(0, 3).forEach((mission, index) => {
+                    const missionUserId = mission.employee?._id || mission.employee;
+                    const isYours = String(missionUserId) === String(currentUserId);
+                    const created = mission.createdAt || mission.dateCreated || 'Unknown';
+                    
+                    log(`${index + 1}. ${mission.location} - Employee: ${missionUserId} - ${isYours ? '✅ YOURS' : '❌ Not yours'} - ${created}`, isYours ? 'success' : 'info');
+                });
+                
+                // Show detailed data
+                showJSON('📊 Mission Analysis', {
+                    totalMissions: missions.length,
+                    yourMissions: userMissions.length,
+                    otherMissions: otherMissions.length,
+                    nullMissions: nullMissions.length,
+                    currentUserId: currentUserId,
+                    yourMissionsList: userMissions.map(m => ({
+                        id: m._id,
+                        location: m.location,
+                        employee: m.employee,
+                        created: m.createdAt || m.dateCreated
+                    }))
+                });
+                
+            } catch (error) {
+                log(`❌ Error checking missions: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load message
+        window.addEventListener('load', () => {
+            log('🔍 Simple mission check tool loaded', 'info');
+            log('💡 If you\'re already logged into the HR app, click "Run Quick Check"', 'info');
+            log('💡 Otherwise, click "Login & Check" to authenticate first', 'info');
+        });
+    </script>
+</body>
+</html>

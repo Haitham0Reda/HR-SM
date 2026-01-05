@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Complete Mission Flow</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .json-output { background: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 5px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        .flow-step { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <h1>🔄 Test Complete Mission Flow</h1>
+    
+    <div class="step info">
+        <h3>🎯 Complete Flow Test</h3>
+        <p>This will test the entire mission creation and display flow step by step.</p>
+    </div>
+
+    <div class="step">
+        <h3>🚀 Test Actions</h3>
+        <button onclick="testCompleteFlow()">Test Complete Flow</button>
+        <button onclick="testUserAuth()">Test User Auth</button>
+        <button onclick="testMissionAPI()">Test Mission API</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div id="results" style="margin-top: 20px;"></div>
+
+    <script>
+        let currentToken = null;
+        let currentUser = null;
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#007bff';
+            results.innerHTML += `<div style="margin: 5px 0; padding: 8px; border-left: 4px solid ${color}; background: #f8f9fa;">${message}</div>`;
+            console.log(message);
+        }
+
+        function displayJSON(title, data) {
+            const results = document.getElementById('results');
+            results.innerHTML += `
+                <div style="margin: 20px 0;">
+                    <h4>${title}</h4>
+                    <div class="json-output">${JSON.stringify(data, null, 2)}</div>
+                </div>
+            `;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function login() {
+            if (currentToken) return currentToken;
+
+            try {
+                log('🔐 Step 1: Logging in...');
+                const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@techcorp.com',
+                        password: 'admin123',
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+                
+                if (!loginResponse.ok) {
+                    log('❌ Login failed', 'error');
+                    return null;
+                }
+                
+                const loginData = await loginResponse.json();
+                currentToken = loginData.data?.token;
+                currentUser = loginData.data?.user;
+                log('✅ Login successful', 'success');
+                log(`👤 User ID: ${currentUser._id}`, 'info');
+                
+                return currentToken;
+            } catch (error) {
+                log(`❌ Login error: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function testUserAuth() {
+            log('👤 Testing user authentication...');
+            
+            const token = await login();
+            if (!token) return;
+
+            displayJSON('👤 Current User Data', currentUser);
+        }
+
+        async function testMissionAPI() {
+            log('📋 Testing mission API...');
+            
+            const token = await login();
+            if (!token) return;
+
+            try {
+                // Get current missions
+                log('📊 Step 2: Getting current missions...');
+                const getResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (getResponse.ok) {
+                    const data = await getResponse.json();
+                    log(`📊 Found ${data.data?.length || 0} missions`, 'info');
+                    displayJSON('📋 Current Missions', data);
+                } else {
+                    log('❌ Failed to fetch missions', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Mission API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCompleteFlow() {
+            log('🔄 Starting complete mission flow test...');
+            clearResults();
+            
+            try {
+                // Step 1: Login
+                const token = await login();
+                if (!token) return;
+
+                // Step 2: Get initial mission count
+                log('📊 Step 2: Getting initial mission count...');
+                const initialResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                let initialCount = 0;
+                if (initialResponse.ok) {
+                    const initialData = await initialResponse.json();
+                    initialCount = initialData.data?.length || 0;
+                    log(`📊 Initial mission count: ${initialCount}`, 'info');
+                    
+                    // Show missions for current user
+                    const userMissions = initialData.data?.filter(mission => {
+                        const missionUserId = mission.employee?._id || mission.employee;
+                        const currentUserId = currentUser._id;
+                        return missionUserId === currentUserId || String(missionUserId) === String(currentUserId);
+                    }) || [];
+                    
+                    log(`👤 Missions for current user: ${userMissions.length}`, 'info');
+                    displayJSON('👤 User Missions (Before)', userMissions);
+                }
+
+                // Step 3: Create a new mission
+                log('📝 Step 3: Creating new mission...');
+                const missionData = {
+                    employee: currentUser._id,
+                    location: `Test Location ${Date.now()}`,
+                    purpose: 'Complete flow test mission',
+                    startDate: new Date().toISOString().split('T')[0],
+                    endDate: new Date().toISOString().split('T')[0],
+                    duration: 1
+                };
+
+                log(`📝 Mission data to send:`, 'info');
+                displayJSON('📝 Mission Creation Data', missionData);
+
+                const createResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(missionData)
+                });
+                
+                if (createResponse.ok) {
+                    const createdMission = await createResponse.json();
+                    log('✅ Mission created successfully', 'success');
+                    displayJSON('✅ Created Mission Response', createdMission);
+                    
+                    // Step 4: Verify mission was created
+                    log('🔍 Step 4: Verifying mission was created...');
+                    setTimeout(async () => {
+                        const verifyResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        
+                        if (verifyResponse.ok) {
+                            const verifyData = await verifyResponse.json();
+                            const newCount = verifyData.data?.length || 0;
+                            log(`📊 New mission count: ${newCount}`, 'info');
+                            
+                            if (newCount > initialCount) {
+                                log('✅ Mission count increased - creation successful', 'success');
+                            } else {
+                                log('❌ Mission count did not increase', 'error');
+                            }
+                            
+                            // Check if mission appears for current user
+                            const userMissions = verifyData.data?.filter(mission => {
+                                const missionUserId = mission.employee?._id || mission.employee;
+                                const currentUserId = currentUser._id;
+                                
+                                log(`🔍 Comparing: mission.employee=${missionUserId} vs user._id=${currentUserId}`, 'info');
+                                
+                                return missionUserId === currentUserId || String(missionUserId) === String(currentUserId);
+                            }) || [];
+                            
+                            log(`👤 Missions for current user after creation: ${userMissions.length}`, 'info');
+                            displayJSON('👤 User Missions (After)', userMissions);
+                            
+                            // Step 5: Test the filtering logic
+                            log('🔍 Step 5: Testing filtering logic...');
+                            verifyData.data?.forEach((mission, index) => {
+                                const missionUserId = mission.employee?._id || mission.employee;
+                                const currentUserId = currentUser._id;
+                                
+                                log(`Mission ${index + 1}:`, 'info');
+                                log(`  - ID: ${mission._id}`, 'info');
+                                log(`  - Location: ${mission.location}`, 'info');
+                                log(`  - Employee: ${JSON.stringify(mission.employee)}`, 'info');
+                                log(`  - Mission User ID: ${missionUserId} (${typeof missionUserId})`, 'info');
+                                log(`  - Current User ID: ${currentUserId} (${typeof currentUserId})`, 'info');
+                                log(`  - Strict Match: ${missionUserId === currentUserId}`, 'info');
+                                log(`  - String Match: ${String(missionUserId) === String(currentUserId)}`, 'info');
+                                log(`  - Would Show: ${missionUserId === currentUserId || String(missionUserId) === String(currentUserId)}`, 'info');
+                                log('---', 'info');
+                            });
+                            
+                        } else {
+                            log('❌ Failed to verify mission creation', 'error');
+                        }
+                    }, 1000);
+                    
+                } else {
+                    const errorData = await createResponse.json();
+                    log('❌ Failed to create mission', 'error');
+                    displayJSON('❌ Mission Creation Error', errorData);
+                }
+                
+            } catch (error) {
+                log(`❌ Complete flow error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load message
+        window.addEventListener('load', () => {
+            log('🔄 Complete mission flow test loaded. Click "Test Complete Flow" to start.', 'info');
+        });
+    </script>
+</body>
+</html>

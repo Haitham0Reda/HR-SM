@@ -26,6 +26,11 @@ const CreateForgetCheckPage = () => {
         reason: ''
     });
 
+    // Debug logging
+    console.log('🔍 CreateForgetCheckPage - Component loaded');
+    console.log('🔍 ForgetCheck Service cache bust:', forgetCheckService._cacheBust);
+    console.log('🔍 Current user:', user);
+
     const requestTypes = [
         { value: 'check-in', label: 'Check In', icon: '🔵' },
         { value: 'check-out', label: 'Check Out', icon: '🟣' }
@@ -37,6 +42,8 @@ const CreateForgetCheckPage = () => {
     };
 
     const handleSubmit = async () => {
+        console.log('🔍 CreateForgetCheckPage - handleSubmit called');
+        
         // Validation
         if (!formData.date) {
             showNotification('Please select a date', 'error');
@@ -53,20 +60,30 @@ const CreateForgetCheckPage = () => {
 
         try {
             const submitData = {
-                employee: user?._id,
+                // Remove employee field - let server use authenticated user
                 date: formData.date,
                 requestType: formData.requestType,
                 requestedTime: formData.requestedTime,
                 reason: formData.reason.trim()
             };
 
+            console.log('🔍 CreateForgetCheckPage - Calling forgetCheckService.create');
+            console.log('🔍 Submit data:', JSON.stringify(submitData, null, 2));
+            console.log('🔍 Current user ID:', user?._id);
+
             await forgetCheckService.create(submitData);
+            
+            console.log('✅ CreateForgetCheckPage - Request created successfully');
             showNotification('Request created successfully', 'success');
 
+            // Dispatch custom events to notify other components
+            window.dispatchEvent(new CustomEvent('forgetCheckCreated'));
             window.dispatchEvent(new CustomEvent('notificationUpdate'));
+            
             navigate(getCompanyRoute('/forget-checks'));
         } catch (error) {
-
+            console.error('❌ CreateForgetCheckPage - Error:', error);
+            
             const errorMessage = error?.response?.data?.message || error?.message || 'Operation failed';
             showNotification(errorMessage, 'error');
         }

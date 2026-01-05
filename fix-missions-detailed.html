@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Missions - Detailed</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .result { margin: 10px 0; padding: 12px; border-radius: 4px; border-left: 4px solid #007bff; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .warning { border-left-color: #ffc107; background: #fff3cd; }
+        .info { border-left-color: #17a2b8; background: #d1ecf1; }
+        button { padding: 12px 24px; margin: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #0056b3; }
+        .json { background: #f8f9fa; padding: 12px; border: 1px solid #dee2e6; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; margin: 8px 0; }
+        .highlight { background: yellow; padding: 2px 4px; border-radius: 2px; font-weight: bold; }
+        .critical { background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Missions - Detailed Approach</h1>
+        
+        <div class="result error">
+            <strong>🚨 CURRENT ISSUE:</strong><br>
+            <span class="critical">All missions have employee: null</span><br>
+            This prevents them from showing in "My Missions" tab
+        </div>
+
+        <div style="margin: 20px 0;">
+            <button onclick="getMissionDetails()">🔍 Get Mission Details</button>
+            <button onclick="fixAllMissions()">🔧 Fix All Missions</button>
+            <button onclick="testDirectUpdate()">🧪 Test Direct Update</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const USER_ID = '6957aaedf166bb9e0c0454c9';
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            results.innerHTML += `<div class="result ${className}">${message}</div>`;
+        }
+
+        function showJSON(title, data) {
+            const results = document.getElementById('results');
+            results.innerHTML += `
+                <div class="result info">
+                    <strong>${title}</strong>
+                    <div class="json">${JSON.stringify(data, null, 2)}</div>
+                </div>
+            `;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function login() {
+            try {
+                const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@techcorp.com',
+                        password: 'admin123',
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+                
+                if (!loginResponse.ok) {
+                    log(`❌ Login failed: ${loginResponse.status}`, 'error');
+                    return null;
+                }
+                
+                const loginData = await loginResponse.json();
+                const token = loginData.data?.token;
+                const user = loginData.data?.user;
+                
+                log(`✅ Login successful - User: ${user.email} (ID: ${user._id})`, 'success');
+                return { token, user };
+                
+            } catch (error) {
+                log(`❌ Login error: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function getMissionDetails() {
+            log('🔍 Getting detailed mission information...');
+            clearResults();
+            
+            const auth = await login();
+            if (!auth) return;
+            
+            const { token } = auth;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const missions = data.data || [];
+                    
+                    log(`📊 Found ${missions.length} missions`, 'info');
+                    
+                    missions.forEach((mission, index) => {
+                        log(`\nMission ${index + 1}:`, 'info');
+                        log(`  ID: ${mission._id}`, 'info');
+                        log(`  Location: ${mission.location}`, 'info');
+                        log(`  Employee: ${JSON.stringify(mission.employee)}`, mission.employee ? 'success' : 'error');
+                        log(`  Status: ${mission.status}`, 'info');
+                        log(`  Created: ${mission.createdAt}`, 'info');
+                    });
+                    
+                    showJSON('All Missions Raw Data', missions);
+                    
+                } else {
+                    log(`❌ Failed to get missions: ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error getting missions: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDirectUpdate() {
+            log('🧪 Testing direct mission update...');
+            clearResults();
+            
+            const auth = await login();
+            if (!auth) return;
+            
+            const { token } = auth;
+            
+            // First get missions to find one to test with
+            try {
+                const getMissionsResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!getMissionsResponse.ok) {
+                    log('❌ Could not get missions for testing', 'error');
+                    return;
+                }
+                
+                const missionsData = await getMissionsResponse.json();
+                const missions = missionsData.data || [];
+                
+                if (missions.length === 0) {
+                    log('❌ No missions to test with', 'error');
+                    return;
+                }
+                
+                const testMission = missions[0];
+                log(`🧪 Testing update on mission: ${testMission._id}`, 'info');
+                log(`Current employee: ${JSON.stringify(testMission.employee)}`, 'info');
+                
+                // Try to update the mission
+                const updateData = {
+                    employee: USER_ID
+                };
+                
+                log('📤 Sending update request:', 'info');
+                showJSON('Update Data', updateData);
+                
+                const updateResponse = await fetch(`http://localhost:5000/api/v1/missions/${testMission._id}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                log(`📡 Update Response Status: ${updateResponse.status}`, updateResponse.ok ? 'success' : 'error');
+                
+                const responseText = await updateResponse.text();
+                log(`📄 Response Headers: ${JSON.stringify(Object.fromEntries(updateResponse.headers.entries()), null, 2)}`, 'info');
+                
+                try {
+                    const responseData = JSON.parse(responseText);
+                    showJSON('Update Response', responseData);
+                    
+                    if (updateResponse.ok) {
+                        log('✅ Update request succeeded!', 'success');
+                        
+                        const updatedEmployee = responseData.employee;
+                        if (updatedEmployee === USER_ID || updatedEmployee?._id === USER_ID) {
+                            log('✅ <span class="highlight">Employee field was successfully updated!</span>', 'success');
+                        } else {
+                            log(`❌ Employee field is still wrong: ${JSON.stringify(updatedEmployee)}`, 'error');
+                        }
+                        
+                    } else {
+                        log('❌ Update request failed', 'error');
+                        if (responseData.error) {
+                            log(`Error: ${responseData.error}`, 'error');
+                        }
+                    }
+                    
+                } catch (e) {
+                    log(`Raw response: ${responseText}`, 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ Test update failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function fixAllMissions() {
+            log('🔧 Fixing all missions...');
+            clearResults();
+            
+            const auth = await login();
+            if (!auth) return;
+            
+            const { token } = auth;
+            
+            try {
+                // Get all missions
+                const getMissionsResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!getMissionsResponse.ok) {
+                    log('❌ Could not get missions', 'error');
+                    return;
+                }
+                
+                const missionsData = await getMissionsResponse.json();
+                const missions = missionsData.data || [];
+                
+                log(`📊 Found ${missions.length} missions to fix`, 'info');
+                
+                let successCount = 0;
+                let errorCount = 0;
+                
+                for (const mission of missions) {
+                    try {
+                        log(`\n🔧 Fixing mission ${mission._id} (${mission.location})...`);
+                        
+                        const updateResponse = await fetch(`http://localhost:5000/api/v1/missions/${mission._id}`, {
+                            method: 'PUT',
+                            headers: { 
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                employee: USER_ID
+                            })
+                        });
+                        
+                        if (updateResponse.ok) {
+                            const updatedMission = await updateResponse.json();
+                            log(`✅ Mission ${mission._id} updated successfully`, 'success');
+                            
+                            const updatedEmployee = updatedMission.employee;
+                            if (updatedEmployee === USER_ID || updatedEmployee?._id === USER_ID) {
+                                log(`✅ Employee field correctly set to: ${updatedEmployee}`, 'success');
+                                successCount++;
+                            } else {
+                                log(`⚠️ Employee field is: ${JSON.stringify(updatedEmployee)}`, 'warning');
+                            }
+                            
+                        } else {
+                            const errorText = await updateResponse.text();
+                            log(`❌ Failed to update mission ${mission._id}: ${errorText}`, 'error');
+                            errorCount++;
+                        }
+                        
+                    } catch (error) {
+                        log(`❌ Error updating mission ${mission._id}: ${error.message}`, 'error');
+                        errorCount++;
+                    }
+                    
+                    // Small delay between requests
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                log(`\n📊 Fix Summary:`, 'info');
+                log(`✅ Successfully updated: ${successCount}`, successCount > 0 ? 'success' : 'warning');
+                log(`❌ Failed to update: ${errorCount}`, errorCount > 0 ? 'error' : 'success');
+                
+                if (successCount > 0) {
+                    log('🎉 <span class="highlight">Some missions were fixed! Check your "My Missions" tab.</span>', 'success');
+                    
+                    // Verify the fix
+                    setTimeout(async () => {
+                        log('\n🔍 Verifying the fix...', 'info');
+                        
+                        const verifyResponse = await fetch('http://localhost:5000/api/v1/missions', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        
+                        if (verifyResponse.ok) {
+                            const verifyData = await verifyResponse.json();
+                            const allMissions = verifyData.data || [];
+                            
+                            const userMissions = allMissions.filter(mission => {
+                                const missionUserId = mission.employee?._id || mission.employee;
+                                return String(missionUserId) === String(USER_ID);
+                            });
+                            
+                            log(`👤 Your missions after fix: ${userMissions.length}`, userMissions.length > 0 ? 'success' : 'error');
+                            
+                            if (userMissions.length > 0) {
+                                log('🎉 SUCCESS! Missions are now assigned to you!', 'success');
+                                userMissions.forEach((mission, index) => {
+                                    log(`${index + 1}. ${mission.location} - ${mission.purpose}`, 'success');
+                                });
+                            }
+                        }
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                log(`❌ Fix process failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load message
+        window.addEventListener('load', () => {
+            log('🔧 Detailed mission fix tool loaded', 'info');
+            log('💡 This tool will show detailed error messages and fix all missions', 'info');
+        });
+    </script>
+</body>
+</html>

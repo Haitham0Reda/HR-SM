@@ -188,9 +188,14 @@ const VacationRequestForm = () => {
             if (isEditMode) {
                 await vacationService.update(id, submitData);
                 showNotification('Vacation request updated successfully', 'success');
+                // Dispatch custom events to notify other components
+                window.dispatchEvent(new CustomEvent('vacationUpdated'));
+                window.dispatchEvent(new CustomEvent('notificationUpdate'));
             } else {
                 await vacationService.create(submitData);
                 showNotification('Vacation request created successfully', 'success');
+                // Dispatch custom events to notify other components
+                window.dispatchEvent(new CustomEvent('vacationCreated'));
                 window.dispatchEvent(new CustomEvent('notificationUpdate'));
             }
 

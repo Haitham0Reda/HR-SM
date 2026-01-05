@@ -14,7 +14,8 @@ export const requireAuth = async (req, res, next) => {
 
         const decoded = verifyTenantToken(token);
         req.user = {
-            id: decoded.userId,
+            _id: decoded.userId,  // Use _id to match MongoDB convention
+            id: decoded.userId,   // Keep id for backward compatibility
             role: decoded.role,
             tenantId: decoded.tenantId
         };

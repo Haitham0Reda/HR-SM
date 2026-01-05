@@ -126,6 +126,9 @@ const DataTable = ({
                   fontWeight: designTokens.typography.fontWeight.semibold,
                   borderBottom: '2px solid',
                   borderColor: 'divider',
+                  width: column.width || 'auto',
+                  minWidth: column.minWidth || 'auto',
+                  maxWidth: column.maxWidth || 'auto',
                 }}
               >
                 {sortable && column.sortable !== false ? (
@@ -157,7 +160,15 @@ const DataTable = ({
               }}
             >
               {columns.map((column) => (
-                <TableCell key={column.id} align={column.align || 'left'}>
+                <TableCell 
+                  key={column.id} 
+                  align={column.align || 'left'}
+                  sx={{
+                    width: column.width || 'auto',
+                    minWidth: column.minWidth || 'auto',
+                    maxWidth: column.maxWidth || 'auto',
+                  }}
+                >
                   {column.render ? column.render(row) : row[column.id]}
                 </TableCell>
               ))}

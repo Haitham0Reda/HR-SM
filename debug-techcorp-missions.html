@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug TechCorp Missions Issue</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+        .warning { color: orange; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; width: 300px; }
+        .result { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Debug TechCorp Missions Issue</h1>
+    
+    <div class="section">
+        <h3>1. Login as Admin</h3>
+        <input type="text" id="username" placeholder="Admin username" value="admin">
+        <input type="password" id="password" placeholder="Admin password" value="">
+        <button onclick="loginAdmin()">Login</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h3>2. Check Token Details</h3>
+        <button onclick="checkToken()">Analyze Current Token</button>
+        <div id="tokenResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h3>3. Test Missions API</h3>
+        <button onclick="testMissionsAPI()">Fetch Missions</button>
+        <button onclick="testMissionsAPIWithDebug()">Fetch with Debug Headers</button>
+        <div id="missionsResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h3>4. Database Direct Check</h3>
+        <button onclick="checkDatabase()">Check Database Directly</button>
+        <div id="databaseResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h3>5. Create Test Mission</h3>
+        <button onclick="createTestMission()">Create Test Mission</button>
+        <div id="createResult" class="result"></div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('token');
+        const API_BASE = 'http://localhost:3000/api/v1';
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            element.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+        }
+
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        async function loginAdmin() {
+            clearLog('loginResult');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                log('loginResult', 'Please enter username and password', 'error');
+                return;
+            }
+
+            try {
+                log('loginResult', 'Attempting login...', 'info');
+                
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        tenantId: 'techcorp_solutions'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    authToken = data.token;
+                    localStorage.setItem('token', authToken);
+                    log('loginResult', 'Login successful!', 'success');
+                    log('loginResult', `Token: ${authToken.substring(0, 50)}...`, 'info');
+                    log('loginResult', `User: ${JSON.stringify(data.user, null, 2)}`, 'info');
+                } else {
+                    log('loginResult', `Login failed: ${data.message}`, 'error');
+                    log('loginResult', `Full response: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                log('loginResult', `Login error: ${error.message}`, 'error');
+            }
+        }
+
+        function checkToken() {
+            clearLog('tokenResult');
+            
+            if (!authToken) {
+                log('tokenResult', 'No token found. Please login first.', 'error');
+                return;
+            }
+
+            try {
+                // Decode JWT token (basic decode, not verification)
+                const parts = authToken.split('.');
+                if (parts.length !== 3) {
+                    log('tokenResult', 'Invalid token format', 'error');
+                    return;
+                }
+
+                const payload = JSON.parse(atob(parts[1]));
+                log('tokenResult', 'Token payload:', 'info');
+                log('tokenResult', `<pre>${JSON.stringify(payload, null, 2)}</pre>`, 'info');
+                
+                // Check expiration
+                const now = Math.floor(Date.now() / 1000);
+                if (payload.exp && payload.exp < now) {
+                    log('tokenResult', 'Token is expired!', 'error');
+                } else {
+                    log('tokenResult', 'Token is valid', 'success');
+                }
+
+                // Check tenant ID
+                if (payload.tenantId === 'techcorp_solutions') {
+                    log('tokenResult', 'Tenant ID matches techcorp_solutions ✓', 'success');
+                } else {
+                    log('tokenResult', `Tenant ID mismatch: ${payload.tenantId} (expected: techcorp_solutions)`, 'error');
+                }
+
+            } catch (error) {
+                log('tokenResult', `Token decode error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMissionsAPI() {
+            clearLog('missionsResult');
+            
+            if (!authToken) {
+                log('missionsResult', 'No token found. Please login first.', 'error');
+                return;
+            }
+
+            try {
+                log('missionsResult', 'Fetching missions...', 'info');
+                
+                const response = await fetch(`${API_BASE}/missions`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                log('missionsResult', `Response status: ${response.status}`, 'info');
+                log('missionsResult', `Response headers: ${JSON.stringify([...response.headers.entries()])}`, 'info');
+                
+                if (data.success) {
+                    log('missionsResult', `Found ${data.data.length} missions`, 'success');
+                    log('missionsResult', `<pre>${JSON.stringify(data.data, null, 2)}</pre>`, 'info');
+                } else {
+                    log('missionsResult', `API error: ${data.message}`, 'error');
+                    log('missionsResult', `Full response: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                log('missionsResult', `Fetch error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMissionsAPIWithDebug() {
+            clearLog('missionsResult');
+            
+            if (!authToken) {
+                log('missionsResult', 'No token found. Please login first.', 'error');
+                return;
+            }
+
+            try {
+                log('missionsResult', 'Fetching missions with debug headers...', 'info');
+                
+                const response = await fetch(`${API_BASE}/missions?debug=true&_t=${Date.now()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'X-Debug': 'true'
+                    }
+                });
+
+                const data = await response.json();
+                
+                log('missionsResult', `Response status: ${response.status}`, 'info');
+                
+                if (data.success) {
+                    log('missionsResult', `Found ${data.data.length} missions`, 'success');
+                    
+                    // Analyze each mission
+                    data.data.forEach((mission, index) => {
+                        log('missionsResult', `Mission ${index + 1}:`, 'info');
+                        log('missionsResult', `  ID: ${mission._id}`, 'info');
+                        log('missionsResult', `  Employee: ${JSON.stringify(mission.employee)}`, 'info');
+                        log('missionsResult', `  Status: ${mission.status}`, 'info');
+                        log('missionsResult', `  Location: ${mission.location}`, 'info');
+                        log('missionsResult', `  TenantId: ${mission.tenantId}`, 'info');
+                    });
+                } else {
+                    log('missionsResult', `API error: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('missionsResult', `Fetch error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkDatabase() {
+            clearLog('databaseResult');
+            log('databaseResult', 'This would require a direct database endpoint...', 'warning');
+            log('databaseResult', 'Suggested MongoDB queries to run manually:', 'info');
+            log('databaseResult', '<pre>db.missions.find({ tenantId: "techcorp_solutions" }).count()</pre>', 'info');
+            log('databaseResult', '<pre>db.missions.find({ tenantId: "techcorp_solutions" }).limit(5)</pre>', 'info');
+            log('databaseResult', '<pre>db.users.find({ tenantId: "techcorp_solutions", role: "admin" })</pre>', 'info');
+        }
+
+        async function createTestMission() {
+            clearLog('createResult');
+            
+            if (!authToken) {
+                log('createResult', 'No token found. Please login first.', 'error');
+                return;
+            }
+
+            try {
+                log('createResult', 'Creating test mission...', 'info');
+                
+                const testMission = {
+                    startDate: new Date().toISOString().split('T')[0],
+                    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    duration: 7,
+                    location: 'Test Location - Debug Mission',
+                    purpose: 'Debug mission created to test visibility issue',
+                    status: 'pending'
+                };
+
+                const response = await fetch(`${API_BASE}/missions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testMission)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('createResult', 'Test mission created successfully!', 'success');
+                    log('createResult', `Mission ID: ${data.data._id}`, 'info');
+                    log('createResult', `<pre>${JSON.stringify(data.data, null, 2)}</pre>`, 'info');
+                } else {
+                    log('createResult', `Create failed: ${data.message}`, 'error');
+                    log('createResult', `Full response: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                log('createResult', `Create error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load token on page load
+        window.onload = function() {
+            if (authToken) {
+                log('loginResult', 'Found existing token in localStorage', 'info');
+                checkToken();
+            }
+        };
+    </script>
+</body>
+</html>
