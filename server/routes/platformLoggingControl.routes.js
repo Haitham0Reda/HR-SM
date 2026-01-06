@@ -16,7 +16,7 @@ const router = express.Router();
 
 // Apply authentication and platform admin role requirement to all routes
 router.use(protect);
-router.use(requireRole('platform_admin'));
+router.use(requireRole('PlatformAdmin'));
 router.use(trackLoggingOperation());
 
 /**

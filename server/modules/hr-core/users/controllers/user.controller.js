@@ -143,6 +143,94 @@ export const getAllUsers = async (req, res) => {
     }
 };
 
+export const searchUsers = async (req, res) => {
+    console.log('🔍 SEARCH USERS FUNCTION CALLED!');
+    console.log('🔍 Query params:', req.query);
+    console.log('🔍 User:', req.user?.email);
+    console.log('🔍 Tenant ID:', req.tenant?.id);
+    
+    try {
+        const { q: searchTerm, includeInactive = 'false' } = req.query;
+        
+        console.log('✅ Search term:', searchTerm || '(empty - loading all employees)');
+        
+        // Get actual users from database instead of test data
+        const query = { tenantId: req.tenant.id };
+        
+        // Add search filter if search term provided
+        if (searchTerm && searchTerm.trim()) {
+            const searchRegex = new RegExp(searchTerm.trim(), 'i');
+            query.$or = [
+                { 'personalInfo.firstName': searchRegex },
+                { 'personalInfo.lastName': searchRegex },
+                { 'personalInfo.fullName': searchRegex },
+                { email: searchRegex },
+                { employeeId: searchRegex }
+            ];
+        }
+        
+        // Include inactive users if requested
+        if (includeInactive !== 'true') {
+            query.status = { $ne: 'inactive' };
+        }
+
+        const users = await User.find(query)
+            .select('_id personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId status role department position')
+            .populate('department', 'name')
+            .populate('position', 'title')
+            .sort({ 'personalInfo.firstName': 1, 'personalInfo.lastName': 1 })
+            .limit(50); // Limit results for performance
+
+        console.log('🔍 Raw users from database:', users.length);
+        if (users.length > 0) {
+            console.log('🔍 Sample raw user:', {
+                _id: users[0]._id,
+                personalInfo: users[0].personalInfo,
+                email: users[0].email,
+                employeeId: users[0].employeeId,
+                status: users[0].status,
+                role: users[0].role
+            });
+        }
+
+        // Format users for frontend consumption
+        const formattedUsers = users.map(user => {
+            const firstName = user.personalInfo?.firstName || 'Unknown';
+            const lastName = user.personalInfo?.lastName || 'User';
+            const fullName = user.personalInfo?.fullName || `${firstName} ${lastName}`;
+            
+            return {
+                _id: user._id,
+                firstName: firstName,
+                lastName: lastName,
+                email: user.email,
+                employeeId: user.employeeId,
+                status: user.status,
+                role: user.role,
+                name: fullName, // This is what the frontend uses in the dropdown
+                employeeNumber: user.employeeId || user._id.toString(),
+                department: user.department ? { name: user.department.name } : { name: 'N/A' },
+                position: user.position ? { title: user.position.title } : null
+            };
+        });
+
+        console.log('🔍 Sample formatted user:', formattedUsers[0]);
+        console.log(`✅ Returning ${formattedUsers.length} actual employees from database`);
+        
+        res.json({
+            success: true,
+            data: formattedUsers,
+            message: searchTerm ? `Search results for: ${searchTerm}` : 'All employees loaded'
+        });
+    } catch (err) {
+        console.error('❌ Error in search users:', err);
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
+    }
+};
+
 export const getUserById = async (req, res) => {
     try {
         const userId = req.params.id;

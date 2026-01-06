@@ -14,7 +14,8 @@ import {
     updateVacationBalance,
     bulkUpdateVacationBalances,
     bulkCreateUsers,
-    uploadProfilePicture
+    uploadProfilePicture,
+    searchUsers
 } from '../controllers/user.controller.js';
 import { bulkDownloadPhotos } from '../controllers/userPhoto.controller.js';
 import {
@@ -98,6 +99,9 @@ try {
 
 // Get all users - Protected, all authenticated users can view
 router.get('/', requireAuth, getAllUsers);
+
+// Search users - Protected, all authenticated users can search
+router.get('/search', requireAuth, searchUsers);
 
 // Bulk download user photos - Protected (supports both POST and GET)
 router.post('/bulk-download-photos', requireAuth, bulkDownloadPhotos);

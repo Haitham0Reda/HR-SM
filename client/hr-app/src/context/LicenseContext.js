@@ -118,6 +118,13 @@ export const LicenseProvider = ({ children }) => {
                         limits: {},
                         status: 'active',
                         billingCycle: 'monthly'
+                    },
+                    'life-insurance': {
+                        enabled: true,
+                        tier: 'premium',
+                        limits: {},
+                        status: 'active',
+                        billingCycle: 'monthly'
                     }
                 };
                 setLicenses(defaultLicenses);

@@ -49,6 +49,7 @@ const PolicyList = () => {
         policies,
         loading,
         error,
+        pagination,
         fetchPolicies,
         deletePolicy
     } = usePolicies();
@@ -137,8 +138,11 @@ const PolicyList = () => {
     }, [navigate, getCompanyRoute]);
 
     const handleRowDelete = useCallback((policy) => async () => {
+        const employee = policy.employeeId;
+        const employeeName = employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown Employee';
+        
         const confirmed = await dialogs.confirm(
-            `Do you wish to delete policy ${policy.policyNumber} for ${policy.employeeName}?`,
+            `Do you wish to delete policy ${policy.policyNumber} for ${employeeName}?`,
             {
                 title: 'Delete Policy?',
                 severity: 'error',
@@ -191,13 +195,19 @@ const PolicyList = () => {
             field: 'employeeName',
             headerName: 'Employee',
             width: 200,
-            valueGetter: (value, row) => row.employee?.name || 'N/A'
+            valueGetter: (value, row) => {
+                const employee = row.employeeId;
+                return employee ? `${employee.firstName} ${employee.lastName}` : 'N/A';
+            }
         },
         {
             field: 'employeeNumber',
             headerName: 'Employee ID',
             width: 120,
-            valueGetter: (value, row) => row.employee?.employeeNumber || 'N/A'
+            valueGetter: (value, row) => {
+                const employee = row.employeeId;
+                return employee?.employeeId || employee?._id || 'N/A';
+            }
         },
         {
             field: 'policyType',
@@ -319,35 +329,37 @@ const PolicyList = () => {
                         onClick={handleCreateClick}
                         startIcon={<AddIcon />}
                     >
-                        Create Policy
+                        Create
                     </Button>
                 </Stack>
             }
         >
             <Box sx={{ flex: 1, width: '100%' }}>
-                {error ? (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Alert>
+                {error && error.length > 0 ? (
+                    <Box sx={{ flexGrow: 1 }}>
+                        <Alert severity="error">{error?.message || (typeof error === 'string' ? error : 'An error occurred. Please try again.')}</Alert>
+                    </Box>
                 ) : (
                     <DataGrid
                         rows={policies}
+                        rowCount={pagination.totalItems}
                         columns={columns}
                         getRowId={(row) => row._id}
                         pagination
-                        paginationMode="server"
                         sortingMode="server"
                         filterMode="server"
+                        paginationMode="server"
                         paginationModel={paginationModel}
                         onPaginationModelChange={handlePaginationModelChange}
                         sortModel={sortModel}
                         onSortModelChange={handleSortModelChange}
                         filterModel={filterModel}
                         onFilterModelChange={handleFilterModelChange}
-                        loading={loading}
                         disableRowSelectionOnClick
                         onRowClick={handleRowClick}
-                        pageSizeOptions={[5, INITIAL_PAGE_SIZE, 25, 50]}
+                        loading={loading}
+                        showToolbar
+                        pageSizeOptions={[5, INITIAL_PAGE_SIZE, 25]}
                         sx={{
                             [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                                 outline: 'transparent',

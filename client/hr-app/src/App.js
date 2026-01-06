@@ -9,6 +9,8 @@ import { ReduxModuleProvider } from './store/providers/ReduxModuleProvider';
 import { ReduxNotificationProvider } from './store/providers/ReduxNotificationProvider';
 import { ThemeConfigProvider } from './context/ThemeContext';
 import { LicenseProvider } from './context/LicenseContext';
+import DialogsProvider from './hooks/useDialogs/DialogsProvider';
+import NotificationsProvider from './hooks/useNotifications/NotificationsProvider';
 import PrivateRoute from './routes/PrivateRoute';
 import CompanyRouteHandler from './components/routing/CompanyRouteHandler';
 import CompanyRouter from './components/routing/CompanyRouter';
@@ -80,9 +82,11 @@ function App() {
             <ReduxModuleProvider>
               <LicenseProvider>
                 <ReduxNotificationProvider>
-                  <ErrorBoundary>
-                    <LicenseNotificationToast />
-                    <Router>
+                  <DialogsProvider>
+                    <NotificationsProvider>
+                      <ErrorBoundary>
+                        <LicenseNotificationToast />
+                        <Router>
                       <CompanyRouteHandler>
                         <Routes>
                           {/* Public Routes */}
@@ -158,7 +162,9 @@ function App() {
                     settings={seasonalSettings}
                   />
                 </ErrorBoundary>
-              </ReduxNotificationProvider>
+              </NotificationsProvider>
+            </DialogsProvider>
+          </ReduxNotificationProvider>
             </LicenseProvider>
             </ReduxModuleProvider>
           </ReduxAuthProvider>

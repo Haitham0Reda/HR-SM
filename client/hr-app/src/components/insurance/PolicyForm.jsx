@@ -78,14 +78,32 @@ const PolicyForm = ({
         }
     }, [isEditMode, initialValues.employee]);
 
-    // Search employees
+    // Load all employees on component mount
     useEffect(() => {
-        const searchEmployees = async () => {
-            if (employeeSearchTerm.length < 2) {
+        const loadAllEmployees = async () => {
+            try {
+                setEmployeeLoading(true);
+                // Load all employees by calling the search endpoint with a minimal query
+                const response = await insuranceService.searchEmployees('');
+                setEmployees(response.data || []);
+            } catch (error) {
+                console.error('Failed to load employees:', error);
                 setEmployees([]);
-                return;
+            } finally {
+                setEmployeeLoading(false);
             }
+        };
 
+        loadAllEmployees();
+    }, []);
+
+    // Search employees (optional - for filtering the loaded employees)
+    useEffect(() => {
+        if (!employeeSearchTerm) {
+            return; // Don't filter if no search term
+        }
+
+        const searchEmployees = async () => {
             try {
                 setEmployeeLoading(true);
                 const response = await insuranceService.searchEmployees(employeeSearchTerm);
@@ -230,26 +248,29 @@ const PolicyForm = ({
                                     <TextField
                                         {...params}
                                         label="Employee *"
-                                        placeholder="Search by name or employee number"
+                                        placeholder="Select an employee"
                                         error={!!formErrors.employeeId}
                                         helperText={
                                             formErrors.employeeId || 
-                                            (isEditMode ? 'Employee cannot be changed after policy creation' : 'Type to search employees')
+                                            (isEditMode ? 'Employee cannot be changed after policy creation' : 'Select an employee from the list')
                                         }
                                     />
                                 )}
-                                renderOption={(props, option) => (
-                                    <Box component="li" {...props}>
-                                        <Box>
-                                            <Typography variant="body2">
-                                                {option.name}
-                                            </Typography>
-                                            <Typography variant="caption" color="text.secondary">
-                                                ID: {option.employeeNumber} | Dept: {option.department?.name || 'N/A'}
-                                            </Typography>
+                                renderOption={(props, option) => {
+                                    const { key, ...otherProps } = props;
+                                    return (
+                                        <Box component="li" key={key} {...otherProps}>
+                                            <Box>
+                                                <Typography variant="body2">
+                                                    {option.name}
+                                                </Typography>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    ID: {option.employeeNumber} | Dept: {option.department?.name || 'N/A'}
+                                                </Typography>
+                                            </Box>
                                         </Box>
-                                    </Box>
-                                )}
+                                    );
+                                }}
                                 noOptionsText={
                                     employeeSearchTerm.length < 2 
                                         ? "Type at least 2 characters to search"
