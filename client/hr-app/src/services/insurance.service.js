@@ -11,85 +11,85 @@ const insuranceService = {
     // Policy operations
     async getAllPolicies(params = {}) {
         const queryParams = new URLSearchParams(params).toString();
-        const url = queryParams ? `/insurance/policies?${queryParams}` : '/insurance/policies';
+        const url = queryParams ? `/life-insurance/policies?${queryParams}` : '/life-insurance/policies';
         return api.get(url);
     },
 
     async getPolicyById(policyId) {
-        return api.get(`/insurance/policies/${policyId}`);
+        return api.get(`/life-insurance/policies/${policyId}`);
     },
 
     async createPolicy(policyData) {
-        return api.post('/insurance/policies', policyData);
+        return api.post('/life-insurance/policies', policyData);
     },
 
     async updatePolicy(policyId, policyData) {
-        return api.put(`/insurance/policies/${policyId}`, policyData);
+        return api.put(`/life-insurance/policies/${policyId}`, policyData);
     },
 
     async deletePolicy(policyId) {
-        return api.delete(`/insurance/policies/${policyId}`);
+        return api.delete(`/life-insurance/policies/${policyId}`);
     },
 
     // Family member operations
     async getFamilyMembers(policyId) {
-        return api.get(`/insurance/policies/${policyId}/family-members`);
+        return api.get(`/life-insurance/policies/${policyId}/family-members`);
     },
 
     async addFamilyMember(policyId, familyMemberData) {
-        return api.post(`/insurance/policies/${policyId}/family-members`, familyMemberData);
+        return api.post(`/life-insurance/policies/${policyId}/family-members`, familyMemberData);
     },
 
     async updateFamilyMember(policyId, familyMemberId, familyMemberData) {
-        return api.put(`/insurance/policies/${policyId}/family-members/${familyMemberId}`, familyMemberData);
+        return api.put(`/life-insurance/policies/${policyId}/family-members/${familyMemberId}`, familyMemberData);
     },
 
     async removeFamilyMember(policyId, familyMemberId) {
-        return api.delete(`/insurance/policies/${policyId}/family-members/${familyMemberId}`);
+        return api.delete(`/life-insurance/policies/${policyId}/family-members/${familyMemberId}`);
     },
 
     // Beneficiary operations
     async getBeneficiaries(policyId) {
-        return api.get(`/insurance/policies/${policyId}/beneficiaries`);
+        return api.get(`/life-insurance/policies/${policyId}/beneficiaries`);
     },
 
     async addBeneficiary(policyId, beneficiaryData) {
-        return api.post(`/insurance/policies/${policyId}/beneficiaries`, beneficiaryData);
+        return api.post(`/life-insurance/policies/${policyId}/beneficiaries`, beneficiaryData);
     },
 
     async updateBeneficiary(policyId, beneficiaryId, beneficiaryData) {
-        return api.put(`/insurance/policies/${policyId}/beneficiaries/${beneficiaryId}`, beneficiaryData);
+        return api.put(`/life-insurance/policies/${policyId}/beneficiaries/${beneficiaryId}`, beneficiaryData);
     },
 
     async removeBeneficiary(policyId, beneficiaryId) {
-        return api.delete(`/insurance/policies/${policyId}/beneficiaries/${beneficiaryId}`);
+        return api.delete(`/life-insurance/policies/${policyId}/beneficiaries/${beneficiaryId}`);
     },
 
     // Claim operations
     async getAllClaims(params = {}) {
         const queryParams = new URLSearchParams(params).toString();
-        const url = queryParams ? `/insurance/claims?${queryParams}` : '/insurance/claims';
+        const url = queryParams ? `/life-insurance/claims?${queryParams}` : '/life-insurance/claims';
         return api.get(url);
     },
 
     async getClaimById(claimId) {
-        return api.get(`/insurance/claims/${claimId}`);
+        return api.get(`/life-insurance/claims/${claimId}`);
     },
 
     async createClaim(claimData) {
-        return api.post('/insurance/claims', claimData);
+        return api.post('/life-insurance/claims', claimData);
     },
 
     async updateClaim(claimId, claimData) {
-        return api.put(`/insurance/claims/${claimId}`, claimData);
+        return api.put(`/life-insurance/claims/${claimId}`, claimData);
     },
 
     async reviewClaim(claimId, reviewData) {
-        return api.patch(`/insurance/claims/${claimId}/review`, reviewData);
+        return api.patch(`/life-insurance/claims/${claimId}/review`, reviewData);
     },
 
     async uploadClaimDocument(claimId, formData) {
-        return api.post(`/insurance/claims/${claimId}/documents`, formData, {
+        return api.post(`/life-insurance/claims/${claimId}/documents`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -99,7 +99,7 @@ const insuranceService = {
     // Report operations
     async generatePolicyReport(params = {}) {
         const queryParams = new URLSearchParams(params).toString();
-        const url = queryParams ? `/insurance/reports/policies?${queryParams}` : '/insurance/reports/policies';
+        const url = queryParams ? `/life-insurance/reports/policies?${queryParams}` : '/life-insurance/reports/policies';
         return api.get(url, {
             responseType: 'blob', // For PDF downloads
         });
@@ -107,7 +107,7 @@ const insuranceService = {
 
     async generateClaimsReport(params = {}) {
         const queryParams = new URLSearchParams(params).toString();
-        const url = queryParams ? `/insurance/reports/claims?${queryParams}` : '/insurance/reports/claims';
+        const url = queryParams ? `/life-insurance/reports/claims?${queryParams}` : '/life-insurance/reports/claims';
         return api.get(url, {
             responseType: 'blob', // For PDF downloads
         });
@@ -115,7 +115,7 @@ const insuranceService = {
 
     async getInsuranceAnalytics(params = {}) {
         const queryParams = new URLSearchParams(params).toString();
-        const url = queryParams ? `/insurance/analytics?${queryParams}` : '/insurance/analytics';
+        const url = queryParams ? `/life-insurance/analytics?${queryParams}` : '/life-insurance/analytics';
         return api.get(url);
     },
 

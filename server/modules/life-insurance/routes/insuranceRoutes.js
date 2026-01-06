@@ -9,7 +9,7 @@ import familyMemberController from '../controllers/familyMemberController.js';
 import claimController from '../controllers/claimController.js';
 import reportController from '../controllers/reportController.js';
 import { insuranceUpload } from '../config/multer.config.js';
-import { MODULES } from '../../../shared/constants/modules.js';
+import { MODULES, ROLES } from '../../../shared/constants/modules.js';
 
 const router = express.Router();
 
@@ -18,6 +18,126 @@ router.use(protect);
 
 // Apply license validation for life insurance module
 router.use(requireModuleLicense(MODULES.LIFE_INSURANCE));
+
+// Debug endpoint to test user search directly (temporary)
+router.get('/debug/user-search', async (req, res) => {
+    try {
+        const User = (await import('../../hr-core/users/models/user.model.js')).default;
+        
+        // Same query as the user search endpoint
+        const query = { tenantId: req.tenant.id };
+        query.status = { $ne: 'inactive' };
+
+        const users = await User.find(query)
+            .select('_id personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId status role department position')
+            .populate('department', 'name')
+            .populate('position', 'title')
+            .sort({ 'personalInfo.firstName': 1, 'personalInfo.lastName': 1 })
+            .limit(50);
+
+        console.log('🔍 DEBUG USER SEARCH - Raw users:', users.length);
+        if (users.length > 0) {
+            console.log('🔍 Sample raw user:', {
+                _id: users[0]._id,
+                personalInfo: users[0].personalInfo,
+                email: users[0].email,
+                employeeId: users[0].employeeId
+            });
+        }
+
+        // Format users exactly like the search endpoint
+        const formattedUsers = users.map(user => {
+            const firstName = user.personalInfo?.firstName || 'Unknown';
+            const lastName = user.personalInfo?.lastName || 'User';
+            const fullName = user.personalInfo?.fullName || `${firstName} ${lastName}`;
+            
+            return {
+                _id: user._id,
+                firstName: firstName,
+                lastName: lastName,
+                email: user.email,
+                employeeId: user.employeeId,
+                status: user.status,
+                role: user.role,
+                name: fullName, // This is what the frontend uses in the dropdown
+                employeeNumber: user.employeeId || user._id.toString(),
+                department: user.department ? { name: user.department.name } : { name: 'N/A' },
+                position: user.position ? { title: user.position.title } : null
+            };
+        });
+
+        console.log('🔍 Sample formatted user:', formattedUsers[0]);
+
+        res.json({
+            success: true,
+            data: formattedUsers,
+            message: 'Debug user search results',
+            debug: {
+                rawCount: users.length,
+                formattedCount: formattedUsers.length,
+                sampleRaw: users[0] || null,
+                sampleFormatted: formattedUsers[0] || null
+            }
+        });
+    } catch (error) {
+        console.error('❌ Debug user search error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to debug user search',
+            error: error.message
+        });
+    }
+});
+
+// Debug endpoint to list available employees (temporary)
+router.get('/debug/employees', async (req, res) => {
+    try {
+        const User = (await import('../../hr-core/users/models/user.model.js')).default;
+        const employees = await User.find({ tenantId: req.tenant.id })
+            .select('_id employeeId email firstName lastName department position name fullName')
+            .sort({ employeeId: 1 });
+
+        console.log('🔍 DEBUG EMPLOYEES - Found:', employees.length);
+        employees.forEach((emp, index) => {
+            console.log(`🔍 Employee ${index + 1}:`, {
+                _id: emp._id,
+                employeeId: emp.employeeId,
+                firstName: emp.firstName,
+                lastName: emp.lastName,
+                name: emp.name,
+                fullName: emp.fullName,
+                email: emp.email
+            });
+        });
+
+        res.json({
+            success: true,
+            message: 'Available employees',
+            data: {
+                count: employees.length,
+                employees: employees.map(emp => ({
+                    mongoId: emp._id,
+                    employeeId: emp.employeeId || 'NOT SET',
+                    firstName: emp.firstName,
+                    lastName: emp.lastName,
+                    name: emp.name,
+                    fullName: emp.fullName,
+                    displayName: `${emp.firstName || 'Unknown'} ${emp.lastName || 'User'}`,
+                    email: emp.email,
+                    department: emp.department,
+                    position: emp.position
+                }))
+            }
+        });
+    } catch (error) {
+        console.error('❌ Debug employees error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch employees',
+            error: error.message
+        });
+    }
+});
 
 // Root route for life insurance
 router.get('/', async (req, res) => {
@@ -50,11 +170,20 @@ router.get('/', async (req, res) => {
 // Policy Management Routes
 router.route('/policies')
     .post(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             body('employeeId')
-                .isMongoId()
-                .withMessage('Valid employee ID is required'),
+                .custom(async (value) => {
+                    // Allow either MongoDB ObjectId or employeeId string
+                    const mongoose = await import('mongoose');
+                    if (mongoose.default.Types.ObjectId.isValid(value)) {
+                        return true; // Valid ObjectId
+                    }
+                    if (typeof value === 'string' && value.length > 0) {
+                        return true; // Valid string employeeId
+                    }
+                    throw new Error('Valid employee ID is required (either MongoDB ObjectId or employeeId string)');
+                }),
             body('policyType')
                 .isIn(['CAT_A', 'CAT_B', 'CAT_C'])
                 .withMessage('Policy type must be CAT_A, CAT_B, or CAT_C'),
@@ -110,7 +239,7 @@ router.route('/policies')
 
 router.route('/policies/expiring')
     .get(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             query('days')
                 .optional()
@@ -123,7 +252,7 @@ router.route('/policies/expiring')
 
 router.route('/policies/statistics')
     .get(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         insuranceController.getPolicyStatistics
     );
 
@@ -138,7 +267,7 @@ router.route('/policies/:id')
         insuranceController.getPolicyById
     )
     .put(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             param('id')
                 .isMongoId()
@@ -175,7 +304,7 @@ router.route('/policies/:id')
         insuranceController.updatePolicy
     )
     .delete(
-        requireRole(['Admin']),
+        requireRole([ROLES.ADMIN]),
         [
             param('id')
                 .isMongoId()
@@ -270,7 +399,7 @@ router.route('/family-members')
 
 router.route('/family-members/statistics')
     .get(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         familyMemberController.getFamilyMemberStatistics
     );
 
@@ -291,7 +420,7 @@ router.route('/family-members/by-relationship/:relationship')
 
 router.route('/family-members/children-under-age')
     .get(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             query('maxAge')
                 .optional()
@@ -361,7 +490,7 @@ router.route('/family-members/:id')
         familyMemberController.updateFamilyMember
     )
     .delete(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             param('id')
                 .isMongoId()
@@ -373,7 +502,7 @@ router.route('/family-members/:id')
 
 router.route('/family-members/:id/coverage')
     .patch(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             param('id')
                 .isMongoId()
@@ -491,13 +620,13 @@ router.route('/claims/by-status/:status')
 
 router.route('/claims/overdue')
     .get(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         claimController.getOverdueClaims
     );
 
 router.route('/claims/statistics')
     .get(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             query('startDate')
                 .optional()
@@ -523,7 +652,7 @@ router.route('/claims/:id')
         claimController.getClaimById
     )
     .delete(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             param('id')
                 .isMongoId()
@@ -540,7 +669,7 @@ router.route('/claims/:id')
 
 router.route('/claims/:id/review')
     .patch(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             param('id')
                 .isMongoId()
@@ -565,7 +694,7 @@ router.route('/claims/:id/review')
 
 router.route('/claims/:id/process-payment')
     .patch(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             param('id')
                 .isMongoId()
@@ -588,7 +717,7 @@ router.route('/claims/:id/process-payment')
 
 router.route('/claims/:id/status')
     .patch(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             param('id')
                 .isMongoId()
@@ -653,7 +782,7 @@ router.route('/claims/:id/documents/:documentId/download')
 
 router.route('/claims/:id/documents/:documentId')
     .delete(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             param('id')
                 .isMongoId()
@@ -669,7 +798,7 @@ router.route('/claims/:id/documents/:documentId')
 // Reports Routes
 router.route('/reports/pdf')
     .post(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             body('startDate')
                 .optional()
@@ -703,7 +832,7 @@ router.route('/reports/pdf')
 
 router.route('/reports/excel')
     .post(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             body('startDate')
                 .optional()
@@ -732,7 +861,7 @@ router.route('/reports/excel')
 
 router.route('/reports')
     .get(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         reportController.getAvailableReports
     );
 
@@ -749,7 +878,7 @@ router.route('/reports/download/:filename')
 
 router.route('/reports/cleanup')
     .post(
-        requireRole(['Admin']),
+        requireRole([ROLES.ADMIN]),
         [
             body('maxAgeHours')
                 .optional()
@@ -762,7 +891,7 @@ router.route('/reports/cleanup')
 
 router.route('/reports/:filename')
     .delete(
-        requireRole(['Manager', 'HR', 'Admin']),
+        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
         [
             param('filename')
                 .matches(/^[a-zA-Z0-9\-_.]+$/)

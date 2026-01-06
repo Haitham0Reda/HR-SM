@@ -16,6 +16,12 @@ export const usePolicies = () => {
     const [policies, setPolicies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        totalPages: 0,
+        totalItems: 0,
+        itemsPerPage: 10
+    });
     const notifications = useNotifications();
 
     const fetchPolicies = useCallback(async (params = {}) => {
@@ -23,7 +29,13 @@ export const usePolicies = () => {
             setLoading(true);
             setError(null);
             const response = await insuranceService.getAllPolicies(params);
-            setPolicies(response.data || []);
+            setPolicies(response.data?.policies || []);
+            setPagination(response.data?.pagination || {
+                currentPage: 1,
+                totalPages: 0,
+                totalItems: 0,
+                itemsPerPage: 10
+            });
         } catch (err) {
             setError(err.message || 'Failed to fetch policies');
             notifications.show('Failed to load policies', { severity: 'error' });
@@ -83,6 +95,7 @@ export const usePolicies = () => {
         policies,
         loading,
         error,
+        pagination,
         fetchPolicies,
         createPolicy,
         updatePolicy,

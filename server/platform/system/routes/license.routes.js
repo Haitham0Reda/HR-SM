@@ -18,7 +18,7 @@ const router = express.Router();
  */
 
 // Get all licenses - GET /api/v1/licenses
-router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
+router.get('/', requireAuth, requireRole('Admin'), async (req, res) => {
     try {
         // Mock response for all licenses
         const licenses = [
@@ -58,21 +58,21 @@ router.get('/', requireAuth, requireRole('admin'), async (req, res) => {
 
 // Query audit logs - GET /api/v1/licenses/audit
 // This must come before /:tenantId routes to avoid matching "audit" as a tenantId
-router.get('/audit', requireAuth, requireRole('admin'), queryAuditLogs);
+router.get('/audit', requireAuth, requireRole('Admin'), queryAuditLogs);
 
 // Create or update license - POST /api/v1/licenses
-router.post('/', requireAuth, requireRole('admin'), createOrUpdateLicense);
+router.post('/', requireAuth, requireRole('Admin'), createOrUpdateLicense);
 
 // Get license details - GET /api/v1/licenses/:tenantId
-router.get('/:tenantId', requireAuth, requireRole('admin'), getLicenseDetails);
+router.get('/:tenantId', requireAuth, getLicenseDetails);
 
 // Get usage metrics - GET /api/v1/licenses/:tenantId/usage
-router.get('/:tenantId/usage', requireAuth, requireRole('admin'), getUsageMetrics);
+router.get('/:tenantId/usage', requireAuth, getUsageMetrics);
 
 // Activate module - POST /api/v1/licenses/:tenantId/modules/:moduleKey/activate
-router.post('/:tenantId/modules/:moduleKey/activate', requireAuth, requireRole('admin'), activateModule);
+router.post('/:tenantId/modules/:moduleKey/activate', requireAuth, requireRole('Admin'), activateModule);
 
 // Deactivate module - POST /api/v1/licenses/:tenantId/modules/:moduleKey/deactivate
-router.post('/:tenantId/modules/:moduleKey/deactivate', requireAuth, requireRole('admin'), deactivateModule);
+router.post('/:tenantId/modules/:moduleKey/deactivate', requireAuth, requireRole('Admin'), deactivateModule);
 
 export default router;

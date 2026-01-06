@@ -93,7 +93,7 @@ router.get('/:tenantId/email-domain', requireAuth, async (req, res) => {
  * Update company email domain
  * PUT /api/companies/:tenantId/email-domain
  */
-router.put('/:tenantId/email-domain', requireAuth, requireRole('admin'), async (req, res) => {
+router.put('/:tenantId/email-domain', requireAuth, requireRole('Admin'), async (req, res) => {
     try {
         const { tenantId } = req.params;
         const { emailDomain } = req.body;
@@ -143,7 +143,7 @@ router.put('/:tenantId/email-domain', requireAuth, requireRole('admin'), async (
  * Get all companies (super-admin only)
  * GET /api/companies
  */
-router.get('/', requireAuth, requireRole('super-admin'), async (req, res) => {
+router.get('/', requireAuth, requireRole('SuperAdmin'), async (req, res) => {
     try {
         const { status, plan, page, limit, search } = req.query;
         
@@ -171,7 +171,7 @@ router.get('/', requireAuth, requireRole('super-admin'), async (req, res) => {
  * Create new company (super-admin only)
  * POST /api/companies
  */
-router.post('/', requireAuth, requireRole('super-admin'), async (req, res) => {
+router.post('/', requireAuth, requireRole('SuperAdmin'), async (req, res) => {
     try {
         const companyData = req.body;
         
@@ -212,7 +212,7 @@ router.post('/', requireAuth, requireRole('super-admin'), async (req, res) => {
  * Update company (admin only)
  * PUT /api/companies/:tenantId
  */
-router.put('/:tenantId', requireAuth, requireRole('admin'), async (req, res) => {
+router.put('/:tenantId', requireAuth, requireRole('Admin'), async (req, res) => {
     try {
         const { tenantId } = req.params;
         const updateData = req.body;
