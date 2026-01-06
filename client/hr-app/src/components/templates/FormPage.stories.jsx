@@ -103,7 +103,7 @@ export const MultipleSections = () => (
               <MenuItem value="senior">Senior</MenuItem>
               <MenuItem value="junior">Junior</MenuItem>
             </Select>
-            <TextField label="Start Date" type="date" required fullWidth InputLabelProps={{ shrink: true }} />
+            <TextField label="Start Date" type="date" required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
           </Stack>
         ),
       },
@@ -241,7 +241,7 @@ export const CompleteExample = () => (
             </Stack>
             <TextField label="Email" type="email" required fullWidth />
             <TextField label="Phone Number" fullWidth />
-            <TextField label="Date of Birth" type="date" fullWidth InputLabelProps={{ shrink: true }} />
+            <TextField label="Date of Birth" type="date" fullWidth slotProps={{ inputLabel: { shrink: true } }} />
           </Stack>
         ),
       },
@@ -266,7 +266,7 @@ export const CompleteExample = () => (
               </Select>
             </Stack>
             <Stack direction="row" spacing={2}>
-              <TextField label="Start Date" type="date" required fullWidth InputLabelProps={{ shrink: true }} />
+              <TextField label="Start Date" type="date" required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
               <TextField label="Salary" type="number" fullWidth />
             </Stack>
           </Stack>

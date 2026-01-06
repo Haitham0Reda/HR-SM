@@ -1,6 +1,7 @@
 import BackupService from './backupService.js';
 import BackupScheduler from './backupScheduler.js';
-import BackupLog from '../models/BackupLog.js';
+// Note: BackupLog is now tenant-specific and should be accessed through getModelForConnection
+import { getModelForConnection } from '../config/sharedModels.js';
 import winston from 'winston';
 import path from 'path';
 

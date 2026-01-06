@@ -67,6 +67,19 @@ import DashboardConfig from '../modules/dashboard/models/dashboardConfig.model.j
 // Theme Models
 import ThemeConfig from '../modules/theme/models/themeConfig.model.js';
 
+// System Models (Tenant-Specific)
+import BackupLog from '../modules/system/models/backupLog.model.js';
+import SystemAlerts from '../modules/system/models/systemAlerts.model.js';
+import PerformanceMetrics from '../modules/system/models/performanceMetrics.model.js';
+import SecurityEvents from '../modules/system/models/securityEvents.model.js';
+
+// Data Management Models (Tenant-Specific)
+import DataArchive from '../modules/data-management/models/dataArchive.model.js';
+import DataRetentionPolicy from '../modules/data-management/models/dataRetentionPolicy.model.js';
+
+// Licensing Models (Tenant-Specific)
+import CompanyLicense from '../modules/licensing/models/companyLicense.model.js';
+
 // Model Registry - Maps model names to their schemas and imports
 export const MODEL_REGISTRY = {
     // HR Core Models
@@ -127,7 +140,20 @@ export const MODEL_REGISTRY = {
     'DashboardConfig': { model: DashboardConfig, schema: DashboardConfig.schema },
     
     // Theme Models
-    'ThemeConfig': { model: ThemeConfig, schema: ThemeConfig.schema }
+    'ThemeConfig': { model: ThemeConfig, schema: ThemeConfig.schema },
+    
+    // System Models (Tenant-Specific)
+    'BackupLog': { model: BackupLog, schema: BackupLog.schema },
+    'SystemAlerts': { model: SystemAlerts, schema: SystemAlerts.schema },
+    'PerformanceMetrics': { model: PerformanceMetrics, schema: PerformanceMetrics.schema },
+    'SecurityEvents': { model: SecurityEvents, schema: SecurityEvents.schema },
+    
+    // Data Management Models (Tenant-Specific)
+    'DataArchive': { model: DataArchive, schema: DataArchive.schema },
+    'DataRetentionPolicy': { model: DataRetentionPolicy, schema: DataRetentionPolicy.schema },
+    
+    // Licensing Models (Tenant-Specific)
+    'CompanyLicense': { model: CompanyLicense, schema: CompanyLicense.schema }
 };
 
 /**

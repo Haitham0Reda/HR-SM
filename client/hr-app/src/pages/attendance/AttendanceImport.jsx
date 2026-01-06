@@ -167,6 +167,8 @@ const AttendanceImport = () => {
                                 Choose File
                                 <input
                                     type="file"
+                                    id="attendance-import-file"
+                                    name="attendanceFile"
                                     accept=".csv,.xlsx,.xls"
                                     hidden
                                     onChange={handleFileSelect}

@@ -369,6 +369,8 @@ const ClaimForm = ({
                             Upload Documents
                             <input
                                 type="file"
+                                id="claim-documents"
+                                name="claimDocuments"
                                 hidden
                                 multiple
                                 accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"

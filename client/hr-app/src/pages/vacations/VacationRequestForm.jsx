@@ -287,7 +287,7 @@ const VacationRequestForm = () => {
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                     error={Boolean(errors.startDate)}
                                     helperText={errors.startDate || 'Select the first day of vacation'}
                                 />
@@ -301,7 +301,7 @@ const VacationRequestForm = () => {
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                     error={Boolean(errors.endDate)}
                                     helperText={errors.endDate || 'Select the last day of vacation'}
                                 />

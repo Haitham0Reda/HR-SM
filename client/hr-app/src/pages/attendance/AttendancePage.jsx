@@ -892,7 +892,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
                                 fullWidth
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{ inputLabel: { shrink: true } }}
                             />
                         </Box>
                         <Box sx={{ flex: '1 1 calc(33.33% - 16px)', minWidth: '200px' }}>
@@ -903,7 +903,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
                                 fullWidth
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{ inputLabel: { shrink: true } }}
                             />
                         </Box>
                         <Box sx={{ flex: '1 1 calc(33.33% - 16px)', minWidth: '200px' }}>
@@ -1393,7 +1393,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -1404,7 +1404,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -1678,7 +1678,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             onChange={handleChange}
                             required
                             fullWidth
-                            InputLabelProps={{ shrink: true }}
+                            slotProps={{ inputLabel: { shrink: true } }}
                         />
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 6 }}>
@@ -1690,7 +1690,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                                     value={formData.checkIn}
                                     onChange={handleChange}
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                 />
                             </Grid>
                             <Grid size={{ xs: 6 }}>
@@ -1702,7 +1702,7 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                                     value={formData.checkOut}
                                     onChange={handleChange}
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                 />
                             </Grid>
                         </Grid>

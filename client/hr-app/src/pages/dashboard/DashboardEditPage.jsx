@@ -199,6 +199,7 @@ const DashboardEditPage = () => {
                                 <FormControlLabel
                                     control={
                                         <Switch
+                                            id="employee-of-month-switch"
                                             checked={config.employeeOfTheMonth.enabled}
                                             onChange={(e) =>
                                                 setConfig(prev => ({
@@ -336,6 +337,7 @@ const DashboardEditPage = () => {
                             <FormControlLabel
                                 control={
                                     <Switch
+                                        id="todays-attendance-widget-switch"
                                         checked={config.widgets.todayAttendance}
                                         onChange={() => handleWidgetToggle('todayAttendance')}
                                     />

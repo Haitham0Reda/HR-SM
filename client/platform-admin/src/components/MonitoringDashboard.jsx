@@ -299,6 +299,7 @@ const MonitoringDashboard = () => {
           <FormControlLabel
             control={
               <Switch
+                id="monitoring-auto-refresh-switch"
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
               />
@@ -311,6 +312,7 @@ const MonitoringDashboard = () => {
           <FormControlLabel
             control={
               <Switch
+                id="monitoring-notifications-switch"
                 checked={notificationsEnabled}
                 onChange={(e) => setNotificationsEnabled(e.target.checked)}
               />

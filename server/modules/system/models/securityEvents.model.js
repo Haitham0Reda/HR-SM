@@ -1,9 +1,14 @@
 import mongoose from 'mongoose';
 
+/**
+ * SecurityEvents Model - Tenant-Specific
+ * Tracks security events per tenant
+ */
 const securityEventsSchema = new mongoose.Schema({
   tenantId: {
     type: String,
-    required: true
+    required: true,
+    index: true
   },
   eventType: {
     type: String,
@@ -111,11 +116,11 @@ const securityEventsSchema = new mongoose.Schema({
 
 // Compound indexes for better query performance
 securityEventsSchema.index({ tenantId: 1, timestamp: -1 });
-securityEventsSchema.index({ eventType: 1, severity: 1 });
-securityEventsSchema.index({ ipAddress: 1, timestamp: -1 });
-securityEventsSchema.index({ resolved: 1, severity: 1 });
-securityEventsSchema.index({ userId: 1, eventType: 1, timestamp: -1 });
-securityEventsSchema.index({ riskScore: -1, timestamp: -1 });
+securityEventsSchema.index({ tenantId: 1, eventType: 1, severity: 1 });
+securityEventsSchema.index({ tenantId: 1, ipAddress: 1, timestamp: -1 });
+securityEventsSchema.index({ tenantId: 1, resolved: 1, severity: 1 });
+securityEventsSchema.index({ tenantId: 1, userId: 1, eventType: 1, timestamp: -1 });
+securityEventsSchema.index({ tenantId: 1, riskScore: -1, timestamp: -1 });
 
 const SecurityEvents = mongoose.model('SecurityEvents', securityEventsSchema);
 

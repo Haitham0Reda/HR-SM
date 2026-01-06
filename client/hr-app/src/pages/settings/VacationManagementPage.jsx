@@ -82,11 +82,19 @@ const VacationManagementPage = () => {
 
             }
 
-            setEmployees(usersData);
-            setDepartments(deptData);
-            setFilteredEmployees(usersData);
+            // Ensure we always set arrays, even if the API returns null/undefined
+            const safeUsersData = Array.isArray(usersData) ? usersData : [];
+            const safeDeptData = Array.isArray(deptData) ? deptData : [];
+
+            setEmployees(safeUsersData);
+            setDepartments(safeDeptData);
+            setFilteredEmployees(safeUsersData);
         } catch (error) {
             showNotification('Failed to fetch data', 'error');
+            // Set empty arrays on error to prevent crashes
+            setEmployees([]);
+            setDepartments([]);
+            setFilteredEmployees([]);
         } finally {
             setLoading(false);
         }
@@ -213,6 +221,12 @@ const VacationManagementPage = () => {
     };
 
     const applyFilters = () => {
+        // Ensure employees is always an array
+        if (!Array.isArray(employees)) {
+            setFilteredEmployees([]);
+            return;
+        }
+
         let filtered = [...employees];
 
         // Search filter
@@ -249,6 +263,11 @@ const VacationManagementPage = () => {
     };
 
     const sortedEmployees = React.useMemo(() => {
+        // Ensure filteredEmployees is always an array
+        if (!Array.isArray(filteredEmployees)) {
+            return [];
+        }
+
         const comparator = (a, b) => {
             let aValue, bValue;
 
@@ -283,6 +302,12 @@ const VacationManagementPage = () => {
     );
 
     const handleExportCSV = () => {
+        // Ensure filteredEmployees is an array before processing
+        if (!Array.isArray(filteredEmployees)) {
+            showNotification('No data available to export', 'warning');
+            return;
+        }
+
         const headers = ['Employee ID', 'Full Name', 'Department', 'Years of Service', 'Annual Total', 'Annual Used', 'Annual Remaining', 'Casual Total', 'Casual Used', 'Casual Remaining', 'Flexible Total', 'Flexible Used', 'Flexible Remaining'];
         const rows = filteredEmployees.map(emp => {
             const balance = calculateVacationBalance(emp);
@@ -481,7 +506,7 @@ const VacationManagementPage = () => {
                 <CardContent>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                            Employee Vacation Balances ({filteredEmployees.length})
+                            Employee Vacation Balances ({Array.isArray(filteredEmployees) ? filteredEmployees.length : 0})
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1 }}>
                             {Object.keys(balanceOverrides).length > 0 && (
@@ -655,7 +680,7 @@ const VacationManagementPage = () => {
 
                     <TablePagination
                         component="div"
-                        count={filteredEmployees.length}
+                        count={Array.isArray(filteredEmployees) ? filteredEmployees.length : 0}
                         page={page}
                         onPageChange={(e, newPage) => setPage(newPage)}
                         rowsPerPage={rowsPerPage}

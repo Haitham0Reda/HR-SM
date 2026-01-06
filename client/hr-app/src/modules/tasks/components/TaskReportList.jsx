@@ -123,6 +123,8 @@ const TaskReportList = ({ taskId }) => {
                                 {reviewingReport === report._id ? (
                                     <div>
                                         <textarea
+                                            id="review-comments"
+                                            name="reviewComments"
                                             value={reviewComments}
                                             onChange={(e) => setReviewComments(e.target.value)}
                                             placeholder="Add review comments..."

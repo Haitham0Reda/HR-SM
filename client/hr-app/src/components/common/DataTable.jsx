@@ -62,10 +62,52 @@ const DataTable = ({
     setPage(0);
   };
 
-  // Calculate paginated data
-  const paginatedData = pagination
-    ? data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-    : data;
+  // Ensure data is always an array with multiple fallbacks
+  let safeData;
+  try {
+    if (data === null || data === undefined) {
+      safeData = [];
+    } else if (Array.isArray(data)) {
+      safeData = data;
+    } else if (typeof data === 'object' && data.length !== undefined) {
+      // Handle array-like objects
+      safeData = Array.from(data);
+    } else {
+      safeData = [];
+    }
+  } catch (error) {
+    console.error('DataTable (hr-app/common): Error processing data prop:', error);
+    safeData = [];
+  }
+  
+  // Debug logging for development
+  if (process.env.NODE_ENV === 'development' && !Array.isArray(data)) {
+    console.warn('DataTable (hr-app/common): data prop is not an array:', { 
+      originalData: data, 
+      originalType: typeof data,
+      safeData,
+      safeDataType: typeof safeData,
+      safeDataIsArray: Array.isArray(safeData)
+    });
+  }
+
+  // Calculate paginated data with additional error handling
+  let paginatedData;
+  try {
+    // Final safety check before slice
+    if (!Array.isArray(safeData)) {
+      console.error('DataTable (hr-app/common): safeData is still not an array!', safeData);
+      paginatedData = [];
+    } else {
+      paginatedData = pagination
+        ? safeData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+        : safeData;
+    }
+  } catch (error) {
+    console.error('DataTable (hr-app/common): Error in pagination calculation:', error);
+    console.error('DataTable (hr-app/common): safeData:', safeData, 'type:', typeof safeData, 'isArray:', Array.isArray(safeData));
+    paginatedData = [];
+  }
 
   if (loading) {
     return (
@@ -75,7 +117,7 @@ const DataTable = ({
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!safeData || safeData.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', p: 4 }}>
         <Typography variant="body2" color="text.secondary">
@@ -165,7 +207,7 @@ const DataTable = ({
         <TablePagination
           rowsPerPageOptions={rowsPerPageOptions}
           component="div"
-          count={data.length}
+          count={safeData.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -189,7 +231,7 @@ DataTable.propTypes = {
   ).isRequired,
   
   /** Table data */
-  data: PropTypes.array.isRequired,
+  data: PropTypes.array,
   
   /** Loading state */
   loading: PropTypes.bool,

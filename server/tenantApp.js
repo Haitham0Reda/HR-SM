@@ -9,7 +9,7 @@ import authRoutes from './modules/hr-core/routes/authRoutes.js';
 import companyRoutes from './routes/company.routes.js';
 import { tenantContext } from './core/middleware/tenantContext.js';
 import { moduleGuard } from './core/middleware/moduleGuard.js';
-import { moduleRegistry } from './core/registry/moduleRegistry.js';
+import moduleRegistry from './core/registry/moduleRegistry.js';
 import { dynamicModuleLoader } from './middleware/dynamicModuleLoader.middleware.js';
 import hardcopyRoutes from './modules/documents/routes/hardcopy.routes.js';
 import { setupCompanyLogging, logResponseCompletion, logCompanyErrors, trackUserActivity } from './middleware/companyLogging.js';

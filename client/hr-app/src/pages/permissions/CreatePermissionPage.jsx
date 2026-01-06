@@ -163,7 +163,7 @@ const CreatePermissionPage = () => {
                             onChange={handleChange}
                             required
                             fullWidth
-                            InputLabelProps={{ shrink: true }}
+                            slotProps={{ inputLabel: { shrink: true } }}
                             helperText="Select the date for which you need permission."
                         />
 
@@ -191,7 +191,7 @@ const CreatePermissionPage = () => {
                                 value={formData.startTime}
                                 onChange={handleChange}
                                 fullWidth
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{ inputLabel: { shrink: true } }}
                                 helperText="This field is automatically set based on working hours."
                             />
                             <TextField
@@ -201,7 +201,7 @@ const CreatePermissionPage = () => {
                                 value={formData.endTime}
                                 onChange={handleChange}
                                 fullWidth
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{ inputLabel: { shrink: true } }}
                                 placeholder="--:-- --"
                             />
                         </Box>
@@ -268,6 +268,24 @@ const CreatePermissionPage = () => {
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                             09:00 - 15:30
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
+                            Expected Time
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
+                            The scheduled time according to your work hours. For late arrival, this is your normal start time (09:00). For early departure, this is your normal end time (15:30).
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
+                            Actual Time
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
+                            The time you actually arrived or left. For late arrival, enter when you actually arrived. For early departure, enter when you actually left.
                         </Typography>
                     </Box>
 

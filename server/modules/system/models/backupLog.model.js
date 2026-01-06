@@ -1,14 +1,18 @@
 import mongoose from 'mongoose';
 
 /**
- * BackupLog Model
- * Tracks all backup operations, metadata, and status
+ * BackupLog Model - Tenant-Specific
+ * Tracks all backup operations, metadata, and status per tenant
  */
 const backupLogSchema = new mongoose.Schema({
+    tenantId: {
+        type: String,
+        required: true,
+        index: true
+    },
     backupId: {
         type: String,
         required: true,
-        unique: true,
         index: true
     },
     
@@ -164,10 +168,11 @@ const backupLogSchema = new mongoose.Schema({
 });
 
 // Indexes for efficient queries
-backupLogSchema.index({ startTime: -1 });
-backupLogSchema.index({ type: 1, status: 1 });
-backupLogSchema.index({ 'cloudStorage.uploaded': 1 });
-backupLogSchema.index({ 'retentionPolicy.expiresAt': 1 });
+backupLogSchema.index({ tenantId: 1, startTime: -1 });
+backupLogSchema.index({ tenantId: 1, backupId: 1 }, { unique: true });
+backupLogSchema.index({ tenantId: 1, type: 1, status: 1 });
+backupLogSchema.index({ tenantId: 1, 'cloudStorage.uploaded': 1 });
+backupLogSchema.index({ tenantId: 1, 'retentionPolicy.expiresAt': 1 });
 
 // Virtual for duration in human-readable format
 backupLogSchema.virtual('durationFormatted').get(function() {
@@ -243,8 +248,9 @@ backupLogSchema.pre('save', function(next) {
 });
 
 // Static method to get backup statistics
-backupLogSchema.statics.getStatistics = async function(startDate, endDate) {
+backupLogSchema.statics.getStatistics = async function(tenantId, startDate, endDate) {
     const match = {
+        tenantId,
         startTime: {
             $gte: startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
             $lte: endDate || new Date()
@@ -274,8 +280,9 @@ backupLogSchema.statics.getStatistics = async function(startDate, endDate) {
 };
 
 // Static method to find expired backups
-backupLogSchema.statics.findExpiredBackups = async function() {
+backupLogSchema.statics.findExpiredBackups = async function(tenantId) {
     return this.find({
+        tenantId,
         'retentionPolicy.expiresAt': { $lt: new Date() },
         'retentionPolicy.autoDelete': true,
         'retentionPolicy.deletedAt': { $exists: false }
@@ -283,8 +290,8 @@ backupLogSchema.statics.findExpiredBackups = async function() {
 };
 
 // Static method to get recent backups
-backupLogSchema.statics.getRecentBackups = async function(limit = 10) {
-    return this.find()
+backupLogSchema.statics.getRecentBackups = async function(tenantId, limit = 10) {
+    return this.find({ tenantId })
         .sort({ startTime: -1 })
         .limit(limit)
         .select('backupId type status startTime endTime size components')
@@ -292,8 +299,8 @@ backupLogSchema.statics.getRecentBackups = async function(limit = 10) {
 };
 
 // Static method to get backup by ID
-backupLogSchema.statics.getBackupById = async function(backupId) {
-    return this.findOne({ backupId })
+backupLogSchema.statics.getBackupById = async function(tenantId, backupId) {
+    return this.findOne({ tenantId, backupId })
         .populate('triggeredByUser', 'name email')
         .populate('restoration.restoredBy', 'name email');
 };

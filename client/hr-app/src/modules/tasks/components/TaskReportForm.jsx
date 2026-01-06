@@ -61,11 +61,13 @@ const TaskReportForm = ({ taskId, onSuccess, onCancel }) => {
             <form onSubmit={handleSubmit}>
                 {/* Report Text */}
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="report-description" className="block text-sm font-medium text-gray-700 mb-2">
                         Report Description *
                         <span className="text-xs text-gray-500 ml-2">(minimum 50 characters)</span>
                     </label>
                     <textarea
+                        id="report-description"
+                        name="reportDescription"
                         value={formData.reportText}
                         onChange={(e) => setFormData({ ...formData, reportText: e.target.value })}
                         rows="6"
@@ -80,50 +82,60 @@ const TaskReportForm = ({ taskId, onSuccess, onCancel }) => {
 
                 {/* Time Spent */}
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Time Spent (Optional)
-                    </label>
-                    <div className="flex gap-4">
-                        <div>
-                            <input
-                                type="number"
-                                min="0"
-                                value={formData.timeSpent.hours}
-                                onChange={(e) => setFormData({
-                                    ...formData,
-                                    timeSpent: { ...formData.timeSpent, hours: parseInt(e.target.value) || 0 }
-                                })}
-                                className="w-24 border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="Hours"
-                            />
-                            <span className="ml-2 text-sm text-gray-600">hours</span>
+                    <fieldset>
+                        <legend className="block text-sm font-medium text-gray-700 mb-2">
+                            Time Spent (Optional)
+                        </legend>
+                        <div className="flex gap-4">
+                            <div>
+                                <label htmlFor="time-spent-hours" className="sr-only">Hours</label>
+                                <input
+                                    type="number"
+                                    id="time-spent-hours"
+                                    name="timeSpentHours"
+                                    min="0"
+                                    value={formData.timeSpent.hours}
+                                    onChange={(e) => setFormData({
+                                        ...formData,
+                                        timeSpent: { ...formData.timeSpent, hours: parseInt(e.target.value) || 0 }
+                                    })}
+                                    className="w-24 border border-gray-300 rounded-lg px-3 py-2"
+                                    placeholder="Hours"
+                                />
+                                <span className="ml-2 text-sm text-gray-600">hours</span>
+                            </div>
+                            <div>
+                                <label htmlFor="time-spent-minutes" className="sr-only">Minutes</label>
+                                <input
+                                    type="number"
+                                    id="time-spent-minutes"
+                                    name="timeSpentMinutes"
+                                    min="0"
+                                    max="59"
+                                    value={formData.timeSpent.minutes}
+                                    onChange={(e) => setFormData({
+                                        ...formData,
+                                        timeSpent: { ...formData.timeSpent, minutes: parseInt(e.target.value) || 0 }
+                                    })}
+                                    className="w-24 border border-gray-300 rounded-lg px-3 py-2"
+                                    placeholder="Minutes"
+                                />
+                                <span className="ml-2 text-sm text-gray-600">minutes</span>
+                            </div>
                         </div>
-                        <div>
-                            <input
-                                type="number"
-                                min="0"
-                                max="59"
-                                value={formData.timeSpent.minutes}
-                                onChange={(e) => setFormData({
-                                    ...formData,
-                                    timeSpent: { ...formData.timeSpent, minutes: parseInt(e.target.value) || 0 }
-                                })}
-                                className="w-24 border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="Minutes"
-                            />
-                            <span className="ml-2 text-sm text-gray-600">minutes</span>
-                        </div>
-                    </div>
+                    </fieldset>
                 </div>
 
                 {/* File Upload */}
                 <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="task-report-files" className="block text-sm font-medium text-gray-700 mb-2">
                         Attachments (Optional)
                         <span className="text-xs text-gray-500 ml-2">(max 5 files, 10MB each)</span>
                     </label>
                     <input
                         type="file"
+                        id="task-report-files"
+                        name="taskFiles"
                         onChange={handleFileChange}
                         multiple
                         accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.txt"

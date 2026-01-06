@@ -1,10 +1,14 @@
 import mongoose from 'mongoose';
 
+/**
+ * DataArchive Model - Tenant-Specific
+ * Manages data archival per tenant
+ */
 const dataArchiveSchema = new mongoose.Schema({
   tenantId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Tenant', 
-    required: true
+    type: String,
+    required: true,
+    index: true
   },
   
   // Archive identification
@@ -264,10 +268,10 @@ const dataArchiveSchema = new mongoose.Schema({
 
 // Indexes for performance
 dataArchiveSchema.index({ tenantId: 1, dataType: 1 });
-dataArchiveSchema.index({ status: 1, createdAt: -1 });
-dataArchiveSchema.index({ 'dateRange.startDate': 1, 'dateRange.endDate': 1 });
-dataArchiveSchema.index({ 'scheduledDeletion.deleteAfter': 1 });
-dataArchiveSchema.index({ 'legalHold.isOnHold': 1 });
+dataArchiveSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
+dataArchiveSchema.index({ tenantId: 1, 'dateRange.startDate': 1, 'dateRange.endDate': 1 });
+dataArchiveSchema.index({ tenantId: 1, 'scheduledDeletion.deleteAfter': 1 });
+dataArchiveSchema.index({ tenantId: 1, 'legalHold.isOnHold': 1 });
 
 // Virtual for archive age in days
 dataArchiveSchema.virtual('ageInDays').get(function() {

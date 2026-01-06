@@ -49,6 +49,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../store/providers/ReduxAuthProvider';
 import { useModules } from '../store/providers/ReduxModuleProvider';
@@ -188,6 +189,7 @@ function DashboardSidebar({
             
             // Payroll module
             'payroll': 'payroll',
+            'salary-management': 'payroll',
             
             // Documents module
             'documents': 'documents',
@@ -595,6 +597,9 @@ function DashboardSidebar({
                                         locked={isMenuItemLocked('requests')}
                                     />
                                 )}
+
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Financial</DashboardSidebarHeaderItem>
                                 {shouldShowMenuItem('payroll') && (
                                     <DashboardSidebarPageItem
                                         id="payroll"
@@ -603,6 +608,16 @@ function DashboardSidebar({
                                         href={getCompanyRoute("/payroll")}
                                         selected={!!matchPath(getCompanyRoute('/payroll'), pathname)}
                                         locked={isMenuItemLocked('payroll')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('salary-management') && (
+                                    <DashboardSidebarPageItem
+                                        id="salary-management"
+                                        title="Salary Management"
+                                        icon={<AccountBalanceWalletIcon />}
+                                        href={getCompanyRoute("/salary-management")}
+                                        selected={!!matchPath(getCompanyRoute('/salary-management'), pathname)}
+                                        locked={isMenuItemLocked('salary-management')}
                                     />
                                 )}
                                 {shouldShowMenuItem('insurance') && (
@@ -858,6 +873,9 @@ function DashboardSidebar({
                                         locked={isMenuItemLocked('requests')}
                                     />
                                 )}
+
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Financial</DashboardSidebarHeaderItem>
                                 {shouldShowMenuItem('payroll') && (
                                     <DashboardSidebarPageItem
                                         id="payroll"
@@ -866,6 +884,16 @@ function DashboardSidebar({
                                         href={getCompanyRoute("/payroll")}
                                         selected={!!matchPath(getCompanyRoute('/payroll'), pathname)}
                                         locked={isMenuItemLocked('payroll')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('salary-management') && (
+                                    <DashboardSidebarPageItem
+                                        id="salary-management"
+                                        title="Salary Management"
+                                        icon={<AccountBalanceWalletIcon />}
+                                        href={getCompanyRoute("/salary-management")}
+                                        selected={!!matchPath(getCompanyRoute('/salary-management'), pathname)}
+                                        locked={isMenuItemLocked('salary-management')}
                                     />
                                 )}
                                 {shouldShowMenuItem('insurance') && (

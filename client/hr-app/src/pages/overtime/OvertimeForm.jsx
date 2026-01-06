@@ -267,7 +267,7 @@ const OvertimeForm = () => {
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                     error={Boolean(errors.startTime)}
                                     helperText={errors.startTime || 'Select overtime start time'}
                                 />
@@ -281,7 +281,7 @@ const OvertimeForm = () => {
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                     error={Boolean(errors.endTime)}
                                     helperText={errors.endTime || 'Select overtime end time'}
                                 />

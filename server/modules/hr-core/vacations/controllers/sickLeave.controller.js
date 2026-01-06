@@ -40,7 +40,7 @@ const getTenantModels = async (tenantId) => {
 export const getAllSickLeaves = async (req, res) => {
     try {
         // Get tenantId from user context (set by auth middleware)
-        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
             return res.status(400).json({
@@ -52,7 +52,7 @@ export const getAllSickLeaves = async (req, res) => {
         // Get tenant-specific models
         const { SickLeave: TenantSickLeave } = await getTenantModels(tenantId);
 
-        const query = { tenantId: req.tenantId };
+        const query = { tenantId: tenantId };
 
         // Filter by user/employee if provided
         if (req.query.user) {
@@ -111,7 +111,7 @@ export const getPendingDoctorReview = async (req, res) => {
         }
 
         // Get tenantId from user context (set by auth middleware)
-        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
             return res.status(400).json({
@@ -138,7 +138,7 @@ export const getPendingDoctorReview = async (req, res) => {
 export const createSickLeave = async (req, res) => {
     try {
         // Get tenantId from user context (set by auth middleware)
-        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
             return res.status(400).json({
@@ -167,7 +167,7 @@ export const createSickLeave = async (req, res) => {
         }
 
         // Set tenantId from authenticated request
-        req.body.tenantId = req.tenantId;
+        req.body.tenantId = tenantId;
 
         const sickLeave = new TenantSickLeave(req.body);
         const savedSickLeave = await sickLeave.save();
@@ -198,7 +198,7 @@ export const createSickLeave = async (req, res) => {
 export const getSickLeaveById = async (req, res) => {
     try {
         // Get tenantId from user context (set by auth middleware)
-        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
             return res.status(400).json({
@@ -212,7 +212,7 @@ export const getSickLeaveById = async (req, res) => {
 
         const sickLeave = await TenantSickLeave.findOne({ 
             _id: req.params.id, 
-            tenantId: req.tenantId 
+            tenantId: tenantId 
         })
             .populate('employee', 'username email employeeId personalInfo department position')
             .populate('department', 'name code')
@@ -238,7 +238,7 @@ export const getSickLeaveById = async (req, res) => {
 export const updateSickLeave = async (req, res) => {
     try {
         // Get tenantId from user context (set by auth middleware)
-        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
             return res.status(400).json({
@@ -252,7 +252,7 @@ export const updateSickLeave = async (req, res) => {
 
         const oldSickLeave = await TenantSickLeave.findOne({ 
             _id: req.params.id, 
-            tenantId: req.tenantId 
+            tenantId: tenantId 
         });
         if (!oldSickLeave) {
             return res.status(404).json({ error: 'Sick leave not found' });
@@ -266,7 +266,7 @@ export const updateSickLeave = async (req, res) => {
         }
 
         const sickLeave = await TenantSickLeave.findOneAndUpdate(
-            { _id: req.params.id, tenantId: req.tenantId },
+            { _id: req.params.id, tenantId: tenantId },
             req.body,
             { new: true, runValidators: true }
         );
@@ -284,7 +284,7 @@ export const updateSickLeave = async (req, res) => {
 export const deleteSickLeave = async (req, res) => {
     try {
         // Get tenantId from user context (set by auth middleware)
-        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
             return res.status(400).json({
@@ -298,7 +298,7 @@ export const deleteSickLeave = async (req, res) => {
 
         const sickLeave = await TenantSickLeave.findOne({ 
             _id: req.params.id, 
-            tenantId: req.tenantId 
+            tenantId: tenantId 
         });
         if (!sickLeave) {
             return res.status(404).json({ error: 'Sick leave not found' });
@@ -313,7 +313,7 @@ export const deleteSickLeave = async (req, res) => {
 
         await TenantSickLeave.findOneAndDelete({ 
             _id: req.params.id, 
-            tenantId: req.tenantId 
+            tenantId: tenantId 
         });
         res.json({ message: 'Sick leave deleted successfully' });
     } catch (err) {
@@ -328,7 +328,7 @@ export const deleteSickLeave = async (req, res) => {
 export const approveBySupervisor = async (req, res) => {
     try {
         // Get tenantId from user context (set by auth middleware)
-        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
             return res.status(400).json({
@@ -342,7 +342,7 @@ export const approveBySupervisor = async (req, res) => {
 
         const sickLeave = await TenantSickLeave.findOne({ 
             _id: req.params.id, 
-            tenantId: req.tenantId 
+            tenantId: tenantId 
         })
             .populate('employee', 'username email personalInfo');
 
@@ -400,7 +400,7 @@ export const approveBySupervisor = async (req, res) => {
 export const approveByDoctor = async (req, res) => {
     try {
         // Get tenantId from user context (set by auth middleware)
-        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
             return res.status(400).json({
@@ -414,7 +414,7 @@ export const approveByDoctor = async (req, res) => {
 
         const sickLeave = await TenantSickLeave.findOne({ 
             _id: req.params.id, 
-            tenantId: req.tenantId 
+            tenantId: tenantId 
         })
             .populate('employee', 'username email personalInfo');
 
@@ -468,7 +468,7 @@ export const approveByDoctor = async (req, res) => {
 export const rejectBySupervisor = async (req, res) => {
     try {
         // Get tenantId from user context (set by auth middleware)
-        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
             return res.status(400).json({
@@ -482,7 +482,7 @@ export const rejectBySupervisor = async (req, res) => {
 
         const sickLeave = await TenantSickLeave.findOne({ 
             _id: req.params.id, 
-            tenantId: req.tenantId 
+            tenantId: tenantId 
         })
             .populate('employee', 'username email personalInfo');
 
@@ -557,7 +557,7 @@ export const rejectBySupervisor = async (req, res) => {
 export const rejectByDoctor = async (req, res) => {
     try {
         // Get tenantId from user context (set by auth middleware)
-        const tenantId = req.user?.tenantId || req.tenant?.tenantId;
+        const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
             return res.status(400).json({
@@ -571,7 +571,7 @@ export const rejectByDoctor = async (req, res) => {
 
         const sickLeave = await TenantSickLeave.findOne({ 
             _id: req.params.id, 
-            tenantId: req.tenantId 
+            tenantId: tenantId 
         })
             .populate('employee', 'username email personalInfo');
 

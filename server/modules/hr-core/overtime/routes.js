@@ -4,9 +4,7 @@ import {
     createOvertime,
     getOvertimeById,
     updateOvertime,
-    deleteOvertime
-} from './controllers/overtimeController.js';
-import {
+    deleteOvertime,
     approveOvertime,
     rejectOvertime
 } from './controllers/overtime.controller.js';

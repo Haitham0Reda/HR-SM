@@ -816,7 +816,7 @@ const SurveysPage = () => {
                                     ...prev,
                                     settings: { ...prev.settings, startDate: e.target.value }
                                 }))}
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{ inputLabel: { shrink: true } }}
                                 fullWidth
                             />
                             <TextField
@@ -827,7 +827,7 @@ const SurveysPage = () => {
                                     ...prev,
                                     settings: { ...prev.settings, endDate: e.target.value }
                                 }))}
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{ inputLabel: { shrink: true } }}
                                 fullWidth
                             />
                         </Box>

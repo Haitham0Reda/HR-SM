@@ -1,9 +1,14 @@
 import mongoose from 'mongoose';
 
+/**
+ * PerformanceMetrics Model - Tenant-Specific
+ * Tracks performance metrics per tenant
+ */
 const performanceMetricsSchema = new mongoose.Schema({
   tenantId: {
     type: String,
-    required: true
+    required: true,
+    index: true
   },
   requestId: {
     type: String,
@@ -58,9 +63,9 @@ const performanceMetricsSchema = new mongoose.Schema({
 
 // Compound indexes for better query performance
 performanceMetricsSchema.index({ tenantId: 1, timestamp: -1 });
-performanceMetricsSchema.index({ path: 1, method: 1, timestamp: -1 });
-performanceMetricsSchema.index({ responseTime: -1 });
-performanceMetricsSchema.index({ statusCode: 1, timestamp: -1 });
+performanceMetricsSchema.index({ tenantId: 1, path: 1, method: 1, timestamp: -1 });
+performanceMetricsSchema.index({ tenantId: 1, responseTime: -1 });
+performanceMetricsSchema.index({ tenantId: 1, statusCode: 1, timestamp: -1 });
 
 const PerformanceMetrics = mongoose.model('PerformanceMetrics', performanceMetricsSchema);
 

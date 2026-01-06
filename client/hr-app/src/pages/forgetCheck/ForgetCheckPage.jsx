@@ -536,7 +536,7 @@ const ForgetCheckPage = () => {
                             onChange={handleChange}
                             required
                             fullWidth
-                            InputLabelProps={{ shrink: true }}
+                            slotProps={{ inputLabel: { shrink: true } }}
                         />
                         <TextField
                             select
@@ -562,7 +562,7 @@ const ForgetCheckPage = () => {
                                 onChange={handleChange}
                                 required
                                 fullWidth
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{ inputLabel: { shrink: true } }}
                             />
                             <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary', fontSize: '0.875rem' }}>
                                 Enter the time you arrived (for check in) or left (for check out).

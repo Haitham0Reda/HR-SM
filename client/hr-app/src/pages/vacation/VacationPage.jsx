@@ -498,7 +498,7 @@ const VacationPage = () => {
                                             name="startDate"
                                             value={formData.startDate}
                                             onChange={handleChange}
-                                            InputLabelProps={{ shrink: true }}
+                                            slotProps={{ inputLabel: { shrink: true } }}
                                             fullWidth
                                             required
                                         />
@@ -512,7 +512,7 @@ const VacationPage = () => {
                                             name="endDate"
                                             value={formData.endDate}
                                             onChange={handleChange}
-                                            InputLabelProps={{ shrink: true }}
+                                            slotProps={{ inputLabel: { shrink: true } }}
                                             fullWidth
                                             required
                                         />
@@ -645,7 +645,7 @@ const VacationPage = () => {
                             name="startDate"
                             value={formData.startDate}
                             onChange={handleChange}
-                            InputLabelProps={{ shrink: true }}
+                            slotProps={{ inputLabel: { shrink: true } }}
                             fullWidth
                             required
                         />
@@ -656,7 +656,7 @@ const VacationPage = () => {
                             name="endDate"
                             value={formData.endDate}
                             onChange={handleChange}
-                            InputLabelProps={{ shrink: true }}
+                            slotProps={{ inputLabel: { shrink: true } }}
                             fullWidth
                             required
                         />

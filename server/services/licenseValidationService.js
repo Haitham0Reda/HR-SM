@@ -1,4 +1,5 @@
-import CompanyLicense from '../models/CompanyLicense.js';
+// Note: CompanyLicense is now tenant-specific and stored per company database
+import { getModelForConnection } from '../config/sharedModels.js';
 import licenseSyncService from './licenseSyncService.js';
 import logger from '../utils/logger.js';
 
@@ -22,8 +23,9 @@ class LicenseValidationService {
     try {
       logger.info('Initializing license validation service...');
       
-      // Test database connection
-      await CompanyLicense.findOne().limit(1);
+      // Note: CompanyLicense is now tenant-specific, so we skip the database test
+      // Each tenant's license will be validated when they connect
+      logger.info('License validation service updated for tenant-specific architecture');
       
       // Initialize sync service
       await licenseSyncService.initialize();

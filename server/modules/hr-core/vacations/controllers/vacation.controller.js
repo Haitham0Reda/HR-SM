@@ -3,13 +3,56 @@ import Vacation from '../models/vacation.model.js';
 import Notification from '../../../notifications/models/notification.model.js';
 import { sendEmail, getEmployeeManager } from '../../../email-service/services/email.service.js';
 import User from '../../users/models/user.model.js';
+import multiTenantDB from '../../../../config/multiTenant.js';
+import { registerHRModels } from '../../../../utils/tenantModelRegistry.js';
+
+// Helper function to get tenant-specific models with safe registration
+const getTenantModels = async (tenantId) => {
+    try {
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+
+        // Register all HR models (User, Department, Position)
+        const hrModels = await registerHRModels(tenantConnection);
+
+        // Register Vacation model
+        let TenantVacation;
+        if (tenantConnection.models.Vacation) {
+            TenantVacation = tenantConnection.models.Vacation;
+        } else {
+            TenantVacation = tenantConnection.model('Vacation', Vacation.schema);
+        }
+
+        return {
+            Vacation: TenantVacation,
+            User: hrModels.User,
+            Department: hrModels.Department,
+            Position: hrModels.Position
+        };
+    } catch (error) {
+        console.error(`Error getting tenant models for ${tenantId}:`, error.message);
+        throw new Error(`Failed to get tenant models: ${error.message}`);
+    }
+};
 
 /**
  * Get all vacations with optional filtering
  */
 export const getAllVacations = async (req, res) => {
     try {
-        const query = { tenantId: req.tenantId };
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Vacation: TenantVacation } = await getTenantModels(tenantId);
+
+        const query = { tenantId: tenantId };
 
         // Filter by user/employee if provided
         if (req.query.user) {
@@ -33,26 +76,53 @@ export const getAllVacations = async (req, res) => {
             query.vacationType = req.query.vacationType;
         }
 
-        const vacations = await Vacation.find(query)
-            .populate('employee', 'username email employeeId personalInfo department position')
-            .populate('department', 'name code')
-            .populate('position', 'title')
-            .populate('approvedBy rejectedBy cancelledBy', 'username employeeId personalInfo')
-            .populate('vacationBalance')
-            .sort({ createdAt: -1 });
+        const vacations = await TenantVacation.find(query)
+            .populate({
+                path: 'employee',
+                select: 'username email employeeId personalInfo department position',
+                options: { lean: true }
+            })
+            .populate({
+                path: 'department',
+                select: 'name code',
+                options: { lean: true }
+            })
+            .populate({
+                path: 'position',
+                select: 'title',
+                options: { lean: true }
+            })
+            .populate({
+                path: 'approvedBy rejectedBy cancelledBy',
+                select: 'username employeeId personalInfo',
+                options: { lean: true }
+            })
+            .sort({ createdAt: -1 })
+            .lean(); // Use lean() to avoid circular references
 
-        // Map vacationType to leaveType for frontend compatibility
-        const mappedVacations = vacations.map(vacation => {
-            const vacationObj = vacation.toObject();
-            if (vacationObj.vacationType && !vacationObj.leaveType) {
-                vacationObj.leaveType = vacationObj.vacationType;
-            }
-            return vacationObj;
-        });
+        // Transform the data to ensure proper serialization and map vacationType to leaveType for frontend compatibility
+        const transformedVacations = vacations.map(vacation => ({
+            ...vacation,
+            leaveType: vacation.vacationType || vacation.leaveType, // Map vacationType to leaveType for frontend compatibility
+            employee: vacation.employee ? {
+                _id: vacation.employee._id,
+                username: vacation.employee.username,
+                email: vacation.employee.email,
+                employeeId: vacation.employee.employeeId,
+                personalInfo: vacation.employee.personalInfo ? {
+                    firstName: vacation.employee.personalInfo.firstName,
+                    lastName: vacation.employee.personalInfo.lastName,
+                    fullName: vacation.employee.personalInfo.fullName || 
+                             (vacation.employee.personalInfo.firstName && vacation.employee.personalInfo.lastName 
+                              ? `${vacation.employee.personalInfo.firstName} ${vacation.employee.personalInfo.lastName}` 
+                              : vacation.employee.username || vacation.employee.email)
+                } : null
+            } : null
+        }));
 
         res.json({
             success: true,
-            data: mappedVacations
+            data: transformedVacations
         });
     } catch (err) {
         console.error('Get vacations error:', err);
@@ -68,12 +138,27 @@ export const getAllVacations = async (req, res) => {
  */
 export const createVacation = async (req, res) => {
     try {
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Vacation: TenantVacation } = await getTenantModels(tenantId);
 
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
+        // Set tenantId in the request body
+        req.body.tenantId = tenantId;
+
         // Set employee from authenticated user if not provided
-        if (!req.body.employee && req.user && req.user.id) {
-            req.body.employee = req.user.id;
+        if (!req.body.employee && req.user && req.user._id) {
+            req.body.employee = req.user._id;
         }
 
         // Set department and position from user if available
@@ -100,12 +185,18 @@ export const createVacation = async (req, res) => {
             }));
         }
 
-        // Check for overlapping vacations
-        const hasOverlap = await Vacation.hasOverlappingVacation(
-            req.body.employee,
-            req.body.startDate,
-            req.body.endDate
-        );
+        // Check for overlapping vacations using tenant-specific model
+        const hasOverlap = await TenantVacation.findOne({
+            tenantId: tenantId,
+            employee: req.body.employee,
+            status: { $in: ['pending', 'approved'] },
+            $or: [
+                {
+                    startDate: { $lte: new Date(req.body.endDate) },
+                    endDate: { $gte: new Date(req.body.startDate) }
+                }
+            ]
+        });
 
         if (hasOverlap) {
             return res.status(400).json({
@@ -113,25 +204,21 @@ export const createVacation = async (req, res) => {
             });
         }
 
-        const vacation = new Vacation({
-            ...req.body,
-            tenantId: req.tenantId
-        });
+        const vacation = new TenantVacation(req.body);
         const savedVacation = await vacation.save();
 
         // Create notification for supervisor/manager
-        await createVacationNotification(savedVacation, 'submitted');
+        await createVacationNotification(savedVacation, 'submitted', tenantId);
 
         // Send email notification to manager
-        await sendVacationRequestNotification(savedVacation);
+        await sendVacationRequestNotification(savedVacation, tenantId);
 
         res.status(201).json({
             success: true,
             data: savedVacation
         });
     } catch (err) {
-
-
+        console.error('Create vacation error:', err);
         res.status(400).json({
             success: false,
             message: err.message,
@@ -148,9 +235,22 @@ export const createVacation = async (req, res) => {
  */
 export const getVacationById = async (req, res) => {
     try {
-        const vacation = await Vacation.findOne({ 
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Vacation: TenantVacation } = await getTenantModels(tenantId);
+
+        const vacation = await TenantVacation.findOne({ 
             _id: req.params.id, 
-            tenantId: req.tenantId 
+            tenantId: tenantId 
         })
             .populate('employee', 'username email employeeId personalInfo department position')
             .populate('department', 'name code')
@@ -183,7 +283,23 @@ export const getVacationById = async (req, res) => {
  */
 export const updateVacation = async (req, res) => {
     try {
-        const oldVacation = await Vacation.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Vacation: TenantVacation } = await getTenantModels(tenantId);
+
+        const oldVacation = await TenantVacation.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        });
         if (!oldVacation) {
             return res.status(404).json({ error: 'Vacation not found' });
         }
@@ -200,12 +316,18 @@ export const updateVacation = async (req, res) => {
             const startDate = req.body.startDate || oldVacation.startDate;
             const endDate = req.body.endDate || oldVacation.endDate;
 
-            const hasOverlap = await Vacation.hasOverlappingVacation(
-                oldVacation.employee,
-                startDate,
-                endDate,
-                req.params.id
-            );
+            const hasOverlap = await TenantVacation.findOne({
+                tenantId: tenantId,
+                employee: oldVacation.employee,
+                _id: { $ne: req.params.id }, // Exclude current vacation
+                status: { $in: ['pending', 'approved'] },
+                $or: [
+                    {
+                        startDate: { $lte: new Date(endDate) },
+                        endDate: { $gte: new Date(startDate) }
+                    }
+                ]
+            });
 
             if (hasOverlap) {
                 return res.status(400).json({
@@ -214,15 +336,18 @@ export const updateVacation = async (req, res) => {
             }
         }
 
-        const vacation = await Vacation.findByIdAndUpdate(
-            req.params.id,
+        // Set tenantId in the request body
+        req.body.tenantId = tenantId;
+
+        const vacation = await TenantVacation.findOneAndUpdate(
+            { _id: req.params.id, tenantId: tenantId },
             req.body,
             { new: true, runValidators: true }
         );
 
         res.json(vacation);
     } catch (err) {
-
+        console.error('Update vacation error:', err);
         res.status(400).json({ error: err.message });
     }
 };
@@ -232,7 +357,23 @@ export const updateVacation = async (req, res) => {
  */
 export const deleteVacation = async (req, res) => {
     try {
-        const vacation = await Vacation.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Vacation: TenantVacation } = await getTenantModels(tenantId);
+
+        const vacation = await TenantVacation.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        });
         if (!vacation) {
             return res.status(404).json({ error: 'Vacation not found' });
         }
@@ -244,10 +385,13 @@ export const deleteVacation = async (req, res) => {
             });
         }
 
-        await Vacation.findByIdAndDelete(req.params.id);
+        await TenantVacation.findOneAndDelete({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        });
         res.json({ message: 'Vacation deleted successfully' });
     } catch (err) {
-
+        console.error('Delete vacation error:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -257,7 +401,23 @@ export const deleteVacation = async (req, res) => {
  */
 export const approveVacation = async (req, res) => {
     try {
-        const vacation = await Vacation.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Vacation: TenantVacation } = await getTenantModels(tenantId);
+
+        const vacation = await TenantVacation.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!vacation) {
@@ -272,7 +432,7 @@ export const approveVacation = async (req, res) => {
         }
 
         const { notes } = req.body;
-        const userId = req.user.id;
+        const userId = req.user._id;
 
         // Check if user has permission to approve (supervisor, HR, admin)
         const canApprove = ['hr', 'admin', 'manager', 'supervisor', 'head-of-department', 'dean'].includes(req.user.role);
@@ -286,14 +446,14 @@ export const approveVacation = async (req, res) => {
         await vacation.approve(userId, notes);
 
         // Create notification for employee
-        await createVacationNotification(vacation, 'approved');
+        await createVacationNotification(vacation, 'approved', tenantId);
 
         // Send email notification to employee
-        await sendVacationStatusUpdateNotification(vacation);
+        await sendVacationStatusUpdateNotification(vacation, tenantId);
 
         res.json(vacation);
     } catch (err) {
-
+        console.error('Approve vacation error:', err);
         res.status(400).json({ error: err.message });
     }
 };
@@ -303,7 +463,23 @@ export const approveVacation = async (req, res) => {
  */
 export const rejectVacation = async (req, res) => {
     try {
-        const vacation = await Vacation.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Vacation: TenantVacation } = await getTenantModels(tenantId);
+
+        const vacation = await TenantVacation.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!vacation) {
@@ -317,9 +493,8 @@ export const rejectVacation = async (req, res) => {
             });
         }
 
-
         const { reason } = req.body;
-        const userId = req.user.id;
+        const userId = req.user._id;
 
         // Check if user has permission to reject (supervisor, HR, admin)
         const canReject = ['hr', 'admin', 'manager', 'supervisor', 'head-of-department', 'dean'].includes(req.user.role);
@@ -331,7 +506,6 @@ export const rejectVacation = async (req, res) => {
 
         // Validate reason
         if (!reason || typeof reason !== 'string') {
-
             return res.status(400).json({
                 error: 'Rejection reason is required and must be a string'
             });
@@ -339,14 +513,12 @@ export const rejectVacation = async (req, res) => {
 
         const trimmedReason = reason.trim();
         if (!trimmedReason) {
-
             return res.status(400).json({
                 error: 'Rejection reason is required and cannot be empty'
             });
         }
 
         if (trimmedReason.length < 10) {
-
             return res.status(400).json({
                 error: 'Rejection reason must be at least 10 characters long'
             });
@@ -356,15 +528,14 @@ export const rejectVacation = async (req, res) => {
         await vacation.reject(userId, trimmedReason);
 
         // Create notification for employee
-        await createVacationNotification(vacation, 'rejected');
+        await createVacationNotification(vacation, 'rejected', tenantId);
 
         // Send email notification to employee
-        await sendVacationStatusUpdateNotification(vacation);
+        await sendVacationStatusUpdateNotification(vacation, tenantId);
 
         res.json(vacation);
     } catch (err) {
-
-
+        console.error('Reject vacation error:', err);
         res.status(400).json({ error: err.message });
     }
 };
@@ -374,7 +545,23 @@ export const rejectVacation = async (req, res) => {
  */
 export const cancelVacation = async (req, res) => {
     try {
-        const vacation = await Vacation.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Vacation: TenantVacation } = await getTenantModels(tenantId);
+
+        const vacation = await TenantVacation.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!vacation) {
@@ -395,7 +582,7 @@ export const cancelVacation = async (req, res) => {
         }
 
         const { reason } = req.body;
-        const userId = req.user.id;
+        const userId = req.user._id;
 
         // Validate reason
         if (!reason || typeof reason !== 'string') {
@@ -421,11 +608,11 @@ export const cancelVacation = async (req, res) => {
         await vacation.cancel(userId, trimmedReason);
 
         // Create notification for employee and manager
-        await createVacationNotification(vacation, 'cancelled');
+        await createVacationNotification(vacation, 'cancelled', tenantId);
 
         res.json(vacation);
     } catch (err) {
-
+        console.error('Cancel vacation error:', err);
         res.status(400).json({ error: err.message });
     }
 };
@@ -433,13 +620,16 @@ export const cancelVacation = async (req, res) => {
 /**
  * Create notification for vacation status change
  */
-async function createVacationNotification(vacation, type) {
+async function createVacationNotification(vacation, type, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+        
         let recipient, message;
 
         if (type === 'submitted') {
             // Notify manager/supervisor
-            const employee = await User.findById(vacation.employee).populate('department');
+            const employee = await TenantUser.findById(vacation.employee).populate('department');
             if (!employee) return;
 
             const manager = await getEmployeeManager(employee);
@@ -477,26 +667,27 @@ async function createVacationNotification(vacation, type) {
             await vacation.save();
         }
     } catch (error) {
-
+        console.error('Create vacation notification error:', error);
     }
 }
 
 /**
  * Send vacation request notification to manager
  */
-async function sendVacationRequestNotification(vacation) {
+async function sendVacationRequestNotification(vacation, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+        
         // Get employee details
-        const employee = await User.findById(vacation.employee).select('username email personalInfo');
+        const employee = await TenantUser.findById(vacation.employee).select('username email personalInfo');
         if (!employee) {
-
             return { success: false, error: 'Employee not found' };
         }
 
         // Get manager
         const manager = await getEmployeeManager(employee);
         if (!manager || !manager.email) {
-
             return { success: false, error: 'Manager not found or has no email' };
         }
 
@@ -627,7 +818,6 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-
         return { success: false, error: error.message };
     }
 }
@@ -635,12 +825,14 @@ This is an automated notification from HR Management System
 /**
  * Send vacation status update notification to employee
  */
-async function sendVacationStatusUpdateNotification(vacation) {
+async function sendVacationStatusUpdateNotification(vacation, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+        
         // Get employee details
-        const employee = await User.findById(vacation.employee).select('username email personalInfo');
+        const employee = await TenantUser.findById(vacation.employee).select('username email personalInfo');
         if (!employee || !employee.email) {
-
             return { success: false, error: 'Employee not found or has no email' };
         }
 
@@ -784,7 +976,6 @@ This is an automated notification from HR Management System
         });
 
     } catch (error) {
-
         return { success: false, error: error.message };
     }
 }

@@ -512,9 +512,11 @@ const HardCopiesPage = () => {
                         
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <FormControl fullWidth variant="outlined">
-                                <InputLabel>Category</InputLabel>
+                                <InputLabel id="hardcopies-category-label">Category</InputLabel>
                                 <Select
                                     name="category"
+                                    id="hardcopies-category-select"
+                                    labelId="hardcopies-category-label"
                                     value={formData.category}
                                     onChange={handleChange}
                                     label="Category"

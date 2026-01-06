@@ -7,7 +7,9 @@
  */
 
 import mongoose from 'mongoose';
-import DataRetentionPolicy from '../../models/DataRetentionPolicy.js';
+// Note: DataRetentionPolicy is now tenant-specific and should be accessed through getModelForConnection
+// This test script needs to be updated for the new tenant-specific architecture
+import { getModelForConnection } from '../../config/sharedModels.js';
 
 async function validateDataRetentionPolicies() {
     console.log('🔍 Validating Data Retention Policy Enforcement...');

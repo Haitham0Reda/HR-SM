@@ -4,7 +4,8 @@ import crypto from 'crypto';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import winston from 'winston';
-import BackupLog from '../models/BackupLog.js';
+// Note: BackupLog is now tenant-specific and should be accessed through getModelForConnection
+import { getModelForConnection } from '../config/sharedModels.js';
 import BackupVerificationService from './backupVerificationService.js';
 import CloudStorageService from './cloudStorageService.js';
 import DatabaseRecoveryService from './databaseRecoveryService.js';

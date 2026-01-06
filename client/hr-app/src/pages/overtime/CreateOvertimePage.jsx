@@ -4,13 +4,14 @@ import {
     Button,
     TextField,
     Typography,
+    MenuItem,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import { CheckCircle, Cancel } from '@mui/icons-material';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
-import permissionService from '../../services/permission.service';
+import overtimeService from '../../services/overtime.service';
 
 const CreateOvertimePage = () => {
     const navigate = useNavigate();
@@ -23,7 +24,14 @@ const CreateOvertimePage = () => {
         startTime: '',
         endTime: '',
         reason: '',
+        compensationType: 'paid', // Default compensation type
     });
+
+    const compensationTypes = [
+        { value: 'paid', label: 'Paid' },
+        { value: 'time-off', label: 'Time Off' },
+        { value: 'none', label: 'None' }
+    ];
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -45,25 +53,34 @@ const CreateOvertimePage = () => {
             return;
         }
         try {
+            // Calculate duration in hours between startTime and endTime
+            let duration = 0;
+            if (formData.startTime && formData.endTime) {
+                const [startHour, startMin] = formData.startTime.split(':').map(Number);
+                const [endHour, endMin] = formData.endTime.split(':').map(Number);
+                const startMinutes = startHour * 60 + startMin;
+                const endMinutes = endHour * 60 + endMin;
+                duration = Math.abs(endMinutes - startMinutes) / 60; // Convert to hours
+            }
 
-            // Create overtime request using permission service
+            // Create overtime request using overtime service
             const overtimeData = {
-                type: 'overtime',
+                employee: formData.user,
                 date: formData.date,
                 startTime: formData.startTime,
                 endTime: formData.endTime,
+                duration: duration,
                 reason: formData.reason,
-                user: formData.user
+                compensationType: formData.compensationType
             };
 
-            const response = await permissionService.create(overtimeData);
+            const response = await overtimeService.create(overtimeData);
 
             showNotification('Overtime request created successfully', 'success');
 
-            // Trigger notification refresh for HR/Admin (with small delay)
-            setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('notificationUpdate'));
-            }, 500);
+            // Dispatch custom events to notify other components
+            window.dispatchEvent(new CustomEvent('overtimeCreated'));
+            window.dispatchEvent(new CustomEvent('notificationUpdate'));
 
             navigate(getCompanyRoute('/overtime'));
         } catch (error) {
@@ -138,12 +155,13 @@ const CreateOvertimePage = () => {
                             type="date"
                             label="Date *"
                             name="date"
+                            id="overtime-date"
                             value={formData.date}
                             onChange={handleChange}
                             required
                             fullWidth
-                            InputLabelProps={{
-                                shrink: true
+                            slotProps={{
+                                inputLabel: { shrink: true }
                             }}
                             helperText="Select the date for which you worked overtime."
                         />
@@ -153,11 +171,12 @@ const CreateOvertimePage = () => {
                                 type="time"
                                 label="End of Working Day *"
                                 name="startTime"
+                                id="overtime-start-time"
                                 value={formData.startTime}
                                 onChange={handleChange}
                                 fullWidth
-                                InputLabelProps={{
-                                    shrink: true
+                                slotProps={{
+                                    inputLabel: { shrink: true }
                                 }}
                                 helperText="This field is automatically set based on working hours."
                             />
@@ -165,19 +184,39 @@ const CreateOvertimePage = () => {
                                 type="time"
                                 label="Last Check Time *"
                                 name="endTime"
+                                id="overtime-end-time"
                                 value={formData.endTime}
                                 onChange={handleChange}
                                 fullWidth
-                                InputLabelProps={{
-                                    shrink: true
+                                slotProps={{
+                                    inputLabel: { shrink: true }
                                 }}
                                 helperText="Enter the time you actually left the office."
                             />
                         </Box>
 
                         <TextField
+                            select
+                            label="Compensation Type *"
+                            name="compensationType"
+                            id="overtime-compensation-type"
+                            value={formData.compensationType}
+                            onChange={handleChange}
+                            required
+                            fullWidth
+                            helperText="Select how you want to be compensated for overtime."
+                        >
+                            {compensationTypes.map((type) => (
+                                <MenuItem key={type.value} value={type.value}>
+                                    {type.label}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+
+                        <TextField
                             label="Reason (Optional)"
                             name="reason"
+                            id="overtime-reason"
                             value={formData.reason}
                             onChange={handleChange}
                             multiline

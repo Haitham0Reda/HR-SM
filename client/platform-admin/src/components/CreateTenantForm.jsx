@@ -399,6 +399,7 @@ const CreateTenantForm = ({ open, onClose, onSuccess }) => {
                 control={
                   <Checkbox
                     name="gdprCompliant"
+                    id="gdpr-compliant-checkbox"
                     checked={formik.values.gdprCompliant}
                     onChange={formik.handleChange}
                   />

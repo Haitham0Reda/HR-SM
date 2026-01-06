@@ -578,7 +578,7 @@ const BackupsPage = () => {
                             value={scheduleSettings.time}
                             onChange={(e) => setScheduleSettings({ ...scheduleSettings, time: e.target.value })}
                             fullWidth
-                            InputLabelProps={{ shrink: true }}
+                            slotProps={{ inputLabel: { shrink: true } }}
                         />
                         <TextField
                             type="number"

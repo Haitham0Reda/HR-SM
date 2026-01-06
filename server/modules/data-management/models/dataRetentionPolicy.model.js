@@ -1,10 +1,14 @@
 import mongoose from 'mongoose';
 
+/**
+ * DataRetentionPolicy Model - Tenant-Specific
+ * Manages data retention policies per tenant
+ */
 const dataRetentionPolicySchema = new mongoose.Schema({
   tenantId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Tenant', 
-    required: true
+    type: String,
+    required: true,
+    index: true
   },
   
   // Policy identification
@@ -175,8 +179,8 @@ const dataRetentionPolicySchema = new mongoose.Schema({
 
 // Indexes for performance
 dataRetentionPolicySchema.index({ tenantId: 1, dataType: 1 });
-dataRetentionPolicySchema.index({ status: 1, nextExecution: 1 });
-dataRetentionPolicySchema.index({ 'legalRequirements.jurisdiction': 1 });
+dataRetentionPolicySchema.index({ tenantId: 1, status: 1, nextExecution: 1 });
+dataRetentionPolicySchema.index({ tenantId: 1, 'legalRequirements.jurisdiction': 1 });
 
 // Virtual for retention period in days
 dataRetentionPolicySchema.virtual('retentionPeriodInDays').get(function() {

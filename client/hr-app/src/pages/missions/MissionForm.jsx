@@ -287,7 +287,7 @@ const MissionForm = () => {
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                     error={Boolean(errors.startDate)}
                                     helperText={errors.startDate || 'Select the first day of the mission'}
                                 />
@@ -301,7 +301,7 @@ const MissionForm = () => {
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                     error={Boolean(errors.endDate)}
                                     helperText={errors.endDate || 'Select the last day of the mission'}
                                 />
@@ -317,7 +317,7 @@ const MissionForm = () => {
                                     value={formData.startTime}
                                     onChange={handleChange}
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                     helperText="Optional: Specify start time if needed"
                                 />
                             </Grid>
@@ -329,7 +329,7 @@ const MissionForm = () => {
                                     value={formData.endTime}
                                     onChange={handleChange}
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                     helperText="Optional: Specify end time if needed"
                                 />
                             </Grid>
