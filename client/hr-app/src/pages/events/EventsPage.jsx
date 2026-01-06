@@ -379,7 +379,7 @@ const EventsPage = () => {
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                 />
                             </Grid>
                             <Grid size={{ xs: 6 }}>
@@ -391,7 +391,7 @@ const EventsPage = () => {
                                     onChange={handleChange}
                                     required
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                 />
                             </Grid>
                         </Grid>

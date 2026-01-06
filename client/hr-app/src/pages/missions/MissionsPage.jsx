@@ -29,6 +29,7 @@ import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import useSafeTableData from '../../hooks/useSafeTableData';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -350,6 +351,9 @@ const MissionsPage = () => {
     };
 
     const filteredData = getFilteredData();
+    
+    // Use safe table data hook to prevent array errors
+    const safeTableData = useSafeTableData(filteredData);
 
     const columns = [
         // Only show employee column in "All Users Missions" tab and if user can manage
@@ -532,6 +536,7 @@ const MissionsPage = () => {
                             fullWidth
                             label="Status"
                             name="status"
+                            id="missions-status-filter"
                             value={filters.status}
                             onChange={handleFilterChange}
                             size="small"
@@ -549,6 +554,7 @@ const MissionsPage = () => {
                             fullWidth
                             label="Sort By"
                             name="sortBy"
+                            id="missions-sortby-filter"
                             value={filters.sortBy}
                             onChange={handleFilterChange}
                             size="small"
@@ -566,6 +572,7 @@ const MissionsPage = () => {
                             fullWidth
                             label="Order"
                             name="sortOrder"
+                            id="missions-sortorder-filter"
                             value={filters.sortOrder}
                             onChange={handleFilterChange}
                             size="small"
@@ -611,15 +618,17 @@ const MissionsPage = () => {
                 {currentTab === 0 && (
                     <Box>
                         <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
-                            🎯 My Mission Requests ({filteredData.length})
+                            🎯 My Mission Requests ({safeTableData.length})
                         </Typography>
                         {console.log('🔍 About to render My Missions DataTable:', { 
                             filteredDataLength: filteredData.length, 
+                            safeTableDataLength: safeTableData.length,
                             columnsLength: columns.length,
                             filteredData: filteredData,
+                            safeTableData: safeTableData,
                             columns: columns.map(c => ({ id: c.id, label: c.label }))
                         })}
-                        {filteredData.length === 0 ? (
+                        {safeTableData.length === 0 ? (
                             <Box sx={{ textAlign: 'center', p: 4, border: '1px solid #ddd', borderRadius: 2 }}>
                                 <Typography variant="body2" color="text.secondary">
                                     No missions found. Click 'New Mission' to create one.
@@ -628,7 +637,7 @@ const MissionsPage = () => {
                         ) : (
                             <DataTable
                                 key={`my-missions-${refreshKey}`}
-                                data={filteredData}
+                                data={safeTableData}
                                 columns={columns}
                                 emptyMessage="No missions found. Click 'New Mission' to create one."
                             />
@@ -639,11 +648,11 @@ const MissionsPage = () => {
                 {currentTab === 1 && canManage && (
                     <Box>
                         <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
-                            👥 All Users Mission Requests ({filteredData.length})
+                            👥 All Users Mission Requests ({safeTableData.length})
                         </Typography>
                         <DataTable
                             key={`all-missions-${refreshKey}`}
-                            data={filteredData}
+                            data={safeTableData}
                             columns={columns}
                             emptyMessage="No mission requests found from any employees."
                         />

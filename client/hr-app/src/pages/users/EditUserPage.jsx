@@ -538,7 +538,7 @@ const EditUserPage = () => {
                                 value={formData.personalInfo.dateOfBirth}
                                 onChange={(e) => handleChange('personalInfo.dateOfBirth', e.target.value)}
                                 fullWidth
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{ inputLabel: { shrink: true } }}
                             />
                             <TextField
                                 label="Gender"
@@ -852,7 +852,7 @@ const EditUserPage = () => {
                                 value={formData.employment.hireDate}
                                 onChange={(e) => handleChange('employment.hireDate', e.target.value)}
                                 fullWidth
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{ inputLabel: { shrink: true } }}
                             />
                             <TextField
                                 label="Contract Type"

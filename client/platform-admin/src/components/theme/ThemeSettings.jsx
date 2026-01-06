@@ -5,6 +5,7 @@ import {
   CardContent,
   Typography,
   FormControl,
+  FormLabel,
   RadioGroup,
   FormControlLabel,
   Radio,
@@ -91,7 +92,11 @@ const ThemeSettings = () => {
               </Typography>
 
               <FormControl component="fieldset" fullWidth>
+                <FormLabel id="theme-selection-label" component="legend" sx={{ mb: 2 }}>
+                  Theme Selection
+                </FormLabel>
                 <RadioGroup
+                  aria-labelledby="theme-selection-label"
                   value={isCustomTheme ? '' : currentTheme}
                   onChange={handleThemeChange}
                 >
@@ -104,7 +109,7 @@ const ThemeSettings = () => {
                         <Grid item xs={12} key={themeName}>
                           <FormControlLabel
                             value={themeName}
-                            control={<Radio />}
+                            control={<Radio id={`theme-${themeName}`} />}
                             label={
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
                                 <Avatar 

@@ -250,17 +250,18 @@ const ClaimReviewModal = ({
                     
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12 }}>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
+                            <Typography id="claim-decision-label" variant="body2" sx={{ mb: 1 }}>
                                 Decision *
                             </Typography>
                             <RadioGroup
+                                aria-labelledby="claim-decision-label"
                                 value={reviewData.decision}
                                 onChange={(e) => handleFieldChange('decision', e.target.value)}
                                 row
                             >
                                 <FormControlLabel
                                     value="approved"
-                                    control={<Radio />}
+                                    control={<Radio id="claim-review-approved" />}
                                     label={
                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                             <ApproveIcon sx={{ mr: 1, color: 'success.main' }} />
@@ -270,7 +271,7 @@ const ClaimReviewModal = ({
                                 />
                                 <FormControlLabel
                                     value="rejected"
-                                    control={<Radio />}
+                                    control={<Radio id="claim-review-rejected" />}
                                     label={
                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                             <RejectIcon sx={{ mr: 1, color: 'error.main' }} />

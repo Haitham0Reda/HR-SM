@@ -114,11 +114,6 @@ const RolesPage = () => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    useEffect(() => {
-        fetchRoles();
-        fetchStats();
-    }, [fetchRoles, fetchStats]);
-
     const fetchRoles = useCallback(async () => {
         try {
             setLoading(true);
@@ -139,6 +134,11 @@ const RolesPage = () => {
             // Silent fail for stats
         }
     }, []);
+
+    useEffect(() => {
+        fetchRoles();
+        fetchStats();
+    }, [fetchRoles, fetchStats]);
 
     const handleDeleteClick = async (role) => {
         setSelectedRole(role);

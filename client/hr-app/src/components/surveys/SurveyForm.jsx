@@ -196,10 +196,11 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
             case 'single-choice':
                 return (
                     <FormControl component="fieldset" margin="normal">
-                        <FormLabel component="legend">
+                        <FormLabel id={`survey-single-choice-label-${question._id}`} component="legend">
                             {question.required ? `${question.questionText} *` : question.questionText}
                         </FormLabel>
                         <RadioGroup
+                            aria-labelledby={`survey-single-choice-label-${question._id}`}
                             value={answers[question._id] || ''}
                             onChange={(e) => handleAnswerChange(question._id, e.target.value, 'single-choice')}
                         >
@@ -207,7 +208,7 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
                                 <FormControlLabel
                                     key={index}
                                     value={option}
-                                    control={<Radio />}
+                                    control={<Radio id={`survey-${question._id}-option-${index}`} />}
                                     label={option}
                                 />
                             ))}
@@ -218,15 +219,16 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
             case 'multiple-choice':
                 return (
                     <FormControl component="fieldset" margin="normal">
-                        <FormLabel component="legend">
+                        <FormLabel id={`survey-multiple-choice-label-${question._id}`} component="legend">
                             {question.required ? `${question.questionText} *` : question.questionText}
                         </FormLabel>
-                        <FormGroup>
+                        <FormGroup aria-labelledby={`survey-multiple-choice-label-${question._id}`}>
                             {question.options.map((option, index) => (
                                 <FormControlLabel
                                     key={index}
                                     control={
                                         <Checkbox
+                                            id={`survey-${question._id}-checkbox-${index}`}
                                             checked={Array.isArray(answers[question._id]) && answers[question._id].includes(option)}
                                             onChange={() => handleAnswerChange(question._id, option, 'multiple-choice')}
                                         />
@@ -241,10 +243,11 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
             case 'rating':
                 return (
                     <Box margin="normal">
-                        <FormLabel component="legend">
+                        <FormLabel id={`survey-rating-label-${question._id}`} component="legend">
                             {question.required ? `${question.questionText} *` : question.questionText}
                         </FormLabel>
                         <Slider
+                            aria-labelledby={`survey-rating-label-${question._id}`}
                             value={answers[question._id] || question.ratingScale.min}
                             onChange={(e, newValue) => handleAnswerChange(question._id, newValue, 'rating')}
                             min={question.ratingScale.min}
@@ -263,15 +266,16 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
             case 'yes-no':
                 return (
                     <FormControl component="fieldset" margin="normal">
-                        <FormLabel component="legend">
+                        <FormLabel id={`survey-yes-no-label-${question._id}`} component="legend">
                             {question.required ? `${question.questionText} *` : question.questionText}
                         </FormLabel>
                         <RadioGroup
+                            aria-labelledby={`survey-yes-no-label-${question._id}`}
                             value={answers[question._id] || ''}
                             onChange={(e) => handleAnswerChange(question._id, e.target.value === 'true', 'yes-no')}
                         >
-                            <FormControlLabel value="true" control={<Radio />} label="Yes" />
-                            <FormControlLabel value="false" control={<Radio />} label="No" />
+                            <FormControlLabel value="true" control={<Radio id={`survey-${question._id}-yes`} />} label="Yes" />
+                            <FormControlLabel value="false" control={<Radio id={`survey-${question._id}-no`} />} label="No" />
                         </RadioGroup>
                     </FormControl>
                 );
@@ -301,8 +305,8 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
                         required={question.required}
                         variant="outlined"
                         margin="normal"
-                        InputLabelProps={{
-                            shrink: true,
+                        slotProps={{
+                            inputLabel: { shrink: true }
                         }}
                     />
                 );

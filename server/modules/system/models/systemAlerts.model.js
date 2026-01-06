@@ -1,9 +1,14 @@
 import mongoose from 'mongoose';
 
+/**
+ * SystemAlerts Model - Tenant-Specific
+ * Tracks system alerts and issues per tenant
+ */
 const systemAlertsSchema = new mongoose.Schema({
   tenantId: {
     type: String,
-    sparse: true // Some alerts might be system-wide
+    required: true,
+    index: true
   },
   type: {
     type: String,
@@ -177,13 +182,12 @@ const systemAlertsSchema = new mongoose.Schema({
 });
 
 // Compound indexes for better query performance
-systemAlertsSchema.index({ createdAt: -1 });
-systemAlertsSchema.index({ status: 1, severity: 1 });
-systemAlertsSchema.index({ type: 1, category: 1 });
-systemAlertsSchema.index({ tenantId: 1, status: 1 }, { sparse: true });
-systemAlertsSchema.index({ severity: 1, status: 1, createdAt: -1 });
-systemAlertsSchema.index({ source: 1, type: 1, createdAt: -1 });
-systemAlertsSchema.index({ priority: -1, createdAt: -1 });
+systemAlertsSchema.index({ tenantId: 1, createdAt: -1 });
+systemAlertsSchema.index({ tenantId: 1, status: 1, severity: 1 });
+systemAlertsSchema.index({ tenantId: 1, type: 1, category: 1 });
+systemAlertsSchema.index({ tenantId: 1, severity: 1, status: 1, createdAt: -1 });
+systemAlertsSchema.index({ tenantId: 1, source: 1, type: 1, createdAt: -1 });
+systemAlertsSchema.index({ tenantId: 1, priority: -1, createdAt: -1 });
 
 // TTL index for auto-cleanup of resolved alerts after 6 months
 systemAlertsSchema.index(

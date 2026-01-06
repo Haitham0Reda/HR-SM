@@ -3,22 +3,57 @@ import Permission from '../models/permission.model.js';
 import Notification from '../../../notifications/models/notification.model.js';
 import { sendEmail, getEmployeeManager } from '../../../email-service/services/email.service.js';
 import User from '../../users/models/user.model.js';
+import multiTenantDB from '../../../../config/multiTenant.js';
+import { registerHRModels } from '../../../../utils/tenantModelRegistry.js';
 import mongoose from 'mongoose';
+
+// Helper function to get tenant-specific models with safe registration
+const getTenantModels = async (tenantId) => {
+    try {
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+
+        // Register all HR models (User, Department, Position)
+        const hrModels = await registerHRModels(tenantConnection);
+
+        // Register Permission model
+        let TenantPermission;
+        if (tenantConnection.models.Permission) {
+            TenantPermission = tenantConnection.models.Permission;
+        } else {
+            TenantPermission = tenantConnection.model('Permission', Permission.schema);
+        }
+
+        return {
+            Permission: TenantPermission,
+            User: hrModels.User,
+            Department: hrModels.Department,
+            Position: hrModels.Position
+        };
+    } catch (error) {
+        console.error(`Error getting tenant models for ${tenantId}:`, error.message);
+        throw new Error(`Failed to get tenant models: ${error.message}`);
+    }
+};
 
 /**
  * Get all permission requests with optional filtering
  */
 export const getAllPermissionRequests = async (req, res) => {
     try {
-        // Use tenantId directly as string
-        if (!req.tenantId) {
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
             return res.status(400).json({
                 success: false,
                 message: 'Tenant ID is required'
             });
         }
+
+        // Get tenant-specific models
+        const { Permission: TenantPermission } = await getTenantModels(tenantId);
         
-        const query = { tenantId: req.tenantId };
+        const query = { tenantId: tenantId };
 
         // Filter by user/employee if provided
         if (req.query.user) {
@@ -45,7 +80,7 @@ export const getAllPermissionRequests = async (req, res) => {
             };
         }
 
-        const permissions = await Permission.find(query)
+        const permissions = await TenantPermission.find(query)
             .populate('employee', 'username email employeeId personalInfo')
             .populate('approval.reviewedBy', 'username employeeId personalInfo')
             .sort({ createdAt: -1 });
@@ -70,9 +105,22 @@ export const createPermissionRequest = async (req, res) => {
     try {
         console.log('Creating permission request for user:', req.user?.id);
 
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Permission: TenantPermission } = await getTenantModels(tenantId);
+
         // Handle different field name formats from frontend
         const permissionData = {
-            tenantId: req.tenantId,
+            tenantId: tenantId,
             employee: req.body.employee || req.body.user || req.user?.id || req.user?._id,
             permissionType: req.body.permissionType || req.body.type,
             date: req.body.date,
@@ -134,15 +182,15 @@ export const createPermissionRequest = async (req, res) => {
             };
         }
 
-        const permission = new Permission(permissionData);
+        const permission = new TenantPermission(permissionData);
         
         const savedPermission = await permission.save();
 
         // Create notification for supervisor/manager
-        await createPermissionNotification(savedPermission, 'submitted');
+        await createPermissionNotification(savedPermission, 'submitted', tenantId);
 
         // Send email notification to manager
-        await sendPermissionRequestNotification(savedPermission);
+        await sendPermissionRequestNotification(savedPermission, tenantId);
 
         res.status(201).json({
             success: true,
@@ -166,7 +214,23 @@ export const createPermissionRequest = async (req, res) => {
  */
 export const getPermissionRequestById = async (req, res) => {
     try {
-        const permission = await Permission.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Permission: TenantPermission } = await getTenantModels(tenantId);
+
+        const permission = await TenantPermission.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        })
             .populate('employee', 'username email employeeId personalInfo')
             .populate('approval.reviewedBy', 'username employeeId personalInfo');
 
@@ -186,7 +250,23 @@ export const getPermissionRequestById = async (req, res) => {
  */
 export const updatePermissionRequest = async (req, res) => {
     try {
-        const oldPermission = await Permission.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Permission: TenantPermission } = await getTenantModels(tenantId);
+
+        const oldPermission = await TenantPermission.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        });
         if (!oldPermission) {
             return res.status(404).json({ 
                 success: false,
@@ -204,7 +284,7 @@ export const updatePermissionRequest = async (req, res) => {
 
         // Process the update data similar to create function
         const updateData = {
-            tenantId: req.tenantId,
+            tenantId: tenantId,
             employee: req.body.employee || req.body.user || req.user?.id || req.user?._id,
             permissionType: req.body.permissionType || req.body.type,
             date: req.body.date,
@@ -257,8 +337,8 @@ export const updatePermissionRequest = async (req, res) => {
             }
         });
 
-        const permission = await Permission.findByIdAndUpdate(
-            req.params.id,
+        const permission = await TenantPermission.findOneAndUpdate(
+            { _id: req.params.id, tenantId: tenantId },
             updateData,
             { new: true, runValidators: true }
         );
@@ -285,7 +365,23 @@ export const updatePermissionRequest = async (req, res) => {
  */
 export const deletePermissionRequest = async (req, res) => {
     try {
-        const permission = await Permission.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Permission: TenantPermission } = await getTenantModels(tenantId);
+
+        const permission = await TenantPermission.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        });
         if (!permission) {
             return res.status(404).json({ error: 'Permission request not found' });
         }
@@ -297,7 +393,10 @@ export const deletePermissionRequest = async (req, res) => {
             });
         }
 
-        await Permission.findByIdAndDelete(req.params.id);
+        await TenantPermission.findOneAndDelete({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        });
         res.json({ message: 'Permission request deleted successfully' });
     } catch (err) {
         console.error('Delete permission request error:', err);
@@ -310,7 +409,23 @@ export const deletePermissionRequest = async (req, res) => {
  */
 export const approvePermissionRequest = async (req, res) => {
     try {
-        const permission = await Permission.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Permission: TenantPermission } = await getTenantModels(tenantId);
+
+        const permission = await TenantPermission.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!permission) {
@@ -339,10 +454,10 @@ export const approvePermissionRequest = async (req, res) => {
         await permission.approve(userId, notes);
 
         // Create notification for employee
-        await createPermissionNotification(permission, 'approved');
+        await createPermissionNotification(permission, 'approved', tenantId);
 
         // Send email notification to employee
-        await sendPermissionStatusUpdateNotification(permission);
+        await sendPermissionStatusUpdateNotification(permission, tenantId);
 
         res.json(permission);
     } catch (err) {
@@ -356,7 +471,23 @@ export const approvePermissionRequest = async (req, res) => {
  */
 export const rejectPermissionRequest = async (req, res) => {
     try {
-        const permission = await Permission.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Permission: TenantPermission } = await getTenantModels(tenantId);
+
+        const permission = await TenantPermission.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!permission) {
@@ -405,10 +536,10 @@ export const rejectPermissionRequest = async (req, res) => {
         await permission.reject(userId, trimmedReason);
 
         // Create notification for employee
-        await createPermissionNotification(permission, 'rejected');
+        await createPermissionNotification(permission, 'rejected', tenantId);
 
         // Send email notification to employee
-        await sendPermissionStatusUpdateNotification(permission);
+        await sendPermissionStatusUpdateNotification(permission, tenantId);
 
         res.json(permission);
     } catch (err) {
@@ -420,13 +551,16 @@ export const rejectPermissionRequest = async (req, res) => {
 /**
  * Create notification for permission request status change
  */
-async function createPermissionNotification(permission, type) {
+async function createPermissionNotification(permission, type, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+        
         let recipient, message;
 
         if (type === 'submitted') {
             // Notify manager/supervisor
-            const employee = await User.findById(permission.employee).populate('department');
+            const employee = await TenantUser.findById(permission.employee).populate('department');
             if (!employee) return;
 
             const manager = await getEmployeeManager(employee);
@@ -471,10 +605,13 @@ async function createPermissionNotification(permission, type) {
 /**
  * Send permission request notification to manager
  */
-async function sendPermissionRequestNotification(permission) {
+async function sendPermissionRequestNotification(permission, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+        
         // Get employee details
-        const employee = await User.findById(permission.employee).select('username email personalInfo');
+        const employee = await TenantUser.findById(permission.employee).select('username email personalInfo');
         if (!employee) {
             console.log('Employee not found for permission request notification');
             return { success: false, error: 'Employee not found' };
@@ -612,10 +749,13 @@ This is an automated notification from HR Management System
 /**
  * Send permission status update notification to employee
  */
-async function sendPermissionStatusUpdateNotification(permission) {
+async function sendPermissionStatusUpdateNotification(permission, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+        
         // Get employee details
-        const employee = await User.findById(permission.employee).select('username email personalInfo');
+        const employee = await TenantUser.findById(permission.employee).select('username email personalInfo');
         if (!employee || !employee.email) {
             console.log('Employee not found or has no email for permission status notification');
             return { success: false, error: 'Employee not found or has no email' };

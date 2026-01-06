@@ -1,6 +1,7 @@
 import axios from 'axios';
 import mongoose from 'mongoose';
-import CompanyLicense from '../models/CompanyLicense.js';
+// Note: CompanyLicense is now tenant-specific and stored per company database
+import { getModelForConnection } from '../config/sharedModels.js';
 import logger from '../utils/logger.js';
 
 /**

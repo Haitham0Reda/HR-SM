@@ -619,7 +619,7 @@ const CreateUserPage = () => {
                                             value={formData.personalInfo.dateOfBirth} 
                                             onChange={(e) => handleChange('personalInfo.dateOfBirth', e.target.value)} 
                                             fullWidth
-                                            InputLabelProps={{ shrink: true }}
+                                            slotProps={{ inputLabel: { shrink: true } }}
                                             InputProps={{
                                                 startAdornment: (
                                                     <InputAdornment position="start">
@@ -819,7 +819,7 @@ const CreateUserPage = () => {
                                     value={formData.employment.hireDate} 
                                     onChange={(e) => handleChange('employment.hireDate', e.target.value)} 
                                     fullWidth
-                                    InputLabelProps={{ shrink: true }}
+                                    slotProps={{ inputLabel: { shrink: true } }}
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">

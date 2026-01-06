@@ -54,10 +54,8 @@ import {
 // Import logs route (moved to early mounting before validation)
 // import logsRoutes from './routes/logs.routes.js';
 
-// Import system models to ensure collections are created
-import './models/performanceMetrics.model.js';
-import './models/securityEvents.model.js';
-import './models/systemAlerts.model.js';
+// Note: System models are now registered through the shared models registry
+// and initialized per tenant connection. No need to import them globally.
 
 const app = express();
 
@@ -358,6 +356,15 @@ export const initializeRoutes = async () => {
         console.log('✓ Permission-requests route loaded at /api/v1/permission-requests');
     } catch (error) {
         console.error('❌ Failed to load permission-requests route:', error);
+    }
+
+    // Ensure mixed-vacations route is loaded (temporary fix until module registry is fully working)
+    try {
+        const mixedVacationRoutes = await import('./modules/hr-core/vacations/routes/mixedVacation.routes.js');
+        app.use('/api/v1/mixed-vacations', mixedVacationRoutes.default);
+        console.log('✓ Mixed-vacations route loaded at /api/v1/mixed-vacations');
+    } catch (error) {
+        console.error('❌ Failed to load mixed-vacations route:', error);
     }
 
     console.log('✓ Modular routes loaded');

@@ -326,6 +326,8 @@ function EmployeeForm(props) {
                                     Change Photo
                                     <input 
                                         type="file" 
+                                        id="employee-profile-picture"
+                                        name="profilePicture"
                                         hidden 
                                         accept="image/*" 
                                         onChange={handleProfilePictureChange}
@@ -643,6 +645,7 @@ function EmployeeForm(props) {
                     <FormControlLabel
                         control={
                             <Checkbox
+                                id="allow-research-checkbox"
                                 checked={formValues.allowResearch || false}
                                 onChange={(e) => onFieldChange('allowResearch', e.target.checked)}
                             />
@@ -655,6 +658,7 @@ function EmployeeForm(props) {
                     <FormControlLabel
                         control={
                             <Checkbox
+                                id="include-in-attendance-checkbox"
                                 checked={formValues.includeInAttendance !== false}
                                 onChange={(e) => onFieldChange('includeInAttendance', e.target.checked)}
                             />

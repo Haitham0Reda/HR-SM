@@ -16,8 +16,15 @@ const overtimeService = {
      * @returns {Promise<Object>} Response containing overtime records array and metadata
      */
     getAll: async (params) => {
-        const data = await api.get('/overtime', { params });
-        return data;
+        console.log('🔍 OvertimeService - getAll called with params:', params);
+        try {
+            const data = await api.get('/overtime', { params });
+            console.log('🔍 OvertimeService - API response:', data);
+            return data;
+        } catch (error) {
+            console.error('🔍 OvertimeService - API error:', error);
+            throw error;
+        }
     },
 
     /**

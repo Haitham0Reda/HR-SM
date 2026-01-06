@@ -10,8 +10,9 @@
 
 import fc from 'fast-check';
 import mongoose from 'mongoose';
-import DataRetentionPolicy from '../../models/DataRetentionPolicy.js';
-import DataArchive from '../../models/DataArchive.js';
+// Note: DataRetentionPolicy and DataArchive are now tenant-specific
+// These tests need to be updated for the new tenant-specific architecture
+import { getModelForConnection } from '../../config/sharedModels.js';
 import complianceReportingService from '../../services/complianceReportingService.js';
 import { connectTestDatabase, clearTestDatabase, closeTestDatabase } from '../helpers/testDatabase.js';
 

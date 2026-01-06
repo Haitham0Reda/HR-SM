@@ -3,13 +3,56 @@ import Overtime from '../models/overtime.model.js';
 import Notification from '../../../notifications/models/notification.model.js';
 import { sendEmail, getEmployeeManager } from '../../../email-service/services/email.service.js';
 import User from '../../users/models/user.model.js';
+import multiTenantDB from '../../../../config/multiTenant.js';
+import { registerHRModels } from '../../../../utils/tenantModelRegistry.js';
+
+// Helper function to get tenant-specific models with safe registration
+const getTenantModels = async (tenantId) => {
+    try {
+        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+
+        // Register all HR models (User, Department, Position)
+        const hrModels = await registerHRModels(tenantConnection);
+
+        // Register Overtime model
+        let TenantOvertime;
+        if (tenantConnection.models.Overtime) {
+            TenantOvertime = tenantConnection.models.Overtime;
+        } else {
+            TenantOvertime = tenantConnection.model('Overtime', Overtime.schema);
+        }
+
+        return {
+            Overtime: TenantOvertime,
+            User: hrModels.User,
+            Department: hrModels.Department,
+            Position: hrModels.Position
+        };
+    } catch (error) {
+        console.error(`Error getting tenant models for ${tenantId}:`, error.message);
+        throw new Error(`Failed to get tenant models: ${error.message}`);
+    }
+};
 
 /**
  * Get all overtime records with optional filtering
  */
 export const getAllOvertime = async (req, res) => {
     try {
-        const query = {};
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Overtime: TenantOvertime } = await getTenantModels(tenantId);
+
+        const query = { tenantId: tenantId };
 
         // Filter by user/employee if provided
         if (req.query.user) {
@@ -33,17 +76,44 @@ export const getAllOvertime = async (req, res) => {
             query.compensationType = req.query.compensationType;
         }
 
-        const overtime = await Overtime.find(query)
-            .populate('employee', 'username email employeeId personalInfo department position')
-            .populate('department', 'name code')
-            .populate('position', 'title')
-            .populate('approvedBy rejectedBy', 'username employeeId personalInfo')
-            .sort({ createdAt: -1 });
+        const overtime = await TenantOvertime.find(query)
+            .populate({
+                path: 'employee',
+                select: 'username email employeeId personalInfo',
+                options: { lean: true }
+            })
+            .sort({ createdAt: -1 })
+            .lean(); // Use lean() to avoid circular references
 
-        res.json(overtime);
+        // Transform the data to ensure proper serialization
+        const transformedOvertime = overtime.map(ot => ({
+            ...ot,
+            employee: ot.employee ? {
+                _id: ot.employee._id,
+                username: ot.employee.username,
+                email: ot.employee.email,
+                employeeId: ot.employee.employeeId,
+                personalInfo: ot.employee.personalInfo ? {
+                    firstName: ot.employee.personalInfo.firstName,
+                    lastName: ot.employee.personalInfo.lastName,
+                    fullName: ot.employee.personalInfo.fullName || 
+                             (ot.employee.personalInfo.firstName && ot.employee.personalInfo.lastName 
+                              ? `${ot.employee.personalInfo.firstName} ${ot.employee.personalInfo.lastName}` 
+                              : ot.employee.username || ot.employee.email)
+                } : null
+            } : null
+        }));
+
+        res.json({
+            success: true,
+            data: transformedOvertime
+        });
     } catch (err) {
-
-        res.status(500).json({ error: err.message });
+        console.error('Get overtime error:', err.message);
+        res.status(500).json({ 
+            success: false,
+            message: err.message 
+        });
     }
 };
 
@@ -52,24 +122,42 @@ export const getAllOvertime = async (req, res) => {
  */
 export const createOvertime = async (req, res) => {
     try {
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Overtime: TenantOvertime } = await getTenantModels(tenantId);
 
         console.log('Request body:', JSON.stringify(req.body, null, 2));
 
-        const overtime = new Overtime(req.body);
+        // Set tenantId in the request body
+        req.body.tenantId = tenantId;
+
+        const overtime = new TenantOvertime(req.body);
         const savedOvertime = await overtime.save();
 
         // Create notification for supervisor/manager
-        await createOvertimeNotification(savedOvertime, 'submitted');
+        await createOvertimeNotification(savedOvertime, 'submitted', tenantId);
 
         // Send email notification to manager
-        await sendOvertimeRequestNotification(savedOvertime);
+        await sendOvertimeRequestNotification(savedOvertime, tenantId);
 
-        res.status(201).json(savedOvertime);
+        res.status(201).json({
+            success: true,
+            data: savedOvertime
+        });
     } catch (err) {
-
-
+        console.error('Create overtime error:', err);
         res.status(400).json({
-            error: err.message,
+            success: false,
+            message: err.message,
             details: err.errors ? Object.keys(err.errors).map(key => ({
                 field: key,
                 message: err.errors[key].message
@@ -83,7 +171,23 @@ export const createOvertime = async (req, res) => {
  */
 export const getOvertimeById = async (req, res) => {
     try {
-        const overtime = await Overtime.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Overtime: TenantOvertime } = await getTenantModels(tenantId);
+
+        const overtime = await TenantOvertime.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        })
             .populate('employee', 'username email employeeId personalInfo department position')
             .populate('department', 'name code')
             .populate('position', 'title')
@@ -95,7 +199,7 @@ export const getOvertimeById = async (req, res) => {
 
         res.json(overtime);
     } catch (err) {
-
+        console.error('Get overtime by ID error:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -105,7 +209,23 @@ export const getOvertimeById = async (req, res) => {
  */
 export const updateOvertime = async (req, res) => {
     try {
-        const oldOvertime = await Overtime.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Overtime: TenantOvertime } = await getTenantModels(tenantId);
+
+        const oldOvertime = await TenantOvertime.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        });
         if (!oldOvertime) {
             return res.status(404).json({ error: 'Overtime not found' });
         }
@@ -117,15 +237,18 @@ export const updateOvertime = async (req, res) => {
             });
         }
 
-        const overtime = await Overtime.findByIdAndUpdate(
-            req.params.id,
+        // Set tenantId in the request body
+        req.body.tenantId = tenantId;
+
+        const overtime = await TenantOvertime.findOneAndUpdate(
+            { _id: req.params.id, tenantId: tenantId },
             req.body,
             { new: true, runValidators: true }
         );
 
         res.json(overtime);
     } catch (err) {
-
+        console.error('Update overtime error:', err);
         res.status(400).json({ error: err.message });
     }
 };
@@ -135,7 +258,23 @@ export const updateOvertime = async (req, res) => {
  */
 export const deleteOvertime = async (req, res) => {
     try {
-        const overtime = await Overtime.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Overtime: TenantOvertime } = await getTenantModels(tenantId);
+
+        const overtime = await TenantOvertime.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        });
         if (!overtime) {
             return res.status(404).json({ error: 'Overtime not found' });
         }
@@ -147,10 +286,13 @@ export const deleteOvertime = async (req, res) => {
             });
         }
 
-        await Overtime.findByIdAndDelete(req.params.id);
+        await TenantOvertime.findOneAndDelete({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        });
         res.json({ message: 'Overtime deleted successfully' });
     } catch (err) {
-
+        console.error('Delete overtime error:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -160,7 +302,23 @@ export const deleteOvertime = async (req, res) => {
  */
 export const approveOvertime = async (req, res) => {
     try {
-        const overtime = await Overtime.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Overtime: TenantOvertime } = await getTenantModels(tenantId);
+
+        const overtime = await TenantOvertime.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!overtime) {
@@ -189,14 +347,14 @@ export const approveOvertime = async (req, res) => {
         await overtime.approve(userId, notes);
 
         // Create notification for employee
-        await createOvertimeNotification(overtime, 'approved');
+        await createOvertimeNotification(overtime, 'approved', tenantId);
 
         // Send email notification to employee
-        await sendOvertimeStatusUpdateNotification(overtime);
+        await sendOvertimeStatusUpdateNotification(overtime, tenantId);
 
         res.json(overtime);
     } catch (err) {
-
+        console.error('Approve overtime error:', err);
         res.status(400).json({ error: err.message });
     }
 };
@@ -206,7 +364,23 @@ export const approveOvertime = async (req, res) => {
  */
 export const rejectOvertime = async (req, res) => {
     try {
-        const overtime = await Overtime.findById(req.params.id)
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Get tenant-specific models
+        const { Overtime: TenantOvertime } = await getTenantModels(tenantId);
+
+        const overtime = await TenantOvertime.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        })
             .populate('employee', 'username email personalInfo');
 
         if (!overtime) {
@@ -219,7 +393,6 @@ export const rejectOvertime = async (req, res) => {
                 error: `Overtime is already ${overtime.status}`
             });
         }
-
 
         const { reason } = req.body;
         const userId = req.user._id;
@@ -234,7 +407,6 @@ export const rejectOvertime = async (req, res) => {
 
         // Validate reason
         if (!reason || typeof reason !== 'string') {
-
             return res.status(400).json({
                 error: 'Rejection reason is required and must be a string'
             });
@@ -242,14 +414,12 @@ export const rejectOvertime = async (req, res) => {
 
         const trimmedReason = reason.trim();
         if (!trimmedReason) {
-
             return res.status(400).json({
                 error: 'Rejection reason is required and cannot be empty'
             });
         }
 
         if (trimmedReason.length < 10) {
-
             return res.status(400).json({
                 error: 'Rejection reason must be at least 10 characters long'
             });
@@ -259,15 +429,14 @@ export const rejectOvertime = async (req, res) => {
         await overtime.reject(userId, trimmedReason);
 
         // Create notification for employee
-        await createOvertimeNotification(overtime, 'rejected');
+        await createOvertimeNotification(overtime, 'rejected', tenantId);
 
         // Send email notification to employee
-        await sendOvertimeStatusUpdateNotification(overtime);
+        await sendOvertimeStatusUpdateNotification(overtime, tenantId);
 
         res.json(overtime);
     } catch (err) {
-
-
+        console.error('Reject overtime error:', err);
         res.status(400).json({ error: err.message });
     }
 };
@@ -275,13 +444,16 @@ export const rejectOvertime = async (req, res) => {
 /**
  * Create notification for overtime status change
  */
-async function createOvertimeNotification(overtime, type) {
+async function createOvertimeNotification(overtime, type, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+        
         let recipient, message;
 
         if (type === 'submitted') {
             // Notify manager/supervisor
-            const employee = await User.findById(overtime.employee).populate('department');
+            const employee = await TenantUser.findById(overtime.employee).populate('department');
             if (!employee) return;
 
             const manager = await getEmployeeManager(employee);
@@ -319,17 +491,20 @@ async function createOvertimeNotification(overtime, type) {
             await overtime.save();
         }
     } catch (error) {
-
+        console.error('Create overtime notification error:', error);
     }
 }
 
 /**
  * Send overtime request notification to manager
  */
-async function sendOvertimeRequestNotification(overtime) {
+async function sendOvertimeRequestNotification(overtime, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+        
         // Get employee details
-        const employee = await User.findById(overtime.employee).select('username email personalInfo');
+        const employee = await TenantUser.findById(overtime.employee).select('username email personalInfo');
         if (!employee) {
 
             return { success: false, error: 'Employee not found' };
@@ -466,10 +641,13 @@ This is an automated notification from HR Management System
 /**
  * Send overtime status update notification to employee
  */
-async function sendOvertimeStatusUpdateNotification(overtime) {
+async function sendOvertimeStatusUpdateNotification(overtime, tenantId) {
     try {
+        // Get tenant-specific models
+        const { User: TenantUser } = await getTenantModels(tenantId);
+        
         // Get employee details
-        const employee = await User.findById(overtime.employee).select('username email personalInfo');
+        const employee = await TenantUser.findById(overtime.employee).select('username email personalInfo');
         if (!employee || !employee.email) {
 
             return { success: false, error: 'Employee not found or has no email' };

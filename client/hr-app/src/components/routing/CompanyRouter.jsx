@@ -40,6 +40,7 @@ import VacationRequestPage from '../../pages/vacation/VacationRequestPage';
 import VacationPage from '../../pages/vacation/VacationPage';
 import VacationDebug from '../../pages/debug/VacationDebug';
 import PayrollPage from '../../pages/payroll/PayrollPage';
+import SalaryManagementPage from '../../pages/payroll/SalaryManagementPage';
 import DocumentsPage from '../../pages/documents/DocumentsPage';
 import TemplatesPage from '../../pages/templates/TemplatesPage';
 import HardCopiesPage from '../../pages/hardcopies/HardCopiesPage';
@@ -194,6 +195,7 @@ const CompanyRouter = () => {
                 <Route path="vacation" element={<VacationPage />} />
                 <Route path="vacation-debug" element={<VacationDebug />} />
                 <Route path="payroll" element={<PayrollPage />} />
+                <Route path="salary-management" element={<SalaryManagementPage />} />
 
                 {/* Documents */}
                 <Route path="documents" element={<DocumentsPage />} />

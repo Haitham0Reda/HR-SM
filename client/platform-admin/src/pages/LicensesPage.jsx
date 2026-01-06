@@ -438,8 +438,10 @@ const LicensesPage = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
+                <InputLabel id="license-status-filter-label">Status</InputLabel>
                 <Select
+                  id="license-status-filter"
+                  labelId="license-status-filter-label"
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
                   label="Status"
@@ -455,8 +457,10 @@ const LicensesPage = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth>
-                <InputLabel>Type</InputLabel>
+                <InputLabel id="license-type-filter-label">Type</InputLabel>
                 <Select
+                  id="license-type-filter"
+                  labelId="license-type-filter-label"
                   value={filters.type}
                   onChange={(e) => handleFilterChange('type', e.target.value)}
                   label="Type"
@@ -653,8 +657,10 @@ const LicensesPage = () => {
           <Grid container spacing={3} sx={{ mt: 1 }}>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>Tenant</InputLabel>
+                <InputLabel id="license-tenant-label">Tenant</InputLabel>
                 <Select
+                  id="license-tenant-select"
+                  labelId="license-tenant-label"
                   value={newLicense.tenantId}
                   onChange={(e) => setNewLicense({ ...newLicense, tenantId: e.target.value })}
                   label="Tenant"
@@ -670,8 +676,10 @@ const LicensesPage = () => {
 
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>License Type</InputLabel>
+                <InputLabel id="license-type-label">License Type</InputLabel>
                 <Select
+                  id="license-type-select"
+                  labelId="license-type-label"
                   value={newLicense.type}
                   onChange={(e) => setNewLicense({ ...newLicense, type: e.target.value })}
                   label="License Type"
@@ -735,8 +743,10 @@ const LicensesPage = () => {
 
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel>Enabled Modules</InputLabel>
+                <InputLabel id="license-modules-label">Enabled Modules</InputLabel>
                 <Select
+                  id="license-modules-select"
+                  labelId="license-modules-label"
                   multiple
                   value={newLicense.features.modules}
                   onChange={(e) => setNewLicense({

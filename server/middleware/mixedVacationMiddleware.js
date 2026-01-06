@@ -15,15 +15,16 @@ export const validateDateRange = (req, res, next) => {
         const start = new Date(startDate);
         const end = new Date(endDate);
 
-        if (end <= start) {
+        // Allow same date for single-day policies
+        if (end < start) {
             return res.status(400).json({
                 success: false,
-                message: 'End date must be after start date'
+                message: 'End date cannot be before start date'
             });
         }
 
         // Check if date range is reasonable (not more than 30 days)
-        const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
         if (diffDays > 30) {
             return res.status(400).json({
                 success: false,
@@ -80,27 +81,16 @@ export const validateApplicableScope = (req, res, next) => {
     const { applicableTo } = req.body;
 
     if (applicableTo) {
-        const { locationes, departments, allEmployees } = applicableTo;
+        const { departments, allEmployees } = applicableTo;
 
-        if (!allEmployees && (!locationes || locationes.length === 0) && (!departments || departments.length === 0)) {
+        if (!allEmployees && (!departments || departments.length === 0)) {
             return res.status(400).json({
                 success: false,
-                message: 'Must specify locationes, departments, or select all employees'
+                message: 'Must specify departments or select all employees'
             });
         }
 
-        // Validate ObjectIds
-        if (locationes && locationes.length > 0) {
-            const invalidIds = locationes.filter(id => !mongoose.Types.ObjectId.isValid(id));
-            if (invalidIds.length > 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid location IDs',
-                    invalidIds
-                });
-            }
-        }
-
+        // Validate ObjectIds for departments
         if (departments && departments.length > 0) {
             const invalidIds = departments.filter(id => !mongoose.Types.ObjectId.isValid(id));
             if (invalidIds.length > 0) {
@@ -157,8 +147,26 @@ export const validatePolicyStatus = (req, res, next) => {
  */
 export const checkPolicyExists = async (req, res, next) => {
     try {
-        const MixedVacation = mongoose.model('MixedVacation');
-        const policy = await MixedVacation.findById(req.params.id);
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Import the controller's getTenantModels function directly
+        const { getTenantModels } = await import('../modules/hr-core/vacations/controllers/mixedVacation.controller.js');
+
+        // Get tenant-specific models using the same function as the controller
+        const { MixedVacation } = await getTenantModels(tenantId);
+
+        const policy = await MixedVacation.findOne({ 
+            _id: req.params.id, 
+            tenantId: tenantId 
+        });
 
         if (!policy) {
             return res.status(404).json({
@@ -170,7 +178,7 @@ export const checkPolicyExists = async (req, res, next) => {
         req.policy = policy;
         next();
     } catch (error) {
-
+        console.error('Error checking policy:', error);
         return res.status(500).json({
             success: false,
             message: 'Error checking policy'
@@ -184,9 +192,27 @@ export const checkPolicyExists = async (req, res, next) => {
 export const checkEmployeeExists = async (req, res, next) => {
     try {
         const { employeeId } = req.params;
+        
+        // Get tenantId from user context (set by auth middleware)
+        const tenantId = req.tenantId || req.user?.tenantId;
 
-        const User = mongoose.model('User');
-        const employee = await User.findById(employeeId);
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tenant ID is required'
+            });
+        }
+
+        // Import the controller's getTenantModels function directly
+        const { getTenantModels } = await import('../modules/hr-core/vacations/controllers/mixedVacation.controller.js');
+
+        // Get tenant-specific models using the same function as the controller
+        const { User } = await getTenantModels(tenantId);
+
+        const employee = await User.findOne({ 
+            _id: employeeId,
+            tenantId: tenantId 
+        });
 
         if (!employee) {
             return res.status(404).json({
@@ -205,7 +231,7 @@ export const checkEmployeeExists = async (req, res, next) => {
         req.employee = employee;
         next();
     } catch (error) {
-
+        console.error('Error checking employee:', error);
         return res.status(500).json({
             success: false,
             message: 'Error checking employee'

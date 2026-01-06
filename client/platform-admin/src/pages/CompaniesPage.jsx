@@ -699,8 +699,10 @@ const CompaniesPage = () => {
                 sx={{ flex: '1 1 250px' }}
               />
               <FormControl sx={{ flex: '1 1 250px' }}>
-                <InputLabel>Timezone</InputLabel>
+                <InputLabel id="new-company-timezone-label">Timezone</InputLabel>
                 <Select
+                  id="new-company-timezone-select"
+                  labelId="new-company-timezone-label"
                   value={newCompany.settings.timezone}
                   onChange={(e) => setNewCompany({
                     ...newCompany,
@@ -1139,8 +1141,10 @@ const CompaniesPage = () => {
                 sx={{ flex: '1 1 250px' }}
               />
               <FormControl sx={{ flex: '1 1 250px' }}>
-                <InputLabel>Timezone</InputLabel>
+                <InputLabel id="edit-company-timezone-label">Timezone</InputLabel>
                 <Select
+                  id="edit-company-timezone-select"
+                  labelId="edit-company-timezone-label"
                   value={editCompanyData.settings?.timezone || 'UTC'}
                   onChange={(e) => setEditCompanyData({
                     ...editCompanyData,
@@ -1166,8 +1170,10 @@ const CompaniesPage = () => {
               '& > *': { flex: '1 1 250px', minWidth: '250px' }
             }}>
               <FormControl sx={{ flex: '1 1 250px' }}>
-                <InputLabel>Currency</InputLabel>
+                <InputLabel id="edit-company-currency-label">Currency</InputLabel>
                 <Select
+                  id="edit-company-currency-select"
+                  labelId="edit-company-currency-label"
                   value={editCompanyData.settings?.currency || 'USD'}
                   onChange={(e) => setEditCompanyData({
                     ...editCompanyData,
@@ -1195,7 +1201,7 @@ const CompaniesPage = () => {
                     }
                   }
                 })}
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
                 sx={{ flex: '1 1 250px' }}
               />
             </Box>
@@ -1220,7 +1226,7 @@ const CompaniesPage = () => {
                     }
                   }
                 })}
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
                 sx={{ flex: '1 1 250px' }}
               />
             </Box>

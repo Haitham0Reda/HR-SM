@@ -121,7 +121,7 @@ export const EmployeeForm = () => (
         <MenuItem value="senior">Senior</MenuItem>
         <MenuItem value="junior">Junior</MenuItem>
       </Select>
-      <TextField label="Start Date" type="date" required fullWidth InputLabelProps={{ shrink: true }} />
+      <TextField label="Start Date" type="date" required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
       <TextField label="Salary" type="number" fullWidth />
     </FormSection>
 
@@ -205,7 +205,7 @@ export const LongDescription = () => (
       description="We collect this information to provide you with better service and personalized experience. Your data is protected according to our privacy policy and will never be shared with third parties without your explicit consent. You can update or delete this information at any time from your account settings."
     >
       <TextField label="Full Name" required fullWidth />
-      <TextField label="Date of Birth" type="date" fullWidth InputLabelProps={{ shrink: true }} />
+      <TextField label="Date of Birth" type="date" fullWidth slotProps={{ inputLabel: { shrink: true } }} />
       <TextField label="Occupation" fullWidth />
     </FormSection>
   </div>

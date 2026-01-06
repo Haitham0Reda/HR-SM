@@ -409,6 +409,7 @@ const ModuleControl = ({ open, onClose, tenantId, tenantName, currentLicense, on
                               <FormControlLabel
                                 control={
                                   <Switch
+                                    id={`module-toggle-${module.id}`}
                                     checked={enabled}
                                     onChange={(e) => handleModuleToggle(module.id, e.target.checked)}
                                     disabled={enabled ? !canDisable : !canEnable}

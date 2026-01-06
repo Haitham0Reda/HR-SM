@@ -6,6 +6,13 @@
 import mongoose from 'mongoose';
 
 const mixedVacationSchema = new mongoose.Schema({
+    // Tenant ID for multi-tenancy
+    tenantId: {
+        type: String,
+        required: true,
+        index: true
+    },
+    
     // Policy Information
     name: {
         type: String,
@@ -187,6 +194,9 @@ const mixedVacationSchema = new mongoose.Schema({
 });
 
 // Indexes
+mixedVacationSchema.index({ tenantId: 1, startDate: 1, endDate: 1 });
+mixedVacationSchema.index({ tenantId: 1, status: 1 });
+mixedVacationSchema.index({ tenantId: 1, 'applications.employee': 1 });
 mixedVacationSchema.index({ startDate: 1, endDate: 1 });
 mixedVacationSchema.index({ status: 1 });
 mixedVacationSchema.index({ 'applications.employee': 1 });
@@ -434,11 +444,11 @@ mixedVacationSchema.methods.applyToAll = async function (approvedBy) {
 };
 
 // Static method to find active policies
-mixedVacationSchema.statics.findActivePolicies = async function () {
-
+mixedVacationSchema.statics.findActivePolicies = async function (tenantId) {
     const now = new Date();
 
     const query = {
+        tenantId: tenantId,
         status: 'active',
         startDate: { $lte: now },
         endDate: { $gte: now }
@@ -446,32 +456,28 @@ mixedVacationSchema.statics.findActivePolicies = async function () {
 
     try {
         const result = await this.find(query).populate('createdBy', 'username email');
-
         return result;
     } catch (err) {
-
         throw err;
     }
 };
 
 // Static method to find upcoming policies
-mixedVacationSchema.statics.findUpcomingPolicies = async function (days = 30) {
-
+mixedVacationSchema.statics.findUpcomingPolicies = async function (tenantId, days = 30) {
     const now = new Date();
     const future = new Date();
     future.setDate(future.getDate() + days);
 
     const query = {
+        tenantId: tenantId,
         status: 'active',
         startDate: { $gte: now, $lte: future }
     };
 
     try {
         const result = await this.find(query).populate('createdBy', 'username email');
-
         return result;
     } catch (err) {
-
         throw err;
     }
 };

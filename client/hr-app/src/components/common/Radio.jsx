@@ -71,10 +71,17 @@ Radio.propTypes = {
 
 // RadioGroup wrapper for convenience
 export const RadioGroupWrapper = ({ label, value, onChange, children, row = false, sx = {} }) => {
+  const labelId = `radio-group-label-${Math.random().toString(36).substr(2, 9)}`;
+  
   return (
     <FormControl sx={sx}>
-      {label && <FormLabel>{label}</FormLabel>}
-      <RadioGroup value={value} onChange={onChange} row={row}>
+      {label && <FormLabel id={labelId}>{label}</FormLabel>}
+      <RadioGroup 
+        value={value} 
+        onChange={onChange} 
+        row={row}
+        aria-labelledby={label ? labelId : undefined}
+      >
         {children}
       </RadioGroup>
     </FormControl>

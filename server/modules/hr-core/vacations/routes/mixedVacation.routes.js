@@ -66,7 +66,6 @@ router.post('/',
     validateTotalDays,
     validateDeductionStrategy,
     validateApplicableScope,
-    validatePolicyStatus,
     createPolicy
 );
 

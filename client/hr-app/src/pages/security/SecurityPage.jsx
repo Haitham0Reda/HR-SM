@@ -242,6 +242,7 @@ const SecurityPage = () => {
                                         <FormControlLabel
                                             control={
                                                 <Switch
+                                                    id="two-factor-auth-switch"
                                                     checked={settings.twoFactorAuth.enabled}
                                                     onChange={handleSettingChange('twoFactorAuth.enabled')}
                                                 />
@@ -257,6 +258,7 @@ const SecurityPage = () => {
                                         <FormControlLabel
                                             control={
                                                 <Switch
+                                                    id="password-expiry-switch"
                                                     checked={settings.passwordPolicy.expirationDays > 0}
                                                     onChange={(e) => {
                                                         const newSettings = { ...settings };

@@ -461,8 +461,10 @@ export default function ModuleManagement() {
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>Module</InputLabel>
+                <InputLabel id="module-select-label">Module</InputLabel>
                 <Select
+                  id="module-select"
+                  labelId="module-select-label"
                   value={moduleForm.moduleKey}
                   onChange={(e) => setModuleForm({ ...moduleForm, moduleKey: e.target.value })}
                 >
@@ -476,8 +478,10 @@ export default function ModuleManagement() {
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>Tier</InputLabel>
+                <InputLabel id="tier-select-label">Tier</InputLabel>
                 <Select
+                  id="tier-select"
+                  labelId="tier-select-label"
                   value={moduleForm.tier}
                   onChange={(e) => setModuleForm({ ...moduleForm, tier: e.target.value })}
                 >
@@ -545,8 +549,10 @@ export default function ModuleManagement() {
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>Module</InputLabel>
+                <InputLabel id="bulk-module-select-label">Module</InputLabel>
                 <Select
+                  id="bulk-module-select"
+                  labelId="bulk-module-select-label"
                   value={bulkForm.moduleKey}
                   onChange={(e) => setBulkForm({ ...bulkForm, moduleKey: e.target.value })}
                 >
@@ -560,8 +566,10 @@ export default function ModuleManagement() {
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>Tier</InputLabel>
+                <InputLabel id="bulk-tier-select-label">Tier</InputLabel>
                 <Select
+                  id="bulk-tier-select"
+                  labelId="bulk-tier-select-label"
                   value={bulkForm.tier}
                   onChange={(e) => setBulkForm({ ...bulkForm, tier: e.target.value })}
                 >

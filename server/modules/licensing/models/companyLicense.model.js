@@ -4,6 +4,7 @@ import crypto from 'crypto';
 /**
  * Company License Schema - Stored in Each Company Database
  * This is an encrypted copy of the license for local validation and performance
+ * Tenant-specific by design (one per company database)
  */
 const companyLicenseSchema = new mongoose.Schema({
   // License Identification

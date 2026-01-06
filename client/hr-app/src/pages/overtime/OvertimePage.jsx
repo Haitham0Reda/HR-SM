@@ -22,7 +22,7 @@ import {
     Person as PersonIcon,
     Group as GroupIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
 import Loading from '../../components/common/Loading';
@@ -35,6 +35,7 @@ import overtimeService from '../../services/overtime.service';
 const OvertimePage = () => {
     useDocumentTitle('Overtime');
     const navigate = useNavigate();
+    const location = useLocation();
     const { getCompanyRoute } = useCompanyRouting();
     const { user, isHR, isAdmin } = useAuth();
     const { showNotification } = useNotification();
@@ -86,6 +87,49 @@ const OvertimePage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters]);
 
+    // Listen for custom events (like from create/edit page)
+    useEffect(() => {
+        const handleRefresh = () => {
+            fetchOvertime();
+        };
+
+        const handleVisibilityChange = () => {
+            // Refresh data when user comes back to the tab
+            if (!document.hidden && location.pathname.includes('/overtime')) {
+                fetchOvertime();
+            }
+        };
+
+        window.addEventListener('overtimeCreated', handleRefresh);
+        window.addEventListener('overtimeUpdated', handleRefresh);
+        window.addEventListener('notificationUpdate', handleRefresh);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('overtimeCreated', handleRefresh);
+            window.removeEventListener('overtimeUpdated', handleRefresh);
+            window.removeEventListener('notificationUpdate', handleRefresh);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    // Refresh data when navigating back to this page
+    useEffect(() => {
+        // Only refresh if we're exactly on the overtime list page (not create/edit pages)
+        const isOnOvertimeListPage = location.pathname.includes('/overtime') && 
+                                    !location.pathname.includes('/create') && 
+                                    !location.pathname.includes('/edit') &&
+                                    !location.pathname.match(/\/overtime\/[^\/]+$/); // Not on detail page
+        
+        if (isOnOvertimeListPage) {
+            // Use setTimeout to ensure the page is fully loaded
+            setTimeout(() => {
+                fetchOvertime();
+            }, 50);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.pathname]);
+
     const fetchOvertime = async () => {
         try {
             setLoading(true);
@@ -96,11 +140,13 @@ const OvertimePage = () => {
             if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
             const response = await overtimeService.getAll(params);
+            
             const overtimeArray = response?.data || [];
+            
             setOvertime(overtimeArray);
             calculateMonthlySummary(overtimeArray);
         } catch (error) {
-
+            console.error('Error fetching overtime:', error);
             showNotification('Failed to fetch overtime records', 'error');
             setOvertime([]);
         } finally {
@@ -237,7 +283,23 @@ const OvertimePage = () => {
             id: 'employee',
             label: 'Employee',
             align: 'center',
-            render: (row) => row.employee?.personalInfo?.fullName || row.employee?.username || 'N/A',
+            render: (row) => {
+                const employee = row.employee;
+                if (!employee) return 'N/A';
+                
+                // Try to get full name from personalInfo
+                if (employee.personalInfo?.fullName) {
+                    return employee.personalInfo.fullName;
+                }
+                
+                // Try to construct from first and last name
+                if (employee.personalInfo?.firstName && employee.personalInfo?.lastName) {
+                    return `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`;
+                }
+                
+                // Fall back to username or email
+                return employee.username || employee.email || 'N/A';
+            },
         }] : []),
         {
             id: 'date',

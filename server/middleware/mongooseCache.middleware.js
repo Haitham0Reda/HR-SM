@@ -246,13 +246,18 @@ export const mongooseCachePlugin = function(schema, options = {}) {
  * @param {Function} next - Next middleware function
  */
 export const cacheHeadersMiddleware = (req, res, next) => {
-    // Add cache control headers for API responses
+    // Only add cache control headers for GET requests if no-cache headers aren't already set
     if (req.method === 'GET') {
-        res.set({
-            'Cache-Control': 'private, max-age=300', // 5 minutes
-            'ETag': generateETag(req.originalUrl, req.query),
-            'Vary': 'Accept-Encoding, Authorization'
-        });
+        const existingCacheControl = res.get('Cache-Control');
+        
+        // Don't override if no-cache headers are already set (e.g., by globalValidation middleware)
+        if (!existingCacheControl || !existingCacheControl.includes('no-cache')) {
+            res.set({
+                'Cache-Control': 'private, max-age=300', // 5 minutes
+                'ETag': generateETag(req.originalUrl, req.query),
+                'Vary': 'Accept-Encoding, Authorization'
+            });
+        }
     }
     
     next();

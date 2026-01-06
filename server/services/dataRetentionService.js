@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import DataRetentionPolicy from '../models/DataRetentionPolicy.js';
-import DataArchive from '../models/DataArchive.js';
+// Note: DataRetentionPolicy and DataArchive are now tenant-specific
+import { getModelForConnection } from '../config/sharedModels.js';
 import { companyLogger } from '../utils/companyLogger.js';
 import fs from 'fs/promises';
 import path from 'path';

@@ -380,7 +380,7 @@ const VacationRequestPage = () => {
                                         onChange={handleChange}
                                         required
                                         fullWidth
-                                        InputLabelProps={{ shrink: true }}
+                                        slotProps={{ inputLabel: { shrink: true } }}
                                     />
                                 </Box>
                                 <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
@@ -392,7 +392,7 @@ const VacationRequestPage = () => {
                                         onChange={handleChange}
                                         required
                                         fullWidth
-                                        InputLabelProps={{ shrink: true }}
+                                        slotProps={{ inputLabel: { shrink: true } }}
                                     />
                                 </Box>
                                 <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
@@ -425,6 +425,8 @@ const VacationRequestPage = () => {
                                         {selectedFile ? 'Change Medical Document' : 'Upload Medical Document (Required)'}
                                         <input
                                             type="file"
+                                            id="vacation-medical-document"
+                                            name="medicalDocument"
                                             hidden
                                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                                             onChange={handleFileChange}

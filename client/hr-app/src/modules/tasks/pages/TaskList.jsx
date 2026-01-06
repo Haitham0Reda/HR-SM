@@ -72,10 +72,11 @@ const TaskList = () => {
             <div className="bg-white rounded-lg shadow p-4 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="task-status-filter" className="block text-sm font-medium text-gray-700 mb-2">
                             Status
                         </label>
                         <select
+                            id="task-status-filter"
                             value={filter.status}
                             onChange={(e) => setFilter({ ...filter, status: e.target.value })}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2"
@@ -90,10 +91,11 @@ const TaskList = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="task-priority-filter" className="block text-sm font-medium text-gray-700 mb-2">
                             Priority
                         </label>
                         <select
+                            id="task-priority-filter"
                             value={filter.priority}
                             onChange={(e) => setFilter({ ...filter, priority: e.target.value })}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2"

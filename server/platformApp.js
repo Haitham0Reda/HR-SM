@@ -5,11 +5,11 @@ import mongoSanitize from 'express-mongo-sanitize';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './core/errors/errorHandler.js';
-import { platformAuthRoutes } from './platform/auth/routes/platformAuthRoutes.js';
-import { tenantRoutes } from './platform/tenants/routes/tenantRoutes.js';
-import { subscriptionRoutes } from './platform/subscriptions/routes/subscriptionRoutes.js';
-import { moduleRoutes } from './platform/modules/routes/moduleRoutes.js';
-import { systemRoutes } from './platform/system/routes/systemRoutes.js';
+import platformAuthRoutes from './platform/auth/routes/platformAuthRoutes.js';
+import tenantRoutes from './platform/tenants/routes/tenantRoutes.js';
+import subscriptionRoutes from './platform/subscriptions/routes/subscriptionRoutes.js';
+import moduleRoutes from './platform/modules/routes/moduleRoutes.js';
+import systemRoutes from './platform/system/routes/systemRoutes.js';
 import companyLogsRoutes from './routes/companyLogs.js';
 // Enhanced rate limiting middleware
 import { 

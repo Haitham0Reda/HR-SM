@@ -7,7 +7,8 @@ import { promisify } from 'util';
 import mongoose from 'mongoose';
 import winston from 'winston';
 import CloudStorageService from './cloudStorageService.js';
-import BackupLog from '../models/BackupLog.js';
+// Note: BackupLog is now tenant-specific and should be accessed through getModelForConnection
+import { getModelForConnection } from '../config/sharedModels.js';
 
 const execAsync = promisify(exec);
 

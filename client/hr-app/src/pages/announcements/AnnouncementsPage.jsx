@@ -714,8 +714,8 @@ const AnnouncementsPage = () => {
                             value={formData.startDate}
                             onChange={handleChange}
                             fullWidth
-                            InputLabelProps={{
-                                shrink: true,
+                            slotProps={{
+                                inputLabel: { shrink: true }
                             }}
                             helperText="Optional: When the announcement becomes active"
                         />
@@ -726,8 +726,8 @@ const AnnouncementsPage = () => {
                             value={formData.endDate}
                             onChange={handleChange}
                             fullWidth
-                            InputLabelProps={{
-                                shrink: true,
+                            slotProps={{
+                                inputLabel: { shrink: true }
                             }}
                             helperText="Optional: When the announcement expires"
                         />

@@ -246,7 +246,7 @@ const FormPageExample = () => {
               type="date"
               value={formData.startDate}
               onChange={handleChange('startDate')}
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>

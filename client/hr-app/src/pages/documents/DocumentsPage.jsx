@@ -605,7 +605,7 @@ const DocumentsPage = () => {
                             value={formData.expiryDate}
                             onChange={handleChange}
                             fullWidth
-                            InputLabelProps={{ shrink: true }}
+                            slotProps={{ inputLabel: { shrink: true } }}
                         />
                         <TextField
                             select

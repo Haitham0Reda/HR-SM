@@ -1,7 +1,8 @@
 import winston from 'winston';
 import nodemailer from 'nodemailer';
 import path from 'path';
-import BackupLog from '../models/BackupLog.js';
+// Note: BackupLog is now tenant-specific and should be accessed through getModelForConnection
+import { getModelForConnection } from '../config/sharedModels.js';
 import BackupVerificationService from './backupVerificationService.js';
 import CloudStorageService from './cloudStorageService.js';
 

@@ -330,7 +330,7 @@ const HolidaysPage = () => {
                             onChange={handleChange}
                             required
                             fullWidth
-                            InputLabelProps={{ shrink: true }}
+                            slotProps={{ inputLabel: { shrink: true } }}
                         />
                         <TextField
                             label="Description"
@@ -356,8 +356,10 @@ const HolidaysPage = () => {
                 <DialogContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
                         <FormControl fullWidth>
-                            <InputLabel>Year</InputLabel>
+                            <InputLabel id="holidays-year-label">Year</InputLabel>
                             <Select
+                                id="holidays-year-select"
+                                labelId="holidays-year-label"
                                 value={importYear}
                                 label="Year"
                                 onChange={handleImportYearChange}

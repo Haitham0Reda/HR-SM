@@ -522,8 +522,10 @@ const UserActivityTracker = () => {
                     <Grid container spacing={2} alignItems="center">
                         <Grid size={{ xs: 12, md: 2 }}>
                             <FormControl fullWidth size="small">
-                                <InputLabel>Days</InputLabel>
+                                <InputLabel id="activity-days-label">Days</InputLabel>
                                 <Select
+                                    id="activity-days-select"
+                                    labelId="activity-days-label"
                                     value={filters.days}
                                     label="Days"
                                     onChange={(e) => setFilters(prev => ({ ...prev, days: e.target.value }))}
@@ -536,8 +538,10 @@ const UserActivityTracker = () => {
                         </Grid>
                         <Grid size={{ xs: 12, md: 3 }}>
                             <FormControl fullWidth size="small">
-                                <InputLabel>Activity Type</InputLabel>
+                                <InputLabel id="activity-type-label">Activity Type</InputLabel>
                                 <Select
+                                    id="activity-type-select"
+                                    labelId="activity-type-label"
                                     value={filters.activityType}
                                     label="Activity Type"
                                     onChange={(e) => setFilters(prev => ({ ...prev, activityType: e.target.value }))}

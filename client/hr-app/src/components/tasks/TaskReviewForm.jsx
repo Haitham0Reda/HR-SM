@@ -120,8 +120,9 @@ const TaskReviewForm = ({ open, onClose, onSubmit, task, report }) => {
                 </Card>
 
                 <FormControl component="fieldset" sx={{ mt: 2, mb: 2 }}>
-                    <FormLabel component="legend">Review Decision</FormLabel>
+                    <FormLabel id="review-decision-label" component="legend">Review Decision</FormLabel>
                     <RadioGroup
+                        aria-labelledby="review-decision-label"
                         aria-label="review-decision"
                         name="status"
                         value={reviewData.status}
@@ -129,12 +130,12 @@ const TaskReviewForm = ({ open, onClose, onSubmit, task, report }) => {
                     >
                         <FormControlLabel
                             value="approved"
-                            control={<Radio />}
+                            control={<Radio id="task-review-approved" />}
                             label="Approve Task Completion"
                         />
                         <FormControlLabel
                             value="rejected"
-                            control={<Radio />}
+                            control={<Radio id="task-review-rejected" />}
                             label="Reject and Request Rework"
                         />
                     </RadioGroup>
