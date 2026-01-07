@@ -31,6 +31,10 @@ const insuranceService = {
         return api.delete(`/life-insurance/policies/${policyId}`);
     },
 
+    async bulkDeleteTestPolicies() {
+        return api.delete('/life-insurance/policies/bulk-delete-test');
+    },
+
     // Family member operations
     async getFamilyMembers(policyId) {
         return api.get(`/life-insurance/policies/${policyId}/family-members`);
@@ -144,7 +148,43 @@ const insuranceService = {
                 { value: 'parent', label: 'Parent' }
             ]
         };
+    },
+
+    // Provider operations
+    async getProviders(params = {}) {
+        const queryParams = new URLSearchParams(params).toString();
+        const url = queryParams ? `/life-insurance/providers?${queryParams}` : '/life-insurance/providers';
+        return api.get(url);
+    },
+
+    async getProviderById(providerId) {
+        return api.get(`/life-insurance/providers/${providerId}`);
+    },
+
+    async createProvider(providerData) {
+        return api.post('/life-insurance/providers', providerData);
+    },
+
+    async updateProvider(providerId, providerData) {
+        return api.put(`/life-insurance/providers/${providerId}`, providerData);
+    },
+
+    async deleteProvider(providerId) {
+        return api.delete(`/life-insurance/providers/${providerId}`);
+    },
+
+    async activateProvider(providerId) {
+        return api.patch(`/life-insurance/providers/${providerId}/activate`);
+    },
+
+    async deactivateProvider(providerId, reason) {
+        return api.patch(`/life-insurance/providers/${providerId}/deactivate`, { reason });
+    },
+
+    async getProviderStatistics() {
+        return api.get('/life-insurance/providers/statistics');
     }
 };
 
 export default insuranceService;
+export { insuranceService };

@@ -332,23 +332,57 @@ insuranceClaimSchema.methods.reject = function(performedBy, reason) {
     return this.save();
 };
 
-// Static method to find claims by status
-insuranceClaimSchema.statics.findByStatus = function(tenantId, status, employeeId = null) {
-    const query = { tenantId, status };
-    
-    if (employeeId) {
-        query.employeeId = employeeId;
+// Pre-save middleware for tenant validation
+insuranceClaimSchema.pre('save', function(next) {
+    if (!this.tenantId) {
+        const error = new Error('TenantId is required for insurance claim');
+        error.name = 'ValidationError';
+        return next(error);
     }
-    
-    return this.find(query).sort({ createdAt: -1 });
+    next();
+});
+
+// Static method to find claims by tenant
+insuranceClaimSchema.statics.findByTenant = function(tenantId, filters = {}) {
+    return this.withTenant(tenantId).find(filters);
 };
 
-// Static method to find overdue claims
-insuranceClaimSchema.statics.findOverdueClaims = function(tenantId) {
+// Static method to find claims by tenant and employee with role-based access
+insuranceClaimSchema.statics.findByTenantAndEmployee = function(tenantId, employeeId, userRole, userDepartment = null) {
+    const query = { tenantId };
+    
+    // Apply role-based filtering
+    if (userRole === 'employee') {
+        query.employeeId = employeeId;
+    } else if (userRole === 'manager' && userDepartment) {
+        // Manager access will be validated in controller layer
+        query.employeeId = employeeId;
+    }
+    // HR and Admin roles get access to all claims within tenant
+    
+    return this.find(query);
+};
+
+// Static method to find claims by status with role-based access
+insuranceClaimSchema.statics.findByStatus = function(tenantId, status, userRole = null, userId = null, userDepartment = null) {
+    const query = { status };
+    
+    // Apply role-based filtering
+    if (userRole === 'employee' && userId) {
+        query.employeeId = userId;
+    } else if (userRole === 'manager' && userDepartment && userId) {
+        // Manager access will be validated in controller layer
+        query.employeeId = userId;
+    }
+    
+    return this.withTenant(tenantId).find(query).sort({ createdAt: -1 });
+};
+
+// Static method to find overdue claims with role-based access
+insuranceClaimSchema.statics.findOverdueClaims = function(tenantId, userRole = null, userId = null, userDepartment = null) {
     const now = new Date();
     
-    return this.find({
-        tenantId,
+    const query = {
         $or: [
             {
                 status: 'pending',
@@ -363,11 +397,44 @@ insuranceClaimSchema.statics.findOverdueClaims = function(tenantId) {
                 paymentDeadline: { $lt: now }
             }
         ]
-    });
+    };
+    
+    // Apply role-based filtering
+    if (userRole === 'employee' && userId) {
+        query.employeeId = userId;
+    } else if (userRole === 'manager' && userDepartment && userId) {
+        // Manager access will be validated in controller layer
+        query.employeeId = userId;
+    }
+    
+    return this.withTenant(tenantId).find(query);
 };
 
-// Static method to get claims statistics
-insuranceClaimSchema.statics.getStatistics = function(tenantId, dateRange = null) {
+// Static method for role-based claim queries
+insuranceClaimSchema.statics.findWithRoleAccess = function(tenantId, userRole, userId, userDepartment = null, additionalFilters = {}) {
+    const query = { ...additionalFilters };
+    
+    switch (userRole) {
+        case 'employee':
+            query.employeeId = userId;
+            break;
+        case 'manager':
+            // Manager access requires department validation in controller
+            break;
+        case 'hr':
+        case 'admin':
+            // Full tenant access - no additional filtering
+            break;
+        default:
+            // Unknown role - restrict to user's own data
+            query.employeeId = userId;
+    }
+    
+    return this.withTenant(tenantId).find(query);
+};
+
+// Static method to get claims statistics with role-based access
+insuranceClaimSchema.statics.getStatistics = function(tenantId, dateRange = null, userRole = null, userId = null, userDepartment = null) {
     const matchStage = { tenantId };
     
     if (dateRange) {
@@ -375,6 +442,13 @@ insuranceClaimSchema.statics.getStatistics = function(tenantId, dateRange = null
             $gte: dateRange.startDate,
             $lte: dateRange.endDate
         };
+    }
+    
+    // Apply role-based filtering
+    if (userRole === 'employee' && userId) {
+        matchStage.employeeId = userId;
+    } else if (userRole === 'manager' && userDepartment) {
+        // Manager statistics will be filtered in controller layer
     }
     
     return this.aggregate([

@@ -28,7 +28,8 @@ import {
     Delete as DeleteIcon,
     Visibility as ViewIcon,
     Group as FamilyIcon,
-    Assignment as ClaimIcon
+    Assignment as ClaimIcon,
+    DeleteSweep as BulkDeleteIcon
 } from '@mui/icons-material';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDialogs } from '../../hooks/useDialogs/useDialogs';
@@ -51,7 +52,8 @@ const PolicyList = () => {
         error,
         pagination,
         fetchPolicies,
-        deletePolicy
+        deletePolicy,
+        bulkDeleteTestPolicies
     } = usePolicies();
 
     const [paginationModel, setPaginationModel] = useState({
@@ -167,6 +169,26 @@ const PolicyList = () => {
     const handleClaims = useCallback((policy) => () => {
         navigate(getCompanyRoute(`/insurance/policies/${policy._id}/claims`));
     }, [navigate, getCompanyRoute]);
+
+    const handleBulkDeleteTest = useCallback(async () => {
+        const confirmed = await dialogs.confirm(
+            'This will delete all test policies (policies starting with POL-2024- or with N/A employee data). This action cannot be undone.',
+            {
+                title: 'Delete Test Policies?',
+                severity: 'warning',
+                okText: 'Delete Test Policies',
+                cancelText: 'Cancel',
+            },
+        );
+
+        if (confirmed) {
+            try {
+                await bulkDeleteTestPolicies();
+            } catch (error) {
+                // Error handling is done in the hook
+            }
+        }
+    }, [dialogs, bulkDeleteTestPolicies]);
 
     const getStatusChip = (status) => {
         const statusConfig = {
@@ -312,6 +334,19 @@ const PolicyList = () => {
             ]}
             actions={
                 <Stack direction="row" alignItems="center" spacing={1}>
+                    <Tooltip title="Delete test policies" placement="right" enterDelay={1000}>
+                        <div>
+                            <IconButton 
+                                size="small" 
+                                aria-label="bulk delete test policies" 
+                                onClick={handleBulkDeleteTest}
+                                disabled={loading}
+                                sx={{ color: 'warning.main' }}
+                            >
+                                <BulkDeleteIcon />
+                            </IconButton>
+                        </div>
+                    </Tooltip>
                     <Tooltip title="Reload data" placement="right" enterDelay={1000}>
                         <div>
                             <IconButton 

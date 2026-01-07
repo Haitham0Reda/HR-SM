@@ -91,6 +91,39 @@ export const usePolicies = () => {
         }
     }, [notifications]);
 
+    const bulkDeleteTestPolicies = useCallback(async () => {
+        try {
+            setLoading(true);
+            const response = await insuranceService.bulkDeleteTestPolicies();
+            
+            // Refresh the policies list to reflect the changes
+            await fetchPolicies();
+            
+            const { deletedCount, deletedPolicies, errors } = response.data;
+            
+            if (deletedCount > 0) {
+                notifications.show(
+                    `Successfully deleted ${deletedCount} test policies${errors?.length > 0 ? ` (${errors.length} errors)` : ''}`, 
+                    { severity: 'success' }
+                );
+            } else {
+                notifications.show('No test policies found to delete', { severity: 'info' });
+            }
+            
+            if (errors && errors.length > 0) {
+                console.warn('Bulk delete errors:', errors);
+            }
+            
+            return response.data;
+        } catch (err) {
+            const errorMessage = err.message || 'Failed to delete test policies';
+            notifications.show(errorMessage, { severity: 'error' });
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [notifications, fetchPolicies]);
+
     return {
         policies,
         loading,
@@ -100,6 +133,7 @@ export const usePolicies = () => {
         createPolicy,
         updatePolicy,
         deletePolicy,
+        bulkDeleteTestPolicies,
         refetch: fetchPolicies
     };
 };

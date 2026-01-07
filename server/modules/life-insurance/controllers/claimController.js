@@ -4,9 +4,21 @@ import InsurancePolicy from '../models/InsurancePolicy.js';
 import FamilyMember from '../models/FamilyMember.js';
 import User from '../../hr-core/users/models/user.model.js';
 import { sendSuccess, sendError } from '../../../core/utils/response.js';
+import { ROLES } from '../../../shared/constants/modules.js';
 import logger from '../../../utils/logger.js';
 import path from 'path';
 import fs from 'fs';
+import employeeService from '../services/employeeService.js';
+
+/**
+ * Helper function to apply role-based access control filtering for claims
+ * @param {Object} user - The authenticated user
+ * @param {Object} baseQuery - Base query object to extend
+ * @returns {Object} - Extended query with role-based filtering
+ */
+const applyRoleBasedFiltering = async (user, baseQuery = {}) => {
+    return await employeeService.applyRoleBasedEmployeeFilter(baseQuery, user);
+};
 
 /**
  * Create a new insurance claim
@@ -25,10 +37,9 @@ export const createClaim = asyncHandler(async (req, res) => {
         priority = 'medium'
     } = req.body;
 
-    // Validate policy exists and belongs to tenant
-    const policy = await InsurancePolicy.findOne({
+    // Validate policy exists and belongs to tenant with automatic tenant scoping
+    const policy = await InsurancePolicy.withTenant(req.tenant.id).findOne({
         _id: policyId,
-        tenantId: req.tenant.id,
         status: 'active'
     }).populate('employeeId');
 
@@ -36,21 +47,51 @@ export const createClaim = asyncHandler(async (req, res) => {
         return sendError(res, 'Active insurance policy not found', 404);
     }
 
+    // Self-service restriction: Employees can only create claims for their own policies
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (policy.employeeId._id.toString() !== req.user._id.toString()) {
+            return sendError(res, 'Employees can only create claims for their own policies', 403);
+        }
+        
+        // Additional validation for employee claims: ensure claimant is either themselves or their family member
+        if (claimantType === 'employee') {
+            if (claimantId !== req.user._id.toString()) {
+                return sendError(res, 'Employees can only create employee claims for themselves', 403);
+            }
+        } else if (claimantType === 'family_member') {
+            // Verify the family member belongs to the employee's policy
+            const familyMember = await FamilyMember.withTenant(req.tenant.id).findOne({
+                _id: claimantId,
+                policyId: policyId,
+                employeeId: req.user._id,
+                status: 'active'
+            });
+            
+            if (!familyMember) {
+                return sendError(res, 'Employees can only create claims for their own family members', 403);
+            }
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, policy.employeeId._id, req.tenant.id);
+        if (!canAccess) {
+            return sendError(res, 'Insufficient permissions to create claims for this policy', 403);
+        }
+    }
+
     // Validate claimant based on type
     let claimant;
     if (claimantType === 'employee') {
-        claimant = await User.findOne({
-            _id: claimantId,
-            tenantId: req.tenant.id
+        claimant = await User.withTenant(req.tenant.id).findOne({
+            _id: claimantId
         });
         
         if (!claimant || claimant._id.toString() !== policy.employeeId._id.toString()) {
             return sendError(res, 'Claimant must be the policy holder for employee claims', 400);
         }
     } else if (claimantType === 'family_member') {
-        claimant = await FamilyMember.findOne({
+        claimant = await FamilyMember.withTenant(req.tenant.id).findOne({
             _id: claimantId,
-            tenantId: req.tenant.id,
             policyId: policyId,
             status: 'active'
         });
@@ -83,9 +124,8 @@ export const createClaim = asyncHandler(async (req, res) => {
     const submissionDeadline = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
     const reviewDeadline = new Date(now.getTime() + (45 * 24 * 60 * 60 * 1000)); // 45 days
 
-    // Create new claim
+    // Create new claim with automatic tenant context
     const claim = new InsuranceClaim({
-        tenantId: req.tenant.id,
         policyId,
         employeeId: policy.employeeId._id,
         claimantType,
@@ -100,6 +140,9 @@ export const createClaim = asyncHandler(async (req, res) => {
         status: 'pending'
     });
 
+    // Set tenant context for automatic tenant scoping
+    claim._tenantId = req.tenant.id;
+
     // Add initial workflow entry
     claim.workflow.push({
         status: 'pending',
@@ -113,7 +156,7 @@ export const createClaim = asyncHandler(async (req, res) => {
     // Populate for response
     await claim.populate([
         { path: 'policyId', select: 'policyNumber policyType coverageAmount' },
-        { path: 'employeeId', select: 'firstName lastName email employeeId' },
+        { path: 'employeeId', select: 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position' },
         { path: 'claimantId', refPath: 'claimantModel' }
     ]);
 
@@ -149,8 +192,8 @@ export const getClaims = asyncHandler(async (req, res) => {
         sortOrder = 'desc'
     } = req.query;
 
-    // Build query
-    const query = { tenantId: req.tenant.id };
+    // Build base query with automatic tenant scoping
+    let query = {};
 
     if (status) {
         query.status = status;
@@ -172,6 +215,9 @@ export const getClaims = asyncHandler(async (req, res) => {
         query.policyId = policyId;
     }
 
+    // Apply role-based filtering
+    query = await applyRoleBasedFiltering(req.user, query);
+
     // Handle search across claim numbers and descriptions
     if (search) {
         query.$or = [
@@ -180,21 +226,21 @@ export const getClaims = asyncHandler(async (req, res) => {
         ];
     }
 
-    // Execute query with pagination
+    // Execute query with pagination and automatic tenant scoping
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
     const [claims, total] = await Promise.all([
-        InsuranceClaim.find(query)
+        InsuranceClaim.withTenant(req.tenant.id).find(query)
             .populate('policyId', 'policyNumber policyType coverageAmount')
-            .populate('employeeId', 'firstName lastName email employeeId')
+            .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
             .populate('claimantId', 'firstName lastName relationship')
-            .populate('reviewedBy', 'firstName lastName')
+            .populate('reviewedBy', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName')
             .sort(sortOptions)
             .skip(skip)
             .limit(parseInt(limit)),
-        InsuranceClaim.countDocuments(query)
+        InsuranceClaim.withTenant(req.tenant.id).countDocuments(query)
     ]);
 
     const pagination = {
@@ -218,18 +264,30 @@ export const getClaims = asyncHandler(async (req, res) => {
 export const getClaimById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const claim = await InsuranceClaim.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    const claim = await InsuranceClaim.withTenant(req.tenant.id).findOne({
+        _id: id
     })
     .populate('policyId', 'policyNumber policyType coverageAmount startDate endDate')
-    .populate('employeeId', 'firstName lastName email employeeId department')
+    .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
     .populate('claimantId', 'firstName lastName relationship dateOfBirth')
-    .populate('reviewedBy', 'firstName lastName email')
-    .populate('workflow.performedBy', 'firstName lastName');
+    .populate('reviewedBy', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email')
+    .populate('workflow.performedBy', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName');
 
     if (!claim) {
         return sendError(res, 'Insurance claim not found', 404);
+    }
+
+    // Self-service restriction: Employees can only view claims for their own policies
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (claim.employeeId._id.toString() !== req.user._id.toString()) {
+            return sendError(res, 'Employees can only view claims for their own policies', 403);
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, claim.employeeId._id, req.tenant.id);
+        if (!canAccess) {
+            return sendError(res, 'Insufficient permissions to view this claim', 403);
+        }
     }
 
     sendSuccess(res, claim, 'Claim retrieved successfully');
@@ -248,13 +306,23 @@ export const reviewClaim = asyncHandler(async (req, res) => {
         return sendError(res, 'Action must be either approve or reject', 400);
     }
 
-    const claim = await InsuranceClaim.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    const claim = await InsuranceClaim.withTenant(req.tenant.id).findOne({
+        _id: id
     }).populate('policyId');
 
     if (!claim) {
         return sendError(res, 'Insurance claim not found', 404);
+    }
+
+    // Self-service restriction: Employees cannot review claims (only managers and above)
+    if (req.user.role === ROLES.EMPLOYEE) {
+        return sendError(res, 'Employees cannot review claims. Only managers, HR, and admins can review claims', 403);
+    }
+
+    // Role-based access control using employee service for other roles
+    const canAccess = await employeeService.canAccessEmployee(req.user, claim.employeeId, req.tenant.id);
+    if (!canAccess) {
+        return sendError(res, 'Insufficient permissions to review this claim', 403);
     }
 
     if (!['pending', 'under_review'].includes(claim.status)) {
@@ -315,13 +383,23 @@ export const processClaim = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { paymentMethod, paymentReference, paymentDate } = req.body;
 
-    const claim = await InsuranceClaim.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    const claim = await InsuranceClaim.withTenant(req.tenant.id).findOne({
+        _id: id
     });
 
     if (!claim) {
         return sendError(res, 'Insurance claim not found', 404);
+    }
+
+    // Self-service restriction: Employees cannot process claim payments (only managers and above)
+    if (req.user.role === ROLES.EMPLOYEE) {
+        return sendError(res, 'Employees cannot process claim payments. Only managers, HR, and admins can process payments', 403);
+    }
+
+    // Role-based access control using employee service for other roles
+    const canAccess = await employeeService.canAccessEmployee(req.user, claim.employeeId, req.tenant.id);
+    if (!canAccess) {
+        return sendError(res, 'Insufficient permissions to process this claim', 403);
     }
 
     if (claim.status !== 'approved') {
@@ -371,13 +449,23 @@ export const updateClaimStatus = asyncHandler(async (req, res) => {
         return sendError(res, 'Invalid status', 400);
     }
 
-    const claim = await InsuranceClaim.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    const claim = await InsuranceClaim.withTenant(req.tenant.id).findOne({
+        _id: id
     });
 
     if (!claim) {
         return sendError(res, 'Insurance claim not found', 404);
+    }
+
+    // Self-service restriction: Employees cannot update claim status (only managers and above)
+    if (req.user.role === ROLES.EMPLOYEE) {
+        return sendError(res, 'Employees cannot update claim status. Only managers, HR, and admins can update claim status', 403);
+    }
+
+    // Role-based access control using employee service for other roles
+    const canAccess = await employeeService.canAccessEmployee(req.user, claim.employeeId, req.tenant.id);
+    if (!canAccess) {
+        return sendError(res, 'Insufficient permissions to update this claim status', 403);
     }
 
     // Update status using the model method
@@ -409,9 +497,19 @@ export const getClaimsByStatus = asyncHandler(async (req, res) => {
         return sendError(res, 'Invalid status', 400);
     }
 
-    const claims = await InsuranceClaim.findByStatus(req.tenant.id, status, employeeId)
+    // Build base query
+    let query = { status };
+    
+    if (employeeId) {
+        query.employeeId = employeeId;
+    }
+
+    // Apply role-based filtering
+    query = await applyRoleBasedFiltering(req.user, query);
+
+    const claims = await InsuranceClaim.withTenant(req.tenant.id).find(query)
         .populate('policyId', 'policyNumber policyType')
-        .populate('employeeId', 'firstName lastName email employeeId')
+        .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
         .populate('claimantId', 'firstName lastName relationship');
 
     sendSuccess(res, claims, `${status} claims retrieved successfully`);
@@ -423,10 +521,42 @@ export const getClaimsByStatus = asyncHandler(async (req, res) => {
  * @access Private (Manager, HR, Admin)
  */
 export const getOverdueClaims = asyncHandler(async (req, res) => {
-    const overdueClaims = await InsuranceClaim.findOverdueClaims(req.tenant.id)
-        .populate('policyId', 'policyNumber policyType')
-        .populate('employeeId', 'firstName lastName email employeeId')
-        .populate('claimantId', 'firstName lastName relationship');
+    // Apply role-based filtering to overdue claims
+    let baseQuery = {};
+    baseQuery = await applyRoleBasedFiltering(req.user, baseQuery);
+
+    // Get overdue claims with role-based filtering
+    let overdueClaims;
+    if (Object.keys(baseQuery).length > 0) {
+        // If there are role-based filters, we need to manually filter
+        const now = new Date();
+        
+        const query = {
+            ...baseQuery,
+            $or: [
+                { 
+                    status: { $in: ['pending', 'under_review'] },
+                    reviewDeadline: { $lt: now }
+                },
+                {
+                    status: 'approved',
+                    paymentDate: null,
+                    createdAt: { $lt: new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)) } // 30 days old
+                }
+            ]
+        };
+
+        overdueClaims = await InsuranceClaim.withTenant(req.tenant.id).find(query)
+            .populate('policyId', 'policyNumber policyType')
+            .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
+            .populate('claimantId', 'firstName lastName relationship');
+    } else {
+        // HR/Admin case - use the model method
+        overdueClaims = await InsuranceClaim.findOverdueClaims(req.tenant.id)
+            .populate('policyId', 'policyNumber policyType')
+            .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
+            .populate('claimantId', 'firstName lastName relationship');
+    }
 
     sendSuccess(res, overdueClaims, 'Overdue claims retrieved successfully');
 });
@@ -447,6 +577,10 @@ export const getClaimsStatistics = asyncHandler(async (req, res) => {
         };
     }
 
+    // Apply role-based filtering to statistics
+    let baseQuery = {};
+    baseQuery = await applyRoleBasedFiltering(req.user, baseQuery);
+
     const [
         totalClaims,
         pendingClaims,
@@ -457,17 +591,42 @@ export const getClaimsStatistics = asyncHandler(async (req, res) => {
         typeStats,
         overdueClaims
     ] = await Promise.all([
-        InsuranceClaim.countDocuments({ tenantId: req.tenant.id }),
-        InsuranceClaim.countDocuments({ tenantId: req.tenant.id, status: 'pending' }),
-        InsuranceClaim.countDocuments({ tenantId: req.tenant.id, status: 'approved' }),
-        InsuranceClaim.countDocuments({ tenantId: req.tenant.id, status: 'rejected' }),
-        InsuranceClaim.countDocuments({ tenantId: req.tenant.id, status: 'paid' }),
-        InsuranceClaim.getStatistics(req.tenant.id, dateRange),
-        InsuranceClaim.aggregate([
-            { $match: { tenantId: req.tenant.id } },
+        InsuranceClaim.withTenant(req.tenant.id).countDocuments(baseQuery),
+        InsuranceClaim.withTenant(req.tenant.id).countDocuments({ ...baseQuery, status: 'pending' }),
+        InsuranceClaim.withTenant(req.tenant.id).countDocuments({ ...baseQuery, status: 'approved' }),
+        InsuranceClaim.withTenant(req.tenant.id).countDocuments({ ...baseQuery, status: 'rejected' }),
+        InsuranceClaim.withTenant(req.tenant.id).countDocuments({ ...baseQuery, status: 'paid' }),
+        InsuranceClaim.withTenant(req.tenant.id).aggregate([
+            { $match: baseQuery },
+            { $group: { _id: '$status', count: { $sum: 1 } } }
+        ]),
+        InsuranceClaim.withTenant(req.tenant.id).aggregate([
+            { $match: baseQuery },
             { $group: { _id: '$claimType', count: { $sum: 1 }, totalAmount: { $sum: '$claimAmount' } } }
         ]),
-        InsuranceClaim.findOverdueClaims(req.tenant.id).countDocuments()
+        // For overdue claims count, we need to apply the same logic as getOverdueClaims
+        (async () => {
+            if (Object.keys(baseQuery).length > 0) {
+                const now = new Date();
+                const overdueQuery = {
+                    ...baseQuery,
+                    $or: [
+                        { 
+                            status: { $in: ['pending', 'under_review'] },
+                            reviewDeadline: { $lt: now }
+                        },
+                        {
+                            status: 'approved',
+                            paymentDate: null,
+                            createdAt: { $lt: new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)) }
+                        }
+                    ]
+                };
+                return await InsuranceClaim.withTenant(req.tenant.id).countDocuments(overdueQuery);
+            } else {
+                return await InsuranceClaim.findOverdueClaims(req.tenant.id).countDocuments();
+            }
+        })()
     ]);
 
     const statistics = {
@@ -494,13 +653,25 @@ export const cancelClaim = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { reason } = req.body;
 
-    const claim = await InsuranceClaim.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    const claim = await InsuranceClaim.withTenant(req.tenant.id).findOne({
+        _id: id
     });
 
     if (!claim) {
         return sendError(res, 'Insurance claim not found', 404);
+    }
+
+    // Self-service restriction: Employees can only cancel their own claims
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (claim.employeeId.toString() !== req.user._id.toString()) {
+            return sendError(res, 'Employees can only cancel their own claims', 403);
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, claim.employeeId, req.tenant.id);
+        if (!canAccess) {
+            return sendError(res, 'Insufficient permissions to cancel this claim', 403);
+        }
     }
 
     if (['paid', 'cancelled'].includes(claim.status)) {
@@ -530,14 +701,26 @@ export const uploadClaimDocuments = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { documentType, description } = req.body;
 
-    // Find the claim
-    const claim = await InsuranceClaim.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    // Find the claim with automatic tenant scoping
+    const claim = await InsuranceClaim.withTenant(req.tenant.id).findOne({
+        _id: id
     });
 
     if (!claim) {
         return sendError(res, 'Insurance claim not found', 404);
+    }
+
+    // Self-service restriction: Employees can only upload documents to their own claims
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (claim.employeeId.toString() !== req.user._id.toString()) {
+            return sendError(res, 'Employees can only upload documents to their own claims', 403);
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, claim.employeeId, req.tenant.id);
+        if (!canAccess) {
+            return sendError(res, 'Insufficient permissions to upload documents to this claim', 403);
+        }
     }
 
     // Check if files were uploaded
@@ -594,15 +777,27 @@ export const uploadClaimDocuments = asyncHandler(async (req, res) => {
 export const getClaimDocuments = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const claim = await InsuranceClaim.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    const claim = await InsuranceClaim.withTenant(req.tenant.id).findOne({
+        _id: id
     })
-    .select('documents')
-    .populate('documents.uploadedBy', 'firstName lastName');
+    .select('documents employeeId')
+    .populate('documents.uploadedBy', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName');
 
     if (!claim) {
         return sendError(res, 'Insurance claim not found', 404);
+    }
+
+    // Self-service restriction: Employees can only view documents for their own claims
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (claim.employeeId.toString() !== req.user._id.toString()) {
+            return sendError(res, 'Employees can only view documents for their own claims', 403);
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, claim.employeeId, req.tenant.id);
+        if (!canAccess) {
+            return sendError(res, 'Insufficient permissions to view documents for this claim', 403);
+        }
     }
 
     sendSuccess(res, claim.documents, 'Claim documents retrieved successfully');
@@ -616,13 +811,25 @@ export const getClaimDocuments = asyncHandler(async (req, res) => {
 export const downloadClaimDocument = asyncHandler(async (req, res) => {
     const { id, documentId } = req.params;
 
-    const claim = await InsuranceClaim.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    const claim = await InsuranceClaim.withTenant(req.tenant.id).findOne({
+        _id: id
     });
 
     if (!claim) {
         return sendError(res, 'Insurance claim not found', 404);
+    }
+
+    // Self-service restriction: Employees can only download documents from their own claims
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (claim.employeeId.toString() !== req.user._id.toString()) {
+            return sendError(res, 'Employees can only download documents from their own claims', 403);
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, claim.employeeId, req.tenant.id);
+        if (!canAccess) {
+            return sendError(res, 'Insufficient permissions to download documents from this claim', 403);
+        }
     }
 
     // Find the document
@@ -663,13 +870,25 @@ export const downloadClaimDocument = asyncHandler(async (req, res) => {
 export const deleteClaimDocument = asyncHandler(async (req, res) => {
     const { id, documentId } = req.params;
 
-    const claim = await InsuranceClaim.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    const claim = await InsuranceClaim.withTenant(req.tenant.id).findOne({
+        _id: id
     });
 
     if (!claim) {
         return sendError(res, 'Insurance claim not found', 404);
+    }
+
+    // Self-service restriction: Employees can only delete documents from their own claims
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (claim.employeeId.toString() !== req.user._id.toString()) {
+            return sendError(res, 'Employees can only delete documents from their own claims', 403);
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, claim.employeeId, req.tenant.id);
+        if (!canAccess) {
+            return sendError(res, 'Insufficient permissions to delete documents from this claim', 403);
+        }
     }
 
     // Find the document

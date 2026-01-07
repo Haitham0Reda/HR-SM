@@ -212,35 +212,127 @@ insurancePolicySchema.methods.addHistoryEntry = function(action, performedBy, no
     return this.save();
 };
 
-// Static method to find active policies
-insurancePolicySchema.statics.findActivePolicies = function(tenantId, employeeId = null) {
+// Pre-save middleware for tenant validation
+insurancePolicySchema.pre('save', function(next) {
+    if (!this.tenantId) {
+        const error = new Error('TenantId is required for insurance policy');
+        error.name = 'ValidationError';
+        return next(error);
+    }
+    next();
+});
+
+// Static method to find policies by tenant with role-based filtering
+insurancePolicySchema.statics.findByTenant = function(tenantId, filters = {}) {
+    return this.withTenant(tenantId).find(filters);
+};
+
+// Static method to find policies by tenant and employee with role-based access
+insurancePolicySchema.statics.findByTenantAndEmployee = function(tenantId, employeeId, userRole, userDepartment = null) {
+    const query = { tenantId };
+    
+    // Apply role-based filtering
+    if (userRole === 'employee') {
+        query.employeeId = employeeId;
+    } else if (userRole === 'manager' && userDepartment) {
+        // For managers, we need to join with User model to filter by department
+        // This will be handled in the controller layer with population
+        query.employeeId = employeeId; // Will be expanded in controller
+    }
+    // HR and Admin roles get access to all policies within tenant (no additional filtering)
+    
+    return this.find(query);
+};
+
+// Static method to find active policies with role-based access
+insurancePolicySchema.statics.findActivePolicies = function(tenantId, employeeId = null, userRole = null, userDepartment = null) {
     const query = {
-        tenantId,
         status: 'active',
         startDate: { $lte: new Date() },
         endDate: { $gte: new Date() }
     };
     
-    if (employeeId) {
+    // Apply role-based filtering
+    if (userRole === 'employee' && employeeId) {
+        query.employeeId = employeeId;
+    } else if (userRole === 'manager' && userDepartment && employeeId) {
+        // Manager access will be validated in controller layer
         query.employeeId = employeeId;
     }
     
-    return this.find(query);
+    return this.withTenant(tenantId).find(query);
 };
 
-// Static method to find expiring policies
-insurancePolicySchema.statics.findExpiringPolicies = function(tenantId, daysAhead = 30) {
+// Static method to find expiring policies with role-based access
+insurancePolicySchema.statics.findExpiringPolicies = function(tenantId, daysAhead = 30, userRole = null, userDepartment = null, employeeId = null) {
     const now = new Date();
     const futureDate = new Date(now.getTime() + (daysAhead * 24 * 60 * 60 * 1000));
     
-    return this.find({
-        tenantId,
+    const query = {
         status: 'active',
         endDate: {
             $gte: now,
             $lte: futureDate
         }
-    });
+    };
+    
+    // Apply role-based filtering
+    if (userRole === 'employee' && employeeId) {
+        query.employeeId = employeeId;
+    } else if (userRole === 'manager' && userDepartment && employeeId) {
+        // Manager access will be validated in controller layer
+        query.employeeId = employeeId;
+    }
+    
+    return this.withTenant(tenantId).find(query);
+};
+
+// Static method for role-based policy queries
+insurancePolicySchema.statics.findWithRoleAccess = function(tenantId, userRole, userId, userDepartment = null, additionalFilters = {}) {
+    const query = { ...additionalFilters };
+    
+    switch (userRole) {
+        case 'employee':
+            query.employeeId = userId;
+            break;
+        case 'manager':
+            // Manager access requires department validation in controller
+            // This method returns base query, department filtering done in controller
+            break;
+        case 'hr':
+        case 'admin':
+            // Full tenant access - no additional filtering
+            break;
+        default:
+            // Unknown role - restrict to user's own data
+            query.employeeId = userId;
+    }
+    
+    return this.withTenant(tenantId).find(query);
+};
+
+// Static method to get policy statistics by tenant
+insurancePolicySchema.statics.getStatisticsByTenant = function(tenantId, userRole = null, userId = null, userDepartment = null) {
+    const matchStage = { tenantId };
+    
+    // Apply role-based filtering for statistics
+    if (userRole === 'employee' && userId) {
+        matchStage.employeeId = userId;
+    } else if (userRole === 'manager' && userDepartment) {
+        // Manager statistics will be filtered in controller layer
+    }
+    
+    return this.aggregate([
+        { $match: matchStage },
+        {
+            $group: {
+                _id: '$status',
+                count: { $sum: 1 },
+                totalCoverage: { $sum: '$coverageAmount' },
+                totalPremium: { $sum: '$premium' }
+            }
+        }
+    ]);
 };
 
 const InsurancePolicy = mongoose.model('InsurancePolicy', insurancePolicySchema);

@@ -2,172 +2,100 @@
  * Utility functions for formatting data
  */
 
-/**
- * Format date to readable string
- * @param {Date|string} date - Date to format
- * @param {string} locale - Locale string (default: 'en-US')
- * @returns {string} - Formatted date string
- */
-export const formatDate = (date, locale = 'en-US') => {
-    if (!date) return '-';
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleDateString(locale, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
-};
-
-/**
- * Format date and time to readable string
- * @param {Date|string} date - Date to format
- * @param {string} locale - Locale string (default: 'en-US')
- * @returns {string} - Formatted date and time string
- */
-export const formatDateTime = (date, locale = 'en-US') => {
-    if (!date) return '-';
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleString(locale, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-};
-
-/**
- * Format time to readable string
- * @param {Date|string} date - Date to format
- * @param {string} locale - Locale string (default: 'en-US')
- * @returns {string} - Formatted time string
- */
-export const formatTime = (date, locale = 'en-US') => {
-    if (!date) return '-';
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleTimeString(locale, {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-};
-
-/**
- * Format number with thousand separators
- * @param {number} num - Number to format
- * @param {string} locale - Locale string (default: 'en-US')
- * @returns {string} - Formatted number string
- */
-export const formatNumber = (num, locale = 'en-US') => {
-    if (num === null || num === undefined) return '-';
-    return new Intl.NumberFormat(locale).format(num);
-};
-
-/**
- * Format currency
- * @param {number} amount - Amount to format
- * @param {string} currency - Currency code (default: 'USD')
- * @param {string} locale - Locale string (default: 'en-US')
- * @returns {string} - Formatted currency string
- */
-export const formatCurrency = (amount, currency = 'USD', locale = 'en-US') => {
-    if (amount === null || amount === undefined) return '-';
-    return new Intl.NumberFormat(locale, {
+// Format currency
+export const formatCurrency = (amount, currency = 'EGP') => {
+    if (amount === null || amount === undefined) return 'N/A';
+    
+    const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency,
-    }).format(amount);
+        currency: currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    
+    return formatter.format(amount);
 };
 
-/**
- * Format percentage
- * @param {number} value - Value to format (0-100)
- * @param {number} decimals - Number of decimal places (default: 0)
- * @returns {string} - Formatted percentage string
- */
-export const formatPercentage = (value, decimals = 0) => {
-    if (value === null || value === undefined) return '-';
-    return `${value.toFixed(decimals)}%`;
+// Format date
+export const formatDate = (date, options = {}) => {
+    if (!date) return 'N/A';
+    
+    const defaultOptions = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        ...options
+    };
+    
+    return new Date(date).toLocaleDateString('en-US', defaultOptions);
 };
 
-/**
- * Format file size
- * @param {number} bytes - File size in bytes
- * @returns {string} - Formatted file size string
- */
-export const formatFileSize = (bytes) => {
-    if (!bytes || bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+// Format date and time
+export const formatDateTime = (date, options = {}) => {
+    if (!date) return 'N/A';
+    
+    const defaultOptions = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        ...options
+    };
+    
+    return new Date(date).toLocaleDateString('en-US', defaultOptions);
 };
 
-/**
- * Truncate text with ellipsis
- * @param {string} text - Text to truncate
- * @param {number} maxLength - Maximum length (default: 50)
- * @returns {string} - Truncated text
- */
-export const truncateText = (text, maxLength = 50) => {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return `${text.substring(0, maxLength)}...`;
-};
-
-/**
- * Capitalize first letter
- * @param {string} text - Text to capitalize
- * @returns {string} - Capitalized text
- */
-export const capitalize = (text) => {
-    if (!text) return '';
-    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-};
-
-/**
- * Convert to title case
- * @param {string} text - Text to convert
- * @returns {string} - Title case text
- */
-export const toTitleCase = (text) => {
-    if (!text) return '';
-    return text
-        .toLowerCase()
-        .split(' ')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
-
-/**
- * Format phone number
- * @param {string} phone - Phone number to format
- * @returns {string} - Formatted phone number
- */
+// Format phone number
 export const formatPhoneNumber = (phone) => {
-    if (!phone) return '-';
+    if (!phone) return 'N/A';
+    
+    // Simple formatting for Egyptian numbers
     const cleaned = phone.replace(/\D/g, '');
-    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
-    if (match) {
-        return `(${match[1]}) ${match[2]}-${match[3]}`;
+    
+    if (cleaned.startsWith('20')) {
+        // International format
+        return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 8)} ${cleaned.slice(8)}`;
+    } else if (cleaned.startsWith('01')) {
+        // Local mobile format
+        return `${cleaned.slice(0, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`;
     }
+    
     return phone;
 };
 
-/**
- * Get relative time (e.g., "2 hours ago")
- * @param {Date|string} date - Date to compare
- * @returns {string} - Relative time string
- */
-export const getRelativeTime = (date) => {
-    if (!date) return '-';
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - dateObj) / 1000);
+// Format percentage
+export const formatPercentage = (value, decimals = 1) => {
+    if (value === null || value === undefined) return 'N/A';
+    return `${value.toFixed(decimals)}%`;
+};
 
-    if (diffInSeconds < 60) return 'just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
-    if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} months ago`;
-    return `${Math.floor(diffInSeconds / 31536000)} years ago`;
+// Format file size
+export const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+// Capitalize first letter
+export const capitalize = (str) => {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+// Format name
+export const formatName = (firstName, lastName) => {
+    const parts = [firstName, lastName].filter(Boolean);
+    return parts.join(' ') || 'N/A';
+};
+
+// Truncate text
+export const truncateText = (text, maxLength = 50) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 };

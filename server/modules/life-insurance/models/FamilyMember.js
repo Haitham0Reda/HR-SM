@@ -181,10 +181,18 @@ familyMemberSchema.pre('save', async function(next) {
             }
             
             // Count existing family members for this policy to get the next number
-            const existingCount = await this.constructor.countDocuments({
-                policyId: this.policyId,
-                tenantId: this.tenantId
-            });
+            // Use automatic tenant scoping if tenantId is available
+            let existingCount;
+            if (this.tenantId) {
+                existingCount = await this.constructor.withTenant(this.tenantId).countDocuments({
+                    policyId: this.policyId
+                });
+            } else {
+                existingCount = await this.constructor.countDocuments({
+                    policyId: this.policyId,
+                    tenantId: this.tenantId
+                });
+            }
             
             this.insuranceNumber = `${policy.policyNumber}-${existingCount + 1}`;
             next();
@@ -196,32 +204,124 @@ familyMemberSchema.pre('save', async function(next) {
     }
 });
 
-// Static method to find family members by relationship
-familyMemberSchema.statics.findByRelationship = function(tenantId, relationship, employeeId = null) {
-    const query = {
-        tenantId,
-        relationship,
-        status: 'active'
-    };
+// Pre-save middleware for tenant validation
+familyMemberSchema.pre('save', function(next) {
+    if (!this.tenantId) {
+        const error = new Error('TenantId is required for family member');
+        error.name = 'ValidationError';
+        return next(error);
+    }
+    next();
+});
+
+// Static method to find family members by tenant
+familyMemberSchema.statics.findByTenant = function(tenantId, filters = {}) {
+    return this.withTenant(tenantId).find(filters);
+};
+
+// Static method to find family members by tenant and employee with role-based access
+familyMemberSchema.statics.findByTenantAndEmployee = function(tenantId, employeeId, userRole, userDepartment = null) {
+    const query = { tenantId };
     
-    if (employeeId) {
+    // Apply role-based filtering
+    if (userRole === 'employee') {
+        query.employeeId = employeeId;
+    } else if (userRole === 'manager' && userDepartment) {
+        // Manager access will be validated in controller layer
         query.employeeId = employeeId;
     }
+    // HR and Admin roles get access to all family members within tenant
     
     return this.find(query);
 };
 
-// Static method to find children under age limit
-familyMemberSchema.statics.findChildrenUnderAge = function(tenantId, maxAge = 25) {
+// Static method to find family members by relationship with role-based access
+familyMemberSchema.statics.findByRelationship = function(tenantId, relationship, userRole = null, userId = null, userDepartment = null) {
+    const query = {
+        relationship,
+        status: 'active'
+    };
+    
+    // Apply role-based filtering
+    if (userRole === 'employee' && userId) {
+        query.employeeId = userId;
+    } else if (userRole === 'manager' && userDepartment && userId) {
+        // Manager access will be validated in controller layer
+        query.employeeId = userId;
+    }
+    
+    return this.withTenant(tenantId).find(query);
+};
+
+// Static method to find children under age limit with role-based access
+familyMemberSchema.statics.findChildrenUnderAge = function(tenantId, maxAge = 25, userRole = null, userId = null, userDepartment = null) {
     const cutoffDate = new Date();
     cutoffDate.setFullYear(cutoffDate.getFullYear() - maxAge);
     
-    return this.find({
-        tenantId,
+    const query = {
         relationship: 'child',
         status: 'active',
         dateOfBirth: { $gte: cutoffDate }
-    });
+    };
+    
+    // Apply role-based filtering
+    if (userRole === 'employee' && userId) {
+        query.employeeId = userId;
+    } else if (userRole === 'manager' && userDepartment && userId) {
+        // Manager access will be validated in controller layer
+        query.employeeId = userId;
+    }
+    
+    return this.withTenant(tenantId).find(query);
+};
+
+// Static method for role-based family member queries
+familyMemberSchema.statics.findWithRoleAccess = function(tenantId, userRole, userId, userDepartment = null, additionalFilters = {}) {
+    const query = { ...additionalFilters };
+    
+    switch (userRole) {
+        case 'employee':
+            query.employeeId = userId;
+            break;
+        case 'manager':
+            // Manager access requires department validation in controller
+            break;
+        case 'hr':
+        case 'admin':
+            // Full tenant access - no additional filtering
+            break;
+        default:
+            // Unknown role - restrict to user's own data
+            query.employeeId = userId;
+    }
+    
+    return this.withTenant(tenantId).find(query);
+};
+
+// Static method to get family member statistics by tenant
+familyMemberSchema.statics.getStatisticsByTenant = function(tenantId, userRole = null, userId = null, userDepartment = null) {
+    const matchStage = { tenantId };
+    
+    // Apply role-based filtering
+    if (userRole === 'employee' && userId) {
+        matchStage.employeeId = userId;
+    } else if (userRole === 'manager' && userDepartment) {
+        // Manager statistics will be filtered in controller layer
+    }
+    
+    return this.aggregate([
+        { $match: matchStage },
+        {
+            $group: {
+                _id: {
+                    relationship: '$relationship',
+                    status: '$status'
+                },
+                count: { $sum: 1 },
+                totalCoverage: { $sum: '$coverageAmount' }
+            }
+        }
+    ]);
 };
 
 // Method to update coverage dates

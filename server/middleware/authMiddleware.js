@@ -43,10 +43,7 @@ export const protect = async (req, res, next) => {
                             });
                             return res.status(403).json({ 
                                 success: false,
-                                error: {
-                                    code: 'TENANT_SUSPENDED',
-                                    message: 'Tenant account is suspended'
-                                }
+                                message: 'Tenant account is suspended'
                             });
                         }
                         
@@ -57,10 +54,7 @@ export const protect = async (req, res, next) => {
                             });
                             return res.status(403).json({ 
                                 success: false,
-                                error: {
-                                    code: 'TENANT_CANCELLED',
-                                    message: 'Tenant account is cancelled'
-                                }
+                                message: 'Tenant account is cancelled'
                             });
                         }
                         

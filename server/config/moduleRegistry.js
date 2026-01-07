@@ -62,7 +62,7 @@ export const moduleRegistry = {
     },
     [MODULES.LIFE_INSURANCE]: {
         routes: {
-            'life-insurance': () => import('../modules/life-insurance/routes/insuranceRoutes.js')
+            'life-insurance': () => import('../modules/life-insurance/routes.js')
         },
         basePath: '/api/v1'
     }

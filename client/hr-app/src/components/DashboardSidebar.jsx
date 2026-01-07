@@ -50,6 +50,9 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
+import VaccinesIcon from '@mui/icons-material/Vaccines';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import { matchPath, useLocation } from 'react-router';
 import { useAuth } from '../store/providers/ReduxAuthProvider';
 import { useModules } from '../store/providers/ReduxModuleProvider';
@@ -102,6 +105,10 @@ function DashboardSidebar({
     React.useEffect(() => {
         if (pathname.startsWith(getCompanyRoute('/system-settings')) && !expandedItemIds.includes('settings')) {
             setExpandedItemIds((prev) => [...prev, 'settings']);
+        }
+        // Auto-expand Insurance dropdown if on an insurance page
+        if (pathname.startsWith(getCompanyRoute('/insurance')) && !expandedItemIds.includes('insurance')) {
+            setExpandedItemIds((prev) => [...prev, 'insurance']);
         }
     }, [pathname, expandedItemIds, getCompanyRoute]);
 
@@ -208,8 +215,12 @@ function DashboardSidebar({
             // Tasks module
             'tasks': 'tasks',
             
-            // Life Insurance module
+            // Medical Insurance module (keeping life-insurance for compatibility)
             'insurance': 'life-insurance',
+            'insurance-policies': 'life-insurance',
+            'insurance-claims': 'life-insurance',
+            'insurance-reports': 'life-insurance',
+            'insurance-providers': 'life-insurance',
             
             // Core HR - always enabled (no module key needed)
             'dashboard': null,
@@ -623,11 +634,56 @@ function DashboardSidebar({
                                 {shouldShowMenuItem('insurance') && (
                                     <DashboardSidebarPageItem
                                         id="insurance"
-                                        title="Life Insurance"
-                                        icon={<HealthAndSafetyIcon />}
-                                        href={getCompanyRoute("/insurance/policies")}
+                                        title="Medical Insurance"
+                                        icon={<LocalPharmacyIcon />}
+                                        href="#"
                                         selected={pathname.startsWith(getCompanyRoute('/insurance'))}
+                                        expanded={expandedItemIds.includes('insurance')}
                                         locked={isMenuItemLocked('insurance')}
+                                        nestedNavigation={
+                                            <List dense sx={{
+                                                pl: 2,
+                                                '& .MuiListItem-root': {
+                                                    pl: 1,
+                                                },
+                                                '& .MuiListItemButton-root': {
+                                                    pl: 2,
+                                                },
+                                            }}>
+                                                <DashboardSidebarPageItem
+                                                    id="insurance-policies"
+                                                    title="Insurance Policies"
+                                                    icon={<PolicyIcon />}
+                                                    href={getCompanyRoute("/insurance/policies")}
+                                                    selected={!!matchPath(getCompanyRoute('/insurance/policies'), pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="insurance-claims"
+                                                    title="Claims Management"
+                                                    icon={<FavoriteIcon />}
+                                                    href={getCompanyRoute("/insurance/claims")}
+                                                    selected={pathname.startsWith(getCompanyRoute('/insurance/claims'))}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="insurance-providers"
+                                                    title="Insurance Providers"
+                                                    icon={<VaccinesIcon />}
+                                                    href={getCompanyRoute("/insurance/providers")}
+                                                    selected={pathname.startsWith(getCompanyRoute('/insurance/providers'))}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="insurance-reports"
+                                                    title="Insurance Reports"
+                                                    icon={<BarChartIcon />}
+                                                    href={getCompanyRoute("/insurance/reports")}
+                                                    selected={pathname.startsWith(getCompanyRoute('/insurance/reports'))}
+                                                    isNested={true}
+                                                />
+                                            </List>
+                                        }
                                     />
                                 )}
 
@@ -899,11 +955,56 @@ function DashboardSidebar({
                                 {shouldShowMenuItem('insurance') && (
                                     <DashboardSidebarPageItem
                                         id="insurance"
-                                        title="Life Insurance"
-                                        icon={<HealthAndSafetyIcon />}
-                                        href={getCompanyRoute("/insurance/policies")}
+                                        title="Medical Insurance"
+                                        icon={<LocalPharmacyIcon />}
+                                        href="#"
                                         selected={pathname.startsWith(getCompanyRoute('/insurance'))}
+                                        expanded={expandedItemIds.includes('insurance')}
                                         locked={isMenuItemLocked('insurance')}
+                                        nestedNavigation={
+                                            <List dense sx={{
+                                                pl: 2,
+                                                '& .MuiListItem-root': {
+                                                    pl: 1,
+                                                },
+                                                '& .MuiListItemButton-root': {
+                                                    pl: 2,
+                                                },
+                                            }}>
+                                                <DashboardSidebarPageItem
+                                                    id="insurance-policies"
+                                                    title="Insurance Policies"
+                                                    icon={<PolicyIcon />}
+                                                    href={getCompanyRoute("/insurance/policies")}
+                                                    selected={!!matchPath(getCompanyRoute('/insurance/policies'), pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="insurance-claims"
+                                                    title="Claims Management"
+                                                    icon={<FavoriteIcon />}
+                                                    href={getCompanyRoute("/insurance/claims")}
+                                                    selected={pathname.startsWith(getCompanyRoute('/insurance/claims'))}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="insurance-providers"
+                                                    title="Insurance Providers"
+                                                    icon={<VaccinesIcon />}
+                                                    href={getCompanyRoute("/insurance/providers")}
+                                                    selected={pathname.startsWith(getCompanyRoute('/insurance/providers'))}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="insurance-reports"
+                                                    title="Insurance Reports"
+                                                    icon={<BarChartIcon />}
+                                                    href={getCompanyRoute("/insurance/reports")}
+                                                    selected={pathname.startsWith(getCompanyRoute('/insurance/reports'))}
+                                                    isNested={true}
+                                                />
+                                            </List>
+                                        }
                                     />
                                 )}
                                 {shouldShowMenuItem('resigned') && (

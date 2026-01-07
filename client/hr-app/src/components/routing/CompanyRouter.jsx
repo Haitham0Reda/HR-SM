@@ -99,6 +99,7 @@ import {
     ClaimDetailsPage,
     InsuranceReportsPage
 } from '../../pages/insurance';
+import ProvidersPage from '../../pages/insurance/ProvidersPage';
 
 /**
  * Company-scoped router component
@@ -231,6 +232,7 @@ const CompanyRouter = () => {
                 <Route path="insurance/claims" element={<ClaimsPage />} />
                 <Route path="insurance/claims/new" element={<CreateClaimPage />} />
                 <Route path="insurance/claims/:claimId" element={<ClaimDetailsPage />} />
+                <Route path="insurance/providers" element={<ProvidersPage />} />
                 <Route path="insurance/reports" element={<InsuranceReportsPage />} />
 
                 {/* Pricing */}
