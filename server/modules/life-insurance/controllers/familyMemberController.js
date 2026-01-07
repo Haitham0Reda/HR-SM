@@ -1,8 +1,22 @@
 import asyncHandler from '../../../core/utils/asyncHandler.js';
 import FamilyMember from '../models/FamilyMember.js';
 import InsurancePolicy from '../models/InsurancePolicy.js';
+import User from '../../hr-core/users/models/user.model.js';
 import { sendSuccess, sendError } from '../../../core/utils/response.js';
+import { ROLES } from '../../../shared/constants/modules.js';
 import logger from '../../../utils/logger.js';
+import employeeService from '../services/employeeService.js';
+import auditService from '../services/auditService.js';
+
+/**
+ * Helper function to apply role-based access control filtering for family members
+ * @param {Object} user - The authenticated user
+ * @param {Object} baseQuery - Base query object to extend
+ * @returns {Object} - Extended query with role-based filtering
+ */
+const applyRoleBasedFiltering = async (user, baseQuery = {}) => {
+    return await employeeService.applyRoleBasedEmployeeFilter(baseQuery, user);
+};
 
 /**
  * Update family member information
@@ -13,14 +27,52 @@ export const updateFamilyMember = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
     
-    const familyMember = await FamilyMember.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    // Log authentication event for family member update attempt
+    await auditService.logInsuranceAuthEvent(req, 'family-member-update-attempt', {
+        familyMemberId: id,
+        updates: Object.keys(updates)
+    });
+    
+    const familyMember = await FamilyMember.withTenant(req.tenant.id).findOne({
+        _id: id
     });
     
     if (!familyMember) {
+        await auditService.logAccessDenied(req, 'family-member-update', 'family-member-not-found', {
+            familyMemberId: id
+        });
         return sendError(res, 'Family member not found', 404);
     }
+    
+    // Self-service restriction: Employees can only update family members on their own policies
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (familyMember.employeeId.toString() !== req.user._id.toString()) {
+            await auditService.logAccessDenied(req, 'family-member-update', 'self-service-violation', {
+                familyMemberId: id,
+                familyMemberEmployeeId: familyMember.employeeId,
+                requestingUserId: req.user._id,
+                userRole: req.user.role
+            });
+            return sendError(res, 'Employees can only update family members on their own policies', 403);
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, familyMember.employeeId, req.tenant.id);
+        if (!canAccess) {
+            await auditService.logAccessDenied(req, 'family-member-update', 'insufficient-permissions', {
+                familyMemberId: id,
+                familyMemberEmployeeId: familyMember.employeeId,
+                userRole: req.user.role
+            });
+            return sendError(res, 'Insufficient permissions to update this family member', 403);
+        }
+    }
+
+    // Log successful authorization
+    await auditService.logInsuranceAuthorizationEvent(req, 'update-family-member', `family-member:${id}`, true, {
+        familyMemberEmployeeId: familyMember.employeeId,
+        relationship: familyMember.relationship
+    });
     
     // Validate relationship and age for children if being updated
     if (updates.relationship === 'child' || (familyMember.relationship === 'child' && updates.dateOfBirth)) {
@@ -64,13 +116,25 @@ export const updateFamilyMember = asyncHandler(async (req, res) => {
 export const removeFamilyMember = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
-    const familyMember = await FamilyMember.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    const familyMember = await FamilyMember.withTenant(req.tenant.id).findOne({
+        _id: id
     });
     
     if (!familyMember) {
         return sendError(res, 'Family member not found', 404);
+    }
+    
+    // Self-service restriction: Employees can only remove family members from their own policies
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (familyMember.employeeId.toString() !== req.user._id.toString()) {
+            return sendError(res, 'Employees can only remove family members from their own policies', 403);
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, familyMember.employeeId, req.tenant.id);
+        if (!canAccess) {
+            return sendError(res, 'Insufficient permissions to remove this family member', 403);
+        }
     }
     
     // Soft delete by setting status to removed
@@ -102,16 +166,28 @@ export const removeFamilyMember = asyncHandler(async (req, res) => {
 export const getFamilyMemberById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
-    const familyMember = await FamilyMember.findOne({
+    const familyMember = await FamilyMember.withTenant(req.tenant.id).findOne({
         _id: id,
-        tenantId: req.tenant.id,
         status: { $ne: 'removed' }
     })
-    .populate('employeeId', 'firstName lastName email employeeId')
+    .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
     .populate('policyId', 'policyNumber policyType coverageAmount');
     
     if (!familyMember) {
         return sendError(res, 'Family member not found', 404);
+    }
+    
+    // Self-service restriction: Employees can only view family members on their own policies
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (familyMember.employeeId._id.toString() !== req.user._id.toString()) {
+            return sendError(res, 'Employees can only view family members on their own policies', 403);
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, familyMember.employeeId._id, req.tenant.id);
+        if (!canAccess) {
+            return sendError(res, 'Insufficient permissions to view this family member', 403);
+        }
     }
     
     sendSuccess(res, familyMember, 'Family member retrieved successfully');
@@ -133,9 +209,8 @@ export const getFamilyMembers = asyncHandler(async (req, res) => {
         search 
     } = req.query;
     
-    // Build query
-    const query = { 
-        tenantId: req.tenant.id,
+    // Build base query with automatic tenant scoping
+    let query = { 
         status: { $ne: 'removed' }
     };
     
@@ -155,6 +230,9 @@ export const getFamilyMembers = asyncHandler(async (req, res) => {
         query.policyId = policyId;
     }
     
+    // Apply role-based filtering
+    query = await applyRoleBasedFiltering(req.user, query);
+    
     // Handle search across names
     if (search) {
         query.$or = [
@@ -164,17 +242,17 @@ export const getFamilyMembers = asyncHandler(async (req, res) => {
         ];
     }
     
-    // Execute query with pagination
+    // Execute query with pagination and automatic tenant scoping
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
     const [familyMembers, total] = await Promise.all([
-        FamilyMember.find(query)
-            .populate('employeeId', 'firstName lastName email employeeId')
+        FamilyMember.withTenant(req.tenant.id).find(query)
+            .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
             .populate('policyId', 'policyNumber policyType')
             .sort({ relationship: 1, firstName: 1 })
             .skip(skip)
             .limit(parseInt(limit)),
-        FamilyMember.countDocuments(query)
+        FamilyMember.withTenant(req.tenant.id).countDocuments(query)
     ]);
     
     const pagination = {
@@ -204,13 +282,22 @@ export const getFamilyMembersByRelationship = asyncHandler(async (req, res) => {
         return sendError(res, 'Invalid relationship type', 400);
     }
     
-    const familyMembers = await FamilyMember.findByRelationship(
-        req.tenant.id, 
-        relationship, 
-        employeeId
-    )
-    .populate('employeeId', 'firstName lastName email employeeId')
-    .populate('policyId', 'policyNumber policyType');
+    // Build base query
+    let query = {
+        relationship,
+        status: 'active'
+    };
+    
+    if (employeeId) {
+        query.employeeId = employeeId;
+    }
+    
+    // Apply role-based filtering
+    query = await applyRoleBasedFiltering(req.user, query);
+    
+    const familyMembers = await FamilyMember.withTenant(req.tenant.id).find(query)
+        .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
+        .populate('policyId', 'policyNumber policyType');
     
     sendSuccess(res, familyMembers, `${relationship} family members retrieved successfully`);
 });
@@ -223,12 +310,22 @@ export const getFamilyMembersByRelationship = asyncHandler(async (req, res) => {
 export const getChildrenUnderAge = asyncHandler(async (req, res) => {
     const { maxAge = 25 } = req.query;
     
-    const children = await FamilyMember.findChildrenUnderAge(
-        req.tenant.id, 
-        parseInt(maxAge)
-    )
-    .populate('employeeId', 'firstName lastName email employeeId')
-    .populate('policyId', 'policyNumber policyType');
+    // Build base query for children under age
+    const cutoffDate = new Date();
+    cutoffDate.setFullYear(cutoffDate.getFullYear() - parseInt(maxAge));
+    
+    let query = {
+        relationship: 'child',
+        status: 'active',
+        dateOfBirth: { $gte: cutoffDate }
+    };
+    
+    // Apply role-based filtering
+    query = await applyRoleBasedFiltering(req.user, query);
+    
+    const children = await FamilyMember.withTenant(req.tenant.id).find(query)
+        .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
+        .populate('policyId', 'policyNumber policyType');
     
     sendSuccess(res, children, `Children under ${maxAge} years retrieved successfully`);
 });
@@ -242,13 +339,25 @@ export const updateFamilyMemberCoverage = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { coverageStartDate, coverageEndDate, coverageAmount } = req.body;
     
-    const familyMember = await FamilyMember.findOne({
-        _id: id,
-        tenantId: req.tenant.id
+    const familyMember = await FamilyMember.withTenant(req.tenant.id).findOne({
+        _id: id
     });
     
     if (!familyMember) {
         return sendError(res, 'Family member not found', 404);
+    }
+    
+    // Self-service restriction: Employees can only update coverage for family members on their own policies
+    if (req.user.role === ROLES.EMPLOYEE) {
+        if (familyMember.employeeId.toString() !== req.user._id.toString()) {
+            return sendError(res, 'Employees can only update coverage for family members on their own policies', 403);
+        }
+    } else {
+        // Role-based access control using employee service for other roles
+        const canAccess = await employeeService.canAccessEmployee(req.user, familyMember.employeeId, req.tenant.id);
+        if (!canAccess) {
+            return sendError(res, 'Insufficient permissions to update coverage for this family member', 403);
+        }
     }
     
     // Validate dates if provided
@@ -285,20 +394,24 @@ export const updateFamilyMemberCoverage = asyncHandler(async (req, res) => {
 export const getFamilyMemberStatistics = asyncHandler(async (req, res) => {
     const tenantId = req.tenant.id;
     
+    // Apply role-based filtering to statistics
+    let baseQuery = {};
+    baseQuery = await applyRoleBasedFiltering(req.user, baseQuery);
+    
     const [
         totalFamilyMembers,
         activeFamilyMembers,
         relationshipStats,
         ageStats
     ] = await Promise.all([
-        FamilyMember.countDocuments({ tenantId, status: { $ne: 'removed' } }),
-        FamilyMember.countDocuments({ tenantId, status: 'active' }),
-        FamilyMember.aggregate([
-            { $match: { tenantId: req.tenant.id, status: 'active' } },
+        FamilyMember.withTenant(req.tenant.id).countDocuments({ ...baseQuery, status: { $ne: 'removed' } }),
+        FamilyMember.withTenant(req.tenant.id).countDocuments({ ...baseQuery, status: 'active' }),
+        FamilyMember.withTenant(req.tenant.id).aggregate([
+            { $match: { ...baseQuery, status: 'active' } },
             { $group: { _id: '$relationship', count: { $sum: 1 } } }
         ]),
-        FamilyMember.aggregate([
-            { $match: { tenantId: req.tenant.id, status: 'active' } },
+        FamilyMember.withTenant(req.tenant.id).aggregate([
+            { $match: { ...baseQuery, status: 'active' } },
             {
                 $project: {
                     relationship: 1,

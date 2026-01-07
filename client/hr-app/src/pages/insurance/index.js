@@ -12,3 +12,4 @@ export { default as ClaimsPage } from './ClaimsPage';
 export { default as CreateClaimPage } from './CreateClaimPage';
 export { default as ClaimDetailsPage } from './ClaimDetailsPage';
 export { default as InsuranceReportsPage } from './InsuranceReportsPage';
+export { default as ProvidersPage } from './ProvidersPage';

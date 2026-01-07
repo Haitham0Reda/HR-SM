@@ -3,6 +3,7 @@ import User from '../../../modules/hr-core/users/models/user.model.js';
 import AppError from '../../../core/errors/AppError.js';
 import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
 import crypto from 'crypto';
+import { seedInsuranceProvidersForTenant } from '../../../modules/life-insurance/utils/seedInsuranceProviders.js';
 
 /**
  * Tenant Provisioning Service
@@ -163,6 +164,28 @@ class TenantProvisioningService {
     // Update tenant user count
     tenant.usage.userCount = 1;
     await tenant.save();
+
+    // Auto-seed default insurance providers for the new tenant (only if life-insurance module is enabled)
+    try {
+      // Check if life-insurance module is enabled for this tenant
+      const hasLifeInsuranceModule = tenant.enabledModules.some(
+        module => module.moduleId === 'life-insurance'
+      );
+
+      if (hasLifeInsuranceModule) {
+        const seedResult = await seedInsuranceProvidersForTenant(tenantId, createdUser._id);
+        if (seedResult.success) {
+          console.log(`✓ Auto-seeded ${seedResult.count} insurance providers for tenant ${tenantId} (life-insurance module enabled)`);
+        } else {
+          console.warn(`⚠️ Failed to auto-seed insurance providers for tenant ${tenantId}:`, seedResult.message);
+        }
+      } else {
+        console.log(`ℹ️ Skipping insurance provider seeding for tenant ${tenantId} (life-insurance module not enabled)`);
+      }
+    } catch (error) {
+      // Don't fail tenant creation if insurance provider seeding fails
+      console.error(`Error auto-seeding insurance providers for tenant ${tenantId}:`, error);
+    }
 
     return {
       tenant,

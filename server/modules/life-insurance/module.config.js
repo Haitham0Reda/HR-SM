@@ -6,6 +6,8 @@
  * It requires the "life-insurance" license feature to be enabled.
  */
 
+import logger from '../../utils/logger.js';
+
 export default {
     name: 'life-insurance',
     displayName: 'Life Insurance Management',
@@ -251,13 +253,16 @@ export default {
      * @param {Object} config - Module configuration
      */
     async initialize(app, tenantId, config) {
-        console.log(`[Life Insurance Module] Initializing for tenant: ${tenantId}`);
+        logger.info('Life Insurance Module initializing', { tenantId });
         
         // Check if required license feature is available
         const hasLicenseFeature = config?.licenseFeatures?.includes('life-insurance');
         
         if (!hasLicenseFeature) {
-            console.log(`[Life Insurance Module] License feature 'life-insurance' not available for tenant: ${tenantId}`);
+            logger.warn('Life Insurance Module license feature not available', { 
+                tenantId, 
+                requiredFeature: 'life-insurance' 
+            });
             return {
                 success: false,
                 message: 'Life insurance module requires license feature: life-insurance',
@@ -269,17 +274,76 @@ export default {
         const emailServiceAvailable = config?.enabledModules?.includes('email-service');
         
         if (emailServiceAvailable) {
-            console.log(`[Life Insurance Module] Email service is available for tenant: ${tenantId}`);
+            logger.info('Life Insurance Module email service available', { tenantId });
         } else {
-            console.log(`[Life Insurance Module] Email service not available, notifications will be logged only`);
+            logger.info('Life Insurance Module email service not available, notifications will be logged only', { tenantId });
         }
-        
-        return {
-            success: true,
-            message: 'Life insurance module initialized successfully',
-            emailServiceAvailable,
-            licenseFeatureAvailable: true
-        };
+
+        // Initialize module configuration service
+        try {
+            const moduleConfigService = (await import('./services/moduleConfigService.js')).default;
+            
+            // Validate module availability for tenant
+            const availability = await moduleConfigService.checkModuleAvailability(tenantId);
+            
+            if (!availability.available) {
+                logger.warn('Life Insurance Module not available for tenant', {
+                    tenantId,
+                    reason: availability.reason,
+                    moduleEnabled: availability.moduleEnabled,
+                    licensed: availability.licensed
+                });
+                
+                return {
+                    success: false,
+                    message: `Life insurance module not available: ${availability.reason}`,
+                    availability
+                };
+            }
+
+            // Get tenant-specific configuration
+            const tenantConfig = await moduleConfigService.getTenantModuleConfig(tenantId);
+            
+            logger.info('Life Insurance Module initialized successfully', { 
+                tenantId, 
+                emailServiceAvailable,
+                licenseFeatureAvailable: true,
+                subscriptionPlan: tenantConfig.subscription.plan,
+                availableFeatures: Object.keys(tenantConfig.features).filter(f => tenantConfig.features[f])
+            });
+            
+            return {
+                success: true,
+                message: 'Life insurance module initialized successfully',
+                emailServiceAvailable,
+                licenseFeatureAvailable: true,
+                tenantConfig: {
+                    subscriptionPlan: tenantConfig.subscription.plan,
+                    availableFeatures: tenantConfig.features,
+                    moduleSettings: tenantConfig.tenantSettings
+                }
+            };
+        } catch (error) {
+            logger.error('Failed to initialize Life Insurance Module configuration', {
+                tenantId,
+                error: error.message
+            });
+            
+            // Continue with basic initialization even if config service fails
+            logger.info('Life Insurance Module initialized with basic configuration', { 
+                tenantId, 
+                emailServiceAvailable,
+                licenseFeatureAvailable: true 
+            });
+            
+            return {
+                success: true,
+                message: 'Life insurance module initialized with basic configuration',
+                emailServiceAvailable,
+                licenseFeatureAvailable: true,
+                configServiceError: error.message
+            };
+        }
     },
     
     /**
@@ -287,10 +351,12 @@ export default {
      * @param {string} tenantId - Tenant identifier
      */
     async cleanup(tenantId) {
-        console.log(`[Life Insurance Module] Cleanup for tenant: ${tenantId}`);
+        logger.info('Life Insurance Module cleanup initiated', { tenantId });
         
         // Insurance data is preserved in the database
         // No specific cleanup needed
+        
+        logger.info('Life Insurance Module cleanup completed', { tenantId });
         
         return {
             success: true,

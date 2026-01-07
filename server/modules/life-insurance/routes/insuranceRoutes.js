@@ -4,12 +4,34 @@ import { protect } from '../../../middleware/authMiddleware.js';
 import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
 import { validateRequest } from '../../../core/middleware/validation.js';
 import { requireRole } from '../../../shared/middleware/auth.js';
+import { sendSuccess, sendError } from '../../../core/utils/response.js';
 import insuranceController from '../controllers/insuranceController.js';
 import familyMemberController from '../controllers/familyMemberController.js';
 import claimController from '../controllers/claimController.js';
 import reportController from '../controllers/reportController.js';
+import employeeController from '../controllers/employeeController.js';
+import configController from '../controllers/configController.js';
+import * as insuranceProviderController from '../controllers/insuranceProviderController.js';
+import { 
+    validateCreateProvider, 
+    validateUpdateProvider, 
+    validateProviderId, 
+    validateDeactivateProvider, 
+    validateProviderQuery,
+    validateContractDates 
+} from '../middleware/insuranceProviderValidation.js';
 import { insuranceUpload } from '../config/multer.config.js';
 import { MODULES, ROLES } from '../../../shared/constants/modules.js';
+import { 
+    requireFeature, 
+    requireFeatures, 
+    attachModuleConfig, 
+    requireModuleAvailable 
+} from '../middleware/featureGuard.js';
+import { 
+    requireActiveTenant, 
+    logTenantAccess 
+} from '../middleware/tenantStatusGuard.js';
 
 const router = express.Router();
 
@@ -17,155 +39,151 @@ const router = express.Router();
 router.use(protect);
 
 // Apply license validation for life insurance module
-router.use(requireModuleLicense(MODULES.LIFE_INSURANCE));
+// router.use(requireModuleLicense(MODULES.LIFE_INSURANCE)); // Temporarily disabled
 
-// Debug endpoint to test user search directly (temporary)
-router.get('/debug/user-search', async (req, res) => {
-    try {
-        const User = (await import('../../hr-core/users/models/user.model.js')).default;
-        
-        // Same query as the user search endpoint
-        const query = { tenantId: req.tenant.id };
-        query.status = { $ne: 'inactive' };
+// Check tenant status and log tenant access for audit
+// router.use(requireActiveTenant()); // Temporarily disabled
+// router.use(logTenantAccess()); // Temporarily disabled
 
-        const users = await User.find(query)
-            .select('_id personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId status role department position')
-            .populate('department', 'name')
-            .populate('position', 'title')
-            .sort({ 'personalInfo.firstName': 1, 'personalInfo.lastName': 1 })
-            .limit(50);
+// Check if module is available for tenant
+// router.use(requireModuleAvailable()); // Temporarily disabled
 
-        console.log('🔍 DEBUG USER SEARCH - Raw users:', users.length);
-        if (users.length > 0) {
-            console.log('🔍 Sample raw user:', {
-                _id: users[0]._id,
-                personalInfo: users[0].personalInfo,
-                email: users[0].email,
-                employeeId: users[0].employeeId
-            });
-        }
+// Attach module configuration to all requests
+// router.use(attachModuleConfig()); // Temporarily disabled
 
-        // Format users exactly like the search endpoint
-        const formattedUsers = users.map(user => {
-            const firstName = user.personalInfo?.firstName || 'Unknown';
-            const lastName = user.personalInfo?.lastName || 'User';
-            const fullName = user.personalInfo?.fullName || `${firstName} ${lastName}`;
-            
-            return {
-                _id: user._id,
-                firstName: firstName,
-                lastName: lastName,
-                email: user.email,
-                employeeId: user.employeeId,
-                status: user.status,
-                role: user.role,
-                name: fullName, // This is what the frontend uses in the dropdown
-                employeeNumber: user.employeeId || user._id.toString(),
-                department: user.department ? { name: user.department.name } : { name: 'N/A' },
-                position: user.position ? { title: user.position.title } : null
-            };
-        });
-
-        console.log('🔍 Sample formatted user:', formattedUsers[0]);
-
-        res.json({
-            success: true,
-            data: formattedUsers,
-            message: 'Debug user search results',
-            debug: {
-                rawCount: users.length,
-                formattedCount: formattedUsers.length,
-                sampleRaw: users[0] || null,
-                sampleFormatted: formattedUsers[0] || null
-            }
-        });
-    } catch (error) {
-        console.error('❌ Debug user search error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to debug user search',
-            error: error.message
-        });
-    }
+// Simple test endpoint to verify authentication works
+router.get('/test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Life insurance module is accessible',
+        user: {
+            id: req.user?.id || req.user?._id,
+            role: req.user?.role,
+            tenantId: req.user?.tenantId || req.tenantId
+        },
+        timestamp: new Date().toISOString()
+    });
 });
 
-// Debug endpoint to list available employees (temporary)
-router.get('/debug/employees', async (req, res) => {
-    try {
-        const User = (await import('../../hr-core/users/models/user.model.js')).default;
-        const employees = await User.find({ tenantId: req.tenant.id })
-            .select('_id employeeId email firstName lastName department position name fullName')
-            .sort({ employeeId: 1 });
 
-        console.log('🔍 DEBUG EMPLOYEES - Found:', employees.length);
-        employees.forEach((emp, index) => {
-            console.log(`🔍 Employee ${index + 1}:`, {
-                _id: emp._id,
-                employeeId: emp.employeeId,
-                firstName: emp.firstName,
-                lastName: emp.lastName,
-                name: emp.name,
-                fullName: emp.fullName,
-                email: emp.email
-            });
-        });
-
-        res.json({
-            success: true,
-            message: 'Available employees',
-            data: {
-                count: employees.length,
-                employees: employees.map(emp => ({
-                    mongoId: emp._id,
-                    employeeId: emp.employeeId || 'NOT SET',
-                    firstName: emp.firstName,
-                    lastName: emp.lastName,
-                    name: emp.name,
-                    fullName: emp.fullName,
-                    displayName: `${emp.firstName || 'Unknown'} ${emp.lastName || 'User'}`,
-                    email: emp.email,
-                    department: emp.department,
-                    position: emp.position
-                }))
-            }
-        });
-    } catch (error) {
-        console.error('❌ Debug employees error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch employees',
-            error: error.message
-        });
-    }
-});
 
 // Root route for life insurance
 router.get('/', async (req, res) => {
     try {
-        res.json({
-            success: true,
-            message: 'Life Insurance module is available',
-            data: {
-                module: 'life-insurance',
-                version: '1.0.0',
-                features: ['policies', 'claims', 'family-members', 'reports'],
-                endpoints: [
-                    'GET /policies - List all policies',
-                    'POST /policies - Create new policy',
-                    'GET /claims - List all claims',
-                    'POST /claims - Create new claim',
-                    'GET /family-members - List family members'
-                ]
-            }
-        });
+        const moduleConfig = req.moduleConfig;
+        const availableFeatures = req.availableFeatures;
+        
+        // Build feature list based on availability
+        const features = [];
+        if (availableFeatures.policyManagement) features.push('policies');
+        if (availableFeatures.claimsProcessing) features.push('claims');
+        if (availableFeatures.familyMembers) features.push('family-members');
+        if (availableFeatures.insuranceReports) features.push('reports');
+        if (availableFeatures.beneficiaryManagement) features.push('beneficiaries');
+        
+        // Build endpoint list based on available features
+        const endpoints = ['GET /policies - List all policies'];
+        if (availableFeatures.policyManagement) {
+            endpoints.push('POST /policies - Create new policy');
+        }
+        if (availableFeatures.claimsProcessing) {
+            endpoints.push('GET /claims - List all claims');
+            endpoints.push('POST /claims - Create new claim');
+        }
+        if (availableFeatures.familyMembers) {
+            endpoints.push('GET /family-members - List family members');
+        }
+        
+        sendSuccess(res, {
+            module: 'life-insurance',
+            version: '1.0.0',
+            tenant: {
+                id: req.tenant.id,
+                subscriptionPlan: moduleConfig.subscription.plan,
+                subscriptionStatus: moduleConfig.subscription.status
+            },
+            features,
+            availableFeatures,
+            endpoints,
+            moduleSettings: req.moduleSettings
+        }, 'Life Insurance module is available');
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to access life insurance module',
-            error: error.message
-        });
+        return sendError(res, 'Failed to access life insurance module', 500);
     }
 });
+
+// Employee Lookup Routes for Insurance Operations
+router.route('/employees/search')
+    .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
+        [
+            query('q')
+                .optional()
+                .trim()
+                .isLength({ min: 1, max: 100 })
+                .withMessage('Search query must be between 1 and 100 characters'),
+            query('limit')
+                .optional()
+                .isInt({ min: 1, max: 100 })
+                .withMessage('Limit must be between 1 and 100'),
+            query('page')
+                .optional()
+                .isInt({ min: 1 })
+                .withMessage('Page must be a positive integer')
+        ],
+        validateRequest,
+        employeeController.searchEmployees
+    );
+
+router.route('/employees/validate')
+    .post(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
+        [
+            body('employeeId')
+                .notEmpty()
+                .withMessage('Employee ID is required')
+        ],
+        validateRequest,
+        employeeController.validateEmployeeIdentifier
+    );
+
+router.route('/employees')
+    .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
+        [
+            query('includeInactive')
+                .optional()
+                .isBoolean()
+                .withMessage('Include inactive must be a boolean'),
+            query('limit')
+                .optional()
+                .isInt({ min: 1, max: 200 })
+                .withMessage('Limit must be between 1 and 200')
+        ],
+        validateRequest,
+        employeeController.getAccessibleEmployees
+    );
+
+router.route('/employees/:id')
+    .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
+        [
+            param('id')
+                .custom(async (value) => {
+                    // Allow either MongoDB ObjectId or employeeId string
+                    const mongoose = await import('mongoose');
+                    if (mongoose.default.Types.ObjectId.isValid(value)) {
+                        return true; // Valid ObjectId
+                    }
+                    if (typeof value === 'string' && value.length > 0) {
+                        return true; // Valid string employeeId
+                    }
+                    return Promise.reject('Valid employee ID is required (either MongoDB ObjectId or employeeId string)');
+                })
+        ],
+        validateRequest,
+        employeeController.getEmployeeById
+    );
 
 // Policy Management Routes
 router.route('/policies')
@@ -182,7 +200,7 @@ router.route('/policies')
                     if (typeof value === 'string' && value.length > 0) {
                         return true; // Valid string employeeId
                     }
-                    throw new Error('Valid employee ID is required (either MongoDB ObjectId or employeeId string)');
+                    return Promise.reject('Valid employee ID is required (either MongoDB ObjectId or employeeId string)');
                 }),
             body('policyType')
                 .isIn(['CAT_A', 'CAT_B', 'CAT_C'])
@@ -211,6 +229,7 @@ router.route('/policies')
         insuranceController.createPolicy
     )
     .get(
+        // requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN), // Temporarily disabled for debugging
         [
             query('page')
                 .optional()
@@ -239,7 +258,7 @@ router.route('/policies')
 
 router.route('/policies/expiring')
     .get(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             query('days')
                 .optional()
@@ -252,12 +271,15 @@ router.route('/policies/expiring')
 
 router.route('/policies/statistics')
     .get(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         insuranceController.getPolicyStatistics
     );
 
+
+
 router.route('/policies/:id')
     .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -267,7 +289,7 @@ router.route('/policies/:id')
         insuranceController.getPolicyById
     )
     .put(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -304,7 +326,7 @@ router.route('/policies/:id')
         insuranceController.updatePolicy
     )
     .delete(
-        requireRole([ROLES.ADMIN]),
+        requireRole(ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -317,6 +339,8 @@ router.route('/policies/:id')
 // Family Member Routes
 router.route('/policies/:policyId/family-members')
     .post(
+        requireFeature('familyMembers'),
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('policyId')
                 .isMongoId()
@@ -356,6 +380,8 @@ router.route('/policies/:policyId/family-members')
         insuranceController.addFamilyMember
     )
     .get(
+        requireFeature('familyMembers'),
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('policyId')
                 .isMongoId()
@@ -367,6 +393,8 @@ router.route('/policies/:policyId/family-members')
 
 router.route('/family-members')
     .get(
+        requireFeature('familyMembers'),
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             query('page')
                 .optional()
@@ -399,12 +427,13 @@ router.route('/family-members')
 
 router.route('/family-members/statistics')
     .get(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         familyMemberController.getFamilyMemberStatistics
     );
 
 router.route('/family-members/by-relationship/:relationship')
     .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('relationship')
                 .isIn(['spouse', 'child', 'parent'])
@@ -420,7 +449,7 @@ router.route('/family-members/by-relationship/:relationship')
 
 router.route('/family-members/children-under-age')
     .get(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             query('maxAge')
                 .optional()
@@ -433,6 +462,7 @@ router.route('/family-members/children-under-age')
 
 router.route('/family-members/:id')
     .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -442,6 +472,7 @@ router.route('/family-members/:id')
         familyMemberController.getFamilyMemberById
     )
     .put(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -490,7 +521,7 @@ router.route('/family-members/:id')
         familyMemberController.updateFamilyMember
     )
     .delete(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -502,7 +533,7 @@ router.route('/family-members/:id')
 
 router.route('/family-members/:id/coverage')
     .patch(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -528,6 +559,8 @@ router.route('/family-members/:id/coverage')
 // Claims Management Routes
 router.route('/claims')
     .post(
+        requireFeature('claimsProcessing'),
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             body('policyId')
                 .isMongoId()
@@ -561,6 +594,8 @@ router.route('/claims')
         claimController.createClaim
     )
     .get(
+        requireFeature('claimsProcessing'),
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             query('page')
                 .optional()
@@ -605,6 +640,7 @@ router.route('/claims')
 
 router.route('/claims/by-status/:status')
     .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('status')
                 .isIn(['pending', 'under_review', 'approved', 'rejected', 'paid', 'cancelled'])
@@ -620,13 +656,13 @@ router.route('/claims/by-status/:status')
 
 router.route('/claims/overdue')
     .get(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         claimController.getOverdueClaims
     );
 
 router.route('/claims/statistics')
     .get(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             query('startDate')
                 .optional()
@@ -643,6 +679,7 @@ router.route('/claims/statistics')
 
 router.route('/claims/:id')
     .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -652,7 +689,7 @@ router.route('/claims/:id')
         claimController.getClaimById
     )
     .delete(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -669,7 +706,7 @@ router.route('/claims/:id')
 
 router.route('/claims/:id/review')
     .patch(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -694,7 +731,7 @@ router.route('/claims/:id/review')
 
 router.route('/claims/:id/process-payment')
     .patch(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -717,7 +754,7 @@ router.route('/claims/:id/process-payment')
 
 router.route('/claims/:id/status')
     .patch(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -738,6 +775,8 @@ router.route('/claims/:id/status')
 // Claims Document Management Routes
 router.route('/claims/:id/documents')
     .post(
+        requireFeature('documentUpload'),
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         insuranceUpload.array('documents', 5), // Allow up to 5 files
         [
             param('id')
@@ -757,6 +796,7 @@ router.route('/claims/:id/documents')
         claimController.uploadClaimDocuments
     )
     .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -768,6 +808,7 @@ router.route('/claims/:id/documents')
 
 router.route('/claims/:id/documents/:documentId/download')
     .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -782,7 +823,7 @@ router.route('/claims/:id/documents/:documentId/download')
 
 router.route('/claims/:id/documents/:documentId')
     .delete(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('id')
                 .isMongoId()
@@ -795,10 +836,70 @@ router.route('/claims/:id/documents/:documentId')
         claimController.deleteClaimDocument
     );
 
+// Insurance Provider Management Routes
+router.route('/providers')
+    .get(
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
+        validateProviderQuery,
+        validateRequest,
+        insuranceProviderController.getInsuranceProviders
+    )
+    .post(
+        requireRole(ROLES.HR, ROLES.ADMIN),
+        validateCreateProvider,
+        validateContractDates,
+        validateRequest,
+        insuranceProviderController.createInsuranceProvider
+    );
+
+router.route('/providers/statistics')
+    .get(
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
+        insuranceProviderController.getProviderStatistics
+    );
+
+router.route('/providers/:id')
+    .get(
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
+        validateProviderId,
+        validateRequest,
+        insuranceProviderController.getInsuranceProvider
+    )
+    .put(
+        requireRole(ROLES.HR, ROLES.ADMIN),
+        validateUpdateProvider,
+        validateContractDates,
+        validateRequest,
+        insuranceProviderController.updateInsuranceProvider
+    )
+    .delete(
+        requireRole(ROLES.ADMIN),
+        validateProviderId,
+        validateRequest,
+        insuranceProviderController.deleteInsuranceProvider
+    );
+
+router.route('/providers/:id/activate')
+    .patch(
+        requireRole(ROLES.HR, ROLES.ADMIN),
+        validateProviderId,
+        validateRequest,
+        insuranceProviderController.activateInsuranceProvider
+    );
+
+router.route('/providers/:id/deactivate')
+    .patch(
+        requireRole(ROLES.HR, ROLES.ADMIN),
+        validateDeactivateProvider,
+        validateRequest,
+        insuranceProviderController.deactivateInsuranceProvider
+    );
+
 // Reports Routes
 router.route('/reports/pdf')
     .post(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireFeature('insuranceReports'),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             body('startDate')
                 .optional()
@@ -832,7 +933,8 @@ router.route('/reports/pdf')
 
 router.route('/reports/excel')
     .post(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireFeature('insuranceReports'),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             body('startDate')
                 .optional()
@@ -861,12 +963,14 @@ router.route('/reports/excel')
 
 router.route('/reports')
     .get(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireFeature('insuranceReports'),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         reportController.getAvailableReports
     );
 
 router.route('/reports/download/:filename')
     .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('filename')
                 .matches(/^[a-zA-Z0-9\-_.]+$/)
@@ -878,7 +982,7 @@ router.route('/reports/download/:filename')
 
 router.route('/reports/cleanup')
     .post(
-        requireRole([ROLES.ADMIN]),
+        requireRole(ROLES.ADMIN),
         [
             body('maxAgeHours')
                 .optional()
@@ -891,7 +995,7 @@ router.route('/reports/cleanup')
 
 router.route('/reports/:filename')
     .delete(
-        requireRole([ROLES.MANAGER, ROLES.HR, ROLES.ADMIN]),
+        requireRole(ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             param('filename')
                 .matches(/^[a-zA-Z0-9\-_.]+$/)
@@ -899,6 +1003,82 @@ router.route('/reports/:filename')
         ],
         validateRequest,
         reportController.deleteReport
+    );
+
+// Module Configuration Routes
+router.route('/config')
+    .get(
+        requireRole(ROLES.HR, ROLES.ADMIN),
+        configController.getModuleConfig
+    );
+
+router.route('/config/settings')
+    .put(
+        requireRole(ROLES.ADMIN),
+        [
+            body('settings')
+                .isObject()
+                .withMessage('Settings must be an object'),
+            body('settings.emailNotifications')
+                .optional()
+                .isBoolean()
+                .withMessage('Email notifications must be a boolean'),
+            body('settings.autoApproveSmallClaims')
+                .optional()
+                .isBoolean()
+                .withMessage('Auto approve small claims must be a boolean'),
+            body('settings.smallClaimThreshold')
+                .optional()
+                .isNumeric()
+                .isFloat({ min: 0 })
+                .withMessage('Small claim threshold must be a positive number'),
+            body('settings.requireDocumentsForClaims')
+                .optional()
+                .isBoolean()
+                .withMessage('Require documents for claims must be a boolean'),
+            body('settings.maxFamilyMembers')
+                .optional()
+                .isInt({ min: 1, max: 50 })
+                .withMessage('Max family members must be between 1 and 50')
+        ],
+        validateRequest,
+        configController.updateModuleSettings
+    );
+
+router.route('/config/features')
+    .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
+        configController.getFeatureAvailability
+    );
+
+router.route('/config/features/:featureName')
+    .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
+        [
+            param('featureName')
+                .isIn(['policyManagement', 'familyMembers', 'claimsProcessing', 'beneficiaryManagement', 'insuranceReports', 'documentUpload', 'emailNotifications', 'policyAnalytics'])
+                .withMessage('Invalid feature name')
+        ],
+        validateRequest,
+        configController.checkFeatureAvailability
+    );
+
+router.route('/config/availability')
+    .get(
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
+        configController.getModuleAvailability
+    );
+
+router.route('/config/cache/clear')
+    .post(
+        requireRole(ROLES.ADMIN),
+        configController.clearConfigCache
+    );
+
+router.route('/config/cache/stats')
+    .get(
+        requireRole(ROLES.ADMIN),
+        configController.getCacheStats
     );
 
 export default router;

@@ -290,13 +290,51 @@ beneficiarySchema.methods.verifyIdentification = function(verifiedBy, documentTy
     return this.save();
 };
 
-// Static method to validate total percentages for a policy
-beneficiarySchema.statics.validateTotalPercentages = async function(policyId, beneficiaryType = 'primary') {
-    const beneficiaries = await this.find({
+// Pre-save middleware for tenant validation
+beneficiarySchema.pre('save', function(next) {
+    if (!this.tenantId) {
+        const error = new Error('TenantId is required for beneficiary');
+        error.name = 'ValidationError';
+        return next(error);
+    }
+    next();
+});
+
+// Static method to find beneficiaries by tenant
+beneficiarySchema.statics.findByTenant = function(tenantId, filters = {}) {
+    return this.withTenant(tenantId).find(filters);
+};
+
+// Static method to find beneficiaries by tenant and employee with role-based access
+beneficiarySchema.statics.findByTenantAndEmployee = function(tenantId, employeeId, userRole, userDepartment = null) {
+    const query = { tenantId };
+    
+    // Apply role-based filtering
+    if (userRole === 'employee') {
+        query.employeeId = employeeId;
+    } else if (userRole === 'manager' && userDepartment) {
+        // Manager access will be validated in controller layer
+        query.employeeId = employeeId;
+    }
+    // HR and Admin roles get access to all beneficiaries within tenant
+    
+    return this.find(query);
+};
+
+// Static method to validate total percentages for a policy with tenant validation
+beneficiarySchema.statics.validateTotalPercentages = async function(policyId, beneficiaryType = 'primary', tenantId = null) {
+    const query = {
         policyId,
         beneficiaryType,
         status: 'active'
-    });
+    };
+    
+    // Add tenant validation if provided
+    if (tenantId) {
+        query.tenantId = tenantId;
+    }
+    
+    const beneficiaries = await this.find(query);
     
     const totalPercentage = beneficiaries.reduce(
         (sum, beneficiary) => sum + beneficiary.benefitPercentage, 
@@ -313,23 +351,28 @@ beneficiarySchema.statics.validateTotalPercentages = async function(policyId, be
     };
 };
 
-// Static method to find beneficiaries by type
-beneficiarySchema.statics.findByType = function(tenantId, policyId, beneficiaryType = 'primary') {
-    return this.find({
-        tenantId,
+// Static method to find beneficiaries by type with role-based access
+beneficiarySchema.statics.findByType = function(tenantId, policyId, beneficiaryType = 'primary', userRole = null, userId = null) {
+    const query = {
         policyId,
         beneficiaryType,
         status: 'active'
-    }).sort({ priority: 1 });
+    };
+    
+    // Apply role-based filtering for employee access
+    if (userRole === 'employee' && userId) {
+        query.employeeId = userId;
+    }
+    
+    return this.withTenant(tenantId).find(query).sort({ priority: 1 });
 };
 
-// Static method to find minor beneficiaries
-beneficiarySchema.statics.findMinors = function(tenantId, policyId = null) {
+// Static method to find minor beneficiaries with role-based access
+beneficiarySchema.statics.findMinors = function(tenantId, policyId = null, userRole = null, userId = null, userDepartment = null) {
     const cutoffDate = new Date();
     cutoffDate.setFullYear(cutoffDate.getFullYear() - 18);
     
     const query = {
-        tenantId,
         status: 'active',
         dateOfBirth: { $gt: cutoffDate }
     };
@@ -338,7 +381,65 @@ beneficiarySchema.statics.findMinors = function(tenantId, policyId = null) {
         query.policyId = policyId;
     }
     
-    return this.find(query);
+    // Apply role-based filtering
+    if (userRole === 'employee' && userId) {
+        query.employeeId = userId;
+    } else if (userRole === 'manager' && userDepartment && userId) {
+        // Manager access will be validated in controller layer
+        query.employeeId = userId;
+    }
+    
+    return this.withTenant(tenantId).find(query);
+};
+
+// Static method for role-based beneficiary queries
+beneficiarySchema.statics.findWithRoleAccess = function(tenantId, userRole, userId, userDepartment = null, additionalFilters = {}) {
+    const query = { ...additionalFilters };
+    
+    switch (userRole) {
+        case 'employee':
+            query.employeeId = userId;
+            break;
+        case 'manager':
+            // Manager access requires department validation in controller
+            break;
+        case 'hr':
+        case 'admin':
+            // Full tenant access - no additional filtering
+            break;
+        default:
+            // Unknown role - restrict to user's own data
+            query.employeeId = userId;
+    }
+    
+    return this.withTenant(tenantId).find(query);
+};
+
+// Static method to get beneficiary statistics by tenant
+beneficiarySchema.statics.getStatisticsByTenant = function(tenantId, userRole = null, userId = null, userDepartment = null) {
+    const matchStage = { tenantId };
+    
+    // Apply role-based filtering
+    if (userRole === 'employee' && userId) {
+        matchStage.employeeId = userId;
+    } else if (userRole === 'manager' && userDepartment) {
+        // Manager statistics will be filtered in controller layer
+    }
+    
+    return this.aggregate([
+        { $match: matchStage },
+        {
+            $group: {
+                _id: {
+                    beneficiaryType: '$beneficiaryType',
+                    relationship: '$relationship'
+                },
+                count: { $sum: 1 },
+                totalBenefitAmount: { $sum: '$benefitAmount' },
+                averagePercentage: { $avg: '$benefitPercentage' }
+            }
+        }
+    ]);
 };
 
 // Method to update priority

@@ -551,6 +551,65 @@ class TenantService {
   }
 
   /**
+   * Enable module for a single tenant
+   * 
+   * @param {string} tenantId - Tenant ID
+   * @param {string} moduleId - Module ID to enable
+   * @param {string} enabledBy - User who enabled the module
+   * @returns {Promise<Object>} Updated tenant
+   */
+  async enableModule(tenantId, moduleId, enabledBy = 'platform-admin') {
+    const tenant = await Tenant.findOne({ tenantId });
+    
+    if (!tenant) {
+      throw new AppError(
+        `Tenant with ID ${tenantId} not found`,
+        404,
+        ERROR_TYPES.TENANT_NOT_FOUND
+      );
+    }
+
+    if (!tenant.isModuleEnabled(moduleId)) {
+      tenant.enableModule(moduleId, enabledBy);
+      await tenant.save();
+
+      // Call module-specific initialization hooks
+      await this._callModuleEnablementHook(tenantId, moduleId, enabledBy);
+    }
+
+    return tenant;
+  }
+
+  /**
+   * Disable module for a single tenant
+   * 
+   * @param {string} tenantId - Tenant ID
+   * @param {string} moduleId - Module ID to disable
+   * @returns {Promise<Object>} Updated tenant
+   */
+  async disableModule(tenantId, moduleId) {
+    const tenant = await Tenant.findOne({ tenantId });
+    
+    if (!tenant) {
+      throw new AppError(
+        `Tenant with ID ${tenantId} not found`,
+        404,
+        ERROR_TYPES.TENANT_NOT_FOUND
+      );
+    }
+
+    if (tenant.isModuleEnabled(moduleId)) {
+      tenant.disableModule(moduleId);
+      await tenant.save();
+
+      // Call module-specific cleanup hooks
+      await this._callModuleDisablementHook(tenantId, moduleId);
+    }
+
+    return tenant;
+  }
+
+  /**
    * Bulk enable module for tenants
    * 
    * @param {Array} tenantIds - Array of tenant IDs
@@ -567,6 +626,9 @@ class TenantService {
         tenant.enableModule(moduleId, enabledBy);
         await tenant.save();
         updatedTenants.push(tenant);
+
+        // Call module-specific initialization hooks
+        await this._callModuleEnablementHook(tenant.tenantId, moduleId, enabledBy);
       }
     }
 
@@ -589,6 +651,9 @@ class TenantService {
         tenant.disableModule(moduleId);
         await tenant.save();
         updatedTenants.push(tenant);
+
+        // Call module-specific cleanup hooks
+        await this._callModuleDisablementHook(tenant.tenantId, moduleId);
       }
     }
 
@@ -833,6 +898,63 @@ class TenantService {
    */
   async getPerformanceAnalytics() {
     return await Tenant.getPerformanceMetrics();
+  }
+
+  /**
+   * Call module-specific enablement hook
+   * 
+   * @param {string} tenantId - Tenant ID
+   * @param {string} moduleId - Module ID
+   * @param {string} enabledBy - User who enabled the module
+   * @private
+   */
+  async _callModuleEnablementHook(tenantId, moduleId, enabledBy) {
+    try {
+      switch (moduleId) {
+        case 'life-insurance':
+          try {
+            const { onLifeInsuranceModuleEnabled } = await import('../../../modules/life-insurance/hooks/moduleEnablementHook.js');
+            await onLifeInsuranceModuleEnabled(tenantId, enabledBy);
+          } catch (importError) {
+            console.warn(`Life insurance module hook not available: ${importError.message}`);
+          }
+          break;
+        // Add other module hooks here as needed
+        default:
+          console.log(`No enablement hook defined for module: ${moduleId}`);
+      }
+    } catch (error) {
+      console.error(`Error calling enablement hook for module ${moduleId} on tenant ${tenantId}:`, error);
+      // Don't throw error to avoid breaking module enablement
+    }
+  }
+
+  /**
+   * Call module-specific disablement hook
+   * 
+   * @param {string} tenantId - Tenant ID
+   * @param {string} moduleId - Module ID
+   * @private
+   */
+  async _callModuleDisablementHook(tenantId, moduleId) {
+    try {
+      switch (moduleId) {
+        case 'life-insurance':
+          try {
+            const { onLifeInsuranceModuleDisabled } = await import('../../../modules/life-insurance/hooks/moduleEnablementHook.js');
+            await onLifeInsuranceModuleDisabled(tenantId);
+          } catch (importError) {
+            console.warn(`Life insurance module hook not available: ${importError.message}`);
+          }
+          break;
+        // Add other module hooks here as needed
+        default:
+          console.log(`No disablement hook defined for module: ${moduleId}`);
+      }
+    } catch (error) {
+      console.error(`Error calling disablement hook for module ${moduleId} on tenant ${tenantId}:`, error);
+      // Don't throw error to avoid breaking module disablement
+    }
   }
 }
 

@@ -184,7 +184,7 @@ class InsuranceReportService {
      * Get policies data for reporting
      */
     async getPoliciesData(tenantId, dateFilter, includeExpired) {
-        const query = { tenantId };
+        const query = {};
         
         if (Object.keys(dateFilter).length > 0) {
             query.createdAt = dateFilter;
@@ -194,7 +194,7 @@ class InsuranceReportService {
             query.status = { $ne: 'expired' };
         }
 
-        return await InsurancePolicy.find(query)
+        return await InsurancePolicy.withTenant(tenantId).find(query)
             .populate('employeeId', 'firstName lastName email employeeId department')
             .populate('familyMembers')
             .sort({ createdAt: -1 })
@@ -205,13 +205,13 @@ class InsuranceReportService {
      * Get claims data for reporting
      */
     async getClaimsData(tenantId, dateFilter) {
-        const query = { tenantId };
+        const query = {};
         
         if (Object.keys(dateFilter).length > 0) {
             query.createdAt = dateFilter;
         }
 
-        return await InsuranceClaim.find(query)
+        return await InsuranceClaim.withTenant(tenantId).find(query)
             .populate('policyId', 'policyNumber policyType')
             .populate('employeeId', 'firstName lastName email employeeId')
             .populate('claimantId', 'firstName lastName relationship')
@@ -224,13 +224,13 @@ class InsuranceReportService {
      * Get family members data for reporting
      */
     async getFamilyMembersData(tenantId, dateFilter) {
-        const query = { tenantId, status: { $ne: 'removed' } };
+        const query = { status: { $ne: 'removed' } };
         
         if (Object.keys(dateFilter).length > 0) {
             query.createdAt = dateFilter;
         }
 
-        return await FamilyMember.find(query)
+        return await FamilyMember.withTenant(tenantId).find(query)
             .populate('employeeId', 'firstName lastName email employeeId')
             .populate('policyId', 'policyNumber policyType')
             .sort({ createdAt: -1 })
