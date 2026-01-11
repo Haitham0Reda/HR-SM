@@ -71,7 +71,15 @@ const insuranceService = {
 
     // Claim operations
     async getAllClaims(params = {}) {
-        const queryParams = new URLSearchParams(params).toString();
+        // Filter out undefined values to avoid "undefined" in query string
+        const cleanParams = Object.entries(params).reduce((acc, [key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                acc[key] = value;
+            }
+            return acc;
+        }, {});
+        
+        const queryParams = new URLSearchParams(cleanParams).toString();
         const url = queryParams ? `/life-insurance/claims?${queryParams}` : '/life-insurance/claims';
         return api.get(url);
     },

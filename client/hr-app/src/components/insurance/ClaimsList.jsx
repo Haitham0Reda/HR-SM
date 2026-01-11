@@ -46,6 +46,7 @@ const ClaimsList = () => {
         claims,
         loading,
         error,
+        pagination,
         fetchClaims
     } = useClaims();
 
@@ -72,10 +73,18 @@ const ClaimsList = () => {
     useEffect(() => {
         const params = {
             page: paginationModel.page + 1,
-            limit: paginationModel.pageSize,
-            sort: sortModel.length > 0 ? `${sortModel[0].field}:${sortModel[0].sort}` : undefined,
-            filter: filterModel.items.length > 0 ? JSON.stringify(filterModel.items) : undefined
+            limit: paginationModel.pageSize
         };
+        
+        // Only add sort if it exists and is valid
+        if (sortModel.length > 0 && sortModel[0].field && sortModel[0].sort) {
+            params.sort = `${sortModel[0].field}:${sortModel[0].sort}`;
+        }
+        
+        // Only add filter if it exists and has items
+        if (filterModel.items && filterModel.items.length > 0) {
+            params.filter = JSON.stringify(filterModel.items);
+        }
         
         fetchClaims(params);
     }, [paginationModel, sortModel, filterModel, fetchClaims]);
@@ -109,12 +118,22 @@ const ClaimsList = () => {
 
     const handleRefresh = useCallback(() => {
         if (!loading) {
-            fetchClaims({
+            const params = {
                 page: paginationModel.page + 1,
-                limit: paginationModel.pageSize,
-                sort: sortModel.length > 0 ? `${sortModel[0].field}:${sortModel[0].sort}` : undefined,
-                filter: filterModel.items.length > 0 ? JSON.stringify(filterModel.items) : undefined
-            });
+                limit: paginationModel.pageSize
+            };
+            
+            // Only add sort if it exists and is valid
+            if (sortModel.length > 0 && sortModel[0].field && sortModel[0].sort) {
+                params.sort = `${sortModel[0].field}:${sortModel[0].sort}`;
+            }
+            
+            // Only add filter if it exists and has items
+            if (filterModel.items && filterModel.items.length > 0) {
+                params.filter = JSON.stringify(filterModel.items);
+            }
+            
+            fetchClaims(params);
         }
     }, [loading, fetchClaims, paginationModel, sortModel, filterModel]);
 
@@ -276,6 +295,7 @@ const ClaimsList = () => {
                         getRowId={(row) => row._id}
                         pagination
                         paginationMode="server"
+                        rowCount={pagination?.totalItems || 0}
                         sortingMode="server"
                         filterMode="server"
                         paginationModel={paginationModel}

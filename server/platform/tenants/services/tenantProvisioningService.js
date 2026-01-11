@@ -2,6 +2,7 @@ import Tenant from '../models/Tenant.js';
 import User from '../../../modules/hr-core/users/models/user.model.js';
 import AppError from '../../../core/errors/AppError.js';
 import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
+import { ROLES } from '../../../shared/constants/modules.js';
 import crypto from 'crypto';
 import { seedInsuranceProvidersForTenant } from '../../../modules/life-insurance/utils/seedInsuranceProviders.js';
 
@@ -230,7 +231,7 @@ class TenantProvisioningService {
         lastName,
         fullName: `${firstName} ${lastName}`
       },
-      role: 'Admin',
+      role: ROLES.ADMIN,
       status: 'active',
       permissions: []
     });

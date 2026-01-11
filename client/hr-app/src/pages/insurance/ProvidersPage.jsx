@@ -110,8 +110,23 @@ const ProvidersPage = () => {
     };
 
     const handleDialogOpen = (type, provider = null) => {
+        console.log('handleDialogOpen called:', { type, provider: provider?.name, providerId: provider?._id });
+        
+        // Ensure we have a provider for actions that require it
+        if ((type === 'edit' || type === 'view' || type === 'delete') && !provider) {
+            console.error(`Cannot open ${type} dialog without a provider`);
+            return;
+        }
+        
+        // Close menu immediately
+        setAnchorEl(null);
+        
+        // Set all dialog state at once
         setDialogType(type);
         setSelectedProvider(provider);
+        setDialogOpen(true);
+        
+        console.log('Dialog state set:', { type, provider: provider?.name });
         
         if (type === 'create') {
             setFormData({
@@ -135,11 +150,23 @@ const ProvidersPage = () => {
                 rating: 3
             });
         } else if (type === 'edit' && provider) {
-            setFormData({ ...provider });
+            setFormData({ 
+                ...provider,
+                contactInfo: {
+                    email: provider.contactInfo?.email || '',
+                    phone: provider.contactInfo?.phone || '',
+                    website: provider.contactInfo?.website || '',
+                    address: {
+                        street: provider.contactInfo?.address?.street || '',
+                        city: provider.contactInfo?.address?.city || '',
+                        governorate: provider.contactInfo?.address?.governorate || '',
+                        country: provider.contactInfo?.address?.country || 'Egypt'
+                    }
+                },
+                insuranceTypes: provider.insuranceTypes || [],
+                coverageAreas: provider.coverageAreas || []
+            });
         }
-        
-        setDialogOpen(true);
-        handleMenuClose();
     };
 
     const handleDialogClose = () => {
@@ -154,6 +181,11 @@ const ProvidersPage = () => {
             if (dialogType === 'create') {
                 await createProvider(formData);
             } else if (dialogType === 'edit') {
+                if (!selectedProvider || !selectedProvider._id) {
+                    console.error('No provider selected for editing');
+                    handleDialogClose();
+                    return;
+                }
                 await updateProvider(selectedProvider._id, formData);
             }
             handleDialogClose();
@@ -164,6 +196,12 @@ const ProvidersPage = () => {
     };
 
     const handleDelete = async () => {
+        if (!selectedProvider || !selectedProvider._id) {
+            console.error('No provider selected for deletion');
+            handleDialogClose();
+            return;
+        }
+
         try {
             await deleteProvider(selectedProvider._id);
             handleDialogClose();
@@ -174,6 +212,11 @@ const ProvidersPage = () => {
     };
 
     const handleActivate = async (providerId) => {
+        if (!providerId) {
+            console.error('No provider ID provided for activation');
+            return;
+        }
+
         try {
             await activateProvider(providerId);
             loadProviders();
@@ -184,6 +227,11 @@ const ProvidersPage = () => {
     };
 
     const handleDeactivate = async (providerId) => {
+        if (!providerId) {
+            console.error('No provider ID provided for deactivation');
+            return;
+        }
+
         try {
             await deactivateProvider(providerId, 'Deactivated by admin');
             loadProviders();
@@ -364,8 +412,10 @@ const ProvidersPage = () => {
                                     <MenuItem value="life">Life</MenuItem>
                                     <MenuItem value="dental">Dental</MenuItem>
                                     <MenuItem value="vision">Vision</MenuItem>
+                                    <MenuItem value="disability">Disability</MenuItem>
                                     <MenuItem value="accident">Accident</MenuItem>
                                     <MenuItem value="travel">Travel</MenuItem>
+                                    <MenuItem value="other">Other</MenuItem>
                                 </Select>
                             </FormControl>
                         </Grid>
@@ -537,9 +587,361 @@ const ProvidersPage = () => {
                 </MenuItem>
             </Menu>
 
-            {/* Dialogs would go here - Create/Edit/View/Delete */}
-            {/* For brevity, I'm not including the full dialog implementations */}
-            {/* They would follow similar patterns to other pages in the app */}
+            {/* Dialogs */}
+            {/* View Provider Dialog */}
+            <Dialog
+                open={dialogOpen && dialogType === 'view'}
+                onClose={handleDialogClose}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    Provider Details
+                </DialogTitle>
+                <DialogContent>
+                    {selectedProvider && (
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid item xs={12} sm={6}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Provider Name
+                                </Typography>
+                                <Typography variant="body1" gutterBottom>
+                                    {selectedProvider.name}
+                                </Typography>
+                                {selectedProvider.nameArabic && (
+                                    <>
+                                        <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                                            Arabic Name
+                                        </Typography>
+                                        <Typography variant="body1" gutterBottom>
+                                            {selectedProvider.nameArabic}
+                                        </Typography>
+                                    </>
+                                )}
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Provider Code
+                                </Typography>
+                                <Chip label={selectedProvider.code} variant="outlined" />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Status
+                                </Typography>
+                                <Chip 
+                                    label={selectedProvider.status} 
+                                    color={getStatusColor(selectedProvider.status)}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Rating
+                                </Typography>
+                                {renderRating(selectedProvider.rating)}
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Contact Information
+                                </Typography>
+                                <Box sx={{ pl: 2 }}>
+                                    {selectedProvider.contactInfo?.email && (
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <EmailIcon fontSize="small" sx={{ mr: 1 }} />
+                                            <Typography variant="body2">
+                                                {selectedProvider.contactInfo.email}
+                                            </Typography>
+                                        </Box>
+                                    )}
+                                    {selectedProvider.contactInfo?.phone && (
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <PhoneIcon fontSize="small" sx={{ mr: 1 }} />
+                                            <Typography variant="body2">
+                                                {selectedProvider.contactInfo.phone}
+                                            </Typography>
+                                        </Box>
+                                    )}
+                                    {selectedProvider.contactInfo?.website && (
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <WebsiteIcon fontSize="small" sx={{ mr: 1 }} />
+                                            <Typography variant="body2">
+                                                {selectedProvider.contactInfo.website}
+                                            </Typography>
+                                        </Box>
+                                    )}
+                                </Box>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Insurance Types
+                                </Typography>
+                                <Box display="flex" flexWrap="wrap" gap={1}>
+                                    {selectedProvider.insuranceTypes?.map((type) => (
+                                        <Chip 
+                                            key={type} 
+                                            label={type} 
+                                            size="small" 
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    ))}
+                                </Box>
+                            </Grid>
+                            {selectedProvider.coverageAreas?.length > 0 && (
+                                <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                        Coverage Areas
+                                    </Typography>
+                                    <Box display="flex" flexWrap="wrap" gap={1}>
+                                        {selectedProvider.coverageAreas.map((area) => (
+                                            <Chip 
+                                                key={area} 
+                                                label={area} 
+                                                size="small" 
+                                                variant="outlined"
+                                            />
+                                        ))}
+                                    </Box>
+                                </Grid>
+                            )}
+                        </Grid>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDialogClose}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Create/Edit Provider Dialog */}
+            <Dialog
+                open={dialogOpen && (dialogType === 'create' || dialogType === 'edit')}
+                onClose={handleDialogClose}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    {dialogType === 'create' ? 'Add New Provider' : 'Edit Provider'}
+                </DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Provider Name *"
+                                value={formData.name || ''}
+                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                required
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Arabic Name"
+                                value={formData.nameArabic || ''}
+                                onChange={(e) => setFormData(prev => ({ ...prev, nameArabic: e.target.value }))}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Provider Code *"
+                                value={formData.code || ''}
+                                onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                                required
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>Status</InputLabel>
+                                <Select
+                                    value={formData.status || 'active'}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                                    label="Status"
+                                >
+                                    <MenuItem value="active">Active</MenuItem>
+                                    <MenuItem value="inactive">Inactive</MenuItem>
+                                    <MenuItem value="suspended">Suspended</MenuItem>
+                                    <MenuItem value="pending">Pending</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Email"
+                                type="email"
+                                value={formData.contactInfo?.email || ''}
+                                onChange={(e) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    contactInfo: { ...prev.contactInfo, email: e.target.value }
+                                }))}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Phone"
+                                value={formData.contactInfo?.phone || ''}
+                                onChange={(e) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    contactInfo: { ...prev.contactInfo, phone: e.target.value }
+                                }))}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Website"
+                                value={formData.contactInfo?.website || ''}
+                                onChange={(e) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    contactInfo: { ...prev.contactInfo, website: e.target.value }
+                                }))}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth>
+                                <InputLabel>Insurance Types</InputLabel>
+                                <Select
+                                    multiple
+                                    value={formData.insuranceTypes || []}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, insuranceTypes: e.target.value }))}
+                                    label="Insurance Types"
+                                    renderValue={(selected) => (
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {selected.map((value) => (
+                                                <Chip key={value} label={value} size="small" />
+                                            ))}
+                                        </Box>
+                                    )}
+                                >
+                                    <MenuItem value="health">Health</MenuItem>
+                                    <MenuItem value="life">Life</MenuItem>
+                                    <MenuItem value="dental">Dental</MenuItem>
+                                    <MenuItem value="vision">Vision</MenuItem>
+                                    <MenuItem value="disability">Disability</MenuItem>
+                                    <MenuItem value="accident">Accident</MenuItem>
+                                    <MenuItem value="travel">Travel</MenuItem>
+                                    <MenuItem value="other">Other</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth>
+                                <InputLabel>Coverage Areas</InputLabel>
+                                <Select
+                                    multiple
+                                    value={formData.coverageAreas || []}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, coverageAreas: e.target.value }))}
+                                    label="Coverage Areas"
+                                    renderValue={(selected) => (
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {selected.map((value) => (
+                                                <Chip key={value} label={value} size="small" />
+                                            ))}
+                                        </Box>
+                                    )}
+                                >
+                                    <MenuItem value="cairo">Cairo</MenuItem>
+                                    <MenuItem value="alexandria">Alexandria</MenuItem>
+                                    <MenuItem value="giza">Giza</MenuItem>
+                                    <MenuItem value="luxor">Luxor</MenuItem>
+                                    <MenuItem value="aswan">Aswan</MenuItem>
+                                    <MenuItem value="nationwide">Nationwide</MenuItem>
+                                    <MenuItem value="international">International</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Street Address"
+                                value={formData.contactInfo?.address?.street || ''}
+                                onChange={(e) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    contactInfo: { 
+                                        ...prev.contactInfo, 
+                                        address: { ...prev.contactInfo?.address, street: e.target.value }
+                                    }
+                                }))}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="City"
+                                value={formData.contactInfo?.address?.city || ''}
+                                onChange={(e) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    contactInfo: { 
+                                        ...prev.contactInfo, 
+                                        address: { ...prev.contactInfo?.address, city: e.target.value }
+                                    }
+                                }))}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Governorate"
+                                value={formData.contactInfo?.address?.governorate || ''}
+                                onChange={(e) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    contactInfo: { 
+                                        ...prev.contactInfo, 
+                                        address: { ...prev.contactInfo?.address, governorate: e.target.value }
+                                    }
+                                }))}
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDialogClose}>Cancel</Button>
+                    <Button 
+                        onClick={handleSubmit} 
+                        variant="contained"
+                        disabled={!formData.name || !formData.code}
+                    >
+                        {dialogType === 'create' ? 'Create' : 'Update'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            {console.log('Delete dialog render check:', { 
+                dialogOpen, 
+                dialogType, 
+                selectedProvider: selectedProvider?.name,
+                condition: dialogOpen && dialogType === 'delete'
+            })}
+            <Dialog
+                open={dialogOpen && dialogType === 'delete'}
+                onClose={handleDialogClose}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    Confirm Delete
+                </DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to delete the provider "{selectedProvider?.name}"? 
+                        This action cannot be undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDialogClose}>Cancel</Button>
+                    <Button 
+                        onClick={handleDelete} 
+                        variant="contained" 
+                        color="error"
+                        disabled={!selectedProvider}
+                    >
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

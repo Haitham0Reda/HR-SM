@@ -46,6 +46,14 @@ export const requireRole = (...allowedRoles) => {
         });
 
         if (!hasPermission) {
+            // Add debugging information for role mismatch
+            console.warn(`Role permission denied for user ${req.user.id}:`, {
+                userRole,
+                allowedRoles,
+                userRoleHierarchy: ROLE_HIERARCHY[userRole],
+                requiredHierarchies: allowedRoles.map(role => ({ role, hierarchy: ROLE_HIERARCHY[role] }))
+            });
+            
             return res.status(403).json({
                 success: false,
                 message: 'Insufficient permissions'
