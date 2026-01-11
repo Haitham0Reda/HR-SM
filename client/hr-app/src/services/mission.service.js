@@ -2,7 +2,7 @@ import api from './api';
 
 // Force cache bust with unique identifier
 const SERVICE_VERSION = '2026-01-03-missions-' + Math.random().toString(36).substr(2, 9);
-console.log(`🔄 Mission Service v${SERVICE_VERSION} loading...`);
+// console.log(`🔄 Mission Service v${SERVICE_VERSION} loading...`);
 
 /**
  * Mission Service
@@ -20,7 +20,7 @@ const missionService = {
      * @returns {Promise<Object>} Response containing missions array and metadata
      */
     getAll: async (params) => {
-        console.log(`🔍 [${SERVICE_VERSION}] Mission Service - getAll called`);
+        // console.log(`🔍 [${SERVICE_VERSION}] Mission Service - getAll called`);
         // Add cache-busting parameter to ensure fresh data
         const cacheBustParams = { 
             ...params, 
@@ -51,8 +51,8 @@ const missionService = {
      * @returns {Promise<Object>} Created mission object
      */
     create: async (data) => {
-        console.log(`🔍 [${SERVICE_VERSION}] Mission Service - create called`);
-        console.log(`🔍 [${SERVICE_VERSION}] Request data:`, data instanceof FormData ? 'FormData' : JSON.stringify(data, null, 2));
+        // console.log(`🔍 [${SERVICE_VERSION}] Mission Service - create called`);
+        // console.log(`🔍 [${SERVICE_VERSION}] Request data:`, data instanceof FormData ? 'FormData' : JSON.stringify(data, null, 2));
         
         try {
             // Check if data is FormData (for file uploads)
@@ -62,7 +62,7 @@ const missionService = {
                 },
             } : {};
             const result = await api.post('/missions', data, config);
-            console.log(`✅ [${SERVICE_VERSION}] Mission Service - create successful`);
+            // console.log(`✅ [${SERVICE_VERSION}] Mission Service - create successful`);
             return result;
         } catch (error) {
             console.error(`❌ [${SERVICE_VERSION}] Mission Service - create failed:`, error);
@@ -77,7 +77,7 @@ const missionService = {
      * @returns {Promise<Object>} Updated mission object
      */
     update: async (id, data) => {
-        console.log(`🔍 [${SERVICE_VERSION}] Mission Service - update called for ID: ${id}`);
+        // console.log(`🔍 [${SERVICE_VERSION}] Mission Service - update called for ID: ${id}`);
         const result = await api.put(`/missions/${id}`, data);
         // If status is being updated, dispatch notification update event
         if (data && (data.status === 'approved' || data.status === 'rejected')) {
@@ -86,7 +86,7 @@ const missionService = {
             // Dispatch notification update event
             window.dispatchEvent(new CustomEvent('notificationUpdate'));
         }
-        console.log(`✅ [${SERVICE_VERSION}] Mission Service - update successful`);
+        // console.log(`✅ [${SERVICE_VERSION}] Mission Service - update successful`);
         return result;
     },
 
@@ -133,6 +133,6 @@ const missionService = {
 
 // Add version identifier
 missionService._version = SERVICE_VERSION;
-console.log(`✅ Mission Service v${SERVICE_VERSION} loaded successfully`);
+// console.log(`✅ Mission Service v${SERVICE_VERSION} loaded successfully`);
 
 export default missionService;

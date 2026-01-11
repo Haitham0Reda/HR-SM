@@ -110,7 +110,8 @@ api.interceptors.request.use(
             circuitBreakerActive = false;
         }
 
-        logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        // Reduced logging for performance
+        // logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
 
         // Add Tenant JWT authentication token if available
         const tenantToken = localStorage.getItem('tenant_token') || localStorage.getItem('token');
@@ -137,7 +138,8 @@ api.interceptors.request.use(
  */
 api.interceptors.response.use(
     (response) => {
-        logger.debug(`API Response: ${response.config.method?.toUpperCase()} ${response.config.url} - Status: ${response.status}`);
+        // Reduced logging for performance - only log errors
+        // logger.debug(`API Response: ${response.config.method?.toUpperCase()} ${response.config.url} - Status: ${response.status}`);
 
         // Reset circuit breaker on successful response
         resetCircuitBreaker();
@@ -159,22 +161,16 @@ api.interceptors.response.use(
             // Reset circuit breaker if we got a response (server is up)
             resetCircuitBreaker();
 
-            // Only log errors that aren't expected 403s (permission denied)
-            // 403s are expected for users accessing restricted endpoints
-            if (status !== 403) {
+            // Reduced logging for performance - only log critical errors
+            if (status !== 403 && status !== 404) {
                 const method = error.config?.method?.toUpperCase();
                 const url = error.config?.url || '';
-                const isPlainPassword404 = status === 404 && url.endsWith('/plain-password');
-                if (isPlainPassword404) {
-                    logger.debug(`API ${method} ${url} - Status: ${status} (expected)`);
-                } else {
-                    logger.apiCall(
-                        method,
-                        url,
-                        status,
-                        new Error(data.error || data.message || 'An error occurred')
-                    );
-                }
+                logger.apiCall(
+                    method,
+                    url,
+                    status,
+                    new Error(data.error || data.message || 'An error occurred')
+                );
             }
 
             // Handle 401 Unauthorized - log but don't automatically redirect

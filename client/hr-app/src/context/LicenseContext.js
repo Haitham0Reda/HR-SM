@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { debounce } from '../utils/helpers';
 import api from '../services/api';
 import { useAuth } from '../store/providers/ReduxAuthProvider';
 
@@ -137,6 +138,12 @@ export const LicenseProvider = ({ children }) => {
         }
     }, [isAuthenticated, user]);
 
+    // Debounced version of fetchLicenses to prevent excessive API calls
+    const debouncedFetchLicenses = useMemo(
+        () => debounce(fetchLicenses, 1000), // 1 second debounce
+        [fetchLicenses]
+    );
+
     /**
      * Connect to WebSocket for real-time license updates
      */
@@ -204,7 +211,7 @@ export const LicenseProvider = ({ children }) => {
      * Handle incoming WebSocket messages
      */
     const handleWebSocketMessage = useCallback((message) => {
-        console.log('License WebSocket message:', message);
+        // console.log('License WebSocket message:', message); // Disabled for performance
 
         switch (message.type) {
             case 'connected':
@@ -236,8 +243,8 @@ export const LicenseProvider = ({ children }) => {
                     timestamp: message.timestamp
                 });
                 
-                // Refresh license data to update UI
-                fetchLicenses();
+                // Refresh license data to update UI (debounced)
+                debouncedFetchLicenses();
                 break;
 
             case 'usage_limit_warning':

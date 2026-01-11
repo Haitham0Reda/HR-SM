@@ -346,11 +346,11 @@ class EnhancedFrontendLogger {
     }
 
     setupPerformanceMonitoring() {
-        // Performance Observer for navigation timing (with throttling)
+        // Performance Observer for navigation timing (with heavy throttling)
         if ('PerformanceObserver' in window) {
             try {
                 let lastLogTime = 0;
-                const LOG_THROTTLE_MS = 120000; // Only log performance metrics every 2 minutes (increased from 30s)
+                const LOG_THROTTLE_MS = 300000; // Only log performance metrics every 5 minutes (increased from 2 minutes)
                 
                 this.performanceObserver = new PerformanceObserver((list) => {
                     const now = Date.now();
@@ -362,7 +362,7 @@ class EnhancedFrontendLogger {
                     // Only log significant performance entries (increased threshold)
                     for (const entry of list.getEntries()) {
                         if (entry.entryType === 'navigation' || 
-                            (entry.entryType === 'measure' && entry.duration > 1000)) { // Increased from 500ms to 1000ms
+                            (entry.entryType === 'measure' && entry.duration > 2000)) { // Increased from 1000ms to 2000ms
                             this.logPerformanceMetric(entry);
                         }
                     }
@@ -372,7 +372,8 @@ class EnhancedFrontendLogger {
                     entryTypes: ['navigation'] // Removed 'measure' to reduce noise further
                 });
             } catch (error) {
-                console.warn('Performance monitoring not available:', error);
+                // Performance monitoring disabled for performance
+                // console.warn('Performance monitoring not available:', error);
             }
         }
         
@@ -482,9 +483,10 @@ class EnhancedFrontendLogger {
     async sendBatchToBackend(batch, retryCount = 0) {
         // Check circuit breaker
         if (Date.now() < this.rateLimitedUntil) {
-            if (process.env.NODE_ENV === 'development') {
-                console.warn('Logging circuit breaker active, skipping batch');
-            }
+            // Development logging disabled
+            // if (process.env.NODE_ENV === 'development') {
+            //     console.warn('Logging circuit breaker active, skipping batch');
+            // }
             this.storeFailedLogs(batch);
             return;
         }
@@ -493,9 +495,10 @@ class EnhancedFrontendLogger {
         if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
             const backoffTime = Math.min(60000 * Math.pow(2, this.consecutiveFailures - this.maxConsecutiveFailures), 300000); // Max 5 minutes
             this.rateLimitedUntil = Date.now() + backoffTime;
-            if (process.env.NODE_ENV === 'development') {
-                console.warn(`Too many consecutive failures (${this.consecutiveFailures}), circuit breaker active for ${backoffTime/1000}s`);
-            }
+            // Development logging disabled
+            // if (process.env.NODE_ENV === 'development') {
+            //     console.warn(`Too many consecutive failures (${this.consecutiveFailures}), circuit breaker active for ${backoffTime/1000}s`);
+            // }
             this.storeFailedLogs(batch);
             return;
         }
@@ -525,16 +528,16 @@ class EnhancedFrontendLogger {
                 timestamp: new Date().toISOString()
             };
 
-            // Debug logging in development
-            if (process.env.NODE_ENV === 'development') {
-                console.log('🔍 Sending logs batch:', {
-                    url: `${API_URL}/logs`,
-                    headers,
-                    bodySize: JSON.stringify(requestBody).length,
-                    logCount: batch.length,
-                    firstLog: batch[0]
-                });
-            }
+            // Debug logging disabled to reduce console noise
+            // if (process.env.NODE_ENV === 'development') {
+            //     console.log('🔍 Sending logs batch:', {
+            //         url: `${API_URL}/logs`,
+            //         headers,
+            //         bodySize: JSON.stringify(requestBody).length,
+            //         logCount: batch.length,
+            //         firstLog: batch[0]
+            //     });
+            // }
 
             const response = await fetch(`${API_URL}/logs`, {
                 method: 'POST',
@@ -553,15 +556,15 @@ class EnhancedFrontendLogger {
                     responseText = 'Unable to read response body';
                 }
 
-                // Debug logging for failed requests
-                if (process.env.NODE_ENV === 'development') {
-                    console.error('🚨 Logs request failed:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        headers: Object.fromEntries(response.headers.entries()),
-                        body: responseText
-                    });
-                }
+                // Debug logging disabled to reduce console noise
+                // if (process.env.NODE_ENV === 'development') {
+                //     console.error('🚨 Logs request failed:', {
+                //         status: response.status,
+                //         statusText: response.statusText,
+                //         headers: Object.fromEntries(response.headers.entries()),
+                //         body: responseText
+                //     });
+                // }
 
                 // Handle rate limiting specifically
                 if (response.status === 429) {
@@ -569,9 +572,10 @@ class EnhancedFrontendLogger {
                     // Activate circuit breaker for increasing durations
                     const backoffTime = Math.min(60000 * this.consecutiveFailures, 300000); // Max 5 minutes
                     this.rateLimitedUntil = Date.now() + backoffTime;
-                    if (process.env.NODE_ENV === 'development') {
-                        console.warn(`Rate limited, circuit breaker active for ${backoffTime/1000}s`);
-                    }
+                    // Development logging disabled
+                    // if (process.env.NODE_ENV === 'development') {
+                    //     console.warn(`Rate limited, circuit breaker active for ${backoffTime/1000}s`);
+                    // }
                     return;
                 }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -596,9 +600,10 @@ class EnhancedFrontendLogger {
             if (error.message.includes('ERR_CONNECTION_REFUSED') || error.name === 'AbortError') {
                 const backoffTime = Math.min(30000 * (this.consecutiveFailures + 1), 120000); // Max 2 minutes
                 this.rateLimitedUntil = Date.now() + backoffTime;
-                if (process.env.NODE_ENV === 'development') {
-                    console.warn(`Connection refused/timeout detected, circuit breaker active for ${backoffTime/1000}s`);
-                }
+                // Development logging disabled
+                // if (process.env.NODE_ENV === 'development') {
+                //     console.warn(`Connection refused/timeout detected, circuit breaker active for ${backoffTime/1000}s`);
+                // }
                 this.storeFailedLogs(batch);
                 return;
             }
@@ -607,9 +612,10 @@ class EnhancedFrontendLogger {
                 // For other network errors, activate circuit breaker after 2 failures
                 const backoffTime = 60000; // 1 minute for network errors
                 this.rateLimitedUntil = Date.now() + backoffTime;
-                if (process.env.NODE_ENV === 'development') {
-                    console.warn(`Network error detected, circuit breaker active for ${backoffTime/1000}s`);
-                }
+                // Development logging disabled
+                // if (process.env.NODE_ENV === 'development') {
+                //     console.warn(`Network error detected, circuit breaker active for ${backoffTime/1000}s`);
+                // }
                 this.storeFailedLogs(batch);
                 return;
             }
@@ -622,9 +628,10 @@ class EnhancedFrontendLogger {
             } else {
                 // Store failed logs in localStorage as fallback
                 this.storeFailedLogs(batch);
-                if (process.env.NODE_ENV === 'development') {
-                    console.warn('Storing failed logs locally due to network error:', error.message);
-                }
+                // Development logging disabled
+                // if (process.env.NODE_ENV === 'development') {
+                //     console.warn('Storing failed logs locally due to network error:', error.message);
+                // }
             }
         }
     }
@@ -635,14 +642,15 @@ class EnhancedFrontendLogger {
             const updatedLogs = [...existingLogs, ...logs].slice(-100); // Keep only last 100
             localStorage.setItem('failedLogs', JSON.stringify(updatedLogs));
             
-            if (process.env.NODE_ENV === 'development') {
-                console.warn(`Stored ${logs.length} failed logs locally. Total stored: ${updatedLogs.length}`);
-            }
+            // Development logging disabled
+            // if (process.env.NODE_ENV === 'development') {
+            //     console.warn(`Stored ${logs.length} failed logs locally. Total stored: ${updatedLogs.length}`);
+            // }
         } catch (error) {
-            // Ignore localStorage errors but log in development
-            if (process.env.NODE_ENV === 'development') {
-                console.warn('Failed to store logs in localStorage:', error.message);
-            }
+            // Development logging disabled
+            // if (process.env.NODE_ENV === 'development') {
+            //     console.warn('Failed to store logs in localStorage:', error.message);
+            // }
         }
     }
 
@@ -654,9 +662,10 @@ class EnhancedFrontendLogger {
                 return;
             }
 
-            if (process.env.NODE_ENV === 'development') {
-                console.log(`Attempting to retry ${failedLogs.length} failed logs...`);
-            }
+            // Development logging disabled
+            // if (process.env.NODE_ENV === 'development') {
+            //     console.log(`Attempting to retry ${failedLogs.length} failed logs...`);
+            // }
 
             // Try to send failed logs in smaller batches
             const batchSize = 10;
@@ -673,14 +682,16 @@ class EnhancedFrontendLogger {
             // Clear failed logs on successful retry
             localStorage.removeItem('failedLogs');
             
-            if (process.env.NODE_ENV === 'development') {
-                console.log('✓ Successfully retried all failed logs');
-            }
+            // Development logging disabled
+            // if (process.env.NODE_ENV === 'development') {
+            //     console.log('✓ Successfully retried all failed logs');
+            // }
 
         } catch (error) {
-            if (process.env.NODE_ENV === 'development') {
-                console.warn('Failed to retry stored logs:', error.message);
-            }
+            // Development logging disabled
+            // if (process.env.NODE_ENV === 'development') {
+            //     console.warn('Failed to retry stored logs:', error.message);
+            // }
         }
     }
 
@@ -712,9 +723,10 @@ class EnhancedFrontendLogger {
     resetCircuitBreaker() {
         this.consecutiveFailures = 0;
         this.rateLimitedUntil = 0;
-        if (process.env.NODE_ENV === 'development') {
-            console.log('Circuit breaker manually reset');
-        }
+        // Development logging disabled
+        // if (process.env.NODE_ENV === 'development') {
+        //     console.log('Circuit breaker manually reset');
+        // }
     }
 
     // Method to get circuit breaker status
@@ -741,10 +753,10 @@ class EnhancedFrontendLogger {
             return null;
         }
         
-        // Always log to console in development
-        if (process.env.NODE_ENV === 'development') {
-            console[level](message, logEntry);
-        }
+        // Console logging disabled to reduce browser console noise
+        // if (process.env.NODE_ENV === 'development') {
+        //     console[level](message, logEntry);
+        // }
         
         // Add to queue for backend transmission
         this.addToQueue(logEntry);
@@ -912,10 +924,10 @@ class EnhancedFrontendLogger {
             essentialReason: 'platform_override'
         });
         
-        // Always log to console in development
-        if (process.env.NODE_ENV === 'development') {
-            console[level](message, logEntry);
-        }
+        // Console logging disabled to reduce browser console noise
+        // if (process.env.NODE_ENV === 'development') {
+        //     console[level](message, logEntry);
+        // }
         
         // Add to queue for backend transmission
         this.addToQueue(logEntry);
@@ -1032,50 +1044,50 @@ const logger = {
 
 export default logger;
 
-// Development helper - expose logger to window for debugging
-if (process.env.NODE_ENV === 'development') {
-    window.logger = logger;
-    window.loggerDebug = {
-        status: () => {
-            const status = logger.getCircuitBreakerStatus();
-            console.log('🔧 Logger Circuit Breaker Status:', status);
-            
-            const failedLogs = JSON.parse(localStorage.getItem('failedLogs') || '[]');
-            console.log('📦 Failed logs in storage:', failedLogs.length);
-            
-            return { circuitBreaker: status, failedLogsCount: failedLogs.length };
-        },
-        reset: () => {
-            logger.resetCircuitBreaker();
-            console.log('✅ Circuit breaker reset');
-        },
-        clearFailed: () => {
-            localStorage.removeItem('failedLogs');
-            console.log('🗑️ Cleared failed logs from storage');
-        },
-        retry: async () => {
-            console.log('🔄 Retrying failed logs...');
-            await logger.retryFailedLogs();
-            console.log('✅ Retry attempt completed');
-        },
-        test: async () => {
-            console.log('🧪 Testing logger connection...');
-            await logger.info('Test log message', { test: true });
-            console.log('✅ Test log sent');
-        },
-        
-        // Force send a batch immediately for testing
-        forceSend: async () => {
-            console.log('🚀 Force sending current log queue...');
-            await enhancedLogger.flushQueue();
-            console.log('✅ Queue flushed');
-        }
-    };
-    
-    console.log('🔧 Logger debug tools available:');
-    console.log('  - window.loggerDebug.status() - Check circuit breaker status');
-    console.log('  - window.loggerDebug.reset() - Reset circuit breaker');
-    console.log('  - window.loggerDebug.clearFailed() - Clear failed logs');
-    console.log('  - window.loggerDebug.retry() - Retry failed logs');
-    console.log('  - window.loggerDebug.test() - Send test log');
-}
+// Development helper disabled to reduce console noise
+// if (process.env.NODE_ENV === 'development') {
+//     window.logger = logger;
+//     window.loggerDebug = {
+//         status: () => {
+//             const status = logger.getCircuitBreakerStatus();
+//             console.log('🔧 Logger Circuit Breaker Status:', status);
+//             
+//             const failedLogs = JSON.parse(localStorage.getItem('failedLogs') || '[]');
+//             console.log('📦 Failed logs in storage:', failedLogs.length);
+//             
+//             return { circuitBreaker: status, failedLogsCount: failedLogs.length };
+//         },
+//         reset: () => {
+//             logger.resetCircuitBreaker();
+//             console.log('✅ Circuit breaker reset');
+//         },
+//         clearFailed: () => {
+//             localStorage.removeItem('failedLogs');
+//             console.log('🗑️ Cleared failed logs from storage');
+//         },
+//         retry: async () => {
+//             console.log('🔄 Retrying failed logs...');
+//             await logger.retryFailedLogs();
+//             console.log('✅ Retry attempt completed');
+//         },
+//         test: async () => {
+//             console.log('🧪 Testing logger connection...');
+//             await logger.info('Test log message', { test: true });
+//             console.log('✅ Test log sent');
+//         },
+//         
+//         // Force send a batch immediately for testing
+//         forceSend: async () => {
+//             console.log('🚀 Force sending current log queue...');
+//             await enhancedLogger.flushQueue();
+//             console.log('✅ Queue flushed');
+//         }
+//     };
+//     
+//     console.log('🔧 Logger debug tools available:');
+//     console.log('  - window.loggerDebug.status() - Check circuit breaker status');
+//     console.log('  - window.loggerDebug.reset() - Reset circuit breaker');
+//     console.log('  - window.loggerDebug.clearFailed() - Clear failed logs');
+//     console.log('  - window.loggerDebug.retry() - Retry failed logs');
+//     console.log('  - window.loggerDebug.test() - Send test log');
+// }
