@@ -32,24 +32,28 @@ import {
     requireActiveTenant, 
     logTenantAccess 
 } from '../middleware/tenantStatusGuard.js';
+import { tenantContext } from '../../../core/middleware/tenantContext.js';
 
 const router = express.Router();
 
 // Apply authentication first
 router.use(protect);
 
+// Apply tenant context middleware - REQUIRED for feature guards
+router.use(tenantContext);
+
 // Apply license validation for life insurance module
-// router.use(requireModuleLicense(MODULES.LIFE_INSURANCE)); // Temporarily disabled
+// router.use(requireModuleLicense(MODULES.LIFE_INSURANCE)); // Keep disabled for now
 
 // Check tenant status and log tenant access for audit
-// router.use(requireActiveTenant()); // Temporarily disabled
-// router.use(logTenantAccess()); // Temporarily disabled
+// router.use(requireActiveTenant()); // Keep disabled for now
+// router.use(logTenantAccess()); // Keep disabled for now
 
 // Check if module is available for tenant
-// router.use(requireModuleAvailable()); // Temporarily disabled
+// router.use(requireModuleAvailable()); // Keep disabled for now
 
-// Attach module configuration to all requests
-// router.use(attachModuleConfig()); // Temporarily disabled
+// Attach module configuration to all requests - ENABLE THIS
+router.use(attachModuleConfig());
 
 // Simple test endpoint to verify authentication works
 router.get('/test', (req, res) => {
@@ -60,6 +64,22 @@ router.get('/test', (req, res) => {
             id: req.user?.id || req.user?._id,
             role: req.user?.role,
             tenantId: req.user?.tenantId || req.tenantId
+        },
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Debug endpoint to check user role and permissions
+router.get('/debug/user', (req, res) => {
+    res.json({
+        success: true,
+        message: 'User debug information',
+        user: req.user,
+        roleHierarchy: {
+            userRole: req.user?.role,
+            hierarchy: require('../../../shared/constants/modules.js').ROLE_HIERARCHY[req.user?.role],
+            allRoles: require('../../../shared/constants/modules.js').ROLES,
+            allHierarchy: require('../../../shared/constants/modules.js').ROLE_HIERARCHY
         },
         timestamp: new Date().toISOString()
     });
@@ -229,7 +249,7 @@ router.route('/policies')
         insuranceController.createPolicy
     )
     .get(
-        // requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN), // Temporarily disabled for debugging
+        requireRole(ROLES.EMPLOYEE, ROLES.MANAGER, ROLES.HR, ROLES.ADMIN),
         [
             query('page')
                 .optional()

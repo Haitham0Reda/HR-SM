@@ -37,7 +37,7 @@ class ModuleConfigService {
             }
 
             // Get tenant configuration
-            const tenantConfig = await TenantConfig.findOne({ tenantId }).lean();
+            const tenantConfig = await TenantConfig.findOne({ tenantId });
             
             if (!tenantConfig) {
                 throw new AppError(

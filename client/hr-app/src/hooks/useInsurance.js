@@ -145,6 +145,7 @@ export const useClaims = () => {
     const [claims, setClaims] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [pagination, setPagination] = useState(null);
     const notifications = useNotifications();
 
     const fetchClaims = useCallback(async (params = {}) => {
@@ -152,10 +153,19 @@ export const useClaims = () => {
             setLoading(true);
             setError(null);
             const response = await insuranceService.getAllClaims(params);
-            setClaims(response.data || []);
+            
+            if (response.success) {
+                setClaims(response.data.claims || []);
+                setPagination(response.data.pagination);
+            } else {
+                setClaims(response.data || []);
+                setPagination(null);
+            }
         } catch (err) {
             setError(err.message || 'Failed to fetch claims');
             notifications.show('Failed to load claims', { severity: 'error' });
+            setClaims([]);
+            setPagination(null);
         } finally {
             setLoading(false);
         }
@@ -215,6 +225,7 @@ export const useClaims = () => {
         claims,
         loading,
         error,
+        pagination,
         fetchClaims,
         createClaim,
         reviewClaim,
