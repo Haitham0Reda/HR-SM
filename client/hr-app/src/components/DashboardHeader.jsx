@@ -99,12 +99,12 @@ function DashboardHeader({ logo, title, menuOpen, onToggleMenu, user }) {
     // Update profile picture when user prop changes
     React.useEffect(() => {
         const newProfilePicture = getUserProfilePicture(user);
-        console.log('🖼️ DashboardHeader: User data changed, updating profile picture:', {
-            userId: user?._id,
-            oldPicture: userProfilePicture,
-            newPicture: newProfilePicture,
-            userPersonalInfo: user?.personalInfo
-        });
+        // console.log('🖼️ DashboardHeader: User data changed, updating profile picture:', {
+        //     userId: user?._id,
+        //     oldPicture: userProfilePicture,
+        //     newPicture: newProfilePicture,
+        //     userPersonalInfo: user?.personalInfo
+        // });
         setUserProfilePicture(newProfilePicture);
     }, [user, user?.personalInfo?.profilePicture]); // Add specific dependency
 

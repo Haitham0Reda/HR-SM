@@ -131,15 +131,15 @@ const CompanyRouter = () => {
         return <Navigate to="/" replace />;
     }
 
-    // Only log in development mode to reduce console noise
-    if (process.env.NODE_ENV === 'development') {
-        console.log('CompanyRouter: Rendering routes', { 
-            user: user?.email, 
-            companySlug, 
-            isValidCompanyRoute,
-            tenant: tenant?.name
-        });
-    }
+    // Console logging disabled to reduce browser console noise
+    // if (process.env.NODE_ENV === 'development') {
+    //     console.log('CompanyRouter: Rendering routes', { 
+    //         user: user?.email, 
+    //         companySlug, 
+    //         isValidCompanyRoute,
+    //         tenant: tenant?.name
+    //     });
+    // }
 
     return (
         <Routes>

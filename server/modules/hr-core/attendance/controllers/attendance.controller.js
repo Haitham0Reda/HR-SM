@@ -81,7 +81,7 @@ export const getAllAttendance = async (req, res) => {
             startDate,
             endDate,
             page = 1,
-            limit = 50,
+            limit = 25, // Reduced from 50 to 25 for better performance
             sortBy = 'date',
             sortOrder = 'desc'
         } = req.query;
@@ -130,17 +130,15 @@ export const getAllAttendance = async (req, res) => {
         const sort = {};
         sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-        // Execute query with pagination
+        // Execute query with pagination - optimized with minimal population and lean queries
         const [attendance, totalCount] = await Promise.all([
             TenantAttendance.find(query)
                 .populate('employee', 'username email employeeId personalInfo')
                 .populate('department', 'name code')
-                .populate('position', 'title')
-                .populate('device', 'deviceName deviceType')
-                .populate('approvedBy', 'username email personalInfo')
                 .sort(sort)
                 .skip(skip)
-                .limit(parseInt(limit)),
+                .limit(parseInt(limit))
+                .lean(), // Use lean() for better performance on read-only operations
             TenantAttendance.countDocuments(query)
         ]);
 

@@ -2,7 +2,7 @@ import api from './api';
 
 // Force cache bust with unique identifier
 const SERVICE_VERSION = '2026-01-03-permissions-' + Math.random().toString(36).substr(2, 9);
-console.log(`🔄 Permission Service v${SERVICE_VERSION} loading...`);
+// console.log(`🔄 Permission Service v${SERVICE_VERSION} loading...`);
 
 /**
  * Permissions Service
@@ -20,7 +20,7 @@ const permissionService = {
      * @returns {Promise<Object>} Response containing permissions array and metadata
      */
     getAll: async (params) => {
-        console.log(`🔍 [${SERVICE_VERSION}] Permission Service - getAll called`);
+        // console.log(`🔍 [${SERVICE_VERSION}] Permission Service - getAll called`);
         // Add cache-busting parameter to ensure fresh data
         const cacheBustParams = { 
             ...params, 
@@ -47,12 +47,12 @@ const permissionService = {
      * @returns {Promise<Object>} Created permission object
      */
     create: async (data) => {
-        console.log(`🔍 [${SERVICE_VERSION}] Permission Service - create called`);
-        console.log(`🔍 [${SERVICE_VERSION}] Request data:`, JSON.stringify(data, null, 2));
+        // console.log(`🔍 [${SERVICE_VERSION}] Permission Service - create called`);
+        // console.log(`🔍 [${SERVICE_VERSION}] Request data:`, JSON.stringify(data, null, 2));
         
         try {
             const result = await api.post('/permission-requests', data);
-            console.log(`✅ [${SERVICE_VERSION}] Permission Service - create successful`);
+            // console.log(`✅ [${SERVICE_VERSION}] Permission Service - create successful`);
             return result;
         } catch (error) {
             console.error(`❌ [${SERVICE_VERSION}] Permission Service - create failed:`, error);
@@ -121,6 +121,6 @@ const permissionService = {
 
 // Add version identifier
 permissionService._version = SERVICE_VERSION;
-console.log(`✅ Permission Service v${SERVICE_VERSION} loaded successfully`);
+// console.log(`✅ Permission Service v${SERVICE_VERSION} loaded successfully`);
 
 export default permissionService;

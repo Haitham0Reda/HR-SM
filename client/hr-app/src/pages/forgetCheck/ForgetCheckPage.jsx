@@ -62,13 +62,13 @@ const ForgetCheckPage = () => {
 
     const fetchForgetChecks = async () => {
         try {
-            console.log('🔄 ForgetCheckPage - fetchForgetChecks called');
+            // console.log('🔄 ForgetCheckPage - fetchForgetChecks called');
             setLoading(true);
             const response = await forgetCheckService.getAll();
             // Handle both direct array and API response format
             const requestsArray = Array.isArray(response) ? response : 
                                  (response?.data && Array.isArray(response.data)) ? response.data : [];
-            console.log('✅ ForgetCheckPage - Fetched', requestsArray.length, 'forget-check requests');
+            // console.log('✅ ForgetCheckPage - Fetched', requestsArray.length, 'forget-check requests');
             setForgetChecks(requestsArray);
         } catch (error) {
             console.error('❌ ForgetCheckPage - Error fetching forget checks:', error);

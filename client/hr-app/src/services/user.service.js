@@ -3,14 +3,16 @@ import api from './api';
 const userService = {
     // Get all users
     getAll: async (params) => {
-        if (process.env.NODE_ENV === 'development') {
-            console.log('UserService: Fetching all users with params:', params);
-        }
+        // Development logging disabled
+        // if (process.env.NODE_ENV === 'development') {
+        //     console.log('UserService: Fetching all users with params:', params);
+        // }
         try {
             const response = await api.get('/users', { params });
-            if (process.env.NODE_ENV === 'development') {
-                console.log('UserService: Received response:', response);
-            }
+            // Development logging disabled
+            // if (process.env.NODE_ENV === 'development') {
+            //     console.log('UserService: Received response:', response);
+            // }
             return response;
         } catch (error) {
             console.error('UserService: Error fetching users:', error);
@@ -21,11 +23,12 @@ const userService = {
     // Get user by ID
     getById: async (id) => {
         try {
-            if (process.env.NODE_ENV === 'development') {
-                console.log(`UserService: Fetching user by ID: ${id}`);
-            }
+            // Development logging disabled
+            // if (process.env.NODE_ENV === 'development') {
+            //     console.log(`UserService: Fetching user by ID: ${id}`);
+            // }
             const response = await api.get(`/users/${id}`);
-            console.log('UserService: Successfully fetched user:', response.data);
+            // console.log('UserService: Successfully fetched user:', response.data);
             return response;
         } catch (error) {
             console.error(`UserService: Error fetching user ${id}:`, error);
@@ -46,13 +49,13 @@ const userService = {
     // Create user
     create: async (data) => {
         try {
-            console.log('UserService: Creating user with data:', data);
+            // console.log('UserService: Creating user with data:', data);
             const response = await api.post('/users', data);
-            console.log('UserService: User created successfully:', response.data);
+            // console.log('UserService: User created successfully:', response.data);
             
             // Check if email was auto-generated
             if (response.data.message && response.data.message.includes('Email auto-generated')) {
-                console.log('UserService: Email was auto-generated:', response.data.message);
+                // console.log('UserService: Email was auto-generated:', response.data.message);
             }
             
             return response;

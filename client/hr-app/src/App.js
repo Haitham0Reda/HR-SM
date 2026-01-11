@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useMemo, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { CssBaseline } from '@mui/material';
 import { Provider } from 'react-redux';
@@ -14,8 +14,10 @@ import NotificationsProvider from './hooks/useNotifications/NotificationsProvide
 import PrivateRoute from './routes/PrivateRoute';
 import CompanyRouteHandler from './components/routing/CompanyRouteHandler';
 import CompanyRouter from './components/routing/CompanyRouter';
+import LazyWrapper from './components/performance/LazyWrapper';
 
 import logger from './utils/logger';
+import './utils/performanceConfig'; // Import performance optimizations
 import Login from './pages/auth/Login';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
@@ -24,9 +26,25 @@ import ServerError from './pages/errors/ServerError';
 import AuthDebug from './pages/debug/AuthDebug';
 import ErrorBoundary from './components/ErrorBoundary';
 import LicenseNotificationToast from './components/license/LicenseNotificationToast';
-import SeasonalEffectsManager from './components/seasonal/SeasonalEffectsManager';
 import './components/seasonal/SeasonalEffects.css';
 import './App.css';
+
+// Lazy load heavy components
+const SeasonalEffectsManager = lazy(() => import('./components/seasonal/SeasonalEffectsManager'));
+
+// Memoized components to prevent unnecessary re-renders
+const MemoizedPrivateRoute = React.memo(PrivateRoute);
+const MemoizedCompanyRouter = React.memo(CompanyRouter);
+
+// Lazy-loaded seasonal effects with wrapper
+const LazySeasonalEffects = React.memo(({ settings, settingsKey }) => (
+  <LazyWrapper>
+    <SeasonalEffectsManager
+      key={settingsKey}
+      settings={settings}
+    />
+  </LazyWrapper>
+));
 
 function App() {
   const [seasonalSettings, setSeasonalSettings] = React.useState(() => {
@@ -44,34 +62,48 @@ function App() {
     };
   });
 
+  // Memoize the seasonal settings key to prevent unnecessary re-renders
+  const seasonalSettingsKey = useMemo(() => 
+    JSON.stringify(seasonalSettings), 
+    [seasonalSettings]
+  );
+
+  // Optimize event handlers with useCallback
+  const handleStorageChange = useCallback((e) => {
+    if (e.key === 'seasonalSettings' && e.newValue) {
+      try {
+        setSeasonalSettings(JSON.parse(e.newValue));
+      } catch (error) {
+        console.error('Failed to parse seasonal settings:', error);
+      }
+    }
+  }, []);
+
+  const handleSettingsUpdate = useCallback(() => {
+    const saved = localStorage.getItem('seasonalSettings');
+    if (saved) {
+      try {
+        setSeasonalSettings(JSON.parse(saved));
+      } catch (error) {
+        console.error('Failed to parse seasonal settings:', error);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     // Setup global error handler
     logger.setupGlobalErrorHandler();
     logger.info('Application started');
 
-    // Listen for localStorage changes (from Settings page)
-    const handleStorageChange = (e) => {
-      if (e.key === 'seasonalSettings' && e.newValue) {
-        setSeasonalSettings(JSON.parse(e.newValue));
-      }
-    };
-
-    // Listen for custom event (for same-tab updates)
-    const handleSettingsUpdate = (e) => {
-      const saved = localStorage.getItem('seasonalSettings');
-      if (saved) {
-        setSeasonalSettings(JSON.parse(saved));
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('seasonalSettingsUpdated', handleSettingsUpdate);
+    // Use passive listeners for better performance
+    window.addEventListener('storage', handleStorageChange, { passive: true });
+    window.addEventListener('seasonalSettingsUpdated', handleSettingsUpdate, { passive: true });
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('seasonalSettingsUpdated', handleSettingsUpdate);
     };
-  }, []);
+  }, [handleStorageChange, handleSettingsUpdate]);
 
   return (
     <Provider store={store}>
@@ -110,9 +142,9 @@ function App() {
 
                           {/* Company-scoped routes - ALL authenticated routes go here */}
                           <Route path="/company/:companySlug/*" element={
-                            <PrivateRoute>
-                              <CompanyRouter />
-                            </PrivateRoute>
+                            <MemoizedPrivateRoute>
+                              <MemoizedCompanyRouter />
+                            </MemoizedPrivateRoute>
                           } />
 
                           {/* Redirect any other authenticated routes to company routes */}
@@ -156,10 +188,10 @@ function App() {
                       </CompanyRouteHandler>
                     </Router>
 
-                  {/* Seasonal Effects */}
-                  <SeasonalEffectsManager
-                    key={JSON.stringify(seasonalSettings)}
+                  {/* Seasonal Effects - Lazy loaded */}
+                  <LazySeasonalEffects
                     settings={seasonalSettings}
+                    settingsKey={seasonalSettingsKey}
                   />
                 </ErrorBoundary>
               </NotificationsProvider>
