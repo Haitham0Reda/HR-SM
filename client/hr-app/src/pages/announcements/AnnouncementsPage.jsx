@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
+import DateInput from '../../components/common/DateInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
@@ -707,11 +708,8 @@ const AnnouncementsPage = () => {
                             <MenuItem value="true">Active</MenuItem>
                             <MenuItem value="false">Inactive</MenuItem>
                         </TextField>
-                        <TextField
-                            label="Start Date"
-                            name="startDate"
-                            type="date"
-                            value={formData.startDate}
+                        <DateInput label="Start Date"
+                            name="startDate" value={formData.startDate}
                             onChange={handleChange}
                             fullWidth
                             slotProps={{
@@ -719,11 +717,8 @@ const AnnouncementsPage = () => {
                             }}
                             helperText="Optional: When the announcement becomes active"
                         />
-                        <TextField
-                            label="End Date"
-                            name="endDate"
-                            type="date"
-                            value={formData.endDate}
+                        <DateInput label="End Date"
+                            name="endDate" value={formData.endDate}
                             onChange={handleChange}
                             fullWidth
                             slotProps={{

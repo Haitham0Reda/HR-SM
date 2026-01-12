@@ -30,6 +30,7 @@ import { useNotification } from '../../store/providers/ReduxNotificationProvider
 import attendanceService from '../../services/attendance.service';
 import userService from '../../services/user.service';
 import departmentService from '../../services/department.service';
+import DateInput from '../../components/common/DateInput';
 
 const AttendancePageOptimized = ({ viewMode = 'my' }) => {
     const { user, isHR, isAdmin } = useAuth();
@@ -241,10 +242,7 @@ const AttendancePageOptimized = ({ viewMode = 'my' }) => {
                 <Typography variant="h6" sx={{ mb: 2 }}>Filters</Typography>
                 <Grid container spacing={2} alignItems="center">
                     <Grid item xs={12} sm={6} md={2}>
-                        <TextField
-                            label="Start Date"
-                            type="date"
-                            value={filters.startDate}
+                        <DateInput label="Start Date" value={filters.startDate}
                             onChange={(e) => handleFilterChange('startDate', e.target.value)}
                             fullWidth
                             size="small"
@@ -252,10 +250,7 @@ const AttendancePageOptimized = ({ viewMode = 'my' }) => {
                         />
                     </Grid>
                     <Grid item xs={12} sm={6} md={2}>
-                        <TextField
-                            label="End Date"
-                            type="date"
-                            value={filters.endDate}
+                        <DateInput label="End Date" value={filters.endDate}
                             onChange={(e) => handleFilterChange('endDate', e.target.value)}
                             fullWidth
                             size="small"

@@ -16,6 +16,7 @@ import useDocumentTitle from '../../hooks/useDocumentTitle';
 import overtimeService from '../../services/overtime.service';
 import Loading from '../../components/common/Loading';
 
+import DateInput from '../../components/common/DateInput';
 const OvertimeForm = () => {
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
@@ -244,9 +245,7 @@ const OvertimeForm = () => {
                     </Typography>
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
-                        <TextField
-                            type="date"
-                            label="Date *"
+                        <DateInput  label="Date *"
                             name="date"
                             value={formData.date}
                             onChange={handleChange}

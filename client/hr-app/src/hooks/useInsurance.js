@@ -52,7 +52,7 @@ export const usePolicies = () => {
             notifications.show('Policy created successfully', { severity: 'success' });
             return response.data;
         } catch (err) {
-            const errorMessage = err.message || 'Failed to create policy';
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to create policy';
             notifications.show(errorMessage, { severity: 'error' });
             throw err;
         } finally {

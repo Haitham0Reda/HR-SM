@@ -15,6 +15,7 @@ import useDocumentTitle from '../../hooks/useDocumentTitle';
 import permissionService from '../../services/permission.service';
 import Loading from '../../components/common/Loading';
 
+import DateInput from '../../components/common/DateInput';
 const PermissionForm = () => {
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
@@ -224,9 +225,7 @@ const PermissionForm = () => {
                             ))}
                         </TextField>
 
-                        <TextField
-                            type="date"
-                            label="Date *"
+                        <DateInput  label="Date *"
                             name="date"
                             value={formData.date}
                             onChange={handleChange}

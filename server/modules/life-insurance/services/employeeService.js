@@ -12,11 +12,53 @@
  */
 
 import mongoose from 'mongoose';
-import User from '../../hr-core/users/models/user.model.js';
 import { ROLES } from '../../../shared/constants/modules.js';
 import logger from '../../../utils/logger.js';
+import multiTenantDB from '../../../config/multiTenant.js';
 
 class EmployeeService {
+    /**
+     * Get User model for tenant with all required models registered
+     * @param {string} tenantId - Tenant ID
+     * @returns {Promise<mongoose.Model>} - User model for the tenant
+     */
+    async getUserModel(tenantId) {
+        try {
+            const connection = await multiTenantDB.getCompanyConnection(tenantId);
+            
+            // Import the schemas
+            const { default: User } = await import('../../hr-core/users/models/user.model.js');
+            
+            // Register all required models if they don't exist
+            const modelsToRegister = [
+                { name: 'Department', path: '../../hr-core/users/models/department.model.js' },
+                { name: 'Position', path: '../../hr-core/users/models/position.model.js' },
+                { name: 'InsurancePolicy', path: '../models/InsurancePolicy.js' },
+                { name: 'FamilyMember', path: '../models/FamilyMember.js' },
+                { name: 'Beneficiary', path: '../models/Beneficiary.js' },
+                { name: 'InsuranceClaim', path: '../models/InsuranceClaim.js' }
+            ];
+
+            for (const modelInfo of modelsToRegister) {
+                if (!connection.models[modelInfo.name]) {
+                    try {
+                        const { default: Model } = await import(modelInfo.path);
+                        connection.model(modelInfo.name, Model.schema);
+                        console.log(`Registered ${modelInfo.name} model for tenant ${tenantId}`);
+                    } catch (error) {
+                        console.warn(`Could not import ${modelInfo.name} model:`, error.message);
+                    }
+                }
+            }
+            
+            // Get the User model for this tenant's database
+            return connection.model('User', User.schema);
+        } catch (error) {
+            console.error('Error getting User model for tenant:', tenantId, error);
+            throw error;
+        }
+    }
+
     /**
      * Find employee for policy operations with role-based access control
      * @param {string|ObjectId} employeeIdentifier - Employee ID (string) or MongoDB ObjectId
@@ -26,8 +68,25 @@ class EmployeeService {
      */
     async findEmployeeForPolicy(employeeIdentifier, tenantId, requestingUser) {
         try {
-            // Build base query with tenant scoping
-            const query = { tenantId };
+            console.log('findEmployeeForPolicy called with:', {
+                employeeIdentifier,
+                tenantId,
+                requestingUser: requestingUser ? {
+                    id: requestingUser._id || requestingUser.id,
+                    role: requestingUser.role,
+                    email: requestingUser.email
+                } : 'null/undefined'
+            });
+
+            // Get the User model for this tenant
+            const User = await this.getUserModel(tenantId);
+
+            // Debug: Test if we can find ANY users in the tenant database
+            const totalUsers = await User.countDocuments();
+            console.log('Total users in tenant database:', totalUsers);
+
+            // Build base query (no need for tenantId since we're using tenant-specific database)
+            const query = {};
             
             // Handle both ObjectId and employeeId string formats
             if (mongoose.Types.ObjectId.isValid(employeeIdentifier)) {
@@ -36,31 +95,101 @@ class EmployeeService {
                 query.employeeId = employeeIdentifier;
             }
 
-            // Apply role-based filtering
-            const roleFilteredQuery = await this.applyRoleBasedEmployeeFilter(query, requestingUser);
-            
-            // Find employee with consistent data population
-            const employee = await User.withTenant(tenantId).findOne(roleFilteredQuery)
-                .populate('department', 'name code')
-                .populate('position', 'title level')
-                .select('employeeId personalInfo.firstName personalInfo.lastName personalInfo.fullName email department position employment.employmentStatus status')
-                .lean();
+            console.log('Base query:', query);
+            console.log('User role:', requestingUser?.role);
+
+            // For admin users, use direct query without role filtering
+            if (requestingUser?.role === 'admin') {
+                console.log('Admin user - using direct query');
+                console.log('Query being executed:', JSON.stringify(query));
+                
+                // First, let's try to find ANY user with this ID
+                const anyUser = await User.findById(employeeIdentifier);
+                console.log('Any user lookup result:', anyUser ? 'Found' : 'Not found');
+                if (anyUser) {
+                    console.log('Any user details:', {
+                        id: anyUser._id,
+                        tenantId: anyUser.tenantId,
+                        email: anyUser.email,
+                        employeeId: anyUser.employeeId,
+                        role: anyUser.role
+                    });
+                }
+                
+                // Now try with the query
+                let employee;
+                try {
+                    employee = await User.findOne(query)
+                        .populate('department', 'name code')
+                        .populate('position', 'title level')
+                        .select('employeeId personalInfo.firstName personalInfo.lastName personalInfo.fullName email department position employment.employmentStatus status')
+                        .lean();
+                } catch (populateError) {
+                    console.warn('Populate failed, trying without populate:', populateError.message);
+                    // Fallback: query without populate
+                    employee = await User.findOne(query)
+                        .select('employeeId personalInfo.firstName personalInfo.lastName personalInfo.fullName email department position employment.employmentStatus status')
+                        .lean();
+                }
+
+                console.log('Admin query result:', employee ? 'Found' : 'Not found');
+                if (employee) {
+                    console.log('Found employee details:', {
+                        id: employee._id,
+                        tenantId: employee.tenantId,
+                        email: employee.email,
+                        employeeId: employee.employeeId,
+                        name: employee.personalInfo?.fullName
+                    });
+                }
+                return employee;
+            }
+
+            // For non-admin users, apply role-based filtering
+            const roleFilteredQuery = await this.applyRoleBasedEmployeeFilter(query, requestingUser, User);
+            console.log('Role-filtered query:', roleFilteredQuery);
+
+            let employee;
+            try {
+                employee = await User.findOne(roleFilteredQuery)
+                    .populate('department', 'name code')
+                    .populate('position', 'title level')
+                    .select('employeeId personalInfo.firstName personalInfo.lastName personalInfo.fullName email department position employment.employmentStatus status')
+                    .lean();
+            } catch (populateError) {
+                console.warn('Populate failed, trying without populate:', populateError.message);
+                // Fallback: query without populate
+                employee = await User.findOne(roleFilteredQuery)
+                    .select('employeeId personalInfo.firstName personalInfo.lastName personalInfo.fullName email department position employment.employmentStatus status')
+                    .lean();
+            }
+
+            console.log('Role-filtered query result:', employee ? 'Found' : 'Not found');
 
             if (employee) {
+                console.log('Found employee details:', {
+                    id: employee._id,
+                    tenantId: employee.tenantId,
+                    email: employee.email,
+                    employeeId: employee.employeeId,
+                    name: employee.personalInfo?.fullName
+                });
+
                 logger.debug('Employee found for policy operation', {
                     tenantId,
                     employeeId: employee._id,
-                    requestedBy: requestingUser._id,
-                    requestingRole: requestingUser.role
+                    requestedBy: requestingUser?._id || requestingUser?.id,
+                    requestingRole: requestingUser?.role
                 });
             }
 
             return employee;
         } catch (error) {
+            console.error('Error in findEmployeeForPolicy:', error);
             logger.error('Error finding employee for policy', {
                 tenantId,
                 employeeIdentifier,
-                requestingUser: requestingUser._id,
+                requestingUser: requestingUser?._id || requestingUser?.id,
                 error: error.message
             });
             throw error;
@@ -79,8 +208,11 @@ class EmployeeService {
         try {
             const { limit = 20, page = 1 } = options;
             
-            // Build base search query
-            let baseQuery = { tenantId };
+            // Get the User model for this tenant
+            const User = await this.getUserModel(tenantId);
+            
+            // Build base search query (no tenantId needed since using tenant-specific database)
+            let baseQuery = {};
             
             if (searchTerm) {
                 baseQuery.$or = [
@@ -93,11 +225,11 @@ class EmployeeService {
             }
 
             // Apply role-based filtering
-            const roleFilteredQuery = await this.applyRoleBasedEmployeeFilter(baseQuery, requestingUser);
+            const roleFilteredQuery = await this.applyRoleBasedEmployeeFilter(baseQuery, requestingUser, User);
             
             // Execute search with pagination
             const skip = (page - 1) * limit;
-            const employees = await User.withTenant(tenantId).find(roleFilteredQuery)
+            const employees = await User.find(roleFilteredQuery)
                 .populate('department', 'name code')
                 .populate('position', 'title level')
                 .select('employeeId personalInfo.firstName personalInfo.lastName personalInfo.fullName email department position employment.employmentStatus status')
@@ -135,6 +267,9 @@ class EmployeeService {
      */
     async canAccessEmployee(requestingUser, targetEmployeeId, tenantId) {
         try {
+            // Get the User model for this tenant
+            const User = await this.getUserModel(tenantId);
+            
             switch (requestingUser.role) {
                 case ROLES.EMPLOYEE:
                     // Employees can only access their own data
@@ -143,7 +278,7 @@ class EmployeeService {
                 case ROLES.MANAGER:
                     // Managers can access employees in their department
                     if (requestingUser.department) {
-                        const targetEmployee = await User.withTenant(tenantId).findOne({
+                        const targetEmployee = await User.findOne({
                             _id: targetEmployeeId,
                             department: requestingUser.department,
                             status: 'active'
@@ -184,18 +319,21 @@ class EmployeeService {
         try {
             const { includeInactive = false, limit = 100 } = options;
             
-            // Build base query
-            let baseQuery = { tenantId };
+            // Get the User model for this tenant
+            const User = await this.getUserModel(tenantId);
+            
+            // Build base query (no tenantId needed since using tenant-specific database)
+            let baseQuery = {};
             
             if (!includeInactive) {
                 baseQuery.status = 'active';
             }
 
             // Apply role-based filtering
-            const roleFilteredQuery = await this.applyRoleBasedEmployeeFilter(baseQuery, requestingUser);
+            const roleFilteredQuery = await this.applyRoleBasedEmployeeFilter(baseQuery, requestingUser, User);
             
             // Get employees
-            const employees = await User.withTenant(tenantId).find(roleFilteredQuery)
+            const employees = await User.find(roleFilteredQuery)
                 .populate('department', 'name code')
                 .populate('position', 'title level')
                 .select('employeeId personalInfo.firstName personalInfo.lastName personalInfo.fullName email department position status')
@@ -218,22 +356,29 @@ class EmployeeService {
      * Apply role-based filtering to employee queries
      * @param {Object} baseQuery - Base query object
      * @param {Object} requestingUser - User making the request
+     * @param {mongoose.Model} User - User model for the tenant
      * @returns {Promise<Object>} - Query with role-based filtering applied
      */
-    async applyRoleBasedEmployeeFilter(baseQuery, requestingUser) {
+    async applyRoleBasedEmployeeFilter(baseQuery, requestingUser, User) {
         const query = { ...baseQuery };
+
+        if (!requestingUser) {
+            // No user context - restrict to nothing
+            query._id = null;
+            return query;
+        }
 
         switch (requestingUser.role) {
             case ROLES.EMPLOYEE:
                 // Employees can only access their own data
-                query._id = requestingUser._id;
+                query._id = requestingUser._id || requestingUser.id;
                 break;
                 
             case ROLES.MANAGER:
                 // Managers can access employees in their department
                 if (requestingUser.department) {
                     // Get all employees in the manager's department
-                    const departmentEmployees = await User.withTenant(requestingUser.tenantId || requestingUser._tenantId).find({
+                    const departmentEmployees = await User.find({
                         department: requestingUser.department,
                         status: 'active'
                     }).select('_id').lean();
@@ -242,7 +387,7 @@ class EmployeeService {
                     query._id = { $in: employeeIds };
                 } else {
                     // If manager has no department, only show their own data
-                    query._id = requestingUser._id;
+                    query._id = requestingUser._id || requestingUser.id;
                 }
                 break;
                 
@@ -253,7 +398,7 @@ class EmployeeService {
                 
             default:
                 // Unknown role - restrict to own data only
-                query._id = requestingUser._id;
+                query._id = requestingUser._id || requestingUser.id;
                 break;
         }
 

@@ -13,6 +13,7 @@ import { CheckCircle, Cancel, AccessTime, EventNote, Info } from '@mui/icons-mat
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import forgetCheckService from '../../services/forgetCheck.service';
+import DateInput from '../../components/common/DateInput';
 
 const CreateForgetCheckPage = () => {
     const navigate = useNavigate();
@@ -134,9 +135,7 @@ const CreateForgetCheckPage = () => {
                     </Typography>
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
-                        <TextField
-                            type="date"
-                            label="Date *"
+                        <DateInput  label="Date *"
                             name="date"
                             value={formData.date}
                             onChange={handleChange}

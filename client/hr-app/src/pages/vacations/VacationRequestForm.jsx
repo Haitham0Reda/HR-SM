@@ -19,6 +19,7 @@ import useDocumentTitle from '../../hooks/useDocumentTitle';
 import vacationService from '../../services/vacation.service';
 import Loading from '../../components/common/Loading';
 
+import DateInput from '../../components/common/DateInput';
 const VacationRequestForm = () => {
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
@@ -279,9 +280,7 @@ const VacationRequestForm = () => {
 
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                    type="date"
-                                    label="Start Date *"
+                                <DateInput  label="Start Date *"
                                     name="startDate"
                                     value={formData.startDate}
                                     onChange={handleChange}
@@ -293,9 +292,7 @@ const VacationRequestForm = () => {
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                    type="date"
-                                    label="End Date *"
+                                <DateInput  label="End Date *"
                                     name="endDate"
                                     value={formData.endDate}
                                     onChange={handleChange}

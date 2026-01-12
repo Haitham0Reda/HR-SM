@@ -33,6 +33,7 @@ import {
     Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
+import DateInput from '../../components/common/DateInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
@@ -416,20 +417,14 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                     {/* Date Range Row */}
                     <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                         <Box sx={{ flex: 1, minWidth: '200px' }}>
-                            <TextField
-                                label="Start Date"
-                                type="date"
-                                value={filters.startDate}
+                            <DateInput label="Start Date" value={filters.startDate}
                                 onChange={(e) => handleFilterChange('startDate', e.target.value)}
                                 fullWidth
                                 slotProps={{ inputLabel: { shrink: true } }}
                             />
                         </Box>
                         <Box sx={{ flex: 1, minWidth: '200px' }}>
-                            <TextField
-                                label="End Date"
-                                type="date"
-                                value={filters.endDate}
+                            <DateInput label="End Date" value={filters.endDate}
                                 onChange={(e) => handleFilterChange('endDate', e.target.value)}
                                 fullWidth
                                 slotProps={{ inputLabel: { shrink: true } }}
@@ -696,11 +691,8 @@ const AttendancePage = ({ viewMode = 'my' }) => {
                             </Grid>
                         )}
                         <Grid item xs={12}>
-                            <TextField
-                                name="date"
-                                label="Date"
-                                type="date"
-                                value={formData.date}
+                            <DateInput name="date"
+                                label="Date" value={formData.date}
                                 onChange={handleChange}
                                 fullWidth
                                 required

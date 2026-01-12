@@ -13,8 +13,7 @@ import {
     Box,
     Alert
 } from '@mui/material';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import DatePicker from '../common/DatePicker';
 import userService from '../../services/user.service';
 
 const TaskForm = ({ open, onClose, onSubmit, task }) => {
@@ -250,21 +249,21 @@ const TaskForm = ({ open, onClose, onSubmit, task }) => {
                         </Select>
                     </FormControl>
 
-                    <LocalizationProvider dateAdapter={AdapterDateFns}>
-                        <DatePicker
-                            label="Start Date"
-                            value={formData.startDate || new Date()}
-                            onChange={(value) => handleDateChange('startDate', value)}
-                            renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
-                        />
+                    <DatePicker
+                        label="Start Date"
+                        value={formData.startDate || new Date()}
+                        onChange={(value) => handleDateChange('startDate', value)}
+                        fullWidth
+                        sx={{ margin: '8px 0' }}
+                    />
 
-                        <DatePicker
-                            label="Due Date"
-                            value={formData.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
-                            onChange={(value) => handleDateChange('dueDate', value)}
-                            renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
-                        />
-                    </LocalizationProvider>
+                    <DatePicker
+                        label="Due Date"
+                        value={formData.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
+                        onChange={(value) => handleDateChange('dueDate', value)}
+                        fullWidth
+                        sx={{ margin: '8px 0' }}
+                    />
                 </Box>
             </DialogContent>
 

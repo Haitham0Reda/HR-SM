@@ -8,6 +8,8 @@ export { default as InsurancePoliciesPage } from './InsurancePoliciesPage';
 export { default as CreatePolicyPage } from './CreatePolicyPage';
 export { default as EditPolicyPage } from './EditPolicyPage';
 export { default as PolicyDetailsPage } from './PolicyDetailsPage';
+export { default as PolicyFamilyMembersPage } from './PolicyFamilyMembersPage';
+export { default as FamilyMembersPage } from './FamilyMembersPage';
 export { default as ClaimsPage } from './ClaimsPage';
 export { default as CreateClaimPage } from './CreateClaimPage';
 export { default as ClaimDetailsPage } from './ClaimDetailsPage';

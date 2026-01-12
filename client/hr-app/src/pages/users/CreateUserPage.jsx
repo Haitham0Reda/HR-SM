@@ -45,6 +45,7 @@ import departmentService from '../../services/department.service';
 import positionService from '../../services/position.service';
 import companyService from '../../services/company.service';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
+import DateInput from '../../components/common/DateInput';
 
 const steps = ['Account', 'Personal Info', 'Employment'];
 
@@ -612,11 +613,8 @@ const CreateUserPage = () => {
                                         />
                                     </Grid>
                                     <Grid size={{ xs: 12, sm: 6 }}>
-                                        <TextField 
-                                            id="create-user-date-of-birth"
-                                            label="Date of Birth" 
-                                            type="date" 
-                                            value={formData.personalInfo.dateOfBirth} 
+                                        <DateInput id="create-user-date-of-birth"
+                                            label="Date of Birth" value={formData.personalInfo.dateOfBirth} 
                                             onChange={(e) => handleChange('personalInfo.dateOfBirth', e.target.value)} 
                                             fullWidth
                                             slotProps={{ inputLabel: { shrink: true } }}
@@ -812,11 +810,8 @@ const CreateUserPage = () => {
                                     ))}
                                 </TextField>
 
-                                <TextField 
-                                    id="create-user-hire-date"
-                                    label="Hire Date" 
-                                    type="date" 
-                                    value={formData.employment.hireDate} 
+                                <DateInput id="create-user-hire-date"
+                                    label="Hire Date" value={formData.employment.hireDate} 
                                     onChange={(e) => handleChange('employment.hireDate', e.target.value)} 
                                     fullWidth
                                     slotProps={{ inputLabel: { shrink: true } }}

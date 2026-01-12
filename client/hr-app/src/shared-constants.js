@@ -45,8 +45,11 @@ export const ATTENDANCE_STATUS = {
 // Date Formats
 export const DATE_FORMATS = {
     ISO: 'YYYY-MM-DD',
-    DISPLAY: 'MMM DD, YYYY',
-    DATETIME: 'YYYY-MM-DD HH:mm:ss',
+    DISPLAY: 'DD/MM/YYYY', // Changed to dd/mm/yyyy format (full year)
+    DISPLAY_SHORT: 'DD/MM/YY', // Short version for special cases
+    DATETIME: 'DD/MM/YYYY HH:mm',
+    INPUT: 'DD/MM/YYYY', // For input fields
+    API: 'YYYY-MM-DD', // For API communication
 };
 
 // Priority Levels

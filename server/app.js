@@ -494,14 +494,8 @@ export const initializeRoutes = async () => {
     app.use('/api/v1/licenses', licenseRoutes);
     app.use('/api/v1/licenses/audit', licenseAuditRoutes);
 
-    // Life Insurance Module
-    try {
-        const lifeInsuranceRoutes = await import('./modules/life-insurance/routes.js');
-        app.use('/api/v1/life-insurance', lifeInsuranceRoutes.default);
-        console.log('✓ Life insurance routes loaded (/api/v1/life-insurance/*)');
-    } catch (error) {
-        console.warn('⚠️  Life insurance routes not available:', error.message);
-    }
+    // Life Insurance Module - now loaded via modular system above
+    // Removed duplicate mounting to prevent conflicts
 
     // Pricing & Quotes (legacy - not yet moved)
     app.use('/api/v1/pricing', pricingRoutes);

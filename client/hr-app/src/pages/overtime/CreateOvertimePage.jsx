@@ -12,6 +12,7 @@ import { CheckCircle, Cancel } from '@mui/icons-material';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import overtimeService from '../../services/overtime.service';
+import DateInput from '../../components/common/DateInput';
 
 const CreateOvertimePage = () => {
     const navigate = useNavigate();
@@ -151,9 +152,7 @@ const CreateOvertimePage = () => {
                         gap: 3,
                         flex: 1
                     }}>
-                        <TextField
-                            type="date"
-                            label="Date *"
+                        <DateInput  label="Date *"
                             name="date"
                             id="overtime-date"
                             value={formData.date}

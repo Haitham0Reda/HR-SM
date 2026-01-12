@@ -29,6 +29,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import Loading from '../../components/common/Loading';
+import DateInput from '../../components/common/DateInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
@@ -808,9 +809,7 @@ const SurveysPage = () => {
                         </Box>
 
                         <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                            <TextField
-                                type="date"
-                                label="Start Date"
+                            <DateInput  label="Start Date"
                                 value={formData.settings.startDate}
                                 onChange={(e) => setFormData(prev => ({
                                     ...prev,
@@ -819,9 +818,7 @@ const SurveysPage = () => {
                                 slotProps={{ inputLabel: { shrink: true } }}
                                 fullWidth
                             />
-                            <TextField
-                                type="date"
-                                label="End Date"
+                            <DateInput  label="End Date"
                                 value={formData.settings.endDate}
                                 onChange={(e) => setFormData(prev => ({
                                     ...prev,

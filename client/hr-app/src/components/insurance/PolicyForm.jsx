@@ -22,13 +22,12 @@ import {
     ArrowBack as ArrowBackIcon,
     Save as SaveIcon
 } from '@mui/icons-material';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import DatePicker from '../common/DatePicker';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import insuranceService from '../../services/insurance.service';
+import userService from '../../services/user.service';
 import { formatCurrency } from '../../utils/formatters';
 
 const policyTypes = [
@@ -55,9 +54,9 @@ const PolicyForm = ({
     
     const [formValues, setFormValues] = useState({
         employeeId: '',
-        policyType: 'CAT_C',
-        coverageAmount: 200000,
-        premium: 300,
+        policyType: 'CAT_A',
+        coverageAmount: 50000, // Changed from 200000 to 50000 to match CAT_A options
+        premium: 100,
         startDate: dayjs().format('YYYY-MM-DD'),
         endDate: dayjs().add(1, 'year').format('YYYY-MM-DD'),
         deductible: 0,
@@ -67,6 +66,7 @@ const PolicyForm = ({
 
     const [formErrors, setFormErrors] = useState({});
     const [employees, setEmployees] = useState([]);
+    const [allEmployees, setAllEmployees] = useState([]); // Store all employees
     const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
     const [employeeLoading, setEmployeeLoading] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -83,11 +83,14 @@ const PolicyForm = ({
         const loadAllEmployees = async () => {
             try {
                 setEmployeeLoading(true);
-                // Load all employees by calling the search endpoint with a minimal query
-                const response = await insuranceService.searchEmployees('');
-                setEmployees(response.data || []);
+                // Load all users from the company
+                const response = await userService.getAll({ includeInactive: false });
+                const allUsers = response.data || [];
+                setAllEmployees(allUsers);
+                setEmployees(allUsers); // Initially show all employees
             } catch (error) {
                 console.error('Failed to load employees:', error);
+                setAllEmployees([]);
                 setEmployees([]);
             } finally {
                 setEmployeeLoading(false);
@@ -97,28 +100,25 @@ const PolicyForm = ({
         loadAllEmployees();
     }, []);
 
-    // Search employees (optional - for filtering the loaded employees)
+    // Filter employees locally based on search term
     useEffect(() => {
-        if (!employeeSearchTerm) {
-            return; // Don't filter if no search term
+        if (!employeeSearchTerm.trim()) {
+            setEmployees(allEmployees);
+            return;
         }
 
-        const searchEmployees = async () => {
-            try {
-                setEmployeeLoading(true);
-                const response = await insuranceService.searchEmployees(employeeSearchTerm);
-                setEmployees(response.data || []);
-            } catch (error) {
-                console.error('Failed to search employees:', error);
-                setEmployees([]);
-            } finally {
-                setEmployeeLoading(false);
-            }
-        };
-
-        const timeoutId = setTimeout(searchEmployees, 300);
-        return () => clearTimeout(timeoutId);
-    }, [employeeSearchTerm]);
+        const searchTerm = employeeSearchTerm.toLowerCase();
+        const filteredEmployees = allEmployees.filter(employee => 
+            employee.name?.toLowerCase().includes(searchTerm) ||
+            employee.personalInfo?.fullName?.toLowerCase().includes(searchTerm) ||
+            employee.username?.toLowerCase().includes(searchTerm) ||
+            employee._id?.toLowerCase().includes(searchTerm) ||
+            employee.email?.toLowerCase().includes(searchTerm) ||
+            employee.department?.name?.toLowerCase().includes(searchTerm)
+        );
+        
+        setEmployees(filteredEmployees);
+    }, [employeeSearchTerm, allEmployees]);
 
     // Update coverage amounts and premium when policy type changes
     useEffect(() => {
@@ -204,7 +204,19 @@ const PolicyForm = ({
             return;
         }
 
+        // Additional validation to ensure employee is selected
+        if (!selectedEmployee) {
+            setFormErrors(prev => ({
+                ...prev,
+                employeeId: 'Please select an employee'
+            }));
+            return;
+        }
+
         try {
+            // Debug: Log what we're sending
+            console.log('Form values being submitted:', formValues);
+            console.log('Selected employee:', selectedEmployee);
             await onSubmit(formValues);
         } catch (error) {
             // Error handling is done in parent component
@@ -222,8 +234,7 @@ const PolicyForm = ({
     const availableCoverages = coverageAmounts[formValues.policyType] || [];
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
                 {/* Employee Selection Section */}
                 <Paper sx={{ p: 3, mb: 3 }}>
                     <Typography variant="h6" sx={{ mb: 3 }}>
@@ -239,9 +250,10 @@ const PolicyForm = ({
                                     setEmployeeSearchTerm(newInputValue);
                                 }}
                                 options={employees}
-                                getOptionLabel={(option) => 
-                                    option ? `${option.name} (${option.employeeNumber})` : ''
-                                }
+                                getOptionLabel={(option) => {
+                                    if (!option) return '';
+                                    return option.personalInfo?.fullName || option.name || option.username || 'Unknown';
+                                }}
                                 loading={employeeLoading}
                                 disabled={isEditMode}
                                 renderInput={(params) => (
@@ -260,21 +272,18 @@ const PolicyForm = ({
                                     const { key, ...otherProps } = props;
                                     return (
                                         <Box component="li" key={key} {...otherProps}>
-                                            <Box>
-                                                <Typography variant="body2">
-                                                    {option.name}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    ID: {option.employeeNumber} | Dept: {option.department?.name || 'N/A'}
-                                                </Typography>
-                                            </Box>
+                                            <Typography variant="body2">
+                                                {option.personalInfo?.fullName || option.name || option.username || 'Unknown'}
+                                            </Typography>
                                         </Box>
                                     );
                                 }}
                                 noOptionsText={
-                                    employeeSearchTerm.length < 2 
-                                        ? "Type at least 2 characters to search"
-                                        : "No employees found"
+                                    employeeSearchTerm.trim() 
+                                        ? "No employees found matching your search"
+                                        : allEmployees.length === 0 
+                                            ? "Loading employees..." 
+                                            : "No employees available"
                                 }
                             />
                         </Grid>
@@ -364,30 +373,22 @@ const PolicyForm = ({
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <DatePicker
                                 label="Start Date *"
-                                value={formValues.startDate ? dayjs(formValues.startDate) : null}
-                                onChange={(value) => handleFieldChange('startDate', value?.format('YYYY-MM-DD'))}
-                                slotProps={{
-                                    textField: {
-                                        fullWidth: true,
-                                        error: !!formErrors.startDate,
-                                        helperText: formErrors.startDate
-                                    }
-                                }}
+                                value={formValues.startDate || null}
+                                onChange={(value) => handleFieldChange('startDate', value)}
+                                fullWidth
+                                error={!!formErrors.startDate}
+                                helperText={formErrors.startDate}
                             />
                         </Grid>
 
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <DatePicker
                                 label="End Date *"
-                                value={formValues.endDate ? dayjs(formValues.endDate) : null}
-                                onChange={(value) => handleFieldChange('endDate', value?.format('YYYY-MM-DD'))}
-                                slotProps={{
-                                    textField: {
-                                        fullWidth: true,
-                                        error: !!formErrors.endDate,
-                                        helperText: formErrors.endDate
-                                    }
-                                }}
+                                value={formValues.endDate || null}
+                                onChange={(value) => handleFieldChange('endDate', value)}
+                                fullWidth
+                                error={!!formErrors.endDate}
+                                helperText={formErrors.endDate}
                             />
                         </Grid>
 
@@ -467,7 +468,6 @@ const PolicyForm = ({
                     </Button>
                 </Stack>
             </Box>
-        </LocalizationProvider>
     );
 };
 

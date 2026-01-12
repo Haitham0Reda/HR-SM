@@ -73,6 +73,7 @@ import dashboardService from '../../services/dashboard.service';
 import userService from '../../services/user.service';
 import departmentService from '../../services/department.service';
 import { useTheme } from '@mui/material/styles';
+import DateInput from '../../components/common/DateInput';
 
 const ReportsPage = () => {
     const theme = useTheme();
@@ -830,18 +831,14 @@ const ReportsPage = () => {
                                 </Box>
                                 {showFilters && (
                                     <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                                        <TextField
-                                            type="date"
-                                            label="Start Date"
+                                        <DateInput  label="Start Date"
                                             name="startDate"
                                             value={filters.startDate}
                                             onChange={handleFilterChange}
                                             sx={{ flex: '1 1 200px' }}
                                             slotProps={{ inputLabel: { shrink: true } }}
                                         />
-                                        <TextField
-                                            type="date"
-                                            label="End Date"
+                                        <DateInput  label="End Date"
                                             name="endDate"
                                             value={filters.endDate}
                                             onChange={handleFilterChange}

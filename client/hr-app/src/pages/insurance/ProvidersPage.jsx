@@ -267,9 +267,33 @@ const ProvidersPage = () => {
     }
 
     return (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '100vh',
+            margin: {
+                xs: '-16px -16px', // Counteract layout padding
+                sm: '-24px -24px',
+                md: '-32px -32px'
+            },
+            padding: {
+                xs: '16px',
+                sm: '24px', 
+                md: '32px'
+            },
+            boxSizing: 'border-box'
+        }}>
             {/* Header */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box 
+                sx={{
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    mb: 3,
+                    width: '100%',
+                    flexShrink: 0
+                }}
+            >
                 <Typography variant="h4" component="h1">
                     Insurance Providers
                 </Typography>
@@ -302,9 +326,15 @@ const ProvidersPage = () => {
 
             {/* Statistics Cards */}
             {(statistics || statisticsLoading) && (
-                <Grid container spacing={3} sx={{ mb: 3 }}>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Card>
+                <Box sx={{ 
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 3,
+                    mb: 3,
+                    width: '100%'
+                }}>
+                    <Box sx={{ flex: '1 1 calc(25% - 18px)', minWidth: '200px' }}>
+                        <Card sx={{ height: '100%' }}>
                             <CardContent>
                                 <Typography color="textSecondary" gutterBottom>
                                     Total Providers
@@ -318,9 +348,9 @@ const ProvidersPage = () => {
                                 </Typography>
                             </CardContent>
                         </Card>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Card>
+                    </Box>
+                    <Box sx={{ flex: '1 1 calc(25% - 18px)', minWidth: '200px' }}>
+                        <Card sx={{ height: '100%' }}>
                             <CardContent>
                                 <Typography color="textSecondary" gutterBottom>
                                     Active Providers
@@ -334,9 +364,9 @@ const ProvidersPage = () => {
                                 </Typography>
                             </CardContent>
                         </Card>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Card>
+                    </Box>
+                    <Box sx={{ flex: '1 1 calc(25% - 18px)', minWidth: '200px' }}>
+                        <Card sx={{ height: '100%' }}>
                             <CardContent>
                                 <Typography color="textSecondary" gutterBottom>
                                     Average Rating
@@ -350,9 +380,9 @@ const ProvidersPage = () => {
                                 </Typography>
                             </CardContent>
                         </Card>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Card>
+                    </Box>
+                    <Box sx={{ flex: '1 1 calc(25% - 18px)', minWidth: '200px' }}>
+                        <Card sx={{ height: '100%' }}>
                             <CardContent>
                                 <Typography color="textSecondary" gutterBottom>
                                     Inactive/Suspended
@@ -366,15 +396,21 @@ const ProvidersPage = () => {
                                 </Typography>
                             </CardContent>
                         </Card>
-                    </Grid>
-                </Grid>
+                    </Box>
+                </Box>
             )}
 
             {/* Filters */}
-            <Card sx={{ mb: 3 }}>
+            <Card sx={{ mb: 3, width: '100%' }}>
                 <CardContent>
-                    <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} sm={4}>
+                    <Box sx={{ 
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 2,
+                        alignItems: 'center',
+                        width: '100%'
+                    }}>
+                        <Box sx={{ flex: '1 1 300px', minWidth: '200px' }}>
                             <TextField
                                 fullWidth
                                 label="Search"
@@ -382,8 +418,8 @@ const ProvidersPage = () => {
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
                                 placeholder="Search by name, code, or email..."
                             />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
+                        </Box>
+                        <Box sx={{ flex: '1 1 200px', minWidth: '150px' }}>
                             <FormControl fullWidth>
                                 <InputLabel>Status</InputLabel>
                                 <Select
@@ -398,8 +434,8 @@ const ProvidersPage = () => {
                                     <MenuItem value="pending">Pending</MenuItem>
                                 </Select>
                             </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
+                        </Box>
+                        <Box sx={{ flex: '1 1 200px', minWidth: '150px' }}>
                             <FormControl fullWidth>
                                 <InputLabel>Insurance Type</InputLabel>
                                 <Select
@@ -418,14 +454,20 @@ const ProvidersPage = () => {
                                     <MenuItem value="other">Other</MenuItem>
                                 </Select>
                             </FormControl>
-                        </Grid>
-                    </Grid>
+                        </Box>
+                    </Box>
                 </CardContent>
             </Card>
 
             {/* Providers Table */}
-            <Card>
-                <TableContainer component={Paper}>
+            <Box sx={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                width: '100%'
+            }}>
+                <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <TableContainer component={Paper} sx={{ flex: 1 }}>
                     <Table>
                         <TableHead>
                             <TableRow>
@@ -551,7 +593,8 @@ const ProvidersPage = () => {
                         />
                     </Box>
                 )}
-            </Card>
+                </Card>
+            </Box>
 
             {/* Action Menu */}
             <Menu

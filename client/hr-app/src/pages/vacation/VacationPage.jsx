@@ -29,6 +29,7 @@ import { useNotification } from '../../store/providers/ReduxNotificationProvider
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import vacationService from '../../services/vacation.service';
 import DataTable from '../../components/common/DataTable';
+import DateInput from '../../components/common/DateInput';
 import Loading from '../../components/common/Loading';
 
 const VacationPage = () => {
@@ -491,10 +492,7 @@ const VacationPage = () => {
 
                                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                                     <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
-                                        <TextField
-                                            id="vacation-start-date"
-                                            type="date"
-                                            label="Start Date"
+                                        <DateInput id="vacation-start-date" label="Start Date"
                                             name="startDate"
                                             value={formData.startDate}
                                             onChange={handleChange}
@@ -505,10 +503,7 @@ const VacationPage = () => {
                                     </Box>
 
                                     <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
-                                        <TextField
-                                            id="vacation-end-date"
-                                            type="date"
-                                            label="End Date"
+                                        <DateInput id="vacation-end-date" label="End Date"
                                             name="endDate"
                                             value={formData.endDate}
                                             onChange={handleChange}
@@ -638,10 +633,7 @@ const VacationPage = () => {
                             <MenuItem value="casual">Casual Leave</MenuItem>
                             <MenuItem value="sick">Sick Leave</MenuItem>
                         </TextField>
-                        <TextField
-                            id="edit-vacation-start-date"
-                            type="date"
-                            label="Start Date"
+                        <DateInput id="edit-vacation-start-date" label="Start Date"
                             name="startDate"
                             value={formData.startDate}
                             onChange={handleChange}
@@ -649,10 +641,7 @@ const VacationPage = () => {
                             fullWidth
                             required
                         />
-                        <TextField
-                            id="edit-vacation-end-date"
-                            type="date"
-                            label="End Date"
+                        <DateInput id="edit-vacation-end-date" label="End Date"
                             name="endDate"
                             value={formData.endDate}
                             onChange={handleChange}

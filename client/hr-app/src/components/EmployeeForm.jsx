@@ -21,11 +21,8 @@ import {
     Delete as DeleteIcon,
     Email as EmailIcon
 } from '@mui/icons-material';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import DatePicker from './common/DatePicker';
 import { useNavigate } from 'react-router';
-import dayjs from 'dayjs';
 import { useCompanyRouting } from '../hooks/useCompanyRouting';
 import departmentService from '../services/department.service';
 import positionService from '../services/position.service';
@@ -489,28 +486,20 @@ function EmployeeForm(props) {
                         <Grid size={{ xs: 12, sm: 4 }}>
                             <DatePicker
                                 label="Hire Date"
-                                value={formValues.employment?.hireDate ? dayjs(formValues.employment.hireDate) : null}
+                                value={formValues.employment?.hireDate || null}
                                 onChange={handleNestedDateChange('employment', 'hireDate')}
-                                slotProps={{
-                                    textField: {
-                                        fullWidth: true,
-                                        helperText: 'Years of service: 10 years'
-                                    }
-                                }}
+                                fullWidth
+                                helperText="Years of service: 10 years"
                             />
                         </Grid>
 
                         <Grid size={{ xs: 12, sm: 4 }}>
                             <DatePicker
                                 label="Birthday"
-                                value={formValues.profile?.dateOfBirth ? dayjs(formValues.profile.dateOfBirth) : null}
+                                value={formValues.profile?.dateOfBirth || null}
                                 onChange={handleNestedDateChange('profile', 'dateOfBirth')}
-                                slotProps={{
-                                    textField: {
-                                        fullWidth: true,
-                                        helperText: 'Auto-extracted from National ID'
-                                    }
-                                }}
+                                fullWidth
+                                helperText="Auto-extracted from National ID"
                             />
                         </Grid>
 

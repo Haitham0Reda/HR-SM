@@ -3,53 +3,84 @@
  * Shared across hr-app and platform-admin
  */
 
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+
+// Enable custom parse format plugin
+dayjs.extend(customParseFormat);
+
 /**
- * Format date to readable string
+ * Format date to dd/mm/yy format
  * @param {Date|string} date - Date to format
- * @param {string} locale - Locale string (default: 'en-US')
+ * @param {boolean} fullYear - Whether to use full year (dd/mm/yyyy)
  * @returns {string} - Formatted date string
  */
-export const formatDate = (date, locale = 'en-US') => {
+export const formatDate = (date, fullYear = false) => {
     if (!date) return '-';
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleDateString(locale, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    const dateObj = dayjs(date);
+    if (!dateObj.isValid()) return '-';
+    return fullYear ? dateObj.format('DD/MM/YYYY') : dateObj.format('DD/MM/YY');
 };
 
 /**
- * Format date and time to readable string
+ * Format date and time to dd/mm/yy HH:mm format
  * @param {Date|string} date - Date to format
- * @param {string} locale - Locale string (default: 'en-US')
+ * @param {boolean} fullYear - Whether to use full year
  * @returns {string} - Formatted date and time string
  */
-export const formatDateTime = (date, locale = 'en-US') => {
+export const formatDateTime = (date, fullYear = false) => {
     if (!date) return '-';
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleString(locale, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+    const dateObj = dayjs(date);
+    if (!dateObj.isValid()) return '-';
+    return fullYear ? dateObj.format('DD/MM/YYYY HH:mm') : dateObj.format('DD/MM/YY HH:mm');
+};
+
+/**
+ * Parse dd/mm/yy or dd/mm/yyyy format to ISO date
+ * @param {string} dateString - Date string in dd/mm/yy or dd/mm/yyyy format
+ * @returns {string} - ISO date string (YYYY-MM-DD)
+ */
+export const parseDateInput = (dateString) => {
+    if (!dateString) return '';
+    
+    // Try different formats
+    const formats = ['DD/MM/YY', 'DD/MM/YYYY', 'YYYY-MM-DD'];
+    
+    for (const format of formats) {
+        const parsed = dayjs(dateString, format, true);
+        if (parsed.isValid()) {
+            return parsed.format('YYYY-MM-DD');
+        }
+    }
+    
+    // Fallback to dayjs auto-parsing
+    const fallback = dayjs(dateString);
+    return fallback.isValid() ? fallback.format('YYYY-MM-DD') : '';
+};
+
+/**
+ * Convert ISO date to dd/mm/yy format for input fields
+ * @param {string} isoDate - ISO date string (YYYY-MM-DD)
+ * @param {boolean} fullYear - Whether to use full year
+ * @returns {string} - Formatted date string for input
+ */
+export const formatDateForInput = (isoDate, fullYear = false) => {
+    if (!isoDate) return '';
+    const dateObj = dayjs(isoDate);
+    if (!dateObj.isValid()) return '';
+    return fullYear ? dateObj.format('DD/MM/YYYY') : dateObj.format('DD/MM/YY');
 };
 
 /**
  * Format time to readable string
  * @param {Date|string} date - Date to format
- * @param {string} locale - Locale string (default: 'en-US')
  * @returns {string} - Formatted time string
  */
-export const formatTime = (date, locale = 'en-US') => {
+export const formatTime = (date) => {
     if (!date) return '-';
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleTimeString(locale, {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+    const dateObj = dayjs(date);
+    if (!dateObj.isValid()) return '-';
+    return dateObj.format('HH:mm');
 };
 
 /**

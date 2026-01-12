@@ -94,6 +94,8 @@ import {
     CreatePolicyPage,
     EditPolicyPage,
     PolicyDetailsPage,
+    PolicyFamilyMembersPage,
+    FamilyMembersPage,
     ClaimsPage,
     CreateClaimPage,
     ClaimDetailsPage,
@@ -227,8 +229,10 @@ const CompanyRouter = () => {
                 <Route path="insurance" element={<Navigate to="insurance/policies" replace />} />
                 <Route path="insurance/policies" element={<InsurancePoliciesPage />} />
                 <Route path="insurance/policies/new" element={<CreatePolicyPage />} />
-                <Route path="insurance/policies/:policyId" element={<PolicyDetailsPage />} />
                 <Route path="insurance/policies/:policyId/edit" element={<EditPolicyPage />} />
+                <Route path="insurance/policies/:policyId/family" element={<PolicyFamilyMembersPage />} />
+                <Route path="insurance/policies/:policyId" element={<PolicyDetailsPage />} />
+                <Route path="insurance/family-members" element={<FamilyMembersPage />} />
                 <Route path="insurance/claims" element={<ClaimsPage />} />
                 <Route path="insurance/claims/new" element={<CreateClaimPage />} />
                 <Route path="insurance/claims/:claimId" element={<ClaimDetailsPage />} />

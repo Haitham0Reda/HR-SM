@@ -27,6 +27,7 @@ import {
     Description as DescriptionIcon
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
+import DateInput from '../../components/common/DateInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import DocumentViewer from '../../components/common/DocumentViewer';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
@@ -598,11 +599,8 @@ const DocumentsPage = () => {
                             fullWidth
                             helperText="File size in bytes"
                         />
-                        <TextField
-                            label="Expiry Date (Optional)"
-                            name="expiryDate"
-                            type="date"
-                            value={formData.expiryDate}
+                        <DateInput label="Expiry Date (Optional)"
+                            name="expiryDate" value={formData.expiryDate}
                             onChange={handleChange}
                             fullWidth
                             slotProps={{ inputLabel: { shrink: true } }}
