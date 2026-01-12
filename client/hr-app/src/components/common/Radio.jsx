@@ -29,11 +29,11 @@ const Radio = React.forwardRef(({
       size={size}
       sx={{
         transition: 'all 0.2s ease-in-out',
-        
+
         '&:hover': {
           transform: 'scale(1.05)',
         },
-        
+
         ...sx,
       }}
       {...props}
@@ -71,16 +71,16 @@ Radio.propTypes = {
 
 // RadioGroup wrapper for convenience
 export const RadioGroupWrapper = ({ label, value, onChange, children, row = false, sx = {} }) => {
-  const labelId = `radio-group-label-${Math.random().toString(36).substr(2, 9)}`;
-  
+  const labelId = label ? `radio-group-label-${label.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}` : undefined;
+
   return (
     <FormControl sx={sx}>
       {label && <FormLabel id={labelId}>{label}</FormLabel>}
-      <RadioGroup 
-        value={value} 
-        onChange={onChange} 
+      <RadioGroup
+        value={value}
+        onChange={onChange}
         row={row}
-        aria-labelledby={label ? labelId : undefined}
+        aria-labelledby={labelId}
       >
         {children}
       </RadioGroup>

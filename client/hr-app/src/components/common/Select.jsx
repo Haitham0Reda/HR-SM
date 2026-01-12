@@ -24,7 +24,7 @@ const Select = React.forwardRef(({
   sx = {},
   ...props
 }, ref) => {
-  const labelId = `select-label-${label?.replace(/\s+/g, '-').toLowerCase()}`;
+  const labelId = label ? `select-label-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined;
 
   return (
     <FormControl
@@ -39,18 +39,18 @@ const Select = React.forwardRef(({
       {label && <InputLabel id={labelId}>{label}</InputLabel>}
       <MuiSelect
         ref={ref}
-        labelId={label ? labelId : undefined}
+        labelId={labelId}
         label={label}
         value={value}
         onChange={onChange}
         sx={{
           borderRadius: designTokens.borderRadius.md,
           transition: 'all 0.2s ease-in-out',
-          
+
           '&:hover': {
             boxShadow: designTokens.shadows.xs,
           },
-          
+
           '&.Mui-focused': {
             boxShadow: designTokens.shadows.sm,
           },
