@@ -31,6 +31,7 @@ import {
     VisibilityOff as VisibilityOffIcon
 } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
+import DateInput from '../../components/common/DateInput';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
@@ -536,9 +537,7 @@ const SalaryManagementPage = () => {
                             </Grid>
                             
                             <Grid item xs={12} sm={6}>
-                                <TextField
-                                    type="date"
-                                    label="Effective Date"
+                                <DateInput  label="Effective Date"
                                     value={formData.effectiveDate}
                                     onChange={(e) => setFormData(prev => ({ ...prev, effectiveDate: e.target.value }))}
                                     fullWidth

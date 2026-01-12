@@ -4,6 +4,7 @@ import TextField from '../common/TextField';
 import Select from '../common/Select';
 import Checkbox from '../common/Checkbox';
 import { MenuItem, Stack } from '@mui/material';
+import DateInput from '../common/DateInput';
 
 export default {
   title: 'Page Templates/FormPage',
@@ -103,7 +104,7 @@ export const MultipleSections = () => (
               <MenuItem value="senior">Senior</MenuItem>
               <MenuItem value="junior">Junior</MenuItem>
             </Select>
-            <TextField label="Start Date" type="date" required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+            <DateInput label="Start Date" required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
           </Stack>
         ),
       },
@@ -241,7 +242,7 @@ export const CompleteExample = () => (
             </Stack>
             <TextField label="Email" type="email" required fullWidth />
             <TextField label="Phone Number" fullWidth />
-            <TextField label="Date of Birth" type="date" fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+            <DateInput label="Date of Birth" fullWidth slotProps={{ inputLabel: { shrink: true } }} />
           </Stack>
         ),
       },
@@ -266,7 +267,7 @@ export const CompleteExample = () => (
               </Select>
             </Stack>
             <Stack direction="row" spacing={2}>
-              <TextField label="Start Date" type="date" required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+              <DateInput label="Start Date" required fullWidth slotProps={{ inputLabel: { shrink: true } }} />
               <TextField label="Salary" type="number" fullWidth />
             </Stack>
           </Stack>

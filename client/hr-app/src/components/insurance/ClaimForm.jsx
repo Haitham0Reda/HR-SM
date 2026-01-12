@@ -30,9 +30,7 @@ import {
     Delete as DeleteIcon,
     Description as FileIcon
 } from '@mui/icons-material';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import DatePicker from '../common/DatePicker';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
@@ -326,15 +324,11 @@ const ClaimForm = ({
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <DatePicker
                                 label="Claim Date *"
-                                value={formValues.claimDate ? dayjs(formValues.claimDate) : null}
-                                onChange={(value) => handleFieldChange('claimDate', value?.format('YYYY-MM-DD'))}
-                                slotProps={{
-                                    textField: {
-                                        fullWidth: true,
-                                        error: !!formErrors.claimDate,
-                                        helperText: formErrors.claimDate || 'Date when the incident occurred'
-                                    }
-                                }}
+                                value={formValues.claimDate || null}
+                                onChange={(value) => handleFieldChange('claimDate', value)}
+                                fullWidth
+                                error={!!formErrors.claimDate}
+                                helperText={formErrors.claimDate || 'Date when the incident occurred'}
                             />
                         </Grid>
 

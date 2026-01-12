@@ -20,6 +20,7 @@ import {
     CameraAlt as CameraIcon
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
+import DateInput from '../../components/common/DateInput';
 import userService from '../../services/user.service';
 import departmentService from '../../services/department.service';
 import positionService from '../../services/position.service';
@@ -532,10 +533,7 @@ const EditUserPage = () => {
                                 fullWidth
                                 helperText="Name in Arabic (optional)"
                             />
-                            <TextField
-                                label="Date of Birth"
-                                type="date"
-                                value={formData.personalInfo.dateOfBirth}
+                            <DateInput label="Date of Birth" value={formData.personalInfo.dateOfBirth}
                                 onChange={(e) => handleChange('personalInfo.dateOfBirth', e.target.value)}
                                 fullWidth
                                 slotProps={{ inputLabel: { shrink: true } }}
@@ -846,10 +844,7 @@ const EditUserPage = () => {
                                     </MenuItem>
                                 ))}
                             </TextField>
-                            <TextField
-                                label="Hire Date"
-                                type="date"
-                                value={formData.employment.hireDate}
+                            <DateInput label="Hire Date" value={formData.employment.hireDate}
                                 onChange={(e) => handleChange('employment.hireDate', e.target.value)}
                                 fullWidth
                                 slotProps={{ inputLabel: { shrink: true } }}

@@ -659,6 +659,14 @@ function DashboardSidebar({
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem
+                                                    id="insurance-family-members"
+                                                    title="Family Members"
+                                                    icon={<GroupIcon />}
+                                                    href={getCompanyRoute("/insurance/family-members")}
+                                                    selected={pathname.startsWith(getCompanyRoute('/insurance/family-members'))}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
                                                     id="insurance-claims"
                                                     title="Claims Management"
                                                     icon={<FavoriteIcon />}
@@ -977,6 +985,14 @@ function DashboardSidebar({
                                                     icon={<PolicyIcon />}
                                                     href={getCompanyRoute("/insurance/policies")}
                                                     selected={!!matchPath(getCompanyRoute('/insurance/policies'), pathname)}
+                                                    isNested={true}
+                                                />
+                                                <DashboardSidebarPageItem
+                                                    id="insurance-family-members"
+                                                    title="Family Members"
+                                                    icon={<GroupIcon />}
+                                                    href={getCompanyRoute("/insurance/family-members")}
+                                                    selected={pathname.startsWith(getCompanyRoute('/insurance/family-members'))}
                                                     isNested={true}
                                                 />
                                                 <DashboardSidebarPageItem

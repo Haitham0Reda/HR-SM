@@ -26,6 +26,7 @@ import surveyService from '../../services/survey.service';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
+import DateInput from '../common/DateInput';
 
 const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
     const { id } = useParams();
@@ -296,11 +297,8 @@ const SurveyForm = ({ survey: propSurvey, onSurveyComplete }) => {
             
             case 'date':
                 return (
-                    <TextField
-                        fullWidth
-                        label={question.required ? `${question.questionText} *` : question.questionText}
-                        type="date"
-                        value={answers[question._id] || ''}
+                    <DateInput fullWidth
+                        label={question.required ? `${question.questionText} *` : question.questionText} value={answers[question._id] || ''}
                         onChange={(e) => handleAnswerChange(question._id, e.target.value, 'date')}
                         required={question.required}
                         variant="outlined"

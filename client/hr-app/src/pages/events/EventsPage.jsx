@@ -25,6 +25,7 @@ import {
     LocationOn as LocationIcon
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
+import DateInput from '../../components/common/DateInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
@@ -371,9 +372,7 @@ const EventsPage = () => {
                         />
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="date"
-                                    label="Start Date"
+                                <DateInput  label="Start Date"
                                     name="startDate"
                                     value={formData.startDate}
                                     onChange={handleChange}
@@ -383,9 +382,7 @@ const EventsPage = () => {
                                 />
                             </Grid>
                             <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="date"
-                                    label="End Date"
+                                <DateInput  label="End Date"
                                     name="endDate"
                                     value={formData.endDate}
                                     onChange={handleChange}

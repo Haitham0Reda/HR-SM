@@ -24,9 +24,7 @@ import {
     PictureAsPdf as PdfIcon,
     TableChart as ExcelIcon
 } from '@mui/icons-material';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import DatePicker from '../common/DatePicker';
 import dayjs from 'dayjs';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -235,11 +233,7 @@ const InsuranceReportsPanel = () => {
                                 label="Start Date"
                                 value={filters.startDate}
                                 onChange={(value) => handleFilterChange('startDate', value)}
-                                slotProps={{
-                                    textField: {
-                                        fullWidth: true
-                                    }
-                                }}
+                                fullWidth
                             />
                         </Grid>
 
@@ -248,11 +242,7 @@ const InsuranceReportsPanel = () => {
                                 label="End Date"
                                 value={filters.endDate}
                                 onChange={(value) => handleFilterChange('endDate', value)}
-                                slotProps={{
-                                    textField: {
-                                        fullWidth: true
-                                    }
-                                }}
+                                fullWidth
                             />
                         </Grid>
 

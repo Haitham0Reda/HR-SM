@@ -20,6 +20,7 @@ import {
   Box,
   Stack,
 } from '@mui/material';
+import DateInput from '../../common/DateInput';
 
 const FormPageExample = () => {
   const [loading, setLoading] = useState(false);
@@ -240,11 +241,8 @@ const FormPageExample = () => {
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Start Date"
-              type="date"
-              value={formData.startDate}
+            <DateInput fullWidth
+              label="Start Date" value={formData.startDate}
               onChange={handleChange('startDate')}
               slotProps={{ inputLabel: { shrink: true } }}
             />

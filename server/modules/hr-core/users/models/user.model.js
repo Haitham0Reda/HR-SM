@@ -274,4 +274,9 @@ userSchema.index({ tenantId: 1, role: 1 });
 userSchema.index({ tenantId: 1, department: 1 });
 userSchema.index({ tenantId: 1, status: 1 });
 
+// Add withTenant static method manually (instead of using baseSchemaPlugin)
+userSchema.statics.withTenant = function (tenantId) {
+    return this.find({ tenantId });
+};
+
 export default mongoose.model('User', userSchema);

@@ -15,6 +15,7 @@ import { useNotification } from '../../store/providers/ReduxNotificationProvider
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import vacationService from '../../services/vacation.service';
 import DataTable from '../../components/common/DataTable';
+import DateInput from '../../components/common/DateInput';
 import Loading from '../../components/common/Loading';
 
 const VacationRequestPage = () => {
@@ -372,9 +373,7 @@ const VacationRequestPage = () => {
                                     </TextField>
                                 </Box>
                                 <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
-                                    <TextField
-                                        type="date"
-                                        label="Start Date"
+                                    <DateInput  label="Start Date"
                                         name="startDate"
                                         value={formData.startDate}
                                         onChange={handleChange}
@@ -384,9 +383,7 @@ const VacationRequestPage = () => {
                                     />
                                 </Box>
                                 <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
-                                    <TextField
-                                        type="date"
-                                        label="End Date"
+                                    <DateInput  label="End Date"
                                         name="endDate"
                                         value={formData.endDate}
                                         onChange={handleChange}

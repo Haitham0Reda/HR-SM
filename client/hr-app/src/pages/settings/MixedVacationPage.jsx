@@ -38,6 +38,7 @@ import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import mixedVacationService from '../../services/mixedVacation.service';
 import Loading from '../../components/common/Loading';
+import DateInput from '../../components/common/DateInput';
 import DataTable from '../../components/common/DataTable';
 import useSafeTableData from '../../hooks/useSafeTableData';
 
@@ -471,19 +472,13 @@ function MixedVacationPage() {
                             fullWidth
                         />
                         <Box sx={{ display: 'flex', gap: 2 }}>
-                            <TextField
-                                label="Start Date"
-                                type="date"
-                                value={formData.startDate}
+                            <DateInput label="Start Date" value={formData.startDate}
                                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                                 InputLabelProps={{ shrink: true }}
                                 required
                                 fullWidth
                             />
-                            <TextField
-                                label="End Date"
-                                type="date"
-                                value={formData.endDate}
+                            <DateInput label="End Date" value={formData.endDate}
                                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                                 InputLabelProps={{ shrink: true }}
                                 required

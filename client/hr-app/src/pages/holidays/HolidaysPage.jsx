@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Download as DownloadIcon } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
+import DateInput from '../../components/common/DateInput';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import holidayService from '../../services/holiday.service';
@@ -322,9 +323,7 @@ const HolidaysPage = () => {
                             required
                             fullWidth
                         />
-                        <TextField
-                            type="date"
-                            label="Date"
+                        <DateInput  label="Date"
                             name="date"
                             value={formData.date}
                             onChange={handleChange}

@@ -20,6 +20,7 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle, Ca
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCompanyRouting } from '../../hooks/useCompanyRouting';
 import DataTable from '../../components/common/DataTable';
+import DateInput from '../../components/common/DateInput';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
@@ -528,9 +529,7 @@ const ForgetCheckPage = () => {
                                 ))}
                             </TextField>
                         )}
-                        <TextField
-                            type="date"
-                            label="Date"
+                        <DateInput  label="Date"
                             name="date"
                             value={formData.date}
                             onChange={handleChange}

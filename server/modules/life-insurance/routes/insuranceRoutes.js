@@ -69,6 +69,35 @@ router.get('/test', (req, res) => {
     });
 });
 
+// Test endpoint for employee lookup
+router.get('/test-employee/:employeeId', async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        console.log('Testing employee lookup for:', employeeId);
+        
+        const employeeService = (await import('../services/employeeService.js')).default;
+        const employee = await employeeService.findEmployeeForPolicy(employeeId, req.tenant.id, req.user);
+        
+        res.json({
+            success: true,
+            message: 'Employee lookup test completed',
+            employee: employee ? {
+                id: employee._id,
+                name: employee.personalInfo?.fullName,
+                email: employee.email,
+                employeeId: employee.employeeId
+            } : null,
+            found: !!employee
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Employee lookup test failed',
+            error: error.message
+        });
+    }
+});
+
 // Debug endpoint to check user role and permissions
 router.get('/debug/user', (req, res) => {
     res.json({

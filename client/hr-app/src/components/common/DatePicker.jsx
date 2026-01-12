@@ -1,7 +1,7 @@
 /**
- * Standardized DatePicker Component
+ * Standardized DatePicker Component with dd/mm/yyyy format
  * 
- * A wrapper around MUI DatePicker with consistent styling.
+ * A wrapper around MUI DatePicker with consistent styling and dd/mm/yyyy format.
  */
 
 import React from 'react';
@@ -9,8 +9,13 @@ import PropTypes from 'prop-types';
 import { DatePicker as MuiDatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { designTokens } from '../../theme/designTokens';
 import TextField from './TextField';
+
+// Enable custom parse format plugin
+dayjs.extend(customParseFormat);
 
 const DatePicker = React.forwardRef(({
   label,
@@ -22,29 +27,49 @@ const DatePicker = React.forwardRef(({
   disabled = false,
   minDate,
   maxDate,
-  format = 'MM/DD/YYYY',
+  format, // Will be overridden to use dd/mm/yyyy
+  shortYear = false, // New prop to use dd/mm/yy instead of dd/mm/yyyy (default: false)
   sx = {},
   ...props
 }, ref) => {
-  // Ensure value is never undefined to prevent controlled/uncontrolled component warnings
-  const safeValue = value !== undefined ? value : null;
+  
+  // Use dd/mm/yyyy by default, dd/mm/yy if shortYear is true
+  const dateFormat = shortYear ? 'DD/MM/YY' : 'DD/MM/YYYY';
+  
+  // Convert string value to dayjs object if needed
+  const dayjsValue = value ? (dayjs.isDayjs(value) ? value : dayjs(value)) : null;
+  
+  // Handle change - ensure we return the format expected by the parent
+  const handleChange = (newValue) => {
+    if (onChange) {
+      // If parent expects dayjs object, return dayjs
+      // If parent expects string, return ISO string
+      if (typeof value === 'string' || value === null || value === undefined) {
+        const isoString = newValue ? newValue.format('YYYY-MM-DD') : null;
+        onChange(isoString);
+      } else {
+        onChange(newValue);
+      }
+    }
+  };
   
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <MuiDatePicker
         ref={ref}
         label={label}
-        value={safeValue}
-        onChange={onChange}
+        value={dayjsValue}
+        onChange={handleChange}
         disabled={disabled}
         minDate={minDate}
         maxDate={maxDate}
-        format={format}
+        format={dateFormat}
         slotProps={{
           textField: {
             fullWidth,
             error,
             helperText,
+            placeholder: shortYear ? 'dd/mm/yy' : 'dd/mm/yyyy',
             sx: {
               '& .MuiOutlinedInput-root': {
                 borderRadius: designTokens.borderRadius.md,
@@ -71,7 +96,8 @@ DatePicker.propTypes = {
   disabled: PropTypes.bool,
   minDate: PropTypes.any,
   maxDate: PropTypes.any,
-  format: PropTypes.string,
+  format: PropTypes.string, // Will be overridden
+  shortYear: PropTypes.bool, // Use dd/mm/yy instead of dd/mm/yyyy (default: false)
   sx: PropTypes.object,
 };
 

@@ -40,6 +40,12 @@ const insuranceService = {
         return api.get(`/life-insurance/policies/${policyId}/family-members`);
     },
 
+    async getAllFamilyMembers(params = {}) {
+        const queryParams = new URLSearchParams(params).toString();
+        const url = queryParams ? `/life-insurance/family-members?${queryParams}` : '/life-insurance/family-members';
+        return api.get(url);
+    },
+
     async addFamilyMember(policyId, familyMemberData) {
         return api.post(`/life-insurance/policies/${policyId}/family-members`, familyMemberData);
     },
@@ -49,6 +55,10 @@ const insuranceService = {
     },
 
     async removeFamilyMember(policyId, familyMemberId) {
+        return api.delete(`/life-insurance/policies/${policyId}/family-members/${familyMemberId}`);
+    },
+
+    async deleteFamilyMember(policyId, familyMemberId) {
         return api.delete(`/life-insurance/policies/${policyId}/family-members/${familyMemberId}`);
     },
 

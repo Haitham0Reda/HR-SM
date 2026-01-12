@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import DataTable from '../../components/common/DataTable';
+import DateInput from '../../components/common/DateInput';
 import Loading from '../../components/common/Loading';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
@@ -411,9 +412,7 @@ const ResignedPage = () => {
                         </Grid>
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="date"
-                                    label="Resignation Date"
+                                <DateInput  label="Resignation Date"
                                     name="resignationDate"
                                     value={formData.resignationDate}
                                     onChange={handleChange}
@@ -423,9 +422,7 @@ const ResignedPage = () => {
                                 />
                             </Grid>
                             <Grid size={{ xs: 6 }}>
-                                <TextField
-                                    type="date"
-                                    label="Last Working Day"
+                                <DateInput  label="Last Working Day"
                                     name="lastWorkingDay"
                                     value={formData.lastWorkingDay}
                                     onChange={handleChange}

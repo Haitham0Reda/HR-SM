@@ -1,7 +1,4 @@
 import asyncHandler from '../../../core/utils/asyncHandler.js';
-import InsurancePolicy from '../models/InsurancePolicy.js';
-import FamilyMember from '../models/FamilyMember.js';
-import User from '../../hr-core/users/models/user.model.js';
 import { sendSuccess, sendError } from '../../../core/utils/response.js';
 import { ROLES } from '../../../shared/constants/modules.js';
 import mongoose from 'mongoose';
@@ -9,6 +6,72 @@ import logger from '../../../utils/logger.js';
 import employeeService from '../services/employeeService.js';
 import moduleConfigService from '../services/moduleConfigService.js';
 import auditService from '../services/auditService.js';
+import multiTenantDB from '../../../config/multiTenant.js';
+
+/**
+ * Get InsurancePolicy model for tenant
+ * @param {string} tenantId - Tenant ID
+ * @returns {Promise<mongoose.Model>} - InsurancePolicy model for the tenant
+ */
+const getInsurancePolicyModel = async (tenantId) => {
+    try {
+        const connection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register InsurancePolicy model if it doesn't exist
+        if (!connection.models.InsurancePolicy) {
+            const { default: InsurancePolicy } = await import('../models/InsurancePolicy.js');
+            connection.model('InsurancePolicy', InsurancePolicy.schema);
+        }
+        
+        // Register related models
+        const modelsToRegister = [
+            { name: 'FamilyMember', path: '../models/FamilyMember.js' },
+            { name: 'Beneficiary', path: '../models/Beneficiary.js' },
+            { name: 'InsuranceClaim', path: '../models/InsuranceClaim.js' },
+            { name: 'User', path: '../../hr-core/users/models/user.model.js' },
+            { name: 'Department', path: '../../hr-core/users/models/department.model.js' },
+            { name: 'Position', path: '../../hr-core/users/models/position.model.js' }
+        ];
+
+        for (const modelInfo of modelsToRegister) {
+            if (!connection.models[modelInfo.name]) {
+                try {
+                    const { default: Model } = await import(modelInfo.path);
+                    connection.model(modelInfo.name, Model.schema);
+                } catch (error) {
+                    console.warn(`Could not register ${modelInfo.name} model:`, error.message);
+                }
+            }
+        }
+        
+        return connection.model('InsurancePolicy');
+    } catch (error) {
+        console.error('Error getting InsurancePolicy model for tenant:', tenantId, error);
+        throw error;
+    }
+};
+
+/**
+ * Get FamilyMember model for tenant
+ * @param {string} tenantId - Tenant ID
+ * @returns {Promise<mongoose.Model>} - FamilyMember model for the tenant
+ */
+const getFamilyMemberModel = async (tenantId) => {
+    try {
+        const connection = await multiTenantDB.getCompanyConnection(tenantId);
+        
+        // Register FamilyMember model if it doesn't exist
+        if (!connection.models.FamilyMember) {
+            const { default: FamilyMember } = await import('../models/FamilyMember.js');
+            connection.model('FamilyMember', FamilyMember.schema);
+        }
+        
+        return connection.model('FamilyMember');
+    } catch (error) {
+        console.error('Error getting FamilyMember model for tenant:', tenantId, error);
+        throw error;
+    }
+};
 
 /**
  * Helper function to apply role-based access control filtering
@@ -30,19 +93,28 @@ const applyRoleBasedFiltering = async (user, baseQuery = {}) => {
 export const createPolicy = asyncHandler(async (req, res) => {
     const { employeeId, policyType, coverageAmount, premium, startDate, endDate, deductible = 0 } = req.body;
 
-    // Log authentication event for policy creation attempt
-    await auditService.logInsuranceAuthEvent(req, 'policy-creation-attempt', {
+    // Debug: Check authentication
+    console.log('Request user:', {
+        user: req.user,
+        tenant: req.tenant,
+        headers: req.headers.authorization ? 'Present' : 'Missing'
+    });
+
+    // Log authentication event for policy creation attempt (non-blocking)
+    auditService.logInsuranceAuthEvent(req, 'policy-creation-attempt', {
         employeeId,
         policyType,
         coverageAmount
+    }).catch(err => {
+        console.warn('Audit logging failed:', err.message);
     });
 
     // Check if policy management feature is available
     if (!req.availableFeatures?.policyManagement) {
-        await auditService.logAccessDenied(req, 'policy-creation', 'feature-not-available', {
+        auditService.logAccessDenied(req, 'policy-creation', 'feature-not-available', {
             requestedFeature: 'policyManagement',
             subscriptionPlan: req.moduleConfig?.subscription?.plan
-        });
+        }).catch(err => console.warn('Audit logging failed:', err.message));
         return sendError(res, 'Policy management feature is not available for your subscription plan', 403);
     }
 
@@ -52,32 +124,56 @@ export const createPolicy = asyncHandler(async (req, res) => {
     // Validate employee identifier format
     const validation = employeeService.validateEmployeeIdentifier(employeeId);
     if (!validation.isValid) {
-        await auditService.logAccessDenied(req, 'policy-creation', 'invalid-employee-id', {
+        auditService.logAccessDenied(req, 'policy-creation', 'invalid-employee-id', {
             employeeId,
             validationError: validation.message
-        });
+        }).catch(err => console.warn('Audit logging failed:', err.message));
         return sendError(res, validation.message, 400);
     }
 
+    // Debug: Log what we're looking for
+    console.log('Looking for employee:', {
+        employeeId,
+        tenantId: req.tenant.id,
+        userRole: req.user.role,
+        userId: req.user._id || req.user.id
+    });
+
+    console.log('About to call employeeService.findEmployeeForPolicy...');
+    
     // Find employee using standardized employee lookup service
     const employee = await employeeService.findEmployeeForPolicy(employeeId, req.tenant.id, req.user);
+    
+    console.log('employeeService.findEmployeeForPolicy returned:', employee ? 'Found employee' : 'No employee found');
+
+    console.log('Employee lookup result:', employee ? 'Found' : 'Not found');
+    if (employee) {
+        console.log('Found employee:', {
+            id: employee._id,
+            employeeId: employee.employeeId,
+            name: employee.personalInfo?.fullName || employee.name
+        });
+    }
 
     if (!employee) {
-        await auditService.logAccessDenied(req, 'policy-creation', 'employee-not-found-or-access-denied', {
+        auditService.logAccessDenied(req, 'policy-creation', 'employee-not-found-or-access-denied', {
             employeeId,
             userRole: req.user.role
-        });
+        }).catch(err => console.warn('Audit logging failed:', err.message));
         return sendError(res, 'Employee not found or access denied', 404);
     }
 
-    // Log authorization event for employee access
-    await auditService.logInsuranceAuthorizationEvent(req, 'create-policy', `employee:${employee._id}`, true, {
+    // Log authorization event for employee access (non-blocking)
+    auditService.logInsuranceAuthorizationEvent(req, 'create-policy', `employee:${employee._id}`, true, {
         employeeId: employee._id,
         employeeNumber: employee.employeeId
-    });
+    }).catch(err => console.warn('Audit logging failed:', err.message));
 
-    // Check for existing active policy for this employee with automatic tenant scoping
-    const existingPolicy = await InsurancePolicy.withTenant(req.tenant.id).findOne({
+    // Get tenant-specific InsurancePolicy model
+    const InsurancePolicy = await getInsurancePolicyModel(req.tenant.id);
+
+    // Check for existing active policy for this employee
+    const existingPolicy = await InsurancePolicy.findOne({
         employeeId: employee._id,
         status: 'active'
     });
@@ -112,7 +208,7 @@ export const createPolicy = asyncHandler(async (req, res) => {
         return sendError(res, `Coverage amount exceeds maximum allowed: ${moduleSettings.maxCoverageAmount}`, 400);
     }
 
-    // Create new policy with automatic tenant context
+    // Create new policy with tenant-specific model
     const policy = new InsurancePolicy({
         tenantId: req.tenant.id,
         employeeId: employee._id,
@@ -125,13 +221,10 @@ export const createPolicy = asyncHandler(async (req, res) => {
         endDate: policyEndDate
     });
 
-    // Set tenant context for automatic tenant scoping
-    policy._tenantId = req.tenant.id;
-
     // Add creation history entry
     policy.history.push({
         action: 'created',
-        performedBy: req.user._id,
+        performedBy: req.user._id || req.user.id,
         timestamp: new Date(),
         notes: req.user.role === ROLES.EMPLOYEE ? 'Self-enrollment' : 'Initial policy creation'
     });
@@ -158,7 +251,7 @@ export const createPolicy = asyncHandler(async (req, res) => {
         policyId: policy._id,
         policyNumber: policy.policyNumber,
         employeeId: employee._id,
-        createdBy: req.user._id,
+        createdBy: req.user._id || req.user.id,
         selfEnrollment: req.user.role === ROLES.EMPLOYEE,
         subscriptionPlan: req.moduleConfig?.subscription?.plan
     });
@@ -245,16 +338,19 @@ export const getPolicies = asyncHandler(async (req, res) => {
             }
         }
 
-        // Execute query with pagination and automatic tenant scoping
+        // Get tenant-specific InsurancePolicy model
+        const InsurancePolicy = await getInsurancePolicyModel(req.tenant.id);
+
+        // Execute query with pagination using tenant-specific model
         const skip = (parseInt(page) - 1) * parseInt(limit);
         const [policies, total] = await Promise.all([
-            InsurancePolicy.withTenant(req.tenant.id).find(query)
+            InsurancePolicy.find(query)
                 .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
                 .populate('familyMembers')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(parseInt(limit)),
-            InsurancePolicy.withTenant(req.tenant.id).countDocuments(query)
+            InsurancePolicy.countDocuments(query)
         ]);
 
         const pagination = {
@@ -281,13 +377,19 @@ export const getPolicies = asyncHandler(async (req, res) => {
  */
 export const getPolicyById = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    
+    console.log('getPolicyById called with ID:', id);
+    console.log('Request tenant:', req.tenant?.id);
 
     // Log data access attempt
     await auditService.logInsuranceDataAccess(req, 'read', 'policy', id, {
         operation: 'get-policy-by-id'
     });
 
-    const policy = await InsurancePolicy.withTenant(req.tenant.id).findOne({
+    // Get tenant-specific InsurancePolicy model
+    const InsurancePolicy = await getInsurancePolicyModel(req.tenant.id);
+
+    const policy = await InsurancePolicy.findOne({
         _id: id
     })
         .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId department position')
@@ -338,7 +440,10 @@ export const updatePolicy = asyncHandler(async (req, res) => {
         updates: Object.keys(updates)
     });
 
-    const policy = await InsurancePolicy.withTenant(req.tenant.id).findOne({
+    // Get tenant-specific InsurancePolicy model
+    const InsurancePolicy = await getInsurancePolicyModel(req.tenant.id);
+
+    const policy = await InsurancePolicy.findOne({
         _id: id
     });
 
@@ -429,7 +534,10 @@ export const deletePolicy = asyncHandler(async (req, res) => {
         policyId: id
     });
 
-    const policy = await InsurancePolicy.withTenant(req.tenant.id).findOne({
+    // Get tenant-specific InsurancePolicy model
+    const InsurancePolicy = await getInsurancePolicyModel(req.tenant.id);
+
+    const policy = await InsurancePolicy.findOne({
         _id: id
     });
 
@@ -536,8 +644,11 @@ export const addFamilyMember = asyncHandler(async (req, res) => {
     // Get module settings for validation
     const moduleSettings = req.moduleSettings;
 
-    // Find and validate policy with automatic tenant scoping
-    const policy = await InsurancePolicy.withTenant(req.tenant.id).findOne({
+    // Get tenant-specific InsurancePolicy model
+    const InsurancePolicy = await getInsurancePolicyModel(req.tenant.id);
+
+    // Find and validate policy using tenant-specific model
+    const policy = await InsurancePolicy.findOne({
         _id: policyId
     });
 
@@ -550,13 +661,13 @@ export const addFamilyMember = asyncHandler(async (req, res) => {
 
     // Self-service restriction: Employees can only add family members to their own policies
     if (req.user.role === ROLES.EMPLOYEE) {
-        if (policy.employeeId.toString() !== req.user._id.toString()) {
-            await auditService.logAccessDenied(req, 'family-member-addition', 'self-service-violation', {
+        if (policy.employeeId.toString() !== (req.user._id || req.user.id).toString()) {
+            auditService.logAccessDenied(req, 'family-member-addition', 'self-service-violation', {
                 policyId,
                 policyEmployeeId: policy.employeeId,
-                requestingUserId: req.user._id,
+                requestingUserId: req.user._id || req.user.id,
                 userRole: req.user.role
-            });
+            }).catch(err => console.warn('Audit logging failed:', err.message));
             return sendError(res, 'Employees can only add family members to their own policies', 403);
         }
     } else {
@@ -587,8 +698,11 @@ export const addFamilyMember = asyncHandler(async (req, res) => {
         return sendError(res, 'Can only add family members to active policies', 400);
     }
 
+    // Get tenant-specific FamilyMember model
+    const FamilyMember = await getFamilyMemberModel(req.tenant.id);
+
     // Check maximum family members limit from module configuration
-    const currentFamilyMemberCount = await FamilyMember.withTenant(req.tenant.id).countDocuments({
+    const currentFamilyMemberCount = await FamilyMember.countDocuments({
         policyId: policy._id,
         status: { $ne: 'removed' }
     });
@@ -617,8 +731,9 @@ export const addFamilyMember = asyncHandler(async (req, res) => {
         }
     }
 
-    // Create family member with automatic tenant context
+    // Create family member with tenant-specific model
     const familyMember = new FamilyMember({
+        tenantId: req.tenant.id,
         employeeId: policy.employeeId,
         policyId: policy._id,
         ...familyMemberData,
@@ -626,9 +741,6 @@ export const addFamilyMember = asyncHandler(async (req, res) => {
         coverageEndDate: policy.endDate,
         coverageAmount: familyMemberData.coverageAmount || policy.coverageAmount * 0.5 // Default to 50% of policy amount
     });
-
-    // Set tenant context for automatic tenant scoping
-    familyMember._tenantId = req.tenant.id;
 
     await familyMember.save();
 
@@ -669,6 +781,9 @@ export const addFamilyMember = asyncHandler(async (req, res) => {
  */
 export const getFamilyMembers = asyncHandler(async (req, res) => {
     const { policyId } = req.params;
+    
+    console.log('getFamilyMembers called with policyId:', policyId);
+    console.log('Request tenant:', req.tenant?.id);
 
     // Log data access attempt
     await auditService.logInsuranceDataAccess(req, 'read', 'family-members', [], {
@@ -676,8 +791,11 @@ export const getFamilyMembers = asyncHandler(async (req, res) => {
         policyId
     });
 
-    // Verify policy exists and belongs to tenant with automatic tenant scoping
-    const policy = await InsurancePolicy.withTenant(req.tenant.id).findOne({
+    // Get tenant-specific InsurancePolicy model
+    const InsurancePolicy = await getInsurancePolicyModel(req.tenant.id);
+
+    // Verify policy exists and belongs to tenant using tenant-specific model
+    const policy = await InsurancePolicy.findOne({
         _id: policyId
     });
 
@@ -690,13 +808,13 @@ export const getFamilyMembers = asyncHandler(async (req, res) => {
 
     // Self-service restriction: Employees can only view family members for their own policies
     if (req.user.role === ROLES.EMPLOYEE) {
-        if (policy.employeeId.toString() !== req.user._id.toString()) {
-            await auditService.logAccessDenied(req, 'family-members-access', 'self-service-violation', {
+        if (policy.employeeId.toString() !== (req.user._id || req.user.id).toString()) {
+            auditService.logAccessDenied(req, 'family-members-access', 'self-service-violation', {
                 policyId,
                 policyEmployeeId: policy.employeeId,
-                requestingUserId: req.user._id,
+                requestingUserId: req.user._id || req.user.id,
                 userRole: req.user.role
-            });
+            }).catch(err => console.warn('Audit logging failed:', err.message));
             return sendError(res, 'Employees can only view family members for their own policies', 403);
         }
     } else {
@@ -718,7 +836,10 @@ export const getFamilyMembers = asyncHandler(async (req, res) => {
         employeeId: policy.employeeId
     });
 
-    const familyMembers = await FamilyMember.withTenant(req.tenant.id).find({
+    // Get tenant-specific FamilyMember model
+    const FamilyMember = await getFamilyMemberModel(req.tenant.id);
+
+    const familyMembers = await FamilyMember.find({
         policyId,
         status: { $ne: 'removed' }
     }).sort({ relationship: 1, createdAt: 1 });
@@ -742,6 +863,9 @@ export const getFamilyMembers = asyncHandler(async (req, res) => {
 export const getExpiringPolicies = asyncHandler(async (req, res) => {
     const { days = 30 } = req.query;
 
+    // Get tenant-specific InsurancePolicy model
+    const InsurancePolicy = await getInsurancePolicyModel(req.tenant.id);
+
     // Apply role-based filtering to expiring policies query
     let baseQuery = {};
     baseQuery = await applyRoleBasedFiltering(req.user, baseQuery);
@@ -762,14 +886,20 @@ export const getExpiringPolicies = asyncHandler(async (req, res) => {
             }
         };
 
-        expiringPolicies = await InsurancePolicy.withTenant(req.tenant.id).find(query)
+        expiringPolicies = await InsurancePolicy.find(query)
             .populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId');
     } else {
-        // HR/Admin case - use the model method
-        expiringPolicies = await InsurancePolicy.findExpiringPolicies(
-            req.tenant.id,
-            parseInt(days)
-        ).populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId');
+        // HR/Admin case - use a direct query
+        const now = new Date();
+        const futureDate = new Date(now.getTime() + (parseInt(days) * 24 * 60 * 60 * 1000));
+        
+        expiringPolicies = await InsurancePolicy.find({
+            status: 'active',
+            endDate: {
+                $gte: now,
+                $lte: futureDate
+            }
+        }).populate('employeeId', 'personalInfo.firstName personalInfo.lastName personalInfo.fullName email employeeId');
     }
 
     sendSuccess(res, expiringPolicies, `Policies expiring in next ${days} days retrieved successfully`);
@@ -783,6 +913,9 @@ export const getExpiringPolicies = asyncHandler(async (req, res) => {
 export const getPolicyStatistics = asyncHandler(async (req, res) => {
     const tenantId = req.tenant.id;
 
+    // Get tenant-specific InsurancePolicy model
+    const InsurancePolicy = await getInsurancePolicyModel(tenantId);
+
     // Apply role-based filtering to statistics
     let baseQuery = {};
     baseQuery = await applyRoleBasedFiltering(req.user, baseQuery);
@@ -794,14 +927,14 @@ export const getPolicyStatistics = asyncHandler(async (req, res) => {
         policyTypeStats,
         coverageStats
     ] = await Promise.all([
-        InsurancePolicy.withTenant(req.tenant.id).countDocuments(baseQuery),
-        InsurancePolicy.withTenant(req.tenant.id).countDocuments({ ...baseQuery, status: 'active' }),
-        InsurancePolicy.withTenant(req.tenant.id).countDocuments({ ...baseQuery, status: 'expired' }),
-        InsurancePolicy.withTenant(req.tenant.id).aggregate([
+        InsurancePolicy.countDocuments(baseQuery),
+        InsurancePolicy.countDocuments({ ...baseQuery, status: 'active' }),
+        InsurancePolicy.countDocuments({ ...baseQuery, status: 'expired' }),
+        InsurancePolicy.aggregate([
             { $match: baseQuery },
             { $group: { _id: '$policyType', count: { $sum: 1 } } }
         ]),
-        InsurancePolicy.withTenant(req.tenant.id).aggregate([
+        InsurancePolicy.aggregate([
             { $match: { ...baseQuery, status: 'active' } },
             {
                 $group: {

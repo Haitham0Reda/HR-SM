@@ -17,6 +17,7 @@ import missionService from '../../services/mission.service';
 import departmentService from '../../services/department.service';
 import Loading from '../../components/common/Loading';
 
+import DateInput from '../../components/common/DateInput';
 const MissionForm = () => {
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
@@ -279,9 +280,7 @@ const MissionForm = () => {
 
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                    type="date"
-                                    label="Start Date *"
+                                <DateInput  label="Start Date *"
                                     name="startDate"
                                     value={formData.startDate}
                                     onChange={handleChange}
@@ -293,9 +292,7 @@ const MissionForm = () => {
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                    type="date"
-                                    label="End Date *"
+                                <DateInput  label="End Date *"
                                     name="endDate"
                                     value={formData.endDate}
                                     onChange={handleChange}

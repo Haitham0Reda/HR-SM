@@ -17,6 +17,7 @@ import useDocumentTitle from '../../hooks/useDocumentTitle';
 import sickLeaveService from '../../services/sickLeave.service';
 import Loading from '../../components/common/Loading';
 
+import DateInput from '../../components/common/DateInput';
 const SickLeaveForm = () => {
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
@@ -222,9 +223,7 @@ const SickLeaveForm = () => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                    type="date"
-                                    label="Start Date *"
+                                <DateInput  label="Start Date *"
                                     name="startDate"
                                     value={formData.startDate}
                                     onChange={handleChange}
@@ -236,9 +235,7 @@ const SickLeaveForm = () => {
                                 />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                    type="date"
-                                    label="End Date *"
+                                <DateInput  label="End Date *"
                                     name="endDate"
                                     value={formData.endDate}
                                     onChange={handleChange}

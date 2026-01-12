@@ -12,6 +12,7 @@ import { CheckCircle, Cancel } from '@mui/icons-material';
 import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import permissionService from '../../services/permission.service';
+import DateInput from '../../components/common/DateInput';
 
 const CreatePermissionPage = () => {
     const navigate = useNavigate();
@@ -155,9 +156,7 @@ const CreatePermissionPage = () => {
                         gap: 3,
                         flex: 1
                     }}>
-                        <TextField
-                            type="date"
-                            label="Date *"
+                        <DateInput  label="Date *"
                             name="date"
                             value={formData.date}
                             onChange={handleChange}
