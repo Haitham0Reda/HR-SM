@@ -46,7 +46,7 @@ const ClaimDetailsPage = () => {
     const { getCompanyRoute } = useCompanyRouting();
     const { isHR, isAdmin } = useAuth();
     const { reviewClaim } = useClaims();
-    
+
     const [claim, setClaim] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -197,7 +197,7 @@ const ClaimDetailsPage = () => {
                             <Typography variant="h6" sx={{ mb: 3 }}>
                                 Claim Information
                             </Typography>
-                            
+
                             <Grid container spacing={2}>
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
@@ -207,7 +207,7 @@ const ClaimDetailsPage = () => {
                                         {claim.claimNumber}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Status
@@ -216,7 +216,7 @@ const ClaimDetailsPage = () => {
                                         {getStatusChip(claim.status)}
                                     </Box>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Claim Type
@@ -225,7 +225,7 @@ const ClaimDetailsPage = () => {
                                         {claim.claimType}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Claim Amount
@@ -234,7 +234,7 @@ const ClaimDetailsPage = () => {
                                         {formatCurrency(claim.claimAmount)}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Claim Date
@@ -243,7 +243,7 @@ const ClaimDetailsPage = () => {
                                         {formatDate(claim.claimDate)}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Submitted Date
@@ -252,7 +252,7 @@ const ClaimDetailsPage = () => {
                                         {formatDate(claim.createdAt)}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Description
@@ -269,7 +269,7 @@ const ClaimDetailsPage = () => {
                             <Typography variant="h6" sx={{ mb: 3 }}>
                                 Policy Information
                             </Typography>
-                            
+
                             <Grid container spacing={2}>
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
@@ -279,7 +279,7 @@ const ClaimDetailsPage = () => {
                                         {claim.policy?.policyNumber || 'N/A'}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Policy Type
@@ -288,7 +288,7 @@ const ClaimDetailsPage = () => {
                                         {claim.policy?.policyType || 'N/A'}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Coverage Amount
@@ -297,13 +297,15 @@ const ClaimDetailsPage = () => {
                                         {claim.policy?.coverageAmount ? formatCurrency(claim.policy.coverageAmount) : 'N/A'}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Employee
                                     </Typography>
                                     <Typography variant="body1">
-                                        {claim.employee?.name || 'N/A'}
+                                        {claim.employeeId?.personalInfo?.fullName ||
+                                            `${claim.employeeId?.personalInfo?.firstName || ''} ${claim.employeeId?.personalInfo?.lastName || ''}`.trim() ||
+                                            claim.employee?.name || 'N/A'}
                                     </Typography>
                                 </Grid>
                             </Grid>
@@ -315,7 +317,7 @@ const ClaimDetailsPage = () => {
                                 <Typography variant="h6" sx={{ mb: 3 }}>
                                     Supporting Documents
                                 </Typography>
-                                
+
                                 <List>
                                     {claim.documents.map((doc, index) => (
                                         <ListItem key={index} divider>
@@ -347,7 +349,7 @@ const ClaimDetailsPage = () => {
                                 <Typography variant="h6" sx={{ mb: 2 }}>
                                     Review History
                                 </Typography>
-                                
+
                                 {claim.reviewHistory && claim.reviewHistory.length > 0 ? (
                                     <Stack spacing={2}>
                                         {claim.reviewHistory.map((review, index) => (
@@ -357,7 +359,7 @@ const ClaimDetailsPage = () => {
                                                 </Typography>
                                                 <Typography variant="body2" fontWeight="medium">
                                                     {review.decision === 'approved' ? 'Approved' : 'Rejected'}
-                                                    {review.decision === 'approved' && review.approvedAmount && 
+                                                    {review.decision === 'approved' && review.approvedAmount &&
                                                         ` - ${formatCurrency(review.approvedAmount)}`
                                                     }
                                                 </Typography>

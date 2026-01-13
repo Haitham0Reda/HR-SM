@@ -18,7 +18,7 @@ import backendSecurityDetectionService from '../services/backendSecurityDetectio
  */
 export function logControllerAction(req, action, details = {}) {
     const logger = req.companyLogger || getLoggerForTenant(req.tenantId, req.companyName);
-    
+
     const logData = {
         correlationId: req.correlationId,
         action,
@@ -34,7 +34,7 @@ export function logControllerAction(req, action, details = {}) {
         timestamp: new Date().toISOString(),
         ...details
     };
-    
+
     logger.info(`Controller action: ${action}`, logData);
 }
 
@@ -47,7 +47,7 @@ export function logControllerAction(req, action, details = {}) {
  */
 export function logControllerError(req, error, details = {}) {
     const logger = req.companyLogger || getLoggerForTenant(req.tenantId, req.companyName);
-    
+
     const logData = {
         correlationId: req.correlationId,
         error: error.message,
@@ -65,9 +65,9 @@ export function logControllerError(req, error, details = {}) {
         timestamp: new Date().toISOString(),
         ...details
     };
-    
+
     logger.error(`Controller error: ${details.action || 'unknown'}`, logData);
-    
+
     // Log critical errors to platform logger
     if (error.statusCode >= 500 || error.name === 'DatabaseError') {
         platformLogger.systemHealth('controller-error', 'critical', {
@@ -86,7 +86,7 @@ export function logControllerError(req, error, details = {}) {
  */
 export function logAuthenticationEvent(req, eventType, details = {}) {
     const logger = req.companyLogger || getLoggerForTenant(req.tenantId, req.companyName);
-    
+
     const logData = {
         correlationId: req.correlationId,
         eventType: 'authentication',
@@ -102,9 +102,9 @@ export function logAuthenticationEvent(req, eventType, details = {}) {
         success: details.success !== false,
         ...details
     };
-    
+
     logger.audit(`Authentication event: ${eventType}`, logData);
-    
+
     // Analyze for security threats
     try {
         const threats = backendSecurityDetectionService.analyzeAuthenticationEvent(
@@ -114,9 +114,9 @@ export function logAuthenticationEvent(req, eventType, details = {}) {
             req.tenantId,
             { correlationId: req.correlationId, ...details }
         );
-        
+
         if (threats.length > 0) {
-            logger.security('Authentication security threats detected', {
+            logger.warn('Authentication security threats detected', {
                 correlationId: req.correlationId,
                 authEventType: eventType,
                 threats,
@@ -142,12 +142,12 @@ export function logAuthenticationEvent(req, eventType, details = {}) {
  */
 export function logDataAccess(req, dataType, details = {}) {
     const logger = req.companyLogger || getLoggerForTenant(req.tenantId, req.companyName);
-    
-    const isSensitiveData = details.sensitiveData || 
-                           ['user', 'employee', 'payroll', 'salary', 'personal'].some(type => 
-                               dataType.toLowerCase().includes(type)
-                           );
-    
+
+    const isSensitiveData = details.sensitiveData ||
+        ['user', 'employee', 'payroll', 'salary', 'personal'].some(type =>
+            dataType.toLowerCase().includes(type)
+        );
+
     const logData = {
         correlationId: req.correlationId,
         eventType: 'data_access',
@@ -165,11 +165,11 @@ export function logDataAccess(req, dataType, details = {}) {
         sensitiveData: isSensitiveData,
         ...details
     };
-    
+
     // Use audit logging for sensitive data
     if (isSensitiveData) {
         logger.audit(`Sensitive data access: ${dataType}`, logData);
-        
+
         // Log to platform logger for sensitive data access
         platformLogger.adminAction(`Sensitive Data Access: ${dataType}`, req.user?.id || 'unknown', {
             ...logData,
@@ -189,7 +189,7 @@ export function logDataAccess(req, dataType, details = {}) {
  */
 export function logSecurityEvent(req, eventType, details = {}) {
     const logger = req.companyLogger || getLoggerForTenant(req.tenantId, req.companyName);
-    
+
     const logData = {
         correlationId: req.correlationId,
         eventType: 'security',
@@ -207,9 +207,9 @@ export function logSecurityEvent(req, eventType, details = {}) {
         actionTaken: details.actionTaken || 'logged',
         ...details
     };
-    
-    logger.security(`Security event: ${eventType}`, logData);
-    
+
+    logger.warn(`Security event: ${eventType}`, logData);
+
     // Log high/critical security events to platform logger
     if (details.severity === 'high' || details.severity === 'critical') {
         platformLogger.platformSecurity(`Company Security Event: ${eventType}`, {
@@ -229,7 +229,7 @@ export function logSecurityEvent(req, eventType, details = {}) {
  */
 export function logAdminAction(req, action, details = {}) {
     const logger = req.companyLogger || getLoggerForTenant(req.tenantId, req.companyName);
-    
+
     const logData = {
         correlationId: req.correlationId,
         eventType: 'admin_action',
@@ -245,9 +245,9 @@ export function logAdminAction(req, action, details = {}) {
         timestamp: new Date().toISOString(),
         ...details
     };
-    
+
     logger.audit(`Admin action: ${action}`, logData);
-    
+
     // Log to platform logger for admin actions
     platformLogger.adminAction(action, req.user?.id || 'unknown', {
         ...logData,
@@ -266,9 +266,9 @@ export function logAdminAction(req, action, details = {}) {
  */
 export function logPerformanceMetric(req, metric, value, details = {}) {
     const logger = req.companyLogger || getLoggerForTenant(req.tenantId, req.companyName);
-    
+
     const isSlowOperation = value > (details.threshold || 5000); // 5 seconds default
-    
+
     const logData = {
         correlationId: req.correlationId,
         eventType: 'performance_metric',
@@ -283,10 +283,10 @@ export function logPerformanceMetric(req, metric, value, details = {}) {
         isSlowOperation,
         ...details
     };
-    
+
     if (isSlowOperation) {
         logger.warn(`Slow operation: ${metric}`, logData);
-        
+
         // Log to platform logger for slow operations
         platformLogger.systemPerformance({
             eventType: 'slow_controller_operation',
@@ -309,17 +309,17 @@ export function logPerformanceMetric(req, metric, value, details = {}) {
 export function withLogging(controllerName, actionName, fn) {
     return async (req, res, next) => {
         const startTime = Date.now();
-        
+
         try {
             // Log action start
             logControllerAction(req, `${actionName}_start`, {
                 controller: controllerName,
                 action: actionName
             });
-            
+
             // Execute controller function
             const result = await fn(req, res, next);
-            
+
             // Log action completion
             const executionTime = Date.now() - startTime;
             logControllerAction(req, `${actionName}_complete`, {
@@ -328,7 +328,7 @@ export function withLogging(controllerName, actionName, fn) {
                 executionTime,
                 statusCode: res.statusCode
             });
-            
+
             // Log performance metric if slow
             if (executionTime > 5000) {
                 logPerformanceMetric(req, `${controllerName}.${actionName}`, executionTime, {
@@ -336,7 +336,7 @@ export function withLogging(controllerName, actionName, fn) {
                     action: actionName
                 });
             }
-            
+
             return result;
         } catch (error) {
             // Log error
@@ -345,7 +345,7 @@ export function withLogging(controllerName, actionName, fn) {
                 action: actionName,
                 executionTime: Date.now() - startTime
             });
-            
+
             throw error;
         }
     };

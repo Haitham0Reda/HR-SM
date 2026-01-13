@@ -30,6 +30,7 @@ import {
     Delete as DeleteIcon,
     Description as FileIcon
 } from '@mui/icons-material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import DatePicker from '../common/DatePicker';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -53,12 +54,12 @@ const ClaimForm = ({
 }) => {
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
-    
+
     const [formValues, setFormValues] = useState({
         policyId: '',
         claimType: 'medical',
         claimAmount: '',
-        claimDate: dayjs().format('YYYY-MM-DD'),
+        claimDate: null, // Initialize as null instead of formatted string
         description: '',
         ...initialValues
     });
@@ -110,7 +111,7 @@ const ClaimForm = ({
             ...prev,
             [field]: value
         }));
-        
+
         // Clear error when field is updated
         if (formErrors[field]) {
             setFormErrors(prev => ({
@@ -132,7 +133,7 @@ const ClaimForm = ({
         // Validate files
         const maxSize = 10 * 1024 * 1024; // 10MB
         const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-        
+
         const validFiles = files.filter(file => {
             if (file.size > maxSize) {
                 alert(`File ${file.name} is too large. Maximum size is 10MB.`);
@@ -157,7 +158,7 @@ const ClaimForm = ({
         }));
 
         setUploadedFiles(prev => [...prev, ...newFiles]);
-        
+
         // Clear the input
         event.target.value = '';
     };
@@ -199,7 +200,7 @@ const ClaimForm = ({
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        
+
         if (!validateForm()) {
             return;
         }
@@ -209,7 +210,7 @@ const ClaimForm = ({
                 ...formValues,
                 documents: uploadedFiles.map(f => f.file)
             };
-            
+
             await onSubmit(claimData);
         } catch (error) {
             // Error handling is done in parent component
@@ -225,209 +226,218 @@ const ClaimForm = ({
     };
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-                {/* Policy Selection Section */}
-                <Paper sx={{ p: 3, mb: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 3 }}>
-                        Policy Information
-                    </Typography>
-                    
-                    <Grid container spacing={2}>
-                        <Grid size={{ xs: 12 }}>
-                            <Autocomplete
-                                value={selectedPolicy}
-                                onChange={handlePolicyChange}
-                                onInputChange={(event, newInputValue) => {
-                                    setPolicySearchTerm(newInputValue);
-                                }}
-                                options={policies}
-                                getOptionLabel={(option) => 
-                                    option ? `${option.policyNumber} - ${option.employee?.name}` : ''
-                                }
-                                loading={policyLoading}
-                                disabled={isEditMode}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Policy *"
-                                        placeholder="Search by policy number or employee name"
-                                        error={!!formErrors.policyId}
-                                        helperText={
-                                            formErrors.policyId || 
-                                            (isEditMode ? 'Policy cannot be changed after claim creation' : 'Type to search active policies')
-                                        }
-                                    />
-                                )}
-                                renderOption={(props, option) => (
+        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+            {/* Policy Selection Section */}
+            <Paper sx={{ p: 3, mb: 3 }}>
+                <Typography variant="h6" sx={{ mb: 3 }}>
+                    Policy Information
+                </Typography>
+
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 12 }}>
+                        <Autocomplete
+                            value={selectedPolicy}
+                            onChange={handlePolicyChange}
+                            onInputChange={(event, newInputValue) => {
+                                setPolicySearchTerm(newInputValue);
+                            }}
+                            options={policies}
+                            getOptionLabel={(option) => {
+                                if (!option) return '';
+                                const employee = option.employeeId || option.employee;
+                                const employeeName = employee?.personalInfo?.fullName ||
+                                    `${employee?.personalInfo?.firstName || ''} ${employee?.personalInfo?.lastName || ''}`.trim() ||
+                                    employee?.name || 'Unknown';
+                                return `${option.policyNumber} - ${employeeName}`;
+                            }}
+                            loading={policyLoading}
+                            disabled={isEditMode}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Policy *"
+                                    placeholder="Search by policy number or employee name"
+                                    error={!!formErrors.policyId}
+                                    helperText={
+                                        formErrors.policyId ||
+                                        (isEditMode ? 'Policy cannot be changed after claim creation' : 'Type to search active policies')
+                                    }
+                                />
+                            )}
+                            renderOption={(props, option) => {
+                                const employee = option.employeeId || option.employee;
+                                const employeeName = employee?.personalInfo?.fullName ||
+                                    `${employee?.personalInfo?.firstName || ''} ${employee?.personalInfo?.lastName || ''}`.trim() ||
+                                    employee?.name || 'Unknown';
+                                return (
                                     <Box component="li" {...props}>
                                         <Box>
                                             <Typography variant="body2">
-                                                {option.policyNumber} - {option.employee?.name}
+                                                {option.policyNumber} - {employeeName}
                                             </Typography>
                                             <Typography variant="caption" color="text.secondary">
                                                 Type: {option.policyType} | Coverage: {formatCurrency(option.coverageAmount)}
                                             </Typography>
                                         </Box>
                                     </Box>
-                                )}
-                                noOptionsText={
-                                    policySearchTerm.length < 2 
-                                        ? "Type at least 2 characters to search"
-                                        : "No active policies found"
-                                }
-                            />
-                        </Grid>
+                                );
+                            }}
+                            noOptionsText={
+                                policySearchTerm.length < 2
+                                    ? "Type at least 2 characters to search"
+                                    : "No active policies found"
+                            }
+                        />
                     </Grid>
-                </Paper>
+                </Grid>
+            </Paper>
 
-                {/* Claim Details Section */}
-                <Paper sx={{ p: 3, mb: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 3 }}>
-                        Claim Details
-                    </Typography>
-                    
-                    <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                select
-                                label="Claim Type *"
-                                value={formValues.claimType}
-                                onChange={(e) => handleFieldChange('claimType', e.target.value)}
-                                fullWidth
-                                error={!!formErrors.claimType}
-                                helperText={formErrors.claimType}
-                            >
-                                {claimTypes.map((type) => (
-                                    <MenuItem key={type.value} value={type.value}>
-                                        {type.label}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
+            {/* Claim Details Section */}
+            <Paper sx={{ p: 3, mb: 3 }}>
+                <Typography variant="h6" sx={{ mb: 3 }}>
+                    Claim Details
+                </Typography>
 
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                label="Claim Amount *"
-                                type="number"
-                                value={formValues.claimAmount}
-                                onChange={(e) => handleFieldChange('claimAmount', Number(e.target.value))}
-                                fullWidth
-                                error={!!formErrors.claimAmount}
-                                helperText={formErrors.claimAmount || 'Amount being claimed'}
-                                InputProps={{
-                                    startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>
-                                }}
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <DatePicker
-                                label="Claim Date *"
-                                value={formValues.claimDate || null}
-                                onChange={(value) => handleFieldChange('claimDate', value)}
-                                fullWidth
-                                error={!!formErrors.claimDate}
-                                helperText={formErrors.claimDate || 'Date when the incident occurred'}
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12 }}>
-                            <TextField
-                                label="Description *"
-                                multiline
-                                rows={4}
-                                value={formValues.description}
-                                onChange={(e) => handleFieldChange('description', e.target.value)}
-                                fullWidth
-                                error={!!formErrors.description}
-                                helperText={formErrors.description || 'Detailed description of the claim (minimum 10 characters)'}
-                            />
-                        </Grid>
-                    </Grid>
-                </Paper>
-
-                {/* Document Upload Section */}
-                <Paper sx={{ p: 3, mb: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 3 }}>
-                        Supporting Documents
-                    </Typography>
-                    
-                    <Box sx={{ mb: 2 }}>
-                        <Button
-                            variant="outlined"
-                            component="label"
-                            startIcon={<UploadIcon />}
-                            disabled={uploading}
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField
+                            select
+                            label="Claim Type *"
+                            value={formValues.claimType}
+                            onChange={(e) => handleFieldChange('claimType', e.target.value)}
+                            fullWidth
+                            error={!!formErrors.claimType}
+                            helperText={formErrors.claimType}
                         >
-                            Upload Documents
-                            <input
-                                type="file"
-                                id="claim-documents"
-                                name="claimDocuments"
-                                hidden
-                                multiple
-                                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                                onChange={handleFileUpload}
-                            />
-                        </Button>
-                        <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
-                            Supported formats: JPG, PNG, PDF, DOC, DOCX (Max 10MB per file)
-                        </Typography>
-                        {formErrors.documents && (
-                            <Typography variant="caption" color="error" display="block" sx={{ mt: 1 }}>
-                                {formErrors.documents}
-                            </Typography>
-                        )}
-                    </Box>
-
-                    {uploadedFiles.length > 0 && (
-                        <List>
-                            {uploadedFiles.map((file) => (
-                                <ListItem key={file.id} divider>
-                                    <FileIcon sx={{ mr: 2, color: 'text.secondary' }} />
-                                    <ListItemText
-                                        primary={file.name}
-                                        secondary={`${formatFileSize(file.size)} • ${file.type}`}
-                                    />
-                                    <ListItemSecondaryAction>
-                                        <IconButton
-                                            edge="end"
-                                            onClick={() => handleRemoveFile(file.id)}
-                                            color="error"
-                                            aria-label="delete"
-                                        >
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    </ListItemSecondaryAction>
-                                </ListItem>
+                            {claimTypes.map((type) => (
+                                <MenuItem key={type.value} value={type.value}>
+                                    {type.label}
+                                </MenuItem>
                             ))}
-                        </List>
-                    )}
-                </Paper>
+                        </TextField>
+                    </Grid>
 
-                {/* Action Buttons */}
-                <Stack direction="row" spacing={2} justifyContent="space-between" sx={{ mt: 3 }}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField
+                            label="Claim Amount *"
+                            type="number"
+                            value={formValues.claimAmount}
+                            onChange={(e) => handleFieldChange('claimAmount', Number(e.target.value))}
+                            fullWidth
+                            error={!!formErrors.claimAmount}
+                            helperText={formErrors.claimAmount || 'Amount being claimed'}
+                            InputProps={{
+                                startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>
+                            }}
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <DatePicker
+                            label="Claim Date *"
+                            value={formValues.claimDate || null}
+                            onChange={(value) => handleFieldChange('claimDate', value)}
+                            fullWidth
+                            error={!!formErrors.claimDate}
+                            helperText={formErrors.claimDate || 'Date when the incident occurred'}
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12 }}>
+                        <TextField
+                            label="Description *"
+                            multiline
+                            rows={4}
+                            value={formValues.description}
+                            onChange={(e) => handleFieldChange('description', e.target.value)}
+                            fullWidth
+                            error={!!formErrors.description}
+                            helperText={formErrors.description || 'Detailed description of the claim (minimum 10 characters)'}
+                        />
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            {/* Document Upload Section */}
+            <Paper sx={{ p: 3, mb: 3 }}>
+                <Typography variant="h6" sx={{ mb: 3 }}>
+                    Supporting Documents
+                </Typography>
+
+                <Box sx={{ mb: 2 }}>
                     <Button
                         variant="outlined"
-                        startIcon={<ArrowBackIcon />}
-                        onClick={handleBack}
-                        disabled={loading}
+                        component="label"
+                        startIcon={<UploadIcon />}
+                        disabled={uploading}
                     >
-                        Back
+                        Upload Documents
+                        <input
+                            type="file"
+                            id="claim-documents"
+                            name="claimDocuments"
+                            hidden
+                            multiple
+                            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                            onChange={handleFileUpload}
+                        />
                     </Button>
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        size="large"
-                        startIcon={<SaveIcon />}
-                        disabled={loading}
-                    >
-                        {loading ? 'Submitting...' : (isEditMode ? 'Update Claim' : 'Submit Claim')}
-                    </Button>
-                </Stack>
-            </Box>
-        </LocalizationProvider>
+                    <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
+                        Supported formats: JPG, PNG, PDF, DOC, DOCX (Max 10MB per file)
+                    </Typography>
+                    {formErrors.documents && (
+                        <Typography variant="caption" color="error" display="block" sx={{ mt: 1 }}>
+                            {formErrors.documents}
+                        </Typography>
+                    )}
+                </Box>
+
+                {uploadedFiles.length > 0 && (
+                    <List>
+                        {uploadedFiles.map((file) => (
+                            <ListItem key={file.id} divider>
+                                <FileIcon sx={{ mr: 2, color: 'text.secondary' }} />
+                                <ListItemText
+                                    primary={file.name}
+                                    secondary={`${formatFileSize(file.size)} • ${file.type}`}
+                                />
+                                <ListItemSecondaryAction>
+                                    <IconButton
+                                        edge="end"
+                                        onClick={() => handleRemoveFile(file.id)}
+                                        color="error"
+                                        aria-label="delete"
+                                    >
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </ListItemSecondaryAction>
+                            </ListItem>
+                        ))}
+                    </List>
+                )}
+            </Paper>
+
+            {/* Action Buttons */}
+            <Stack direction="row" spacing={2} justifyContent="space-between" sx={{ mt: 3 }}>
+                <Button
+                    variant="outlined"
+                    startIcon={<ArrowBackIcon />}
+                    onClick={handleBack}
+                    disabled={loading}
+                >
+                    Back
+                </Button>
+                <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    startIcon={<SaveIcon />}
+                    disabled={loading}
+                >
+                    {loading ? 'Submitting...' : (isEditMode ? 'Update Claim' : 'Submit Claim')}
+                </Button>
+            </Stack>
+        </Box>
     );
 };
 

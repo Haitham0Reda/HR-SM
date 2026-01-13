@@ -45,7 +45,7 @@ const PolicyList = () => {
     const { getCompanyRoute } = useCompanyRouting();
     const [searchParams, setSearchParams] = useSearchParams();
     const dialogs = useDialogs();
-    
+
     const {
         policies,
         loading,
@@ -81,7 +81,7 @@ const PolicyList = () => {
             sort: sortModel.length > 0 ? `${sortModel[0].field}:${sortModel[0].sort}` : undefined,
             filter: filterModel.items.length > 0 ? JSON.stringify(filterModel.items) : undefined
         };
-        
+
         fetchPolicies(params);
     }, [paginationModel, sortModel, filterModel, fetchPolicies]);
 
@@ -141,8 +141,11 @@ const PolicyList = () => {
 
     const handleRowDelete = useCallback((policy) => async () => {
         const employee = policy.employeeId;
-        const employeeName = employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown Employee';
-        
+        const employeeName = employee ?
+            (employee.personalInfo?.fullName ||
+                `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim() ||
+                'Unknown Employee') : 'Unknown Employee';
+
         const confirmed = await dialogs.confirm(
             `Do you wish to delete policy ${policy.policyNumber} for ${employeeName}?`,
             {
@@ -219,7 +222,10 @@ const PolicyList = () => {
             width: 200,
             valueGetter: (value, row) => {
                 const employee = row.employeeId;
-                return employee ? `${employee.firstName} ${employee.lastName}` : 'N/A';
+                return employee ?
+                    (employee.personalInfo?.fullName ||
+                        `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim() ||
+                        'N/A') : 'N/A';
             }
         },
         {
@@ -336,9 +342,9 @@ const PolicyList = () => {
                 <Stack direction="row" alignItems="center" spacing={1}>
                     <Tooltip title="Delete test policies" placement="right" enterDelay={1000}>
                         <div>
-                            <IconButton 
-                                size="small" 
-                                aria-label="bulk delete test policies" 
+                            <IconButton
+                                size="small"
+                                aria-label="bulk delete test policies"
                                 onClick={handleBulkDeleteTest}
                                 disabled={loading}
                                 sx={{ color: 'warning.main' }}
@@ -349,9 +355,9 @@ const PolicyList = () => {
                     </Tooltip>
                     <Tooltip title="Reload data" placement="right" enterDelay={1000}>
                         <div>
-                            <IconButton 
-                                size="small" 
-                                aria-label="refresh" 
+                            <IconButton
+                                size="small"
+                                aria-label="refresh"
                                 onClick={handleRefresh}
                                 disabled={loading}
                             >

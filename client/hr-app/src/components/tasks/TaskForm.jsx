@@ -22,8 +22,8 @@ const TaskForm = ({ open, onClose, onSubmit, task }) => {
         description: '',
         priority: 'medium',
         assignee: '',
-        startDate: new Date(),
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default to 1 week from now
+        startDate: null, // Initialize as null instead of new Date()
+        dueDate: null // Initialize as null instead of new Date()
     });
 
     const [users, setUsers] = useState([]);
@@ -251,7 +251,7 @@ const TaskForm = ({ open, onClose, onSubmit, task }) => {
 
                     <DatePicker
                         label="Start Date"
-                        value={formData.startDate || new Date()}
+                        value={formData.startDate}
                         onChange={(value) => handleDateChange('startDate', value)}
                         fullWidth
                         sx={{ margin: '8px 0' }}
@@ -259,7 +259,7 @@ const TaskForm = ({ open, onClose, onSubmit, task }) => {
 
                     <DatePicker
                         label="Due Date"
-                        value={formData.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
+                        value={formData.dueDate}
                         onChange={(value) => handleDateChange('dueDate', value)}
                         fullWidth
                         sx={{ margin: '8px 0' }}

@@ -7,11 +7,11 @@
 
 import SecurityAudit from '../../../platform/system/models/securityAudit.model.js';
 import logger from '../../../utils/logger.js';
-import { 
-    logAuthenticationEvent, 
-    logDataAccess, 
+import {
+    logAuthenticationEvent,
+    logDataAccess,
     logSecurityEvent,
-    logAdminAction 
+    logAdminAction
 } from '../../../utils/controllerLogger.js';
 
 /**
@@ -57,7 +57,7 @@ export const logInsuranceAuthEvent = async (req, eventType, details = {}) => {
 
         // Also log to SecurityAudit for centralized audit trail
         const auditData = {
-            eventType: `insurance-${eventType}`,
+            eventType: eventType.includes('failed') ? 'login-failed' : 'login-success', // Use valid eventTypes
             ...getUserMetadata(req.user),
             ...getRequestMetadata(req),
             details: {
@@ -93,7 +93,7 @@ export const logInsuranceAuthEvent = async (req, eventType, details = {}) => {
 export const logInsuranceAuthorizationEvent = async (req, action, resource, granted, details = {}) => {
     try {
         const eventType = granted ? 'authorization-granted' : 'authorization-denied';
-        
+
         // Use existing security logging utility
         logSecurityEvent(req, eventType, {
             module: 'life-insurance',
@@ -106,7 +106,7 @@ export const logInsuranceAuthorizationEvent = async (req, action, resource, gran
 
         // Log to SecurityAudit for centralized audit trail
         const auditData = {
-            eventType: `insurance-${eventType}`,
+            eventType: granted ? 'data-accessed' : 'unauthorized-access', // Use valid eventTypes
             ...getUserMetadata(req.user),
             ...getRequestMetadata(req),
             details: {
@@ -158,7 +158,7 @@ export const logInsuranceDataAccess = async (req, operation, dataType, recordIds
 
         // Log to SecurityAudit for centralized audit trail
         const auditData = {
-            eventType: 'insurance-data-accessed',
+            eventType: 'data-accessed', // Use valid eventType from enum
             ...getUserMetadata(req.user),
             ...getRequestMetadata(req),
             details: {
@@ -199,7 +199,9 @@ export const logInsuranceDataAccess = async (req, operation, dataType, recordIds
 export const logPolicyOperation = async (req, operation, policyId, policyData = {}, details = {}) => {
     try {
         const auditData = {
-            eventType: `insurance-policy-${operation}`,
+            eventType: operation === 'created' ? 'data-modified' :
+                operation === 'updated' ? 'data-modified' :
+                    operation === 'deleted' ? 'data-deleted' : 'data-accessed', // Use valid eventTypes
             ...getUserMetadata(req.user),
             ...getRequestMetadata(req),
             details: {
@@ -247,7 +249,9 @@ export const logPolicyOperation = async (req, operation, policyId, policyData = 
 export const logClaimOperation = async (req, operation, claimId, claimData = {}, details = {}) => {
     try {
         const auditData = {
-            eventType: `insurance-claim-${operation}`,
+            eventType: operation === 'created' ? 'data-modified' :
+                operation === 'updated' ? 'data-modified' :
+                    operation === 'deleted' ? 'data-deleted' : 'data-accessed', // Use valid eventTypes
             ...getUserMetadata(req.user),
             ...getRequestMetadata(req),
             details: {
@@ -297,7 +301,9 @@ export const logClaimOperation = async (req, operation, claimId, claimData = {},
 export const logFamilyMemberOperation = async (req, operation, familyMemberId, familyMemberData = {}, details = {}) => {
     try {
         const auditData = {
-            eventType: `insurance-family-member-${operation}`,
+            eventType: operation === 'added' ? 'data-modified' :
+                operation === 'updated' ? 'data-modified' :
+                    operation === 'removed' ? 'data-deleted' : 'data-accessed', // Use valid eventTypes
             ...getUserMetadata(req.user),
             ...getRequestMetadata(req),
             details: {
@@ -395,7 +401,7 @@ export const logConfigurationChange = async (req, configType, changes, details =
         });
 
         const auditData = {
-            eventType: 'insurance-configuration-changed',
+            eventType: 'settings-changed', // Use valid eventType
             ...getUserMetadata(req.user),
             ...getRequestMetadata(req),
             details: {
@@ -433,9 +439,9 @@ export const logConfigurationChange = async (req, configType, changes, details =
 export const logTenantStatusAccess = async (req, tenantStatus, allowed, details = {}) => {
     try {
         const eventType = allowed ? 'tenant-access-granted' : 'tenant-access-denied';
-        
+
         const auditData = {
-            eventType: `insurance-${eventType}`,
+            eventType: allowed ? 'data-accessed' : 'unauthorized-access', // Use valid eventTypes
             ...getUserMetadata(req.user),
             ...getRequestMetadata(req),
             details: {

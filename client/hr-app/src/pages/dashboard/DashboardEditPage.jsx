@@ -55,7 +55,7 @@ const DashboardEditPage = () => {
             enabled: true,
             selectedEmployee: null,
             month: new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }),
-            monthDate: new Date(), // Store as Date object for DatePicker
+            monthDate: null, // Initialize as null instead of new Date()
         },
         widgets: {
             todayAttendance: true,
@@ -87,7 +87,7 @@ const DashboardEditPage = () => {
                     ...dashboardConfig,
                     employeeOfTheMonth: {
                         ...dashboardConfig.employeeOfTheMonth,
-                        monthDate: dashboardConfig.employeeOfTheMonth.monthDate 
+                        monthDate: dashboardConfig.employeeOfTheMonth.monthDate
                             ? new Date(dashboardConfig.employeeOfTheMonth.monthDate)
                             : new Date(), // Default to current date if not provided
                         selectedEmployee: dashboardConfig.employeeOfTheMonth.selectedEmployee || null

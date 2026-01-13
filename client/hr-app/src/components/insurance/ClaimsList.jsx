@@ -41,7 +41,7 @@ const ClaimsList = () => {
     const { getCompanyRoute } = useCompanyRouting();
     const [searchParams, setSearchParams] = useSearchParams();
     const { isHR, isAdmin } = useAuth();
-    
+
     const {
         claims,
         loading,
@@ -75,17 +75,17 @@ const ClaimsList = () => {
             page: paginationModel.page + 1,
             limit: paginationModel.pageSize
         };
-        
+
         // Only add sort if it exists and is valid
         if (sortModel.length > 0 && sortModel[0].field && sortModel[0].sort) {
             params.sort = `${sortModel[0].field}:${sortModel[0].sort}`;
         }
-        
+
         // Only add filter if it exists and has items
         if (filterModel.items && filterModel.items.length > 0) {
             params.filter = JSON.stringify(filterModel.items);
         }
-        
+
         fetchClaims(params);
     }, [paginationModel, sortModel, filterModel, fetchClaims]);
 
@@ -122,17 +122,17 @@ const ClaimsList = () => {
                 page: paginationModel.page + 1,
                 limit: paginationModel.pageSize
             };
-            
+
             // Only add sort if it exists and is valid
             if (sortModel.length > 0 && sortModel[0].field && sortModel[0].sort) {
                 params.sort = `${sortModel[0].field}:${sortModel[0].sort}`;
             }
-            
+
             // Only add filter if it exists and has items
             if (filterModel.items && filterModel.items.length > 0) {
                 params.filter = JSON.stringify(filterModel.items);
             }
-            
+
             fetchClaims(params);
         }
     }, [loading, fetchClaims, paginationModel, sortModel, filterModel]);
@@ -187,7 +187,12 @@ const ClaimsList = () => {
             field: 'employeeName',
             headerName: 'Employee',
             width: 200,
-            valueGetter: (value, row) => row.employee?.name || 'N/A'
+            valueGetter: (value, row) => {
+                const employee = row.employeeId || row.employee;
+                return employee?.personalInfo?.fullName ||
+                    `${employee?.personalInfo?.firstName || ''} ${employee?.personalInfo?.lastName || ''}`.trim() ||
+                    employee?.name || 'N/A';
+            }
         },
         {
             field: 'claimType',
@@ -263,9 +268,9 @@ const ClaimsList = () => {
                 <Stack direction="row" alignItems="center" spacing={1}>
                     <Tooltip title="Reload data" placement="right" enterDelay={1000}>
                         <div>
-                            <IconButton 
-                                size="small" 
-                                aria-label="refresh" 
+                            <IconButton
+                                size="small"
+                                aria-label="refresh"
                                 onClick={handleRefresh}
                                 disabled={loading}
                             >
