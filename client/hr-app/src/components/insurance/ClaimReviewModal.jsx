@@ -155,7 +155,7 @@ const ClaimReviewModal = ({
                     <Typography variant="h6" sx={{ mb: 2 }}>
                         Claim Information
                     </Typography>
-                    
+
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
@@ -165,7 +165,7 @@ const ClaimReviewModal = ({
                                 {claim.claimNumber}
                             </Typography>
                         </Grid>
-                        
+
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Status
@@ -174,7 +174,7 @@ const ClaimReviewModal = ({
                                 {getStatusChip(claim.status)}
                             </Box>
                         </Grid>
-                        
+
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Policy Number
@@ -183,16 +183,18 @@ const ClaimReviewModal = ({
                                 {claim.policy?.policyNumber || 'N/A'}
                             </Typography>
                         </Grid>
-                        
+
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Employee
                             </Typography>
                             <Typography variant="body1">
-                                {claim.employee?.name || 'N/A'}
+                                {claim.employeeId?.personalInfo?.fullName ||
+                                    `${claim.employeeId?.personalInfo?.firstName || ''} ${claim.employeeId?.personalInfo?.lastName || ''}`.trim() ||
+                                    claim.employee?.name || 'N/A'}
                             </Typography>
                         </Grid>
-                        
+
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Claim Type
@@ -201,7 +203,7 @@ const ClaimReviewModal = ({
                                 {claim.claimType}
                             </Typography>
                         </Grid>
-                        
+
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Claim Amount
@@ -210,7 +212,7 @@ const ClaimReviewModal = ({
                                 {formatCurrency(claim.claimAmount)}
                             </Typography>
                         </Grid>
-                        
+
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Claim Date
@@ -219,7 +221,7 @@ const ClaimReviewModal = ({
                                 {formatDate(claim.claimDate)}
                             </Typography>
                         </Grid>
-                        
+
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Submitted Date
@@ -228,7 +230,7 @@ const ClaimReviewModal = ({
                                 {formatDate(claim.createdAt)}
                             </Typography>
                         </Grid>
-                        
+
                         <Grid size={{ xs: 12 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Description
@@ -247,7 +249,7 @@ const ClaimReviewModal = ({
                     <Typography variant="h6" sx={{ mb: 2 }}>
                         Review Decision
                     </Typography>
-                    
+
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12 }}>
                             <Typography id="claim-decision-label" variant="body2" sx={{ mb: 1 }}>

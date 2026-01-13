@@ -84,10 +84,10 @@ const InsuranceReportsPanel = () => {
                 format
             };
             console.log('Generating report:', reportData);
-            
+
             // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             // Create mock download
             const blob = new Blob(['Mock report data'], { type: format === 'pdf' ? 'application/pdf' : 'application/vnd.ms-excel' });
             const url = URL.createObjectURL(blob);
@@ -124,223 +124,221 @@ const InsuranceReportsPanel = () => {
     }, []);
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Box sx={{ width: '100%', p: 3 }}>
-                {/* Header */}
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-                    <Typography variant="h4">
-                        Insurance Reports & Analytics
-                    </Typography>
+        <Box sx={{ width: '100%', p: 3 }}>
+            {/* Header */}
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                <Typography variant="h4">
+                    Insurance Reports & Analytics
+                </Typography>
+                <Button
+                    variant="outlined"
+                    startIcon={<RefreshIcon />}
+                    onClick={handleRefreshAnalytics}
+                    disabled={loading}
+                >
+                    Refresh Analytics
+                </Button>
+            </Stack>
+
+            {/* Key Metrics */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" color="text.secondary">
+                                Total Policies
+                            </Typography>
+                            <Typography variant="h4">
+                                {analytics.totalPolicies}
+                            </Typography>
+                            <Typography variant="body2" color="success.main">
+                                +8.5% vs last year
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" color="text.secondary">
+                                Total Coverage
+                            </Typography>
+                            <Typography variant="h4">
+                                {formatCurrency(analytics.totalCoverage)}
+                            </Typography>
+                            <Typography variant="body2" color="success.main">
+                                +12.1% vs last year
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" color="text.secondary">
+                                Monthly Premiums
+                            </Typography>
+                            <Typography variant="h4">
+                                {formatCurrency(analytics.monthlyPremiums)}
+                            </Typography>
+                            <Typography variant="body2" color="success.main">
+                                +5.7% vs last year
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" color="text.secondary">
+                                Active Claims
+                            </Typography>
+                            <Typography variant="h4">
+                                {analytics.totalClaims}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {analytics.activePolicies} active, {analytics.pendingClaims} pending
+                            </Typography>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* Report Generation */}
+            <Paper sx={{ p: 3, mb: 4 }}>
+                <Typography variant="h6" sx={{ mb: 3 }}>
+                    Generate Reports
+                </Typography>
+
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <TextField
+                            select
+                            label="Report Type"
+                            value={filters.reportType}
+                            onChange={(e) => handleFilterChange('reportType', e.target.value)}
+                            fullWidth
+                        >
+                            {reportTypes.map((type) => (
+                                <MenuItem key={type.value} value={type.value}>
+                                    {type.label}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <DatePicker
+                            label="Start Date"
+                            value={filters.startDate}
+                            onChange={(value) => handleFilterChange('startDate', value)}
+                            fullWidth
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <DatePicker
+                            label="End Date"
+                            value={filters.endDate}
+                            onChange={(value) => handleFilterChange('endDate', value)}
+                            fullWidth
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <TextField
+                            select
+                            label="Policy Type"
+                            value={filters.policyType}
+                            onChange={(e) => handleFilterChange('policyType', e.target.value)}
+                            fullWidth
+                        >
+                            {policyTypes.map((type) => (
+                                <MenuItem key={type.value} value={type.value}>
+                                    {type.label}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <TextField
+                            select
+                            label="Status"
+                            value={filters.status}
+                            onChange={(e) => handleFilterChange('status', e.target.value)}
+                            fullWidth
+                        >
+                            {statusOptions.map((status) => (
+                                <MenuItem key={status.value} value={status.value}>
+                                    {status.label}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+                </Grid>
+
+                <Stack direction="row" spacing={2}>
                     <Button
-                        variant="outlined"
-                        startIcon={<RefreshIcon />}
-                        onClick={handleRefreshAnalytics}
+                        variant="contained"
+                        startIcon={<PdfIcon />}
+                        onClick={() => handleGenerateReport('pdf')}
                         disabled={loading}
                     >
-                        Refresh Analytics
+                        PDF
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<ExcelIcon />}
+                        onClick={() => handleGenerateReport('excel')}
+                        disabled={loading}
+                    >
+                        Excel
                     </Button>
                 </Stack>
+            </Paper>
 
-                {/* Key Metrics */}
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Card>
-                            <CardContent>
-                                <Typography variant="h6" color="text.secondary">
-                                    Total Policies
-                                </Typography>
-                                <Typography variant="h4">
-                                    {analytics.totalPolicies}
-                                </Typography>
-                                <Typography variant="body2" color="success.main">
-                                    +8.5% vs last year
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Card>
-                            <CardContent>
-                                <Typography variant="h6" color="text.secondary">
-                                    Total Coverage
-                                </Typography>
-                                <Typography variant="h4">
-                                    {formatCurrency(analytics.totalCoverage)}
-                                </Typography>
-                                <Typography variant="body2" color="success.main">
-                                    +12.1% vs last year
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Card>
-                            <CardContent>
-                                <Typography variant="h6" color="text.secondary">
-                                    Monthly Premiums
-                                </Typography>
-                                <Typography variant="h4">
-                                    {formatCurrency(analytics.monthlyPremiums)}
-                                </Typography>
-                                <Typography variant="body2" color="success.main">
-                                    +5.7% vs last year
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Card>
-                            <CardContent>
-                                <Typography variant="h6" color="text.secondary">
-                                    Active Claims
-                                </Typography>
-                                <Typography variant="h4">
-                                    {analytics.totalClaims}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {analytics.activePolicies} active, {analytics.pendingClaims} pending
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
+            {/* Charts Section */}
+            <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <Paper sx={{ p: 3 }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>
+                            Policy Distribution by Type
+                        </Typography>
+                        <Box data-testid="pie-chart" sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Typography color="text.secondary">Pie Chart Placeholder</Typography>
+                        </Box>
+                    </Paper>
                 </Grid>
-
-                {/* Report Generation */}
-                <Paper sx={{ p: 3, mb: 4 }}>
-                    <Typography variant="h6" sx={{ mb: 3 }}>
-                        Generate Reports
-                    </Typography>
-                    
-                    <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                            <TextField
-                                select
-                                label="Report Type"
-                                value={filters.reportType}
-                                onChange={(e) => handleFilterChange('reportType', e.target.value)}
-                                fullWidth
-                            >
-                                {reportTypes.map((type) => (
-                                    <MenuItem key={type.value} value={type.value}>
-                                        {type.label}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                            <DatePicker
-                                label="Start Date"
-                                value={filters.startDate}
-                                onChange={(value) => handleFilterChange('startDate', value)}
-                                fullWidth
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                            <DatePicker
-                                label="End Date"
-                                value={filters.endDate}
-                                onChange={(value) => handleFilterChange('endDate', value)}
-                                fullWidth
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                            <TextField
-                                select
-                                label="Policy Type"
-                                value={filters.policyType}
-                                onChange={(e) => handleFilterChange('policyType', e.target.value)}
-                                fullWidth
-                            >
-                                {policyTypes.map((type) => (
-                                    <MenuItem key={type.value} value={type.value}>
-                                        {type.label}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                            <TextField
-                                select
-                                label="Status"
-                                value={filters.status}
-                                onChange={(e) => handleFilterChange('status', e.target.value)}
-                                fullWidth
-                            >
-                                {statusOptions.map((status) => (
-                                    <MenuItem key={status.value} value={status.value}>
-                                        {status.label}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
-                    </Grid>
-
-                    <Stack direction="row" spacing={2}>
-                        <Button
-                            variant="contained"
-                            startIcon={<PdfIcon />}
-                            onClick={() => handleGenerateReport('pdf')}
-                            disabled={loading}
-                        >
-                            PDF
-                        </Button>
-                        <Button
-                            variant="contained"
-                            startIcon={<ExcelIcon />}
-                            onClick={() => handleGenerateReport('excel')}
-                            disabled={loading}
-                        >
-                            Excel
-                        </Button>
-                    </Stack>
-                </Paper>
-
-                {/* Charts Section */}
-                <Grid container spacing={3}>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                        <Paper sx={{ p: 3 }}>
-                            <Typography variant="h6" sx={{ mb: 2 }}>
-                                Policy Distribution by Type
-                            </Typography>
-                            <Box data-testid="pie-chart" sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Typography color="text.secondary">Pie Chart Placeholder</Typography>
-                            </Box>
-                        </Paper>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                        <Paper sx={{ p: 3 }}>
-                            <Typography variant="h6" sx={{ mb: 2 }}>
-                                Monthly Trends
-                            </Typography>
-                            <Box data-testid="line-chart" sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Typography color="text.secondary">Line Chart Placeholder</Typography>
-                            </Box>
-                        </Paper>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                        <Paper sx={{ p: 3 }}>
-                            <Typography variant="h6" sx={{ mb: 2 }}>
-                                Premium Collection Trends
-                            </Typography>
-                            <Box data-testid="bar-chart" sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Typography color="text.secondary">Bar Chart Placeholder</Typography>
-                            </Box>
-                        </Paper>
-                    </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <Paper sx={{ p: 3 }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>
+                            Monthly Trends
+                        </Typography>
+                        <Box data-testid="line-chart" sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Typography color="text.secondary">Line Chart Placeholder</Typography>
+                        </Box>
+                    </Paper>
                 </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <Paper sx={{ p: 3 }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>
+                            Premium Collection Trends
+                        </Typography>
+                        <Box data-testid="bar-chart" sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Typography color="text.secondary">Bar Chart Placeholder</Typography>
+                        </Box>
+                    </Paper>
+                </Grid>
+            </Grid>
 
-                {/* Loading Overlay */}
-                {loading && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                        <CircularProgress />
-                    </Box>
-                )}
-            </Box>
-        </LocalizationProvider>
+            {/* Loading Overlay */}
+            {loading && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                    <CircularProgress />
+                </Box>
+            )}
+        </Box>
     );
 };
 

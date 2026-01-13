@@ -20,7 +20,7 @@ const EditPolicyPage = () => {
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
     const { updatePolicy, loading: updateLoading } = usePolicies();
-    
+
     const [policy, setPolicy] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -112,7 +112,7 @@ const EditPolicyPage = () => {
 
     const initialValues = {
         employeeId: policy.employeeId,
-        employee: policy.employee,
+        employee: policy.employeeId,
         policyType: policy.policyType,
         coverageAmount: policy.coverageAmount,
         premium: policy.premium,

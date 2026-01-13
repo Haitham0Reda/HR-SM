@@ -32,27 +32,54 @@ const DatePicker = React.forwardRef(({
   sx = {},
   ...props
 }, ref) => {
-  
+
   // Use dd/mm/yyyy by default, dd/mm/yy if shortYear is true
   const dateFormat = shortYear ? 'DD/MM/YY' : 'DD/MM/YYYY';
-  
-  // Convert string value to dayjs object if needed
-  const dayjsValue = value ? (dayjs.isDayjs(value) ? value : dayjs(value)) : null;
-  
+
+  // Convert string value to dayjs object if needed, with proper validation
+  const dayjsValue = React.useMemo(() => {
+    if (!value) return null;
+
+    if (dayjs.isDayjs(value)) {
+      return value.isValid() ? value : null;
+    }
+
+    // Handle Date objects
+    if (value instanceof Date) {
+      const parsed = dayjs(value);
+      return parsed.isValid() ? parsed : null;
+    }
+
+    // Handle strings and other values
+    try {
+      const parsed = dayjs(value);
+      return parsed.isValid() ? parsed : null;
+    } catch (error) {
+      console.warn('DatePicker: Invalid date value provided:', value);
+      return null;
+    }
+  }, [value]);
+
   // Handle change - ensure we return the format expected by the parent
   const handleChange = (newValue) => {
     if (onChange) {
+      // Validate the new value first
+      if (!newValue || !dayjs.isDayjs(newValue) || !newValue.isValid()) {
+        onChange(null);
+        return;
+      }
+
       // If parent expects dayjs object, return dayjs
       // If parent expects string, return ISO string
       if (typeof value === 'string' || value === null || value === undefined) {
-        const isoString = newValue ? newValue.format('YYYY-MM-DD') : null;
+        const isoString = newValue.format('YYYY-MM-DD');
         onChange(isoString);
       } else {
         onChange(newValue);
       }
     }
   };
-  
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <MuiDatePicker

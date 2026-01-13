@@ -36,7 +36,7 @@ const PolicyDetailsPage = () => {
     const { policyId } = useParams();
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
-    
+
     const [policy, setPolicy] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -189,7 +189,7 @@ const PolicyDetailsPage = () => {
                             <Typography variant="h6" sx={{ mb: 3 }}>
                                 Policy Information
                             </Typography>
-                            
+
                             <Grid container spacing={2}>
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
@@ -199,7 +199,7 @@ const PolicyDetailsPage = () => {
                                         {policy.policyNumber}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Status
@@ -208,7 +208,7 @@ const PolicyDetailsPage = () => {
                                         {getStatusChip(policy.status)}
                                     </Box>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Policy Type
@@ -217,7 +217,7 @@ const PolicyDetailsPage = () => {
                                         {policy.policyType}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Coverage Amount
@@ -226,7 +226,7 @@ const PolicyDetailsPage = () => {
                                         {formatCurrency(policy.coverageAmount)}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Monthly Premium
@@ -235,7 +235,7 @@ const PolicyDetailsPage = () => {
                                         {formatCurrency(policy.premium)}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Deductible
@@ -244,7 +244,7 @@ const PolicyDetailsPage = () => {
                                         {formatCurrency(policy.deductible || 0)}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Start Date
@@ -253,7 +253,7 @@ const PolicyDetailsPage = () => {
                                         {formatDate(policy.startDate)}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         End Date
@@ -262,7 +262,7 @@ const PolicyDetailsPage = () => {
                                         {formatDate(policy.endDate)}
                                     </Typography>
                                 </Grid>
-                                
+
                                 {policy.notes && (
                                     <Grid size={{ xs: 12 }}>
                                         <Typography variant="body2" color="text.secondary">
@@ -281,41 +281,43 @@ const PolicyDetailsPage = () => {
                             <Typography variant="h6" sx={{ mb: 3 }}>
                                 Employee Information
                             </Typography>
-                            
+
                             <Grid container spacing={2}>
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Name
                                     </Typography>
                                     <Typography variant="body1">
-                                        {policy.employee?.name || 'N/A'}
+                                        {policy.employeeId?.personalInfo?.fullName ||
+                                            `${policy.employeeId?.personalInfo?.firstName || ''} ${policy.employeeId?.personalInfo?.lastName || ''}`.trim() ||
+                                            'N/A'}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Employee Number
                                     </Typography>
                                     <Typography variant="body1">
-                                        {policy.employee?.employeeNumber || 'N/A'}
+                                        {policy.employeeId?.employeeId || policy.employeeNumber || 'N/A'}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Department
                                     </Typography>
                                     <Typography variant="body1">
-                                        {policy.employee?.department?.name || 'N/A'}
+                                        {policy.employeeId?.department?.name || 'N/A'}
                                     </Typography>
                                 </Grid>
-                                
+
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Position
                                     </Typography>
                                     <Typography variant="body1">
-                                        {policy.employee?.position?.title || 'N/A'}
+                                        {policy.employeeId?.position?.title || 'N/A'}
                                     </Typography>
                                 </Grid>
                             </Grid>
