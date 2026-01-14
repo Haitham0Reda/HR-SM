@@ -27,6 +27,21 @@ import {
 import DatePicker from '../common/DatePicker';
 import dayjs from 'dayjs';
 import { formatCurrency } from '../../utils/formatters';
+import {
+    PieChart,
+    Pie,
+    Cell,
+    LineChart,
+    Line,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer
+} from 'recharts';
 
 const reportTypes = [
     { value: 'policies', label: 'Policies Report' },
@@ -66,6 +81,31 @@ const InsuranceReportsPanel = () => {
         monthlyPremiums: 46800
     });
 
+    // Chart data
+    const [policyDistributionData] = useState([
+        { name: 'Category A', value: 62, color: '#0088FE' },
+        { name: 'Category B', value: 58, color: '#00C49F' },
+        { name: 'Category C', value: 36, color: '#FFBB28' }
+    ]);
+
+    const [monthlyTrendsData] = useState([
+        { month: 'Jan', policies: 120, claims: 15 },
+        { month: 'Feb', policies: 125, claims: 18 },
+        { month: 'Mar', policies: 132, claims: 16 },
+        { month: 'Apr', policies: 138, claims: 20 },
+        { month: 'May', policies: 145, claims: 19 },
+        { month: 'Jun', policies: 156, claims: 23 }
+    ]);
+
+    const [premiumCollectionData] = useState([
+        { month: 'Jan', amount: 42000 },
+        { month: 'Feb', amount: 43500 },
+        { month: 'Mar', amount: 44200 },
+        { month: 'Apr', amount: 45100 },
+        { month: 'May', amount: 45800 },
+        { month: 'Jun', amount: 46800 }
+    ]);
+
     const [loading, setLoading] = useState(false);
 
     const handleFilterChange = (field, value) => {
@@ -78,28 +118,73 @@ const InsuranceReportsPanel = () => {
     const handleGenerateReport = async (format) => {
         try {
             setLoading(true);
-            // Mock report generation
-            const reportData = {
-                ...filters,
-                format
+            console.log('Generating report:', { ...filters, format });
+
+            // Get auth token from localStorage
+            const persistRoot = localStorage.getItem('persist:root');
+            if (!persistRoot) {
+                console.error('No authentication found');
+                alert('Please log in to generate reports');
+                return;
+            }
+
+            const root = JSON.parse(persistRoot);
+            const auth = JSON.parse(root.auth);
+            // Try both possible property names
+            const token = auth.tenantToken || auth.tenant_token;
+
+            if (!token) {
+                console.error('No auth token found in auth object:', Object.keys(auth));
+                alert('Authentication token not found. Please log in again.');
+                return;
+            }
+
+            // Format dates properly for the API
+            const requestBody = {
+                startDate: filters.startDate ? filters.startDate.format('YYYY-MM-DD') : undefined,
+                endDate: filters.endDate ? filters.endDate.format('YYYY-MM-DD') : undefined,
+                includeExpired: filters.status === '' || filters.status === 'expired',
+                includeClaims: true,
+                includeFamilyMembers: true,
+                reportTitle: `Insurance ${filters.reportType.charAt(0).toUpperCase() + filters.reportType.slice(1)} Report`
             };
-            console.log('Generating report:', reportData);
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Make API call to generate report
+            const endpoint = format === 'pdf'
+                ? '/api/v1/life-insurance/reports/pdf'
+                : '/api/v1/life-insurance/reports/excel';
 
-            // Create mock download
-            const blob = new Blob(['Mock report data'], { type: format === 'pdf' ? 'application/pdf' : 'application/vnd.ms-excel' });
+            const response = await fetch(`http://localhost:5000${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            // Get the blob from the response
+            const blob = await response.blob();
+
+            // Create download link
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `insurance-report.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+            link.download = `insurance-report-${filters.reportType}-${dayjs().format('YYYY-MM-DD')}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
+
+            console.log('Report generated successfully');
         } catch (error) {
             console.error('Report generation failed:', error);
+            alert(`Failed to generate report: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -305,8 +390,26 @@ const InsuranceReportsPanel = () => {
                         <Typography variant="h6" sx={{ mb: 2 }}>
                             Policy Distribution by Type
                         </Typography>
-                        <Box data-testid="pie-chart" sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Typography color="text.secondary">Pie Chart Placeholder</Typography>
+                        <Box data-testid="pie-chart" sx={{ height: 250 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={policyDistributionData}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                        outerRadius={80}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                    >
+                                        {policyDistributionData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
                         </Box>
                     </Paper>
                 </Grid>
@@ -315,8 +418,18 @@ const InsuranceReportsPanel = () => {
                         <Typography variant="h6" sx={{ mb: 2 }}>
                             Monthly Trends
                         </Typography>
-                        <Box data-testid="line-chart" sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Typography color="text.secondary">Line Chart Placeholder</Typography>
+                        <Box data-testid="line-chart" sx={{ height: 250 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={monthlyTrendsData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="policies" stroke="#8884d8" strokeWidth={2} />
+                                    <Line type="monotone" dataKey="claims" stroke="#82ca9d" strokeWidth={2} />
+                                </LineChart>
+                            </ResponsiveContainer>
                         </Box>
                     </Paper>
                 </Grid>
@@ -325,8 +438,17 @@ const InsuranceReportsPanel = () => {
                         <Typography variant="h6" sx={{ mb: 2 }}>
                             Premium Collection Trends
                         </Typography>
-                        <Box data-testid="bar-chart" sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Typography color="text.secondary">Bar Chart Placeholder</Typography>
+                        <Box data-testid="bar-chart" sx={{ height: 250 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={premiumCollectionData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis />
+                                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                                    <Legend />
+                                    <Bar dataKey="amount" fill="#8884d8" name="Premium Amount" />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </Box>
                     </Paper>
                 </Grid>

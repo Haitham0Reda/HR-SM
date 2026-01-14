@@ -10,19 +10,19 @@ import { MODULES } from './shared/constants/modules.js';
 import moduleInitializer from './core/registry/moduleInitializer.js';
 import { namespaceValidator, validateRouteNamespaces, logValidationResults } from './core/middleware/namespaceValidator.js';
 import { preventInjection, validateJsonSchema } from './middleware/enhancedValidation.middleware.js';
-import { 
-    authRateLimit, 
-    sensitiveRateLimit, 
-    apiRateLimit, 
-    publicRateLimit, 
-    globalRateLimit 
+import {
+    authRateLimit,
+    sensitiveRateLimit,
+    apiRateLimit,
+    publicRateLimit,
+    globalRateLimit
 } from './middleware/enhancedRateLimit.middleware.js';
 
 // Import Redis caching middleware
-import { 
-    cacheHeadersMiddleware, 
+import {
+    cacheHeadersMiddleware,
     conditionalRequestMiddleware,
-    cacheStatsMiddleware 
+    cacheStatsMiddleware
 } from './middleware/mongooseCache.middleware.js';
 import { initializeSessionMiddleware } from './middleware/redisSession.middleware.js';
 
@@ -62,7 +62,7 @@ const app = express();
 // Security middleware with relaxed policies for development
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
-    crossOriginEmbedderPolicy: false, // Disable for development
+    crossOriginEmbedderPolicy: false, // Disable to allow CORS requests
     contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false // Disable CSP in development
 }));
 app.use(cors({
@@ -147,16 +147,16 @@ app.get('/uploads/profile-pictures/*', (req, res, next) => {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
     res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
-    
+
     // Log the request for debugging
     console.log(`Profile picture request: ${req.path}, Origin: ${req.headers.origin || 'none'}`);
-    
+
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
-    
+
     next();
 });
 
@@ -168,17 +168,17 @@ app.use('/uploads', (req, res, next) => {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
     res.header('Access-Control-Allow-Credentials', 'false'); // Set to false when using wildcard origin
     res.header('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
-    
+
     // Additional headers to prevent caching issues
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
     res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
-    
+
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
-    
+
     next();
 }, express.static('uploads', {
     // Additional express.static options
@@ -211,10 +211,10 @@ try {
     const { setupCompanyLogging, logResponseCompletion, trackUserActivity } = await import('./middleware/companyLogging.js');
     app.use(setupCompanyLogging);
     app.use(logResponseCompletion);
-    
+
     // Apply user activity tracking to all API routes (it will check for authentication internally)
     app.use('/api', trackUserActivity);
-    
+
     console.log('✓ Company logging middleware loaded');
 } catch (error) {
     console.warn('⚠️  Company logging middleware not available:', error.message);
@@ -223,7 +223,7 @@ try {
 // Enhanced audit logging middleware
 try {
     const { auditLogger, auditSecurityOperation } = await import('./middleware/auditLogger.middleware.js');
-    
+
     // Apply audit logging to all API routes with different configurations
     app.use('/api/platform', auditSecurityOperation()); // High-security operations
     app.use('/api/v1', auditLogger({
@@ -233,7 +233,7 @@ try {
         includeRequestBody: false,
         includeResponseBody: false
     }));
-    
+
     console.log('✓ Enhanced audit logging middleware loaded');
 } catch (error) {
     console.warn('⚠️  Enhanced audit logging middleware not available:', error.message);
@@ -257,7 +257,7 @@ export const initializeModuleSystem = async (options = {}) => {
         await moduleInitializer.initialize(app, options);
 
         console.log('✓ Module system initialized');
-        
+
         // Log module statistics
         const stats = moduleInitializer.getStats();
         console.log(`✓ Registered ${stats.registry.totalModules} modules`);
@@ -277,32 +277,32 @@ export const initializeRoutes = async () => {
     // ========================================
     // Platform administration routes - require Platform JWT
     // These routes are for system administrators managing tenants, subscriptions, and modules
-    
+
     try {
         // Platform authentication
         const platformAuthRoutes = await import('./platform/auth/routes/platformAuthRoutes.js');
         app.use('/api/platform/auth', platformAuthRoutes.default);
-        
+
         // Tenant management
         const tenantRoutes = await import('./platform/tenants/routes/tenantRoutes.js');
         app.use('/api/platform/tenants', tenantRoutes.default);
-        
+
         // Subscription management
         const subscriptionRoutes = await import('./platform/subscriptions/routes/subscriptionRoutes.js');
         app.use('/api/platform/subscriptions', subscriptionRoutes.default);
-        
+
         // Module management
         const moduleRoutes = await import('./platform/modules/routes/moduleRoutes.js');
         app.use('/api/platform/modules', moduleRoutes.default);
-        
+
         // System health and metrics
         const systemRoutes = await import('./platform/system/routes/systemRoutes.js');
         app.use('/api/platform/system', systemRoutes.default);
-        
+
         // Company management (multi-tenant)
         const companyRoutes = await import('./platform/companies/routes/companyRoutes.js');
         app.use('/api/platform/companies', companyRoutes.default);
-        
+
         console.log('✓ Platform routes loaded (/api/platform/*)');
     } catch (error) {
         console.warn('⚠️  Platform routes not available:', error.message);
@@ -312,9 +312,9 @@ export const initializeRoutes = async () => {
     // TENANT APPLICATION ROUTES (/api/v1/*)
     // ========================================
     // Tenant-scoped routes - require Tenant JWT and automatic tenant filtering
-    
+
     // NEW MODULAR SYSTEM ROUTES
-// Load core HR module (always enabled)
+    // Load core HR module (always enabled)
     console.log('🔧 Loading core HR routes...');
     await loadCoreRoutes(app);
     console.log('✓ Core HR routes loaded');
@@ -326,7 +326,7 @@ export const initializeRoutes = async () => {
     await loadModuleRoutes(app, MODULES.DOCUMENTS);
     await loadModuleRoutes(app, MODULES.REPORTING);
     await loadModuleRoutes(app, MODULES.PAYROLL);
-    
+
     // Life Insurance module - loaded conditionally with enhanced guards
     // The module routes include both availability and license checks
     await loadModuleRoutes(app, MODULES.LIFE_INSURANCE);
@@ -424,7 +424,7 @@ export const initializeRoutes = async () => {
     app.use('/api/v1/theme', themeRoutes);
     app.use('/api/v1/feature-flags', featureFlagRoutes);
     // Logs routes already mounted before validation middleware
-    
+
     // System Settings (Admin only)
     try {
         const systemSettingsRoutes = await import('./routes/systemSettings.routes.js');
@@ -433,7 +433,7 @@ export const initializeRoutes = async () => {
     } catch (error) {
         console.warn('⚠️  System settings routes not available:', error.message);
     }
-    
+
     // HR Auth routes
     const hrAuthRoutes = await import('./modules/hr-core/routes/authRoutes.js');
     app.use('/api/v1/auth', hrAuthRoutes.default);
