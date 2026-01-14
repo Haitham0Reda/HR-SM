@@ -78,9 +78,10 @@ const PolicyFamilyMembersPage = () => {
     };
 
     const handleDeleteMember = async (member) => {
+        const fullName = `${member.firstName || ''} ${member.lastName || ''}`.trim();
         const confirmed = await showConfirmDialog({
             title: 'Delete Family Member',
-            message: `Are you sure you want to remove ${member.name} from this policy?`,
+            message: `Are you sure you want to remove ${fullName} from this policy?`,
             confirmText: 'Delete',
             confirmColor: 'error'
         });
@@ -119,12 +120,14 @@ const PolicyFamilyMembersPage = () => {
             field: 'name',
             headerName: 'Name',
             width: 200,
-            flex: 1
+            flex: 1,
+            valueGetter: (value, row) => `${row.firstName || ''} ${row.lastName || ''}`.trim()
         },
         {
             field: 'relationship',
             headerName: 'Relationship',
-            width: 150
+            width: 150,
+            valueFormatter: (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : ''
         },
         {
             field: 'dateOfBirth',
@@ -135,7 +138,8 @@ const PolicyFamilyMembersPage = () => {
         {
             field: 'gender',
             headerName: 'Gender',
-            width: 100
+            width: 100,
+            valueFormatter: (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : ''
         },
         {
             field: 'status',
