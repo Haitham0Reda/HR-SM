@@ -170,15 +170,24 @@ familyMemberSchema.pre('save', function(next) {
 familyMemberSchema.pre('save', async function(next) {
     if (this.isNew && !this.insuranceNumber) {
         try {
-            // Get the policy to derive the insurance number
-            // Use tenant-scoped query
-            const InsurancePolicy = mongoose.model('InsurancePolicy');
-            const policy = await InsurancePolicy.findOne({
-                _id: this.policyId,
+            console.log('FamilyMember pre-save: Looking for policy', {
+                policyId: this.policyId,
                 tenantId: this.tenantId
             });
             
+            // Get the policy from the same connection/database as this family member
+            // Use this.constructor.db to get the database connection
+            const InsurancePolicy = this.constructor.db.model('InsurancePolicy');
+            const policy = await InsurancePolicy.findById(this.policyId);
+            
+            console.log('FamilyMember pre-save: Policy found?', !!policy);
+            
             if (!policy) {
+                console.error('FamilyMember pre-save: Policy not found', {
+                    policyId: this.policyId,
+                    tenantId: this.tenantId,
+                    dbName: this.constructor.db.name
+                });
                 const error = new Error('Associated policy not found');
                 error.name = 'ValidationError';
                 return next(error);
@@ -186,13 +195,14 @@ familyMemberSchema.pre('save', async function(next) {
             
             // Count existing family members for this policy to get the next number
             const existingCount = await this.constructor.countDocuments({
-                policyId: this.policyId,
-                tenantId: this.tenantId
+                policyId: this.policyId
             });
             
             this.insuranceNumber = `${policy.policyNumber}-${existingCount + 1}`;
+            console.log('FamilyMember pre-save: Generated insurance number', this.insuranceNumber);
             next();
         } catch (error) {
+            console.error('FamilyMember pre-save: Error', error);
             next(error);
         }
     } else {
