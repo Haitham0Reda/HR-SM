@@ -101,6 +101,7 @@ const PolicyFamilyMembersPage = () => {
 
     const handleSaveMember = async (memberData) => {
         try {
+            console.log('Saving family member:', { policyId, memberData });
             if (selectedMember) {
                 await insuranceService.updateFamilyMember(policyId, selectedMember._id, memberData);
             } else {
@@ -110,6 +111,7 @@ const PolicyFamilyMembersPage = () => {
             setModalOpen(false);
             await fetchPolicyAndMembers();
         } catch (err) {
+            console.error('Error saving family member:', err);
             throw new Error(err.message || 'Failed to save family member');
         }
     };
