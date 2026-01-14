@@ -4,7 +4,7 @@
  * A wrapper around MUI DatePicker with consistent styling and dd/mm/yyyy format.
  */
 
-import React from 'react';
+import { useMemo, forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import { DatePicker as MuiDatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -12,12 +12,11 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { designTokens } from '../../theme/designTokens';
-import TextField from './TextField';
 
 // Enable custom parse format plugin
 dayjs.extend(customParseFormat);
 
-const DatePicker = React.forwardRef(({
+const DatePicker = forwardRef(({
   label,
   value,
   onChange,
@@ -37,7 +36,7 @@ const DatePicker = React.forwardRef(({
   const dateFormat = shortYear ? 'DD/MM/YY' : 'DD/MM/YYYY';
 
   // Convert string value to dayjs object if needed, with proper validation
-  const dayjsValue = React.useMemo(() => {
+  const dayjsValue = useMemo(() => {
     if (!value) return null;
 
     if (dayjs.isDayjs(value)) {
