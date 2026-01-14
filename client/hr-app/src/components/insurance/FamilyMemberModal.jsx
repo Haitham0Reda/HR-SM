@@ -24,12 +24,13 @@ import DatePicker from '../common/DatePicker';
 
 const FamilyMemberModal = ({ open, onClose, onSave, member, policyId }) => {
     const [formData, setFormData] = useState({
-        name: '',
+        firstName: '',
+        lastName: '',
         relationship: '',
         dateOfBirth: null,
         gender: '',
         nationalId: '',
-        phoneNumber: '',
+        phone: '',
         email: '',
         status: 'active'
     });
@@ -39,23 +40,25 @@ const FamilyMemberModal = ({ open, onClose, onSave, member, policyId }) => {
     useEffect(() => {
         if (member) {
             setFormData({
-                name: member.name || '',
+                firstName: member.firstName || '',
+                lastName: member.lastName || '',
                 relationship: member.relationship || '',
                 dateOfBirth: member.dateOfBirth || null,
                 gender: member.gender || '',
                 nationalId: member.nationalId || '',
-                phoneNumber: member.phoneNumber || '',
+                phone: member.phone || '',
                 email: member.email || '',
                 status: member.status || 'active'
             });
         } else {
             setFormData({
-                name: '',
+                firstName: '',
+                lastName: '',
                 relationship: '',
                 dateOfBirth: null,
                 gender: '',
                 nationalId: '',
-                phoneNumber: '',
+                phone: '',
                 email: '',
                 status: 'active'
             });
@@ -81,8 +84,13 @@ const FamilyMemberModal = ({ open, onClose, onSave, member, policyId }) => {
         event.preventDefault();
         
         // Validation
-        if (!formData.name.trim()) {
-            setError('Name is required');
+        if (!formData.firstName.trim()) {
+            setError('First name is required');
+            return;
+        }
+        
+        if (!formData.lastName.trim()) {
+            setError('Last name is required');
             return;
         }
         
@@ -149,9 +157,19 @@ const FamilyMemberModal = ({ open, onClose, onSave, member, policyId }) => {
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     fullWidth
-                                    label="Full Name"
-                                    value={formData.name}
-                                    onChange={handleChange('name')}
+                                    label="First Name"
+                                    value={formData.firstName}
+                                    onChange={handleChange('firstName')}
+                                    required
+                                />
+                            </Grid>
+                            
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Last Name"
+                                    value={formData.lastName}
+                                    onChange={handleChange('lastName')}
                                     required
                                 />
                             </Grid>
@@ -214,8 +232,8 @@ const FamilyMemberModal = ({ open, onClose, onSave, member, policyId }) => {
                                 <TextField
                                     fullWidth
                                     label="Phone Number"
-                                    value={formData.phoneNumber}
-                                    onChange={handleChange('phoneNumber')}
+                                    value={formData.phone}
+                                    onChange={handleChange('phone')}
                                 />
                             </Grid>
                             
