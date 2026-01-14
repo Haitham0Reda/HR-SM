@@ -37,7 +37,7 @@ const PolicyFamilyMembersPage = () => {
     const { policyId } = useParams();
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
-    const { showConfirmDialog } = useDialogs();
+    const dialogs = useDialogs();
     
     const [policy, setPolicy] = useState(null);
     const [familyMembers, setFamilyMembers] = useState([]);
@@ -79,12 +79,14 @@ const PolicyFamilyMembersPage = () => {
 
     const handleDeleteMember = async (member) => {
         const fullName = `${member.firstName || ''} ${member.lastName || ''}`.trim();
-        const confirmed = await showConfirmDialog({
-            title: 'Delete Family Member',
-            message: `Are you sure you want to remove ${fullName} from this policy?`,
-            confirmText: 'Delete',
-            confirmColor: 'error'
-        });
+        const confirmed = await dialogs.confirm(
+            `Are you sure you want to remove ${fullName} from this policy?`,
+            {
+                title: 'Delete Family Member',
+                okText: 'Delete',
+                severity: 'error'
+            }
+        );
 
         if (confirmed) {
             try {

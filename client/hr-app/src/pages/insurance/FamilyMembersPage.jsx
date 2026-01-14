@@ -36,7 +36,7 @@ import { formatDate } from '../../utils/formatters';
 const FamilyMembersPage = () => {
     const navigate = useNavigate();
     const { getCompanyRoute } = useCompanyRouting();
-    const { showConfirmDialog } = useDialogs();
+    const dialogs = useDialogs();
     
     const [familyMembers, setFamilyMembers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -69,12 +69,14 @@ const FamilyMembersPage = () => {
 
     const handleDeleteMember = async (member) => {
         const fullName = `${member.firstName || ''} ${member.lastName || ''}`.trim();
-        const confirmed = await showConfirmDialog({
-            title: 'Delete Family Member',
-            message: `Are you sure you want to remove ${fullName} from policy ${member.policyNumber}?`,
-            confirmText: 'Delete',
-            confirmColor: 'error'
-        });
+        const confirmed = await dialogs.confirm(
+            `Are you sure you want to remove ${fullName} from policy ${member.policyNumber}?`,
+            {
+                title: 'Delete Family Member',
+                okText: 'Delete',
+                severity: 'error'
+            }
+        );
 
         if (confirmed) {
             try {
