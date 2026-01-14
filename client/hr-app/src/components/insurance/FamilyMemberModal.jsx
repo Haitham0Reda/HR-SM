@@ -4,7 +4,7 @@
  * Modal for adding/editing family members in insurance policies
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -17,8 +17,7 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Alert,
-    Box
+    Alert
 } from '@mui/material';
 import DatePicker from '../common/DatePicker';
 
