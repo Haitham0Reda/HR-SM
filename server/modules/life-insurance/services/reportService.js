@@ -76,47 +76,69 @@ class InsuranceReportService {
         const filename = `insurance-report-${tenantId}-${Date.now()}.pdf`;
         const filePath = path.join(this.reportsDir, filename);
 
-        const doc = new PDFDocument({ margin: 50 });
-        doc.pipe(fs.createWriteStream(filePath));
+        return new Promise((resolve, reject) => {
+            const doc = new PDFDocument({ margin: 50 });
+            const writeStream = fs.createWriteStream(filePath);
+            
+            doc.pipe(writeStream);
 
-        // Header
-        this.addPDFHeader(doc, reportTitle, tenant);
+            // Handle stream errors
+            writeStream.on('error', (error) => {
+                logger.error('Error writing PDF file', {
+                    tenantId,
+                    filename,
+                    error: error.message
+                });
+                reject(error);
+            });
 
-        // Summary section
-        this.addPDFSummary(doc, policies, claims, familyMembers);
+            // Wait for write stream to finish
+            writeStream.on('finish', () => {
+                logger.info('Insurance PDF report generated', {
+                    tenantId,
+                    filename,
+                    policiesCount: policies.length,
+                    claimsCount: claims.length,
+                    familyMembersCount: familyMembers.length
+                });
+                resolve(filePath);
+            });
 
-        // Policies section
-        this.addPDFPoliciesSection(doc, policies);
+            try {
+                // Header
+                this.addPDFHeader(doc, reportTitle, tenant);
 
-        if (includeClaims && claims.length > 0) {
-            // Claims section
-            this.addPDFClaimsSection(doc, claims);
-        }
+                // Summary section
+                this.addPDFSummary(doc, policies, claims, familyMembers);
 
-        if (includeFamilyMembers && familyMembers.length > 0) {
-            // Family members section
-            this.addPDFFamilyMembersSection(doc, familyMembers);
-        }
+                // Policies section
+                this.addPDFPoliciesSection(doc, policies);
 
-        // Footer
-        this.addPDFFooter(doc);
+                if (includeClaims && claims.length > 0) {
+                    // Claims section
+                    this.addPDFClaimsSection(doc, claims);
+                }
 
-        doc.end();
+                if (includeFamilyMembers && familyMembers.length > 0) {
+                    // Family members section
+                    this.addPDFFamilyMembersSection(doc, familyMembers);
+                }
 
-        // Wait for PDF to be written
-        await new Promise((resolve) => {
-            doc.on('end', resolve);
+                // Footer
+                this.addPDFFooter(doc);
+
+                // Finalize PDF
+                doc.end();
+            } catch (error) {
+                logger.error('Error generating PDF content', {
+                    tenantId,
+                    error: error.message,
+                    stack: error.stack
+                });
+                doc.end();
+                reject(error);
+            }
         });
-
-        logger.info('Insurance PDF report generated', {
-            tenantId,
-            filename,
-            policiesCount: policies.length,
-            claimsCount: claims.length,
-            familyMembersCount: familyMembers.length
-        });
-
-        return filePath;
     }
 
     /**
