@@ -39,11 +39,63 @@ export const generatePDFReport = asyncHandler(async (req, res) => {
             options: { startDate, endDate, includeExpired, includeClaims, includeFamilyMembers }
         });
 
-        sendSuccess(res, {
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            logger.error('Generated PDF file not found', {
+                filePath,
+                filename,
+                tenantId: req.tenant.id
+            });
+            return sendError(res, 'Generated report file not found', 500);
+        }
+
+        // Get file stats
+        const stats = fs.statSync(filePath);
+
+        // Set appropriate headers for PDF download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Length', stats.size);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+        // Stream the file directly to the response
+        const fileStream = fs.createReadStream(filePath);
+
+        fileStream.on('error', (error) => {
+            logger.error('Error streaming PDF file', {
+                filename,
+                error: error.message
+            });
+            if (!res.headersSent) {
+                sendError(res, 'Error reading PDF file', 500);
+            }
+        });
+
+        // Clean up the file after streaming
+        fileStream.on('end', () => {
+            // Delete the file after a short delay to ensure streaming is complete
+            setTimeout(() => {
+                try {
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                        logger.info('Temporary PDF file cleaned up', { filename });
+                    }
+                } catch (cleanupError) {
+                    logger.warn('Failed to cleanup temporary PDF file', {
+                        filename,
+                        error: cleanupError.message
+                    });
+                }
+            }, 1000);
+        });
+
+        fileStream.pipe(res);
+
+        logger.info('PDF insurance report downloaded', {
+            tenantId: req.tenant.id,
             filename,
-            downloadUrl: `/api/v1/life-insurance/reports/download/${filename}`,
-            generatedAt: new Date()
-        }, 'PDF report generated successfully');
+            downloadedBy: req.user._id,
+            fileSize: stats.size
+        });
 
     } catch (error) {
         logger.error('Error generating PDF report', {
@@ -51,8 +103,10 @@ export const generatePDFReport = asyncHandler(async (req, res) => {
             error: error.message,
             stack: error.stack
         });
-        
-        sendError(res, 'Failed to generate PDF report', 500);
+
+        if (!res.headersSent) {
+            sendError(res, 'Failed to generate PDF report', 500);
+        }
     }
 });
 
@@ -88,11 +142,63 @@ export const generateExcelReport = asyncHandler(async (req, res) => {
             options: { startDate, endDate, includeExpired, includeClaims, includeFamilyMembers }
         });
 
-        sendSuccess(res, {
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            logger.error('Generated Excel file not found', {
+                filePath,
+                filename,
+                tenantId: req.tenant.id
+            });
+            return sendError(res, 'Generated report file not found', 500);
+        }
+
+        // Get file stats
+        const stats = fs.statSync(filePath);
+
+        // Set appropriate headers for Excel download
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Length', stats.size);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+        // Stream the file directly to the response
+        const fileStream = fs.createReadStream(filePath);
+
+        fileStream.on('error', (error) => {
+            logger.error('Error streaming Excel file', {
+                filename,
+                error: error.message
+            });
+            if (!res.headersSent) {
+                sendError(res, 'Error reading Excel file', 500);
+            }
+        });
+
+        // Clean up the file after streaming
+        fileStream.on('end', () => {
+            // Delete the file after a short delay to ensure streaming is complete
+            setTimeout(() => {
+                try {
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                        logger.info('Temporary Excel file cleaned up', { filename });
+                    }
+                } catch (cleanupError) {
+                    logger.warn('Failed to cleanup temporary Excel file', {
+                        filename,
+                        error: cleanupError.message
+                    });
+                }
+            }, 1000);
+        });
+
+        fileStream.pipe(res);
+
+        logger.info('Excel insurance report downloaded', {
+            tenantId: req.tenant.id,
             filename,
-            downloadUrl: `/api/v1/life-insurance/reports/download/${filename}`,
-            generatedAt: new Date()
-        }, 'Excel report generated successfully');
+            downloadedBy: req.user._id,
+            fileSize: stats.size
+        });
 
     } catch (error) {
         logger.error('Error generating Excel report', {
@@ -100,8 +206,10 @@ export const generateExcelReport = asyncHandler(async (req, res) => {
             error: error.message,
             stack: error.stack
         });
-        
-        sendError(res, 'Failed to generate Excel report', 500);
+
+        if (!res.headersSent) {
+            sendError(res, 'Failed to generate Excel report', 500);
+        }
     }
 });
 
@@ -167,7 +275,7 @@ export const downloadReport = asyncHandler(async (req, res) => {
 
         // Stream the file
         const fileStream = fs.createReadStream(filePath);
-        
+
         fileStream.on('error', (error) => {
             logger.error('Error streaming file', {
                 filename,
@@ -204,15 +312,15 @@ export const downloadReport = asyncHandler(async (req, res) => {
 export const getAvailableReports = asyncHandler(async (req, res) => {
     try {
         const files = fs.readdirSync(reportService.reportsDir);
-        
+
         // Filter files for current tenant
         const tenantFiles = files.filter(file => file.includes(req.tenant.id));
-        
+
         const reports = tenantFiles.map(filename => {
             const filePath = path.join(reportService.reportsDir, filename);
             const stats = fs.statSync(filePath);
             const fileExtension = path.extname(filename).toLowerCase();
-            
+
             return {
                 filename,
                 size: stats.size,
@@ -233,7 +341,7 @@ export const getAvailableReports = asyncHandler(async (req, res) => {
             tenantId: req.tenant.id,
             error: error.message
         });
-        
+
         sendError(res, 'Failed to retrieve available reports', 500);
     }
 });
@@ -281,7 +389,7 @@ export const deleteReport = asyncHandler(async (req, res) => {
             filename,
             error: error.message
         });
-        
+
         sendError(res, 'Failed to delete report', 500);
     }
 });
@@ -310,7 +418,7 @@ export const cleanupOldReports = asyncHandler(async (req, res) => {
             tenantId: req.tenant.id,
             error: error.message
         });
-        
+
         sendError(res, 'Failed to cleanup old reports', 500);
     }
 });
