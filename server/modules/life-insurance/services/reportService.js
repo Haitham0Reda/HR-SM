@@ -29,8 +29,17 @@ class InsuranceReportService {
      * Ensure reports directory exists
      */
     ensureReportsDirectory() {
-        if (!fs.existsSync(this.reportsDir)) {
-            fs.mkdirSync(this.reportsDir, { recursive: true });
+        try {
+            if (!fs.existsSync(this.reportsDir)) {
+                fs.mkdirSync(this.reportsDir, { recursive: true });
+                logger.info('Reports directory created', { path: this.reportsDir });
+            }
+        } catch (error) {
+            logger.error('Failed to create reports directory', {
+                path: this.reportsDir,
+                error: error.message
+            });
+            throw error;
         }
     }
 
