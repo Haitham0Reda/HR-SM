@@ -19,7 +19,6 @@ import {
     MenuItem,
     Alert
 } from '@mui/material';
-import DatePicker from '../common/DatePicker';
 
 const FamilyMemberModal = ({ open, onClose, onSave, member, policyId }) => {
     const [formData, setFormData] = useState({
@@ -69,13 +68,6 @@ const FamilyMemberModal = ({ open, onClose, onSave, member, policyId }) => {
         setFormData(prev => ({
             ...prev,
             [field]: event.target.value
-        }));
-    };
-
-    const handleDateChange = (date) => {
-        setFormData(prev => ({
-            ...prev,
-            dateOfBirth: date
         }));
     };
 
@@ -191,13 +183,15 @@ const FamilyMemberModal = ({ open, onClose, onSave, member, policyId }) => {
                             </Grid>
                             
                             <Grid item xs={12} sm={6}>
-                                <DatePicker
-                                    label="Date of Birth"
-                                    value={formData.dateOfBirth}
-                                    onChange={handleDateChange}
+                                <TextField
                                     fullWidth
+                                    label="Date of Birth"
+                                    type="date"
+                                    value={formData.dateOfBirth || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
                                     required
-                                    maxDate={new Date()}
+                                    InputLabelProps={{ shrink: true }}
+                                    inputProps={{ max: new Date().toISOString().split('T')[0] }}
                                 />
                             </Grid>
                             
