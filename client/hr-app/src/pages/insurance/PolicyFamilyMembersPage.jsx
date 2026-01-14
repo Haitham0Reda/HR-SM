@@ -48,6 +48,7 @@ const PolicyFamilyMembersPage = () => {
 
     useEffect(() => {
         fetchPolicyAndMembers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [policyId]);
 
     const fetchPolicyAndMembers = async () => {
@@ -280,13 +281,15 @@ const PolicyFamilyMembersPage = () => {
                     </Box>
                 </Paper>
 
-                <FamilyMemberModal
-                    open={modalOpen}
-                    onClose={() => setModalOpen(false)}
-                    onSave={handleSaveMember}
-                    member={selectedMember}
-                    policyId={policyId}
-                />
+                {modalOpen && (
+                    <FamilyMemberModal
+                        open={modalOpen}
+                        onClose={() => setModalOpen(false)}
+                        onSave={handleSaveMember}
+                        member={selectedMember}
+                        policyId={policyId}
+                    />
+                )}
             </PageContainer>
         </ModuleGuard>
     );
