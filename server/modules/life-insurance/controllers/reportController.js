@@ -113,48 +113,87 @@ export const generateExcelReport = asyncHandler(async (req, res) => {
 export const downloadReport = asyncHandler(async (req, res) => {
     const { filename } = req.params;
 
+    logger.info('Download report requested', {
+        filename,
+        tenantId: req.tenant.id,
+        userId: req.user._id
+    });
+
     // Validate filename to prevent directory traversal
     if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+        logger.warn('Invalid filename requested', { filename });
         return sendError(res, 'Invalid filename', 400);
     }
 
     // Check if filename belongs to current tenant (basic security)
     if (!filename.includes(req.tenant.id)) {
+        logger.warn('Unauthorized report access attempt', {
+            filename,
+            tenantId: req.tenant.id
+        });
         return sendError(res, 'Report not found', 404);
     }
 
     const filePath = path.join(reportService.reportsDir, filename);
 
+    logger.info('Checking file path', { filePath });
+
     // Check if file exists
     if (!fs.existsSync(filePath)) {
+        logger.error('Report file not found', {
+            filePath,
+            filename,
+            tenantId: req.tenant.id
+        });
         return sendError(res, 'Report file not found', 404);
     }
 
-    // Get file stats
-    const stats = fs.statSync(filePath);
-    const fileExtension = path.extname(filename).toLowerCase();
+    try {
+        // Get file stats
+        const stats = fs.statSync(filePath);
+        const fileExtension = path.extname(filename).toLowerCase();
 
-    // Set appropriate headers
-    let contentType = 'application/octet-stream';
-    if (fileExtension === '.pdf') {
-        contentType = 'application/pdf';
-    } else if (fileExtension === '.xlsx') {
-        contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        // Set appropriate headers
+        let contentType = 'application/octet-stream';
+        if (fileExtension === '.pdf') {
+            contentType = 'application/pdf';
+        } else if (fileExtension === '.xlsx') {
+            contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        }
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Length', stats.size);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+        // Stream the file
+        const fileStream = fs.createReadStream(filePath);
+        
+        fileStream.on('error', (error) => {
+            logger.error('Error streaming file', {
+                filename,
+                error: error.message
+            });
+            if (!res.headersSent) {
+                sendError(res, 'Error reading file', 500);
+            }
+        });
+
+        fileStream.pipe(res);
+
+        logger.info('Insurance report downloaded', {
+            tenantId: req.tenant.id,
+            filename,
+            downloadedBy: req.user._id,
+            fileSize: stats.size
+        });
+    } catch (error) {
+        logger.error('Error downloading report', {
+            filename,
+            error: error.message,
+            stack: error.stack
+        });
+        sendError(res, 'Failed to download report', 500);
     }
-
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Length', stats.size);
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-
-    logger.info('Insurance report downloaded', {
-        tenantId: req.tenant.id,
-        filename,
-        downloadedBy: req.user._id
-    });
 });
 
 /**

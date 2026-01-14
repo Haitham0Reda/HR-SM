@@ -109,9 +109,7 @@ const FamilyMemberModal = ({ open, onClose, onSave, member, policyId }) => {
     const relationshipOptions = [
         { value: 'spouse', label: 'Spouse' },
         { value: 'child', label: 'Child' },
-        { value: 'parent', label: 'Parent' },
-        { value: 'sibling', label: 'Sibling' },
-        { value: 'other', label: 'Other' }
+        { value: 'parent', label: 'Parent' }
     ];
 
     const genderOptions = [
@@ -190,8 +188,10 @@ const FamilyMemberModal = ({ open, onClose, onSave, member, policyId }) => {
                                     value={formData.dateOfBirth || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
                                     required
-                                    InputLabelProps={{ shrink: true }}
-                                    inputProps={{ max: new Date().toISOString().split('T')[0] }}
+                                    slotProps={{
+                                        inputLabel: { shrink: true },
+                                        htmlInput: { max: new Date().toISOString().split('T')[0] }
+                                    }}
                                 />
                             </Grid>
                             
