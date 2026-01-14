@@ -13,11 +13,35 @@ import PDFDocument from 'pdfkit';
 import xlsx from 'xlsx';
 import fs from 'fs';
 import path from 'path';
-import InsurancePolicy from '../models/InsurancePolicy.js';
-import InsuranceClaim from '../models/InsuranceClaim.js';
-import FamilyMember from '../models/FamilyMember.js';
-import User from '../../hr-core/users/models/user.model.js';
+import multiTenantDB from '../../../config/multiTenant.js';
+import InsurancePolicyModel from '../models/InsurancePolicy.js';
+import InsuranceClaimModel from '../models/InsuranceClaim.js';
+import FamilyMemberModel from '../models/FamilyMember.js';
 import logger from '../../../utils/logger.js';
+
+/**
+ * Get tenant-specific InsurancePolicy model
+ */
+const getInsurancePolicyModel = async (tenantId) => {
+    const connection = await multiTenantDB.getCompanyConnection(tenantId);
+    return connection.model('InsurancePolicy', InsurancePolicyModel.schema);
+};
+
+/**
+ * Get tenant-specific InsuranceClaim model
+ */
+const getInsuranceClaimModel = async (tenantId) => {
+    const connection = await multiTenantDB.getCompanyConnection(tenantId);
+    return connection.model('InsuranceClaim', InsuranceClaimModel.schema);
+};
+
+/**
+ * Get tenant-specific FamilyMember model
+ */
+const getFamilyMemberModel = async (tenantId) => {
+    const connection = await multiTenantDB.getCompanyConnection(tenantId);
+    return connection.model('FamilyMember', FamilyMemberModel.schema);
+};
 
 class InsuranceReportService {
     constructor() {
@@ -225,7 +249,8 @@ class InsuranceReportService {
             query.status = { $ne: 'expired' };
         }
 
-        return await InsurancePolicy.withTenant(tenantId).find(query)
+        const InsurancePolicy = await getInsurancePolicyModel(tenantId);
+        return await InsurancePolicy.find(query)
             .populate('employeeId', 'firstName lastName email employeeId department')
             .populate('familyMembers')
             .sort({ createdAt: -1 })
@@ -242,7 +267,8 @@ class InsuranceReportService {
             query.createdAt = dateFilter;
         }
 
-        return await InsuranceClaim.withTenant(tenantId).find(query)
+        const InsuranceClaim = await getInsuranceClaimModel(tenantId);
+        return await InsuranceClaim.find(query)
             .populate('policyId', 'policyNumber policyType')
             .populate('employeeId', 'firstName lastName email employeeId')
             .populate('claimantId', 'firstName lastName relationship')
@@ -261,7 +287,8 @@ class InsuranceReportService {
             query.createdAt = dateFilter;
         }
 
-        return await FamilyMember.withTenant(tenantId).find(query)
+        const FamilyMember = await getFamilyMemberModel(tenantId);
+        return await FamilyMember.find(query)
             .populate('employeeId', 'firstName lastName email employeeId')
             .populate('policyId', 'policyNumber policyType')
             .sort({ createdAt: -1 })
