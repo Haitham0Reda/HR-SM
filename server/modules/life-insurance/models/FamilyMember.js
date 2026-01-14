@@ -171,8 +171,12 @@ familyMemberSchema.pre('save', async function(next) {
     if (this.isNew && !this.insuranceNumber) {
         try {
             // Get the policy to derive the insurance number
+            // Use tenant-scoped query
             const InsurancePolicy = mongoose.model('InsurancePolicy');
-            const policy = await InsurancePolicy.findById(this.policyId);
+            const policy = await InsurancePolicy.findOne({
+                _id: this.policyId,
+                tenantId: this.tenantId
+            });
             
             if (!policy) {
                 const error = new Error('Associated policy not found');
@@ -181,18 +185,10 @@ familyMemberSchema.pre('save', async function(next) {
             }
             
             // Count existing family members for this policy to get the next number
-            // Use automatic tenant scoping if tenantId is available
-            let existingCount;
-            if (this.tenantId) {
-                existingCount = await this.constructor.withTenant(this.tenantId).countDocuments({
-                    policyId: this.policyId
-                });
-            } else {
-                existingCount = await this.constructor.countDocuments({
-                    policyId: this.policyId,
-                    tenantId: this.tenantId
-                });
-            }
+            const existingCount = await this.constructor.countDocuments({
+                policyId: this.policyId,
+                tenantId: this.tenantId
+            });
             
             this.insuranceNumber = `${policy.policyNumber}-${existingCount + 1}`;
             next();
