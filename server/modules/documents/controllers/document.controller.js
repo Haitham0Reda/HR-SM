@@ -11,6 +11,8 @@ const getTenantId = (req) => {
 export const getAllDocuments = async (req, res) => {
     try {
         const tenantId = getTenantId(req);
+        console.log('Getting documents for tenant:', tenantId);
+        console.log('User:', { id: req.user.id, role: req.user.role });
         
         // Build filter based on user role
         let filter = {};
@@ -31,6 +33,8 @@ export const getAllDocuments = async (req, res) => {
         }
         // HR and Admin see all documents (no additional filtering needed)
 
+        console.log('Role-based filter:', filter);
+
         const options = {
             filter,
             populate: [
@@ -42,6 +46,7 @@ export const getAllDocuments = async (req, res) => {
         };
 
         const documents = await documentService.getAllDocuments(tenantId, options);
+        console.log('Documents found:', documents.length);
 
         res.json({
             success: true,
@@ -59,18 +64,24 @@ export const getAllDocuments = async (req, res) => {
 export const createDocument = async (req, res) => {
     try {
         const tenantId = getTenantId(req);
+        console.log('Creating document for tenant:', tenantId);
+        console.log('User:', { id: req.user.id, role: req.user.role });
+        console.log('Document data:', req.body);
+        
         const documentData = {
             ...req.body,
             uploadedBy: req.user.id
         };
 
         const document = await documentService.createDocument(documentData, tenantId);
+        console.log('Document created:', { id: document._id, tenantId: document.tenantId });
 
         res.status(201).json({
             success: true,
             data: document
         });
     } catch (err) {
+        console.error('Error creating document:', err);
         res.status(400).json({
             success: false,
             message: err.message
@@ -157,6 +168,51 @@ export const deleteDocument = async (req, res) => {
         res.json({
             success: true,
             message: 'Document deleted successfully'
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+};
+
+export const uploadDocument = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        const fileUrl = `/uploads/documents/${req.file.filename}`;
+        
+        res.json({
+            success: true,
+            data: {
+                fileUrl,
+                fileName: req.file.originalname,
+                fileSize: req.file.size,
+                mimeType: req.file.mimetype
+            }
+        });
+    } catch (err) {
+        console.error('Upload error:', err);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+};
+
+// Simple test endpoint
+export const testUpload = async (req, res) => {
+    try {
+        res.json({
+            success: true,
+            message: 'Upload endpoint is accessible',
+            user: req.user ? { id: req.user.id, role: req.user.role } : null
         });
     } catch (err) {
         res.status(500).json({

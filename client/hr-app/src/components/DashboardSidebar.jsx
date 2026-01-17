@@ -608,29 +608,6 @@ function DashboardSidebar({
                                         locked={isMenuItemLocked('requests')}
                                     />
                                 )}
-
-                                <DashboardSidebarDividerItem />
-                                <DashboardSidebarHeaderItem>Financial</DashboardSidebarHeaderItem>
-                                {shouldShowMenuItem('payroll') && (
-                                    <DashboardSidebarPageItem
-                                        id="payroll"
-                                        title="Payroll"
-                                        icon={<PaymentIcon />}
-                                        href={getCompanyRoute("/payroll")}
-                                        selected={!!matchPath(getCompanyRoute('/payroll'), pathname)}
-                                        locked={isMenuItemLocked('payroll')}
-                                    />
-                                )}
-                                {shouldShowMenuItem('salary-management') && (
-                                    <DashboardSidebarPageItem
-                                        id="salary-management"
-                                        title="Salary Management"
-                                        icon={<AccountBalanceWalletIcon />}
-                                        href={getCompanyRoute("/salary-management")}
-                                        selected={!!matchPath(getCompanyRoute('/salary-management'), pathname)}
-                                        locked={isMenuItemLocked('salary-management')}
-                                    />
-                                )}
                                 {shouldShowMenuItem('insurance') && (
                                     <DashboardSidebarPageItem
                                         id="insurance"
@@ -692,6 +669,39 @@ function DashboardSidebar({
                                                 />
                                             </List>
                                         }
+                                    />
+                                )}
+                                {shouldShowMenuItem('resigned') && (
+                                    <DashboardSidebarPageItem
+                                        id="resigned"
+                                        title="Resigned Employees"
+                                        icon={<PersonOffIcon />}
+                                        href={getCompanyRoute("/resigned")}
+                                        selected={!!matchPath(getCompanyRoute('/resigned'), pathname)}
+                                        locked={isMenuItemLocked('resigned')}
+                                    />
+                                )}
+
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Financial</DashboardSidebarHeaderItem>
+                                {shouldShowMenuItem('payroll') && (
+                                    <DashboardSidebarPageItem
+                                        id="payroll"
+                                        title="Payroll"
+                                        icon={<PaymentIcon />}
+                                        href={getCompanyRoute("/payroll")}
+                                        selected={!!matchPath(getCompanyRoute('/payroll'), pathname)}
+                                        locked={isMenuItemLocked('payroll')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('salary-management') && (
+                                    <DashboardSidebarPageItem
+                                        id="salary-management"
+                                        title="Salary Management"
+                                        icon={<AccountBalanceWalletIcon />}
+                                        href={getCompanyRoute("/salary-management")}
+                                        selected={!!matchPath(getCompanyRoute('/salary-management'), pathname)}
+                                        locked={isMenuItemLocked('salary-management')}
                                     />
                                 )}
 
@@ -937,29 +947,6 @@ function DashboardSidebar({
                                         locked={isMenuItemLocked('requests')}
                                     />
                                 )}
-
-                                <DashboardSidebarDividerItem />
-                                <DashboardSidebarHeaderItem>Financial</DashboardSidebarHeaderItem>
-                                {shouldShowMenuItem('payroll') && (
-                                    <DashboardSidebarPageItem
-                                        id="payroll"
-                                        title="Payroll"
-                                        icon={<PaymentIcon />}
-                                        href={getCompanyRoute("/payroll")}
-                                        selected={!!matchPath(getCompanyRoute('/payroll'), pathname)}
-                                        locked={isMenuItemLocked('payroll')}
-                                    />
-                                )}
-                                {shouldShowMenuItem('salary-management') && (
-                                    <DashboardSidebarPageItem
-                                        id="salary-management"
-                                        title="Salary Management"
-                                        icon={<AccountBalanceWalletIcon />}
-                                        href={getCompanyRoute("/salary-management")}
-                                        selected={!!matchPath(getCompanyRoute('/salary-management'), pathname)}
-                                        locked={isMenuItemLocked('salary-management')}
-                                    />
-                                )}
                                 {shouldShowMenuItem('insurance') && (
                                     <DashboardSidebarPageItem
                                         id="insurance"
@@ -1031,6 +1018,29 @@ function DashboardSidebar({
                                         href={getCompanyRoute("/resigned")}
                                         selected={!!matchPath(getCompanyRoute('/resigned'), pathname)}
                                         locked={isMenuItemLocked('resigned')}
+                                    />
+                                )}
+
+                                <DashboardSidebarDividerItem />
+                                <DashboardSidebarHeaderItem>Financial</DashboardSidebarHeaderItem>
+                                {shouldShowMenuItem('payroll') && (
+                                    <DashboardSidebarPageItem
+                                        id="payroll"
+                                        title="Payroll"
+                                        icon={<PaymentIcon />}
+                                        href={getCompanyRoute("/payroll")}
+                                        selected={!!matchPath(getCompanyRoute('/payroll'), pathname)}
+                                        locked={isMenuItemLocked('payroll')}
+                                    />
+                                )}
+                                {shouldShowMenuItem('salary-management') && (
+                                    <DashboardSidebarPageItem
+                                        id="salary-management"
+                                        title="Salary Management"
+                                        icon={<AccountBalanceWalletIcon />}
+                                        href={getCompanyRoute("/salary-management")}
+                                        selected={!!matchPath(getCompanyRoute('/salary-management'), pathname)}
+                                        locked={isMenuItemLocked('salary-management')}
                                     />
                                 )}
 

@@ -4,12 +4,15 @@ import {
     createDocument,
     getDocumentById,
     updateDocument,
-    deleteDocument
+    deleteDocument,
+    uploadDocument,
+    testUpload
 } from '../controllers/document.controller.js';
 import { protect } from '../../../middleware/authMiddleware.js';
 import { requireRole } from '../../../shared/middleware/auth.js';
 import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
 import { MODULES, ROLES } from '../../../shared/constants/modules.js';
+import { documentUpload } from '../config/multer.config.js';
 
 const router = express.Router();
 
@@ -22,6 +25,17 @@ router.get('/', getAllDocuments);
 
 // Create document - HR or Admin only
 router.post('/', requireRole(ROLES.HR, ROLES.ADMIN), createDocument);
+
+// Upload document file - HR or Admin only
+router.post('/upload', requireRole(ROLES.HR, ROLES.ADMIN), documentUpload.single('file'), uploadDocument);
+
+// Test upload endpoint accessibility
+router.get('/upload/test', requireRole(ROLES.HR, ROLES.ADMIN), testUpload);
+
+// Test endpoint to verify route is working
+router.get('/test', (req, res) => {
+    res.json({ success: true, message: 'Document routes are working' });
+});
 
 // Get document by ID - All authenticated users (access control in controller)
 router.get('/:id', getDocumentById);
