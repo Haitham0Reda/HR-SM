@@ -14,6 +14,12 @@ class DocumentService {
    */
   async getAllDocuments(tenantId, options = {}) {
     const filter = { tenantId };
+    
+    // Merge additional filters if provided
+    if (options.filter) {
+      Object.assign(filter, options.filter);
+    }
+    
     const queryOptions = {
       populate: [
         { path: 'uploadedBy', select: 'firstName lastName email employeeId' },
@@ -23,6 +29,9 @@ class DocumentService {
       sort: { createdAt: -1 },
       ...options
     };
+    
+    // Remove filter from queryOptions to avoid passing it to the repository
+    delete queryOptions.filter;
 
     return await this.documentRepository.find(filter, queryOptions);
   }

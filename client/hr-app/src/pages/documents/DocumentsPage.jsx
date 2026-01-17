@@ -14,7 +14,9 @@ import {
     Card,
     CardContent,
     CardActions,
-    Grid
+    Grid,
+    CircularProgress,
+    Alert
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -24,7 +26,10 @@ import {
     Visibility as VisibilityIcon,
     Lock as LockIcon,
     LockOpen as LockOpenIcon,
-    Description as DescriptionIcon
+    Description as DescriptionIcon,
+    CloudUpload as UploadIcon,
+    AttachFile as AttachFileIcon,
+    Clear as ClearIcon
 } from '@mui/icons-material';
 import Loading from '../../components/common/Loading';
 import DateInput from '../../components/common/DateInput';
@@ -34,6 +39,7 @@ import { useNotification } from '../../store/providers/ReduxNotificationProvider
 import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import documentService from '../../services/document.service';
 import userService from '../../services/user.service';
+import { formatFileSize } from '../../utils/formatters';
 
 const DocumentsPage = () => {
     const { user, isHR, isAdmin } = useAuth();
@@ -44,6 +50,8 @@ const DocumentsPage = () => {
     const [openConfirm, setOpenConfirm] = useState(false);
     const [openViewer, setOpenViewer] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
         arabicTitle: '',
@@ -81,8 +89,15 @@ const DocumentsPage = () => {
         try {
             setLoading(true);
             console.log('Fetching documents...');
-            const data = await documentService.getAll();
-            console.log('Documents received:', data);
+            console.log('Current user:', user);
+            console.log('Can manage:', canManage);
+            
+            const response = await documentService.getAll();
+            console.log('Documents received:', response);
+            
+            // Extract the actual data array from the response
+            const data = response.data || response;
+            console.log('Extracted data:', data);
             console.log('Data is array:', Array.isArray(data));
             console.log('Data length:', data?.length);
 
@@ -90,11 +105,33 @@ const DocumentsPage = () => {
             let filteredData = Array.isArray(data) ? data : [];
             if (!canManage) {
                 console.log('Filtering for non-admin user:', user?._id);
+                console.log('Documents before filtering:', filteredData.map(doc => ({
+                    id: doc._id,
+                    title: doc.title,
+                    employee: doc.employee,
+                    uploadedBy: doc.uploadedBy
+                })));
+                
                 filteredData = filteredData.filter(doc => {
                     const docUserId = doc.employee?._id || doc.employee;
                     const currentUserId = user?._id;
-                    // Show documents assigned to user or public documents (no employee assigned)
-                    return !docUserId || docUserId === currentUserId || String(docUserId) === String(currentUserId);
+                    const isAssignedToUser = docUserId === currentUserId || String(docUserId) === String(currentUserId);
+                    const isUploadedByUser = doc.uploadedBy?._id === currentUserId || doc.uploadedBy === currentUserId;
+                    const isPublic = !docUserId;
+                    
+                    console.log('Document filter check:', {
+                        docId: doc._id,
+                        title: doc.title,
+                        docUserId,
+                        currentUserId,
+                        isAssignedToUser,
+                        isUploadedByUser,
+                        isPublic,
+                        shouldShow: isAssignedToUser || isUploadedByUser || isPublic
+                    });
+                    
+                    // Show documents assigned to user, uploaded by user, or public documents (no employee assigned)
+                    return isAssignedToUser || isUploadedByUser || isPublic;
                 });
                 console.log('Filtered documents:', filteredData.length);
             }
@@ -103,7 +140,7 @@ const DocumentsPage = () => {
             setDocuments(filteredData);
         } catch (error) {
             console.error('Error fetching documents:', error);
-            showNotification(typeof error === 'string' ? error : 'Failed to fetch documents', 'error');
+            showNotification(error.message || 'Failed to fetch documents', 'error');
             setDocuments([]);
         } finally {
             setLoading(false);
@@ -156,6 +193,8 @@ const DocumentsPage = () => {
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setSelectedDocument(null);
+        setSelectedFile(null);
+        setUploading(false);
     };
 
     const handleChange = (e) => {
@@ -163,20 +202,122 @@ const DocumentsPage = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleFileSelect = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file size (max 10MB)
+        const maxSize = 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+            showNotification('File size must be less than 10MB', 'error');
+            return;
+        }
+
+        // Validate file type
+        const allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg',
+            'image/png',
+            'image/jpg',
+            'text/plain'
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            showNotification('Please select a valid file type (PDF, DOC, DOCX, JPG, PNG, TXT)', 'error');
+            return;
+        }
+
+        setSelectedFile(file);
+        
+        // Auto-fill file name if title is empty
+        if (!formData.title) {
+            const fileName = file.name.split('.').slice(0, -1).join('.');
+            setFormData(prev => ({ 
+                ...prev, 
+                title: fileName,
+                fileName: file.name,
+                fileSize: file.size
+            }));
+        } else {
+            setFormData(prev => ({ 
+                ...prev, 
+                fileName: file.name,
+                fileSize: file.size
+            }));
+        }
+    };
+
+    const handleRemoveFile = () => {
+        setSelectedFile(null);
+        setFormData(prev => ({ 
+            ...prev, 
+            fileName: '',
+            fileSize: 0
+        }));
+    };
+
     const handleSubmit = async () => {
         try {
+            setUploading(true);
+            
+            let finalFormData = { ...formData };
+            
+            // If we have a selected file, we need to upload it first
+            if (selectedFile) {
+                console.log('Uploading file:', selectedFile.name);
+                
+                try {
+                    // Create FormData for file upload
+                    const uploadFormData = new FormData();
+                    uploadFormData.append('file', selectedFile);
+                    
+                    // Upload file using the document service
+                    const uploadResult = await documentService.upload(uploadFormData);
+                    console.log('Upload result:', uploadResult);
+                    
+                    if (uploadResult && uploadResult.data && uploadResult.data.fileUrl) {
+                        finalFormData.fileUrl = uploadResult.data.fileUrl;
+                    } else {
+                        throw new Error('Upload failed - no file URL returned');
+                    }
+                } catch (uploadError) {
+                    console.error('File upload error:', uploadError);
+                    
+                    // For now, show an error and let user enter URL manually
+                    showNotification('File upload is not available. Please enter the file URL manually.', 'warning');
+                    return; // Don't proceed with document creation
+                }
+            }
+            
+            // Validate that we have either a file URL or this is an edit
+            if (!finalFormData.fileUrl && !selectedDocument) {
+                showNotification('Please select a file or enter a file URL', 'error');
+                return;
+            }
+            
+            console.log('Creating/updating document with data:', finalFormData);
+            
             if (selectedDocument) {
-                await documentService.update(selectedDocument._id, formData);
+                const result = await documentService.update(selectedDocument._id, finalFormData);
+                console.log('Document updated:', result);
                 showNotification('Document updated successfully', 'success');
             } else {
-                await documentService.create(formData);
+                const result = await documentService.create(finalFormData);
+                console.log('Document created:', result);
                 showNotification('Document created successfully', 'success');
             }
             handleCloseDialog();
-            fetchDocuments();
+            
+            // Refresh the documents list
+            console.log('Refreshing documents list...');
+            await fetchDocuments();
         } catch (error) {
             console.error('Error submitting document:', error);
-            showNotification(typeof error === 'string' ? error : 'Operation failed', 'error');
+            showNotification(error.message || 'Operation failed', 'error');
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -190,12 +331,6 @@ const DocumentsPage = () => {
         } catch (error) {
             showNotification(typeof error === 'string' ? error : 'Delete failed', 'error');
         }
-    };
-
-    const formatFileSize = (bytes) => {
-        if (!bytes) return 'N/A';
-        const mb = bytes / (1024 * 1024);
-        return mb < 1 ? `${(bytes / 1024).toFixed(2)} KB` : `${mb.toFixed(2)} MB`;
     };
 
     const handleViewDocument = (doc) => {
@@ -436,7 +571,11 @@ const DocumentsPage = () => {
                                         onClick={() => handleDownload(doc)}
                                         color="success"
                                         startIcon={<DownloadIcon />}
-                                        sx={{ flex: 1 }}
+                                        sx={{ 
+                                            flex: 1,
+                                            px: 3,
+                                            py: 1
+                                        }}
                                     >
                                         Download
                                     </Button>
@@ -489,23 +628,24 @@ const DocumentsPage = () => {
             <Dialog
                 open={openDialog}
                 onClose={handleCloseDialog}
-                maxWidth="md"
+                maxWidth="sm"
                 fullWidth
                 PaperProps={{
                     sx: {
-                        borderRadius: 3,
+                        borderRadius: 2,
                         boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
                     }
                 }}
             >
                 <DialogTitle sx={{
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    fontWeight: 700,
-                    fontSize: '1.3rem',
-                    py: 2.5
+                    pb: 1,
+                    pt: 2,
+                    fontWeight: 600,
+                    color: 'primary.main',
+                    borderBottom: `1px solid`,
+                    borderColor: 'divider'
                 }}>
-                    {selectedDocument ? '✏️ Edit Document' : '📤 Upload Document'}
+                    {selectedDocument ? 'Edit Document' : 'Upload Document'}
                 </DialogTitle>
                 <DialogContent sx={{ pt: 3 }}>
                     <Box sx={{
@@ -525,6 +665,91 @@ const DocumentsPage = () => {
                             }
                         }
                     }}>
+                        {/* File Upload Section */}
+                        {!selectedDocument && (
+                            <>
+                                <Box sx={{
+                                    border: `2px dashed`,
+                                    borderColor: selectedFile ? 'success.main' : 'divider',
+                                    borderRadius: 2,
+                                    p: 3,
+                                    textAlign: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    bgcolor: selectedFile ? 'success.lighter' : 'background.default',
+                                    '&:hover': {
+                                        borderColor: 'primary.main',
+                                        bgcolor: selectedFile ? 'success.lighter' : 'action.hover'
+                                    }
+                                }}>
+                                    <input
+                                        type="file"
+                                        id="document-file-upload"
+                                        style={{ display: 'none' }}
+                                        onChange={handleFileSelect}
+                                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                                    />
+                                    <label htmlFor="document-file-upload" style={{ cursor: 'pointer', width: '100%', display: 'block' }}>
+                                        {selectedFile ? (
+                                            <>
+                                                <AttachFileIcon sx={{ fontSize: 48, color: 'success.main', mb: 1 }} />
+                                                <Typography variant="h6" sx={{ color: 'success.main', mb: 1, fontWeight: 600 }}>
+                                                    {selectedFile.name}
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
+                                                    Size: {formatFileSize(selectedFile.size)}
+                                                </Typography>
+                                                <Button
+                                                    size="small"
+                                                    startIcon={<ClearIcon />}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        handleRemoveFile();
+                                                    }}
+                                                    sx={{ mt: 1, textTransform: 'none' }}
+                                                >
+                                                    Remove file
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
+                                                <Typography variant="h6" sx={{ color: 'primary.main', mb: 1, fontWeight: 600 }}>
+                                                    Click to select file
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                    Supported formats: PDF, DOC, DOCX, JPG, PNG, TXT (Max 10MB)
+                                                </Typography>
+                                            </>
+                                        )}
+                                    </label>
+                                </Box>
+                                
+                                {/* OR Divider */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+                                    <Box sx={{ flex: 1, height: '1px', bgcolor: 'divider' }} />
+                                    <Typography variant="body2" sx={{ px: 2, color: 'text.secondary' }}>
+                                        OR
+                                    </Typography>
+                                    <Box sx={{ flex: 1, height: '1px', bgcolor: 'divider' }} />
+                                </Box>
+                            </>
+                        )}
+
+                        {/* Show file URL field for editing or if no file is selected */}
+                        <TextField
+                            label="File URL"
+                            name="fileUrl"
+                            value={formData.fileUrl}
+                            onChange={handleChange}
+                            placeholder="https://example.com/document.pdf"
+                            required={!selectedFile && !selectedDocument}
+                            fullWidth
+                            helperText={selectedFile ? "File will be uploaded automatically" : "Enter the URL of the document"}
+                            disabled={!!selectedFile}
+                        />
+
                         <TextField
                             label="Title"
                             name="title"
@@ -572,35 +797,11 @@ const DocumentsPage = () => {
                                 ))}
                             </TextField>
                         )}
-                        <TextField
-                            label="File URL"
-                            name="fileUrl"
-                            value={formData.fileUrl}
-                            onChange={handleChange}
-                            placeholder="https://example.com/document.pdf"
-                            required
-                            fullWidth
-                            helperText="Enter the URL of the uploaded document"
-                        />
-                        <TextField
-                            label="File Name"
-                            name="fileName"
-                            value={formData.fileName}
-                            onChange={handleChange}
-                            placeholder="document.pdf"
-                            fullWidth
-                        />
-                        <TextField
-                            label="File Size (bytes)"
-                            name="fileSize"
-                            type="number"
-                            value={formData.fileSize}
-                            onChange={handleChange}
-                            fullWidth
-                            helperText="File size in bytes"
-                        />
-                        <DateInput label="Expiry Date (Optional)"
-                            name="expiryDate" value={formData.expiryDate}
+                        
+                        <DateInput 
+                            label="Expiry Date (Optional)"
+                            name="expiryDate" 
+                            value={formData.expiryDate}
                             onChange={handleChange}
                             fullWidth
                             slotProps={{ inputLabel: { shrink: true } }}
@@ -618,25 +819,15 @@ const DocumentsPage = () => {
                         </TextField>
                     </Box>
                 </DialogContent>
-                <DialogActions sx={{
-                    px: 3,
-                    py: 2.5,
-                    gap: 1.5,
-                    borderTop: '2px solid',
-                    borderColor: 'divider',
-                    bgcolor: 'action.hover'
-                }}>
+                <DialogActions sx={{ p: 2 }}>
                     <Button
                         onClick={handleCloseDialog}
                         variant="outlined"
+                        disabled={uploading}
                         sx={{
-                            minWidth: 120,
-                            borderRadius: 2,
-                            borderWidth: 2,
-                            fontWeight: 600,
-                            '&:hover': {
-                                borderWidth: 2
-                            }
+                            minWidth: 100,
+                            borderRadius: 1,
+                            textTransform: 'none'
                         }}
                     >
                         Cancel
@@ -645,17 +836,16 @@ const DocumentsPage = () => {
                         onClick={handleSubmit}
                         variant="contained"
                         color="primary"
+                        disabled={uploading || (!selectedFile && !formData.fileUrl && !selectedDocument)}
+                        startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : null}
                         sx={{
-                            minWidth: 120,
-                            borderRadius: 2,
-                            fontWeight: 700,
-                            '&:hover': {
-                                transform: 'translateY(-1px)'
-                            },
-                            transition: 'all 0.3s ease'
+                            minWidth: 100,
+                            borderRadius: 1,
+                            textTransform: 'none',
+                            fontWeight: 600
                         }}
                     >
-                        {selectedDocument ? '✓ Update' : '✓ Upload'}
+                        {uploading ? 'Uploading...' : (selectedDocument ? 'Update' : 'Upload')}
                     </Button>
                 </DialogActions>
             </Dialog>
