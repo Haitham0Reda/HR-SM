@@ -84,10 +84,15 @@ forgetCheckSchema.methods.reject = async function (rejecterId, reason) {
     return await this.save();
 };
 
-// Indexes
-forgetCheckSchema.index({ employee: 1, status: 1 });
-forgetCheckSchema.index({ employee: 1, date: 1 });
-forgetCheckSchema.index({ department: 1, status: 1 });
-forgetCheckSchema.index({ date: 1 });
+// Compound indexes for tenant isolation and performance
+forgetCheckSchema.index({ tenantId: 1, employee: 1, status: 1 });
+forgetCheckSchema.index({ tenantId: 1, employee: 1, date: 1 });
+forgetCheckSchema.index({ tenantId: 1, department: 1, status: 1 });
+forgetCheckSchema.index({ tenantId: 1, date: 1 });
+
+// Add withTenant static method for tenant-aware queries
+forgetCheckSchema.statics.withTenant = function (tenantId) {
+    return this.find({ tenantId });
+};
 
 export default mongoose.model('ForgetCheck', forgetCheckSchema);

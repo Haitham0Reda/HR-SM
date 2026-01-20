@@ -15,6 +15,14 @@
 import mongoose from 'mongoose';
 
 const reportConfigSchema = new mongoose.Schema({
+    // Tenant ID for multi-tenancy
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        index: true,
+        trim: true
+    },
+
     // Organization/location reference
     organization: {
         type: String,
@@ -731,9 +739,14 @@ reportConfigSchema.methods.calculateExpectedHours = function (rangeType = 'hr-mo
     };
 };
 
-// Indexes for better query performance
-reportConfigSchema.index({ organization: 1, isActive: 1 }, { unique: true });
-reportConfigSchema.index({ 'hrMonth.startDay': 1 });
-reportConfigSchema.index({ 'payrollCycle.type': 1 });
+// Compound indexes for tenant isolation and performance
+reportConfigSchema.index({ tenantId: 1, organization: 1, isActive: 1 }, { unique: true });
+reportConfigSchema.index({ tenantId: 1, 'hrMonth.startDay': 1 });
+reportConfigSchema.index({ tenantId: 1, 'payrollCycle.type': 1 });
+
+// Add withTenant static method for tenant-aware queries
+reportConfigSchema.statics.withTenant = function (tenantId) {
+    return this.find({ tenantId });
+};
 
 export default mongoose.model('ReportConfig', reportConfigSchema);

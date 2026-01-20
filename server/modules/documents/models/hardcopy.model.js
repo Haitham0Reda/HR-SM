@@ -31,23 +31,18 @@ const hardCopySchema = new mongoose.Schema({
     isPublic: {
         type: Boolean,
         default: false
-    },
-    uploadedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    tenantId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Company',
-        required: true,
-        index: true
     }
 }, {
     timestamps: true
 });
 
-// Add tenant isolation plugin
+// Apply base schema plugin for multi-tenancy (this will add tenantId, createdBy, updatedBy)
+hardCopySchema.plugin(baseSchemaPlugin);
+
+// Compound indexes for tenant isolation and performance
+hardCopySchema.index({ tenantId: 1, category: 1 });
+hardCopySchema.index({ tenantId: 1, isPublic: 1 });
+hardCopySchema.index({ tenantId: 1, createdBy: 1 });
 hardCopySchema.plugin(baseSchemaPlugin);
 
 // Indexes for performance

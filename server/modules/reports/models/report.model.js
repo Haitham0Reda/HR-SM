@@ -6,6 +6,14 @@
 import mongoose from 'mongoose';
 
 const reportSchema = new mongoose.Schema({
+    // Tenant ID for multi-tenancy
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        index: true,
+        trim: true
+    },
+
     // Report Information
     name: {
         type: String,
@@ -215,10 +223,12 @@ const reportSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Indexes
-reportSchema.index({ name: 1, createdBy: 1 });
-reportSchema.index({ reportType: 1, isActive: 1 });
-reportSchema.index({ 'schedule.enabled': 1, 'schedule.nextRun': 1 });
+// Compound indexes for tenant isolation and performance
+reportSchema.index({ tenantId: 1, name: 1, createdBy: 1 });
+reportSchema.index({ tenantId: 1, reportType: 1, isActive: 1 });
+reportSchema.index({ tenantId: 1, 'schedule.enabled': 1, 'schedule.nextRun': 1 });
+reportSchema.index({ tenantId: 1, createdBy: 1 });
+reportSchema.index({ tenantId: 1, isTemplate: 1, isActive: 1 });
 
 // Virtual for next scheduled run
 reportSchema.virtual('nextScheduledRun').get(function () {
@@ -277,8 +287,9 @@ reportSchema.methods.recordRun = async function () {
 };
 
 // Static method to get scheduled reports
-reportSchema.statics.getScheduledReports = function () {
+reportSchema.statics.getScheduledReports = function (tenantId) {
     return this.find({
+        tenantId,
         'schedule.enabled': true,
         'schedule.nextRun': { $lte: new Date() },
         isActive: true
@@ -286,8 +297,9 @@ reportSchema.statics.getScheduledReports = function () {
 };
 
 // Static method to get user reports
-reportSchema.statics.getUserReports = function (userId) {
+reportSchema.statics.getUserReports = function (userId, tenantId) {
     return this.find({
+        tenantId,
         $or: [
             { createdBy: userId },
             { isPublic: true },
@@ -298,11 +310,17 @@ reportSchema.statics.getUserReports = function (userId) {
 };
 
 // Static method to get templates
-reportSchema.statics.getTemplates = function () {
+reportSchema.statics.getTemplates = function (tenantId) {
     return this.find({
+        tenantId,
         isTemplate: true,
         isActive: true
     }).sort({ templateCategory: 1, name: 1 });
+};
+
+// Add withTenant static method for tenant-aware queries
+reportSchema.statics.withTenant = function (tenantId) {
+    return this.find({ tenantId });
 };
 
 export default mongoose.model('Report', reportSchema);

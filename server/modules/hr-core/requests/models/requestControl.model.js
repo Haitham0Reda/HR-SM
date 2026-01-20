@@ -15,6 +15,14 @@
 import mongoose from 'mongoose';
 
 const requestControlSchema = new mongoose.Schema({
+    // Tenant ID for multi-tenancy
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        index: true,
+        trim: true
+    },
+
     // Organization/location reference
     organization: {
         type: String,
@@ -766,9 +774,14 @@ requestControlSchema.statics.validateRequest = async function (requestType, empl
 // Note: Post-save notification logic moved to requestControlMiddleware.js
 // Call sendRequestControlNotifications function after save in controllers
 
-// Compound indexes for better performance
-requestControlSchema.index({ organization: 1, isActive: 1 }, { unique: true });
-requestControlSchema.index({ 'changeHistory.changedAt': -1 });
-requestControlSchema.index({ 'changeHistory.changedBy': 1 });
+// Compound indexes for tenant isolation and performance
+requestControlSchema.index({ tenantId: 1, organization: 1, isActive: 1 }, { unique: true });
+requestControlSchema.index({ tenantId: 1, 'changeHistory.changedAt': -1 });
+requestControlSchema.index({ tenantId: 1, 'changeHistory.changedBy': 1 });
+
+// Add withTenant static method for tenant-aware queries
+requestControlSchema.statics.withTenant = function (tenantId) {
+    return this.find({ tenantId });
+};
 
 export default mongoose.model('RequestControl', requestControlSchema);

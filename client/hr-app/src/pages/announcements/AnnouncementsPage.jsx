@@ -56,55 +56,27 @@ const AnnouncementsPage = () => {
     const fetchAnnouncements = async () => {
         try {
             setLoading(true);
-            console.log('🚀 Starting fetchAnnouncements...');
 
             // Check authentication
             const token = localStorage.getItem('token');
             if (!token) {
-                console.log('❌ No token found, setting empty announcements');
                 setAnnouncements([]);
                 setLoading(false);
                 return;
             }
-            console.log('✅ Token found, proceeding with API call');
 
             // Fetch announcements from API
-            console.log('🔍 Fetching announcements...');
             const response = await announcementService.getAll();
-            console.log('📡 API response:', response);
-            console.log('📊 Response type:', typeof response);
-            console.log('📈 Is array:', Array.isArray(response));
 
             // The API service returns the data directly, and backend returns array directly
             const announcements = Array.isArray(response) ? response : [];
-            
-            console.log('📋 Final announcements:', announcements);
-            console.log('📈 Announcements count:', announcements.length);
-
-            // Log the first item to see its structure
-            if (announcements.length > 0) {
-                console.log('📝 First announcement:', announcements[0]);
-            } else {
-                console.log('⚠️ No announcements found');
-            }
 
             setAnnouncements(announcements);
-            console.log('✅ Announcements set successfully');
         } catch (error) {
-            console.error('❌ Error fetching announcements:', error);
-            console.error('📋 Error details:', {
-                message: error.message,
-                status: error.status,
-                data: error.data
-            });
-
-            if (error.response) {
-                console.error('🔍 Response error:', error.response);
-            }
+            console.error('Error fetching announcements:', error);
             showNotification('Failed to fetch announcements: ' + error.message, 'error');
             setAnnouncements([]);
         } finally {
-            console.log('🏁 fetchAnnouncements completed');
             setLoading(false);
         }
     };
@@ -435,25 +407,7 @@ const AnnouncementsPage = () => {
                 </Button>
             </Box>
 
-            {/* Debug Info - Remove this after fixing */}
-            {process.env.NODE_ENV === 'development' && (
-                <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-                    <Typography variant="caption" display="block">
-                        Debug: Announcements array length: {announcements.length}
-                    </Typography>
-                    <Typography variant="caption" display="block">
-                        Debug: Announcements type: {typeof announcements}
-                    </Typography>
-                    <Typography variant="caption" display="block">
-                        Debug: Is array: {Array.isArray(announcements) ? 'Yes' : 'No'}
-                    </Typography>
-                    {announcements.length > 0 && (
-                        <Typography variant="caption" display="block">
-                            Debug: First item keys: {Object.keys(announcements[0]).join(', ')}
-                        </Typography>
-                    )}
-                </Box>
-            )}
+
 
             {announcements.length === 0 ? (
                 <Box sx={{

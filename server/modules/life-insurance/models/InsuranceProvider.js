@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { baseSchemaPlugin } from '../../../shared/models/BaseModel.js';
 
 const insuranceProviderSchema = new mongoose.Schema({
     // Basic Information
@@ -21,7 +22,7 @@ const insuranceProviderSchema = new mongoose.Schema({
         trim: true,
         maxlength: 10
     },
-    
+
     // Contact Information
     contactInfo: {
         email: {
@@ -48,7 +49,7 @@ const insuranceProviderSchema = new mongoose.Schema({
             }
         }
     },
-    
+
     // Business Information
     licenseNumber: {
         type: String,
@@ -59,19 +60,19 @@ const insuranceProviderSchema = new mongoose.Schema({
         min: 1900,
         max: new Date().getFullYear()
     },
-    
+
     // Insurance Details
     insuranceTypes: [{
         type: String,
         enum: ['health', 'life', 'dental', 'vision', 'disability', 'accident', 'travel', 'other']
     }],
-    
+
     // Coverage Areas
     coverageAreas: [{
         type: String,
         enum: ['cairo', 'alexandria', 'giza', 'luxor', 'aswan', 'nationwide', 'international']
     }],
-    
+
     // Financial Information
     financialInfo: {
         currency: {
@@ -91,21 +92,21 @@ const insuranceProviderSchema = new mongoose.Schema({
             default: 0
         }
     },
-    
+
     // Status and Ratings
     status: {
         type: String,
         enum: ['active', 'inactive', 'suspended', 'pending'],
         default: 'active'
     },
-    
+
     rating: {
         type: Number,
         min: 1,
         max: 5,
         default: 3
     },
-    
+
     // Contract Information
     contractInfo: {
         startDate: Date,
@@ -114,37 +115,37 @@ const insuranceProviderSchema = new mongoose.Schema({
         contractNumber: String,
         terms: String
     },
-    
+
     // Additional Information
     description: {
         type: String,
         maxlength: 1000
     },
-    
+
     notes: {
         type: String,
         maxlength: 500
     },
-    
+
     // Tenant Information
     tenantId: {
         type: String,
         required: true,
         index: true
     },
-    
+
     // Audit Fields
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    
+
     updatedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    
+
     // History tracking
     history: [{
         action: {
@@ -179,7 +180,7 @@ insuranceProviderSchema.index({ tenantId: 1, status: 1 });
 insuranceProviderSchema.index({ 'contactInfo.email': 1 });
 
 // Virtual for full name with Arabic
-insuranceProviderSchema.virtual('fullName').get(function() {
+insuranceProviderSchema.virtual('fullName').get(function () {
     return this.nameArabic ? `${this.name} (${this.nameArabic})` : this.name;
 });
 
@@ -193,12 +194,12 @@ insuranceProviderSchema.virtual('activePoliciesCount', {
 });
 
 // Pre-save middleware
-insuranceProviderSchema.pre('save', function(next) {
+insuranceProviderSchema.pre('save', function (next) {
     // Auto-generate code if not provided
     if (!this.code && this.name) {
         this.code = this.name.replace(/[^A-Z0-9]/gi, '').substring(0, 10).toUpperCase();
     }
-    
+
     // Add history entry for updates
     if (!this.isNew && this.isModified()) {
         const changes = {};
@@ -210,7 +211,7 @@ insuranceProviderSchema.pre('save', function(next) {
                 };
             }
         });
-        
+
         this.history.push({
             action: 'updated',
             performedBy: this.updatedBy,
@@ -218,34 +219,34 @@ insuranceProviderSchema.pre('save', function(next) {
             changes: changes
         });
     }
-    
+
     next();
 });
 
 // Static methods
-insuranceProviderSchema.statics.findByTenant = function(tenantId, options = {}) {
+insuranceProviderSchema.statics.findByTenant = function (tenantId, options = {}) {
     const query = { tenantId };
-    
+
     if (options.status) {
         query.status = options.status;
     }
-    
+
     if (options.insuranceType) {
         query.insuranceTypes = { $in: [options.insuranceType] };
     }
-    
+
     return this.find(query)
         .populate('createdBy', 'firstName lastName email')
         .populate('updatedBy', 'firstName lastName email')
         .sort(options.sort || { name: 1 });
 };
 
-insuranceProviderSchema.statics.findActiveProviders = function(tenantId) {
+insuranceProviderSchema.statics.findActiveProviders = function (tenantId) {
     return this.findByTenant(tenantId, { status: 'active' });
 };
 
 // Instance methods
-insuranceProviderSchema.methods.activate = function(userId) {
+insuranceProviderSchema.methods.activate = function (userId) {
     this.status = 'active';
     this.updatedBy = userId;
     this.history.push({
@@ -256,7 +257,7 @@ insuranceProviderSchema.methods.activate = function(userId) {
     return this.save();
 };
 
-insuranceProviderSchema.methods.deactivate = function(userId, reason) {
+insuranceProviderSchema.methods.deactivate = function (userId, reason) {
     this.status = 'inactive';
     this.updatedBy = userId;
     this.history.push({
@@ -267,6 +268,14 @@ insuranceProviderSchema.methods.deactivate = function(userId, reason) {
     });
     return this.save();
 };
+
+// Apply base schema plugin for multi-tenancy
+insuranceProviderSchema.plugin(baseSchemaPlugin);
+
+// Compound indexes for tenant isolation and performance
+insuranceProviderSchema.index({ tenantId: 1, code: 1 }, { unique: true });
+insuranceProviderSchema.index({ tenantId: 1, name: 1 });
+insuranceProviderSchema.index({ tenantId: 1, status: 1 });
 
 const InsuranceProvider = mongoose.model('InsuranceProvider', insuranceProviderSchema);
 

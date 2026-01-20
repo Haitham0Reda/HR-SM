@@ -10,7 +10,13 @@ import logger from '../../../utils/logger.js';
  */
 export const getDashboardConfig = async (req, res) => {
     try {
-        const config = await DashboardConfig.getConfig();
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const config = await DashboardConfig.getConfig(tenantId);
         await config.populate('employeeOfTheMonth.selectedEmployee', 'username email employeeId profile');
 
         res.json(config);
@@ -27,7 +33,13 @@ export const getDashboardConfig = async (req, res) => {
  */
 export const updateDashboardConfig = async (req, res) => {
     try {
-        const config = await DashboardConfig.getConfig();
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const config = await DashboardConfig.getConfig(tenantId);
         let employeeOfMonthChanged = false;
         let newEmployeeId = null;
 
@@ -70,7 +82,7 @@ export const updateDashboardConfig = async (req, res) => {
         // Send email notification if employee of the month changed
         if (employeeOfMonthChanged && newEmployeeId) {
             try {
-                const employee = await User.findById(newEmployeeId);
+                const employee = await User.findOne({ _id: newEmployeeId, tenantId });
                 if (employee && employee.email) {
                     await sendEmployeeOfMonthEmail(employee, config.employeeOfTheMonth.month);
                 }
@@ -82,6 +94,7 @@ export const updateDashboardConfig = async (req, res) => {
 
         logger.info(`Dashboard config updated by ${req.user.username}`, {
             userId: req.user._id,
+            tenantId,
             action: 'UPDATE_DASHBOARD_CONFIG',
             employeeOfMonthChanged
         });
@@ -175,7 +188,13 @@ async function sendEmployeeOfMonthEmail(employee, month) {
  */
 export const getEmployeeOfTheMonth = async (req, res) => {
     try {
-        const config = await DashboardConfig.getConfig();
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const config = await DashboardConfig.getConfig(tenantId);
         await config.populate('employeeOfTheMonth.selectedEmployee', 'username email employeeId personalInfo');
 
         res.json(config.employeeOfTheMonth);
@@ -192,17 +211,23 @@ export const getEmployeeOfTheMonth = async (req, res) => {
  */
 export const setEmployeeOfTheMonth = async (req, res) => {
     try {
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         const { employeeId, month } = req.body;
 
-        // Validate employee exists
+        // Validate employee exists and belongs to same tenant
         if (employeeId) {
-            const employee = await User.findById(employeeId);
+            const employee = await User.findOne({ _id: employeeId, tenantId });
             if (!employee) {
                 return res.status(404).json({ error: 'Employee not found' });
             }
         }
 
-        const config = await DashboardConfig.getConfig();
+        const config = await DashboardConfig.getConfig(tenantId);
         config.employeeOfTheMonth = {
             enabled: true,
             selectedEmployee: employeeId || null,
@@ -216,6 +241,7 @@ export const setEmployeeOfTheMonth = async (req, res) => {
 
         logger.info(`Employee of the month set by ${req.user.username}`, {
             userId: req.user._id,
+            tenantId,
             employeeId,
             month,
             action: 'SET_EMPLOYEE_OF_MONTH'
@@ -235,15 +261,22 @@ export const setEmployeeOfTheMonth = async (req, res) => {
  */
 export const getDashboardStatistics = async (req, res) => {
     try {
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        // Get today's attendance for the user
+        // Get today's attendance for the user (tenant-aware)
         const todayAttendance = await Attendance.findOne({
-            user: req.user._id,
+            employee: req.user._id,
+            tenantId,
             date: {
                 $gte: today,
                 $lt: tomorrow
@@ -253,8 +286,8 @@ export const getDashboardStatistics = async (req, res) => {
         // Calculate working hours if checked in
         let workingHours = '0h 0m';
         if (todayAttendance && todayAttendance.checkIn) {
-            const checkInTime = new Date(todayAttendance.checkIn);
-            const checkOutTime = todayAttendance.checkOut ? new Date(todayAttendance.checkOut) : new Date();
+            const checkInTime = new Date(todayAttendance.checkIn.time);
+            const checkOutTime = todayAttendance.checkOut?.time ? new Date(todayAttendance.checkOut.time) : new Date();
             const diffMs = checkOutTime - checkInTime;
             const hours = Math.floor(diffMs / (1000 * 60 * 60));
             const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -263,8 +296,8 @@ export const getDashboardStatistics = async (req, res) => {
 
         const statistics = {
             todayAttendance: {
-                checkIn: todayAttendance?.checkIn || null,
-                checkOut: todayAttendance?.checkOut || null,
+                checkIn: todayAttendance?.checkIn?.time || null,
+                checkOut: todayAttendance?.checkOut?.time || null,
                 status: todayAttendance?.status || 'absent',
                 workingHours
             }

@@ -411,13 +411,18 @@ permissionSchema.statics.getPendingAttendanceAdjustments = function () {
 // Note: Notification logic moved to permissionMiddleware.js
 // Call createPermissionNotification function after save in controllers
 
-// Compound indexes for better query performance
-permissionSchema.index({ employee: 1, status: 1 });
-permissionSchema.index({ employee: 1, date: 1 });
-permissionSchema.index({ date: 1, status: 1 });
-permissionSchema.index({ permissionType: 1, status: 1 });
-permissionSchema.index({ status: 1, createdAt: 1 });
-permissionSchema.index({ attendanceAdjusted: 1, status: 1 });
-permissionSchema.index({ 'approval.reviewedBy': 1 });
+// Compound indexes for tenant isolation and performance
+permissionSchema.index({ tenantId: 1, employee: 1, status: 1 });
+permissionSchema.index({ tenantId: 1, employee: 1, date: 1 });
+permissionSchema.index({ tenantId: 1, date: 1, status: 1 });
+permissionSchema.index({ tenantId: 1, permissionType: 1, status: 1 });
+permissionSchema.index({ tenantId: 1, status: 1, createdAt: 1 });
+permissionSchema.index({ tenantId: 1, attendanceAdjusted: 1, status: 1 });
+permissionSchema.index({ tenantId: 1, 'approval.reviewedBy': 1 });
+
+// Add withTenant static method for tenant-aware queries
+permissionSchema.statics.withTenant = function (tenantId) {
+  return this.find({ tenantId });
+};
 
 export default mongoose.model('Permission', permissionSchema);

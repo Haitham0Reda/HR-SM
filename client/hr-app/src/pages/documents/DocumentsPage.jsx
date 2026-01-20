@@ -15,8 +15,7 @@ import {
     CardContent,
     CardActions,
     Grid,
-    CircularProgress,
-    Alert
+    CircularProgress
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -91,10 +90,10 @@ const DocumentsPage = () => {
             console.log('Fetching documents...');
             console.log('Current user:', user);
             console.log('Can manage:', canManage);
-            
+
             const response = await documentService.getAll();
             console.log('Documents received:', response);
-            
+
             // Extract the actual data array from the response
             const data = response.data || response;
             console.log('Extracted data:', data);
@@ -111,14 +110,14 @@ const DocumentsPage = () => {
                     employee: doc.employee,
                     uploadedBy: doc.uploadedBy
                 })));
-                
+
                 filteredData = filteredData.filter(doc => {
                     const docUserId = doc.employee?._id || doc.employee;
                     const currentUserId = user?._id;
                     const isAssignedToUser = docUserId === currentUserId || String(docUserId) === String(currentUserId);
                     const isUploadedByUser = doc.uploadedBy?._id === currentUserId || doc.uploadedBy === currentUserId;
                     const isPublic = !docUserId;
-                    
+
                     console.log('Document filter check:', {
                         docId: doc._id,
                         title: doc.title,
@@ -129,7 +128,7 @@ const DocumentsPage = () => {
                         isPublic,
                         shouldShow: isAssignedToUser || isUploadedByUser || isPublic
                     });
-                    
+
                     // Show documents assigned to user, uploaded by user, or public documents (no employee assigned)
                     return isAssignedToUser || isUploadedByUser || isPublic;
                 });
@@ -230,19 +229,19 @@ const DocumentsPage = () => {
         }
 
         setSelectedFile(file);
-        
+
         // Auto-fill file name if title is empty
         if (!formData.title) {
             const fileName = file.name.split('.').slice(0, -1).join('.');
-            setFormData(prev => ({ 
-                ...prev, 
+            setFormData(prev => ({
+                ...prev,
                 title: fileName,
                 fileName: file.name,
                 fileSize: file.size
             }));
         } else {
-            setFormData(prev => ({ 
-                ...prev, 
+            setFormData(prev => ({
+                ...prev,
                 fileName: file.name,
                 fileSize: file.size
             }));
@@ -251,8 +250,8 @@ const DocumentsPage = () => {
 
     const handleRemoveFile = () => {
         setSelectedFile(null);
-        setFormData(prev => ({ 
-            ...prev, 
+        setFormData(prev => ({
+            ...prev,
             fileName: '',
             fileSize: 0
         }));
@@ -261,22 +260,22 @@ const DocumentsPage = () => {
     const handleSubmit = async () => {
         try {
             setUploading(true);
-            
+
             let finalFormData = { ...formData };
-            
+
             // If we have a selected file, we need to upload it first
             if (selectedFile) {
                 console.log('Uploading file:', selectedFile.name);
-                
+
                 try {
                     // Create FormData for file upload
                     const uploadFormData = new FormData();
                     uploadFormData.append('file', selectedFile);
-                    
+
                     // Upload file using the document service
                     const uploadResult = await documentService.upload(uploadFormData);
                     console.log('Upload result:', uploadResult);
-                    
+
                     if (uploadResult && uploadResult.data && uploadResult.data.fileUrl) {
                         finalFormData.fileUrl = uploadResult.data.fileUrl;
                     } else {
@@ -284,21 +283,21 @@ const DocumentsPage = () => {
                     }
                 } catch (uploadError) {
                     console.error('File upload error:', uploadError);
-                    
+
                     // For now, show an error and let user enter URL manually
                     showNotification('File upload is not available. Please enter the file URL manually.', 'warning');
                     return; // Don't proceed with document creation
                 }
             }
-            
+
             // Validate that we have either a file URL or this is an edit
             if (!finalFormData.fileUrl && !selectedDocument) {
                 showNotification('Please select a file or enter a file URL', 'error');
                 return;
             }
-            
+
             console.log('Creating/updating document with data:', finalFormData);
-            
+
             if (selectedDocument) {
                 const result = await documentService.update(selectedDocument._id, finalFormData);
                 console.log('Document updated:', result);
@@ -309,7 +308,7 @@ const DocumentsPage = () => {
                 showNotification('Document created successfully', 'success');
             }
             handleCloseDialog();
-            
+
             // Refresh the documents list
             console.log('Refreshing documents list...');
             await fetchDocuments();
@@ -571,7 +570,7 @@ const DocumentsPage = () => {
                                         onClick={() => handleDownload(doc)}
                                         color="success"
                                         startIcon={<DownloadIcon />}
-                                        sx={{ 
+                                        sx={{
                                             flex: 1,
                                             px: 3,
                                             py: 1
@@ -725,7 +724,7 @@ const DocumentsPage = () => {
                                         )}
                                     </label>
                                 </Box>
-                                
+
                                 {/* OR Divider */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
                                     <Box sx={{ flex: 1, height: '1px', bgcolor: 'divider' }} />
@@ -797,10 +796,10 @@ const DocumentsPage = () => {
                                 ))}
                             </TextField>
                         )}
-                        
-                        <DateInput 
+
+                        <DateInput
                             label="Expiry Date (Optional)"
-                            name="expiryDate" 
+                            name="expiryDate"
                             value={formData.expiryDate}
                             onChange={handleChange}
                             fullWidth

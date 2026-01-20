@@ -87,71 +87,71 @@ export const MODEL_REGISTRY = {
     'Department': { model: Department, schema: Department.schema },
     'Position': { model: Position, schema: Position.schema },
     'Role': { model: Role, schema: Role.schema },
-    
+
     // Attendance Models
     'Attendance': { model: Attendance, schema: Attendance.schema },
     'ForgetCheck': { model: ForgetCheck, schema: ForgetCheck.schema },
-    
+
     // Holiday Models
     'Holiday': { model: Holiday, schema: Holiday.schema },
-    
+
     // Vacation Models
     'Vacation': { model: Vacation, schema: Vacation.schema },
     'SickLeave': { model: SickLeave, schema: SickLeave.schema },
     'MixedVacation': { model: MixedVacation, schema: MixedVacation.schema },
     'VacationBalance': { model: VacationBalance, schema: VacationBalance.schema },
-    
+
     // Mission Models
     'Mission': { model: Mission, schema: Mission.schema },
-    
+
     // Request Models
     'Request': { model: Request, schema: Request.schema },
     'Permission': { model: Permission, schema: Permission.schema },
     'RequestControl': { model: RequestControl, schema: RequestControl.schema },
-    
+
     // Document Models
     'Document': { model: Document, schema: Document.schema },
     'DocumentTemplate': { model: DocumentTemplate, schema: DocumentTemplate.schema },
     'Hardcopy': { model: Hardcopy, schema: Hardcopy.schema },
-    
+
     // Event Models
     'Event': { model: Event, schema: Event.schema },
-    
+
     // Announcement Models
     'Announcement': { model: Announcement, schema: Announcement.schema },
-    
+
     // Notification Models
     'Notification': { model: Notification, schema: Notification.schema },
-    
+
     // Payroll Models
     'Payroll': { model: Payroll, schema: Payroll.schema },
-    
+
     // Report Models
     'Report': { model: Report, schema: Report.schema },
     'ReportConfig': { model: ReportConfig, schema: ReportConfig.schema },
     'ReportExecution': { model: ReportExecution, schema: ReportExecution.schema },
     'ReportExport': { model: ReportExport, schema: ReportExport.schema },
-    
+
     // Survey Models
     'Survey': { model: Survey, schema: Survey.schema },
     'SurveyNotification': { model: SurveyNotification, schema: SurveyNotification.schema },
-    
+
     // Dashboard Models
     'DashboardConfig': { model: DashboardConfig, schema: DashboardConfig.schema },
-    
+
     // Theme Models
     'ThemeConfig': { model: ThemeConfig, schema: ThemeConfig.schema },
-    
+
     // System Models (Tenant-Specific)
     'BackupLog': { model: BackupLog, schema: BackupLog.schema },
     'SystemAlerts': { model: SystemAlerts, schema: SystemAlerts.schema },
     'PerformanceMetrics': { model: PerformanceMetrics, schema: PerformanceMetrics.schema },
     'SecurityEvents': { model: SecurityEvents, schema: SecurityEvents.schema },
-    
+
     // Data Management Models (Tenant-Specific)
     'DataArchive': { model: DataArchive, schema: DataArchive.schema },
     'DataRetentionPolicy': { model: DataRetentionPolicy, schema: DataRetentionPolicy.schema },
-    
+
     // Licensing Models (Tenant-Specific)
     'CompanyLicense': { model: CompanyLicense, schema: CompanyLicense.schema }
 };
@@ -184,7 +184,7 @@ export function getModelForConnection(connection, modelName) {
  */
 export function initializeAllModels(connection) {
     const models = {};
-    
+
     for (const [modelName, { schema }] of Object.entries(MODEL_REGISTRY)) {
         try {
             models[modelName] = getModelForConnection(connection, modelName);
@@ -192,7 +192,7 @@ export function initializeAllModels(connection) {
             console.warn(`Warning: Could not initialize model '${modelName}':`, error.message);
         }
     }
-    
+
     return models;
 }
 
