@@ -6,6 +6,14 @@
 import mongoose from 'mongoose';
 
 const surveyNotificationSchema = new mongoose.Schema({
+    // Tenant ID for multi-tenancy
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        index: true,
+        trim: true
+    },
+
     // Survey reference
     survey: {
         type: mongoose.Schema.Types.ObjectId,
@@ -109,10 +117,10 @@ const surveyNotificationSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Indexes
-surveyNotificationSchema.index({ survey: 1, notificationType: 1 });
-surveyNotificationSchema.index({ 'recipients.user': 1 });
-surveyNotificationSchema.index({ status: 1, scheduledFor: 1 });
+// Compound indexes for tenant isolation and performance
+surveyNotificationSchema.index({ tenantId: 1, survey: 1, notificationType: 1 });
+surveyNotificationSchema.index({ tenantId: 1, 'recipients.user': 1 });
+surveyNotificationSchema.index({ tenantId: 1, status: 1, scheduledFor: 1 });
 
 // Method to mark as sent
 surveyNotificationSchema.methods.markAsSent = function () {
@@ -133,8 +141,9 @@ surveyNotificationSchema.methods.markAsRead = function (userId) {
 };
 
 // Static method to create survey assignment notification
-surveyNotificationSchema.statics.createAssignmentNotification = async function (survey, recipientIds) {
+surveyNotificationSchema.statics.createAssignmentNotification = async function (survey, recipientIds, tenantId) {
     const notification = new this({
+        tenantId,
         survey: survey._id,
         notificationType: 'survey-assigned',
         message: {
@@ -152,8 +161,9 @@ surveyNotificationSchema.statics.createAssignmentNotification = async function (
 };
 
 // Static method to create reminder notification
-surveyNotificationSchema.statics.createReminderNotification = async function (survey, recipientIds) {
+surveyNotificationSchema.statics.createReminderNotification = async function (survey, recipientIds, tenantId) {
     const notification = new this({
+        tenantId,
         survey: survey._id,
         notificationType: 'survey-reminder',
         message: {
@@ -168,6 +178,11 @@ surveyNotificationSchema.statics.createReminderNotification = async function (su
     });
 
     return await notification.save();
+};
+
+// Add withTenant static method for tenant-aware queries
+surveyNotificationSchema.statics.withTenant = function (tenantId) {
+    return this.find({ tenantId });
 };
 
 export default mongoose.model('SurveyNotification', surveyNotificationSchema);

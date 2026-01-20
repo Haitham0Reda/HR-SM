@@ -16,6 +16,14 @@ import mongoose from 'mongoose';
 import ReportConfig from './reportConfig.model.js';  // Add this import
 
 const reportExportSchema = new mongoose.Schema({
+    // Tenant ID for multi-tenancy
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        index: true,
+        trim: true
+    },
+
     // Report metadata
     reportType: {
         type: String,
@@ -687,14 +695,19 @@ reportExportSchema.statics.getExportStats = async function (organization = 'defa
     return stats;
 };
 
-// Compound indexes for better performance
-reportExportSchema.index({ generatedBy: 1, createdAt: -1 });
-reportExportSchema.index({ reportType: 1, status: 1 });
-reportExportSchema.index({ organization: 1, reportType: 1 });
-reportExportSchema.index({ 'dateRange.startDate': 1, 'dateRange.endDate': 1 });
-reportExportSchema.index({ expiresAt: 1 });
-reportExportSchema.index({ 'filters.department': 1 });
-reportExportSchema.index({ 'filters.employee': 1 });
-reportExportSchema.index({ status: 1, createdAt: -1 });
+// Compound indexes for tenant isolation and performance
+reportExportSchema.index({ tenantId: 1, generatedBy: 1, createdAt: -1 });
+reportExportSchema.index({ tenantId: 1, reportType: 1, status: 1 });
+reportExportSchema.index({ tenantId: 1, organization: 1, reportType: 1 });
+reportExportSchema.index({ tenantId: 1, 'dateRange.startDate': 1, 'dateRange.endDate': 1 });
+reportExportSchema.index({ tenantId: 1, expiresAt: 1 });
+reportExportSchema.index({ tenantId: 1, 'filters.department': 1 });
+reportExportSchema.index({ tenantId: 1, 'filters.employee': 1 });
+reportExportSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
+
+// Add withTenant static method for tenant-aware queries
+reportExportSchema.statics.withTenant = function (tenantId) {
+    return this.find({ tenantId });
+};
 
 export default mongoose.model('ReportExport', reportExportSchema);

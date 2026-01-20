@@ -18,9 +18,16 @@ import Request from '../../hr-core/requests/models/request.model.js';
  */
 export const getAllReports = async (req, res) => {
     try {
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         const { reportType, isTemplate, page = 1, limit = 50 } = req.query;
 
         const query = {
+            tenantId,
             $or: [
                 { createdBy: req.user._id },
                 { isPublic: true },
@@ -62,7 +69,13 @@ export const getAllReports = async (req, res) => {
  */
 export const getReportById = async (req, res) => {
     try {
-        const report = await Report.findById(req.params.id)
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const report = await Report.findOne({ _id: req.params.id, tenantId })
             .populate('createdBy', 'username email profile')
             .populate('lastModifiedBy', 'username email')
             .populate('sharedWith.user', 'username email profile');
@@ -95,8 +108,15 @@ export const getReportById = async (req, res) => {
  */
 export const createReport = async (req, res) => {
     try {
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         const reportData = {
             ...req.body,
+            tenantId,
             createdBy: req.user._id
         };
 
@@ -195,7 +215,13 @@ export const deleteReport = async (req, res) => {
  */
 export const executeReport = async (req, res) => {
     try {
-        const report = await Report.findById(req.params.id);
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const report = await Report.findOne({ _id: req.params.id, tenantId });
 
         if (!report) {
             return res.status(404).json({ error: 'Report not found' });
@@ -205,6 +231,7 @@ export const executeReport = async (req, res) => {
 
         // Create execution record
         const execution = new ReportExecution({
+            tenantId,
             report: report._id,
             reportName: report.name,
             executedBy: req.user._id,
@@ -223,8 +250,8 @@ export const executeReport = async (req, res) => {
         await execution.save();
 
         try {
-            // Execute report based on type
-            const results = await executeReportQuery(report, { startDate, endDate, additionalFilters });
+            // Execute report based on type (pass tenantId for tenant isolation)
+            const results = await executeReportQuery(report, { startDate, endDate, additionalFilters }, tenantId);
 
             // Mark as completed
             await execution.markCompleted(results.length, results);

@@ -48,7 +48,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
 import VaccinesIcon from '@mui/icons-material/Vaccines';
@@ -185,7 +185,7 @@ function DashboardSidebar({
             'attendance': 'attendance',
             'my-attendance': 'attendance',
             'forget-checks': 'attendance',
-            
+
             // Leave module (missions, sick leaves, permissions, overtime, vacation)
             'missions': 'leave',
             'sick-leaves': 'leave',
@@ -193,35 +193,35 @@ function DashboardSidebar({
             'permissions': 'leave',
             'overtime': 'leave',
             'vacation-requests': 'leave',
-            
+
             // Payroll module
             'payroll': 'payroll',
             'salary-management': 'payroll',
-            
+
             // Documents module
             'documents': 'documents',
             'hard-copies': 'documents',
             'templates': 'documents',
-            
+
             // Communication module (announcements, events, surveys)
             'announcements': 'announcements',
             'events': 'events',
             'surveys': 'surveys',
-            
+
             // Reporting module
             'reports': 'reports',
             'analytics': 'reports',
-            
+
             // Tasks module
             'tasks': 'tasks',
-            
+
             // Medical Insurance module (keeping life-insurance for compatibility)
             'insurance': 'life-insurance',
             'insurance-policies': 'life-insurance',
             'insurance-claims': 'life-insurance',
             'insurance-reports': 'life-insurance',
             'insurance-providers': 'life-insurance',
-            
+
             // Core HR - always enabled (no module key needed)
             'dashboard': null,
             'departments': null,
@@ -240,19 +240,19 @@ function DashboardSidebar({
             'license-status': null,
             'pricing': null,
         };
-        
+
         return moduleMapping[itemId] || null;
     }, []);
 
     // Check if a menu item should be shown based on license
     const shouldShowMenuItem = React.useCallback((itemId) => {
         const moduleKey = getModuleKeyForMenuItem(itemId);
-        
+
         // If no module key, it's Core HR - always show
         if (!moduleKey) {
             return true;
         }
-        
+
         // Check if module is enabled
         return isModuleEnabled(moduleKey);
     }, [getModuleKeyForMenuItem, isModuleEnabled]);
@@ -260,12 +260,12 @@ function DashboardSidebar({
     // Check if a menu item should be locked (shown but disabled)
     const isMenuItemLocked = React.useCallback((itemId) => {
         const moduleKey = getModuleKeyForMenuItem(itemId);
-        
+
         // If no module key, it's Core HR - never locked
         if (!moduleKey) {
             return false;
         }
-        
+
         // Item is locked if module is not enabled
         return !isModuleEnabled(moduleKey);
     }, [getModuleKeyForMenuItem, isModuleEnabled]);

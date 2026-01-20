@@ -6,6 +6,14 @@
 import mongoose from 'mongoose';
 
 const reportExecutionSchema = new mongoose.Schema({
+    // Tenant ID for multi-tenancy
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        index: true,
+        trim: true
+    },
+
     // Report Reference
     report: {
         type: mongoose.Schema.Types.ObjectId,
@@ -88,14 +96,19 @@ const reportExecutionSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Indexes
-reportExecutionSchema.index({ report: 1, createdAt: -1 });
-reportExecutionSchema.index({ executedBy: 1, createdAt: -1 });
-reportExecutionSchema.index({ status: 1, createdAt: -1 });
-reportExecutionSchema.index({ executionType: 1, createdAt: -1 });
+// Compound indexes for tenant isolation and performance
+reportExecutionSchema.index({ tenantId: 1, report: 1, createdAt: -1 });
+reportExecutionSchema.index({ tenantId: 1, executedBy: 1, createdAt: -1 });
+reportExecutionSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
+reportExecutionSchema.index({ tenantId: 1, executionType: 1, createdAt: -1 });
 
 // TTL index to auto-delete old executions after 90 days
 reportExecutionSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7776000 });
+
+// Add withTenant static method for tenant-aware queries
+reportExecutionSchema.statics.withTenant = function (tenantId) {
+    return this.find({ tenantId });
+};
 
 // Method to mark as completed
 reportExecutionSchema.methods.markCompleted = async function (resultCount, resultData = null) {

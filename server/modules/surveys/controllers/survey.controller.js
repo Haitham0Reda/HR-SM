@@ -4,6 +4,7 @@
  * Manages surveys, responses, and analytics
  */
 import SurveyService from '../services/SurveyService.js';
+import Survey from '../models/survey.model.js';
 import { sendSurveyAssignmentNotifications } from './surveyNotification.controller.js';
 
 const surveyService = new SurveyService();
@@ -55,7 +56,22 @@ export const getAllSurveys = async (req, res) => {
  */
 export const getEmployeeSurveys = async (req, res) => {
     try {
-        const surveys = await Survey.findActiveSurveysForUser(req.user._id);
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const surveys = await Survey.find({
+            tenantId,
+            status: 'active',
+            $or: [
+                { 'assignedTo.allEmployees': true },
+                { 'assignedTo.departments': { $in: req.user.department ? [req.user.department] : [] } },
+                { 'assignedTo.roles': { $in: req.user.role ? [req.user.role] : [] } },
+                { 'assignedTo.specificEmployees': req.user._id }
+            ]
+        });
 
         console.log(`[getEmployeeSurveys] User: ${req.user.username} (${req.user._id})`);
 
@@ -63,7 +79,6 @@ export const getEmployeeSurveys = async (req, res) => {
         const surveysWithStatus = surveys.map(survey => {
             const hasResponded = survey.hasUserResponded(req.user._id);
             const response = hasResponded ? survey.getUserResponse(req.user._id) : null;
-
 
             return {
                 _id: survey._id,
@@ -99,8 +114,15 @@ export const getEmployeeSurveys = async (req, res) => {
  */
 export const createSurvey = async (req, res) => {
     try {
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         const surveyData = {
             ...req.body,
+            tenantId,
             createdBy: req.user._id
         };
 
@@ -123,7 +145,13 @@ export const createSurvey = async (req, res) => {
  */
 export const getSurveyById = async (req, res) => {
     try {
-        const survey = await Survey.findById(req.params.id)
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const survey = await Survey.findOne({ _id: req.params.id, tenantId })
             .populate('createdBy', 'username email')
             .populate('assignedTo.departments', 'name')
             .populate('responses.respondent', 'username email profile');
@@ -170,7 +198,13 @@ export const getSurveyById = async (req, res) => {
  */
 export const updateSurvey = async (req, res) => {
     try {
-        const survey = await Survey.findById(req.params.id);
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const survey = await Survey.findOne({ _id: req.params.id, tenantId });
 
         if (!survey) {
             return res.status(404).json({ error: 'Survey not found' });
@@ -203,7 +237,13 @@ export const updateSurvey = async (req, res) => {
  */
 export const deleteSurvey = async (req, res) => {
     try {
-        const survey = await Survey.findById(req.params.id);
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const survey = await Survey.findOne({ _id: req.params.id, tenantId });
 
         if (!survey) {
             return res.status(404).json({ error: 'Survey not found' });
@@ -232,6 +272,11 @@ export const deleteSurvey = async (req, res) => {
  */
 export const submitSurveyResponse = async (req, res) => {
     try {
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
 
         const { responses, isAnonymous = false } = req.body;
 
@@ -239,7 +284,7 @@ export const submitSurveyResponse = async (req, res) => {
             return res.status(400).json({ error: 'Invalid responses format. Expected an array.' });
         }
 
-        const survey = await Survey.findById(req.params.id);
+        const survey = await Survey.findOne({ _id: req.params.id, tenantId });
 
         if (!survey) {
             return res.status(404).json({ error: 'Survey not found' });
@@ -281,7 +326,13 @@ export const submitSurveyResponse = async (req, res) => {
  */
 export const publishSurvey = async (req, res) => {
     try {
-        const survey = await Survey.findById(req.params.id);
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const survey = await Survey.findOne({ _id: req.params.id, tenantId });
 
         if (!survey) {
             return res.status(404).json({ error: 'Survey not found' });
@@ -339,7 +390,13 @@ export const publishSurvey = async (req, res) => {
  */
 export const closeSurvey = async (req, res) => {
     try {
-        const survey = await Survey.findById(req.params.id);
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const survey = await Survey.findOne({ _id: req.params.id, tenantId });
 
         if (!survey) {
             return res.status(404).json({ error: 'Survey not found' });
@@ -365,7 +422,13 @@ export const closeSurvey = async (req, res) => {
  */
 export const getSurveyStatistics = async (req, res) => {
     try {
-        const survey = await Survey.findById(req.params.id);
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const survey = await Survey.findOne({ _id: req.params.id, tenantId });
 
         if (!survey) {
             return res.status(404).json({ error: 'Survey not found' });
@@ -443,9 +506,15 @@ export const getSurveyStatistics = async (req, res) => {
  */
 export const exportSurveyResponses = async (req, res) => {
     try {
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         const { format = 'json' } = req.query;
 
-        const survey = await Survey.findById(req.params.id)
+        const survey = await Survey.findOne({ _id: req.params.id, tenantId })
             .populate('responses.respondent', 'username email profile');
 
         if (!survey) {

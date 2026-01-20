@@ -299,11 +299,16 @@ missionSchema.statics.getDepartmentStats = async function (departmentId, year = 
   return stats;
 };
 
-// Compound indexes for better performance
-missionSchema.index({ employee: 1, status: 1 });
-missionSchema.index({ department: 1, status: 1 });
-missionSchema.index({ department: 1, startDate: 1 });
-missionSchema.index({ startDate: 1, endDate: 1 });
-missionSchema.index({ status: 1, createdAt: 1 });
+// Compound indexes for tenant isolation and performance
+missionSchema.index({ tenantId: 1, employee: 1, status: 1 });
+missionSchema.index({ tenantId: 1, department: 1, status: 1 });
+missionSchema.index({ tenantId: 1, department: 1, startDate: 1 });
+missionSchema.index({ tenantId: 1, startDate: 1, endDate: 1 });
+missionSchema.index({ tenantId: 1, status: 1, createdAt: 1 });
+
+// Add withTenant static method for tenant-aware queries
+missionSchema.statics.withTenant = function (tenantId) {
+  return this.find({ tenantId });
+};
 
 export default mongoose.model('Mission', missionSchema);

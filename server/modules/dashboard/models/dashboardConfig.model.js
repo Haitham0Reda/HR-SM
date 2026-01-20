@@ -1,6 +1,14 @@
 import mongoose from 'mongoose';
 
 const dashboardConfigSchema = new mongoose.Schema({
+    // Tenant ID for multi-tenancy
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        trim: true
+        // Removed index: true to avoid conflict with compound index below
+    },
+
     // Employee of the Month configuration
     employeeOfTheMonth: {
         enabled: {
@@ -75,13 +83,21 @@ const dashboardConfigSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Ensure only one configuration document exists
-dashboardConfigSchema.statics.getConfig = async function () {
-    let config = await this.findOne();
+// Compound index for tenant isolation (unique per tenant)
+dashboardConfigSchema.index({ tenantId: 1 }, { unique: true });
+
+// Ensure only one configuration document exists per tenant
+dashboardConfigSchema.statics.getConfig = async function (tenantId) {
+    let config = await this.findOne({ tenantId });
     if (!config) {
-        config = await this.create({});
+        config = await this.create({ tenantId });
     }
     return config;
+};
+
+// Add withTenant static method for tenant-aware queries
+dashboardConfigSchema.statics.withTenant = function (tenantId) {
+    return this.find({ tenantId });
 };
 
 export default mongoose.model('DashboardConfig', dashboardConfigSchema);

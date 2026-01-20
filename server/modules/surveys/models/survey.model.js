@@ -6,6 +6,14 @@
 import mongoose from 'mongoose';
 
 const surveySchema = new mongoose.Schema({
+    // Tenant ID for multi-tenancy
+    tenantId: {
+        type: String,
+        required: [true, 'Tenant ID is required'],
+        index: true,
+        trim: true
+    },
+
     // Survey Information
     title: {
         type: String,
@@ -212,9 +220,11 @@ const surveySchema = new mongoose.Schema({
 });
 
 // Indexes
-surveySchema.index({ status: 1, 'settings.endDate': 1 });
-surveySchema.index({ 'assignedTo.departments': 1 });
-surveySchema.index({ 'responses.respondent': 1 });
+surveySchema.index({ tenantId: 1, status: 1, 'settings.endDate': 1 });
+surveySchema.index({ tenantId: 1, 'assignedTo.departments': 1 });
+surveySchema.index({ tenantId: 1, 'responses.respondent': 1 });
+surveySchema.index({ tenantId: 1, createdBy: 1 });
+surveySchema.index({ tenantId: 1, surveyType: 1 });
 
 // Virtual for active status
 surveySchema.virtual('isCurrentlyActive').get(function () {
@@ -291,8 +301,8 @@ surveySchema.methods.addResponse = async function (userId, answers = [], isAnony
         return answer !== undefined && answer !== null && answer !== '';
     }).length;
 
-    const isComplete = requiredQuestions > 0 
-        ? completionPercentage === 100 
+    const isComplete = requiredQuestions > 0
+        ? completionPercentage === 100
         : totalAnswered > 0;
 
     // Add response
@@ -319,15 +329,16 @@ surveySchema.methods.addResponse = async function (userId, answers = [], isAnony
 };
 
 // Static method to find active surveys for user
-surveySchema.statics.findActiveSurveysForUser = async function (userId) {
+surveySchema.statics.findActiveSurveysForUser = async function (userId, tenantId) {
     const User = mongoose.model('User');
-    const user = await User.findById(userId);
+    const user = await User.findOne({ _id: userId, tenantId });
 
     if (!user) return [];
 
     const now = new Date();
 
     const query = {
+        tenantId,
         status: 'active',
         $and: [
             {
@@ -368,6 +379,11 @@ surveySchema.statics.findActiveSurveysForUser = async function (userId) {
 
         return false;
     });
+};
+
+// Add withTenant static method for tenant-aware queries
+surveySchema.statics.withTenant = function (tenantId) {
+    return this.find({ tenantId });
 };
 
 export default mongoose.model('Survey', surveySchema);

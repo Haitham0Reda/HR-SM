@@ -18,7 +18,7 @@ export const registerTenantModel = (connection, modelName, schema) => {
         if (connection.models[modelName]) {
             return connection.models[modelName];
         }
-        
+
         // Register new model
         return connection.model(modelName, schema);
     } catch (error) {
@@ -38,16 +38,19 @@ export const registerHRModels = async (connection) => {
         const { default: User } = await import('../modules/hr-core/users/models/user.model.js');
         const { default: Department } = await import('../modules/hr-core/users/models/department.model.js');
         const { default: Position } = await import('../modules/hr-core/users/models/position.model.js');
-        
+        const { default: Announcement } = await import('../modules/announcements/models/announcement.model.js');
+
         // Register models safely
         const TenantUser = registerTenantModel(connection, 'User', User.schema);
         const TenantDepartment = registerTenantModel(connection, 'Department', Department.schema);
         const TenantPosition = registerTenantModel(connection, 'Position', Position.schema);
-        
+        const TenantAnnouncement = registerTenantModel(connection, 'Announcement', Announcement.schema);
+
         return {
             User: TenantUser,
             Department: TenantDepartment,
-            Position: TenantPosition
+            Position: TenantPosition,
+            Announcement: TenantAnnouncement
         };
     } catch (error) {
         console.error('Error registering HR models:', error.message);

@@ -189,7 +189,7 @@ sickLeaveSchema.virtual('isActive').get(function () {
 // Instance method to approve by supervisor
 sickLeaveSchema.methods.approveBySupervisor = async function (supervisorId, notes) {
   this.workflow.supervisorApprovalStatus = 'approved';
-  
+
   // If medical documentation is required and not reviewed by doctor yet, move to doctor review
   if (this.medicalDocumentation.required && !this.medicalDocumentation.reviewedByDoctor) {
     this.workflow.currentStep = 'doctor-review';
@@ -202,7 +202,7 @@ sickLeaveSchema.methods.approveBySupervisor = async function (supervisorId, note
     this.approvedBy = supervisorId;
     this.approvedAt = new Date();
   }
-  
+
   if (notes && typeof notes === 'string') this.approverNotes = notes.trim();
   return await this.save();
 };
@@ -213,7 +213,7 @@ sickLeaveSchema.methods.approveByDoctor = async function (doctorId, notes) {
   if (this.workflow.supervisorApprovalStatus !== 'approved') {
     throw new Error('Supervisor must approve before doctor can approve');
   }
-  
+
   this.workflow.doctorApprovalStatus = 'approved';
   this.workflow.currentStep = 'completed';
   this.status = 'approved';
@@ -222,11 +222,11 @@ sickLeaveSchema.methods.approveByDoctor = async function (doctorId, notes) {
   this.medicalDocumentation.reviewedByDoctor = true;
   this.medicalDocumentation.doctorReviewedBy = doctorId;
   this.medicalDocumentation.doctorReviewedAt = new Date();
-  
+
   if (notes && typeof notes === 'string') {
     this.medicalDocumentation.doctorNotes = notes.trim();
   }
-  
+
   return await this.save();
 };
 
@@ -247,7 +247,7 @@ sickLeaveSchema.methods.rejectByDoctor = async function (doctorId, reason) {
   if (this.workflow.supervisorApprovalStatus !== 'approved') {
     throw new Error('Supervisor must approve before doctor can reject');
   }
-  
+
   this.workflow.doctorApprovalStatus = 'rejected';
   this.workflow.currentStep = 'rejected';
   this.status = 'rejected';
@@ -257,7 +257,7 @@ sickLeaveSchema.methods.rejectByDoctor = async function (doctorId, reason) {
   this.medicalDocumentation.reviewedByDoctor = true;
   this.medicalDocumentation.doctorReviewedBy = doctorId;
   this.medicalDocumentation.doctorReviewedAt = new Date();
-  
+
   return await this.save({ validateBeforeSave: false });
 };
 
@@ -267,7 +267,7 @@ sickLeaveSchema.methods.requestAdditionalDocs = async function (doctorId, reques
   this.medicalDocumentation.requestNotes = requestNotes && typeof requestNotes === 'string' ? requestNotes.trim() : '';
   this.medicalDocumentation.doctorReviewedBy = doctorId;
   this.medicalDocumentation.doctorReviewedAt = new Date();
-  
+
   return await this.save();
 };
 
@@ -384,12 +384,17 @@ sickLeaveSchema.statics.hasOverlappingSickLeave = async function (employeeId, st
   return !!overlapping;
 };
 
-// Compound indexes for better performance
-sickLeaveSchema.index({ employee: 1, status: 1 });
-sickLeaveSchema.index({ department: 1, status: 1 });
-sickLeaveSchema.index({ 'workflow.currentStep': 1 });
-sickLeaveSchema.index({ 'workflow.supervisorApprovalStatus': 1 });
-sickLeaveSchema.index({ 'workflow.doctorApprovalStatus': 1 });
-sickLeaveSchema.index({ startDate: 1, endDate: 1 });
+// Compound indexes for tenant isolation and performance
+sickLeaveSchema.index({ tenantId: 1, employee: 1, status: 1 });
+sickLeaveSchema.index({ tenantId: 1, department: 1, status: 1 });
+sickLeaveSchema.index({ tenantId: 1, 'workflow.currentStep': 1 });
+sickLeaveSchema.index({ tenantId: 1, 'workflow.supervisorApprovalStatus': 1 });
+sickLeaveSchema.index({ tenantId: 1, 'workflow.doctorApprovalStatus': 1 });
+sickLeaveSchema.index({ tenantId: 1, startDate: 1, endDate: 1 });
+
+// Add withTenant static method for tenant-aware queries
+sickLeaveSchema.statics.withTenant = function (tenantId) {
+  return this.find({ tenantId });
+};
 
 export default mongoose.model('SickLeave', sickLeaveSchema);
