@@ -63,10 +63,26 @@ const EventsPage = () => {
     const fetchEvents = async () => {
         try {
             setLoading(true);
-            const data = await eventService.getAll();
-            setEvents(data);
+            const response = await eventService.getAll();
+
+            // Handle different response formats
+            let eventsData = [];
+            if (response && response.data && Array.isArray(response.data)) {
+                // Backend returns { success: true, data: [...] }
+                eventsData = response.data;
+            } else if (Array.isArray(response)) {
+                // Direct array response
+                eventsData = response;
+            } else {
+                console.warn('Unexpected API response format:', response);
+                eventsData = [];
+            }
+
+            setEvents(eventsData);
         } catch (error) {
+            console.error('Error fetching events:', error);
             showNotification('Failed to fetch events', 'error');
+            setEvents([]);
         } finally {
             setLoading(false);
         }
@@ -207,12 +223,14 @@ const EventsPage = () => {
                     gap: 3,
                     pb: 3
                 }}>
-                    {events.map((event) => {
+                    {Array.isArray(events) && events.map((event, index) => {
+                        // Use _id or id or fallback to index for key
+                        const eventKey = event._id || event.id || `event-${index}`;
                         const eventTypeColor = getEventTypeColor(event.type || 'other');
 
                         return (
                             <Card
-                                key={event._id}
+                                key={eventKey}
                                 sx={{
                                     flex: '1 1 calc(33.333% - 24px)',
                                     minWidth: '300px',
@@ -372,7 +390,7 @@ const EventsPage = () => {
                         />
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 6 }}>
-                                <DateInput  label="Start Date"
+                                <DateInput label="Start Date"
                                     name="startDate"
                                     value={formData.startDate}
                                     onChange={handleChange}
@@ -382,7 +400,7 @@ const EventsPage = () => {
                                 />
                             </Grid>
                             <Grid size={{ xs: 6 }}>
-                                <DateInput  label="End Date"
+                                <DateInput label="End Date"
                                     name="endDate"
                                     value={formData.endDate}
                                     onChange={handleChange}

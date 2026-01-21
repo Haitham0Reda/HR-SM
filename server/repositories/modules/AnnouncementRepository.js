@@ -1,13 +1,167 @@
 import BaseRepository from '../BaseRepository.js';
 import Announcement from '../../modules/announcements/models/announcement.model.js';
+import multiTenantDB from '../../config/multiTenant.js';
 
 /**
  * Announcement Repository - Data access layer for announcement operations
  * Extends BaseRepository with announcement-specific query methods
+ * Supports multi-tenant database isolation
  */
 class AnnouncementRepository extends BaseRepository {
     constructor() {
         super(Announcement);
+    }
+
+    /**
+     * Get tenant-specific Announcement model
+     */
+    async getTenantModel(tenantId) {
+        try {
+            console.log('🔍 Getting tenant-specific Announcement model for:', tenantId);
+            const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+            console.log('✅ Connected to tenant database:', tenantConnection.name);
+
+            // Register Department and User models if they don't exist on this connection
+            // This is needed for populate() to work
+            try {
+                if (!tenantConnection.models.Department) {
+                    const { default: Department } = await import('../../modules/hr-core/users/models/department.model.js');
+                    tenantConnection.model('Department', Department.schema);
+                }
+            } catch (error) {
+                console.warn('Could not register Department model:', error.message);
+            }
+
+            try {
+                if (!tenantConnection.models.User) {
+                    const { default: User } = await import('../../modules/hr-core/users/models/user.model.js');
+                    tenantConnection.model('User', User.schema);
+                }
+            } catch (error) {
+                console.warn('Could not register User model:', error.message);
+            }
+
+            return tenantConnection.model('Announcement', Announcement.schema);
+        } catch (error) {
+            console.error('❌ Error getting tenant Announcement model:', error);
+            // Fallback to default model if tenant connection fails
+            return Announcement;
+        }
+    }
+
+    /**
+     * Override find to use tenant-specific model
+     */
+    async find(filter, options = {}) {
+        if (filter.tenantId) {
+            console.log('🔍 AnnouncementRepository.find - Using tenant-specific model for:', filter.tenantId);
+            const TenantAnnouncement = await this.getTenantModel(filter.tenantId);
+            let query = TenantAnnouncement.find(filter);
+
+            if (options.populate) {
+                options.populate.forEach(pop => {
+                    query = query.populate(pop);
+                });
+            }
+
+            if (options.sort) {
+                query = query.sort(options.sort);
+            }
+
+            if (options.limit) {
+                query = query.limit(options.limit);
+            }
+
+            if (options.skip) {
+                query = query.skip(options.skip);
+            }
+
+            const results = await query.exec();
+            console.log('✅ AnnouncementRepository.find - Found', results.length, 'announcements in tenant database');
+            return results;
+        }
+
+        console.log('⚠️ AnnouncementRepository.find - No tenantId, using default model');
+        return await super.find(filter, options);
+    }
+
+    /**
+     * Override findOne to use tenant-specific model
+     */
+    async findOne(filter, options = {}) {
+        if (filter.tenantId) {
+            const TenantAnnouncement = await this.getTenantModel(filter.tenantId);
+            let query = TenantAnnouncement.findOne(filter);
+
+            if (options.populate) {
+                options.populate.forEach(pop => {
+                    query = query.populate(pop);
+                });
+            }
+
+            return await query.exec();
+        }
+
+        return await super.findOne(filter, options);
+    }
+
+    /**
+     * Override create to use tenant-specific model
+     */
+    async create(data) {
+        if (data.tenantId) {
+            const TenantAnnouncement = await this.getTenantModel(data.tenantId);
+            return await TenantAnnouncement.create(data);
+        }
+
+        return await super.create(data);
+    }
+
+    /**
+     * Override update to use tenant-specific model
+     */
+    async update(id, data) {
+        // We need tenantId to get the right model
+        // First try to find the document to get tenantId
+        if (data.tenantId) {
+            const TenantAnnouncement = await this.getTenantModel(data.tenantId);
+            return await TenantAnnouncement.findByIdAndUpdate(id, data, { new: true });
+        }
+
+        return await super.update(id, data);
+    }
+
+    /**
+     * Override delete to use tenant-specific model
+     */
+    async delete(id, tenantId) {
+        if (tenantId) {
+            const TenantAnnouncement = await this.getTenantModel(tenantId);
+            return await TenantAnnouncement.findByIdAndDelete(id);
+        }
+
+        return await super.delete(id);
+    }
+
+    /**
+     * Override findById to use tenant-specific model
+     */
+    async findById(id, options = {}) {
+        // For findById, we need tenantId passed in options
+        if (options.tenantId) {
+            const TenantAnnouncement = await this.getTenantModel(options.tenantId);
+            let query = TenantAnnouncement.findById(id);
+
+            if (options.populate) {
+                options.populate.forEach(pop => {
+                    query = query.populate(pop);
+                });
+            }
+
+            return await query.exec();
+        }
+
+        return await super.findById(id, options);
     }
 
     /**
@@ -45,7 +199,17 @@ class AnnouncementRepository extends BaseRepository {
                 { startDate: { $lte: now }, endDate: { $gte: now } }
             ]
         };
-        return await this.find(filter, options);
+
+        console.log('🔍 AnnouncementRepository.findActive query:', {
+            tenantId,
+            filter: JSON.stringify(filter, null, 2),
+            now: now.toISOString()
+        });
+
+        const result = await this.find(filter, options);
+        console.log('🔍 AnnouncementRepository.findActive result count:', result.length);
+
+        return result;
     }
 
     /**
@@ -154,7 +318,19 @@ class AnnouncementRepository extends BaseRepository {
             filter = { $and: [filter, roleFilter] };
         }
 
-        return await this.find(filter, options);
+        console.log('🔍 AnnouncementRepository.findForUser query:', {
+            userId,
+            userRole,
+            userDepartment,
+            tenantId,
+            filter: JSON.stringify(filter, null, 2),
+            now: now.toISOString()
+        });
+
+        const result = await this.find(filter, options);
+        console.log('🔍 AnnouncementRepository.findForUser result count:', result.length);
+
+        return result;
     }
 
     /**

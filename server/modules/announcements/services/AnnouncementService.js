@@ -75,8 +75,9 @@ class AnnouncementService {
 
         const announcement = await this.announcementRepository.create(dataToCreate);
 
-        // Return populated announcement
+        // Return populated announcement with tenantId in options
         return await this.announcementRepository.findById(announcement._id, {
+            tenantId,
             populate: [
                 { path: 'createdBy', select: 'username email firstName lastName' },
                 { path: 'departments', select: 'name code' }
@@ -116,10 +117,12 @@ class AnnouncementService {
             throw new Error('Announcement not found');
         }
 
-        const updatedAnnouncement = await this.announcementRepository.update(id, updateData);
+        // Include tenantId in update data
+        const updatedAnnouncement = await this.announcementRepository.update(id, { ...updateData, tenantId });
 
-        // Return populated announcement
+        // Return populated announcement with tenantId in options
         return await this.announcementRepository.findById(id, {
+            tenantId,
             populate: [
                 { path: 'createdBy', select: 'username email firstName lastName' },
                 { path: 'departments', select: 'name code' }
@@ -137,7 +140,7 @@ class AnnouncementService {
             throw new Error('Announcement not found');
         }
 
-        await this.announcementRepository.delete(id);
+        await this.announcementRepository.delete(id, tenantId);
         return { message: 'Announcement deleted' };
     }
 
