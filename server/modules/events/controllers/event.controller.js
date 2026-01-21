@@ -1,6 +1,8 @@
 // Event Controller
-import Event from '../models/event.model.js';
+import EventService from '../services/EventService.js';
 import { createEventNotifications } from '../../../middleware/index.js';
+
+const eventService = new EventService();
 
 export const getAllEvents = async (req, res) => {
     try {
@@ -10,10 +12,7 @@ export const getAllEvents = async (req, res) => {
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
-        const events = await Event.withTenant(tenantId)
-            .populate('createdBy', 'username email')
-            .populate('attendees', 'username email')
-            .sort({ startDate: -1 });
+        const events = await eventService.getAllEvents(tenantId);
         res.json(events);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -28,16 +27,7 @@ export const createEvent = async (req, res) => {
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
-        const event = new Event({
-            ...req.body,
-            tenantId,
-            createdBy: req.user._id
-        });
-        const savedEvent = await event.save();
-
-        // Populate for response
-        await savedEvent.populate('createdBy', 'username email');
-        await savedEvent.populate('attendees', 'username email');
+        const savedEvent = await eventService.createEvent(req.body, tenantId, req.user._id);
 
         // Create notifications for attendees
         await createEventNotifications(savedEvent);
@@ -56,12 +46,12 @@ export const getEventById = async (req, res) => {
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
-        const event = await Event.findOne({ _id: req.params.id, tenantId })
-            .populate('createdBy', 'username email')
-            .populate('attendees', 'username email');
-        if (!event) return res.status(404).json({ error: 'Event not found' });
+        const event = await eventService.getEventById(req.params.id, tenantId);
         res.json(event);
     } catch (err) {
+        if (err.message === 'Event not found') {
+            return res.status(404).json({ error: err.message });
+        }
         res.status(500).json({ error: err.message });
     }
 };
@@ -74,14 +64,12 @@ export const updateEvent = async (req, res) => {
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
-        const event = await Event.findOneAndUpdate(
-            { _id: req.params.id, tenantId },
-            req.body,
-            { new: true }
-        );
-        if (!event) return res.status(404).json({ error: 'Event not found' });
+        const event = await eventService.updateEvent(req.params.id, req.body, tenantId);
         res.json(event);
     } catch (err) {
+        if (err.message === 'Event not found') {
+            return res.status(404).json({ error: err.message });
+        }
         res.status(400).json({ error: err.message });
     }
 };
@@ -94,10 +82,12 @@ export const deleteEvent = async (req, res) => {
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
-        const event = await Event.findOneAndDelete({ _id: req.params.id, tenantId });
-        if (!event) return res.status(404).json({ error: 'Event not found' });
-        res.json({ message: 'Event deleted' });
+        const result = await eventService.deleteEvent(req.params.id, tenantId);
+        res.json(result);
     } catch (err) {
+        if (err.message === 'Event not found') {
+            return res.status(404).json({ error: err.message });
+        }
         res.status(500).json({ error: err.message });
     }
 };

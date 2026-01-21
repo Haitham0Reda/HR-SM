@@ -49,7 +49,13 @@ const AnnouncementsPage = () => {
     const audiences = ['all', 'department', 'specific']; // Match database model
 
     useEffect(() => {
+        console.log('📍 AnnouncementsPage mounted');
         fetchAnnouncements();
+
+        // Clear any cached announcement data on mount
+        return () => {
+            console.log('📍 AnnouncementsPage unmounted');
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -57,23 +63,47 @@ const AnnouncementsPage = () => {
         try {
             setLoading(true);
 
-            // Check authentication
-            const token = localStorage.getItem('token');
+            // Check authentication - check both token keys
+            const token = localStorage.getItem('tenant_token') || localStorage.getItem('token');
+            console.log('🔍 Token check:', token ? `Token exists (${token.length} chars)` : 'No token found');
+
             if (!token) {
+                console.warn('⚠️ No token found in localStorage - cannot fetch announcements');
                 setAnnouncements([]);
                 setLoading(false);
                 return;
             }
 
-            // Fetch announcements from API
-            const response = await announcementService.getAll();
+            console.log('🔍 Fetching announcements from API...');
 
-            // The API service returns the data directly, and backend returns array directly
-            const announcements = Array.isArray(response) ? response : [];
+            // Add cache-busting parameter to ensure fresh data
+            const cacheBuster = Date.now();
+            const response = await announcementService.getAll({ _t: cacheBuster });
 
-            setAnnouncements(announcements);
+            console.log('🔍 API Response:', response);
+
+            // Handle different response formats
+            let announcements = [];
+            if (response && response.data && Array.isArray(response.data)) {
+                // Backend returns { success: true, data: [...] }
+                announcements = response.data;
+                console.log('✅ Using response.data format');
+            } else if (Array.isArray(response)) {
+                // Direct array response
+                announcements = response;
+                console.log('✅ Using direct array format');
+            } else {
+                console.warn('⚠️ Unexpected API response format:', response);
+                announcements = [];
+            }
+
+            console.log('🔍 Processed announcements:', announcements.length, 'items');
+
+            // Force state update by creating a new array reference
+            setAnnouncements([...announcements]);
+            console.log('✅ State updated with', announcements.length, 'announcements');
         } catch (error) {
-            console.error('Error fetching announcements:', error);
+            console.error('❌ Error fetching announcements:', error);
             showNotification('Failed to fetch announcements: ' + error.message, 'error');
             setAnnouncements([]);
         } finally {
@@ -177,17 +207,29 @@ const AnnouncementsPage = () => {
 
     const handleSubmit = async () => {
         try {
+            console.log('🔄 Submitting announcement...', formData);
+
             if (selectedAnnouncement) {
                 await announcementService.update(selectedAnnouncement._id, formData);
                 showNotification('Announcement updated successfully', 'success');
+                console.log('✅ Announcement updated successfully');
             } else {
-                await announcementService.create(formData);
+                const result = await announcementService.create(formData);
                 showNotification('Announcement created successfully', 'success');
+                console.log('✅ Announcement created successfully:', result);
             }
+
             handleCloseDialog();
-            fetchAnnouncements();
+
+            console.log('🔄 Refreshing announcements list...');
+            // Force a refresh with a small delay to ensure backend has processed
+            setTimeout(() => {
+                fetchAnnouncements();
+            }, 500);
+
         } catch (error) {
-            showNotification(error.response?.data?.message || 'Operation failed', 'error');
+            console.error('❌ Announcement operation failed:', error);
+            showNotification(error.response?.data?.message || error.message || 'Operation failed', 'error');
         }
     };
 
