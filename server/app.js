@@ -405,14 +405,15 @@ export const initializeRoutes = async () => {
         console.warn('⚠️  Task reports routes not available:', error.message);
     }
 
-    // Holidays (new implementation)
-    try {
-        const holidaysRoutes = await import('./routes/holidays.routes.js');
-        app.use('/api/v1/holidays', holidaysRoutes.default);
-        console.log('✓ Holidays routes loaded (/api/v1/holidays/*)');
-    } catch (error) {
-        console.warn('⚠️  Holidays routes not available:', error.message);
-    }
+    // Holidays (new implementation) - DISABLED: Using hr-core module routes instead
+    // The holidays routes are loaded via moduleRegistry from server/modules/hr-core/holidays/routes.js
+    // try {
+    //     const holidaysRoutes = await import('./routes/holidays.routes.js');
+    //     app.use('/api/v1/holidays', holidaysRoutes.default);
+    //     console.log('✓ Holidays routes loaded (/api/v1/holidays/*)');
+    // } catch (error) {
+    //     console.warn('⚠️  Holidays routes not available:', error.message);
+    // }
 
     // Security & Permissions (legacy - not yet moved)
     app.use('/api/v1/permissions', permissionRoutes);

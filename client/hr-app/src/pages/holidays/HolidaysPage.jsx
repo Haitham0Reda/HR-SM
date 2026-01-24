@@ -96,11 +96,13 @@ const HolidaysPage = () => {
 
     const handleSubmit = async () => {
         try {
-            // Format data for the API
+            // Format data for the API - controller expects an array of holidays
             const holidayData = {
-                dates: formData.date,
-                name: formData.name,
-                description: formData.description
+                holidays: [{
+                    date: formData.date,
+                    name: formData.name,
+                    description: formData.description
+                }]
             };
             
             await holidayService.addHolidays(holidayData);
