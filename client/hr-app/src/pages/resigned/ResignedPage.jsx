@@ -93,9 +93,22 @@ const ResignedPage = () => {
     const fetchUsers = async () => {
         try {
             const data = await userService.getAll();
-            setUsers(data);
+            console.log('Fetched users data:', data); // Debug log
+            
+            // Handle different response formats
+            let usersList = [];
+            if (Array.isArray(data)) {
+                usersList = data;
+            } else if (data && Array.isArray(data.data)) {
+                usersList = data.data;
+            } else if (data && Array.isArray(data.users)) {
+                usersList = data.users;
+            }
+            
+            setUsers(usersList);
         } catch (error) {
             console.error('Error fetching users:', error);
+            setUsers([]); // Set empty array on error
         }
     };
 

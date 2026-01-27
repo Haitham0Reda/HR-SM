@@ -8,6 +8,7 @@ import licenseFileLoader from './platform/system/services/licenseFileLoader.serv
 import licenseWebSocketService from './platform/system/services/licenseWebSocket.service.js';
 import redisService from './core/services/redis.service.js';
 import licenseMonitoringJob from './jobs/licenseMonitoring.job.js';
+import cacheRefreshJob from './jobs/cacheRefresh.job.js';
 import licenseValidationService from './services/licenseValidationService.js';
 import realtimeMonitoringService from './services/realtimeMonitoring.service.js';
 import BackupIntegration from './services/backupIntegration.js';
@@ -112,6 +113,10 @@ const startServer = async () => {
         // Start license monitoring job
         licenseMonitoringJob.start();
         console.log('✓ License monitoring job started');
+
+        // Start cache refresh job
+        cacheRefreshJob.start();
+        console.log('✓ Cache refresh job started');
 
         // Initialize and start license validation service
         const licenseServiceInitialized = await licenseValidationService.initialize();

@@ -1,18 +1,116 @@
-import DocumentRepository from '../../../repositories/modules/DocumentRepository.js';
+import multiTenantDB from '../../../config/multiTenant.js';
+import mongoose from 'mongoose';
 
 /**
  * Document Service - Business logic layer for document operations
- * Uses DocumentRepository for data access
+ * Uses tenant-specific database connections for proper data isolation
  */
 class DocumentService {
   constructor() {
-    this.documentRepository = new DocumentRepository();
+    // No repository needed - we'll use tenant-specific models directly
+  }
+
+  /**
+   * Get Document model for specific tenant
+   */
+  async getDocumentModel(tenantId) {
+    const connection = await multiTenantDB.getCompanyConnection(tenantId);
+    
+    // Check if model already exists on this connection
+    if (connection.models.Document) {
+      return connection.models.Document;
+    }
+
+    // Ensure User model is registered on this connection for populate to work
+    if (!connection.models.User) {
+      // Define a minimal User schema for population
+      const userSchema = new mongoose.Schema({
+        firstName: String,
+        lastName: String,
+        email: String,
+        employeeId: String,
+        role: String,
+        tenantId: String
+      }, { timestamps: true });
+      connection.model('User', userSchema);
+    }
+
+    // Ensure Department model is registered on this connection
+    if (!connection.models.Department) {
+      // Define a minimal Department schema for population
+      const departmentSchema = new mongoose.Schema({
+        name: String,
+        code: String,
+        tenantId: String
+      }, { timestamps: true });
+      connection.model('Department', departmentSchema);
+    }
+
+    // Define schema (same as in document.model.js)
+    const documentSchema = new mongoose.Schema({
+      title: {
+        type: String,
+        required: true
+      },
+      arabicTitle: String,
+      type: {
+        type: String,
+        enum: ['contract', 'national-id', 'certificate', 'offer-letter', 'birth-certificate', 'other'],
+        required: true
+      },
+      employee: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      department: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Department'
+      },
+      fileUrl: {
+        type: String,
+        required: true
+      },
+      fileName: String,
+      fileSize: Number,
+      mimeType: String,
+      uploadedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      updatedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      expiryDate: Date,
+      isConfidential: {
+        type: Boolean,
+        default: false
+      },
+      description: String,
+      tenantId: {
+        type: String,
+        required: true,
+        index: true
+      }
+    }, {
+      timestamps: true
+    });
+
+    // Indexes for better performance
+    documentSchema.index({ tenantId: 1, employee: 1 });
+    documentSchema.index({ tenantId: 1, type: 1 });
+    documentSchema.index({ tenantId: 1, uploadedBy: 1 });
+    documentSchema.index({ tenantId: 1, expiryDate: 1 });
+
+    return connection.model('Document', documentSchema);
   }
 
   /**
    * Get all documents
    */
   async getAllDocuments(tenantId, options = {}) {
+    const DocumentModel = await this.getDocumentModel(tenantId);
     const filter = { tenantId };
     
     // Merge additional filters if provided
@@ -20,57 +118,51 @@ class DocumentService {
       Object.assign(filter, options.filter);
     }
     
-    const queryOptions = {
-      populate: [
-        { path: 'uploadedBy', select: 'firstName lastName email employeeId' },
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'department', select: 'name code' }
-      ],
-      sort: { createdAt: -1 },
-      ...options
-    };
-    
-    // Remove filter from queryOptions to avoid passing it to the repository
-    delete queryOptions.filter;
+    let query = DocumentModel.find(filter);
 
-    return await this.documentRepository.find(filter, queryOptions);
+    if (options.populate) {
+      query = query.populate(options.populate);
+    }
+
+    if (options.sort) {
+      query = query.sort(options.sort);
+    }
+
+    return await query.exec();
   }
 
   /**
    * Create document
    */
   async createDocument(documentData, tenantId) {
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
     const dataToCreate = {
       ...documentData,
       tenantId
     };
 
-    const document = await this.documentRepository.create(dataToCreate);
+    const document = await DocumentModel.create(dataToCreate);
     
     // Return populated document
-    return await this.documentRepository.findById(document._id, {
-      populate: [
-        { path: 'uploadedBy', select: 'firstName lastName email employeeId' },
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'department', select: 'name code' }
-      ]
-    });
+    return await DocumentModel.findById(document._id)
+      .populate('uploadedBy', 'firstName lastName email employeeId')
+      .populate('employee', 'firstName lastName email employeeId')
+      .populate('department', 'name code')
+      .exec();
   }
 
   /**
    * Get document by ID
    */
   async getDocumentById(id, tenantId) {
-    const document = await this.documentRepository.findOne(
-      { _id: id, tenantId },
-      {
-        populate: [
-          { path: 'uploadedBy', select: 'firstName lastName email employeeId' },
-          { path: 'employee', select: 'firstName lastName email employeeId' },
-          { path: 'department', select: 'name code' }
-        ]
-      }
-    );
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    const document = await DocumentModel.findOne({ _id: id, tenantId })
+      .populate('uploadedBy', 'firstName lastName email employeeId')
+      .populate('employee', 'firstName lastName email employeeId')
+      .populate('department', 'name code')
+      .exec();
 
     if (!document) {
       throw new Error('Document not found');
@@ -83,35 +175,41 @@ class DocumentService {
    * Update document
    */
   async updateDocument(id, updateData, tenantId) {
-    const document = await this.documentRepository.findOne({ _id: id, tenantId });
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    const document = await DocumentModel.findOne({ _id: id, tenantId });
     
     if (!document) {
       throw new Error('Document not found');
     }
 
-    const updatedDocument = await this.documentRepository.update(id, updateData);
+    await DocumentModel.findByIdAndUpdate(
+      id,
+      { ...updateData, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    );
     
     // Return populated document
-    return await this.documentRepository.findById(id, {
-      populate: [
-        { path: 'uploadedBy', select: 'firstName lastName email employeeId' },
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'department', select: 'name code' }
-      ]
-    });
+    return await DocumentModel.findById(id)
+      .populate('uploadedBy', 'firstName lastName email employeeId')
+      .populate('employee', 'firstName lastName email employeeId')
+      .populate('department', 'name code')
+      .exec();
   }
 
   /**
    * Delete document
    */
   async deleteDocument(id, tenantId) {
-    const document = await this.documentRepository.findOne({ _id: id, tenantId });
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    const document = await DocumentModel.findOne({ _id: id, tenantId });
     
     if (!document) {
       throw new Error('Document not found');
     }
 
-    await this.documentRepository.delete(id);
+    await DocumentModel.deleteOne({ _id: id });
     return { message: 'Document deleted' };
   }
 
@@ -119,34 +217,92 @@ class DocumentService {
    * Get documents by employee
    */
   async getDocumentsByEmployee(employeeId, tenantId, options = {}) {
-    return await this.documentRepository.findByEmployee(employeeId, tenantId, options);
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    let query = DocumentModel.find({ tenantId, employee: employeeId });
+
+    if (options.populate) {
+      query = query.populate(options.populate);
+    }
+
+    if (options.sort) {
+      query = query.sort(options.sort);
+    } else {
+      query = query.sort({ createdAt: -1 });
+    }
+
+    return await query.exec();
   }
 
   /**
    * Get documents by category
    */
   async getDocumentsByCategory(category, tenantId, options = {}) {
-    return await this.documentRepository.findByCategory(category, tenantId, options);
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    let query = DocumentModel.find({ tenantId, category });
+
+    if (options.populate) {
+      query = query.populate(options.populate);
+    }
+
+    if (options.sort) {
+      query = query.sort(options.sort);
+    } else {
+      query = query.sort({ createdAt: -1 });
+    }
+
+    return await query.exec();
   }
 
   /**
    * Get documents by type
    */
   async getDocumentsByType(type, tenantId, options = {}) {
-    return await this.documentRepository.findByType(type, tenantId, options);
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    let query = DocumentModel.find({ tenantId, type });
+
+    if (options.populate) {
+      query = query.populate(options.populate);
+    }
+
+    if (options.sort) {
+      query = query.sort(options.sort);
+    } else {
+      query = query.sort({ createdAt: -1 });
+    }
+
+    return await query.exec();
   }
 
   /**
    * Get documents by department
    */
   async getDocumentsByDepartment(departmentId, tenantId, options = {}) {
-    return await this.documentRepository.findByDepartment(departmentId, tenantId, options);
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    let query = DocumentModel.find({ tenantId, department: departmentId });
+
+    if (options.populate) {
+      query = query.populate(options.populate);
+    }
+
+    if (options.sort) {
+      query = query.sort(options.sort);
+    } else {
+      query = query.sort({ createdAt: -1 });
+    }
+
+    return await query.exec();
   }
 
   /**
    * Search documents
    */
   async searchDocuments(searchTerm, tenantId, options = {}) {
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
     const filter = {
       tenantId,
       $or: [
@@ -156,24 +312,32 @@ class DocumentService {
       ]
     };
 
-    const queryOptions = {
-      populate: [
-        { path: 'uploadedBy', select: 'firstName lastName email employeeId' },
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'department', select: 'name code' }
-      ],
-      sort: { createdAt: -1 },
-      ...options
-    };
+    let query = DocumentModel.find(filter);
 
-    return await this.documentRepository.find(filter, queryOptions);
+    if (options.populate) {
+      query = query.populate(options.populate);
+    } else {
+      query = query
+        .populate('uploadedBy', 'firstName lastName email employeeId')
+        .populate('employee', 'firstName lastName email employeeId')
+        .populate('department', 'name code');
+    }
+
+    if (options.sort) {
+      query = query.sort(options.sort);
+    } else {
+      query = query.sort({ createdAt: -1 });
+    }
+
+    return await query.exec();
   }
 
   /**
    * Get document statistics
    */
   async getDocumentStatistics(tenantId) {
-    const documents = await this.documentRepository.find({ tenantId });
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    const documents = await DocumentModel.find({ tenantId });
     
     const statistics = {
       total: documents.length,
@@ -226,6 +390,8 @@ class DocumentService {
    * Get expiring documents
    */
   async getExpiringDocuments(tenantId, days = 30, options = {}) {
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
     const now = new Date();
     const futureDate = new Date();
     futureDate.setDate(now.getDate() + days);
@@ -239,24 +405,24 @@ class DocumentService {
       status: { $ne: 'expired' }
     };
 
-    const queryOptions = {
-      populate: [
-        { path: 'uploadedBy', select: 'firstName lastName email employeeId' },
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'department', select: 'name code' }
-      ],
-      sort: { expiryDate: 1 },
-      ...options
-    };
+    let query = DocumentModel.find(filter);
 
-    return await this.documentRepository.find(filter, queryOptions);
+    query = query
+      .populate('uploadedBy', 'firstName lastName email employeeId')
+      .populate('employee', 'firstName lastName email employeeId')
+      .populate('department', 'name code')
+      .sort({ expiryDate: 1 });
+
+    return await query.exec();
   }
 
   /**
    * Mark document as expired
    */
   async markDocumentExpired(id, tenantId) {
-    const document = await this.documentRepository.findOne({ _id: id, tenantId });
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    const document = await DocumentModel.findOne({ _id: id, tenantId });
     
     if (!document) {
       throw new Error('Document not found');
@@ -267,7 +433,7 @@ class DocumentService {
       expiredAt: new Date()
     };
 
-    return await this.documentRepository.update(id, updateData);
+    return await DocumentModel.findByIdAndUpdate(id, updateData, { new: true });
   }
 
   /**
@@ -302,7 +468,9 @@ class DocumentService {
    * Get document access log
    */
   async getDocumentAccessLog(id, tenantId, options = {}) {
-    const document = await this.documentRepository.findOne({ _id: id, tenantId });
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    const document = await DocumentModel.findOne({ _id: id, tenantId });
     
     if (!document) {
       throw new Error('Document not found');
@@ -316,7 +484,9 @@ class DocumentService {
    * Log document access
    */
   async logDocumentAccess(id, userId, action, tenantId) {
-    const document = await this.documentRepository.findOne({ _id: id, tenantId });
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    const document = await DocumentModel.findOne({ _id: id, tenantId });
     
     if (!document) {
       throw new Error('Document not found');
@@ -336,32 +506,33 @@ class DocumentService {
       lastAccessedBy: userId
     };
 
-    return await this.documentRepository.update(id, updateData);
+    return await DocumentModel.findByIdAndUpdate(id, updateData, { new: true });
   }
 
   /**
    * Get documents requiring approval
    */
   async getDocumentsRequiringApproval(tenantId, options = {}) {
-    return await this.documentRepository.find(
-      { tenantId, status: 'pending_approval' },
-      {
-        populate: [
-          { path: 'uploadedBy', select: 'firstName lastName email employeeId' },
-          { path: 'employee', select: 'firstName lastName email employeeId' },
-          { path: 'department', select: 'name code' }
-        ],
-        sort: { createdAt: 1 },
-        ...options
-      }
-    );
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    let query = DocumentModel.find({ tenantId, status: 'pending_approval' });
+
+    query = query
+      .populate('uploadedBy', 'firstName lastName email employeeId')
+      .populate('employee', 'firstName lastName email employeeId')
+      .populate('department', 'name code')
+      .sort({ createdAt: 1 });
+
+    return await query.exec();
   }
 
   /**
    * Approve document
    */
   async approveDocument(id, approvedBy, tenantId) {
-    const document = await this.documentRepository.findOne({ _id: id, tenantId });
+    const DocumentModel = await this.getDocumentModel(tenantId);
+    
+    const document = await DocumentModel.findOne({ _id: id, tenantId });
     
     if (!document) {
       throw new Error('Document not found');
@@ -377,7 +548,7 @@ class DocumentService {
       approvedAt: new Date()
     };
 
-    return await this.documentRepository.update(id, updateData);
+    return await DocumentModel.findByIdAndUpdate(id, updateData, { new: true });
   }
 }
 

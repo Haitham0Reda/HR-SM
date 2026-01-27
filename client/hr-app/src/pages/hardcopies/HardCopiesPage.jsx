@@ -383,7 +383,10 @@ const HardCopiesPage = () => {
                                         </Typography>
                                         <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
                                             By: {hardCopy.uploadedBy ? 
-                                                `${hardCopy.uploadedBy.personalInfo?.firstName || ''} ${hardCopy.uploadedBy.personalInfo?.lastName || ''}`.trim() || hardCopy.uploadedBy.personalInfo?.fullName || hardCopy.uploadedBy.username : 
+                                                (() => {
+                                                    const fullName = `${hardCopy.uploadedBy.firstName || ''} ${hardCopy.uploadedBy.lastName || ''}`.trim();
+                                                    return fullName || hardCopy.uploadedBy.email || 'N/A';
+                                                })() : 
                                                 'N/A'}
                                         </Typography>
                                     </Box>

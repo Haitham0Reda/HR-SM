@@ -110,8 +110,6 @@ const ProvidersPage = () => {
     };
 
     const handleDialogOpen = (type, provider = null) => {
-        console.log('handleDialogOpen called:', { type, provider: provider?.name, providerId: provider?._id });
-        
         // Ensure we have a provider for actions that require it
         if ((type === 'edit' || type === 'view' || type === 'delete') && !provider) {
             console.error(`Cannot open ${type} dialog without a provider`);
@@ -125,8 +123,6 @@ const ProvidersPage = () => {
         setDialogType(type);
         setSelectedProvider(provider);
         setDialogOpen(true);
-        
-        console.log('Dialog state set:', { type, provider: provider?.name });
         
         if (type === 'create') {
             setFormData({
@@ -766,178 +762,233 @@ const ProvidersPage = () => {
                     {dialogType === 'create' ? 'Add New Provider' : 'Edit Provider'}
                 </DialogTitle>
                 <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Provider Name *"
-                                value={formData.name || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                required
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Arabic Name"
-                                value={formData.nameArabic || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, nameArabic: e.target.value }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Provider Code *"
-                                value={formData.code || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
-                                required
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth>
-                                <InputLabel>Status</InputLabel>
-                                <Select
-                                    value={formData.status || 'active'}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                                    label="Status"
-                                >
-                                    <MenuItem value="active">Active</MenuItem>
-                                    <MenuItem value="inactive">Inactive</MenuItem>
-                                    <MenuItem value="suspended">Suspended</MenuItem>
-                                    <MenuItem value="pending">Pending</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Email"
-                                type="email"
-                                value={formData.contactInfo?.email || ''}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
-                                    contactInfo: { ...prev.contactInfo, email: e.target.value }
-                                }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Phone"
-                                value={formData.contactInfo?.phone || ''}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
-                                    contactInfo: { ...prev.contactInfo, phone: e.target.value }
-                                }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="Website"
-                                value={formData.contactInfo?.website || ''}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
-                                    contactInfo: { ...prev.contactInfo, website: e.target.value }
-                                }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <FormControl fullWidth>
-                                <InputLabel>Insurance Types</InputLabel>
-                                <Select
-                                    multiple
-                                    value={formData.insuranceTypes || []}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, insuranceTypes: e.target.value }))}
-                                    label="Insurance Types"
-                                    renderValue={(selected) => (
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {selected.map((value) => (
-                                                <Chip key={value} label={value} size="small" />
-                                            ))}
-                                        </Box>
-                                    )}
-                                >
-                                    <MenuItem value="health">Health</MenuItem>
-                                    <MenuItem value="life">Life</MenuItem>
-                                    <MenuItem value="dental">Dental</MenuItem>
-                                    <MenuItem value="vision">Vision</MenuItem>
-                                    <MenuItem value="disability">Disability</MenuItem>
-                                    <MenuItem value="accident">Accident</MenuItem>
-                                    <MenuItem value="travel">Travel</MenuItem>
-                                    <MenuItem value="other">Other</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <FormControl fullWidth>
-                                <InputLabel>Coverage Areas</InputLabel>
-                                <Select
-                                    multiple
-                                    value={formData.coverageAreas || []}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, coverageAreas: e.target.value }))}
-                                    label="Coverage Areas"
-                                    renderValue={(selected) => (
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {selected.map((value) => (
-                                                <Chip key={value} label={value} size="small" />
-                                            ))}
-                                        </Box>
-                                    )}
-                                >
-                                    <MenuItem value="cairo">Cairo</MenuItem>
-                                    <MenuItem value="alexandria">Alexandria</MenuItem>
-                                    <MenuItem value="giza">Giza</MenuItem>
-                                    <MenuItem value="luxor">Luxor</MenuItem>
-                                    <MenuItem value="aswan">Aswan</MenuItem>
-                                    <MenuItem value="nationwide">Nationwide</MenuItem>
-                                    <MenuItem value="international">International</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="Street Address"
-                                value={formData.contactInfo?.address?.street || ''}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
-                                    contactInfo: { 
-                                        ...prev.contactInfo, 
-                                        address: { ...prev.contactInfo?.address, street: e.target.value }
-                                    }
-                                }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="City"
-                                value={formData.contactInfo?.address?.city || ''}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
-                                    contactInfo: { 
-                                        ...prev.contactInfo, 
-                                        address: { ...prev.contactInfo?.address, city: e.target.value }
-                                    }
-                                }))}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Governorate"
-                                value={formData.contactInfo?.address?.governorate || ''}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
-                                    contactInfo: { 
-                                        ...prev.contactInfo, 
-                                        address: { ...prev.contactInfo?.address, governorate: e.target.value }
-                                    }
-                                }))}
-                            />
-                        </Grid>
-                    </Grid>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+                        {/* Basic Information */}
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Basic Information
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                    <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Provider Name *"
+                                            value={formData.name || ''}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                            required
+                                        />
+                                    </Box>
+                                    <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Arabic Name"
+                                            value={formData.nameArabic || ''}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, nameArabic: e.target.value }))}
+                                        />
+                                    </Box>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                    <Box sx={{ flex: '1 1 calc(33.333% - 11px)', minWidth: '150px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Provider Code *"
+                                            value={formData.code || ''}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                                            required
+                                        />
+                                    </Box>
+                                    <Box sx={{ flex: '1 1 calc(33.333% - 11px)', minWidth: '150px' }}>
+                                        <FormControl fullWidth>
+                                            <InputLabel>Status</InputLabel>
+                                            <Select
+                                                value={formData.status || 'active'}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                                                label="Status"
+                                            >
+                                                <MenuItem value="active">Active</MenuItem>
+                                                <MenuItem value="inactive">Inactive</MenuItem>
+                                                <MenuItem value="suspended">Suspended</MenuItem>
+                                                <MenuItem value="pending">Pending</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Box>
+                                    <Box sx={{ flex: '1 1 calc(33.333% - 11px)', minWidth: '150px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Rating"
+                                            type="number"
+                                            inputProps={{ 
+                                                min: 0, 
+                                                max: 5, 
+                                                step: 0.1 
+                                            }}
+                                            value={formData.rating || 3}
+                                            onChange={(e) => {
+                                                const value = parseFloat(e.target.value);
+                                                if (value >= 0 && value <= 5) {
+                                                    setFormData(prev => ({ ...prev, rating: value }));
+                                                }
+                                            }}
+                                            helperText="0 to 5"
+                                        />
+                                    </Box>
+                                </Box>
+                            </Box>
+                        </Box>
+
+                        {/* Contact Information */}
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Contact Information
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                    <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Email"
+                                            type="email"
+                                            value={formData.contactInfo?.email || ''}
+                                            onChange={(e) => setFormData(prev => ({ 
+                                                ...prev, 
+                                                contactInfo: { ...prev.contactInfo, email: e.target.value }
+                                            }))}
+                                        />
+                                    </Box>
+                                    <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Phone"
+                                            value={formData.contactInfo?.phone || ''}
+                                            onChange={(e) => setFormData(prev => ({ 
+                                                ...prev, 
+                                                contactInfo: { ...prev.contactInfo, phone: e.target.value }
+                                            }))}
+                                        />
+                                    </Box>
+                                </Box>
+                                <TextField
+                                    fullWidth
+                                    label="Website"
+                                    value={formData.contactInfo?.website || ''}
+                                    onChange={(e) => setFormData(prev => ({ 
+                                        ...prev, 
+                                        contactInfo: { ...prev.contactInfo, website: e.target.value }
+                                    }))}
+                                />
+                            </Box>
+                        </Box>
+
+                        {/* Insurance Details */}
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Insurance Details
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Insurance Types</InputLabel>
+                                    <Select
+                                        multiple
+                                        value={formData.insuranceTypes || []}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, insuranceTypes: e.target.value }))}
+                                        label="Insurance Types"
+                                        renderValue={(selected) => (
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                {selected.map((value) => (
+                                                    <Chip key={value} label={value} size="small" />
+                                                ))}
+                                            </Box>
+                                        )}
+                                    >
+                                        <MenuItem value="health">Health</MenuItem>
+                                        <MenuItem value="life">Life</MenuItem>
+                                        <MenuItem value="dental">Dental</MenuItem>
+                                        <MenuItem value="vision">Vision</MenuItem>
+                                        <MenuItem value="disability">Disability</MenuItem>
+                                        <MenuItem value="accident">Accident</MenuItem>
+                                        <MenuItem value="travel">Travel</MenuItem>
+                                        <MenuItem value="other">Other</MenuItem>
+                                    </Select>
+                                </FormControl>
+                                <FormControl fullWidth>
+                                    <InputLabel>Coverage Areas</InputLabel>
+                                    <Select
+                                        multiple
+                                        value={formData.coverageAreas || []}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, coverageAreas: e.target.value }))}
+                                        label="Coverage Areas"
+                                        renderValue={(selected) => (
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                {selected.map((value) => (
+                                                    <Chip key={value} label={value} size="small" />
+                                                ))}
+                                            </Box>
+                                        )}
+                                    >
+                                        <MenuItem value="cairo">Cairo</MenuItem>
+                                        <MenuItem value="alexandria">Alexandria</MenuItem>
+                                        <MenuItem value="giza">Giza</MenuItem>
+                                        <MenuItem value="luxor">Luxor</MenuItem>
+                                        <MenuItem value="aswan">Aswan</MenuItem>
+                                        <MenuItem value="nationwide">Nationwide</MenuItem>
+                                        <MenuItem value="international">International</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Box>
+                        </Box>
+
+                        {/* Address */}
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Address
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Street Address"
+                                    value={formData.contactInfo?.address?.street || ''}
+                                    onChange={(e) => setFormData(prev => ({ 
+                                        ...prev, 
+                                        contactInfo: { 
+                                            ...prev.contactInfo, 
+                                            address: { ...prev.contactInfo?.address, street: e.target.value }
+                                        }
+                                    }))}
+                                />
+                                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                    <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="City"
+                                            value={formData.contactInfo?.address?.city || ''}
+                                            onChange={(e) => setFormData(prev => ({ 
+                                                ...prev, 
+                                                contactInfo: { 
+                                                    ...prev.contactInfo, 
+                                                    address: { ...prev.contactInfo?.address, city: e.target.value }
+                                                }
+                                            }))}
+                                        />
+                                    </Box>
+                                    <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Governorate"
+                                            value={formData.contactInfo?.address?.governorate || ''}
+                                            onChange={(e) => setFormData(prev => ({ 
+                                                ...prev, 
+                                                contactInfo: { 
+                                                    ...prev.contactInfo, 
+                                                    address: { ...prev.contactInfo?.address, governorate: e.target.value }
+                                                }
+                                            }))}
+                                        />
+                                    </Box>
+                                </Box>
+                            </Box>
+                        </Box>
+                    </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleDialogClose}>Cancel</Button>
@@ -952,12 +1003,6 @@ const ProvidersPage = () => {
             </Dialog>
 
             {/* Delete Confirmation Dialog */}
-            {console.log('Delete dialog render check:', { 
-                dialogOpen, 
-                dialogType, 
-                selectedProvider: selectedProvider?.name,
-                condition: dialogOpen && dialogType === 'delete'
-            })}
             <Dialog
                 open={dialogOpen && dialogType === 'delete'}
                 onClose={handleDialogClose}

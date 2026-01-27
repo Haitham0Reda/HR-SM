@@ -1,214 +1,151 @@
-# 🚨 CRITICAL MODULE SECURITY FIXES
+# Module Security Fixes - Database Isolation
 
-## ⚠️ MAJOR SECURITY VULNERABILITIES DISCOVERED
+## Overview
+This document tracks fixes applied to ensure proper database isolation in multi-tenant modules. The issue was that some modules were using the default mongoose connection instead of tenant-specific connections, causing data to be stored in the wrong database.
 
-While the **models** had tenant support, the **controllers** were **NOT enforcing tenant isolation**! This created massive security vulnerabilities where users could access data from other companies.
+## Architecture
+- **Cluster 1** (cluster.uwhj601.mongodb.net): Company-specific databases (e.g., `hrsm_techcorp_solutions`)
+- **Cluster 2** (license-server.n0m3jbn.mongodb.net): Platform/licensing management (`hrsm-licenses`)
+- **hrsm_admin**: Base URI for multi-tenant connections, doesn't store actual data
 
-## 🔍 Issues Found
+## Fixed Modules
 
-### 🚨 **Event Controller** - CRITICAL
+### 1. Life Insurance Module - Insurance Providers
+**Date Fixed**: January 27, 2026
+**Issue**: Insurance providers created via UI were being stored in `hrsm_admin` instead of company database
+**Root Cause**: Controller used default mongoose connection instead of tenant-specific connection
 
-- **Issue**: `Event.find()` returned events from ALL tenants
-- **Risk**: Company A could see Company B's events
-- **Status**: ✅ **FIXED** - Added tenant filtering to all methods
+**Solution**:
+- Updated `insuranceProviderController.js` to use `multiTenantDB.getCompanyConnection(tenantId)`
+- Created `getInsuranceProviderModel()` helper function
+- Updated all 8 controller functions to use tenant-specific model
+- Migrated existing providers from `hrsm_admin` to `hrsm_techcorp_solutions`
 
-### 🚨 **Dashboard Controller** - CRITICAL
+**Files Modified**:
+- `server/modules/life-insurance/controllers/insuranceProviderController.js`
 
-- **Issue**: `DashboardConfig.getConfig()` shared config across ALL tenants
-- **Risk**: All companies shared the same dashboard settings
-- **Status**: ✅ **FIXED** - Added tenant-aware config retrieval
+**Migration Script**:
+- `move-providers-to-company-db.js`
 
-### 🚨 **Report Controller** - CRITICAL
+### 2. Documents Module - Document Upload
+**Date Fixed**: January 27, 2026
+**Issue**: Documents uploaded via UI were not being saved to database, or were being saved to wrong database
+**Root Cause**: DocumentService used DocumentRepository which relied on default mongoose connection
 
-- **Issue**: Report queries had no tenant filtering
-- **Risk**: Users could access business reports from other companies
-- **Status**: ✅ **FIXED** - Added tenant filtering to all report operations
+**Solution**:
+- Completely refactored `DocumentService.js` to use tenant-specific connections
+- Removed dependency on DocumentRepository (which uses BaseRepository with default connection)
+- Created `getDocumentModel()` helper function that registers model on tenant-specific connection
+- Updated all service methods to use tenant-specific model
+- Added proper schema definition with all required fields (including mimeType, description)
+- Registered User and Department models on tenant connection for populate to work
 
-### ✅ **Survey Controller** - COMPLETE
+**Files Modified**:
+- `server/modules/documents/services/DocumentService.js`
+- `server/modules/documents/controllers/document.controller.js` (already had tenant-aware upload logic)
 
-- **Issue**: Some methods were tenant-aware, others were not
-- **Risk**: Potential survey data leakage
-- **Status**: ✅ **FIXED** - Complete tenant validation added to all methods
+**Methods Updated**:
+- getAllDocuments
+- createDocument
+- getDocumentById
+- updateDocument
+- deleteDocument
+- getDocumentsByEmployee
+- getDocumentsByCategory
+- getDocumentsByType
+- getDocumentsByDepartment
+- searchDocuments
+- getDocumentStatistics
+- getExpiringDocuments
+- markDocumentExpired
+- bulkUpdateDocumentStatus
+- getDocumentAccessLog
+- logDocumentAccess
+- getDocumentsRequiringApproval
+- approveDocument
 
-## 🔧 Fixes Applied
+### 3. Documents Module - HardCopy Upload
+**Date Fixed**: January 27, 2026
+**Issue**: HardCopy uploads failed with "Cannot populate path 'uploadedBy'" error
+**Root Cause**: HardCopy controller used default HardCopy model instead of tenant-specific connection
 
-### **Event Controller Fixed**
+**Solution**:
+- Created `getHardCopyModel()` helper function in hardcopy controller
+- Registers HardCopy model on tenant-specific connection
+- Registers User model on tenant connection for populate to work
+- Updated all 6 controller functions to use tenant-specific model
 
-```javascript
-// BEFORE (VULNERABLE)
-const events = await Event.find();
+**Files Modified**:
+- `server/modules/documents/controllers/hardcopy.controller.js`
 
-// AFTER (SECURE)
-const tenantId = req.user?.tenantId || req.tenantId;
-const events = await Event.withTenant(tenantId);
-```
+**Methods Updated**:
+- getAllHardCopies
+- createHardCopy
+- getHardCopyById
+- updateHardCopy
+- uploadHardCopy
+- deleteHardCopy
 
-### **Dashboard Controller Fixed**
+## Pattern to Follow
 
-```javascript
-// BEFORE (VULNERABLE)
-const config = await DashboardConfig.getConfig();
-
-// AFTER (SECURE)
-const tenantId = req.user?.tenantId || req.tenantId;
-const config = await DashboardConfig.getConfig(tenantId);
-```
-
-### **Report Controller Fixed**
-
-```javascript
-// BEFORE (VULNERABLE)
-const query = { createdBy: req.user._id };
-
-// AFTER (SECURE)
-const tenantId = req.user?.tenantId || req.tenantId;
-const query = { tenantId, createdBy: req.user._id };
-```
-
-### **Survey Controller Fixed**
-
-```javascript
-// BEFORE (VULNERABLE)
-const survey = await Survey.findById(req.params.id);
-
-// AFTER (SECURE)
-const tenantId = req.user?.tenantId || req.tenantId;
-const survey = await Survey.findOne({ _id: req.params.id, tenantId });
-```
-
-## 🛡️ Security Measures Added
-
-### **Tenant ID Validation**
-
-All controllers now validate tenant ID:
-
-```javascript
-const tenantId = req.user?.tenantId || req.tenantId;
-if (!tenantId) {
-  return res.status(400).json({ error: "Tenant ID is required" });
-}
-```
-
-### **Tenant-Aware Queries**
-
-All database queries now include tenant filtering:
+All multi-tenant modules MUST follow this pattern:
 
 ```javascript
-// Find operations
-Model.findOne({ _id: id, tenantId });
+import multiTenantDB from '../../../config/multiTenantDB.js';
 
-// Create operations
-new Model({ ...data, tenantId });
-
-// Update operations
-Model.findOneAndUpdate({ _id: id, tenantId }, data);
-```
-
-### **Cross-Tenant Access Prevention**
-
-- Users can only access data from their own tenant
-- Employee lookups are tenant-scoped
-- Report execution is tenant-isolated
-- Dashboard configs are per-tenant
-
-## 📊 Impact Assessment
-
-### **Before Fixes** ❌
-
-- **Event Data**: Shared across all companies
-- **Dashboard Settings**: Global configuration for all tenants
-- **Business Reports**: Accessible by users from other companies
-- **Survey Data**: Partially exposed across tenants
-
-### **After Fixes** ✅
-
-- **Event Data**: Completely isolated per tenant
-- **Dashboard Settings**: Unique configuration per tenant
-- **Business Reports**: Fully tenant-isolated
-- **Survey Data**: Complete tenant isolation
-
-## 🚀 Controllers Audited and Status
-
-### **High Priority Controllers** ✅
-
-1. **Event Controller** ✅ **FIXED** - Complete tenant isolation
-2. **Dashboard Controller** ✅ **FIXED** - Complete tenant isolation
-3. **Report Controller** ✅ **FIXED** - Complete tenant isolation
-4. **Survey Controller** ✅ **FIXED** - Complete tenant isolation
-5. **Document Controller** ✅ **ALREADY SECURE** - Proper tenant isolation
-6. **Payroll Controller** ✅ **ALREADY SECURE** - Proper tenant isolation
-7. **Life Insurance Controller** ✅ **ALREADY SECURE** - Proper tenant isolation
-8. **HR Core Controllers** ✅ **ALREADY SECURE** - Proper tenant isolation
-
-### **Medium Priority Controllers** ✅
-
-1. **User Controller** ✅ **ALREADY SECURE** - Proper tenant isolation
-2. **Attendance Controller** ✅ **ALREADY SECURE** - Proper tenant isolation
-3. **Task Controllers** - Need audit
-4. **Notification Controllers** - Need audit
-5. **System Controllers** - Need audit
-6. **Analytics Controllers** - Need audit
-
-## 🔧 Recommended Next Steps
-
-### **Immediate Actions**
-
-1. ✅ **Audit all high-priority controllers** - COMPLETED
-2. **Test the fixed controllers** with multi-tenant data
-3. **Update API documentation** to reflect tenant requirements
-4. **Add integration tests** for cross-tenant access prevention
-
-### **Implementation Pattern**
-
-For all controllers, follow this pattern:
-
-```javascript
-export const controllerMethod = async (req, res) => {
-  try {
-    // 1. Extract and validate tenant ID
-    const tenantId = req.user?.tenantId || req.tenantId;
-    if (!tenantId) {
-      return res.status(400).json({ error: "Tenant ID is required" });
-    }
-
-    // 2. Include tenantId in all queries
-    const query = { tenantId, ...otherFilters };
-
-    // 3. Use tenant-aware operations
-    const result = await Model.find(query);
-
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+// Helper function to get tenant-specific model
+function getModelName(tenantId) {
+  const connection = multiTenantDB.getCompanyConnection(tenantId);
+  
+  if (connection.models.ModelName) {
+    return connection.models.ModelName;
   }
-};
+
+  // Define schema
+  const schema = new mongoose.Schema({
+    // ... schema definition
+    tenantId: { type: String, required: true, index: true }
+  });
+
+  return connection.model('ModelName', schema);
+}
+
+// Use in controller/service
+const Model = getModelName(tenantId);
+const data = await Model.find({ tenantId });
 ```
 
-## 🎯 Security Status
+## Verification Steps
 
-### **Models** ✅
+For each fixed module:
+1. Create new record via UI
+2. Check company database (e.g., `hrsm_techcorp_solutions`) for the record
+3. Verify `tenantId` field is set correctly
+4. Confirm record does NOT appear in `hrsm_admin`
+5. Test all CRUD operations (Create, Read, Update, Delete)
 
-- **100% tenant support** - All models have tenantId fields
-- **Proper indexing** - Tenant-first compound indexes
-- **Data isolation** - Complete separation at database level
+## Modules to Review
 
-### **Controllers** ✅
+Other modules that may need similar fixes:
+- [ ] Announcements
+- [ ] Surveys
+- [ ] Performance Reviews
+- [ ] Training
+- [ ] Recruitment
+- [ ] Payroll
+- [ ] Time Tracking
+- [ ] Leave Management
+- [ ] Assets
+- [ ] Expenses
 
-- **Critical controllers fixed** - Event, Dashboard, Report, Survey controllers secured
-- **High-priority controllers audited** - Document, Payroll, Life Insurance, HR Core all secure
-- **Security pattern** - Established for consistent implementation
+## Notes
 
-## 🏆 Achievement Summary
+- The `hrsm_admin` database should only contain:
+  - TenantConfig records
+  - Platform-level configuration
+  - NOT company-specific operational data
 
-**ALL CRITICAL SECURITY VULNERABILITIES RESOLVED:**
+- All company data (employees, documents, insurance providers, etc.) should be in company-specific databases like `hrsm_techcorp_solutions`
 
-- ✅ **Event data leakage** - Fixed cross-tenant event access
-- ✅ **Dashboard sharing** - Isolated dashboard configs per tenant
-- ✅ **Report exposure** - Secured business report access
-- ✅ **Survey gaps** - Complete survey tenant validation
-- ✅ **Document security** - Already properly isolated
-- ✅ **Payroll security** - Already properly isolated
-- ✅ **Insurance security** - Already properly isolated
-- ✅ **HR Core security** - Already properly isolated
-
-**The HRSM system now has complete multi-tenant security at both model and controller levels. All critical security vulnerabilities have been resolved.**
+- Always use `multiTenantDB.getCompanyConnection(tenantId)` for company data
+- Never use default mongoose connection for tenant-specific data

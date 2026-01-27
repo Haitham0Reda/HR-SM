@@ -103,12 +103,30 @@ const SurveysPage = () => {
     const fetchSurveys = async () => {
         try {
             setLoading(true);
+            
+            // Check if user is authenticated
+            if (!user || !user._id) {
+                console.warn('⚠️ User not authenticated, cannot fetch surveys');
+                showNotification('Please log in to view surveys', 'warning');
+                setLoading(false);
+                return;
+            }
+
+            console.log('📡 Fetching surveys for user:', user._id, 'tenant:', user.tenantId);
+            
             // Everyone uses getMySurveys to get their personal completion status
             const data = (await surveyService.getMySurveys()).surveys;
 
+            console.log('✅ Fetched surveys:', data?.length || 0);
             setSurveys(data);
         } catch (error) {
-            showNotification('Failed to fetch surveys', 'error');
+            console.error('❌ Error fetching surveys:', error);
+            
+            if (error.response?.status === 401) {
+                showNotification('Session expired. Please log in again.', 'error');
+            } else {
+                showNotification('Failed to fetch surveys', 'error');
+            }
         } finally {
             setLoading(false);
         }
@@ -207,11 +225,40 @@ const SurveysPage = () => {
 
     const handleSubmit = async () => {
         try {
+            // Validate questions before submitting
+            if (!formData.questionsList || formData.questionsList.length === 0) {
+                showNotification('Survey must have at least one question', 'error');
+                return;
+            }
+
+            // Check for empty question text
+            const emptyQuestions = formData.questionsList.filter(q => !q.questionText || !q.questionText.trim());
+            if (emptyQuestions.length > 0) {
+                showNotification('All questions must have text', 'error');
+                return;
+            }
+
+            // Check for choice questions without options
+            const choiceQuestions = formData.questionsList.filter(q => 
+                (q.questionType === 'single-choice' || q.questionType === 'multiple-choice') && 
+                (!q.options || q.options.length === 0 || q.options.every(opt => !opt.trim()))
+            );
+            if (choiceQuestions.length > 0) {
+                showNotification('Choice questions must have at least one option', 'error');
+                return;
+            }
+
             // Use the questionsList directly
             const questions = formData.questionsList.map((question, index) => ({
                 ...question,
                 order: index + 1
             }));
+
+            // Check if user is available
+            if (!user || !user._id) {
+                showNotification('User session expired. Please log in again.', 'error');
+                return;
+            }
 
             const submitData = {
                 title: formData.title,
@@ -220,9 +267,12 @@ const SurveysPage = () => {
                 questions: questions,
                 settings: formData.settings,
                 assignedTo: formData.assignedTo,
-                status: formData.status,
-                createdBy: user._id
+                status: formData.status
+                // Don't send createdBy - the server will set it from req.user
             };
+
+            console.log('📤 Submitting survey data:', JSON.stringify(submitData, null, 2));
+            console.log('👤 User info:', { id: user._id, tenantId: user.tenantId });
 
             if (selectedSurvey) {
                 // Double-check before updating
@@ -240,10 +290,17 @@ const SurveysPage = () => {
             handleCloseDialog();
             fetchSurveys();
         } catch (error) {
-
+            console.error('❌ Survey submission error:', error);
+            console.error('Error response:', error.response?.data);
 
             // Provide more specific error messages
             let errorMessage = error.response?.data?.error || error.response?.data?.message || 'Operation failed';
+
+            // Show validation details if available
+            if (error.response?.data?.details) {
+                const details = error.response.data.details;
+                errorMessage = `Validation failed: ${details.map(d => d.message).join(', ')}`;
+            }
 
             // Check if it's the specific error about updating surveys with responses
             if (errorMessage.includes('Cannot update survey that has responses')) {
@@ -291,12 +348,12 @@ const SurveysPage = () => {
 
     // Separate surveys into pending and completed based on user's response status
     // Everyone (including admin/HR) sees their personal completion status
-    const pendingSurveys = surveys.filter(s => {
+    const pendingSurveys = (surveys || []).filter(s => {
         // A survey is pending if the user hasn't completed it
         return !s.isComplete;
     });
 
-    const completedSurveys = surveys.filter(s => {
+    const completedSurveys = (surveys || []).filter(s => {
         // A survey is completed if the user has completed it
         return s.isComplete === true;
     });
