@@ -30,63 +30,108 @@ class SurveyService {
      * Get surveys assigned to employee
      */
     async getEmployeeSurveys(userId, userRole, userDepartment, tenantId, options = {}) {
-        const surveys = await this.surveyRepository.findAssignedToUser(
-            userId,
-            userRole,
-            userDepartment,
-            tenantId,
-            options
-        );
+        try {
+            console.log('🔍 SurveyService.getEmployeeSurveys called', {
+                userId,
+                userRole,
+                userDepartment,
+                tenantId
+            });
 
-        // Map surveys with completion status
-        return surveys.map(survey => {
-            const hasResponded = survey.responses.some(r =>
-                r.respondent && r.respondent.toString() === userId.toString()
+            const surveys = await this.surveyRepository.findAssignedToUser(
+                userId,
+                userRole,
+                userDepartment,
+                tenantId,
+                options
             );
 
-            const response = hasResponded
-                ? survey.responses.find(r => r.respondent && r.respondent.toString() === userId.toString())
-                : null;
+            console.log(`✅ SurveyService.getEmployeeSurveys: Found ${surveys.length} surveys`);
 
-            return {
-                _id: survey._id,
-                title: survey.title,
-                description: survey.description,
-                surveyType: survey.surveyType,
-                questions: survey.questions,
-                questionCount: survey.questions.length,
-                settings: survey.settings,
-                isMandatory: survey.settings.isMandatory,
-                allowAnonymous: survey.settings.allowAnonymous,
-                startDate: survey.settings.startDate,
-                endDate: survey.settings.endDate,
-                status: survey.status,
-                hasResponded,
-                isComplete: response?.isComplete || false,
-                completionPercentage: response?.completionPercentage || 0,
-                submittedAt: response?.submittedAt
-            };
-        });
+            // Map surveys with completion status
+            return surveys.map(survey => {
+                const hasResponded = survey.responses && survey.responses.some(r =>
+                    r.respondent && r.respondent.toString() === userId.toString()
+                );
+
+                const response = hasResponded
+                    ? survey.responses.find(r => r.respondent && r.respondent.toString() === userId.toString())
+                    : null;
+
+                return {
+                    _id: survey._id,
+                    title: survey.title,
+                    description: survey.description,
+                    surveyType: survey.surveyType,
+                    questions: survey.questions || [],
+                    questionCount: survey.questions ? survey.questions.length : 0,
+                    settings: survey.settings || {},
+                    isMandatory: survey.settings?.isMandatory || false,
+                    allowAnonymous: survey.settings?.allowAnonymous || false,
+                    startDate: survey.settings?.startDate,
+                    endDate: survey.settings?.endDate,
+                    status: survey.status,
+                    hasResponded,
+                    isComplete: response?.isComplete || false,
+                    completionPercentage: response?.completionPercentage || 0,
+                    submittedAt: response?.submittedAt
+                };
+            });
+        } catch (error) {
+            console.error('❌ SurveyService.getEmployeeSurveys error:', {
+                error: error.message,
+                stack: error.stack,
+                userId,
+                tenantId
+            });
+            throw error;
+        }
     }
 
     /**
      * Create survey
      */
     async createSurvey(surveyData, createdBy, tenantId) {
-        const dataToCreate = {
-            ...surveyData,
-            createdBy,
-            tenantId
-        };
+        try {
+            console.log('🔍 SurveyService.createSurvey called', {
+                tenantId,
+                createdBy,
+                title: surveyData.title
+            });
 
-        const survey = await this.surveyRepository.create(dataToCreate);
+            const dataToCreate = {
+                ...surveyData,
+                createdBy,
+                tenantId
+            };
 
-        // Return populated survey
-        return await this.surveyRepository.findById(survey._id, {
-            populate: [
-                { path: 'createdBy', select: 'username email firstName lastName' }
-            ]
-        });
+            const survey = await this.surveyRepository.create(dataToCreate);
+            console.log('✅ Survey created in database:', survey._id);
+
+            // Try to populate and return survey
+            try {
+                const populatedSurvey = await this.surveyRepository.findById(survey._id, {
+                    tenantId,
+                    populate: [
+                        { path: 'createdBy', select: 'username email firstName lastName' }
+                    ]
+                });
+                
+                if (populatedSurvey) {
+                    console.log('✅ Survey populated successfully');
+                    return populatedSurvey;
+                } else {
+                    console.warn('⚠️ Could not find survey after creation, returning unpopulated');
+                    return survey;
+                }
+            } catch (populateError) {
+                console.warn('⚠️ Error populating survey, returning unpopulated:', populateError.message);
+                return survey;
+            }
+        } catch (error) {
+            console.error('❌ SurveyService.createSurvey error:', error);
+            throw error;
+        }
     }
 
     /**

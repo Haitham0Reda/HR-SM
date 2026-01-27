@@ -1,6 +1,181 @@
 // Holiday Controller
 import { getHolidayInfo, getHolidaysForYear, isWorkingDay } from '../utils/holidayChecker.js';
-import Holiday from '../models/holiday.model.js';
+import mongoose from 'mongoose';
+import multiTenantDB from '../../../../config/multiTenant.js';
+
+/**
+ * Get Holiday model for tenant-specific database
+ */
+const getHolidayModel = async (tenantId) => {
+    const connection = await multiTenantDB.getCompanyConnection(tenantId);
+    
+    // Check if model is already registered
+    if (connection.models.Holiday) {
+        return connection.models.Holiday;
+    }
+
+    // Define Holiday schema
+    const holidaySchema = new mongoose.Schema({
+        // Tenant identifier for multi-tenant support
+        tenantId: {
+            type: String,
+            required: true,
+            index: true
+        },
+
+        // Official Holidays
+        officialHolidays: [{
+            date: {
+                type: Date,
+                required: true
+            },
+            name: String,
+            dayOfWeek: String,
+            isWeekend: {
+                type: Boolean,
+                default: false
+            },
+            isIslamic: {
+                type: Boolean,
+                default: false
+            },
+            description: String
+        }],
+
+        // Weekend Work Days (makeup days)
+        weekendWorkDays: [{
+            date: {
+                type: Date,
+                required: true
+            },
+            reason: String,
+            dayOfWeek: String
+        }],
+
+        // Early Leave Dates
+        earlyLeaveDates: [{
+            date: {
+                type: Date,
+                required: true
+            },
+            reason: String,
+            earlyLeaveTime: String, // HH:mm format
+            dayOfWeek: String
+        }],
+
+        // Weekend Configuration
+        weekendDays: {
+            type: [Number], // 0 = Sunday, 6 = Saturday
+            default: [5, 6] // Friday and Saturday for Egypt
+        },
+
+        // Metadata
+        lastModified: {
+            type: Date,
+            default: Date.now
+        },
+        lastModifiedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }
+    }, {
+        timestamps: true
+    });
+
+    // Indexes
+    holidaySchema.index({ tenantId: 1 });
+    holidaySchema.index({ 'officialHolidays.date': 1 });
+    holidaySchema.index({ 'weekendWorkDays.date': 1 });
+
+    // Static method to get day of week
+    holidaySchema.statics.getDayOfWeek = function (date) {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return days[new Date(date).getDay()];
+    };
+
+    // Static method to check if date is weekend
+    holidaySchema.statics.isWeekend = function (date, weekendDays = [5, 6]) {
+        const dayOfWeek = new Date(date).getDay();
+        return weekendDays.includes(dayOfWeek);
+    };
+
+    // Static method to identify Islamic holidays
+    holidaySchema.statics.isIslamicHoliday = function (name) {
+        const islamicKeywords = [
+            'eid', 'ramadan', 'muharram', 'hijri', 'islamic',
+            'mawlid', 'ashura', 'laylat', 'rajab', 'sha\'ban',
+            'fitr', 'adha', 'prophet', 'muhammad', 'maulid'
+        ];
+
+        const lowerName = name.toLowerCase();
+        return islamicKeywords.some(keyword => lowerName.includes(keyword));
+    };
+
+    // Method to check if date is holiday
+    holidaySchema.methods.isHoliday = function (date) {
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+
+        return this.officialHolidays.some(h => {
+            const holidayDate = new Date(h.date);
+            holidayDate.setHours(0, 0, 0, 0);
+            return holidayDate.getTime() === checkDate.getTime();
+        });
+    };
+
+    // Method to check if date is weekend work day
+    holidaySchema.methods.isWeekendWorkDay = function (date) {
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+
+        return this.weekendWorkDays.some(w => {
+            const workDate = new Date(w.date);
+            workDate.setHours(0, 0, 0, 0);
+            return workDate.getTime() === checkDate.getTime();
+        });
+    };
+
+    // Method to check if date is working day
+    holidaySchema.methods.isWorkingDay = function (date) {
+        const checkDate = new Date(date);
+
+        // If it's a holiday, it's not a working day
+        if (this.isHoliday(checkDate)) {
+            return false;
+        }
+
+        // If it's a weekend work day, it IS a working day
+        if (this.isWeekendWorkDay(checkDate)) {
+            return true;
+        }
+
+        // Check if it's a regular weekend
+        const HolidayModel = this.constructor;
+        return !HolidayModel.isWeekend(checkDate, this.weekendDays);
+    };
+
+    return connection.model('Holiday', holidaySchema);
+};
+
+/**
+ * Get or create holiday settings for tenant
+ */
+const getOrCreateForTenant = async (tenantId) => {
+    const Holiday = await getHolidayModel(tenantId);
+    let settings = await Holiday.findOne({ tenantId: tenantId });
+
+    if (!settings) {
+        settings = await Holiday.create({
+            tenantId: tenantId,
+            officialHolidays: [],
+            weekendWorkDays: [],
+            earlyLeaveDates: [],
+            weekendDays: [5, 6] // Friday and Saturday
+        });
+    }
+
+    return settings;
+};
 
 /**
  * Get holiday information for a specific date
@@ -98,8 +273,15 @@ export const importEgyptHolidays = async (req, res) => {
             return res.status(404).json({ error: `No holidays found for year ${year}` });
         }
 
-        // Get or create holiday settings for tenant
-        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        // Get tenant ID
+        const tenantId = req.tenantId || req.user?.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        // Get or create holiday settings for tenant using tenant-specific database
+        const Holiday = await getHolidayModel(tenantId);
+        const holidaySettings = await getOrCreateForTenant(tenantId);
 
         // Track import results
         let imported = 0;
@@ -157,6 +339,8 @@ export const importEgyptHolidays = async (req, res) => {
         // Save to database
         await holidaySettings.save();
 
+        console.log(`✅ Imported ${imported} holidays to tenant database: ${tenantId}`);
+
         res.json({
             message: `Successfully imported ${imported} holidays for year ${year}`,
             imported,
@@ -165,6 +349,7 @@ export const importEgyptHolidays = async (req, res) => {
             total: holidays.length
         });
     } catch (err) {
+        console.error('Import holidays error:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -174,8 +359,14 @@ export const importEgyptHolidays = async (req, res) => {
  */
 export const getHolidaySettings = async (req, res) => {
     try {
+        // Get tenant ID
+        const tenantId = req.tenantId || req.user?.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         // Get or create holiday settings for tenant
-        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        const holidaySettings = await getOrCreateForTenant(tenantId);
 
         res.json({ settings: holidaySettings });
     } catch (err) {
@@ -190,8 +381,15 @@ export const updateHolidaySettings = async (req, res) => {
     try {
         const updates = req.body;
 
+        // Get tenant ID
+        const tenantId = req.tenantId || req.user?.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         // Get or create holiday settings for tenant
-        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        const Holiday = await getHolidayModel(tenantId);
+        const holidaySettings = await getOrCreateForTenant(tenantId);
 
         // Update fields if provided
         if (updates.weekendDays !== undefined) {
@@ -242,8 +440,15 @@ export const addOfficialHolidays = async (req, res) => {
             });
         }
 
+        // Get tenant ID
+        const tenantId = req.tenantId || req.user?.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         // Get or create holiday settings for tenant
-        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        const Holiday = await getHolidayModel(tenantId);
+        const holidaySettings = await getOrCreateForTenant(tenantId);
 
         const results = {
             added: [],
@@ -330,8 +535,14 @@ export const removeOfficialHoliday = async (req, res) => {
     try {
         const { holidayId } = req.params;
 
+        // Get tenant ID
+        const tenantId = req.tenantId || req.user?.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         // Get or create holiday settings for tenant
-        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        const holidaySettings = await getOrCreateForTenant(tenantId);
 
         // Find and remove the holiday
         const initialLength = holidaySettings.officialHolidays.length;
@@ -381,8 +592,15 @@ export const addWeekendWorkDays = async (req, res) => {
             });
         }
 
+        // Get tenant ID
+        const tenantId = req.tenantId || req.user?.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         // Get or create holiday settings for tenant
-        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        const Holiday = await getHolidayModel(tenantId);
+        const holidaySettings = await getOrCreateForTenant(tenantId);
 
         const results = {
             added: [],
@@ -466,8 +684,14 @@ export const removeWeekendWorkDay = async (req, res) => {
     try {
         const { workDayId } = req.params;
 
+        // Get tenant ID
+        const tenantId = req.tenantId || req.user?.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         // Get or create holiday settings for tenant
-        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        const holidaySettings = await getOrCreateForTenant(tenantId);
 
         // Find and remove the work day
         const initialLength = holidaySettings.weekendWorkDays.length;
@@ -519,8 +743,14 @@ export const getHolidaySuggestions = async (req, res) => {
 
         const holidays = getHolidaysForYear(parseInt(year));
         
+        // Get tenant ID
+        const tenantId = req.tenantId || req.user?.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         // Get existing holidays to filter out duplicates
-        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        const holidaySettings = await getOrCreateForTenant(tenantId);
         
         const suggestions = holidays.filter(holiday => {
             const holidayDate = new Date(holiday.date);
@@ -588,8 +818,15 @@ export const checkWorkingDayAlt = async (req, res) => {
             });
         }
 
+        // Get tenant ID
+        const tenantId = req.tenantId || req.user?.tenantId;
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         // Get holiday settings for tenant
-        const holidaySettings = await Holiday.getOrCreateForTenant(req.user?.tenantId || 'default-tenant');
+        const Holiday = await getHolidayModel(tenantId);
+        const holidaySettings = await getOrCreateForTenant(tenantId);
         
         const checkDate = new Date(date);
         const isWorking = holidaySettings.isWorkingDay(checkDate);

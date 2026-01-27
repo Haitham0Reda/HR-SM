@@ -1,0 +1,29 @@
+{
+  "enabled": false,
+  "features": {
+    "auditLogging": true,
+    "securityLogging": true,
+    "performanceLogging": false,
+    "userActionLogging": false,
+    "frontendLogging": false,
+    "detailedErrorLogging": false
+  },
+  "retentionPolicies": {
+    "auditLogs": 2555,
+    "securityLogs": 365,
+    "performanceLogs": 90,
+    "errorLogs": 180
+  },
+  "alerting": {
+    "enabled": true,
+    "criticalErrors": true,
+    "securityEvents": true,
+    "performanceThresholds": false
+  },
+  "companyId": "test-tenant-1769444525579",
+  "lastModified": "2026-01-26T16:22:05.586Z",
+  "modifiedBy": "test-admin",
+  "suspendedBy": "test-admin",
+  "suspendedAt": "2026-01-26T16:22:05.585Z",
+  "suspensionReason": "Test suspension"
+}

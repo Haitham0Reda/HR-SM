@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo, lazy } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { CssBaseline } from '@mui/material';
 import { Provider } from 'react-redux';
@@ -47,7 +47,7 @@ const LazySeasonalEffects = React.memo(({ settings, settingsKey }) => (
 ));
 
 function App() {
-  const [seasonalSettings, setSeasonalSettings] = React.useState(() => {
+  const [seasonalSettings, setSeasonalSettings] = useState(() => {
     const saved = localStorage.getItem('seasonalSettings');
     return saved ? JSON.parse(saved) : {
       enabled: true,

@@ -186,16 +186,34 @@ export const uploadDocument = async (req, res) => {
             });
         }
 
+        const tenantId = getTenantId(req);
         const fileUrl = `/uploads/documents/${req.file.filename}`;
+        
+        // Create document record in database
+        const documentData = {
+            title: req.body.title || req.file.originalname,
+            type: req.body.type || 'other',
+            employee: req.body.employee || req.user.id,
+            department: req.body.department || req.user.department,
+            fileUrl,
+            fileName: req.file.originalname,
+            fileSize: req.file.size,
+            mimeType: req.file.mimetype,
+            uploadedBy: req.user.id,
+            isConfidential: req.body.isConfidential === 'true' || req.body.isConfidential === true,
+            description: req.body.description || '',
+            expiryDate: req.body.expiryDate || null
+        };
+
+        console.log('Creating document record:', documentData);
+        
+        const document = await documentService.createDocument(documentData, tenantId);
+        console.log('Document saved to database:', { id: document._id, tenantId: document.tenantId });
         
         res.json({
             success: true,
-            data: {
-                fileUrl,
-                fileName: req.file.originalname,
-                fileSize: req.file.size,
-                mimeType: req.file.mimetype
-            }
+            data: document,
+            message: 'Document uploaded and saved successfully'
         });
     } catch (err) {
         console.error('Upload error:', err);

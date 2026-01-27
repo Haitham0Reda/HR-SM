@@ -1,13 +1,167 @@
 import BaseRepository from '../BaseRepository.js';
 import Survey from '../../modules/surveys/models/survey.model.js';
+import multiTenantDB from '../../config/multiTenant.js';
 
 /**
  * Survey Repository - Data access layer for survey operations
  * Extends BaseRepository with survey-specific query methods
+ * Supports multi-tenant database isolation
  */
 class SurveyRepository extends BaseRepository {
     constructor() {
         super(Survey);
+    }
+
+    /**
+     * Get tenant-specific Survey model
+     */
+    async getTenantModel(tenantId) {
+        try {
+            console.log('🔍 Getting tenant-specific Survey model for:', tenantId);
+            const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+            console.log('✅ Connected to tenant database:', tenantConnection.name);
+
+            // Register User model if it doesn't exist on this connection
+            // This is needed for populate() to work
+            try {
+                if (!tenantConnection.models.User) {
+                    const { default: User } = await import('../../modules/hr-core/users/models/user.model.js');
+                    tenantConnection.model('User', User.schema);
+                }
+            } catch (error) {
+                console.warn('Could not register User model:', error.message);
+            }
+
+            return tenantConnection.model('Survey', Survey.schema);
+        } catch (error) {
+            console.error('❌ Error getting tenant Survey model:', error);
+            // Fallback to default model if tenant connection fails
+            return Survey;
+        }
+    }
+
+    /**
+     * Override create to use tenant-specific model
+     */
+    async create(data) {
+        if (data.tenantId) {
+            const TenantSurvey = await this.getTenantModel(data.tenantId);
+            return await TenantSurvey.create(data);
+        }
+
+        return await super.create(data);
+    }
+
+    /**
+     * Override find to use tenant-specific model
+     */
+    async find(filter, options = {}) {
+        if (filter.tenantId) {
+            console.log('🔍 SurveyRepository.find - Using tenant-specific model for:', filter.tenantId);
+            const TenantSurvey = await this.getTenantModel(filter.tenantId);
+            let query = TenantSurvey.find(filter);
+
+            if (options.populate) {
+                if (Array.isArray(options.populate)) {
+                    options.populate.forEach(pop => {
+                        query = query.populate(pop);
+                    });
+                } else {
+                    query = query.populate(options.populate);
+                }
+            }
+
+            if (options.sort) {
+                query = query.sort(options.sort);
+            }
+
+            if (options.limit) {
+                query = query.limit(options.limit);
+            }
+
+            if (options.skip) {
+                query = query.skip(options.skip);
+            }
+
+            const results = await query.exec();
+            console.log('✅ SurveyRepository.find - Found', results.length, 'surveys in tenant database');
+            return results;
+        }
+
+        console.log('⚠️ SurveyRepository.find - No tenantId, using default model');
+        return await super.find(filter, options);
+    }
+
+    /**
+     * Override findOne to use tenant-specific model
+     */
+    async findOne(filter, options = {}) {
+        if (filter.tenantId) {
+            const TenantSurvey = await this.getTenantModel(filter.tenantId);
+            let query = TenantSurvey.findOne(filter);
+
+            if (options.populate) {
+                if (Array.isArray(options.populate)) {
+                    options.populate.forEach(pop => {
+                        query = query.populate(pop);
+                    });
+                } else {
+                    query = query.populate(options.populate);
+                }
+            }
+
+            return await query.exec();
+        }
+
+        return await super.findOne(filter, options);
+    }
+
+    /**
+     * Override update to use tenant-specific model
+     */
+    async update(id, data) {
+        if (data.tenantId) {
+            const TenantSurvey = await this.getTenantModel(data.tenantId);
+            return await TenantSurvey.findByIdAndUpdate(id, data, { new: true });
+        }
+
+        return await super.update(id, data);
+    }
+
+    /**
+     * Override delete to use tenant-specific model
+     */
+    async delete(id, tenantId) {
+        if (tenantId) {
+            const TenantSurvey = await this.getTenantModel(tenantId);
+            return await TenantSurvey.findByIdAndDelete(id);
+        }
+
+        return await super.delete(id);
+    }
+
+    /**
+     * Override findById to use tenant-specific model
+     */
+    async findById(id, options = {}) {
+        if (options.tenantId) {
+            const TenantSurvey = await this.getTenantModel(options.tenantId);
+            let query = TenantSurvey.findById(id);
+
+            if (options.populate) {
+                if (Array.isArray(options.populate)) {
+                    options.populate.forEach(pop => {
+                        query = query.populate(pop);
+                    });
+                } else {
+                    query = query.populate(options.populate);
+                }
+            }
+
+            return await query.exec();
+        }
+
+        return await super.findById(id, options);
     }
 
     /**
@@ -65,25 +219,33 @@ class SurveyRepository extends BaseRepository {
         const filter = {
             tenantId,
             status: 'active',
-            $or: [
-                // No date restrictions
-                { 'settings.startDate': null, 'settings.endDate': null },
-                // Only start date - must have started
-                { 'settings.startDate': { $lte: now }, 'settings.endDate': null },
-                // Only end date - must not have expired
-                { 'settings.startDate': null, 'settings.endDate': { $gte: now } },
-                // Both dates - must be within range
-                { 'settings.startDate': { $lte: now }, 'settings.endDate': { $gte: now } }
-            ],
-            $or: [
-                // Assigned to all employees
-                { 'assignedTo.allEmployees': true },
-                // Assigned to specific user
-                { 'assignedTo.specificEmployees': userId },
-                // Assigned to user's role
-                { 'assignedTo.roles': userRole },
-                // Assigned to user's department
-                { 'assignedTo.departments': userDepartment }
+            $and: [
+                // Date range check
+                {
+                    $or: [
+                        // No date restrictions
+                        { 'settings.startDate': null, 'settings.endDate': null },
+                        // Only start date - must have started
+                        { 'settings.startDate': { $lte: now }, 'settings.endDate': null },
+                        // Only end date - must not have expired
+                        { 'settings.startDate': null, 'settings.endDate': { $gte: now } },
+                        // Both dates - must be within range
+                        { 'settings.startDate': { $lte: now }, 'settings.endDate': { $gte: now } }
+                    ]
+                },
+                // Assignment check
+                {
+                    $or: [
+                        // Assigned to all employees
+                        { 'assignedTo.allEmployees': true },
+                        // Assigned to specific user
+                        { 'assignedTo.specificEmployees': userId },
+                        // Assigned to user's role
+                        { 'assignedTo.roles': userRole },
+                        // Assigned to user's department
+                        { 'assignedTo.departments': userDepartment }
+                    ]
+                }
             ]
         };
 

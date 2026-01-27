@@ -1,11 +1,24 @@
 import Company from '../platform/models/Company.js';
 import ModuleManagementService from '../platform/services/ModuleManagementService.js';
+import { createLicenseDataService } from './licenseDataService.js';
 import logger from '../utils/logger.js';
+
+// Initialize License Data Service
+const licenseDataService = createLicenseDataService({
+  licenseServerUrl: process.env.LICENSE_SERVER_URL || 'http://localhost:4000',
+  licenseServerApiKey: process.env.LICENSE_SERVER_API_KEY || 'default-api-key',
+  clientOptions: {
+    timeout: 5000,
+    maxRetries: 3
+  }
+});
 
 /**
  * Module Access Service
  * Provides module access checking for HR applications
  * Used by tenant applications to verify module permissions
+ * 
+ * Updated to use License Server API for module checks (Requirements: 4.2)
  */
 class ModuleAccessService {
   constructor() {
@@ -15,9 +28,13 @@ class ModuleAccessService {
 
   /**
    * Check if company has access to a module
+   * Now queries License Server API instead of local database
+   * 
    * @param {string} companySlug - Company slug
    * @param {string} moduleKey - Module key
    * @returns {Promise<Object>} Access check result
+   * 
+   * Requirements: 4.2
    */
   async checkAccess(companySlug, moduleKey) {
     try {
@@ -32,35 +49,29 @@ class ModuleAccessService {
         this.cache.delete(cacheKey);
       }
 
-      // Find company by slug (try both underscore and hyphen formats)
-      let company = await Company.findOne({ slug: companySlug });
-      
-      // If not found and slug contains hyphens, try converting to underscores
-      if (!company && companySlug.includes('-')) {
-        const underscoreSlug = companySlug.replace(/-/g, '_');
-        company = await Company.findOne({ slug: underscoreSlug });
-      }
-      
-      // If not found and slug contains underscores, try converting to hyphens
-      if (!company && companySlug.includes('_')) {
-        const hyphenSlug = companySlug.replace(/_/g, '-');
-        company = await Company.findOne({ slug: hyphenSlug });
-      }
-      
-      if (!company) {
-        const result = { hasAccess: false, reason: `Company not found: ${companySlug}` };
+      // Query License Server API for module enablement
+      try {
+        const isEnabled = await licenseDataService.isModuleEnabled(companySlug, moduleKey);
+        
+        const result = {
+          hasAccess: isEnabled,
+          reason: isEnabled ? 'Module enabled' : 'Module not enabled for this tenant'
+        };
+
+        // Cache the result
         this.cacheResult(cacheKey, result);
+        
         return result;
+      } catch (error) {
+        logger.error('License Server query failed, falling back to local check', {
+          companySlug,
+          moduleKey,
+          error: error.message
+        });
+
+        // Fallback to local database check if License Server unavailable
+        return await this._checkAccessFallback(companySlug, moduleKey, cacheKey);
       }
-
-      // Use ModuleManagementService to check access
-      const result = await ModuleManagementService.checkModuleAccess(company._id, moduleKey);
-      
-      // Cache the result
-      this.cacheResult(cacheKey, result);
-      
-      return result;
-
     } catch (error) {
       logger.error('Module access check failed', {
         companySlug,
@@ -73,9 +84,54 @@ class ModuleAccessService {
   }
 
   /**
+   * Fallback method to check access using local database
+   * Used when License Server is unavailable
+   * 
+   * @private
+   * @param {string} companySlug - Company slug
+   * @param {string} moduleKey - Module key
+   * @param {string} cacheKey - Cache key for result
+   * @returns {Promise<Object>} Access check result
+   */
+  async _checkAccessFallback(companySlug, moduleKey, cacheKey) {
+    // Find company by slug (try both underscore and hyphen formats)
+    let company = await Company.findOne({ slug: companySlug });
+    
+    // If not found and slug contains hyphens, try converting to underscores
+    if (!company && companySlug.includes('-')) {
+      const underscoreSlug = companySlug.replace(/-/g, '_');
+      company = await Company.findOne({ slug: underscoreSlug });
+    }
+    
+    // If not found and slug contains underscores, try converting to hyphens
+    if (!company && companySlug.includes('_')) {
+      const hyphenSlug = companySlug.replace(/_/g, '-');
+      company = await Company.findOne({ slug: hyphenSlug });
+    }
+    
+    if (!company) {
+      const result = { hasAccess: false, reason: `Company not found: ${companySlug}` };
+      this.cacheResult(cacheKey, result);
+      return result;
+    }
+
+    // Use ModuleManagementService to check access
+    const result = await ModuleManagementService.checkModuleAccess(company._id, moduleKey);
+    
+    // Cache the result
+    this.cacheResult(cacheKey, result);
+    
+    return result;
+  }
+
+  /**
    * Get all enabled modules for a company
+   * Now queries License Server API instead of local database
+   * 
    * @param {string} companySlug - Company slug
    * @returns {Promise<Object>} Company modules information
+   * 
+   * Requirements: 4.2
    */
   async getCompanyModules(companySlug) {
     try {
@@ -90,35 +146,30 @@ class ModuleAccessService {
         this.cache.delete(cacheKey);
       }
 
-      // Find company by slug (try both underscore and hyphen formats)
-      let company = await Company.findOne({ slug: companySlug });
-      
-      // If not found and slug contains hyphens, try converting to underscores
-      if (!company && companySlug.includes('-')) {
-        const underscoreSlug = companySlug.replace(/-/g, '_');
-        company = await Company.findOne({ slug: underscoreSlug });
-      }
-      
-      // If not found and slug contains underscores, try converting to hyphens
-      if (!company && companySlug.includes('_')) {
-        const hyphenSlug = companySlug.replace(/_/g, '-');
-        company = await Company.findOne({ slug: hyphenSlug });
-      }
-      
-      if (!company) {
-        const result = { success: false, message: `Company not found: ${companySlug}` };
+      // Query License Server API for enabled modules
+      try {
+        const modules = await licenseDataService.getEnabledModules(companySlug);
+        
+        const result = {
+          success: true,
+          companySlug,
+          modules,
+          moduleCount: modules.length
+        };
+
+        // Cache the result
         this.cacheResult(cacheKey, result);
+        
         return result;
+      } catch (error) {
+        logger.error('License Server query failed, falling back to local check', {
+          companySlug,
+          error: error.message
+        });
+
+        // Fallback to local database check if License Server unavailable
+        return await this._getCompanyModulesFallback(companySlug, cacheKey);
       }
-
-      // Get modules using ModuleManagementService
-      const result = await ModuleManagementService.getCompanyModules(company._id);
-      
-      // Cache the result
-      this.cacheResult(cacheKey, result);
-      
-      return result;
-
     } catch (error) {
       logger.error('Failed to get company modules', {
         companySlug,
@@ -127,6 +178,46 @@ class ModuleAccessService {
 
       return { success: false, message: 'Internal error' };
     }
+  }
+
+  /**
+   * Fallback method to get company modules using local database
+   * Used when License Server is unavailable
+   * 
+   * @private
+   * @param {string} companySlug - Company slug
+   * @param {string} cacheKey - Cache key for result
+   * @returns {Promise<Object>} Company modules information
+   */
+  async _getCompanyModulesFallback(companySlug, cacheKey) {
+    // Find company by slug (try both underscore and hyphen formats)
+    let company = await Company.findOne({ slug: companySlug });
+    
+    // If not found and slug contains hyphens, try converting to underscores
+    if (!company && companySlug.includes('-')) {
+      const underscoreSlug = companySlug.replace(/-/g, '_');
+      company = await Company.findOne({ slug: underscoreSlug });
+    }
+    
+    // If not found and slug contains underscores, try converting to hyphens
+    if (!company && companySlug.includes('_')) {
+      const hyphenSlug = companySlug.replace(/_/g, '-');
+      company = await Company.findOne({ slug: hyphenSlug });
+    }
+    
+    if (!company) {
+      const result = { success: false, message: `Company not found: ${companySlug}` };
+      this.cacheResult(cacheKey, result);
+      return result;
+    }
+
+    // Get modules using ModuleManagementService
+    const result = await ModuleManagementService.getCompanyModules(company._id);
+    
+    // Cache the result
+    this.cacheResult(cacheKey, result);
+    
+    return result;
   }
 
   /**

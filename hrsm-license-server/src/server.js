@@ -12,10 +12,12 @@ import { fileURLToPath } from 'url';
 import licenseRoutes from './routes/licenseRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import metricsRoutes from './routes/metricsRoutes.js';
+import tenantRoutes from './routes/tenantRoutes.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { enforceHTTPS, setSecurityHeaders } from './middleware/httpsEnforcement.middleware.js';
 
 // Import Redis service for rate limiting
 import redisService from '../../server/core/services/redis.service.js';
@@ -111,6 +113,20 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// HTTPS enforcement (Requirement 8.5)
+// Redirect HTTP to HTTPS in production and set security headers
+app.use(enforceHTTPS({
+  enabled: process.env.ENFORCE_HTTPS !== 'false', // Can be disabled via env var
+  trustProxy: true,
+  excludePaths: ['/health', '/health/live', '/health/ready']
+}));
+
+app.use(setSecurityHeaders({
+  maxAge: 31536000, // 1 year
+  includeSubDomains: true,
+  preload: true
+}));
+
 // Enhanced rate limiting with Redis support
 import { licenseServerRateLimit } from '../../server/middleware/enhancedRateLimit.middleware.js';
 app.use(licenseServerRateLimit());
@@ -202,6 +218,7 @@ mongoose.connection.on('reconnected', () => {
 app.use('/health', healthRoutes);
 app.use('/licenses', licenseRoutes);
 app.use('/metrics', metricsRoutes);
+app.use('/api/tenants', tenantRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

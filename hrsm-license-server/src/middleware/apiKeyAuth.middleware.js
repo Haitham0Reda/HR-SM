@@ -194,31 +194,47 @@ export const initializeDefaultApiKeys = () => {
 
 /**
  * API Key authentication middleware
+ * 
+ * Validates X-API-Key header and checks API key validity
+ * Returns 401 for invalid keys
+ * 
+ * Requirements: 3.9, 8.1, 8.4
  */
 export const authenticateApiKey = (requiredPermissions = []) => {
     return (req, res, next) => {
+        // Extract API key from X-API-Key header or Authorization header
         const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
         
+        // Requirement 3.9, 8.1: Return 401 if no API key provided
         if (!apiKey) {
+            console.warn(`❌ No API key provided from IP: ${req.ip}`);
             return res.status(401).json({
                 success: false,
-                error: 'API key required',
-                code: 'NO_API_KEY'
+                error: {
+                    code: 'AUTHENTICATION_FAILED',
+                    message: 'API key required',
+                    statusCode: 401
+                }
             });
         }
         
+        // Validate the API key
         const keyData = validateApiKey(apiKey);
         
+        // Requirement 8.4: Return 401 for invalid or expired API keys
         if (!keyData) {
             console.warn(`❌ Invalid API key attempt from IP: ${req.ip}`);
             return res.status(401).json({
                 success: false,
-                error: 'Invalid or expired API key',
-                code: 'INVALID_API_KEY'
+                error: {
+                    code: 'INVALID_API_KEY',
+                    message: 'Invalid or expired API key',
+                    statusCode: 401
+                }
             });
         }
         
-        // Check permissions
+        // Check permissions if required
         if (requiredPermissions.length > 0) {
             const hasPermission = requiredPermissions.some(permission => 
                 keyData.permissions.includes(permission) || keyData.permissions.includes('admin')
@@ -228,20 +244,25 @@ export const authenticateApiKey = (requiredPermissions = []) => {
                 console.warn(`❌ Insufficient permissions for API key: ${keyData.name}`);
                 return res.status(403).json({
                     success: false,
-                    error: 'Insufficient permissions',
-                    code: 'INSUFFICIENT_PERMISSIONS',
-                    required: requiredPermissions,
-                    granted: keyData.permissions
+                    error: {
+                        code: 'INSUFFICIENT_PERMISSIONS',
+                        message: 'API key does not have permission to perform this operation',
+                        requiredPermission: requiredPermissions.join(' or '),
+                        statusCode: 403
+                    }
                 });
             }
         }
         
-        // Attach API key info to request
+        // Attach API key info to request for downstream use
         req.apiKey = {
             name: keyData.name,
             permissions: keyData.permissions,
             keyHash: keyData.keyHash
         };
+        
+        // Log successful authentication
+        console.log(`✅ API key authenticated: ${keyData.name} from IP: ${req.ip}`);
         
         next();
     };

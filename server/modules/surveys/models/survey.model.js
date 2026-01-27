@@ -216,7 +216,8 @@ const surveySchema = new mongoose.Schema({
     publishedAt: Date,
     closedAt: Date
 }, {
-    timestamps: true
+    timestamps: true,
+    collection: 'surveys'
 });
 
 // Indexes

@@ -67,8 +67,8 @@ import eventRoutesImport from './events.routes.js';
 export const eventRoutes = eventRoutesImport;
 export const payrollRoutes = payrollRoutesImport; // Use real payroll routes
 export const reportRoutes = createPlaceholderRouter('Report');
-// Import real survey routes
-import surveyRoutesImport from './surveys.routes.js';
+// Import real survey routes from the surveys module
+import surveyRoutesImport from '../modules/surveys/routes/survey.routes.js';
 export const surveyRoutes = surveyRoutesImport;
 // Import theme routes from the theme module
 import themeRoutesImport from '../modules/theme/routes/theme.routes.js';

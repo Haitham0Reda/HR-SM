@@ -28,6 +28,40 @@ import {
 
 const router = express.Router();
 
+// Test endpoint to verify routes are loaded (no auth required)
+router.get('/test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Survey routes are working!',
+        timestamp: new Date().toISOString(),
+        authenticated: !!req.user,
+        user: req.user ? {
+            id: req.user._id,
+            username: req.user.username,
+            tenantId: req.user.tenantId,
+            role: req.user.role
+        } : null
+    });
+});
+
+// Test endpoint WITH authentication
+router.get('/test-auth',
+    protect,
+    (req, res) => {
+        res.json({
+            success: true,
+            message: 'Authentication is working!',
+            user: {
+                id: req.user._id,
+                username: req.user.username,
+                tenantId: req.user.tenantId,
+                role: req.user.role,
+                department: req.user.department
+            }
+        });
+    }
+);
+
 // Get all surveys - HR or Admin (for management)
 router.get('/',
     protect,

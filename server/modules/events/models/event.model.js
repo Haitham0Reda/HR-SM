@@ -36,7 +36,8 @@ const eventSchema = new mongoose.Schema({
         default: false
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    collection: 'events'
 });
 
 // Compound indexes for tenant isolation and performance

@@ -1,11 +1,27 @@
-import InsuranceProvider from '../models/InsuranceProvider.js';
+import InsuranceProviderModel from '../models/InsuranceProvider.js';
 import { validationResult } from 'express-validator';
 import { sendSuccess, sendError } from '../../../core/utils/response.js';
+import multiTenantDB from '../../../config/multiTenant.js';
 
 /**
  * Insurance Provider Controller
  * Handles CRUD operations for insurance providers
  */
+
+/**
+ * Get InsuranceProvider model for tenant-specific database
+ */
+const getInsuranceProviderModel = async (tenantId) => {
+    const connection = await multiTenantDB.getCompanyConnection(tenantId);
+    
+    // Check if model is already registered
+    if (connection.models.InsuranceProvider) {
+        return connection.models.InsuranceProvider;
+    }
+    
+    // Register the model on the tenant connection
+    return connection.model('InsuranceProvider', InsuranceProviderModel.schema);
+};
 
 // Get all insurance providers
 export const getInsuranceProviders = async (req, res) => {
@@ -20,6 +36,9 @@ export const getInsuranceProviders = async (req, res) => {
         } = req.query;
 
         const tenantId = req.user.tenantId;
+        
+        // Get tenant-specific InsuranceProvider model
+        const InsuranceProvider = await getInsuranceProviderModel(tenantId);
         
         // Build query
         const query = { tenantId };
@@ -48,7 +67,6 @@ export const getInsuranceProviders = async (req, res) => {
             InsuranceProvider.find(query)
                 .populate('createdBy', 'firstName lastName email')
                 .populate('updatedBy', 'firstName lastName email')
-                .populate('activePoliciesCount')
                 .sort(sort)
                 .skip(skip)
                 .limit(parseInt(limit)),
@@ -78,10 +96,12 @@ export const getInsuranceProvider = async (req, res) => {
         const { id } = req.params;
         const tenantId = req.user.tenantId;
 
+        // Get tenant-specific InsuranceProvider model
+        const InsuranceProvider = await getInsuranceProviderModel(tenantId);
+
         const provider = await InsuranceProvider.findOne({ _id: id, tenantId })
             .populate('createdBy', 'firstName lastName email')
-            .populate('updatedBy', 'firstName lastName email')
-            .populate('activePoliciesCount');
+            .populate('updatedBy', 'firstName lastName email');
 
         if (!provider) {
             return sendError(res, 'Insurance provider not found', 404);
@@ -105,6 +125,9 @@ export const createInsuranceProvider = async (req, res) => {
 
         const tenantId = req.user.tenantId;
         const userId = req.user.id;
+
+        // Get tenant-specific InsuranceProvider model
+        const InsuranceProvider = await getInsuranceProviderModel(tenantId);
 
         // Check if provider with same code already exists
         const existingProvider = await InsuranceProvider.findOne({
@@ -163,6 +186,9 @@ export const updateInsuranceProvider = async (req, res) => {
         const tenantId = req.user.tenantId;
         const userId = req.user.id;
 
+        // Get tenant-specific InsuranceProvider model
+        const InsuranceProvider = await getInsuranceProviderModel(tenantId);
+
         // Find the provider
         const provider = await InsuranceProvider.findOne({ _id: id, tenantId });
         if (!provider) {
@@ -214,13 +240,19 @@ export const deleteInsuranceProvider = async (req, res) => {
         const { id } = req.params;
         const tenantId = req.user.tenantId;
 
+        // Get tenant-specific InsuranceProvider model
+        const InsuranceProvider = await getInsuranceProviderModel(tenantId);
+
         const provider = await InsuranceProvider.findOne({ _id: id, tenantId });
         if (!provider) {
             return sendError(res, 'Insurance provider not found', 404);
         }
 
         // Check if provider has active policies
-        const { default: InsurancePolicy } = await import('../models/InsurancePolicy.js');
+        const { default: InsurancePolicyModel } = await import('../models/InsurancePolicy.js');
+        const connection = await multiTenantDB.getCompanyConnection(tenantId);
+        const InsurancePolicy = connection.model('InsurancePolicy', InsurancePolicyModel.schema);
+        
         const activePolicies = await InsurancePolicy.countDocuments({
             tenantId,
             providerId: id,
@@ -250,6 +282,9 @@ export const activateInsuranceProvider = async (req, res) => {
         const tenantId = req.user.tenantId;
         const userId = req.user.id;
 
+        // Get tenant-specific InsuranceProvider model
+        const InsuranceProvider = await getInsuranceProviderModel(tenantId);
+
         const provider = await InsuranceProvider.findOne({ _id: id, tenantId });
         if (!provider) {
             return sendError(res, 'Insurance provider not found', 404);
@@ -273,6 +308,9 @@ export const deactivateInsuranceProvider = async (req, res) => {
         const tenantId = req.user.tenantId;
         const userId = req.user.id;
 
+        // Get tenant-specific InsuranceProvider model
+        const InsuranceProvider = await getInsuranceProviderModel(tenantId);
+
         const provider = await InsuranceProvider.findOne({ _id: id, tenantId });
         if (!provider) {
             return sendError(res, 'Insurance provider not found', 404);
@@ -292,6 +330,9 @@ export const deactivateInsuranceProvider = async (req, res) => {
 export const getProviderStatistics = async (req, res) => {
     try {
         const tenantId = req.user.tenantId;
+
+        // Get tenant-specific InsuranceProvider model
+        const InsuranceProvider = await getInsuranceProviderModel(tenantId);
 
         const stats = await InsuranceProvider.aggregate([
             { $match: { tenantId } },
