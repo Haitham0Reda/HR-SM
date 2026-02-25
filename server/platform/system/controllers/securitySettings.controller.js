@@ -11,7 +11,13 @@ import SecurityAudit from '../models/securityAudit.model.js';
  */
 export const getSecuritySettings = async (req, res) => {
     try {
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
+        const settings = await SecuritySettings.getSettings(tenantId);
 
         res.json({
             success: true,
@@ -27,9 +33,15 @@ export const getSecuritySettings = async (req, res) => {
  */
 export const updateSecuritySettings = async (req, res) => {
     try {
+        const tenantId = req.user?.tenantId || req.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID is required' });
+        }
+
         const updates = req.body;
         
-        const settings = await SecuritySettings.updateSettings(updates, req.user._id);
+        const settings = await SecuritySettings.updateSettings(tenantId, updates, req.user._id);
 
         // Log security settings change
         await SecurityAudit.logEvent({
@@ -66,7 +78,7 @@ export const update2FASettings = async (req, res) => {
     try {
         const { enabled, enforced, backupCodesCount } = req.body;
 
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
 
         if (enabled !== undefined) settings.twoFactorAuth.enabled = enabled;
         if (enforced !== undefined) settings.twoFactorAuth.enforced = enforced;
@@ -111,7 +123,7 @@ export const updatePasswordPolicy = async (req, res) => {
     try {
         const policy = req.body;
 
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
         Object.assign(settings.passwordPolicy, policy);
 
         settings.lastModified = new Date();
@@ -153,7 +165,7 @@ export const updateLockoutSettings = async (req, res) => {
     try {
         const lockout = req.body;
 
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
         Object.assign(settings.accountLockout, lockout);
 
         settings.lastModified = new Date();
@@ -199,7 +211,7 @@ export const addIPToWhitelist = async (req, res) => {
             return res.status(400).json({ error: 'IP address is required' });
         }
 
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
 
         // Check if IP already exists
         const exists = settings.ipWhitelist.allowedIPs.some(entry => entry.ip === ip);
@@ -255,7 +267,7 @@ export const removeIPFromWhitelist = async (req, res) => {
     try {
         const { ipId } = req.params;
 
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
 
         // Find the index of the IP entry to remove
         const ipIndex = settings.ipWhitelist.allowedIPs.findIndex(entry => entry._id.toString() === ipId);
@@ -307,7 +319,7 @@ export const toggleIPWhitelist = async (req, res) => {
     try {
         const { enabled } = req.body;
 
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
         settings.ipWhitelist.enabled = enabled;
 
         settings.lastModified = new Date();
@@ -349,7 +361,7 @@ export const updateSessionSettings = async (req, res) => {
     try {
         const session = req.body;
 
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
         Object.assign(settings.sessionManagement, session);
 
         settings.lastModified = new Date();
@@ -391,7 +403,7 @@ export const enableDevelopmentMode = async (req, res) => {
     try {
         const { allowedUsers, maintenanceMessage } = req.body;
 
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
 
         settings.developmentMode.enabled = true;
         settings.developmentMode.enabledDate = new Date();
@@ -437,7 +449,7 @@ export const enableDevelopmentMode = async (req, res) => {
  */
 export const disableDevelopmentMode = async (req, res) => {
     try {
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
 
         settings.developmentMode.enabled = false;
         settings.lastModified = new Date();
@@ -475,7 +487,7 @@ export const updateAuditSettings = async (req, res) => {
     try {
         const audit = req.body;
 
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
         Object.assign(settings.auditSettings, audit);
 
         settings.lastModified = new Date();
@@ -521,7 +533,7 @@ export const testPassword = async (req, res) => {
             return res.status(400).json({ error: 'Password is required' });
         }
 
-        const settings = await SecuritySettings.getSettings();
+        const tenantId = req.user?.tenantId || req.tenantId; if (!tenantId) { return res.status(400).json({ error: 'Tenant ID is required' }); } const settings = await SecuritySettings.getSettings(tenantId);
         const validation = settings.validatePassword(password);
 
         res.json({
@@ -532,3 +544,4 @@ export const testPassword = async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 };
+

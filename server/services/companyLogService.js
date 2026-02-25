@@ -285,6 +285,62 @@ class CompanyLogService {
     }
 
     /**
+     * Get global log files (fallback when company-specific logs don't exist)
+     */
+    async getGlobalLogFiles() {
+        try {
+            const globalLogsDir = path.join(baseLogsDir);
+            
+            if (!fs.existsSync(globalLogsDir)) {
+                return [];
+            }
+
+            const files = fs.readdirSync(globalLogsDir);
+            const logFiles = [];
+
+            for (const file of files) {
+                // Only include application log files
+                if (!file.includes('application.log')) {
+                    continue;
+                }
+                
+                const filePath = path.join(globalLogsDir, file);
+                
+                // Skip if it's a directory
+                try {
+                    const stats = fs.statSync(filePath);
+                    if (stats.isDirectory()) {
+                        continue;
+                    }
+                    
+                    // Extract date from filename (e.g., "2026-01-30-application.log" -> "2026-01-30")
+                    const dateMatch = file.match(/(\d{4}-\d{2}-\d{2})/);
+                    const fileDate = dateMatch ? dateMatch[1] : null;
+                    
+                    logFiles.push({
+                        name: file,
+                        size: stats.size,
+                        sizeMB: (stats.size / 1024 / 1024).toFixed(2),
+                        modified: stats.mtime,
+                        type: 'application',
+                        path: filePath,
+                        date: fileDate,
+                        isGlobal: true // Mark as global log file
+                    });
+                } catch (statError) {
+                    // Skip files that can't be read
+                    continue;
+                }
+            }
+
+            return logFiles.sort((a, b) => b.modified - a.modified);
+        } catch (error) {
+            console.error('Failed to get global log files:', error);
+            return [];
+        }
+    }
+
+    /**
      * Search across all log files for a company
      */
     async searchCompanyLogs(tenantId, searchTerm, options = {}) {
@@ -587,8 +643,18 @@ class CompanyLogService {
                 throw new Error('Company not found');
             }
 
-            const logFiles = await this.getCompanyLogFiles(tenantId);
+            // Try to get company-specific log files first
+            let logFiles = await this.getCompanyLogFiles(tenantId);
+            
+            // If no company-specific logs exist, fall back to global logs
+            if (logFiles.length === 0) {
+                console.log(`No company-specific logs found for ${tenantId}, checking global logs...`);
+                logFiles = await this.getGlobalLogFiles();
+                console.log(`Found ${logFiles.length} global log files`);
+            }
+            
             const cutoffDate = new Date(Date.now() - (days * 24 * 60 * 60 * 1000));
+            console.log(`Processing logs for ${tenantId}, cutoff date: ${cutoffDate.toISOString()}, log files: ${logFiles.length}`);
             
             const userActivities = {
                 tenantId,
@@ -607,17 +673,23 @@ class CompanyLogService {
 
             // Process log files for user activity data
             for (const file of logFiles) {
-                if (file.type === 'application' && new Date(file.date) >= cutoffDate) {
+                // Check if file date is within the cutoff period
+                const fileDate = file.date ? new Date(file.date) : file.modified;
+                if (file.type === 'application' && fileDate >= cutoffDate) {
                     try {
-                        const content = await this.getLogFileContent(tenantId, file.name);
+                        // Read content differently based on whether it's a global or company-specific log
+                        const content = file.isGlobal ? 
+                            fs.readFileSync(file.path, 'utf8') : 
+                            await this.getLogFileContent(tenantId, file.name);
                         const lines = content.split('\n').filter(line => line.trim());
                         
                         for (const line of lines) {
                             try {
                                 const logEntry = JSON.parse(line);
                                 
-                                // Filter for user activity entries
+                                // Filter for user activity entries for this tenant
                                 if (logEntry.eventType === 'user_activity' && 
+                                    logEntry.tenantId === tenantId &&
                                     new Date(logEntry.timestamp) >= cutoffDate) {
                                     
                                     // Apply filters
@@ -628,8 +700,9 @@ class CompanyLogService {
                                     
                                     const userKey = logEntry.userId;
                                     const activityTypeKey = logEntry.activityType;
-                                    const hour = new Date(logEntry.timestamp).getHours();
-                                    const day = logEntry.timestamp.split('T')[0];
+                                    const timestampDate = new Date(logEntry.timestamp);
+                                    const hour = timestampDate.getHours();
+                                    const day = logEntry.timestamp.split(' ')[0]; // Extract date part (YYYY-MM-DD)
                                     
                                     // Initialize user data if not exists
                                     if (!userActivities.users[userKey]) {
@@ -704,6 +777,8 @@ class CompanyLogService {
             // Convert users object to array and sort by last activity
             userActivities.usersList = Object.values(userActivities.users)
                 .sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
+
+            console.log(`User activity tracking complete for ${tenantId}: ${userActivities.totalActivities} activities, ${userActivities.usersList.length} users`);
 
             return userActivities;
         } catch (error) {

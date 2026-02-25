@@ -420,6 +420,7 @@ export const initializeRoutes = async () => {
     app.use('/api/v1/permission-audits', permissionAuditRoutes);
     app.use('/api/v1/security-audits', securityAuditRoutes);
     app.use('/api/v1/security-settings', securitySettingsRoutes);
+    app.use('/api/v1/security/settings', securitySettingsRoutes); // Alias for frontend compatibility
 
     // System Management (legacy - not yet moved)
     app.use('/api/v1/theme', themeRoutes);

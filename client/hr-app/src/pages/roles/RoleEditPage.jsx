@@ -26,7 +26,7 @@ import {
 import roleService from '../../services/role.service';
 import PermissionCategoryAccordion from '../../components/roles/PermissionCategoryAccordion';
 import RoleTypeBadge from '../../components/roles/RoleTypeBadge';
-import { useNotification } from '../../context/NotificationContext.js';
+import { useNotification } from '../../store/providers/ReduxNotificationProvider';
 
 const RoleEditPage = () => {
     const { id } = useParams();
