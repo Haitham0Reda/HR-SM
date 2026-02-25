@@ -6,6 +6,13 @@
 import mongoose from 'mongoose';
 
 const securitySettingsSchema = new mongoose.Schema({
+    // Tenant ID for multi-tenancy
+    tenantId: {
+        type: String,
+        required: true,
+        index: true
+    },
+
     // Two-Factor Authentication
     twoFactorAuth: {
         enabled: {
@@ -212,21 +219,25 @@ securitySettingsSchema.pre('save', function (next) {
     next();
 });
 
-// Static method to get current settings
-securitySettingsSchema.statics.getSettings = async function () {
-    let settings = await this.findOne();
+// Static method to get current settings for a tenant
+securitySettingsSchema.statics.getSettings = async function (tenantId) {
+    if (!tenantId) {
+        throw new Error('Tenant ID is required');
+    }
+
+    let settings = await this.findOne({ tenantId });
 
     if (!settings) {
-        // Create default settings
-        settings = await this.create({});
+        // Create default settings for this tenant
+        settings = await this.create({ tenantId });
     }
 
     return settings;
 };
 
-// Static method to update settings
-securitySettingsSchema.statics.updateSettings = async function (updates, userId) {
-    let settings = await this.getSettings();
+// Static method to update settings for a tenant
+securitySettingsSchema.statics.updateSettings = async function (tenantId, updates, userId) {
+    let settings = await this.getSettings(tenantId);
 
     // Handle dot notation updates properly
     for (const [key, value] of Object.entries(updates)) {

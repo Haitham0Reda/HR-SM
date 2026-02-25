@@ -76,8 +76,9 @@ const DashboardEditPage = () => {
         try {
             setLoading(true);
             // Fetch users for employee of the month selection
-            const usersData = await userService.getAll();
-            setUsers(usersData.filter(u => u.role === 'employee'));
+            const usersResponse = await userService.getAll();
+            const usersData = usersResponse.data || usersResponse; // Handle both response formats
+            setUsers(Array.isArray(usersData) ? usersData.filter(u => u.role === 'employee') : []);
 
             // Fetch existing dashboard configuration from API
             const dashboardConfig = await dashboardService.getConfig();
@@ -96,6 +97,7 @@ const DashboardEditPage = () => {
                 setConfig(configWithDate);
             }
         } catch (error) {
+            console.error('Error loading dashboard configuration:', error);
             showError('Failed to load dashboard configuration');
         } finally {
             setLoading(false);
@@ -110,12 +112,26 @@ const DashboardEditPage = () => {
     const handleSave = async () => {
         try {
             setSaving(true);
+            
+            // Prepare config for API - extract just the ID from selectedEmployee
+            const configToSave = {
+                ...config,
+                employeeOfTheMonth: {
+                    ...config.employeeOfTheMonth,
+                    selectedEmployee: config.employeeOfTheMonth.selectedEmployee?._id || config.employeeOfTheMonth.selectedEmployee
+                }
+            };
+            
+            console.log('Saving dashboard config:', configToSave);
+            
             // Save dashboard configuration to API
-            await dashboardService.updateConfig(config);
+            const result = await dashboardService.updateConfig(configToSave);
+            console.log('Dashboard config saved:', result);
 
             showSuccess('Dashboard configuration saved successfully');
             navigate(getCompanyRoute('/dashboard'));
         } catch (error) {
+            console.error('Error saving dashboard configuration:', error);
             showError('Failed to save dashboard configuration');
         } finally {
             setSaving(false);

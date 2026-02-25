@@ -17,9 +17,35 @@ export const getDashboardConfig = async (req, res) => {
         }
 
         const config = await DashboardConfig.getConfig(tenantId);
-        await config.populate('employeeOfTheMonth.selectedEmployee', 'username email employeeId profile');
+        
+        // Manually fetch the employee from tenant database instead of using populate
+        let employeeData = null;
+        if (config.employeeOfTheMonth?.selectedEmployee) {
+            try {
+                // Get tenant-specific database connection
+                const { default: multiTenantDB } = await import('../../../config/multiTenant.js');
+                const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+                
+                // Register models on tenant connection
+                const { registerHRModels } = await import('../../../utils/tenantModelRegistry.js');
+                const models = await registerHRModels(tenantConnection);
+                
+                // Fetch the employee
+                employeeData = await models.User.findById(config.employeeOfTheMonth.selectedEmployee)
+                    .select('username email employeeId personalInfo')
+                    .lean();
+            } catch (error) {
+                logger.error('Error fetching employee for dashboard config:', error);
+            }
+        }
 
-        res.json(config);
+        // Convert to plain object and replace selectedEmployee with fetched data
+        const configObj = config.toObject();
+        if (configObj.employeeOfTheMonth) {
+            configObj.employeeOfTheMonth.selectedEmployee = employeeData;
+        }
+
+        res.json(configObj);
     } catch (error) {
         logger.error('Error fetching dashboard config:', error);
         res.status(500).json({ error: error.message });
@@ -39,7 +65,13 @@ export const updateDashboardConfig = async (req, res) => {
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
+        console.log('=== UPDATE DASHBOARD CONFIG ===');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('Employee of the month data:', JSON.stringify(req.body.employeeOfTheMonth, null, 2));
+
         const config = await DashboardConfig.getConfig(tenantId);
+        console.log('Current config before update:', JSON.stringify(config.employeeOfTheMonth, null, 2));
+        
         let employeeOfMonthChanged = false;
         let newEmployeeId = null;
 
@@ -48,6 +80,9 @@ export const updateDashboardConfig = async (req, res) => {
             // Check if employee of the month changed
             const oldEmployeeId = config.employeeOfTheMonth?.selectedEmployee?.toString();
             newEmployeeId = req.body.employeeOfTheMonth.selectedEmployee;
+            
+            console.log('Old employee ID:', oldEmployeeId);
+            console.log('New employee ID:', newEmployeeId);
 
             if (newEmployeeId && oldEmployeeId !== newEmployeeId) {
                 employeeOfMonthChanged = true;
@@ -58,6 +93,8 @@ export const updateDashboardConfig = async (req, res) => {
                 ...req.body.employeeOfTheMonth,
                 updatedAt: new Date()
             };
+            
+            console.log('Config after merge:', JSON.stringify(config.employeeOfTheMonth, null, 2));
         }
 
         if (req.body.widgets) {
@@ -76,15 +113,43 @@ export const updateDashboardConfig = async (req, res) => {
 
         config.updatedBy = req.user._id;
         await config.save();
+        
+        console.log('Config after save:', JSON.stringify(config.employeeOfTheMonth, null, 2));
 
-        await config.populate('employeeOfTheMonth.selectedEmployee', 'username email employeeId personalInfo');
+        // Manually fetch the employee from tenant database instead of using populate
+        let employeeData = null;
+        if (config.employeeOfTheMonth?.selectedEmployee) {
+            try {
+                // Get tenant-specific database connection
+                const { default: multiTenantDB } = await import('../../../config/multiTenant.js');
+                const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+                
+                // Register models on tenant connection
+                const { registerHRModels } = await import('../../../utils/tenantModelRegistry.js');
+                const models = await registerHRModels(tenantConnection);
+                
+                // Fetch the employee
+                employeeData = await models.User.findById(config.employeeOfTheMonth.selectedEmployee)
+                    .select('username email employeeId personalInfo')
+                    .lean();
+                    
+                console.log('Fetched employee data:', JSON.stringify(employeeData, null, 2));
+            } catch (error) {
+                logger.error('Error fetching employee for dashboard config:', error);
+            }
+        }
+
+        // Convert to plain object and replace selectedEmployee with fetched data
+        const configObj = config.toObject();
+        if (configObj.employeeOfTheMonth) {
+            configObj.employeeOfTheMonth.selectedEmployee = employeeData;
+        }
 
         // Send email notification if employee of the month changed
-        if (employeeOfMonthChanged && newEmployeeId) {
+        if (employeeOfMonthChanged && newEmployeeId && employeeData) {
             try {
-                const employee = await User.findOne({ _id: newEmployeeId, tenantId });
-                if (employee && employee.email) {
-                    await sendEmployeeOfMonthEmail(employee, config.employeeOfTheMonth.month);
+                if (employeeData.email) {
+                    await sendEmployeeOfMonthEmail(employeeData, config.employeeOfTheMonth.month);
                 }
             } catch (emailError) {
                 logger.error('Error sending employee of the month email:', emailError);
@@ -99,7 +164,7 @@ export const updateDashboardConfig = async (req, res) => {
             employeeOfMonthChanged
         });
 
-        res.json(config);
+        res.json(configObj);
     } catch (error) {
         logger.error('Error updating dashboard config:', error);
         res.status(500).json({ error: error.message });
@@ -195,9 +260,35 @@ export const getEmployeeOfTheMonth = async (req, res) => {
         }
 
         const config = await DashboardConfig.getConfig(tenantId);
-        await config.populate('employeeOfTheMonth.selectedEmployee', 'username email employeeId personalInfo');
+        
+        // Manually fetch the employee from tenant database instead of using populate
+        let employeeData = null;
+        if (config.employeeOfTheMonth?.selectedEmployee) {
+            try {
+                // Get tenant-specific database connection
+                const { default: multiTenantDB } = await import('../../../config/multiTenant.js');
+                const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+                
+                // Register models on tenant connection
+                const { registerHRModels } = await import('../../../utils/tenantModelRegistry.js');
+                const models = await registerHRModels(tenantConnection);
+                
+                // Fetch the employee
+                employeeData = await models.User.findById(config.employeeOfTheMonth.selectedEmployee)
+                    .select('username email employeeId personalInfo')
+                    .lean();
+            } catch (error) {
+                logger.error('Error fetching employee for employee of the month:', error);
+            }
+        }
 
-        res.json(config.employeeOfTheMonth);
+        // Return the config with the manually fetched employee
+        const result = {
+            ...config.employeeOfTheMonth.toObject(),
+            selectedEmployee: employeeData
+        };
+
+        res.json(result);
     } catch (error) {
         logger.error('Error fetching employee of the month:', error);
         res.status(500).json({ error: error.message });
@@ -309,3 +400,4 @@ export const getDashboardStatistics = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
