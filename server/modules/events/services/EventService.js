@@ -1,4 +1,5 @@
 import EventRepository from '../../../repositories/modules/EventRepository.js';
+import { Op } from 'sequelize';
 
 /**
  * Event Service - Business logic layer for event operations
@@ -15,15 +16,15 @@ class EventService {
     async getAllEvents(tenantId, options = {}) {
         const filter = { tenantId };
         const queryOptions = {
-            populate: [
-                { path: 'createdBy', select: 'username email' },
-                { path: 'attendees', select: 'username email' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email'] },
+                { association: 'attendees', attributes: ['username', 'email'] }
             ],
-            sort: { startDate: -1 },
+            order: [['startDate', 'DESC']],
             ...options
         };
 
-        return await this.eventRepository.find(filter, queryOptions);
+        return await this.eventRepository.findAll(filter, queryOptions);
     }
 
     /**
@@ -39,11 +40,11 @@ class EventService {
         const event = await this.eventRepository.create(dataToCreate);
 
         // Return populated event with tenantId in options
-        return await this.eventRepository.findById(event._id, {
+        return await this.eventRepository.findById(event.id, {
             tenantId,
-            populate: [
-                { path: 'createdBy', select: 'username email' },
-                { path: 'attendees', select: 'username email' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email'] },
+                { association: 'attendees', attributes: ['username', 'email'] }
             ]
         });
     }
@@ -53,11 +54,11 @@ class EventService {
      */
     async getEventById(id, tenantId) {
         const event = await this.eventRepository.findOne(
-            { _id: id, tenantId },
+            { id, tenantId },
             {
-                populate: [
-                    { path: 'createdBy', select: 'username email' },
-                    { path: 'attendees', select: 'username email' }
+                include: [
+                    { association: 'createdBy', attributes: ['username', 'email'] },
+                    { association: 'attendees', attributes: ['username', 'email'] }
                 ]
             }
         );
@@ -73,7 +74,7 @@ class EventService {
      * Update event
      */
     async updateEvent(id, updateData, tenantId) {
-        const event = await this.eventRepository.findOne({ _id: id, tenantId });
+        const event = await this.eventRepository.findOne({ id, tenantId });
 
         if (!event) {
             throw new Error('Event not found');
@@ -85,9 +86,9 @@ class EventService {
         // Return populated event with tenantId in options
         return await this.eventRepository.findById(id, {
             tenantId,
-            populate: [
-                { path: 'createdBy', select: 'username email' },
-                { path: 'attendees', select: 'username email' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email'] },
+                { association: 'attendees', attributes: ['username', 'email'] }
             ]
         });
     }
@@ -96,7 +97,7 @@ class EventService {
      * Delete event
      */
     async deleteEvent(id, tenantId) {
-        const event = await this.eventRepository.findOne({ _id: id, tenantId });
+        const event = await this.eventRepository.findOne({ id, tenantId });
 
         if (!event) {
             throw new Error('Event not found');
@@ -111,11 +112,11 @@ class EventService {
      */
     async getUpcomingEvents(tenantId, options = {}) {
         return await this.eventRepository.findUpcoming(tenantId, {
-            populate: [
-                { path: 'createdBy', select: 'username email' },
-                { path: 'attendees', select: 'username email' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email'] },
+                { association: 'attendees', attributes: ['username', 'email'] }
             ],
-            sort: { startDate: 1 },
+            order: [['startDate', 'ASC']],
             ...options
         });
     }
@@ -125,11 +126,11 @@ class EventService {
      */
     async getPastEvents(tenantId, options = {}) {
         return await this.eventRepository.findPast(tenantId, {
-            populate: [
-                { path: 'createdBy', select: 'username email' },
-                { path: 'attendees', select: 'username email' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email'] },
+                { association: 'attendees', attributes: ['username', 'email'] }
             ],
-            sort: { startDate: -1 },
+            order: [['startDate', 'DESC']],
             ...options
         });
     }
@@ -139,11 +140,11 @@ class EventService {
      */
     async getEventsByDateRange(startDate, endDate, tenantId, options = {}) {
         return await this.eventRepository.findByDateRange(startDate, endDate, tenantId, {
-            populate: [
-                { path: 'createdBy', select: 'username email' },
-                { path: 'attendees', select: 'username email' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email'] },
+                { association: 'attendees', attributes: ['username', 'email'] }
             ],
-            sort: { startDate: 1 },
+            order: [['startDate', 'ASC']],
             ...options
         });
     }
