@@ -98,13 +98,13 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - Add foreign key to users
     - _Requirements: 4.1, 4.2, 4.7, 4.9, 5.4_
 
-  - [ ] 5.6 Convert Event model
+  - [x] 5.6 Convert Event model
     - Create Sequelize model for events table
     - Add tenant_id column
     - Map date fields appropriately
     - _Requirements: 4.1, 4.2, 4.9_
 
-  - [ ] 5.7 Convert CompanyLicense model (cache)
+  - [x] 5.7 Convert CompanyLicense model (cache)
     - Create Sequelize model for company_license table
     - Add tenant_id column
     - Map quickAccess object to JSONB
