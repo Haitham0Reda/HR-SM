@@ -197,6 +197,15 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
   - No questions arise - repository and query builder are ready for service layer integration.
 
 - [ ] 10. Update service layer for Sequelize
+  - Infrastructure Ready: BaseRepository and QueryBuilder fully support Sequelize
+  - Services need updates to replace MongoDB syntax with Sequelize patterns:
+    * Replace _id with id (UUID)
+    * Replace $regex with Op.iLike or like() method
+    * Replace $or with Op.or or or() method
+    * Replace populate with include for associations
+    * Ensure tenant_id is passed to repository calls
+  - Note: Services use repository pattern, so changes are isolated to service layer
+  
   - [ ] 10.1 Update UserService
     - Replace Mongoose queries with Sequelize
     - Ensure tenant_id is passed to all repository calls
