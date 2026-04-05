@@ -1,314 +1,225 @@
-// models/Mission.js
-import mongoose from 'mongoose';
+/**
+ * Mission Model - PostgreSQL (Sequelize)
+ * 
+ * This model represents the missions table in the Main Application Database (hrsm_platform).
+ * It manages employee business trip/mission requests with approval workflows.
+ * Supports multi-tenancy and date range tracking.
+ * 
+ * @module models/Mission
+ */
 
-const missionSchema = new mongoose.Schema({
-  tenantId: {
-    type: String,
-    required: true,
-    index: true
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+import User from '../../users/models/user.model.js';
+import Department from '../../users/models/department.model.js';
+import Position from '../../users/models/position.model.js';
+
+const Mission = mainAppDb.define('Mission', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
-  employee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
+  tenantId: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'tenant_id'
+  },
+  employeeId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'employee_id',
+    references: { model: User, key: 'id' }
   },
   startDate: {
-    type: Date,
-    required: true
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    field: 'start_date'
   },
   endDate: {
-    type: Date,
-    required: true,
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    field: 'end_date',
     validate: {
-      validator: function (v) {
-        return !v || v >= this.startDate;
-      },
-      message: 'End date must be after or equal to start date'
+      isAfterStartDate(value) {
+        if (value && this.startDate && new Date(value) < new Date(this.startDate)) {
+          throw new Error('End date must be after or equal to start date');
+        }
+      }
     }
   },
   startTime: {
-    type: String,
-    required: false
+    type: DataTypes.STRING(5),
+    allowNull: true,
+    field: 'start_time'
   },
   endTime: {
-    type: String,
-    required: false
+    type: DataTypes.STRING(5),
+    allowNull: true,
+    field: 'end_time'
   },
   duration: {
-    type: Number, // in days
-    required: true
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    comment: 'Duration in days'
   },
   location: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 200
+    type: DataTypes.STRING(200),
+    allowNull: false,
+    validate: { len: [1, 200] }
   },
   purpose: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 500
+    type: DataTypes.TEXT,
+    allowNull: false,
+    validate: { len: [1, 500] }
   },
-  relatedDepartment: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department'
+  relatedDepartmentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'related_department_id',
+    references: { model: Department, key: 'id' }
   },
   status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected', 'cancelled'],
-    default: 'pending',
-    index: true
+    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'),
+    allowNull: false,
+    defaultValue: 'pending'
   },
-  approvedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+  approvedById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'approved_by_id',
+    references: { model: User, key: 'id' }
   },
-  approvedAt: Date,
-  rejectedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+  approvedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'approved_at'
   },
-  rejectedAt: Date,
+  rejectedById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'rejected_by_id',
+    references: { model: User, key: 'id' }
+  },
+  rejectedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'rejected_at'
+  },
   rejectionReason: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'rejection_reason'
   },
-  cancelledBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+  cancelledById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'cancelled_by_id',
+    references: { model: User, key: 'id' }
   },
-  cancelledAt: Date,
+  cancelledAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'cancelled_at'
+  },
   cancellationReason: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'cancellation_reason'
   },
   approverNotes: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'approver_notes'
   },
-  // Employee's department (denormalized for faster queries)
-  department: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department',
-    index: true
+  departmentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'department_id',
+    references: { model: Department, key: 'id' }
   },
-  // Employee's position (denormalized for faster queries)
-  position: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Position'
+  positionId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'position_id',
+    references: { model: Position, key: 'id' }
   },
-  attachments: [{
-    filename: {
-      type: String,
-      trim: true
-    },
-    url: String,
-    uploadedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
-  // Email notification tracking
+  attachments: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: []
+  },
   notifications: {
-    submitted: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    approved: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    rejected: {
-      sent: Boolean,
-      sentAt: Date
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {
+      submitted: { sent: false },
+      approved: { sent: false },
+      rejected: { sent: false }
     }
   }
 }, {
-  timestamps: true
-});
-
-// Virtual to check if mission is active
-missionSchema.virtual('isActive').get(function () {
-  const now = new Date();
-  return this.status === 'approved' &&
-    this.startDate <= now &&
-    this.endDate >= now;
-});
-
-// Virtual to check if mission is upcoming
-missionSchema.virtual('isUpcoming').get(function () {
-  return this.status === 'approved' && this.startDate > new Date();
-});
-
-// Instance method to approve mission
-missionSchema.methods.approve = async function (approverId, notes) {
-  this.status = 'approved';
-  this.approvedBy = approverId;
-  this.approvedAt = new Date();
-  if (notes && typeof notes === 'string') this.approverNotes = notes.trim();
-  return await this.save();
-};
-
-// Instance method to reject mission
-missionSchema.methods.reject = async function (rejecterId, reason) {
-  this.status = 'rejected';
-  this.rejectedBy = rejecterId;
-  this.rejectedAt = new Date();
-  this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
-  return await this.save({ validateBeforeSave: false });
-};
-
-// Instance method to cancel mission
-missionSchema.methods.cancel = async function (userId, reason) {
-  this.status = 'cancelled';
-  this.cancelledBy = userId;
-  this.cancelledAt = new Date();
-  this.cancellationReason = reason && typeof reason === 'string' ? reason.trim() : '';
-  return await this.save();
-};
-
-// Static method to get employee missions with full details
-missionSchema.statics.getMissionsByEmployee = function (employeeId, filters = {}) {
-  const query = { employee: employeeId, ...filters };
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('approvedBy rejectedBy cancelledBy', 'username employeeId personalInfo')
-    .populate('relatedDepartment', 'name code manager')
-    .populate('department', 'name code')
-    .populate('position', 'title')
-    .sort({ startDate: -1 });
-};
-
-// Static method to get pending missions for supervisor approval
-missionSchema.statics.getPendingMissions = function (departmentId = null) {
-  const query = {
-    status: 'pending'
-  };
-
-  // Filter by department if provided
-  if (departmentId) {
-    query.department = departmentId;
-  }
-
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('relatedDepartment', 'name code manager')
-    .populate('department', 'name code')
-    .sort({ createdAt: 1 });
-};
-
-// Static method to get active missions (currently ongoing)
-missionSchema.statics.getActiveMissions = function (departmentId = null) {
-  const now = new Date();
-  const query = {
-    status: 'approved',
-    startDate: { $lte: now },
-    endDate: { $gte: now }
-  };
-
-  if (departmentId) {
-    query.department = departmentId;
-  }
-
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId',
-      populate: [
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title' }
-      ]
-    })
-    .populate('relatedDepartment', 'name code')
-    .sort({ endDate: 1 });
-};
-
-// Static method to get missions by department
-missionSchema.statics.getMissionsByDepartment = function (departmentId, filters = {}) {
-  const query = { department: departmentId, ...filters };
-
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile position employeeId email',
-      populate: { path: 'position', select: 'title code' }
-    })
-    .populate('approvedBy rejectedBy cancelledBy', 'username employeeId personalInfo')
-    .populate('relatedDepartment', 'name code manager')
-    .sort({ startDate: -1 });
-};
-
-// Static method to check for overlapping missions
-missionSchema.statics.hasOverlappingMission = async function (employeeId, startDate, endDate, excludeMissionId = null) {
-  const query = {
-    employee: employeeId,
-    status: { $in: ['pending', 'approved'] },
-    $or: [
-      {
-        startDate: { $lte: endDate },
-        endDate: { $gte: startDate }
-      }
-    ]
-  };
-
-  if (excludeMissionId) {
-    query._id = { $ne: excludeMissionId };
-  }
-
-  const overlapping = await this.findOne(query);
-  return !!overlapping;
-};
-
-// Static method to get mission statistics for a department
-missionSchema.statics.getDepartmentStats = async function (departmentId, year = new Date().getFullYear()) {
-  const yearStart = new Date(year, 0, 1);
-  const yearEnd = new Date(year, 11, 31, 23, 59, 59);
-
-  const stats = await this.aggregate([
-    {
-      $match: {
-        department: new mongoose.Types.ObjectId(departmentId),
-        startDate: { $gte: yearStart, $lte: yearEnd }
-      }
-    },
-    {
-      $group: {
-        _id: '$status',
-        count: { $sum: 1 },
-        totalDays: { $sum: '$duration' }
-      }
+  tableName: 'missions',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  scopes: {
+    pending: { where: { status: 'pending' } },
+    approved: { where: { status: 'approved' } },
+    active() {
+      const now = new Date();
+      return {
+        where: {
+          status: 'approved',
+          startDate: { [mainAppDb.Sequelize.Op.lte]: now },
+          endDate: { [mainAppDb.Sequelize.Op.gte]: now }
+        }
+      };
     }
-  ]);
+  }
+});
 
-  return stats;
+Mission.prototype.getIsActive = function() {
+  const now = new Date();
+  return this.status === 'approved' && new Date(this.startDate) <= now && new Date(this.endDate) >= now;
 };
 
-// Compound indexes for tenant isolation and performance
-missionSchema.index({ tenantId: 1, employee: 1, status: 1 });
-missionSchema.index({ tenantId: 1, department: 1, status: 1 });
-missionSchema.index({ tenantId: 1, department: 1, startDate: 1 });
-missionSchema.index({ tenantId: 1, startDate: 1, endDate: 1 });
-missionSchema.index({ tenantId: 1, status: 1, createdAt: 1 });
-
-// Add withTenant static method for tenant-aware queries
-missionSchema.statics.withTenant = function (tenantId) {
-  return this.find({ tenantId });
+Mission.prototype.getIsUpcoming = function() {
+  return this.status === 'approved' && new Date(this.startDate) > new Date();
 };
 
-export default mongoose.model('Mission', missionSchema);
+Mission.prototype.approve = async function(approverId, notes) {
+  this.status = 'approved';
+  this.approvedById = approverId;
+  this.approvedAt = new Date();
+  if (notes) this.approverNotes = notes.trim();
+  return await this.save();
+};
+
+Mission.prototype.reject = async function(rejecterId, reason) {
+  this.status = 'rejected';
+  this.rejectedById = rejecterId;
+  this.rejectedAt = new Date();
+  this.rejectionReason = reason ? reason.trim() : '';
+  return await this.save({ validate: false });
+};
+
+Mission.prototype.cancel = async function(userId, reason) {
+  this.status = 'cancelled';
+  this.cancelledById = userId;
+  this.cancelledAt = new Date();
+  this.cancellationReason = reason ? reason.trim() : '';
+  return await this.save();
+};
+
+Mission.associate = function(models) {
+  Mission.belongsTo(User, { foreignKey: 'employeeId', as: 'employee', onDelete: 'CASCADE' });
+  Mission.belongsTo(User, { foreignKey: 'approvedById', as: 'approvedBy', onDelete: 'SET NULL' });
+  Mission.belongsTo(User, { foreignKey: 'rejectedById', as: 'rejectedBy', onDelete: 'SET NULL' });
+  Mission.belongsTo(User, { foreignKey: 'cancelledById', as: 'cancelledBy', onDelete: 'SET NULL' });
+  Mission.belongsTo(Department, { foreignKey: 'departmentId', as: 'department', onDelete: 'SET NULL' });
+  Mission.belongsTo(Position, { foreignKey: 'positionId', as: 'position', onDelete: 'SET NULL' });
+  Mission.belongsTo(Department, { foreignKey: 'relatedDepartmentId', as: 'relatedDepartment', onDelete: 'SET NULL' });
+};
+
+export default Mission;
