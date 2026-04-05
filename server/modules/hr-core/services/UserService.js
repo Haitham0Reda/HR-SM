@@ -1,5 +1,6 @@
 import UserRepository from '../../../repositories/core/UserRepository.js';
 import AuditLog from '../models/AuditLog.js';
+import { Op } from 'sequelize';
 
 /**
  * User Service - Business logic layer for user operations
@@ -23,26 +24,26 @@ class UserService {
     if (department) filter.department = department;
 
     if (search) {
-      filter.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { employeeId: { $regex: search, $options: 'i' } }
+      filter[Op.or] = [
+        { firstName: { [Op.iLike]: `%${search}%` } },
+        { lastName: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+        { employeeId: { [Op.iLike]: `%${search}%` } }
       ];
     }
 
     const queryOptions = {
-      populate: [
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title level' },
-        { path: 'manager', select: 'firstName lastName email' }
+      include: [
+        { association: 'department', attributes: ['name', 'code'] },
+        { association: 'position', attributes: ['title', 'level'] },
+        { association: 'manager', attributes: ['firstName', 'lastName', 'email'] }
       ],
-      sort: { createdAt: -1 },
+      order: [['createdAt', 'DESC']],
       limit: parseInt(limit),
-      skip: (parseInt(page) - 1) * parseInt(limit)
+      offset: (parseInt(page) - 1) * parseInt(limit)
     };
 
-    const users = await this.userRepository.find(filter, queryOptions);
+    const users = await this.userRepository.findAll(filter, queryOptions);
     const count = await this.userRepository.count(filter);
 
     return {
@@ -60,12 +61,12 @@ class UserService {
    */
   async getUserById(id, tenantId) {
     const user = await this.userRepository.findOne(
-      { _id: id, tenantId },
+      { id, tenantId },
       {
-        populate: [
-          { path: 'department', select: 'name code' },
-          { path: 'position', select: 'title level' },
-          { path: 'manager', select: 'firstName lastName email' }
+        include: [
+          { association: 'department', attributes: ['name', 'code'] },
+          { association: 'position', attributes: ['title', 'level'] },
+          { association: 'manager', attributes: ['firstName', 'lastName', 'email'] }
         ]
       }
     );
@@ -93,17 +94,17 @@ class UserService {
     await AuditLog.create({
       action: 'create',
       resource: 'User',
-      resourceId: user._id,
+      resourceId: user.id,
       userId: createdBy,
       tenantId,
       module: 'hr-core'
     });
 
     // Populate the created user
-    return await this.userRepository.findById(user._id, {
-      populate: [
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title level' }
+    return await this.userRepository.findById(user.id, {
+      include: [
+        { association: 'department', attributes: ['name', 'code'] },
+        { association: 'position', attributes: ['title', 'level'] }
       ]
     });
   }
@@ -112,7 +113,7 @@ class UserService {
    * Update user
    */
   async updateUser(id, updateData, updatedBy, tenantId) {
-    const user = await this.userRepository.findOne({ _id: id, tenantId });
+    const user = await this.userRepository.findOne({ id, tenantId });
 
     if (!user) {
       throw new Error('User not found');
@@ -148,10 +149,10 @@ class UserService {
 
     // Return populated user
     return await this.userRepository.findById(id, {
-      populate: [
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title level' },
-        { path: 'manager', select: 'firstName lastName email' }
+      include: [
+        { association: 'department', attributes: ['name', 'code'] },
+        { association: 'position', attributes: ['title', 'level'] },
+        { association: 'manager', attributes: ['firstName', 'lastName', 'email'] }
       ]
     });
   }
@@ -160,7 +161,7 @@ class UserService {
    * Delete user (soft delete by setting status to inactive)
    */
   async deleteUser(id, deletedBy, tenantId) {
-    const user = await this.userRepository.findOne({ _id: id, tenantId });
+    const user = await this.userRepository.findOne({ id, tenantId });
 
     if (!user) {
       throw new Error('User not found');
@@ -188,16 +189,16 @@ class UserService {
    * Get user's subordinates
    */
   async getSubordinates(managerId, tenantId) {
-    return await this.userRepository.find(
+    return await this.userRepository.findAll(
       {
         manager: managerId,
         tenantId,
         status: 'active'
       },
       {
-        populate: [
-          { path: 'department', select: 'name code' },
-          { path: 'position', select: 'title level' }
+        include: [
+          { association: 'department', attributes: ['name', 'code'] },
+          { association: 'position', attributes: ['title', 'level'] }
         ]
       }
     );

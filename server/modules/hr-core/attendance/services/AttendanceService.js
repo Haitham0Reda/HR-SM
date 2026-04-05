@@ -1,6 +1,7 @@
 import AttendanceRepository from '../../../../repositories/modules/AttendanceRepository.js';
 import { getHolidayInfo } from '../../holidays/utils/holidayChecker.js';
 import logger from '../../../../utils/logger.js';
+import { Op } from 'sequelize';
 
 /**
  * Attendance Service - Business logic layer for attendance operations
@@ -21,13 +22,13 @@ class AttendanceService {
     if (filters.startDate || filters.endDate) {
       filter.date = {};
       if (filters.startDate) {
-        filter.date.$gte = new Date(filters.startDate);
+        filter.date[Op.gte] = new Date(filters.startDate);
       }
       if (filters.endDate) {
         // Set to end of day for endDate
         const endDate = new Date(filters.endDate);
         endDate.setHours(23, 59, 59, 999);
-        filter.date.$lte = endDate;
+        filter.date[Op.lte] = endDate;
       }
     }
 
@@ -47,16 +48,16 @@ class AttendanceService {
     }
 
     const queryOptions = {
-      populate: [
-        { path: 'employee', select: 'username email employeeId personalInfo department' },
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title' },
-        { path: 'device', select: 'deviceName deviceType' }
+      include: [
+        { association: 'employee', attributes: ['username', 'email', 'employeeId', 'personalInfo', 'department'] },
+        { association: 'department', attributes: ['name', 'code'] },
+        { association: 'position', attributes: ['title'] },
+        { association: 'device', attributes: ['deviceName', 'deviceType'] }
       ],
-      sort: { date: -1 }
+      order: [['date', 'DESC']]
     };
 
-    return await this.attendanceRepository.find(filter, queryOptions);
+    return await this.attendanceRepository.findAll(filter, queryOptions);
   }
 
   /**
@@ -84,11 +85,11 @@ class AttendanceService {
     const attendance = await this.attendanceRepository.create(dataToCreate);
 
     // Return populated attendance
-    return await this.attendanceRepository.findById(attendance._id, {
-      populate: [
-        { path: 'employee', select: 'username email employeeId personalInfo' },
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title' }
+    return await this.attendanceRepository.findById(attendance.id, {
+      include: [
+        { association: 'employee', attributes: ['username', 'email', 'employeeId', 'personalInfo'] },
+        { association: 'department', attributes: ['name', 'code'] },
+        { association: 'position', attributes: ['title'] }
       ]
     });
   }
@@ -98,12 +99,12 @@ class AttendanceService {
    */
   async getAttendanceById(id, tenantId) {
     const attendance = await this.attendanceRepository.findOne(
-      { _id: id, tenantId },
+      { id, tenantId },
       {
-        populate: [
-          { path: 'employee', select: 'username email employeeId personalInfo' },
-          { path: 'department', select: 'name code' },
-          { path: 'position', select: 'title' }
+        include: [
+          { association: 'employee', attributes: ['username', 'email', 'employeeId', 'personalInfo'] },
+          { association: 'department', attributes: ['name', 'code'] },
+          { association: 'position', attributes: ['title'] }
         ]
       }
     );
@@ -144,10 +145,10 @@ class AttendanceService {
 
     // Return populated attendance
     return await this.attendanceRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'username email employeeId personalInfo' },
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title' }
+      include: [
+        { association: 'employee', attributes: ['username', 'email', 'employeeId', 'personalInfo'] },
+        { association: 'department', attributes: ['name', 'code'] },
+        { association: 'position', attributes: ['title'] }
       ]
     });
   }
@@ -156,7 +157,7 @@ class AttendanceService {
    * Delete attendance record
    */
   async deleteAttendance(id, tenantId) {
-    const attendance = await this.attendanceRepository.findOne({ _id: id, tenantId });
+    const attendance = await this.attendanceRepository.findOne({ id, tenantId });
 
     if (!attendance) {
       throw new Error('Attendance not found');
@@ -181,13 +182,13 @@ class AttendanceService {
       tomorrow,
       tenantId,
       {
-        populate: [
-          { path: 'employee', select: 'username email employeeId personalInfo' },
-          { path: 'department', select: 'name code' },
-          { path: 'position', select: 'title' },
-          { path: 'device', select: 'deviceName deviceType' }
+        include: [
+          { association: 'employee', attributes: ['username', 'email', 'employeeId', 'personalInfo'] },
+          { association: 'department', attributes: ['name', 'code'] },
+          { association: 'position', attributes: ['title'] },
+          { association: 'device', attributes: ['deviceName', 'deviceType'] }
         ],
-        sort: { 'checkIn.time': -1 }
+        order: [[{ model: require('../../../../modules/hr-core/attendance/models/attendance.model.js').default.sequelize.literal('"checkIn->time"'), 'DESC' }]]
       }
     );
 
@@ -238,13 +239,13 @@ class AttendanceService {
       endDate,
       tenantId,
       {
-        populate: [
-          { path: 'employee', select: 'username email employeeId personalInfo' },
-          { path: 'department', select: 'name code' },
-          { path: 'position', select: 'title' },
-          { path: 'device', select: 'deviceName deviceType' }
+        include: [
+          { association: 'employee', attributes: ['username', 'email', 'employeeId', 'personalInfo'] },
+          { association: 'department', attributes: ['name', 'code'] },
+          { association: 'position', attributes: ['title'] },
+          { association: 'device', attributes: ['deviceName', 'deviceType'] }
         ],
-        sort: { date: 1, 'employee.employeeId': 1 }
+        order: [['date', 'ASC'], [{ association: 'employee' }, 'employeeId', 'ASC']]
       }
     );
 
@@ -313,7 +314,7 @@ class AttendanceService {
 
     if (!attendance) {
       // Get employee info for department and position
-      const employee = await this.attendanceRepository.findOne({ _id: employeeId });
+      const employee = await this.attendanceRepository.findOne({ id: employeeId });
 
       const attendanceData = {
         employee: employeeId,
@@ -341,16 +342,16 @@ class AttendanceService {
       updateData.notes = notes;
     }
 
-    await this.attendanceRepository.update(attendance._id, updateData);
+    await this.attendanceRepository.update(attendance.id, updateData);
 
     logger.info(`Manual check-in recorded by ${approvedBy} for employee ${employeeId}`);
 
     // Return populated attendance
-    return await this.attendanceRepository.findById(attendance._id, {
-      populate: [
-        { path: 'employee', select: 'username email employeeId personalInfo' },
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title' }
+    return await this.attendanceRepository.findById(attendance.id, {
+      include: [
+        { association: 'employee', attributes: ['username', 'email', 'employeeId', 'personalInfo'] },
+        { association: 'department', attributes: ['name', 'code'] },
+        { association: 'position', attributes: ['title'] }
       ]
     });
   }
@@ -389,16 +390,16 @@ class AttendanceService {
       updateData.notes = attendance.notes ? `${attendance.notes}; ${notes}` : notes;
     }
 
-    await this.attendanceRepository.update(attendance._id, updateData);
+    await this.attendanceRepository.update(attendance.id, updateData);
 
     logger.info(`Manual check-out recorded by ${approvedBy} for employee ${employeeId}`);
 
     // Return populated attendance
-    return await this.attendanceRepository.findById(attendance._id, {
-      populate: [
-        { path: 'employee', select: 'username email employeeId personalInfo' },
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title' }
+    return await this.attendanceRepository.findById(attendance.id, {
+      include: [
+        { association: 'employee', attributes: ['username', 'email', 'employeeId', 'personalInfo'] },
+        { association: 'department', attributes: ['name', 'code'] },
+        { association: 'position', attributes: ['title'] }
       ]
     });
   }
