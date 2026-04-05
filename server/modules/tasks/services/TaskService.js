@@ -1,4 +1,5 @@
 import TaskRepository from '../../../repositories/modules/TaskRepository.js';
+import { Op } from 'sequelize';
 
 /**
  * Task Service - Business logic layer for task operations
@@ -15,17 +16,17 @@ class TaskService {
   async getAllTasks(tenantId, options = {}) {
     const filter = { tenantId };
     const queryOptions = {
-      populate: [
-        { path: 'assignedTo', select: 'firstName lastName email employeeId' },
-        { path: 'assignedBy', select: 'firstName lastName email' },
-        { path: 'project', select: 'name code' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'assignedTo', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'assignedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'project', attributes: ['name', 'code'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ],
-      sort: { createdAt: -1 },
+      order: [['createdAt', 'DESC']],
       ...options
     };
 
-    return await this.taskRepository.find(filter, queryOptions);
+    return await this.taskRepository.findAll(filter, queryOptions);
   }
 
   /**
@@ -40,12 +41,12 @@ class TaskService {
     const task = await this.taskRepository.create(dataToCreate);
     
     // Return populated task
-    return await this.taskRepository.findById(task._id, {
-      populate: [
-        { path: 'assignedTo', select: 'firstName lastName email employeeId' },
-        { path: 'assignedBy', select: 'firstName lastName email' },
-        { path: 'project', select: 'name code' },
-        { path: 'department', select: 'name code' }
+    return await this.taskRepository.findById(task.id, {
+      include: [
+        { association: 'assignedTo', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'assignedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'project', attributes: ['name', 'code'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -55,13 +56,13 @@ class TaskService {
    */
   async getTaskById(id, tenantId) {
     const task = await this.taskRepository.findOne(
-      { _id: id, tenantId },
+      { id, tenantId },
       {
-        populate: [
-          { path: 'assignedTo', select: 'firstName lastName email employeeId' },
-          { path: 'assignedBy', select: 'firstName lastName email' },
-          { path: 'project', select: 'name code' },
-          { path: 'department', select: 'name code' }
+        include: [
+          { association: 'assignedTo', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+          { association: 'assignedBy', attributes: ['firstName', 'lastName', 'email'] },
+          { association: 'project', attributes: ['name', 'code'] },
+          { association: 'department', attributes: ['name', 'code'] }
         ]
       }
     );
@@ -77,7 +78,7 @@ class TaskService {
    * Update task
    */
   async updateTask(id, updateData, tenantId) {
-    const task = await this.taskRepository.findOne({ _id: id, tenantId });
+    const task = await this.taskRepository.findOne({ id, tenantId });
     
     if (!task) {
       throw new Error('Task not found');
@@ -96,11 +97,11 @@ class TaskService {
     
     // Return populated task
     return await this.taskRepository.findById(id, {
-      populate: [
-        { path: 'assignedTo', select: 'firstName lastName email employeeId' },
-        { path: 'assignedBy', select: 'firstName lastName email' },
-        { path: 'project', select: 'name code' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'assignedTo', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'assignedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'project', attributes: ['name', 'code'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -109,7 +110,7 @@ class TaskService {
    * Delete task
    */
   async deleteTask(id, tenantId) {
-    const task = await this.taskRepository.findOne({ _id: id, tenantId });
+    const task = await this.taskRepository.findOne({ id, tenantId });
     
     if (!task) {
       throw new Error('Task not found');
@@ -123,7 +124,7 @@ class TaskService {
    * Assign task to employee
    */
   async assignTask(id, assignedTo, assignedBy, tenantId) {
-    const task = await this.taskRepository.findOne({ _id: id, tenantId });
+    const task = await this.taskRepository.findOne({ id, tenantId });
     
     if (!task) {
       throw new Error('Task not found');
@@ -140,11 +141,11 @@ class TaskService {
     
     // Return populated task
     return await this.taskRepository.findById(id, {
-      populate: [
-        { path: 'assignedTo', select: 'firstName lastName email employeeId' },
-        { path: 'assignedBy', select: 'firstName lastName email' },
-        { path: 'project', select: 'name code' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'assignedTo', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'assignedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'project', attributes: ['name', 'code'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
