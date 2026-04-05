@@ -1,69 +1,36 @@
-// models/Announcement.js
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+import User from '../../users/models/user.model.js';
+import Department from '../../users/models/department.model.js';
 
-const announcementSchema = new mongoose.Schema({
-    tenantId: {
-        type: String,
-        required: true,
-        index: true
-    },
-    title: {
-        type: String,
-        required: true
-    },
-    arabicTitle: String,
-    content: {
-        type: String,
-        required: true
-    },
-    arabicContent: String,
-    type: {
-        type: String,
-        enum: ['general', 'urgent', 'policy', 'event', 'maintenance']
-    },
-    priority: {
-        type: String,
-        enum: ['low', 'medium', 'high'],
-        default: 'medium'
-    },
-    targetAudience: {
-        type: String,
-        enum: ['all', 'department', 'specific'],
-        default: 'all'
-    },
-    departments: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department'
-    }],
-    employees: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }],
-    publishDate: {
-        type: Date,
-        default: Date.now
-    },
-    expiryDate: Date,
-    startDate: {
-        type: Date,
-        default: null
-    },
-    endDate: {
-        type: Date,
-        default: null
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    },
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    attachments: [String]
+const Announcement = mainAppDb.define('Announcement', {
+  id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  tenantId: { type: DataTypes.STRING(100), allowNull: false, field: 'tenant_id' },
+  title: { type: DataTypes.STRING, allowNull: false },
+  arabicTitle: { type: DataTypes.STRING, allowNull: true, field: 'arabic_title' },
+  content: { type: DataTypes.TEXT, allowNull: false },
+  arabicContent: { type: DataTypes.TEXT, allowNull: true, field: 'arabic_content' },
+  type: { type: DataTypes.ENUM('general', 'urgent', 'policy', 'event', 'maintenance'), allowNull: true },
+  priority: { type: DataTypes.ENUM('low', 'medium', 'high'), allowNull: false, defaultValue: 'medium' },
+  targetAudience: { type: DataTypes.ENUM('all', 'department', 'specific'), allowNull: false, defaultValue: 'all', field: 'target_audience' },
+  departments: { type: DataTypes.JSONB, allowNull: true, defaultValue: [] },
+  employees: { type: DataTypes.JSONB, allowNull: true, defaultValue: [] },
+  publishDate: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'publish_date' },
+  expiryDate: { type: DataTypes.DATE, allowNull: true, field: 'expiry_date' },
+  startDate: { type: DataTypes.DATE, allowNull: true, field: 'start_date', defaultValue: null },
+  endDate: { type: DataTypes.DATE, allowNull: true, field: 'end_date', defaultValue: null },
+  isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true, field: 'is_active' },
+  createdById: { type: DataTypes.UUID, allowNull: false, field: 'created_by_id', references: { model: User, key: 'id' } },
+  attachments: { type: DataTypes.JSONB, allowNull: true, defaultValue: [] }
 }, {
-    timestamps: true
+  tableName: 'announcements',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
-export default mongoose.model('Announcement', announcementSchema);
+Announcement.associate = function(models) {
+  Announcement.belongsTo(User, { foreignKey: 'createdById', as: 'createdBy', onDelete: 'CASCADE' });
+};
+
+export default Announcement;
