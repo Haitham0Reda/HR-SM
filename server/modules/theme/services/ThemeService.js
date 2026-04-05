@@ -1,4 +1,5 @@
 import ThemeRepository from '../../../repositories/modules/ThemeRepository.js';
+import { Op } from 'sequelize';
 
 /**
  * Theme Service - Business logic layer for theme configuration operations
@@ -70,7 +71,7 @@ class ThemeService {
 
         const activeTheme = await this.themeRepository.getActiveTheme(tenantId);
 
-        return await this.themeRepository.updateTheme(activeTheme._id, updateData, updatedBy);
+        return await this.themeRepository.updateTheme(activeTheme.id, updateData, updatedBy);
     }
 
     /**
@@ -79,7 +80,7 @@ class ThemeService {
     async resetTheme(tenantId, updatedBy) {
         const activeTheme = await this.themeRepository.getActiveTheme(tenantId);
 
-        return await this.themeRepository.resetToDefaults(activeTheme._id, updatedBy);
+        return await this.themeRepository.resetToDefaults(activeTheme.id, updatedBy);
     }
 
     /**
@@ -88,7 +89,7 @@ class ThemeService {
     async applyThemePreset(tenantId, presetId, updatedBy) {
         const activeTheme = await this.themeRepository.getActiveTheme(tenantId);
 
-        return await this.themeRepository.applyPreset(activeTheme._id, presetId, updatedBy);
+        return await this.themeRepository.applyPreset(activeTheme.id, presetId, updatedBy);
     }
 
     /**
@@ -141,7 +142,7 @@ class ThemeService {
     async createThemeBackup(tenantId, backupName, createdBy) {
         const activeTheme = await this.themeRepository.getActiveTheme(tenantId);
 
-        return await this.themeRepository.createBackup(activeTheme._id, backupName, createdBy);
+        return await this.themeRepository.createBackup(activeTheme.id, backupName, createdBy);
     }
 
     /**
@@ -201,12 +202,12 @@ class ThemeService {
 
         // Validate the updated theme
         const fullThemeData = {
-            ...activeTheme.toObject(),
+            ...activeTheme.toJSON(),
             ...updateData
         };
         await this.themeRepository.validateTheme(fullThemeData);
 
-        return await this.themeRepository.updateTheme(activeTheme._id, updateData, updatedBy);
+        return await this.themeRepository.updateTheme(activeTheme.id, updateData, updatedBy);
     }
 
     /**
@@ -300,8 +301,8 @@ class ThemeService {
 
         // Create a backup with the preset name
         const backupData = {
-            ...activeTheme.toObject(),
-            _id: undefined,
+            ...activeTheme.toJSON(),
+            id: undefined,
             isActive: false,
             isBackup: false,
             isPreset: true,
@@ -323,14 +324,14 @@ class ThemeService {
             isPreset: true
         };
         const queryOptions = {
-            populate: [
-                { path: 'createdBy', select: 'firstName lastName email' }
+            include: [
+                { association: 'createdBy', attributes: ['firstName', 'lastName', 'email'] }
             ],
-            sort: { createdAt: -1 },
+            order: [['createdAt', 'DESC']],
             ...options
         };
 
-        return await this.themeRepository.find(filter, queryOptions);
+        return await this.themeRepository.findAll(filter, queryOptions);
     }
 
     /**

@@ -1,4 +1,5 @@
 import NotificationRepository from '../../../repositories/modules/NotificationRepository.js';
+import { Op } from 'sequelize';
 
 /**
  * Notification Service - Business logic layer for notification operations
@@ -58,7 +59,7 @@ class NotificationService {
      * Get notification by ID
      */
     async getNotificationById(id, tenantId) {
-        const notification = await this.notificationRepository.findOne({ _id: id, tenantId });
+        const notification = await this.notificationRepository.findOne({ id, tenantId });
 
         if (!notification) {
             throw new Error('Notification not found');
@@ -71,7 +72,7 @@ class NotificationService {
      * Update notification
      */
     async updateNotification(id, updateData, tenantId) {
-        const notification = await this.notificationRepository.findOne({ _id: id, tenantId });
+        const notification = await this.notificationRepository.findOne({ id, tenantId });
 
         if (!notification) {
             throw new Error('Notification not found');
@@ -84,7 +85,7 @@ class NotificationService {
      * Delete notification
      */
     async deleteNotification(id, tenantId) {
-        const notification = await this.notificationRepository.findOne({ _id: id, tenantId });
+        const notification = await this.notificationRepository.findOne({ id, tenantId });
 
         if (!notification) {
             throw new Error('Notification not found');
@@ -98,7 +99,7 @@ class NotificationService {
      * Mark notification as read
      */
     async markAsRead(id, tenantId) {
-        const notification = await this.notificationRepository.findOne({ _id: id, tenantId });
+        const notification = await this.notificationRepository.findOne({ id, tenantId });
 
         if (!notification) {
             throw new Error('Notification not found');
