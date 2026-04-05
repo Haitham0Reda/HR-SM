@@ -1,97 +1,45 @@
-// models/Notification.js
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+import User from '../../users/models/user.model.js';
 
-const notificationSchema = new mongoose.Schema({
-    tenantId: {
-        type: String,
-        required: true,
-        index: true
-    },
-    recipient: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    type: {
-        type: String,
-        enum: ['request', 'announcement', 'payroll', 'attendance', 'permission', 'leave', 'request-control', 'custom', 'info', 'warning', 'error', 'success', 'task', 'system'],
-        required: true
-    },
-    title: {
-        type: String,
-        required: true
-    },
-    message: {
-        type: String,
-        required: true
-    },
-    priority: {
-        type: String,
-        enum: ['low', 'normal', 'high', 'urgent'],
-        default: 'normal'
-    },
-    status: {
-        type: String,
-        enum: ['pending', 'approved', 'rejected', 'cancelled'],
-        default: 'pending'
-    },
-    isRead: {
-        type: Boolean,
-        default: false
-    },
-    readAt: {
-        type: Date
-    },
-    dismissed: {
-        type: Boolean,
-        default: false
-    },
-    dismissedAt: {
-        type: Date
-    },
-    snoozed: {
-        type: Boolean,
-        default: false
-    },
-    snoozeUntil: {
-        type: Date
-    },
-    sent: {
-        type: Boolean,
-        default: true
-    },
-    sentAt: {
-        type: Date
-    },
-    scheduledFor: {
-        type: Date
-    },
-    isSystem: {
-        type: Boolean,
-        default: false
-    },
-    metadata: {
-        type: mongoose.Schema.Types.Mixed,
-        default: {}
-    },
-    relatedModel: {
-        type: String, // Name of the related model (e.g., 'Request', 'Event', 'Payroll', 'Survey', 'DocumentTemplate', 'Announcement', 'Attendance', 'Leave', 'Position', 'Department', 'User', etc.)
-        required: false
-    },
-    relatedId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: false
-    }
+const Notification = mainAppDb.define('Notification', {
+  id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  tenantId: { type: DataTypes.STRING(100), allowNull: false, field: 'tenant_id' },
+  recipientId: { type: DataTypes.UUID, allowNull: false, field: 'recipient_id', references: { model: User, key: 'id' } },
+  type: { type: DataTypes.ENUM('request', 'announcement', 'payroll', 'attendance', 'permission', 'leave', 'request-control', 'custom', 'info', 'warning', 'error', 'success', 'task', 'system'), allowNull: false },
+  title: { type: DataTypes.STRING, allowNull: false },
+  message: { type: DataTypes.TEXT, allowNull: false },
+  priority: { type: DataTypes.ENUM('low', 'normal', 'high', 'urgent'), allowNull: false, defaultValue: 'normal' },
+  status: { type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'), allowNull: false, defaultValue: 'pending' },
+  isRead: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: 'is_read' },
+  readAt: { type: DataTypes.DATE, allowNull: true, field: 'read_at' },
+  dismissed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  dismissedAt: { type: DataTypes.DATE, allowNull: true, field: 'dismissed_at' },
+  snoozed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  snoozeUntil: { type: DataTypes.DATE, allowNull: true, field: 'snooze_until' },
+  sent: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+  sentAt: { type: DataTypes.DATE, allowNull: true, field: 'sent_at' },
+  scheduledFor: { type: DataTypes.DATE, allowNull: true, field: 'scheduled_for' },
+  isSystem: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: 'is_system' },
+  metadata: { type: DataTypes.JSONB, allowNull: true, defaultValue: {} },
+  relatedModel: { type: DataTypes.STRING, allowNull: true, field: 'related_model' },
+  relatedId: { type: DataTypes.UUID, allowNull: true, field: 'related_id' },
+  actionUrl: { type: DataTypes.STRING, allowNull: true, field: 'action_url' },
+  icon: { type: DataTypes.STRING, allowNull: true },
+  category: { type: DataTypes.STRING, allowNull: true }
 }, {
-    timestamps: true
+  tableName: 'notifications',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  scopes: {
+    unread: { where: { isRead: false } },
+    read: { where: { isRead: true } }
+  }
 });
 
-// Indexes for performance
-notificationSchema.index({ tenantId: 1, recipient: 1, isRead: 1 });
-notificationSchema.index({ tenantId: 1, createdAt: -1 });
-notificationSchema.index({ tenantId: 1, type: 1 });
-notificationSchema.index({ tenantId: 1, priority: 1 });
-notificationSchema.index({ tenantId: 1, relatedModel: 1, relatedId: 1 });
-notificationSchema.index({ tenantId: 1, scheduledFor: 1, sent: 1 });
+Notification.associate = function(models) {
+  Notification.belongsTo(User, { foreignKey: 'recipientId', as: 'recipient', onDelete: 'CASCADE' });
+};
 
-export default mongoose.model('Notification', notificationSchema);
+export default Notification;
