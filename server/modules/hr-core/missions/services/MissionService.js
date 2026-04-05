@@ -1,4 +1,5 @@
 import MissionRepository from '../../../../repositories/modules/MissionRepository.js';
+import { Op } from 'sequelize';
 
 /**
  * Mission Service - Business logic layer for mission operations
@@ -15,16 +16,16 @@ class MissionService {
   async getAllMissions(tenantId, options = {}) {
     const filter = { tenantId };
     const queryOptions = {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ],
-      sort: { createdAt: -1 },
+      order: [['createdAt', 'DESC']],
       ...options
     };
 
-    return await this.missionRepository.find(filter, queryOptions);
+    return await this.missionRepository.findAll(filter, queryOptions);
   }
 
   /**
@@ -46,11 +47,11 @@ class MissionService {
     const mission = await this.missionRepository.create(dataToCreate);
     
     // Return populated mission
-    return await this.missionRepository.findById(mission._id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+    return await this.missionRepository.findById(mission.id, {
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -60,12 +61,12 @@ class MissionService {
    */
   async getMissionById(id, tenantId) {
     const mission = await this.missionRepository.findOne(
-      { _id: id, tenantId },
+      { id, tenantId },
       {
-        populate: [
-          { path: 'employee', select: 'firstName lastName email employeeId' },
-          { path: 'approvedBy', select: 'firstName lastName email' },
-          { path: 'department', select: 'name code' }
+        include: [
+          { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+          { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+          { association: 'department', attributes: ['name', 'code'] }
         ]
       }
     );
@@ -81,7 +82,7 @@ class MissionService {
    * Update mission
    */
   async updateMission(id, updateData, tenantId) {
-    const mission = await this.missionRepository.findOne({ _id: id, tenantId });
+    const mission = await this.missionRepository.findOne({ id, tenantId });
     
     if (!mission) {
       throw new Error('Mission not found');
@@ -101,10 +102,10 @@ class MissionService {
     
     // Return populated mission
     return await this.missionRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -113,7 +114,7 @@ class MissionService {
    * Delete mission
    */
   async deleteMission(id, tenantId) {
-    const mission = await this.missionRepository.findOne({ _id: id, tenantId });
+    const mission = await this.missionRepository.findOne({ id, tenantId });
     
     if (!mission) {
       throw new Error('Mission not found');
@@ -127,7 +128,7 @@ class MissionService {
    * Approve mission
    */
   async approveMission(id, approvedBy, tenantId) {
-    const mission = await this.missionRepository.findOne({ _id: id, tenantId });
+    const mission = await this.missionRepository.findOne({ id, tenantId });
     
     if (!mission) {
       throw new Error('Mission not found');
@@ -147,10 +148,10 @@ class MissionService {
     
     // Return populated mission
     return await this.missionRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -159,7 +160,7 @@ class MissionService {
    * Reject mission
    */
   async rejectMission(id, rejectedBy, rejectionReason, tenantId) {
-    const mission = await this.missionRepository.findOne({ _id: id, tenantId });
+    const mission = await this.missionRepository.findOne({ id, tenantId });
     
     if (!mission) {
       throw new Error('Mission not found');
@@ -180,10 +181,10 @@ class MissionService {
     
     // Return populated mission
     return await this.missionRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'rejectedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'rejectedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -192,7 +193,7 @@ class MissionService {
    * Complete mission
    */
   async completeMission(id, completedBy, completionNotes, tenantId) {
-    const mission = await this.missionRepository.findOne({ _id: id, tenantId });
+    const mission = await this.missionRepository.findOne({ id, tenantId });
     
     if (!mission) {
       throw new Error('Mission not found');
@@ -213,11 +214,11 @@ class MissionService {
     
     // Return populated mission
     return await this.missionRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'completedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'completedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -317,17 +318,17 @@ class MissionService {
       status: { $in: ['approved', 'pending', 'in_progress'] },
       $or: [
         {
-          startDate: { $lte: endDate },
-          endDate: { $gte: startDate }
+          startDate: { [Op.lte]: endDate },
+          endDate: { [Op.gte]: startDate }
         }
       ]
     };
 
     if (excludeId) {
-      filter._id = { $ne: excludeId };
+      filter.id = { [Op.ne]: excludeId };
     }
 
-    const conflicts = await this.missionRepository.find(filter);
+    const conflicts = await this.missionRepository.findAll(filter);
     return conflicts;
   }
 
@@ -341,24 +342,24 @@ class MissionService {
 
     const filter = {
       tenantId,
-      status: { $in: ['approved', 'in_progress'] },
+      status: { [Op.in]: ['approved', 'in_progress'] },
       startDate: {
-        $gte: now,
-        $lte: futureDate
+        [Op.gte]: now,
+        [Op.lte]: futureDate
       }
     };
 
     const queryOptions = {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ],
-      sort: { startDate: 1 },
+      order: [['startDate', 'ASC']],
       ...options
     };
 
-    return await this.missionRepository.find(filter, queryOptions);
+    return await this.missionRepository.findAll(filter, queryOptions);
   }
 
   /**
@@ -368,9 +369,9 @@ class MissionService {
     // This would require getting employees under this manager first
     // For now, return all pending requests - can be enhanced based on org structure
     return await this.missionRepository.findByStatus('pending', tenantId, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId manager' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId', 'manager'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }

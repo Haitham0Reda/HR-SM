@@ -1,4 +1,5 @@
 import OvertimeRepository from '../../../../repositories/modules/OvertimeRepository.js';
+import { Op } from 'sequelize';
 
 /**
  * Overtime Service - Business logic layer for overtime operations
@@ -15,16 +16,16 @@ class OvertimeService {
   async getAllOvertime(tenantId, options = {}) {
     const filter = { tenantId };
     const queryOptions = {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ],
-      sort: { createdAt: -1 },
+      order: [['createdAt', 'DESC']],
       ...options
     };
 
-    return await this.overtimeRepository.find(filter, queryOptions);
+    return await this.overtimeRepository.findAll(filter, queryOptions);
   }
 
   /**
@@ -46,11 +47,11 @@ class OvertimeService {
     const overtime = await this.overtimeRepository.create(dataToCreate);
     
     // Return populated overtime
-    return await this.overtimeRepository.findById(overtime._id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+    return await this.overtimeRepository.findById(overtime.id, {
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -60,12 +61,12 @@ class OvertimeService {
    */
   async getOvertimeById(id, tenantId) {
     const overtime = await this.overtimeRepository.findOne(
-      { _id: id, tenantId },
+      { id, tenantId },
       {
-        populate: [
-          { path: 'employee', select: 'firstName lastName email employeeId' },
-          { path: 'approvedBy', select: 'firstName lastName email' },
-          { path: 'department', select: 'name code' }
+        include: [
+          { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+          { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+          { association: 'department', attributes: ['name', 'code'] }
         ]
       }
     );
@@ -81,7 +82,7 @@ class OvertimeService {
    * Update overtime record
    */
   async updateOvertime(id, updateData, tenantId) {
-    const overtime = await this.overtimeRepository.findOne({ _id: id, tenantId });
+    const overtime = await this.overtimeRepository.findOne({ id, tenantId });
     
     if (!overtime) {
       throw new Error('Overtime record not found');
@@ -101,10 +102,10 @@ class OvertimeService {
     
     // Return populated overtime
     return await this.overtimeRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -113,7 +114,7 @@ class OvertimeService {
    * Delete overtime record
    */
   async deleteOvertime(id, tenantId) {
-    const overtime = await this.overtimeRepository.findOne({ _id: id, tenantId });
+    const overtime = await this.overtimeRepository.findOne({ id, tenantId });
     
     if (!overtime) {
       throw new Error('Overtime record not found');
@@ -127,7 +128,7 @@ class OvertimeService {
    * Approve overtime request
    */
   async approveOvertime(id, approvedBy, tenantId) {
-    const overtime = await this.overtimeRepository.findOne({ _id: id, tenantId });
+    const overtime = await this.overtimeRepository.findOne({ id, tenantId });
     
     if (!overtime) {
       throw new Error('Overtime record not found');
@@ -147,10 +148,10 @@ class OvertimeService {
     
     // Return populated overtime
     return await this.overtimeRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -159,7 +160,7 @@ class OvertimeService {
    * Reject overtime request
    */
   async rejectOvertime(id, rejectedBy, rejectionReason, tenantId) {
-    const overtime = await this.overtimeRepository.findOne({ _id: id, tenantId });
+    const overtime = await this.overtimeRepository.findOne({ id, tenantId });
     
     if (!overtime) {
       throw new Error('Overtime record not found');
@@ -180,10 +181,10 @@ class OvertimeService {
     
     // Return populated overtime
     return await this.overtimeRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'rejectedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'rejectedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -372,9 +373,9 @@ class OvertimeService {
     // This would require getting employees under this manager first
     // For now, return all pending requests - can be enhanced based on org structure
     return await this.overtimeRepository.findByStatus('pending', tenantId, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId manager' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId', 'manager'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -411,8 +412,8 @@ class OvertimeService {
       tenantId,
       {
         filter: { status: 'approved' },
-        populate: [
-          { path: 'employee', select: 'firstName lastName email employeeId' }
+        include: [
+          { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] }
         ]
       }
     );
@@ -420,7 +421,7 @@ class OvertimeService {
     const summary = {};
 
     overtimeRecords.forEach(overtime => {
-      const employeeId = overtime.employee._id.toString();
+      const employeeId = overtime.employee.id.toString();
       
       if (!summary[employeeId]) {
         summary[employeeId] = {
