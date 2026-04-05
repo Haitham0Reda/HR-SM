@@ -148,33 +148,33 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - Rewrite paginate with tenant_id filtering
     - _Requirements: 6.7, 6.8, 6.9, 6.10_
 
-- [ ] 8. Rewrite QueryBuilder for Sequelize
-  - [ ] 8.1 Implement basic query methods
+- [x] 8. Rewrite QueryBuilder for Sequelize
+  - [x] 8.1 Implement basic query methods
     - Implement tenant() method (required)
     - Implement where() and equals()
     - Implement in() and notIn()
     - Implement greaterThan(), lessThan(), etc.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.12_
 
-  - [ ] 8.2 Implement pattern matching methods
+  - [x] 8.2 Implement pattern matching methods
     - Implement like() using Op.iLike
     - Implement startsWith() and endsWith()
     - Implement isNull() and isNotNull()
     - _Requirements: 7.5_
 
-  - [ ] 8.3 Implement logical operators
+  - [x] 8.3 Implement logical operators
     - Implement or() using Op.or
     - Implement and() using Op.and
     - _Requirements: 7.6, 7.7_
 
-  - [ ] 8.4 Implement query modifiers
+  - [x] 8.4 Implement query modifiers
     - Implement sort() for ORDER BY
     - Implement limit() and skip() for pagination
     - Implement select() for column selection
     - Implement include() for joins
     - _Requirements: 7.8, 7.9, 7.10, 7.11_
 
-  - [ ] 8.5 Implement execution methods
+  - [x] 8.5 Implement execution methods
     - Implement execute() with mandatory tenant_id check
     - Implement executeOne()
     - Implement count()
