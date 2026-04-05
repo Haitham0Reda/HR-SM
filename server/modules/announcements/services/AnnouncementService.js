@@ -1,4 +1,5 @@
 import AnnouncementRepository from '../../../repositories/modules/AnnouncementRepository.js';
+import { Op } from 'sequelize';
 
 /**
  * Announcement Service - Business logic layer for announcement operations
@@ -15,15 +16,15 @@ class AnnouncementService {
     async getAllAnnouncements(tenantId, options = {}) {
         const filter = { tenantId };
         const queryOptions = {
-            populate: [
-                { path: 'createdBy', select: 'username email firstName lastName' },
-                { path: 'departments', select: 'name code' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email', 'firstName', 'lastName'] },
+                { association: 'departments', attributes: ['name', 'code'] }
             ],
-            sort: { publishDate: -1 },
+            order: [['publishDate', 'DESC']],
             ...options
         };
 
-        return await this.announcementRepository.find(filter, queryOptions);
+        return await this.announcementRepository.findAll(filter, queryOptions);
     }
 
     /**
@@ -31,11 +32,11 @@ class AnnouncementService {
      */
     async getActiveAnnouncements(tenantId, options = {}) {
         const queryOptions = {
-            populate: [
-                { path: 'createdBy', select: 'username email firstName lastName' },
-                { path: 'departments', select: 'name code' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email', 'firstName', 'lastName'] },
+                { association: 'departments', attributes: ['name', 'code'] }
             ],
-            sort: { publishDate: -1 },
+            order: [['publishDate', 'DESC']],
             ...options
         };
 
@@ -47,11 +48,11 @@ class AnnouncementService {
      */
     async getAnnouncementsForUser(userId, userRole, userDepartment, tenantId, options = {}) {
         const queryOptions = {
-            populate: [
-                { path: 'createdBy', select: 'username email firstName lastName' },
-                { path: 'departments', select: 'name code' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email', 'firstName', 'lastName'] },
+                { association: 'departments', attributes: ['name', 'code'] }
             ],
-            sort: { publishDate: -1 },
+            order: [['publishDate', 'DESC']],
             ...options
         };
 
@@ -76,11 +77,11 @@ class AnnouncementService {
         const announcement = await this.announcementRepository.create(dataToCreate);
 
         // Return populated announcement with tenantId in options
-        return await this.announcementRepository.findById(announcement._id, {
+        return await this.announcementRepository.findById(announcement.id, {
             tenantId,
-            populate: [
-                { path: 'createdBy', select: 'username email firstName lastName' },
-                { path: 'departments', select: 'name code' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email', 'firstName', 'lastName'] },
+                { association: 'departments', attributes: ['name', 'code'] }
             ]
         });
     }
@@ -90,12 +91,12 @@ class AnnouncementService {
      */
     async getAnnouncementById(id, tenantId) {
         const announcement = await this.announcementRepository.findOne(
-            { _id: id, tenantId },
+            { id, tenantId },
             {
-                populate: [
-                    { path: 'createdBy', select: 'username email firstName lastName' },
-                    { path: 'departments', select: 'name code' },
-                    { path: 'employees', select: 'username email firstName lastName' }
+                include: [
+                    { association: 'createdBy', attributes: ['username', 'email', 'firstName', 'lastName'] },
+                    { association: 'departments', attributes: ['name', 'code'] },
+                    { association: 'employees', attributes: ['username', 'email', 'firstName', 'lastName'] }
                 ]
             }
         );
@@ -111,7 +112,7 @@ class AnnouncementService {
      * Update announcement
      */
     async updateAnnouncement(id, updateData, tenantId) {
-        const announcement = await this.announcementRepository.findOne({ _id: id, tenantId });
+        const announcement = await this.announcementRepository.findOne({ id, tenantId });
 
         if (!announcement) {
             throw new Error('Announcement not found');
@@ -123,9 +124,9 @@ class AnnouncementService {
         // Return populated announcement with tenantId in options
         return await this.announcementRepository.findById(id, {
             tenantId,
-            populate: [
-                { path: 'createdBy', select: 'username email firstName lastName' },
-                { path: 'departments', select: 'name code' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email', 'firstName', 'lastName'] },
+                { association: 'departments', attributes: ['name', 'code'] }
             ]
         });
     }
@@ -134,7 +135,7 @@ class AnnouncementService {
      * Delete announcement
      */
     async deleteAnnouncement(id, tenantId) {
-        const announcement = await this.announcementRepository.findOne({ _id: id, tenantId });
+        const announcement = await this.announcementRepository.findOne({ id, tenantId });
 
         if (!announcement) {
             throw new Error('Announcement not found');
