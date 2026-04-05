@@ -63,8 +63,8 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - Create composite unique index
     - _Requirements: 4.1, 4.2, 4.9, 4.10_
 
-- [ ] 5. Convert Mongoose schemas to Sequelize models (Main Application)
-  - [ ] 5.1 Convert User model
+- [x] 5. Convert Mongoose schemas to Sequelize models (Main Application)
+  - [x] 5.1 Convert User model
     - Create Sequelize model in server/modules/hr-core/users/models/user.model.js
     - Add tenant_id column with index
     - Map all user fields
@@ -72,26 +72,26 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - Define relationship to Department
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
 
-  - [ ] 5.2 Convert Department model
+  - [x] 5.2 Convert Department model
     - Create Sequelize model for departments table
     - Add tenant_id column
     - Map all department fields
     - _Requirements: 4.1, 4.2, 4.9_
 
-  - [ ] 5.3 Convert Attendance model
+  - [x] 5.3 Convert Attendance model
     - Create Sequelize model for attendances table
     - Add tenant_id column
     - Map date/time fields to TIMESTAMP WITH TIME ZONE
     - Add indexes for common queries
     - _Requirements: 4.1, 4.2, 4.9, 5.2_
 
-  - [ ] 5.4 Convert Survey model
+  - [x] 5.4 Convert Survey model
     - Create Sequelize model for surveys table
     - Add tenant_id column
     - Map questions array to JSONB
     - _Requirements: 4.1, 4.2, 4.9, 5.7_
 
-  - [ ] 5.5 Convert Payroll model
+  - [x] 5.5 Convert Payroll model
     - Create Sequelize model for payroll table
     - Add tenant_id column
     - Map salary fields to DECIMAL
