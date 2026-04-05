@@ -1,421 +1,281 @@
-import mongoose from 'mongoose';
-import crypto from 'crypto';
-
 /**
- * Company License Schema - Stored in Each Company Database
- * This is an encrypted copy of the license for local validation and performance
- * Tenant-specific by design (one per company database)
+ * Company License Model - PostgreSQL (Sequelize)
+ * 
+ * This model represents the company_licenses table in the Main Application Database (hrsm_platform).
+ * It stores an encrypted cache of license information for local validation and performance.
+ * This is a tenant-specific cache that syncs with the License Server.
+ * 
+ * @module models/CompanyLicense
  */
-const companyLicenseSchema = new mongoose.Schema({
+
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+
+const CompanyLicense = mainAppDb.define('CompanyLicense', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the company license record (UUID)'
+  },
+
+  // Tenant ID for multi-tenancy
+  tenantId: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'tenant_id',
+    unique: true,
+    comment: 'Tenant/Company identifier (one license per tenant)'
+  },
+
   // License Identification
   licenseId: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'license_id',
     unique: true,
-    index: true
+    comment: 'License identifier from license server'
   },
   licenseNumber: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    field: 'license_number',
     unique: true,
-    index: true
+    comment: 'Formatted license number (HRSM-XXXXXX-XXXXXX)'
   },
-  
+
   // Company Information
   companyId: {
-    type: String,
-    required: true,
-    index: true
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'company_id',
+    comment: 'Company identifier'
   },
-  
+
   // Encrypted License Data
   encryptedLicenseData: {
-    type: String,
-    required: true,
-    select: false // Never include in queries by default for security
+    type: DataTypes.TEXT,
+    allowNull: false,
+    field: 'encrypted_license_data',
+    comment: 'Encrypted license data from license server'
   },
-  
-  // Local Cache Information
+
+  // Cache Information - stored as JSONB
   cacheInfo: {
-    lastSyncedFromServer: {
-      type: Date,
-      required: true,
-      default: Date.now
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      lastSyncedFromServer: new Date(),
+      syncVersion: 1,
+      encryptionVersion: 'v1',
+      checksumHash: ''
     },
-    syncVersion: {
-      type: Number,
-      default: 1
-    },
-    encryptionVersion: {
-      type: String,
-      default: 'v1'
-    },
-    checksumHash: {
-      type: String,
-      required: true
-    }
+    field: 'cache_info',
+    comment: 'Cache synchronization metadata (JSONB)'
   },
-  
-  // Quick Access Fields (non-sensitive, for performance)
+
+  // Quick Access Fields - stored as JSONB for performance
   quickAccess: {
-    licenseType: {
-      type: String,
-      enum: ['trial', 'starter', 'professional', 'enterprise', 'unlimited'],
-      required: true,
-      index: true
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      licenseType: 'trial',
+      status: 'active',
+      expiresAt: null,
+      maxUsers: 0,
+      enabledModules: []
     },
-    status: {
-      type: String,
-      enum: ['active', 'expired', 'suspended', 'revoked', 'pending'],
-      required: true,
-      index: true
-    },
-    expiresAt: {
-      type: Date,
-      required: true,
-      index: true
-    },
-    maxUsers: {
-      type: Number,
-      required: true
-    },
-    enabledModules: [{
-      type: String
-    }]
+    field: 'quick_access',
+    comment: 'Non-sensitive fields for quick access without decryption (JSONB)'
   },
-  
-  // Validation Status
+
+  // Validation Status - stored as JSONB
   validationStatus: {
-    lastValidated: {
-      type: Date,
-      default: Date.now
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      lastValidated: new Date(),
+      validationCount: 0,
+      lastValidationResult: 'valid'
     },
-    validationCount: {
-      type: Number,
-      default: 0
-    },
-    lastValidationResult: {
-      type: String,
-      enum: ['valid', 'invalid', 'expired', 'error'],
-      default: 'valid'
-    },
-    lastValidationError: {
-      type: String,
-      default: null
-    },
-    nextValidationDue: {
-      type: Date,
-      default: () => {
-        const next = new Date();
-        next.setHours(next.getHours() + 24); // Validate daily
-        return next;
-      }
-    }
+    field: 'validation_status',
+    comment: 'License validation tracking (JSONB)'
   },
-  
+
   // Sync Status
   syncStatus: {
-    lastSyncAttempt: {
-      type: Date,
-      default: Date.now
-    },
-    lastSuccessfulSync: {
-      type: Date,
-      default: Date.now
-    },
-    syncFailureCount: {
-      type: Number,
-      default: 0
-    },
-    lastSyncError: {
-      type: String,
-      default: null
-    },
-    nextSyncScheduled: {
-      type: Date,
-      default: () => {
-        const next = new Date();
-        next.setHours(next.getHours() + 6); // Sync every 6 hours
-        return next;
-      }
-    },
-    syncRetryCount: {
-      type: Number,
-      default: 0,
-      max: 5
-    }
+    type: DataTypes.ENUM('synced', 'pending', 'failed', 'outdated'),
+    allowNull: false,
+    defaultValue: 'synced',
+    field: 'sync_status',
+    comment: 'Synchronization status with license server'
   },
-  
-  // Offline Mode Support
-  offlineMode: {
-    enabled: {
-      type: Boolean,
-      default: false
-    },
-    gracePeriodUntil: {
-      type: Date,
-      default: null
-    },
-    offlineValidationsRemaining: {
-      type: Number,
-      default: 100 // Allow 100 offline validations
-    },
-    lastOnlineValidation: {
-      type: Date,
-      default: Date.now
-    }
+  lastSyncAttempt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'last_sync_attempt',
+    comment: 'Last sync attempt timestamp'
   },
-  
-  // Security & Integrity
-  integrity: {
-    tamperDetection: {
-      type: Boolean,
-      default: false
-    },
-    lastIntegrityCheck: {
-      type: Date,
-      default: Date.now
-    },
-    integrityHash: {
-      type: String,
-      required: true
-    },
-    encryptionKeyRotationDate: {
-      type: Date,
-      default: Date.now
-    }
+  syncFailures: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    field: 'sync_failures',
+    comment: 'Number of consecutive sync failures'
+  },
+  lastSyncError: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'last_sync_error',
+    comment: 'Last sync error message'
   }
 }, {
+  tableName: 'company_licenses',
   timestamps: true,
-  collection: 'company_license'
-});
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 
-// Indexes for performance
-companyLicenseSchema.index({ 'quickAccess.expiresAt': 1, 'quickAccess.status': 1 });
-companyLicenseSchema.index({ 'validationStatus.nextValidationDue': 1 });
-companyLicenseSchema.index({ 'syncStatus.nextSyncScheduled': 1 });
-companyLicenseSchema.index({ 'cacheInfo.lastSyncedFromServer': 1 });
+  // Indexes for performance optimization
+  indexes: [
+    {
+      name: 'idx_company_licenses_tenant_id',
+      fields: ['tenant_id'],
+      unique: true
+    },
+    {
+      name: 'idx_company_licenses_license_id',
+      fields: ['license_id']
+    },
+    {
+      name: 'idx_company_licenses_quick_access_status',
+      fields: [{ name: 'quick_access', using: 'gin', opclass: 'jsonb_path_ops' }]
+    },
+    {
+      name: 'idx_company_licenses_sync_status',
+      fields: ['sync_status']
+    }
+  ],
 
-// Pre-save middleware
-companyLicenseSchema.pre('save', function(next) {
-  // Update integrity hash
-  this.integrity.integrityHash = this.calculateIntegrityHash();
-  this.integrity.lastIntegrityCheck = new Date();
-  
-  next();
+  // Default scope to exclude sensitive encrypted data
+  defaultScope: {
+    attributes: { exclude: ['encrypted_license_data'] }
+  },
+
+  // Named scopes
+  scopes: {
+    withEncryptedData: {
+      attributes: { include: ['encrypted_license_data'] }
+    },
+    active: {
+      where: {
+        'quick_access.status': 'active'
+      }
+    },
+    needsSync: {
+      where: {
+        syncStatus: {
+          [require('sequelize').Op.in]: ['pending', 'outdated', 'failed']
+        }
+      }
+    },
+    expiring: (days = 30) => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + days);
+      return {
+        where: {
+          'quick_access.status': 'active',
+          'quick_access.expiresAt': {
+            [require('sequelize').Op.lte]: futureDate,
+            [require('sequelize').Op.gt]: new Date()
+          }
+        }
+      };
+    }
+  }
 });
 
 // Instance Methods
-companyLicenseSchema.methods.calculateIntegrityHash = function() {
-  const data = {
-    licenseId: this.licenseId || '',
-    licenseNumber: this.licenseNumber || '',
-    companyId: this.companyId || '',
-    quickAccess: this.quickAccess || {},
-    cacheInfo: this.cacheInfo || {}
-  };
-  
-  return crypto
-    .createHash('sha256')
-    .update(JSON.stringify(data) + (process.env.INTEGRITY_SECRET || 'default-secret'))
-    .digest('hex');
-};
-
-companyLicenseSchema.methods.verifyIntegrity = function() {
-  const currentHash = this.calculateIntegrityHash();
-  const isValid = currentHash === this.integrity.integrityHash;
-  
-  if (!isValid) {
-    this.integrity.tamperDetection = true;
-  }
-  
-  return isValid;
-};
-
-companyLicenseSchema.methods.decryptLicenseData = function(encryptionKey) {
-  try {
-    // Extract IV and encrypted data
-    const parts = this.encryptedLicenseData.split(':');
-    if (parts.length !== 2) {
-      throw new Error('Invalid encrypted data format');
-    }
-    
-    const iv = Buffer.from(parts[0], 'hex');
-    const encryptedData = Buffer.from(parts[1], 'hex');
-    
-    // Create key hash
-    const key = crypto.createHash('sha256').update(encryptionKey).digest();
-    
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-    let decrypted = decipher.update(encryptedData, null, 'utf8');
-    decrypted += decipher.final('utf8');
-    
-    return JSON.parse(decrypted);
-  } catch (error) {
-    throw new Error('Failed to decrypt license data: ' + error.message);
-  }
-};
-
-companyLicenseSchema.methods.updateEncryptedData = function(licenseData, encryptionKey) {
-  // Generate random IV
-  const iv = crypto.randomBytes(16);
-  
-  // Create key hash
-  const key = crypto.createHash('sha256').update(encryptionKey).digest();
-  
-  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-  let encrypted = cipher.update(JSON.stringify(licenseData), 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  
-  // Store IV:encrypted format
-  this.encryptedLicenseData = iv.toString('hex') + ':' + encrypted;
-  
-  // Update quick access fields
-  this.quickAccess = {
-    licenseType: licenseData.licenseType,
-    status: licenseData.status,
-    expiresAt: licenseData.expiresAt,
-    maxUsers: licenseData.limits?.maxUsers || 0,
-    enabledModules: licenseData.modules?.map(m => m.moduleId) || []
-  };
-  
-  // Update cache info
-  this.cacheInfo.lastSyncedFromServer = new Date();
-  this.cacheInfo.syncVersion += 1;
-  this.cacheInfo.checksumHash = crypto
-    .createHash('md5')
-    .update(encrypted)
-    .digest('hex');
-};
-
-companyLicenseSchema.methods.isValid = function() {
+CompanyLicense.prototype.isValid = function() {
   return (
     this.quickAccess.status === 'active' &&
-    this.quickAccess.expiresAt > new Date() &&
-    this.verifyIntegrity() &&
-    !this.integrity.tamperDetection
+    new Date(this.quickAccess.expiresAt) > new Date()
   );
 };
 
-companyLicenseSchema.methods.isExpired = function() {
-  return this.quickAccess.expiresAt <= new Date();
+CompanyLicense.prototype.isExpired = function() {
+  return new Date(this.quickAccess.expiresAt) <= new Date();
 };
 
-companyLicenseSchema.methods.needsValidation = function() {
-  return new Date() >= this.validationStatus.nextValidationDue;
-};
-
-companyLicenseSchema.methods.needsSync = function() {
-  return (
-    new Date() >= this.syncStatus.nextSyncScheduled ||
-    this.syncStatus.syncFailureCount > 0
-  );
-};
-
-companyLicenseSchema.methods.canOperateOffline = function() {
-  if (!this.offlineMode.enabled) return false;
-  
+CompanyLicense.prototype.daysUntilExpiry = function() {
   const now = new Date();
-  const gracePeriodValid = this.offlineMode.gracePeriodUntil && now <= this.offlineMode.gracePeriodUntil;
-  const validationsRemaining = this.offlineMode.offlineValidationsRemaining > 0;
-  
-  return gracePeriodValid && validationsRemaining;
+  const expiryDate = new Date(this.quickAccess.expiresAt);
+  const diffTime = expiryDate - now;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
-companyLicenseSchema.methods.recordValidation = function(result) {
-  this.validationStatus.lastValidated = new Date();
-  this.validationStatus.validationCount += 1;
-  this.validationStatus.lastValidationResult = result.valid ? 'valid' : 'invalid';
-  this.validationStatus.lastValidationError = result.error || null;
-  
-  // Schedule next validation
-  const next = new Date();
-  next.setHours(next.getHours() + 24); // Daily validation
-  this.validationStatus.nextValidationDue = next;
-  
-  // Update offline mode if validation was successful
-  if (result.valid && result.online) {
-    this.offlineMode.lastOnlineValidation = new Date();
-    this.offlineMode.offlineValidationsRemaining = 100; // Reset counter
-  } else if (this.offlineMode.enabled) {
-    this.offlineMode.offlineValidationsRemaining = Math.max(0, this.offlineMode.offlineValidationsRemaining - 1);
-  }
+CompanyLicense.prototype.hasModule = function(moduleId) {
+  return this.quickAccess.enabledModules.includes(moduleId);
 };
 
-companyLicenseSchema.methods.recordSyncAttempt = function(result) {
-  this.syncStatus.lastSyncAttempt = new Date();
-  
-  if (result.successful) {
-    this.syncStatus.lastSuccessfulSync = new Date();
-    this.syncStatus.syncFailureCount = 0;
-    this.syncStatus.syncRetryCount = 0;
-    this.syncStatus.lastSyncError = null;
-    
-    // Schedule next sync
-    const next = new Date();
-    next.setHours(next.getHours() + 6); // Every 6 hours
-    this.syncStatus.nextSyncScheduled = next;
-  } else {
-    this.syncStatus.syncFailureCount += 1;
-    this.syncStatus.syncRetryCount += 1;
-    this.syncStatus.lastSyncError = result.error;
-    
-    // Exponential backoff for retry
-    const backoffHours = Math.min(24, Math.pow(2, this.syncStatus.syncRetryCount));
-    const next = new Date();
-    next.setHours(next.getHours() + backoffHours);
-    this.syncStatus.nextSyncScheduled = next;
-  }
+CompanyLicense.prototype.isUserLimitReached = function(currentUsers) {
+  return currentUsers >= this.quickAccess.maxUsers;
 };
 
-companyLicenseSchema.methods.enableOfflineMode = function(gracePeriodHours = 72) {
-  this.offlineMode.enabled = true;
-  const gracePeriod = new Date();
-  gracePeriod.setHours(gracePeriod.getHours() + gracePeriodHours);
-  this.offlineMode.gracePeriodUntil = gracePeriod;
-  this.offlineMode.offlineValidationsRemaining = 100;
+CompanyLicense.prototype.updateValidationStatus = async function(result) {
+  this.validationStatus = {
+    ...this.validationStatus,
+    lastValidated: new Date(),
+    validationCount: this.validationStatus.validationCount + 1,
+    lastValidationResult: result
+  };
+  await this.save();
 };
 
-companyLicenseSchema.methods.disableOfflineMode = function() {
-  this.offlineMode.enabled = false;
-  this.offlineMode.gracePeriodUntil = null;
-  this.offlineMode.offlineValidationsRemaining = 0;
+CompanyLicense.prototype.markSyncFailed = async function(error) {
+  this.syncStatus = 'failed';
+  this.syncFailures += 1;
+  this.lastSyncAttempt = new Date();
+  this.lastSyncError = error?.message || String(error);
+  await this.save();
+};
+
+CompanyLicense.prototype.markSynced = async function() {
+  this.syncStatus = 'synced';
+  this.syncFailures = 0;
+  this.lastSyncAttempt = new Date();
+  this.cacheInfo = {
+    ...this.cacheInfo,
+    lastSyncedFromServer: new Date(),
+    syncVersion: this.cacheInfo.syncVersion + 1
+  };
+  await this.save();
 };
 
 // Static Methods
-companyLicenseSchema.statics.findActiveForCompany = function(companyId) {
+CompanyLicense.findByTenant = async function(tenantId) {
   return this.findOne({
-    companyId,
-    'quickAccess.status': 'active'
+    where: { tenantId }
   });
 };
 
-companyLicenseSchema.statics.findNeedingValidation = function() {
-  return this.find({
-    'validationStatus.nextValidationDue': { $lte: new Date() }
+CompanyLicense.findActive = async function() {
+  return this.findAll({
+    where: {
+      'quick_access.status': 'active'
+    }
   });
 };
 
-companyLicenseSchema.statics.findNeedingSync = function() {
-  return this.find({
-    $or: [
-      { 'syncStatus.nextSyncScheduled': { $lte: new Date() } },
-      { 'syncStatus.syncFailureCount': { $gt: 0 } }
-    ]
+CompanyLicense.findNeedsSync = async function() {
+  return this.findAll({
+    where: {
+      syncStatus: {
+        [require('sequelize').Op.in]: ['pending', 'outdated', 'failed']
+      }
+    }
   });
 };
-
-companyLicenseSchema.statics.createFromServerData = function(licenseData, encryptionKey) {
-  const companyLicense = new this({
-    licenseId: licenseData.licenseId,
-    licenseNumber: licenseData.licenseNumber,
-    companyId: licenseData.companyId
-  });
-  
-  companyLicense.updateEncryptedData(licenseData, encryptionKey);
-  return companyLicense;
-};
-
-const CompanyLicense = mongoose.model('CompanyLicense', companyLicenseSchema);
 
 export default CompanyLicense;
