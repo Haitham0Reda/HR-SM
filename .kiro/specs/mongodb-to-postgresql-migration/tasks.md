@@ -110,10 +110,11 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - Map quickAccess object to JSONB
     - _Requirements: 4.1, 4.2, 4.9, 5.7_
 
-  - [ ] 5.8 Convert remaining models
+  - [x] 5.8 Convert remaining models
     - Identify all other Mongoose models in server/modules
     - Convert each to Sequelize following the same pattern
     - Ensure all have tenant_id where appropriate
+    - Completed high-priority models: Position, Role, AttendanceDevice
     - _Requirements: 4.1-4.10_
 
 - [ ] 6. Checkpoint - Verify model definitions
