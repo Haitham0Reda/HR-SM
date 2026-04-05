@@ -37,8 +37,8 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
 - [x] 3. Checkpoint - Verify database connections
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Convert Mongoose schemas to Sequelize models (License Server)
-  - [ ] 4.1 Convert License model
+- [x] 4. Convert Mongoose schemas to Sequelize models (License Server)
+  - [x] 4.1 Convert License model
     - Create Sequelize model in hrsm-license-server/src/models/license.model.js
     - Map ObjectId to UUID
     - Add tenant_id column
