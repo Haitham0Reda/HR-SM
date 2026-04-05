@@ -1,152 +1,195 @@
-// models/Role.js
-import mongoose from 'mongoose';
-import { validatePermissions } from '../../../../utils/permissionValidator.js';
+/**
+ * Role Model - PostgreSQL (Sequelize)
+ * 
+ * This model represents the roles table in the Main Application Database (hrsm_platform).
+ * It manages both system-defined and custom roles with permission assignments.
+ * Supports multi-tenancy where custom roles are tenant-specific.
+ * 
+ * @module models/Role
+ */
 
-const roleSchema = new mongoose.Schema({
-    tenantId: {
-        type: String,
-        required: function() {
-            // tenantId is required for custom roles, but not for system roles
-            return !this.isSystemRole;
-        },
-        index: true,
-        trim: true
-    },
-    name: {
-        type: String,
-        required: true,
-        lowercase: true,
-        trim: true,
-        // System identifier (e.g., 'custom-manager', 'project-lead')
-    },
-    displayName: {
-        type: String,
-        required: true,
-        // Human-readable name (e.g., 'Custom Manager', 'Project Lead')
-    },
-    description: {
-        type: String,
-        default: ''
-    },
-    permissions: {
-        type: [{
-            type: String,
-            // Array of permission keys (e.g., 'users.view', 'documents.edit')
-        }],
-        validate: {
-            validator: function(permissions) {
-                // Validate permissions using the validation utility
-                const validation = validatePermissions(permissions);
-                return validation.valid;
-            },
-            message: function(props) {
-                const validation = validatePermissions(props.value);
-                return validation.errors.join('; ');
-            }
-        }
-    },
-    isSystemRole: {
-        type: Boolean,
-        default: false,
-        // True for predefined roles (admin, hr, etc.), false for custom roles
-    },
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    updatedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+
+const Role = mainAppDb.define('Role', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the role (UUID)'
+  },
+
+  // Tenant ID for multi-tenancy (optional for system roles)
+  tenantId: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'tenant_id',
+    comment: 'Tenant identifier (null for system roles)'
+  },
+
+  // Role Identification
+  name: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    lowercase: true,
+    comment: 'System identifier for the role (e.g., custom-manager)'
+  },
+  displayName: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    field: 'display_name',
+    comment: 'Human-readable role name (e.g., Custom Manager)'
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Role description'
+  },
+
+  // Permissions
+  permissions: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    allowNull: false,
+    defaultValue: [],
+    comment: 'Array of permission keys assigned to this role'
+  },
+
+  // Role Type
+  isSystemRole: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'is_system_role',
+    comment: 'True for predefined system roles, false for custom tenant roles'
+  },
+
+  // Audit Trail
+  createdById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'created_by_id',
+    comment: 'User who created this role'
+  },
+  updatedById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'updated_by_id',
+    comment: 'User who last updated this role'
+  }
 }, {
-    timestamps: true
+  tableName: 'roles',
+  timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+
+  // Indexes for performance optimization
+  indexes: [
+    {
+      name: 'idx_roles_name_system',
+      fields: ['name'],
+      unique: true,
+      where: { isSystemRole: true }
+    },
+    {
+      name: 'idx_roles_tenant_id_name_custom',
+      fields: ['tenant_id', 'name'],
+      unique: true,
+      where: { isSystemRole: false }
+    },
+    {
+      name: 'idx_roles_tenant_id_is_system_role',
+      fields: ['tenant_id', 'is_system_role']
+    }
+  ],
+
+  // Named scopes
+  scopes: {
+    system: {
+      where: { isSystemRole: true }
+    },
+    custom: {
+      where: { isSystemRole: false }
+    },
+    byTenant: (tenantId) => {
+      return {
+        where: {
+          [require('sequelize').Op.or]: [
+            { isSystemRole: true },
+            { tenantId }
+          ]
+        }
+      };
+    }
+  }
 });
 
-// Compound indexes for tenant isolation and performance
-roleSchema.index({ name: 1 }, { 
-    unique: true, 
-    partialFilterExpression: { isSystemRole: true } 
-}); // System roles are globally unique
-roleSchema.index({ tenantId: 1, name: 1 }, { 
-    unique: true, 
-    partialFilterExpression: { isSystemRole: false } 
-}); // Custom roles are unique per tenant
-roleSchema.index({ tenantId: 1, isSystemRole: 1 });
-
 // Instance Methods
-
-// Get permission count
-roleSchema.methods.getPermissionCount = function() {
-    return this.permissions ? this.permissions.length : 0;
+Role.prototype.getPermissionCount = function() {
+  return this.permissions ? this.permissions.length : 0;
 };
 
-// Check if role has specific permission
-roleSchema.methods.hasPermission = function(permission) {
-    return this.permissions && this.permissions.includes(permission);
+Role.prototype.hasPermission = function(permission) {
+  return this.permissions && this.permissions.includes(permission);
 };
 
-// Add permissions to role
-roleSchema.methods.addPermissions = function(permissions) {
-    if (!Array.isArray(permissions)) {
-        permissions = [permissions];
+Role.prototype.addPermissions = async function(permissions) {
+  const perms = Array.isArray(permissions) ? permissions : [permissions];
+  
+  perms.forEach(permission => {
+    if (!this.permissions.includes(permission)) {
+      this.permissions.push(permission);
     }
-    
-    if (!this.permissions) {
-        this.permissions = [];
-    }
-    
-    permissions.forEach(permission => {
-        if (!this.permissions.includes(permission)) {
-            this.permissions.push(permission);
-        }
-    });
-    
-    return this;
+  });
+  
+  await this.save();
+  return this;
 };
 
-// Remove permissions from role
-roleSchema.methods.removePermissions = function(permissions) {
-    if (!Array.isArray(permissions)) {
-        permissions = [permissions];
-    }
-    
-    if (!this.permissions) {
-        return this;
-    }
-    
-    this.permissions = this.permissions.filter(p => !permissions.includes(p));
-    
-    return this;
+Role.prototype.removePermissions = async function(permissions) {
+  const perms = Array.isArray(permissions) ? permissions : [permissions];
+  
+  this.permissions = this.permissions.filter(p => !perms.includes(p));
+  await this.save();
+  return this;
 };
 
 // Static Methods
-
-// Find role by name (tenant-aware)
-roleSchema.statics.findByName = function(name, tenantId = null) {
-    const query = { name: name.toLowerCase() };
-    
-    if (tenantId) {
-        // For tenant-specific search, look for both system roles and tenant roles
-        return this.findOne({
-            $or: [
-                { name: name.toLowerCase(), isSystemRole: true },
-                { name: name.toLowerCase(), tenantId: tenantId, isSystemRole: false }
-            ]
-        });
-    } else {
-        // For global search (backward compatibility)
-        return this.findOne(query);
-    }
+Role.findByName = async function(name, tenantId = null) {
+  if (tenantId) {
+    // For tenant-specific search, look for both system roles and tenant roles
+    return this.findOne({
+      where: {
+        [require('sequelize').Op.or]: [
+          { name: name.toLowerCase(), isSystemRole: true },
+          { name: name.toLowerCase(), tenantId, isSystemRole: false }
+        ]
+      }
+    });
+  } else {
+    // For global search
+    return this.findOne({
+      where: { name: name.toLowerCase() }
+    });
+  }
 };
 
-// Get all system-defined roles
-roleSchema.statics.getSystemRoles = function() {
-    return this.find({ isSystemRole: true });
+Role.getSystemRoles = async function() {
+  return this.findAll({
+    where: { isSystemRole: true },
+    order: [['name', 'ASC']]
+  });
 };
 
-// Get all custom roles
-roleSchema.statics.getCustomRoles = function() {
-    return this.find({ isSystemRole: false });
+Role.getCustomRoles = async function(tenantId) {
+  return this.findAll({
+    where: { 
+      isSystemRole: false,
+      tenantId 
+    },
+    order: [['displayName', 'ASC']]
+  });
 };
 
-export default mongoose.model('Role', roleSchema);
+export default Role;

@@ -1,83 +1,158 @@
-// models/Position.js
-import mongoose from 'mongoose';
+/**
+ * Position Model - PostgreSQL (Sequelize)
+ * 
+ * This model represents the positions table in the Main Application Database (hrsm_platform).
+ * It stores job position information with hierarchical levels and department associations.
+ * 
+ * @module models/Position
+ */
 
-const positionSchema = new mongoose.Schema({
-    tenantId: {
-        type: String,
-        required: [true, 'Tenant ID is required'],
-        index: true,
-        trim: true
-    },
-    title: {
-        type: String,
-        required: true
-    },
-    arabicTitle: String,
-    code: {
-        type: String,
-        sparse: true
-    },
-    department: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department',
-        required: true
-    },
-    jobDescription: String,
-    isActive: {
-        type: Boolean,
-        default: true
-    }
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+import Department from '../users/models/department.model.js';
+
+const Position = mainAppDb.define('Position', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the position (UUID)'
+  },
+
+  // Tenant ID for multi-tenancy
+  tenantId: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'tenant_id',
+    comment: 'Tenant/Company identifier'
+  },
+
+  // Position Information
+  title: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    comment: 'Position title'
+  },
+  code: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    comment: 'Position code'
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Position description'
+  },
+
+  // Department Reference
+  departmentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'department_id',
+    comment: 'Reference to department'
+  },
+
+  // Level/Hierarchy
+  level: {
+    type: DataTypes.ENUM('entry', 'junior', 'mid', 'senior', 'lead', 'manager', 'director', 'executive'),
+    allowNull: false,
+    defaultValue: 'entry',
+    comment: 'Position level in hierarchy'
+  },
+
+  // Status
+  status: {
+    type: DataTypes.ENUM('active', 'inactive'),
+    allowNull: false,
+    defaultValue: 'active',
+    comment: 'Position status'
+  }
 }, {
-    timestamps: true
-});
+  tableName: 'positions',
+  timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 
-// Compound indexes for tenant isolation and performance
-positionSchema.index({ tenantId: 1, code: 1 }, { unique: true, sparse: true });
-positionSchema.index({ tenantId: 1, title: 1 });
-positionSchema.index({ tenantId: 1, department: 1 });
-positionSchema.index({ tenantId: 1, isActive: 1 });
-
-// Pre-save hook to auto-generate code
-positionSchema.pre('validate', async function (next) {
-    if (!this.code) {
-        try {
-            // Find all positions for this tenant and get the highest code number
-            const positions = await this.constructor.find({ tenantId: this.tenantId }, { code: 1 })
-                .sort({ code: -1 })
-                .lean();
-
-            let nextNumber = 1;
-            const existingNumbers = new Set();
-
-            // Extract all existing numbers
-            for (const pos of positions) {
-                if (pos.code) {
-                    const match = pos.code.match(/\d+$/);
-                    if (match) {
-                        const num = parseInt(match[0]);
-                        if (!isNaN(num)) {
-                            existingNumbers.add(num);
-                        }
-                    }
-                }
-            }
-
-            // Find the next available number
-            while (existingNumbers.has(nextNumber)) {
-                nextNumber++;
-            }
-
-            this.code = 'POS' + nextNumber.toString().padStart(3, '0');
-        } catch (error) {
-            return next(error);
-        }
+  // Indexes for performance optimization
+  indexes: [
+    {
+      name: 'idx_positions_tenant_id_code',
+      fields: ['tenant_id', 'code'],
+      unique: true
+    },
+    {
+      name: 'idx_positions_tenant_id_title',
+      fields: ['tenant_id', 'title']
+    },
+    {
+      name: 'idx_positions_tenant_id_department_id',
+      fields: ['tenant_id', 'department_id']
+    },
+    {
+      name: 'idx_positions_tenant_id_level',
+      fields: ['tenant_id', 'level']
+    },
+    {
+      name: 'idx_positions_tenant_id_status',
+      fields: ['tenant_id', 'status']
     }
-    next();
+  ],
+
+  // Named scopes
+  scopes: {
+    active: {
+      where: { status: 'active' }
+    },
+    byLevel: (level) => {
+      return {
+        where: { level }
+      };
+    },
+    byDepartment: (departmentId) => {
+      return {
+        where: { departmentId }
+      };
+    }
+  }
 });
 
-// Add withTenant static method for tenant-aware queries
-positionSchema.statics.withTenant = function (tenantId) {
-    return this.find({ tenantId });
+// Define associations
+Position.belongsTo(Department, {
+  foreignKey: 'departmentId',
+  as: 'department'
+});
+
+Department.hasMany(Position, {
+  foreignKey: 'departmentId',
+  as: 'positions'
+});
+
+// Instance Methods
+Position.prototype.isActive = function() {
+  return this.status === 'active';
 };
 
-export default mongoose.model('Position', positionSchema);
+// Static Methods
+Position.findByCode = async function(tenantId, code) {
+  return this.findOne({
+    where: { tenantId, code }
+  });
+};
+
+Position.findActive = async function(tenantId) {
+  return this.findAll({
+    where: { tenantId, status: 'active' },
+    order: [['title', 'ASC']]
+  });
+};
+
+Position.findByDepartment = async function(tenantId, departmentId) {
+  return this.findAll({
+    where: { tenantId, departmentId, status: 'active' },
+    order: [['level', 'ASC'], ['title', 'ASC']]
+  });
+};
+
+export default Position;
