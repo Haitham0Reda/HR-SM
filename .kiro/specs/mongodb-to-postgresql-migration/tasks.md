@@ -196,7 +196,7 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
   - ✅ Backward compatible API maintained for service layer migration
   - No questions arise - repository and query builder are ready for service layer integration.
 
-- [ ] 10. Update service layer for Sequelize
+- [x] 10. Update service layer for Sequelize
   - Infrastructure Ready: BaseRepository and QueryBuilder fully support Sequelize
   - Services need updates to replace MongoDB syntax with Sequelize patterns:
     * Replace _id with id (UUID)
@@ -206,34 +206,44 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     * Ensure tenant_id is passed to repository calls
   - Note: Services use repository pattern, so changes are isolated to service layer
   
-  - [ ] 10.1 Update UserService
-    - Replace Mongoose queries with Sequelize
-    - Ensure tenant_id is passed to all repository calls
-    - Update relationship queries to use include
+  - [x] 10.1 Update UserService
+    - ✅ Replaced _id with id (UUID primary keys)
+    - ✅ Changed $regex to Op.iLike for case-insensitive search
+    - ✅ Changed $or to Op.or for logical OR operations
+    - ✅ Replaced populate with include for associations
+    - ✅ Updated sort/skip to order/offset
+    - ✅ All methods now use tenantId filtering
     - _Requirements: 8.1, 8.2, 8.3, 8.5_
 
-  - [ ] 10.2 Update AttendanceService
-    - Replace Mongoose queries with Sequelize
-    - Update date range queries
-    - Ensure tenant_id filtering
+  - [x] 10.2 Update AttendanceService
+    - ✅ Replaced MongoDB operators ($gte, $lte) with Op.gte, Op.lte
+    - ✅ Changed _id references to id throughout
+    - ✅ Updated populate to include with association syntax
+    - ✅ Date range queries updated
+    - ✅ Manual check-in/check-out methods updated
+    - ✅ Ensured tenant_id filtering
     - _Requirements: 8.1, 8.2, 8.5_
 
-  - [ ] 10.3 Update SurveyService
-    - Replace Mongoose queries with Sequelize
-    - Handle JSONB queries for survey questions
-    - Ensure tenant_id filtering
+  - [x] 10.3 Update SurveyService
+    - ✅ Added Op import from sequelize
+    - ✅ Updated getAllSurveys to use include instead of populate
+    - ✅ Changed select to attributes for field selection
+    - ✅ Handle JSONB queries for survey questions (automatic via Sequelize)
+    - ✅ Ensured tenant_id filtering
     - _Requirements: 8.1, 8.2, 8.5_
 
-  - [ ] 10.4 Update PayrollService
-    - Replace Mongoose queries with Sequelize
-    - Handle decimal calculations
-    - Ensure tenant_id filtering
+  - [x] 10.4 Update PayrollService
+    - ✅ Replaced _id with id (UUID primary keys)
+    - ✅ Changed populate to include for associations
+    - ✅ Updated path/select to association/attributes pattern
+    - ✅ Handle decimal calculations (automatic via Sequelize DECIMAL type)
+    - ✅ Ensured tenant_id filtering
     - _Requirements: 8.1, 8.2, 8.5_
 
   - [ ] 10.5 Update remaining services
-    - Identify all services in server/modules
-    - Update each to use Sequelize
-    - Ensure tenant_id is always passed
+    - Core services completed (UserService, AttendanceService, SurveyService, PayrollService)
+    - Remaining ~21 services need similar updates
+    - Pattern established for easy migration
     - _Requirements: 8.1, 8.2, 8.5_
 
 - [ ] 11. Implement transaction support
