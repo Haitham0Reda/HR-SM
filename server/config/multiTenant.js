@@ -1,13 +1,11 @@
 /**
- * Multi-Tenant Database Configuration
+ * Multi-Tenant Database Configuration (PostgreSQL)
  * 
- * Handles database connections for multiple companies
- * Each company gets its own database within the MongoDB cluster
+ * Manages tenant context for the single PostgreSQL database model.
+ * All tenants share the same database with tenant_id column for isolation.
  */
 
-import mongoose from 'mongoose';
-import fs from 'fs/promises';
-import path from 'path';
+import { mainAppDb } from './database.js';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -15,245 +13,137 @@ dotenv.config();
 
 class MultiTenantDB {
     constructor() {
-        this.connections = new Map();
-        // Handle both MONGODB_URI and MONGO_URI, and ensure we have a valid connection string
-        const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
-        if (!mongoUri) {
-            throw new Error('MongoDB URI not found in environment variables. Please set MONGODB_URI or MONGO_URI.');
-        }
-        
-        // Extract the base URI without database name
-        const uriParts = mongoUri.split('/');
-        const baseUri = uriParts.slice(0, -1).join('/');
-        const queryParams = uriParts[uriParts.length - 1].split('?')[1];
-        this.baseConnectionString = baseUri + '/' + (queryParams ? '?' + queryParams : '');
+        this.db = mainAppDb; // Single database connection for all tenants
     }
 
     /**
-     * Get database connection for a specific company
-     * @param {string} companyName - Company identifier (will be sanitized)
-     * @returns {Promise<mongoose.Connection>}
+     * Get the shared database connection
+     * @returns {Sequelize} The main application database instance
      */
-    async getCompanyConnection(companyName) {
-        const sanitizedName = this.sanitizeCompanyName(companyName);
-        const dbName = `hrsm_${sanitizedName}`;
+    getConnection() {
+        return this.db;
+    }
 
-        if (this.connections.has(dbName)) {
-            return this.connections.get(dbName);
+    /**
+     * Validate tenant ID
+     * @param {string} tenantId - Tenant identifier
+     * @returns {string} Validated tenant ID
+     * @throws {Error} If tenant ID is invalid
+     */
+    validateTenantId(tenantId) {
+        if (!tenantId || typeof tenantId !== 'string') {
+            throw new Error('Invalid tenant ID: must be a non-empty string');
         }
 
+        if (tenantId.length > 100) {
+            throw new Error('Invalid tenant ID: exceeds maximum length of 100 characters');
+        }
+
+        // Ensure tenant ID contains only safe characters
+        const safePattern = /^[a-zA-Z0-9_-]+$/;
+        if (!safePattern.test(tenantId)) {
+            throw new Error('Invalid tenant ID: must contain only alphanumeric characters, hyphens, and underscores');
+        }
+
+        return tenantId;
+    }
+
+    /**
+     * Check if a tenant exists in the database
+     * @param {string} tenantId - Tenant identifier
+     * @returns {Promise<boolean>}
+     */
+    async tenantExists(tenantId) {
         try {
-            // Build connection string properly
-            const hasQuery = this.baseConnectionString.includes('?');
-            const connectionString = hasQuery ? 
-                this.baseConnectionString.replace('?', `${dbName}?`) :
-                `${this.baseConnectionString}${dbName}`;
+            const validatedTenantId = this.validateTenantId(tenantId);
             
-            const connection = await mongoose.createConnection(connectionString, {
-                maxPoolSize: 10,
-                minPoolSize: 2,
-                maxIdleTimeMS: 30000,
-                serverSelectionTimeoutMS: 5000,
-                socketTimeoutMS: 45000,
-                connectTimeoutMS: 10000,
-                retryWrites: true,
-                retryReads: true,
-                bufferCommands: true,
-                heartbeatFrequencyMS: 10000,
-                w: 'majority',
-                readPreference: 'primary',
-                compressors: ['zlib'],
-            });
-
-            this.connections.set(dbName, connection);
-            
-            // Only log on first connection, not subsequent ones
-            if (!this.connections.has(dbName + '_logged')) {
-                console.log(`Connected to company database: ${dbName}`);
-                this.connections.set(dbName + '_logged', true);
-            }
-            
-            // Create company directories
-            await this.createCompanyDirectories(sanitizedName);
-            
-            return connection;
+            // Query the tenants table in the license server database
+            // This will be implemented once the Tenant model is created
+            // For now, we'll return true to allow development to continue
+            console.log(`Checking if tenant exists: ${validatedTenantId}`);
+            return true;
         } catch (error) {
-            console.error(`Error connecting to company database ${dbName}:`, error.message);
-            throw error;
+            console.error(`Error checking tenant existence: ${error.message}`);
+            return false;
         }
     }
 
     /**
-     * Sanitize company name for database usage
-     * @param {string} companyName 
-     * @returns {string}
+     * Get tenant metadata
+     * @param {string} tenantId - Tenant identifier
+     * @returns {Promise<Object|null>}
      */
-    sanitizeCompanyName(companyName) {
-        return companyName
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, '_')
-            .replace(/_+/g, '_')
-            .replace(/^_|_$/g, '')
-            .substring(0, 50); // MongoDB database name limit
-    }
-
-    /**
-     * Create backup and upload directories for company
-     * @param {string} sanitizedCompanyName 
-     */
-    async createCompanyDirectories(sanitizedCompanyName) {
-        const directories = [
-            `backups/${sanitizedCompanyName}`,
-            `uploads/${sanitizedCompanyName}`,
-            `server/uploads/${sanitizedCompanyName}`,
-            `server/backups/${sanitizedCompanyName}`
-        ];
-
-        for (const dir of directories) {
-            try {
-                await fs.mkdir(dir, { recursive: true });
-                // Only log if directory was actually created (not if it already existed)
-                try {
-                    const stats = await fs.stat(dir);
-                    const isNew = Date.now() - stats.birthtime.getTime() < 1000; // Created within last second
-                    if (isNew) {
-                        console.log(`Created directory: ${dir}`);
-                    }
-                } catch (statError) {
-                    // If we can't stat, assume it was created
-                    console.log(`Created directory: ${dir}`);
-                }
-            } catch (error) {
-                if (error.code !== 'EEXIST') {
-                    console.error(`Error creating directory ${dir}:`, error.message);
-                }
-            }
+    async getTenantMetadata(tenantId) {
+        try {
+            const validatedTenantId = this.validateTenantId(tenantId);
+            
+            // This will query the license server database for tenant metadata
+            // Implementation will be completed when Tenant model is created
+            console.log(`Fetching metadata for tenant: ${validatedTenantId}`);
+            
+            return {
+                tenant_id: validatedTenantId,
+                name: validatedTenantId,
+                is_active: true
+            };
+        } catch (error) {
+            console.error(`Error fetching tenant metadata: ${error.message}`);
+            return null;
         }
     }
 
     /**
-     * List all company databases
+     * List all active tenants
      * @returns {Promise<string[]>}
      */
-    async listCompanyDatabases() {
+    async listActiveTenants() {
         try {
-            // Use the main connection to list databases
-            const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
-            const mainConnection = await mongoose.createConnection(mongoUri);
-
-            // Wait for connection to be ready
-            await new Promise((resolve, reject) => {
-                mainConnection.once('open', resolve);
-                mainConnection.once('error', reject);
-            });
-
-            // Get admin database and list databases
-            const adminDb = mainConnection.db.admin();
-            if (!adminDb) {
-                throw new Error('Cannot access admin database');
-            }
-
-            const result = await adminDb.listDatabases();
+            // This will query the license server database for all active tenants
+            // Implementation will be completed when Tenant model is created
+            console.log('Listing all active tenants');
             
-            const companyDbs = result.databases
-                .filter(db => db.name.startsWith('hrsm_') && db.name !== 'hrms')
-                .map(db => db.name.replace('hrsm_', ''));
-
-            await mainConnection.close();
-            return companyDbs;
+            // For now, return empty array
+            return [];
         } catch (error) {
-            console.error('Error listing company databases:', error.message);
-            
-            // Fallback: check if we have any connections in our map
-            const existingCompanies = Array.from(this.connections.keys())
-                .filter(dbName => dbName.startsWith('hrsm_') && dbName !== 'hrms')
-                .map(dbName => dbName.replace('hrsm_', ''));
-            
-            return existingCompanies;
+            console.error(`Error listing tenants: ${error.message}`);
+            return [];
         }
     }
 
     /**
-     * Create a new company database with initial setup
-     * @param {string} companyName 
-     * @param {Object} companyData 
-     * @returns {Promise<mongoose.Connection>}
+     * Close database connection
+     * @returns {Promise<void>}
      */
-    async createCompanyDatabase(companyName, companyData = {}) {
-        const connection = await this.getCompanyConnection(companyName);
-        const sanitizedName = this.sanitizeCompanyName(companyName);
-
-        // Create initial company record
-        const CompanyModel = connection.model('Company', new mongoose.Schema({
-            name: { type: String, required: true },
-            sanitizedName: { type: String, required: true, unique: true },
-            createdAt: { type: Date, default: Date.now },
-            isActive: { type: Boolean, default: true },
-            adminEmail: { type: String },
-            phone: { type: String },
-            address: { type: String },
-            industry: { type: String },
-            modules: [{ type: String }],
-            settings: {
-                timezone: { type: String },
-                currency: { type: String },
-                language: { type: String },
-                workingHours: {
-                    start: { type: String },
-                    end: { type: String }
-                },
-                weekendDays: [{ type: Number }]
-            }
-        }));
-
+    async closeConnection() {
         try {
-            await CompanyModel.create({
-                name: companyName,
-                sanitizedName: sanitizedName,
-                ...companyData
-            });
-
-            console.log(`Company database created successfully: ${companyName}`);
-            return connection;
+            await this.db.close();
+            console.log('Database connection closed');
         } catch (error) {
-            console.error(`Error creating company database ${companyName}:`, error.message);
+            console.error(`Error closing database connection: ${error.message}`);
             throw error;
         }
     }
 
     /**
-     * Close all company connections
+     * Get database health status
+     * @returns {Promise<Object>}
      */
-    async closeAllConnections() {
-        for (const [dbName, connection] of this.connections) {
-            try {
-                await connection.close();
-                console.log(`Closed connection to ${dbName}`);
-            } catch (error) {
-                console.error(`Error closing connection to ${dbName}:`, error.message);
-            }
+    async getHealthStatus() {
+        try {
+            await this.db.authenticate();
+            return {
+                status: 'healthy',
+                database: this.db.config.database,
+                host: this.db.config.host,
+                poolSize: this.db.connectionManager.pool.size,
+                poolAvailable: this.db.connectionManager.pool.available
+            };
+        } catch (error) {
+            return {
+                status: 'unhealthy',
+                error: error.message
+            };
         }
-        this.connections.clear();
-    }
-
-    /**
-     * Get company backup directory path
-     * @param {string} companyName 
-     * @returns {string}
-     */
-    getCompanyBackupPath(companyName) {
-        const sanitizedName = this.sanitizeCompanyName(companyName);
-        return path.join(process.cwd(), 'backups', sanitizedName);
-    }
-
-    /**
-     * Get company upload directory path
-     * @param {string} companyName 
-     * @returns {string}
-     */
-    getCompanyUploadPath(companyName) {
-        const sanitizedName = this.sanitizeCompanyName(companyName);
-        return path.join(process.cwd(), 'uploads', sanitizedName);
     }
 }
 

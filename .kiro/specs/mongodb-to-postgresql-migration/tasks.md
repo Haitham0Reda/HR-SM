@@ -6,14 +6,14 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
 
 ## Tasks
 
-- [ ] 1. Install PostgreSQL dependencies and configure connections
+- [x] 1. Install PostgreSQL dependencies and configure connections
   - Install pg, sequelize, and pg-hstore packages
   - Update package.json with new dependencies
   - Create environment variables for LICENSE_DATABASE_URL and MAIN_DATABASE_URL
   - _Requirements: 2.1, 2.2, 16.1_
 
-- [ ] 2. Set up dual PostgreSQL database connections
-  - [ ] 2.1 Refactor server/config/database.js for PostgreSQL
+- [x] 2. Set up dual PostgreSQL database connections
+  - [x] 2.1 Refactor server/config/database.js for PostgreSQL
     - Create licenseServerDb Sequelize instance
     - Create mainAppDb Sequelize instance
     - Implement connectDatabases function with authentication
@@ -21,20 +21,20 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - Set timezone to UTC
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.3, 2.4, 2.5_
 
-  - [ ] 2.2 Update server/config/multiTenant.js for single database model
+  - [x] 2.2 Update server/config/multiTenant.js for single database model
     - Remove MongoDB database-per-tenant logic
     - Return single mainAppDb connection
     - Implement tenant ID validation
     - Remove sanitizeCompanyName and createCompanyDirectories if no longer needed
     - _Requirements: 3.4, 3.5_
 
-  - [ ] 2.3 Update tenant middleware for tenant context injection
+  - [x] 2.3 Update tenant middleware for tenant context injection
     - Modify server/middleware/tenantMiddleware.js
     - Inject tenant_id into request context instead of switching connections
     - Add req.tenantContext with tenant_id
     - _Requirements: 3.2, 3.3_
 
-- [ ] 3. Checkpoint - Verify database connections
+- [x] 3. Checkpoint - Verify database connections
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 4. Convert Mongoose schemas to Sequelize models (License Server)
