@@ -1,594 +1,398 @@
-// models/Attendance.js
-import mongoose from 'mongoose';
-import { isWeekend, isHoliday, getHolidayInfo } from '../../holidays/utils/holidayChecker.js';
+/**
+ * Attendance Model - PostgreSQL (Sequelize)
+ * 
+ * This model represents the attendances table in the Main Application Database (hrsm_platform).
+ * It tracks employee attendance including check-in/out times, work hours, and status.
+ * 
+ * @module models/Attendance
+ */
 
-const attendanceSchema = new mongoose.Schema({
-    tenantId: {
-        type: String,
-        required: [true, 'Tenant ID is required'],
-        index: true,
-        trim: true
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
+import User from '../../users/models/user.model.js';
+import Department from '../../users/models/department.model.js';
+
+const Attendance = mainAppDb.define('Attendance', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the attendance record (UUID)'
+  },
+
+  // Tenant ID for multi-tenancy
+  tenantId: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'tenant_id',
+    comment: 'Tenant/Company identifier'
+  },
+
+  // Employee Reference
+  employeeId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'employee_id',
+    comment: 'Reference to employee (User)'
+  },
+
+  // Department and Position (denormalized for performance)
+  departmentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'department_id',
+    comment: 'Department reference (denormalized)'
+  },
+  positionId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'position_id',
+    comment: 'Position reference (denormalized)'
+  },
+
+  // Date
+  date: {
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    comment: 'Attendance date'
+  },
+
+  // Schedule - stored as JSONB
+  schedule: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      startTime: '09:00',
+      endTime: '17:00',
+      expectedHours: 8
     },
-    employee: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
+    comment: 'Scheduled work times (JSONB)'
+  },
+
+  // Check-in Information - stored as JSONB
+  checkIn: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {
+      time: null,
+      method: null,
+      location: null,
+      isLate: false,
+      lateMinutes: 0
     },
-    // Employee's department (denormalized for faster queries)
-    department: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department',
-        index: true
+    field: 'check_in',
+    comment: 'Check-in details (JSONB)'
+  },
+
+  // Check-out Information - stored as JSONB
+  checkOut: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {
+      time: null,
+      method: null,
+      location: null,
+      isEarly: false,
+      earlyMinutes: 0
     },
-    // Employee's position (denormalized for faster queries)
-    position: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Position'
+    field: 'check_out',
+    comment: 'Check-out details (JSONB)'
+  },
+
+  // Source tracking
+  source: {
+    type: DataTypes.ENUM('biometric', 'cloud', 'mobile', 'qr', 'manual', 'csv', 'system'),
+    allowNull: false,
+    defaultValue: 'manual',
+    comment: 'Source of attendance record'
+  },
+
+  // Raw device data
+  rawDeviceData: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    field: 'raw_device_data',
+    comment: 'Raw device data for audit trail (JSONB)'
+  },
+
+  // Device reference
+  deviceId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'device_id',
+    comment: 'Reference to attendance device'
+  },
+
+  // Hours tracking - stored as JSONB
+  hours: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      actual: 0,
+      expected: 8,
+      overtime: 0,
+      workFromHome: 0,
+      totalHours: 0
     },
-    date: {
-        type: Date,
-        required: true
+    comment: 'Working hours breakdown (JSONB)'
+  },
+
+  // Work from home - stored as JSONB
+  workFromHome: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      isWFH: false,
+      approved: false,
+      approvedBy: null,
+      reason: null
     },
-    // Scheduled work times
-    schedule: {
-        startTime: {
-            type: String,  // Format: "HH:MM" (e.g., "09:00")
-            default: '09:00'
-        },
-        endTime: {
-            type: String,  // Format: "HH:MM" (e.g., "17:00")
-            default: '17:00'
-        },
-        expectedHours: {
-            type: Number,  // Expected working hours for the day
-            default: 8
-        }
+    field: 'work_from_home',
+    comment: 'Work from home details (JSONB)'
+  },
+
+  // Status
+  status: {
+    type: DataTypes.ENUM(
+      'on-time',
+      'late',
+      'present',
+      'absent',
+      'vacation',
+      'sick-leave',
+      'mission',
+      'work-from-home',
+      'half-day',
+      'official-holiday',
+      'weekend',
+      'early-departure',
+      'forgot-check-in',
+      'forgot-check-out'
+    ),
+    allowNull: false,
+    defaultValue: 'absent',
+    comment: 'Attendance status'
+  },
+
+  // Leave reference
+  leaveId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'leave_id',
+    comment: 'Reference to leave record if on leave'
+  },
+
+  // Permission requests
+  permissionRequests: {
+    type: DataTypes.ARRAY(DataTypes.UUID),
+    allowNull: false,
+    defaultValue: [],
+    field: 'permission_requests',
+    comment: 'Array of permission request IDs that affected this record'
+  },
+  adjustedByPermission: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'adjusted_by_permission',
+    comment: 'Whether this record was adjusted by an approved permission'
+  },
+
+  // Flags - stored as JSONB
+  flags: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      isLate: false,
+      isEarlyDeparture: false,
+      isMissing: false,
+      needsApproval: false
     },
-    // Check-in information
-    checkIn: {
-        time: Date,
-        method: {
-            type: String,
-            enum: ['biometric', 'manual', 'wfh']
-        },
-        location: {
-            type: String,
-            enum: ['office', 'home', 'remote']
-        },
-        isLate: {
-            type: Boolean,
-            default: false
-        },
-        lateMinutes: {
-            type: Number,
-            default: 0
-        }
-    },
-    // Attendance source tracking
-    source: {
-        type: String,
-        enum: ['biometric', 'cloud', 'mobile', 'qr', 'manual', 'csv', 'system'],
-        default: 'manual',
-        index: true
-    },
-    // Raw device data for audit trail
-    rawDeviceData: {
-        type: mongoose.Schema.Types.Mixed,
-        default: null
-    },
-    // Reference to the device that recorded this attendance
-    device: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'AttendanceDevice'
-    },
-    // Check-out information
-    checkOut: {
-        time: Date,
-        method: {
-            type: String,
-            enum: ['biometric', 'manual', 'wfh']
-        },
-        location: {
-            type: String,
-            enum: ['office', 'home', 'remote']
-        },
-        isEarly: {
-            type: Boolean,
-            default: false
-        },
-        earlyMinutes: {
-            type: Number,
-            default: 0
-        }
-    },
-    // Hours tracking
-    hours: {
-        actual: {
-            type: Number,  // Actual hours worked (checkOut - checkIn)
-            default: 0
-        },
-        expected: {
-            type: Number,  // Expected hours for the day
-            default: 8
-        },
-        overtime: {
-            type: Number,  // Overtime hours (actual - expected, if positive)
-            default: 0
-        },
-        workFromHome: {
-            type: Number,  // Hours worked from home
-            default: 0
-        },
-        totalHours: {
-            type: Number,  // Total hours including WFH
-            default: 0
-        }
-    },
-    // Work from home tracking
-    workFromHome: {
-        isWFH: {
-            type: Boolean,
-            default: false
-        },
-        approved: {
-            type: Boolean,
-            default: false
-        },
-        approvedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        reason: String
-    },
-    // Attendance status
-    status: {
-        type: String,
-        enum: [
-            'on-time',           // Arrived on time or early
-            'late',              // Arrived late
-            'present',           // Present (general)
-            'absent',            // Did not check in/out
-            'vacation',          // On approved vacation
-            'sick-leave',        // On approved sick leave
-            'mission',           // On approved mission
-            'work-from-home',    // Working from home
-            'half-day',          // Half day (present for partial time)
-            'official-holiday',  // Official holiday
-            'weekend',           // Weekend day
-            'early-departure',   // Left early
-            'forgot-check-in',   // Forgot to check in
-            'forgot-check-out'   // Forgot to check out
-        ],
-        default: 'absent'
-    },
-    // Leave reference (if on vacation/sick leave/mission)
-    leave: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Leave'
-    },
-    // Link to permission requests that affected this attendance record
-    permissionRequests: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Permission'
-    }],
-    // Indicates if this record was adjusted based on an approved permission
-    adjustedByPermission: {
-        type: Boolean,
-        default: false
-    },
-    // Flags for attendance issues
-    flags: {
-        isLate: {
-            type: Boolean,
-            default: false
-        },
-        isEarlyDeparture: {
-            type: Boolean,
-            default: false
-        },
-        isMissing: {
-            type: Boolean,
-            default: false
-        },
-        needsApproval: {
-            type: Boolean,
-            default: false
-        }
-    },
-    // Notes and approvals
-    notes: String,
-    approvedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    approvedAt: Date,
-    // Metadata
-    isWorkingDay: {
-        type: Boolean,
-        default: true  // False for weekends and holidays
-    },
-    autoGenerated: {
-        type: Boolean,
-        default: false  // True if generated automatically (e.g., for leaves)
-    }
+    comment: 'Attendance issue flags (JSONB)'
+  },
+
+  // Notes and approvals
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Additional notes'
+  },
+  approvedById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'approved_by_id',
+    comment: 'User who approved this record'
+  },
+  approvedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'approved_at',
+    comment: 'Approval timestamp'
+  },
+
+  // Metadata
+  isWorkingDay: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+    field: 'is_working_day',
+    comment: 'Whether this is a working day (not weekend/holiday)'
+  },
+  autoGenerated: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'auto_generated',
+    comment: 'Whether this record was auto-generated'
+  }
 }, {
-    timestamps: true
-});
+  tableName: 'attendances',
+  timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 
-// Virtual for total working hours including WFH
-attendanceSchema.virtual('totalWorkingHours').get(function () {
-    return this.hours.actual + this.hours.workFromHome;
-});
-
-// Virtual to check if employee was on time
-attendanceSchema.virtual('isOnTime').get(function () {
-    return !this.checkIn.isLate && this.checkIn.time !== null;
-});
-
-// Virtual to check if it's a full day of work
-attendanceSchema.virtual('isFullDay').get(function () {
-    return this.hours.actual >= this.hours.expected;
-});
-
-// Pre-save middleware to enforce weekends and official holidays
-attendanceSchema.pre('save', function(next) {
-    // Get holiday information for the date
-    const holidayInfo = getHolidayInfo(this.date);
-    
-    // Check if it's a weekend or official holiday
-    if (holidayInfo.isWeekend || holidayInfo.isHoliday) {
-        // Automatically set as official holiday
-        this.status = 'absent';
-        this.notes = holidayInfo.note || 'Official Holiday';
-        this.isWorkingDay = false;
-        
-        // Clear check-in/check-out for holidays
-        this.checkIn = {
-            time: null,
-            method: undefined,
-            location: undefined,
-            isLate: false,
-            lateMinutes: 0
-        };
-        this.checkOut = {
-            time: null,
-            method: undefined,
-            location: undefined,
-            isEarly: false,
-            earlyMinutes: 0
-        };
-        
-        // Clear hours for holidays
-        this.hours = {
-            actual: 0,
-            expected: 0,
-            overtime: 0,
-            workFromHome: 0,
-            totalHours: 0
-        };
+  // Indexes for performance optimization
+  indexes: [
+    {
+      name: 'idx_attendances_tenant_id_employee_id_date',
+      fields: ['tenant_id', 'employee_id', 'date'],
+      unique: true
+    },
+    {
+      name: 'idx_attendances_tenant_id_employee_id_status',
+      fields: ['tenant_id', 'employee_id', 'status']
+    },
+    {
+      name: 'idx_attendances_tenant_id_department_id_date',
+      fields: ['tenant_id', 'department_id', 'date']
+    },
+    {
+      name: 'idx_attendances_tenant_id_department_id_status',
+      fields: ['tenant_id', 'department_id', 'status']
+    },
+    {
+      name: 'idx_attendances_tenant_id_date',
+      fields: ['tenant_id', 'date']
+    },
+    {
+      name: 'idx_attendances_tenant_id_status',
+      fields: ['tenant_id', 'status']
+    },
+    {
+      name: 'idx_attendances_tenant_id_adjusted_by_permission',
+      fields: ['tenant_id', 'adjusted_by_permission']
+    },
+    {
+      name: 'idx_attendances_tenant_id_leave_id',
+      fields: ['tenant_id', 'leave_id']
+    },
+    {
+      name: 'idx_attendances_tenant_id_is_working_day',
+      fields: ['tenant_id', 'is_working_day']
     }
-    
-    next();
-});
+  ],
 
-/**
- * Helper method to parse time string (HH:MM) to Date object for today
- */
-attendanceSchema.methods._parseTime = function (timeString) {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    const date = new Date(this.date);
-    date.setHours(hours, minutes, 0, 0);
-    return date;
-};
-
-/**
- * Helper method to determine attendance status
- */
-attendanceSchema.methods._determineStatus = function () {
-    // If leave is linked, use leave-based status
-    if (this.leave) {
-        // Status will be set based on leave type
-        return;
-    }
-
-    // Work from home
-    if (this.workFromHome.isWFH && this.workFromHome.approved) {
-        this.status = 'work-from-home';
-        return;
-    }
-
-    // Weekend or holiday
-    if (!this.isWorkingDay) {
-        this.status = this.status || 'weekend';
-        return;
-    }
-
-    // No check-in
-    if (!this.checkIn.time) {
-        this.status = 'absent';
-        this.flags.isMissing = true;
-        return;
-    }
-
-    // No check-out (forgot to check out)
-    if (this.checkIn.time && !this.checkOut.time) {
-        this.status = 'forgot-check-out';
-        this.flags.needsApproval = true;
-        return;
-    }
-
-    // Late arrival
-    if (this.checkIn.isLate && this.checkOut.time) {
-        this.status = 'late';
-        return;
-    }
-
-    // Early departure
-    if (this.checkOut.isEarly && !this.checkIn.isLate) {
-        this.status = 'early-departure';
-        return;
-    }
-
-    // On time
-    if (this.checkIn.time && this.checkOut.time && !this.checkIn.isLate && !this.checkOut.isEarly) {
-        this.status = 'on-time';
-        return;
-    }
-
-    // Default to present
-    this.status = 'present';
-};
-
-/**
- * Instance method to mark attendance based on approved leave
- */
-attendanceSchema.methods.markAsLeave = async function (leave) {
-    this.leave = leave._id;
-    this.autoGenerated = true;
-    this.isWorkingDay = leave.leaveType !== 'mission'; // Missions are working days
-
-    switch (leave.leaveType) {
-        case 'annual':
-        case 'casual':
-            this.status = 'vacation';
-            break;
-        case 'sick':
-            this.status = 'sick-leave';
-            break;
-        case 'mission':
-            this.status = 'mission';
-            // For missions, mark as full day worked
-            this.hours.actual = this.schedule.expectedHours;
-            this.hours.totalHours = this.schedule.expectedHours;
-            break;
-        default:
-            this.status = 'vacation';
-    }
-
-    return await this.save();
-};
-
-/**
- * Instance method to record check-in
- */
-attendanceSchema.methods.recordCheckIn = async function (method = 'biometric', location = 'office') {
-    this.checkIn.time = new Date();
-    this.checkIn.method = method;
-    this.checkIn.location = location;
-
-    if (location === 'home') {
-        this.workFromHome.isWFH = true;
-    }
-
-    return await this.save();
-};
-
-/**
- * Instance method to record check-out
- */
-attendanceSchema.methods.recordCheckOut = async function (method = 'biometric', location = 'office') {
-    this.checkOut.time = new Date();
-    this.checkOut.method = method;
-    this.checkOut.location = location;
-
-    return await this.save();
-};
-
-/**
- * Static method to get employee attendance for a date range
- */
-attendanceSchema.statics.getEmployeeAttendance = function (employeeId, startDate, endDate) {
-    return this.find({
-        employee: employeeId,
-        date: { $gte: startDate, $lte: endDate }
-    })
-        .populate('leave', 'leaveType startDate endDate status')
-        .populate('permissionRequests', 'permissionType time status')
-        .populate('approvedBy', 'username employeeId personalInfo')
-        .sort({ date: 1 });
-};
-
-/**
- * Static method to get attendance metrics for an employee
- */
-attendanceSchema.statics.getEmployeeMetrics = async function (employeeId, startDate, endDate) {
-    const attendance = await this.find({
-        employee: employeeId,
-        date: { $gte: startDate, $lte: endDate }
-    });
-
-    const metrics = {
-        workingDays: 0,
-        presentDays: 0,
-        absentDays: 0,
-        lateDays: 0,
-        earlyDepartureDays: 0,
-        vacationDays: 0,
-        sickLeaveDays: 0,
-        missionDays: 0,
-        workFromHomeDays: 0,
-        expectedHours: 0,
-        actualHours: 0,
-        workFromHomeHours: 0,
-        totalHours: 0,
-        overtimeHours: 0
-    };
-
-    attendance.forEach(record => {
-        if (record.isWorkingDay) {
-            metrics.workingDays++;
-            metrics.expectedHours += record.hours.expected;
+  // Named scopes
+  scopes: {
+    byDate: (date) => {
+      return {
+        where: { date }
+      };
+    },
+    byDateRange: (startDate, endDate) => {
+      return {
+        where: {
+          date: {
+            [require('sequelize').Op.gte]: startDate,
+            [require('sequelize').Op.lte]: endDate
+          }
         }
-
-        metrics.actualHours += record.hours.actual;
-        metrics.workFromHomeHours += record.hours.workFromHome;
-        metrics.totalHours += record.hours.totalHours;
-        metrics.overtimeHours += record.hours.overtime;
-
-        switch (record.status) {
-            case 'on-time':
-            case 'present':
-                metrics.presentDays++;
-                break;
-            case 'late':
-                metrics.presentDays++;
-                metrics.lateDays++;
-                break;
-            case 'early-departure':
-                metrics.presentDays++;
-                metrics.earlyDepartureDays++;
-                break;
-            case 'absent':
-            case 'forgot-check-in':
-            case 'forgot-check-out':
-                if (record.isWorkingDay) {
-                    metrics.absentDays++;
-                }
-                break;
-            case 'vacation':
-                metrics.vacationDays++;
-                break;
-            case 'sick-leave':
-                metrics.sickLeaveDays++;
-                break;
-            case 'mission':
-                metrics.missionDays++;
-                metrics.presentDays++;
-                break;
-            case 'work-from-home':
-                metrics.workFromHomeDays++;
-                metrics.presentDays++;
-                break;
+      };
+    },
+    present: {
+      where: {
+        status: {
+          [require('sequelize').Op.in]: ['on-time', 'late', 'present', 'work-from-home']
         }
-    });
-
-    return metrics;
-};
-
-/**
- * Static method to get department attendance summary
- */
-attendanceSchema.statics.getDepartmentSummary = async function (departmentId, date) {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const summary = await this.aggregate([
-        {
-            $match: {
-                department: new mongoose.Types.ObjectId(departmentId),
-                date: { $gte: startOfDay, $lte: endOfDay }
-            }
-        },
-        {
-            $group: {
-                _id: '$status',
-                count: { $sum: 1 },
-                totalHours: { $sum: '$hours.totalHours' }
-            }
-        }
-    ]);
-
-    return summary;
-};
-
-/**
- * Static method to create attendance records for approved leaves
- */
-attendanceSchema.statics.createFromLeave = async function (leave) {
-    const records = [];
-    const startDate = new Date(leave.startDate);
-    const endDate = new Date(leave.endDate);
-
-    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-        const attendanceDate = new Date(date);
-
-        // Check if record already exists
-        let attendance = await this.findOne({
-            employee: leave.employee,
-            date: attendanceDate
-        });
-
-        if (!attendance) {
-            attendance = new this({
-                employee: leave.employee,
-                department: leave.department,
-                position: leave.position,
-                date: attendanceDate
-            });
-        }
-
-        await attendance.markAsLeave(leave);
-        records.push(attendance);
+      }
+    },
+    absent: {
+      where: { status: 'absent' }
+    },
+    needsApproval: {
+      where: {
+        'flags.needsApproval': true
+      }
     }
+  }
+});
 
-    return records;
+// Define associations
+Attendance.belongsTo(User, {
+  foreignKey: 'employeeId',
+  as: 'employee'
+});
+
+Attendance.belongsTo(Department, {
+  foreignKey: 'departmentId',
+  as: 'department'
+});
+
+User.hasMany(Attendance, {
+  foreignKey: 'employeeId',
+  as: 'attendances'
+});
+
+// Instance Methods
+Attendance.prototype.isOnTime = function() {
+  return !this.checkIn?.isLate && this.checkIn?.time !== null;
 };
 
-/**
- * Static method to get employees who are currently checked in
- */
-attendanceSchema.statics.getCurrentlyPresent = function (departmentId = null) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const query = {
-        date: today,
-        'checkIn.time': { $exists: true, $ne: null },
-        'checkOut.time': { $exists: false }
-    };
-
-    if (departmentId) {
-        query.department = departmentId;
-    }
-
-    return this.find(query)
-        .populate({
-            path: 'employee',
-            select: 'username employeeId personalInfo department position',
-            populate: [
-                { path: 'department', select: 'name code' },
-                { path: 'position', select: 'title' }
-            ]
-        })
-        .sort({ 'checkIn.time': -1 });
+Attendance.prototype.isFullDay = function() {
+  return this.hours?.actual >= this.hours?.expected;
 };
 
-// Compound indexes for tenant isolation and performance
-attendanceSchema.index({ tenantId: 1, employee: 1, date: 1 }, { unique: true });
-attendanceSchema.index({ tenantId: 1, employee: 1, status: 1 });
-attendanceSchema.index({ tenantId: 1, department: 1, date: 1 });
-attendanceSchema.index({ tenantId: 1, department: 1, status: 1 });
-attendanceSchema.index({ tenantId: 1, date: 1 });
-attendanceSchema.index({ tenantId: 1, status: 1 });
-attendanceSchema.index({ tenantId: 1, adjustedByPermission: 1 });
-attendanceSchema.index({ tenantId: 1, 'flags.isLate': 1 });
-attendanceSchema.index({ tenantId: 1, 'flags.isEarlyDeparture': 1 });
-attendanceSchema.index({ tenantId: 1, 'flags.needsApproval': 1 });
-attendanceSchema.index({ tenantId: 1, leave: 1 });
-attendanceSchema.index({ tenantId: 1, isWorkingDay: 1 });
+Attendance.prototype.getTotalWorkingHours = function() {
+  return (this.hours?.actual || 0) + (this.hours?.workFromHome || 0);
+};
 
-export default mongoose.model('Attendance', attendanceSchema);
+// Static Methods
+Attendance.getEmployeeAttendance = async function(employeeId, startDate, endDate) {
+  return this.findAll({
+    where: {
+      employeeId,
+      date: {
+        [require('sequelize').Op.gte]: startDate,
+        [require('sequelize').Op.lte]: endDate
+      }
+    },
+    order: [['date', 'ASC']]
+  });
+};
+
+Attendance.getCurrentlyPresent = async function(tenantId, departmentId = null) {
+  const today = new Date();
+  const query = {
+    tenantId,
+    date: today,
+    'checkIn.time': { [require('sequelize').Op.ne]: null }
+  };
+
+  if (departmentId) {
+    query.departmentId = departmentId;
+  }
+
+  return this.findAll({
+    where: query,
+    include: [{
+      model: User,
+      as: 'employee',
+      attributes: ['id', 'employeeId', 'personalInfo']
+    }],
+    order: [['checkIn', 'DESC']]
+  });
+};
+
+export default Attendance;

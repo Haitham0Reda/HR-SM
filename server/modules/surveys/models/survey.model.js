@@ -1,391 +1,218 @@
 /**
- * Survey Model
+ * Survey Model - PostgreSQL (Sequelize)
  * 
- * Comprehensive survey management for employee feedback and assessments
+ * This model represents the surveys table in the Main Application Database (hrsm_platform).
+ * It manages employee surveys with questions, responses, and analytics.
+ * 
+ * @module models/Survey
  */
-import mongoose from 'mongoose';
 
-const surveySchema = new mongoose.Schema({
-    // Tenant ID for multi-tenancy
-    tenantId: {
-        type: String,
-        required: [true, 'Tenant ID is required'],
-        index: true,
-        trim: true
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+
+const Survey = mainAppDb.define('Survey', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the survey (UUID)'
+  },
+
+  // Tenant ID for multi-tenancy
+  tenantId: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'tenant_id',
+    comment: 'Tenant/Company identifier'
+  },
+
+  // Survey Information
+  title: {
+    type: DataTypes.STRING(200),
+    allowNull: false,
+    comment: 'Survey title'
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Survey description'
+  },
+
+  // Survey Type
+  surveyType: {
+    type: DataTypes.ENUM('satisfaction', 'training', 'performance', 'policy', '360-feedback', 'exit-interview', 'custom'),
+    allowNull: false,
+    defaultValue: 'custom',
+    field: 'survey_type',
+    comment: 'Type of survey'
+  },
+
+  // Questions - stored as JSONB array
+  questions: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    comment: 'Array of survey questions with configuration (JSONB)'
+  },
+
+  // Settings - stored as JSONB
+  settings: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      isMandatory: false,
+      allowAnonymous: false,
+      allowMultipleSubmissions: false,
+      startDate: null,
+      endDate: null,
+      emailNotifications: {
+        enabled: true,
+        sendOnAssignment: true,
+        sendReminders: true,
+        reminderFrequency: 3
+      }
     },
+    comment: 'Survey settings and configuration (JSONB)'
+  },
 
-    // Survey Information
-    title: {
-        type: String,
-        required: true,
-        trim: true,
-        maxlength: 200
+  // Assignment - stored as JSONB
+  assignedTo: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      allEmployees: false,
+      departments: [],
+      roles: [],
+      specificEmployees: []
     },
-    description: {
-        type: String,
-        maxlength: 1000
+    field: 'assigned_to',
+    comment: 'Target assignment configuration (JSONB)'
+  },
+
+  // Responses - stored as JSONB array
+  responses: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    comment: 'Array of survey responses (JSONB)'
+  },
+
+  // Statistics - stored as JSONB
+  stats: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      totalAssigned: 0,
+      totalResponses: 0,
+      completionRate: 0,
+      lastResponseAt: null
     },
+    comment: 'Survey statistics and metrics (JSONB)'
+  },
 
-    // Survey Type
-    surveyType: {
-        type: String,
-        enum: [
-            'satisfaction',
-            'training',
-            'performance',
-            'policy',
-            '360-feedback',
-            'exit-interview',
-            'custom'
-        ],
-        default: 'custom'
-    },
+  // Status
+  status: {
+    type: DataTypes.ENUM('draft', 'active', 'closed', 'archived'),
+    allowNull: false,
+    defaultValue: 'draft',
+    comment: 'Survey status'
+  },
 
-    // Questions
-    questions: [{
-        questionText: {
-            type: String,
-            required: true,
-            trim: true
-        },
-        questionType: {
-            type: String,
-            enum: [
-                'text',           // Short text input
-                'textarea',       // Long text input
-                'single-choice',  // Radio buttons
-                'multiple-choice',// Checkboxes
-                'rating',         // 1-5 or 1-10 scale
-                'yes-no',         // Boolean
-                'number',         // Numeric input
-                'date'            // Date picker
-            ],
-            required: true
-        },
-        options: [String],    // For choice-based questions
-        ratingScale: {
-            min: { type: Number, default: 1 },
-            max: { type: Number, default: 5 }
-        },
-        required: {
-            type: Boolean,
-            default: false
-        },
-        order: Number
-    }],
-
-    // Survey Settings
-    settings: {
-        // Mandatory Survey
-        isMandatory: {
-            type: Boolean,
-            default: false
-        },
-
-        // Anonymous Responses
-        allowAnonymous: {
-            type: Boolean,
-            default: false
-        },
-
-        // Multiple Submissions
-        allowMultipleSubmissions: {
-            type: Boolean,
-            default: false
-        },
-
-        // Date Range
-        startDate: Date,
-        endDate: Date,
-
-        // Email Notifications
-        emailNotifications: {
-            enabled: {
-                type: Boolean,
-                default: true
-            },
-            sendOnAssignment: {
-                type: Boolean,
-                default: true
-            },
-            sendReminders: {
-                type: Boolean,
-                default: true
-            },
-            reminderFrequency: {
-                type: Number,
-                default: 3 // days
-            }
-        }
-    },
-
-    // Assignment
-    assignedTo: {
-        // Target Scope
-        allEmployees: {
-            type: Boolean,
-            default: false
-        },
-
-
-        // Specific Departments
-        departments: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Department'
-        }],
-
-        // Specific Roles
-        roles: [{
-            type: String,
-            enum: ['admin', 'hr', 'manager', 'employee', 'id-card-admin', 'supervisor', 'head-of-department', 'dean']
-        }],
-
-        // Specific Employees
-        specificEmployees: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        }]
-    },
-
-    // Responses
-    responses: [{
-        respondent: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        isAnonymous: {
-            type: Boolean,
-            default: false
-        },
-        answers: [{
-            questionId: mongoose.Schema.Types.ObjectId,
-            answer: mongoose.Schema.Types.Mixed,
-            answeredAt: {
-                type: Date,
-                default: Date.now
-            }
-        }],
-        completionPercentage: {
-            type: Number,
-            default: 0
-        },
-        isComplete: {
-            type: Boolean,
-            default: false
-        },
-        submittedAt: Date,
-        ipAddress: String,
-        userAgent: String
-    }],
-
-    // Statistics
-    stats: {
-        totalAssigned: {
-            type: Number,
-            default: 0
-        },
-        totalResponses: {
-            type: Number,
-            default: 0
-        },
-        completionRate: {
-            type: Number,
-            default: 0
-        },
-        lastResponseAt: Date
-    },
-
-    // Status
-    status: {
-        type: String,
-        enum: ['draft', 'active', 'closed', 'archived'],
-        default: 'draft',
-        index: true
-    },
-
-    // Metadata
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    lastModifiedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    publishedAt: Date,
-    closedAt: Date
+  // Metadata
+  createdById: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'created_by_id',
+    comment: 'User who created the survey'
+  },
+  lastModifiedById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'last_modified_by_id',
+    comment: 'User who last modified the survey'
+  },
+  publishedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'published_at',
+    comment: 'Publication timestamp'
+  },
+  closedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'closed_at',
+    comment: 'Closure timestamp'
+  }
 }, {
-    timestamps: true,
-    collection: 'surveys'
+  tableName: 'surveys',
+  timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+
+  // Indexes for performance optimization
+  indexes: [
+    {
+      name: 'idx_surveys_tenant_id_status_end_date',
+      fields: ['tenant_id', 'status', { name: 'settings', using: 'gin', opclass: 'jsonb_path_ops' }]
+    },
+    {
+      name: 'idx_surveys_tenant_id_created_by_id',
+      fields: ['tenant_id', 'created_by_id']
+    },
+    {
+      name: 'idx_surveys_tenant_id_survey_type',
+      fields: ['tenant_id', 'survey_type']
+    }
+  ],
+
+  // Named scopes
+  scopes: {
+    active: {
+      where: { status: 'active' }
+    },
+    draft: {
+      where: { status: 'draft' }
+    },
+    byType: (type) => {
+      return {
+        where: { surveyType: type }
+      };
+    }
+  }
 });
 
-// Indexes
-surveySchema.index({ tenantId: 1, status: 1, 'settings.endDate': 1 });
-surveySchema.index({ tenantId: 1, 'assignedTo.departments': 1 });
-surveySchema.index({ tenantId: 1, 'responses.respondent': 1 });
-surveySchema.index({ tenantId: 1, createdBy: 1 });
-surveySchema.index({ tenantId: 1, surveyType: 1 });
-
-// Virtual for active status
-surveySchema.virtual('isCurrentlyActive').get(function () {
-    if (this.status !== 'active') return false;
-
-    const now = new Date();
-
-    if (this.settings.startDate && now < this.settings.startDate) return false;
-    if (this.settings.endDate && now > this.settings.endDate) return false;
-
-    return true;
-});
-
-// Method to check if user has responded
-surveySchema.methods.hasUserResponded = function (userId) {
-    return this.responses.some(r => {
-        if (!r.respondent) return false;
-        // Handle both populated (object with _id) and unpopulated (ObjectId) cases
-        const respondentId = r.respondent._id || r.respondent;
-        return respondentId.toString() === userId.toString();
-    });
+// Instance Methods
+Survey.prototype.hasUserResponded = function(userId) {
+  return this.responses.some(r => r.respondent === userId);
 };
 
-// Method to get user's response
-surveySchema.methods.getUserResponse = function (userId) {
-    return this.responses.find(r => {
-        if (!r.respondent) return false;
-        // Handle both populated (object with _id) and unpopulated (ObjectId) cases
-        const respondentId = r.respondent._id || r.respondent;
-        return respondentId.toString() === userId.toString();
-    });
+Survey.prototype.getUserResponse = function(userId) {
+  return this.responses.find(r => r.respondent === userId);
 };
 
-// Method to calculate completion rate
-surveySchema.methods.calculateCompletionRate = function () {
-    if (this.stats.totalAssigned === 0) {
-        this.stats.completionRate = 0;
-        return 0;
-    }
-
-    this.stats.completionRate = (this.stats.totalResponses / this.stats.totalAssigned) * 100;
-    return this.stats.completionRate;
+Survey.prototype.calculateCompletionRate = function() {
+  if (this.stats.totalAssigned === 0) {
+    this.stats.completionRate = 0;
+    return 0;
+  }
+  
+  this.stats.completionRate = (this.stats.totalResponses / this.stats.totalAssigned) * 100;
+  return this.stats.completionRate;
 };
 
-// Method to add response
-surveySchema.methods.addResponse = async function (userId, answers = [], isAnonymous = false, metadata = {}) {
-    // Check if already responded and multiple submissions not allowed
-    if (!this.settings.allowMultipleSubmissions && this.hasUserResponded(userId)) {
-        throw new Error('You have already submitted a response to this survey');
-    }
-
-    // Ensure answers is an array
-    const responses = Array.isArray(answers) ? answers : [];
-
-    // Calculate completion percentage
-    const requiredQuestions = this.questions.filter(q => q.required).length;
-    const answeredRequired = responses.filter(a => {
-        const question = this.questions.id(a.questionId);
-        return question && question.required;
-    }).length;
-
-    const completionPercentage = requiredQuestions > 0
-        ? (answeredRequired / requiredQuestions) * 100
-        : 100;
-
-    // Consider complete if all required questions are answered
-    // For surveys with no required questions, check if at least one question is answered
-    const totalAnswered = responses.filter(a => {
-        const answer = a.answer;
-        // Handle arrays (multiple choice) and other types
-        if (Array.isArray(answer)) {
-            return answer.length > 0;
-        }
-        return answer !== undefined && answer !== null && answer !== '';
-    }).length;
-
-    const isComplete = requiredQuestions > 0
-        ? completionPercentage === 100
-        : totalAnswered > 0;
-
-    // Add response
-    // Always store userId for tracking, use isAnonymous flag for privacy
-    this.responses.push({
-        respondent: userId,
-        isAnonymous,
-        answers: responses,
-        completionPercentage,
-        isComplete,
-        submittedAt: isComplete ? new Date() : null,
-        ipAddress: metadata.ipAddress,
-        userAgent: metadata.userAgent
-    });
-
-    // Update statistics
-    if (isComplete) {
-        this.stats.totalResponses += 1;
-        this.stats.lastResponseAt = new Date();
-        this.calculateCompletionRate();
-    }
-
-    return await this.save();
+// Static Methods
+Survey.findActiveSurveysForUser = async function(tenantId, userId) {
+  const now = new Date();
+  
+  return this.findAll({
+    where: {
+      tenantId,
+      status: 'active'
+    },
+    order: [['createdAt', 'DESC']]
+  });
 };
 
-// Static method to find active surveys for user
-surveySchema.statics.findActiveSurveysForUser = async function (userId, tenantId) {
-    const User = mongoose.model('User');
-    const user = await User.findOne({ _id: userId, tenantId });
-
-    if (!user) return [];
-
-    const now = new Date();
-
-    const query = {
-        tenantId,
-        status: 'active',
-        $and: [
-            {
-                $or: [
-                    { 'settings.startDate': { $exists: false } },
-                    { 'settings.startDate': { $lte: now } }
-                ]
-            },
-            {
-                $or: [
-                    { 'settings.endDate': { $exists: false } },
-                    { 'settings.endDate': { $gte: now } }
-                ]
-            }
-        ]
-    };
-
-    const surveys = await this.find(query)
-        .populate('createdBy', 'username email')
-        .sort({ createdAt: -1 });
-
-    // Filter surveys assigned to this user
-    return surveys.filter(survey => {
-        if (survey.assignedTo.allEmployees) return true;
-
-        if (survey.assignedTo.specificEmployees.some(id => id.toString() === userId.toString())) {
-            return true;
-        }
-
-
-        if (user.department && survey.assignedTo.departments.some(id => id.toString() === user.department.toString())) {
-            return true;
-        }
-
-        if (survey.assignedTo.roles.includes(user.role)) {
-            return true;
-        }
-
-        return false;
-    });
-};
-
-// Add withTenant static method for tenant-aware queries
-surveySchema.statics.withTenant = function (tenantId) {
-    return this.find({ tenantId });
-};
-
-export default mongoose.model('Survey', surveySchema);
-
+export default Survey;

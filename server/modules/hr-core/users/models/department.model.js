@@ -1,288 +1,169 @@
 /**
- * Department Model
+ * Department Model - PostgreSQL (Sequelize)
  * 
- * Manages organizational departments with hierarchical structure
+ * This model represents the departments table in the Main Application Database (hrsm_platform).
+ * It stores department information with hierarchical structure support.
+ * 
+ * @module models/Department
  */
-import mongoose from 'mongoose';
 
-const departmentSchema = new mongoose.Schema({
-    tenantId: {
-        type: String,
-        required: [true, 'Tenant ID is required'],
-        index: true,
-        trim: true
-    },
-    // Basic Information
-    name: {
-        type: String,
-        required: [true, 'Department name is required'],
-        trim: true,
-        maxlength: [100, 'Department name cannot exceed 100 characters']
-    },
-    arabicName: {
-        type: String,
-        trim: true,
-        maxlength: [100, 'Arabic name cannot exceed 100 characters']
-    },
-    
-    // Department Code
-    code: {
-        type: String,
-        // unique constraint moved to compound index below
-        sparse: true,
-        trim: true,
-        uppercase: true
-    },
-    
-    // Hierarchical Structure
-    parentDepartment: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department',
-        default: null // null indicates a main/root department
-    },
-    
-    // Management
-    manager: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    
-    // Description
-    description: {
-        type: String,
-        maxlength: [500, 'Description cannot exceed 500 characters']
-    },
-    arabicDescription: {
-        type: String,
-        maxlength: [500, 'Arabic description cannot exceed 500 characters']
-    },
-    
-    // Contact Information
-    email: {
-        type: String,
-        trim: true,
-        lowercase: true,
-        match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
-    },
-    phone: {
-        type: String,
-        trim: true
-    },
-    extension: {
-        type: String,
-        trim: true
-    },
-    
-    // Location
-    location: {
-        building: String,
-        floor: String,
-        room: String
-    },
-    
-    // Budget & Cost Center
-    costCenter: {
-        type: String,
-        trim: true
-    },
-    budget: {
-        annual: {
-            type: Number,
-            default: 0
-        },
-        currency: {
-            type: String,
-            default: 'EGP'
-        }
-    },
-    
-    // Status
-    isActive: {
-        type: Boolean,
-        default: true,
-        index: true
-    },
-    
-    // Metadata
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    updatedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+
+const Department = mainAppDb.define('Department', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the department (UUID)'
+  },
+
+  // Tenant ID for multi-tenancy
+  tenantId: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'tenant_id',
+    comment: 'Tenant/Company identifier'
+  },
+
+  // Department Information
+  name: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    comment: 'Department name'
+  },
+  code: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    comment: 'Department code'
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Department description'
+  },
+
+  // Manager Reference
+  managerId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'manager_id',
+    comment: 'Reference to department manager (User)'
+  },
+
+  // Hierarchical Structure
+  parentDepartmentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'parent_department_id',
+    comment: 'Reference to parent department for hierarchy'
+  },
+
+  // Status
+  status: {
+    type: DataTypes.ENUM('active', 'inactive'),
+    allowNull: false,
+    defaultValue: 'active',
+    comment: 'Department status'
+  }
 }, {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
-});
+  tableName: 'departments',
+  timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 
-// Compound indexes for tenant isolation and performance
-departmentSchema.index({ tenantId: 1, name: 1 }, { unique: true });
-departmentSchema.index({ tenantId: 1, code: 1 }, { unique: true, sparse: true });
-departmentSchema.index({ tenantId: 1, parentDepartment: 1 });
-departmentSchema.index({ tenantId: 1, manager: 1 });
-departmentSchema.index({ tenantId: 1, isActive: 1, parentDepartment: 1 });
-
-// Virtual for full name (with parent)
-departmentSchema.virtual('fullName').get(function () {
-    if (this.parentDepartment && this.parentDepartment.name) {
-        return `${this.parentDepartment.name} - ${this.name}`;
+  // Indexes for performance optimization
+  indexes: [
+    {
+      name: 'idx_departments_tenant_id_code',
+      fields: ['tenant_id', 'code'],
+      unique: true
+    },
+    {
+      name: 'idx_departments_tenant_id_name',
+      fields: ['tenant_id', 'name']
+    },
+    {
+      name: 'idx_departments_tenant_id_status',
+      fields: ['tenant_id', 'status']
+    },
+    {
+      name: 'idx_departments_parent_department_id',
+      fields: ['parent_department_id']
+    },
+    {
+      name: 'idx_departments_manager_id',
+      fields: ['manager_id']
     }
-    return this.name;
-});
+  ],
 
-// Virtual for employee count
-departmentSchema.virtual('employeeCount', {
-    ref: 'User',
-    localField: '_id',
-    foreignField: 'department',
-    count: true
-});
-
-// Virtual for sub-departments
-departmentSchema.virtual('subDepartments', {
-    ref: 'Department',
-    localField: '_id',
-    foreignField: 'parentDepartment'
-});
-
-// Auto-generate unique department code
-departmentSchema.pre('save', async function (next) {
-    if (!this.code) {
-        try {
-            // Generate code based on parent
-            if (this.parentDepartment) {
-                // For sub-departments, use parent code + sequential number
-                const parent = await this.constructor.findById(this.parentDepartment);
-                if (parent && parent.code) {
-                    const siblings = await this.constructor.find({
-                        parentDepartment: this.parentDepartment
-                    }).sort({ code: -1 }).limit(1);
-                    
-                    let subNumber = 1;
-                    if (siblings.length > 0 && siblings[0].code) {
-                        const lastSubCode = siblings[0].code.split('-')[1];
-                        if (lastSubCode) {
-                            subNumber = parseInt(lastSubCode) + 1;
-                        }
-                    }
-                    
-                    this.code = `${parent.code}-${subNumber.toString().padStart(2, '0')}`;
-                }
-            } else {
-                // For main departments, use sequential 3-digit code
-                const lastDepartment = await this.constructor.findOne({
-                    parentDepartment: null
-                }).sort({ code: -1 }).limit(1);
-                
-                let nextNumber = 1;
-                if (lastDepartment && lastDepartment.code) {
-                    const lastNumber = parseInt(lastDepartment.code.split('-')[0]);
-                    if (!isNaN(lastNumber)) {
-                        nextNumber = lastNumber + 1;
-                    }
-                }
-                
-                this.code = nextNumber.toString().padStart(3, '0');
-            }
-        } catch (error) {
-            return next(error);
-        }
+  // Named scopes
+  scopes: {
+    active: {
+      where: { status: 'active' }
+    },
+    byParent: (parentId) => {
+      return {
+        where: { parentDepartmentId: parentId }
+      };
+    },
+    topLevel: {
+      where: { parentDepartmentId: null }
     }
-    next();
+  }
 });
 
-// Prevent circular parent-child relationships
-departmentSchema.pre('save', async function (next) {
-    if (this.parentDepartment && this.isModified('parentDepartment')) {
-        // Check if parent is trying to be set to self
-        if (this.parentDepartment.toString() === this._id.toString()) {
-            return next(new Error('A department cannot be its own parent'));
-        }
-        
-        // Check for circular reference
-        let currentParent = this.parentDepartment;
-        const visited = new Set([this._id.toString()]);
-        
-        while (currentParent) {
-            if (visited.has(currentParent.toString())) {
-                return next(new Error('Circular parent-child relationship detected'));
-            }
-            
-            visited.add(currentParent.toString());
-            const parent = await this.constructor.findById(currentParent);
-            
-            if (!parent) break;
-            currentParent = parent.parentDepartment;
-        }
-    }
-    next();
+// Self-referential association for department hierarchy
+Department.belongsTo(Department, {
+  as: 'parentDepartment',
+  foreignKey: 'parentDepartmentId'
 });
 
-// Static method to get department hierarchy
-departmentSchema.statics.getHierarchy = async function (departmentId = null) {
-    const departments = await this.find({
-        parentDepartment: departmentId,
-        isActive: true
-    })
-    .populate('manager', 'username email profile')
-    .sort({ name: 1 });
-    
-    const hierarchy = [];
-    
-    for (const dept of departments) {
-        const deptObj = dept.toObject();
-        deptObj.children = await this.getHierarchy(dept._id);
-        hierarchy.push(deptObj);
-    }
-    
-    return hierarchy;
+Department.hasMany(Department, {
+  as: 'childDepartments',
+  foreignKey: 'parentDepartmentId'
+});
+
+// Instance Methods
+Department.prototype.isActive = function() {
+  return this.status === 'active';
 };
 
-// Static method to get all parent departments
-departmentSchema.statics.getParentChain = async function (departmentId) {
-    const chain = [];
-    let currentDept = await this.findById(departmentId);
-    
-    while (currentDept) {
-        chain.unshift(currentDept);
-        if (currentDept.parentDepartment) {
-            currentDept = await this.findById(currentDept.parentDepartment);
-        } else {
-            break;
-        }
-    }
-    
-    return chain;
+Department.prototype.isTopLevel = function() {
+  return this.parentDepartmentId === null;
 };
 
-// Instance method to check if department has sub-departments
-departmentSchema.methods.hasSubDepartments = async function () {
-    const count = await this.constructor.countDocuments({
-        parentDepartment: this._id
-    });
-    return count > 0;
+// Static Methods
+Department.findByCode = async function(tenantId, code) {
+  return this.findOne({
+    where: { tenantId, code }
+  });
 };
 
-// Instance method to get all descendants
-departmentSchema.methods.getAllDescendants = async function () {
-    const descendants = [];
-    
-    const getChildren = async (parentId) => {
-        const children = await this.constructor.find({
-            parentDepartment: parentId
-        });
-        
-        for (const child of children) {
-            descendants.push(child);
-            await getChildren(child._id);
-        }
-    };
-    
-    await getChildren(this._id);
-    return descendants;
+Department.findActive = async function(tenantId) {
+  return this.findAll({
+    where: { tenantId, status: 'active' },
+    order: [['name', 'ASC']]
+  });
 };
 
-export default mongoose.model('Department', departmentSchema);
+Department.findHierarchy = async function(tenantId, parentId = null) {
+  return this.findAll({
+    where: { 
+      tenantId, 
+      parentDepartmentId: parentId,
+      status: 'active'
+    },
+    include: [{
+      model: Department,
+      as: 'childDepartments',
+      where: { status: 'active' },
+      required: false
+    }],
+    order: [['name', 'ASC']]
+  });
+};
+
+export default Department;
