@@ -437,7 +437,44 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - Provide solutions and workarounds
     - _Requirements: 18.5_
 
-- [ ] 24. Execute migration in staging environment
+- [ ] 24. Remove MongoDB dependencies and code
+  - [ ] 24.1 Remove MongoDB packages
+    - Uninstall mongoose package
+    - Uninstall mongodb driver
+    - Remove MongoDB-related dependencies from package.json
+    - _Requirements: 2.1_
+
+  - [ ] 24.2 Remove MongoDB configuration files
+    - Remove or archive MongoDB connection code
+    - Remove MongoDB-specific environment variables
+    - Clean up any MongoDB utility files
+    - _Requirements: 1.6, 16.1_
+
+  - [ ] 24.3 Remove Mongoose models
+    - Delete all Mongoose schema files
+    - Remove Mongoose model imports
+    - Clean up any MongoDB-specific model utilities
+    - _Requirements: 4.1_
+
+  - [ ] 24.4 Remove MongoDB query code
+    - Remove any remaining MongoDB query syntax
+    - Delete MongoDB-specific helper functions
+    - Clean up aggregation pipeline code
+    - _Requirements: 7.1_
+
+  - [ ] 24.5 Remove MongoDB backup scripts
+    - Delete mongooseBackup.service.js
+    - Remove MongoDB backup utilities
+    - Clean up MongoDB restore scripts
+    - _Requirements: 11.1_
+
+  - [ ] 24.6 Update imports and references
+    - Search for and remove mongoose imports
+    - Remove MongoDB client imports
+    - Update any documentation referencing MongoDB
+    - _Requirements: 2.1_
+
+- [ ] 25. Execute migration in staging environment
   - Run full migration on staging data
   - Validate migrated data
   - Test all application functionality
@@ -445,9 +482,10 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
   - Test performance
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 25. Final checkpoint - Production migration readiness
+- [ ] 26. Final checkpoint - Production migration readiness
   - Review all completed tasks
   - Verify all tests pass
+  - Verify no MongoDB code remains
   - Confirm rollback plan is ready
   - Get stakeholder approval
   - Ensure all tests pass, ask the user if questions arise.
@@ -461,4 +499,6 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
 - License validation between databases is preserved
 - Tenant isolation is enforced through tenant_id columns
 - All tasks build incrementally to minimize risk
+- Task 24 ensures complete removal of MongoDB code and dependencies after migration
+- MongoDB code removal happens after staging validation but before production deployment
 
