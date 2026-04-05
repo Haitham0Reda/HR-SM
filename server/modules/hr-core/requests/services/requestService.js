@@ -7,6 +7,7 @@
 
 import Request from '../models/request.model.js';
 import AppError from '../../../../core/errors/AppError.js';
+import { Op } from 'sequelize';
 
 class RequestService {
   /**
@@ -61,7 +62,7 @@ class RequestService {
    * @returns {Promise<Object>} Request object
    */
   async getRequestById(requestId, tenantId) {
-    const request = await Request.findOne({ _id: requestId, tenantId });
+    const request = await Request.findOne({ id: requestId, tenantId });
     
     if (!request) {
       throw new AppError('Request not found', 404, 'REQUEST_NOT_FOUND');
