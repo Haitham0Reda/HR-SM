@@ -1,4 +1,5 @@
 import VacationRepository from '../../../../repositories/modules/VacationRepository.js';
+import { Op } from 'sequelize';
 
 /**
  * Vacation Service - Business logic layer for vacation/leave operations
@@ -15,16 +16,16 @@ class VacationService {
   async getAllVacations(tenantId, options = {}) {
     const filter = { tenantId };
     const queryOptions = {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ],
-      sort: { createdAt: -1 },
+      order: [['createdAt', 'DESC']],
       ...options
     };
 
-    return await this.vacationRepository.find(filter, queryOptions);
+    return await this.vacationRepository.findAll(filter, queryOptions);
   }
 
   /**
@@ -46,11 +47,11 @@ class VacationService {
     const vacation = await this.vacationRepository.create(dataToCreate);
     
     // Return populated vacation
-    return await this.vacationRepository.findById(vacation._id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+    return await this.vacationRepository.findById(vacation.id, {
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -60,12 +61,12 @@ class VacationService {
    */
   async getVacationById(id, tenantId) {
     const vacation = await this.vacationRepository.findOne(
-      { _id: id, tenantId },
+      { id, tenantId },
       {
-        populate: [
-          { path: 'employee', select: 'firstName lastName email employeeId' },
-          { path: 'approvedBy', select: 'firstName lastName email' },
-          { path: 'department', select: 'name code' }
+        include: [
+          { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+          { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+          { association: 'department', attributes: ['name', 'code'] }
         ]
       }
     );
@@ -81,7 +82,7 @@ class VacationService {
    * Update vacation request
    */
   async updateVacation(id, updateData, tenantId) {
-    const vacation = await this.vacationRepository.findOne({ _id: id, tenantId });
+    const vacation = await this.vacationRepository.findOne({ id, tenantId });
     
     if (!vacation) {
       throw new Error('Vacation request not found');
@@ -101,10 +102,10 @@ class VacationService {
     
     // Return populated vacation
     return await this.vacationRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -113,7 +114,7 @@ class VacationService {
    * Delete vacation request
    */
   async deleteVacation(id, tenantId) {
-    const vacation = await this.vacationRepository.findOne({ _id: id, tenantId });
+    const vacation = await this.vacationRepository.findOne({ id, tenantId });
     
     if (!vacation) {
       throw new Error('Vacation request not found');
@@ -127,7 +128,7 @@ class VacationService {
    * Approve vacation request
    */
   async approveVacation(id, approvedBy, tenantId) {
-    const vacation = await this.vacationRepository.findOne({ _id: id, tenantId });
+    const vacation = await this.vacationRepository.findOne({ id, tenantId });
     
     if (!vacation) {
       throw new Error('Vacation request not found');
@@ -147,10 +148,10 @@ class VacationService {
     
     // Return populated vacation
     return await this.vacationRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'approvedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -159,7 +160,7 @@ class VacationService {
    * Reject vacation request
    */
   async rejectVacation(id, rejectedBy, rejectionReason, tenantId) {
-    const vacation = await this.vacationRepository.findOne({ _id: id, tenantId });
+    const vacation = await this.vacationRepository.findOne({ id, tenantId });
     
     if (!vacation) {
       throw new Error('Vacation request not found');
@@ -180,10 +181,10 @@ class VacationService {
     
     // Return populated vacation
     return await this.vacationRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId' },
-        { path: 'rejectedBy', select: 'firstName lastName email' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'rejectedBy', attributes: ['firstName', 'lastName', 'email'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
@@ -276,20 +277,20 @@ class VacationService {
     const filter = {
       employee: employeeId,
       tenantId,
-      status: { $in: ['approved', 'pending'] },
-      $or: [
+      status: { [Op.in]: ['approved', 'pending'] },
+      [Op.or]: [
         {
-          startDate: { $lte: endDate },
-          endDate: { $gte: startDate }
+          startDate: { [Op.lte]: endDate },
+          endDate: { [Op.gte]: startDate }
         }
       ]
     };
 
     if (excludeId) {
-      filter._id = { $ne: excludeId };
+      filter.id = { [Op.ne]: excludeId };
     }
 
-    const conflicts = await this.vacationRepository.find(filter);
+    const conflicts = await this.vacationRepository.findAll(filter);
     return conflicts;
   }
 
@@ -300,9 +301,9 @@ class VacationService {
     // This would require getting employees under this manager first
     // For now, return all pending requests - can be enhanced based on org structure
     return await this.vacationRepository.findByStatus('pending', tenantId, {
-      populate: [
-        { path: 'employee', select: 'firstName lastName email employeeId manager' },
-        { path: 'department', select: 'name code' }
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId', 'manager'] },
+        { association: 'department', attributes: ['name', 'code'] }
       ]
     });
   }
