@@ -1,285 +1,395 @@
-// models/Overtime.js
-import mongoose from 'mongoose';
+/**
+ * Overtime Model - PostgreSQL (Sequelize)
+ * 
+ * This model represents the overtime table in the Main Application Database (hrsm_platform).
+ * It manages employee overtime requests with approval workflows and compensation tracking.
+ * Supports multi-tenancy and time validation.
+ * 
+ * @module models/Overtime
+ */
 
-const overtimeSchema = new mongoose.Schema({
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+import User from '../../users/models/user.model.js';
+import Department from '../../users/models/department.model.js';
+import Position from '../../users/models/position.model.js';
+
+const Overtime = mainAppDb.define('Overtime', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the overtime request (UUID)'
+  },
+
+  // Tenant ID for multi-tenancy
   tenantId: {
-    type: String,
-    required: true,
-    index: true
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'tenant_id',
+    comment: 'Tenant/Company identifier'
   },
-  employee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
+
+  // Employee reference
+  employeeId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'employee_id',
+    comment: 'Employee who worked overtime',
+    references: {
+      model: User,
+      key: 'id'
+    }
   },
+
+  // Date of overtime
   date: {
-    type: Date,
-    required: true,
-    index: true
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    comment: 'Date when overtime was worked'
   },
+
+  // Start time (HH:MM format)
   startTime: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING(5),
+    allowNull: false,
+    field: 'start_time',
+    comment: 'Start time in HH:MM format (24-hour)',
     validate: {
-      validator: function (v) {
-        // Validate HH:MM format (24-hour)
-        return /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
-      },
-      message: 'Start time must be in HH:MM format (24-hour)'
+      isTimeFormat(value) {
+        if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(value)) {
+          throw new Error('Start time must be in HH:MM format (24-hour)');
+        }
+      }
     }
   },
+
+  // End time (HH:MM format)
   endTime: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING(5),
+    allowNull: false,
+    field: 'end_time',
+    comment: 'End time in HH:MM format (24-hour)',
     validate: {
-      validator: function (v) {
-        // Validate HH:MM format (24-hour)
-        return /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
+      isTimeFormat(value) {
+        if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(value)) {
+          throw new Error('End time must be in HH:MM format (24-hour)');
+        }
       },
-      message: 'End time must be in HH:MM format (24-hour)'
+      isAfterStartTime(value) {
+        if (value && this.startTime) {
+          const [startHour, startMin] = this.startTime.split(':').map(Number);
+          const [endHour, endMin] = value.split(':').map(Number);
+          const startMinutes = startHour * 60 + startMin;
+          const endMinutes = endHour * 60 + endMin;
+          if (endMinutes <= startMinutes) {
+            throw new Error('End time must be after start time');
+          }
+        }
+      }
     }
   },
+
+  // Duration in hours
   duration: {
-    type: Number, // in hours
-    required: true
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: false,
+    comment: 'Duration in hours'
   },
+
+  // Reason for overtime
   reason: {
-    type: String,
-    required: false,
-    trim: true,
-    maxlength: 300
+    type: DataTypes.TEXT,
+    allowNull: true,
+    validate: {
+      len: [0, 300]
+    },
+    comment: 'Reason for the overtime'
   },
+
+  // Compensation type
   compensationType: {
-    type: String,
-    enum: ['paid', 'time-off', 'none'],
-    required: true
+    type: DataTypes.ENUM('paid', 'time-off', 'none'),
+    allowNull: false,
+    field: 'compensation_type',
+    comment: 'How the overtime will be compensated'
   },
+
+  // Status
   status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending',
-    index: true
+    type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+    allowNull: false,
+    defaultValue: 'pending',
+    comment: 'Current status of the overtime request'
   },
-  approvedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  approvedAt: Date,
-  rejectedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  rejectedAt: Date,
-  rejectionReason: {
-    type: String,
-    trim: true
-  },
-  approverNotes: {
-    type: String,
-    trim: true
-  },
-  compensated: {
-    type: Boolean,
-    default: false
-  },
-  compensatedAt: Date,
-  // Employee's department (denormalized for faster queries)
-  department: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department',
-    index: true
-  },
-  // Employee's position (denormalized for faster queries)
-  position: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Position'
-  },
-  // Email notification tracking
-  notifications: {
-    submitted: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    approved: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    rejected: {
-      sent: Boolean,
-      sentAt: Date
+
+  // Approval information
+  approvedById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'approved_by_id',
+    comment: 'User who approved the overtime',
+    references: {
+      model: User,
+      key: 'id'
     }
+  },
+
+  approvedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'approved_at',
+    comment: 'When the overtime was approved'
+  },
+
+  rejectedById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'rejected_by_id',
+    comment: 'User who rejected the overtime',
+    references: {
+      model: User,
+      key: 'id'
+    }
+  },
+
+  rejectedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'rejected_at',
+    comment: 'When the overtime was rejected'
+  },
+
+  rejectionReason: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'rejection_reason',
+    comment: 'Reason for rejection'
+  },
+
+  approverNotes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'approver_notes',
+    comment: 'Additional notes from approver'
+  },
+
+  // Compensation tracking
+  compensated: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Whether the overtime has been compensated'
+  },
+
+  compensatedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'compensated_at',
+    comment: 'When the overtime was compensated'
+  },
+
+  // Denormalized department and position for faster queries
+  departmentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'department_id',
+    comment: 'Employee department (denormalized)',
+    references: {
+      model: Department,
+      key: 'id'
+    }
+  },
+
+  positionId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'position_id',
+    comment: 'Employee position (denormalized)',
+    references: {
+      model: Position,
+      key: 'id'
+    }
+  },
+
+  // Email notification tracking (stored as JSONB)
+  notifications: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {
+      submitted: { sent: false },
+      approved: { sent: false },
+      rejected: { sent: false }
+    },
+    comment: 'Email notification tracking status'
   }
 }, {
-  timestamps: true
-});
+  tableName: 'overtime',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  comment: 'Employee overtime requests with approval and compensation tracking',
 
-// Pre-save hook to validate time range
-overtimeSchema.pre('save', function (next) {
-  if (this.isModified('startTime') || this.isModified('endTime')) {
-    const [startHour, startMin] = this.startTime.split(':').map(Number);
-    const [endHour, endMin] = this.endTime.split(':').map(Number);
-    
-    const startMinutes = startHour * 60 + startMin;
-    const endMinutes = endHour * 60 + endMin;
-    
-    if (endMinutes <= startMinutes) {
-      return next(new Error('End time must be after start time'));
+  // Named scopes for common queries
+  scopes: {
+    pending: {
+      where: { status: 'pending' }
+    },
+    approved: {
+      where: { status: 'approved' }
+    },
+    rejected: {
+      where: { status: 'rejected' }
+    },
+    compensated: {
+      where: { compensated: true }
+    },
+    uncompensated: {
+      where: { compensated: false }
     }
   }
-  next();
 });
 
-// Instance method to approve overtime
-overtimeSchema.methods.approve = async function (approverId, notes) {
+// Instance methods
+
+/**
+ * Approve overtime
+ */
+Overtime.prototype.approve = async function(approverId, notes) {
   this.status = 'approved';
-  this.approvedBy = approverId;
+  this.approvedById = approverId;
   this.approvedAt = new Date();
-  if (notes && typeof notes === 'string') this.approverNotes = notes.trim();
+  if (notes && typeof notes === 'string') {
+    this.approverNotes = notes.trim();
+  }
   return await this.save();
 };
 
-// Instance method to reject overtime
-overtimeSchema.methods.reject = async function (rejecterId, reason) {
+/**
+ * Reject overtime
+ */
+Overtime.prototype.reject = async function(rejecterId, reason) {
   this.status = 'rejected';
-  this.rejectedBy = rejecterId;
+  this.rejectedById = rejecterId;
   this.rejectedAt = new Date();
   this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
-  return await this.save({ validateBeforeSave: false });
+  return await this.save({ validate: false });
 };
 
-// Instance method to mark overtime as compensated
-overtimeSchema.methods.markCompensated = async function () {
+/**
+ * Mark overtime as compensated
+ */
+Overtime.prototype.markCompensated = async function() {
   this.compensated = true;
   this.compensatedAt = new Date();
   return await this.save();
 };
 
-// Static method to get employee overtime with full details
-overtimeSchema.statics.getOvertimeByEmployee = function (employeeId, filters = {}) {
-  const query = { employee: employeeId, ...filters };
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('approvedBy rejectedBy', 'username employeeId personalInfo')
-    .populate('department', 'name code')
-    .populate('position', 'title')
-    .sort({ date: -1 });
+// Static methods
+
+/**
+ * Get overtime by employee with full details
+ */
+Overtime.getOvertimeByEmployee = async function(employeeId, filters = {}) {
+  const where = { employeeId, ...filters };
+  
+  return await Overtime.findAll({
+    where,
+    include: [
+      {
+        association: 'employee',
+        attributes: ['firstName', 'lastName', 'email', 'employeeId'],
+        include: [
+          { association: 'department', attributes: ['name', 'code'] },
+          { association: 'position', attributes: ['title'] }
+        ]
+      },
+      { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+      { association: 'rejectedBy', attributes: ['firstName', 'lastName', 'email'] },
+      { association: 'department', attributes: ['name', 'code'] },
+      { association: 'position', attributes: ['title'] }
+    ],
+    order: [['date', 'DESC']]
+  });
 };
 
-// Static method to get pending overtime for approval
-overtimeSchema.statics.getPendingOvertime = function (departmentId = null) {
-  const query = {
-    status: 'pending'
-  };
-
-  // Filter by department if provided
+/**
+ * Get pending overtime for approval
+ */
+Overtime.getPendingOvertime = async function(departmentId = null) {
+  const where = { status: 'pending' };
+  
   if (departmentId) {
-    query.department = departmentId;
+    where.departmentId = departmentId;
   }
 
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('department', 'name code')
-    .sort({ createdAt: 1 });
+  return await Overtime.findAll({
+    where,
+    include: [
+      {
+        association: 'employee',
+        attributes: ['firstName', 'lastName', 'email', 'employeeId'],
+        include: [
+          { association: 'department', attributes: ['name', 'code'] },
+          { association: 'position', attributes: ['title'] }
+        ]
+      },
+      { association: 'department', attributes: ['name', 'code'] }
+    ],
+    order: [['createdAt', 'ASC']]
+  });
 };
 
-// Static method to get overtime by department
-overtimeSchema.statics.getOvertimeByDepartment = function (departmentId, filters = {}) {
-  const query = { department: departmentId, ...filters };
-
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile position employeeId email',
-      populate: { path: 'position', select: 'title code' }
-    })
-    .populate('approvedBy rejectedBy', 'username employeeId personalInfo')
-    .sort({ date: -1 });
-};
-
-// Static method to get overtime by date range
-overtimeSchema.statics.getOvertimeByDateRange = function (employeeId, startDate, endDate) {
-  const query = {
-    employee: employeeId,
+/**
+ * Get overtime by date range
+ */
+Overtime.getOvertimeByDateRange = async function(employeeId, startDate, endDate) {
+  const where = {
+    employeeId,
     date: {
-      $gte: startDate,
-      $lte: endDate
+      [mainAppDb.Sequelize.Op.gte]: startDate,
+      [mainAppDb.Sequelize.Op.lte]: endDate
     }
   };
 
-  return this.find(query)
-    .populate('approvedBy rejectedBy', 'username employeeId personalInfo')
-    .sort({ date: 1 });
+  return await Overtime.findAll({
+    where,
+    include: [
+      { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+      { association: 'rejectedBy', attributes: ['firstName', 'lastName', 'email'] }
+    ],
+    order: [['date', 'ASC']]
+  });
 };
 
-// Static method to get monthly statistics
-overtimeSchema.statics.getMonthlyStats = async function (employeeId, year, month) {
-  const monthStart = new Date(year, month - 1, 1);
-  const monthEnd = new Date(year, month, 0, 23, 59, 59);
-
-  const stats = await this.aggregate([
-    {
-      $match: {
-        employee: new mongoose.Types.ObjectId(employeeId),
-        date: { $gte: monthStart, $lte: monthEnd }
-      }
-    },
-    {
-      $group: {
-        _id: {
-          compensationType: '$compensationType',
-          status: '$status'
-        },
-        count: { $sum: 1 },
-        totalHours: { $sum: '$duration' }
-      }
-    }
-  ]);
-
-  return stats;
+// Associations
+Overtime.associate = function(models) {
+  Overtime.belongsTo(User, { 
+    foreignKey: 'employeeId', 
+    as: 'employee',
+    onDelete: 'CASCADE'
+  });
+  Overtime.belongsTo(User, { 
+    foreignKey: 'approvedById', 
+    as: 'approvedBy',
+    onDelete: 'SET NULL'
+  });
+  Overtime.belongsTo(User, { 
+    foreignKey: 'rejectedById', 
+    as: 'rejectedBy',
+    onDelete: 'SET NULL'
+  });
+  Overtime.belongsTo(Department, { 
+    foreignKey: 'departmentId', 
+    as: 'department',
+    onDelete: 'SET NULL'
+  });
+  Overtime.belongsTo(Position, { 
+    foreignKey: 'positionId', 
+    as: 'position',
+    onDelete: 'SET NULL'
+  });
 };
 
-// Static method to get total uncompensated hours
-overtimeSchema.statics.getTotalUncompensatedHours = async function (employeeId) {
-  const result = await this.aggregate([
-    {
-      $match: {
-        employee: new mongoose.Types.ObjectId(employeeId),
-        status: 'approved',
-        compensated: false
-      }
-    },
-    {
-      $group: {
-        _id: '$compensationType',
-        totalHours: { $sum: '$duration' },
-        count: { $sum: 1 }
-      }
-    }
-  ]);
-
-  return result;
-};
-
-// Compound indexes for better performance
-overtimeSchema.index({ tenantId: 1, employee: 1, date: 1 });
-overtimeSchema.index({ tenantId: 1, employee: 1, status: 1 });
-overtimeSchema.index({ tenantId: 1, department: 1, status: 1 });
-overtimeSchema.index({ tenantId: 1, date: 1, status: 1 });
-overtimeSchema.index({ tenantId: 1, compensationType: 1, compensated: 1 });
-
-export default mongoose.model('Overtime', overtimeSchema);
+export default Overtime;
