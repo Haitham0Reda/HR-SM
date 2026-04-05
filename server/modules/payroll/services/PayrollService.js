@@ -1,4 +1,5 @@
 import PayrollRepository from '../../../repositories/modules/PayrollRepository.js';
+import { Op } from 'sequelize';
 
 /**
  * Payroll Service - Business logic layer for payroll operations
@@ -15,14 +16,14 @@ class PayrollService {
   async getAllPayrolls(tenantId, options = {}) {
     const filter = { tenantId };
     const queryOptions = {
-      populate: [
-        { path: 'employee', select: 'name email role firstName lastName employeeId' }
+      include: [
+        { association: 'employee', attributes: ['name', 'email', 'role', 'firstName', 'lastName', 'employeeId'] }
       ],
-      sort: { period: -1, createdAt: -1 },
+      order: [['period', 'DESC'], ['createdAt', 'DESC']],
       ...options
     };
 
-    return await this.payrollRepository.find(filter, queryOptions);
+    return await this.payrollRepository.findAll(filter, queryOptions);
   }
 
   /**
@@ -37,9 +38,9 @@ class PayrollService {
     const payroll = await this.payrollRepository.create(dataToCreate);
     
     // Return populated payroll
-    return await this.payrollRepository.findById(payroll._id, {
-      populate: [
-        { path: 'employee', select: 'name email role firstName lastName employeeId' }
+    return await this.payrollRepository.findById(payroll.id, {
+      include: [
+        { association: 'employee', attributes: ['name', 'email', 'role', 'firstName', 'lastName', 'employeeId'] }
       ]
     });
   }
@@ -49,10 +50,10 @@ class PayrollService {
    */
   async getPayrollById(id, tenantId) {
     const payroll = await this.payrollRepository.findOne(
-      { _id: id, tenantId },
+      { id, tenantId },
       {
-        populate: [
-          { path: 'employee', select: 'name email role firstName lastName employeeId' }
+        include: [
+          { association: 'employee', attributes: ['name', 'email', 'role', 'firstName', 'lastName', 'employeeId'] }
         ]
       }
     );
@@ -68,7 +69,7 @@ class PayrollService {
    * Update payroll record
    */
   async updatePayroll(id, updateData, tenantId) {
-    const payroll = await this.payrollRepository.findOne({ _id: id, tenantId });
+    const payroll = await this.payrollRepository.findOne({ id, tenantId });
     
     if (!payroll) {
       throw new Error('Payroll not found');
@@ -78,8 +79,8 @@ class PayrollService {
     
     // Return populated payroll
     return await this.payrollRepository.findById(id, {
-      populate: [
-        { path: 'employee', select: 'name email role firstName lastName employeeId' }
+      include: [
+        { association: 'employee', attributes: ['name', 'email', 'role', 'firstName', 'lastName', 'employeeId'] }
       ]
     });
   }
@@ -88,7 +89,7 @@ class PayrollService {
    * Delete payroll record
    */
   async deletePayroll(id, tenantId) {
-    const payroll = await this.payrollRepository.findOne({ _id: id, tenantId });
+    const payroll = await this.payrollRepository.findOne({ id, tenantId });
     
     if (!payroll) {
       throw new Error('Payroll not found');
