@@ -1,113 +1,218 @@
-import mongoose from 'mongoose';
-import { getOptimizedConnectionOptions, optimizeDatabase } from './databaseOptimization.js';
+/**
+ * PostgreSQL Database Configuration
+ * 
+ * Manages connections to two separate PostgreSQL databases:
+ * 1. License Server Database (hrsm-licenses) - stores license information and tenant metadata
+ * 2. Main Application Database (hrsm_platform) - stores HR business data for all tenants
+ */
 
-export const connectDatabase = async () => {
+import { Sequelize } from 'sequelize';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+// License Server Database Connection
+export const licenseServerDb = new Sequelize(process.env.LICENSE_DATABASE_URL, {
+    dialect: 'postgres',
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    pool: {
+        max: parseInt(process.env.PG_MAX_POOL_SIZE) || 10,
+        min: parseInt(process.env.PG_MIN_POOL_SIZE) || 2,
+        acquire: parseInt(process.env.PG_CONNECTION_TIMEOUT) || 30000,
+        idle: parseInt(process.env.PG_IDLE_TIMEOUT) || 10000
+    },
+    timezone: '+00:00', // UTC
+    dialectOptions: {
+        ssl: process.env.NODE_ENV === 'production' ? {
+            require: true,
+            rejectUnauthorized: false
+        } : false
+    },
+    define: {
+        timestamps: true,
+        underscored: true,
+        freezeTableName: true
+    }
+});
+
+// Main Application Database Connection
+export const mainAppDb = new Sequelize(process.env.MAIN_DATABASE_URL, {
+    dialect: 'postgres',
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    pool: {
+        max: parseInt(process.env.PG_MAX_POOL_SIZE) || 20,
+        min: parseInt(process.env.PG_MIN_POOL_SIZE) || 5,
+        acquire: parseInt(process.env.PG_CONNECTION_TIMEOUT) || 30000,
+        idle: parseInt(process.env.PG_IDLE_TIMEOUT) || 10000
+    },
+    timezone: '+00:00', // UTC
+    dialectOptions: {
+        ssl: process.env.NODE_ENV === 'production' ? {
+            require: true,
+            rejectUnauthorized: false
+        } : false
+    },
+    define: {
+        timestamps: true,
+        underscored: true,
+        freezeTableName: true
+    }
+});
+
+/**
+ * Connect to both PostgreSQL databases
+ * @returns {Promise<void>}
+ */
+export const connectDatabases = async () => {
     try {
-        // Use optimized connection options for enhanced performance
-        const options = getOptimizedConnectionOptions();
+        console.log('Connecting to PostgreSQL databases...');
 
-        const conn = await mongoose.connect(process.env.MONGODB_URI, options);
+        // Authenticate License Server Database
+        await licenseServerDb.authenticate();
+        console.log('✓ License Server PostgreSQL connected');
+        console.log(`  Host: ${licenseServerDb.config.host}`);
+        console.log(`  Database: ${licenseServerDb.config.database}`);
+        console.log(`  Pool: max=${licenseServerDb.config.pool.max}, min=${licenseServerDb.config.pool.min}`);
 
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
-        console.log(`Database: ${conn.connection.name}`);
-        console.log(`Connection state: ${getConnectionState(conn.connection.readyState)}`);
+        // Authenticate Main Application Database
+        await mainAppDb.authenticate();
+        console.log('✓ Main Application PostgreSQL connected');
+        console.log(`  Host: ${mainAppDb.config.host}`);
+        console.log(`  Database: ${mainAppDb.config.database}`);
+        console.log(`  Pool: max=${mainAppDb.config.pool.max}, min=${mainAppDb.config.pool.min}`);
 
-        // Enhanced connection event handlers
-        mongoose.connection.on('error', (err) => {
-            console.error('MongoDB connection error:', err.message);
-        });
-
-        mongoose.connection.on('disconnected', () => {
-            console.warn('MongoDB disconnected. Attempting to reconnect...');
-        });
-
-        mongoose.connection.on('reconnected', () => {
-            console.log('MongoDB reconnected successfully');
-        });
-
-        mongoose.connection.on('connecting', () => {
-            console.log('MongoDB connecting...');
-        });
-
-        mongoose.connection.on('connected', () => {
-            console.log('MongoDB connected');
-        });
+        // Set up connection event handlers
+        setupConnectionHandlers();
 
         // Graceful shutdown
-        process.on('SIGINT', async () => {
-            try {
-                await mongoose.connection.close();
-                console.log('MongoDB connection closed through app termination');
-                process.exit(0);
-            } catch (err) {
-                console.error('Error closing MongoDB connection:', err);
-                process.exit(1);
-            }
-        });
+        setupGracefulShutdown();
 
-        // Run database optimization after successful connection
-        if (process.env.NODE_ENV !== 'test') {
-            setTimeout(async () => {
-                try {
-                    console.log('🔧 Running database optimization...');
-                    const result = await optimizeDatabase();
-                    console.log(`✅ Database optimization completed: ${result.totalIndexes} indexes created`);
-                } catch (error) {
-                    console.error('⚠️  Database optimization failed:', error.message);
-                }
-            }, 5000); // Wait 5 seconds after connection to run optimization
-        }
-
-        return conn;
+        console.log('✓ All PostgreSQL databases connected successfully');
     } catch (error) {
-        console.error('Error connecting to MongoDB:', error.message);
-
-        // Retry connection after delay
-        console.log('Retrying connection in 5 seconds...');
-        setTimeout(() => {
-            connectDatabase();
-        }, 5000);
+        console.error('✗ Database connection failed:', error.message);
+        console.error('  Please check your database configuration and ensure PostgreSQL is running');
+        throw error;
     }
 };
 
-// Helper function to get readable connection state
-const getConnectionState = (state) => {
-    const states = {
-        0: 'disconnected',
-        1: 'connected',
-        2: 'connecting',
-        3: 'disconnecting'
-    };
-    return states[state] || 'unknown';
+/**
+ * Set up connection event handlers for monitoring
+ */
+const setupConnectionHandlers = () => {
+    // License Server Database events
+    licenseServerDb.connectionManager.pool.on('acquire', () => {
+        if (process.env.LOG_LEVEL === 'debug') {
+            console.log('License Server DB: Connection acquired from pool');
+        }
+    });
+
+    licenseServerDb.connectionManager.pool.on('release', () => {
+        if (process.env.LOG_LEVEL === 'debug') {
+            console.log('License Server DB: Connection released back to pool');
+        }
+    });
+
+    // Main Application Database events
+    mainAppDb.connectionManager.pool.on('acquire', () => {
+        if (process.env.LOG_LEVEL === 'debug') {
+            console.log('Main App DB: Connection acquired from pool');
+        }
+    });
+
+    mainAppDb.connectionManager.pool.on('release', () => {
+        if (process.env.LOG_LEVEL === 'debug') {
+            console.log('Main App DB: Connection released back to pool');
+        }
+    });
 };
 
-// Function to check database health
-export const checkDatabaseHealth = async () => {
-    try {
-        const state = mongoose.connection.readyState;
-
-        if (state === 1) {
-            // Test the connection with a ping
-            await mongoose.connection.db.admin().ping();
-            return {
-                status: 'healthy',
-                state: getConnectionState(state),
-                host: mongoose.connection.host,
-                database: mongoose.connection.name
-            };
-        } else {
-            return {
-                status: 'unhealthy',
-                state: getConnectionState(state),
-                message: 'Database not connected'
-            };
+/**
+ * Set up graceful shutdown handlers
+ */
+const setupGracefulShutdown = () => {
+    const shutdown = async (signal) => {
+        console.log(`\n${signal} received. Closing database connections...`);
+        
+        try {
+            await licenseServerDb.close();
+            console.log('✓ License Server database connection closed');
+            
+            await mainAppDb.close();
+            console.log('✓ Main Application database connection closed');
+            
+            console.log('✓ All database connections closed successfully');
+            process.exit(0);
+        } catch (err) {
+            console.error('✗ Error closing database connections:', err);
+            process.exit(1);
         }
+    };
+
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+};
+
+/**
+ * Check health of both databases
+ * @returns {Promise<Object>}
+ */
+export const checkDatabaseHealth = async () => {
+    const health = {
+        licenseServer: { status: 'unknown' },
+        mainApp: { status: 'unknown' },
+        overall: 'unhealthy'
+    };
+
+    try {
+        // Check License Server Database
+        await licenseServerDb.authenticate();
+        health.licenseServer = {
+            status: 'healthy',
+            host: licenseServerDb.config.host,
+            database: licenseServerDb.config.database,
+            poolSize: licenseServerDb.connectionManager.pool.size,
+            poolAvailable: licenseServerDb.connectionManager.pool.available
+        };
     } catch (error) {
-        return {
+        health.licenseServer = {
             status: 'unhealthy',
             error: error.message
         };
     }
+
+    try {
+        // Check Main Application Database
+        await mainAppDb.authenticate();
+        health.mainApp = {
+            status: 'healthy',
+            host: mainAppDb.config.host,
+            database: mainAppDb.config.database,
+            poolSize: mainAppDb.connectionManager.pool.size,
+            poolAvailable: mainAppDb.connectionManager.pool.available
+        };
+    } catch (error) {
+        health.mainApp = {
+            status: 'unhealthy',
+            error: error.message
+        };
+    }
+
+    // Overall health is healthy only if both databases are healthy
+    health.overall = (health.licenseServer.status === 'healthy' && health.mainApp.status === 'healthy') 
+        ? 'healthy' 
+        : 'unhealthy';
+
+    return health;
 };
 
-export default connectDatabase;
+/**
+ * Legacy function for backward compatibility
+ * @deprecated Use connectDatabases() instead
+ */
+export const connectDatabase = async () => {
+    console.warn('Warning: connectDatabase() is deprecated. Use connectDatabases() instead.');
+    return await connectDatabases();
+};
+
+export default connectDatabases;
