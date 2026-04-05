@@ -242,8 +242,10 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
 
   - [ ] 10.5 Update remaining services
     - Core services completed (UserService, AttendanceService, SurveyService, PayrollService)
-    - Remaining ~21 services need similar updates
+    - Additional services completed (EventService, AnnouncementService)
+    - Remaining ~18 services need similar updates
     - Pattern established for easy migration
+    - Progress: 6/25 services complete (24%)
     - _Requirements: 8.1, 8.2, 8.5_
 
 - [ ] 11. Implement transaction support
