@@ -115,6 +115,8 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - Convert each to Sequelize following the same pattern
     - Ensure all have tenant_id where appropriate
     - Completed high-priority models: Position, Role, AttendanceDevice
+    - Additional models converted: Vacation, Request ⭐ NEW
+    - Total models complete: 16/32 (50%)
     - _Requirements: 4.1-4.10_
 
 - [x] 6. Checkpoint - Verify model definitions
