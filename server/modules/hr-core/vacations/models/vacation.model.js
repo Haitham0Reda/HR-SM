@@ -1,131 +1,348 @@
-// models/Vacation.js
-import mongoose from 'mongoose';
+/**
+ * Vacation Model - PostgreSQL (Sequelize)
+ * 
+ * This model represents the vacations table in the Main Application Database (hrsm_platform).
+ * It manages employee vacation requests with approval workflows and balance tracking.
+ * Supports multi-tenancy and complex date calculations excluding weekends.
+ * 
+ * @module models/Vacation
+ */
 
-const vacationSchema = new mongoose.Schema({
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+import User from '../../users/models/user.model.js';
+import Department from '../../users/models/department.model.js';
+import Position from '../../users/models/position.model.js';
+
+const Vacation = mainAppDb.define('Vacation', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the vacation request (UUID)'
+  },
+
+  // Tenant ID for multi-tenancy
   tenantId: {
-    type: String,
-    required: true,
-    index: true
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'tenant_id',
+    comment: 'Tenant/Company identifier'
   },
-  employee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
+
+  // Employee reference
+  employeeId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'employee_id',
+    comment: 'Employee who requested the vacation',
+    references: {
+      model: User,
+      key: 'id'
+    }
   },
+
+  // Vacation type
   vacationType: {
-    type: String,
-    enum: ['annual', 'casual', 'sick', 'unpaid'],
-    required: true,
-    index: true
+    type: DataTypes.ENUM('annual', 'casual', 'sick', 'unpaid'),
+    allowNull: false,
+    field: 'vacation_type',
+    comment: 'Type of vacation'
   },
+
+  // Date range
   startDate: {
-    type: Date,
-    required: true
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    field: 'start_date',
+    comment: 'Vacation start date'
   },
+
   endDate: {
-    type: Date,
-    required: true,
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    field: 'end_date',
+    comment: 'Vacation end date',
     validate: {
-      validator: function (v) {
-        return !v || v >= this.startDate;
-      },
-      message: 'End date must be after or equal to start date'
+      isAfterStartDate(value) {
+        if (value && this.startDate && new Date(value) < new Date(this.startDate)) {
+          throw new Error('End date must be after or equal to start date');
+        }
+      }
     }
   },
+
+  // Duration in working days (calculated automatically, excluding weekends)
   duration: {
-    type: Number, // in days (calculated automatically, excluding weekends)
-    required: false
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'Duration in working days (excluding Friday and Saturday)'
   },
+
+  // Reason for vacation
   reason: {
-    type: String,
-    trim: true,
-    maxlength: 500
+    type: DataTypes.TEXT,
+    allowNull: true,
+    validate: {
+      len: [0, 500]
+    },
+    comment: 'Reason for the vacation request'
   },
+
+  // Status
   status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected', 'cancelled'],
-    default: 'pending',
-    index: true
+    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'),
+    allowNull: false,
+    defaultValue: 'pending',
+    comment: 'Current status of the vacation request'
   },
-  approvedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+
+  // Approval information
+  approvedById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'approved_by_id',
+    comment: 'User who approved the vacation',
+    references: {
+      model: User,
+      key: 'id'
+    }
   },
-  approvedAt: Date,
-  rejectedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+
+  approvedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'approved_at',
+    comment: 'When the vacation was approved'
   },
-  rejectedAt: Date,
+
+  rejectedById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'rejected_by_id',
+    comment: 'User who rejected the vacation',
+    references: {
+      model: User,
+      key: 'id'
+    }
+  },
+
+  rejectedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'rejected_at',
+    comment: 'When the vacation was rejected'
+  },
+
   rejectionReason: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'rejection_reason',
+    comment: 'Reason for rejection'
   },
-  cancelledBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+
+  cancelledById: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'cancelled_by_id',
+    comment: 'User who cancelled the vacation',
+    references: {
+      model: User,
+      key: 'id'
+    }
   },
-  cancelledAt: Date,
+
+  cancelledAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'cancelled_at',
+    comment: 'When the vacation was cancelled'
+  },
+
   cancellationReason: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'cancellation_reason',
+    comment: 'Reason for cancellation'
   },
+
   approverNotes: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'approver_notes',
+    comment: 'Additional notes from approver'
   },
-  vacationBalance: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'VacationBalance'
+
+  // Vacation balance reference
+  vacationBalanceId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'vacation_balance_id',
+    comment: 'Reference to vacation balance record'
   },
-  // Employee's department (denormalized for faster queries)
-  department: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department',
-    index: true
-  },
-  // Employee's position (denormalized for faster queries)
-  position: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Position'
-  },
-  attachments: [{
-    filename: {
-      type: String,
-      trim: true
-    },
-    url: String,
-    uploadedAt: {
-      type: Date,
-      default: Date.now
+
+  // Denormalized department and position for faster queries
+  departmentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'department_id',
+    comment: 'Employee department (denormalized)',
+    references: {
+      model: Department,
+      key: 'id'
     }
-  }],
-  // Email notification tracking
+  },
+
+  positionId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'position_id',
+    comment: 'Employee position (denormalized)',
+    references: {
+      model: Position,
+      key: 'id'
+    }
+  },
+
+  // Attachments (stored as JSONB)
+  attachments: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'Array of attachment objects with filename, url, uploadedAt'
+  },
+
+  // Email notification tracking (stored as JSONB)
   notifications: {
-    submitted: {
-      sent: Boolean,
-      sentAt: Date
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {
+      submitted: { sent: false },
+      approved: { sent: false },
+      rejected: { sent: false },
+      reminder: { sent: false }
     },
-    approved: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    rejected: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    reminder: {
-      sent: Boolean,
-      sentAt: Date
-    }
+    comment: 'Email notification tracking status'
   }
 }, {
-  timestamps: true
+  tableName: 'vacations',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  comment: 'Employee vacation requests with approval workflows',
+  
+  // Default scope to exclude sensitive data
+  defaultScope: {
+    attributes: { exclude: [] }
+  },
+
+  // Named scopes for common queries
+  scopes: {
+    pending: {
+      where: { status: 'pending' }
+    },
+    approved: {
+      where: { status: 'approved' }
+    },
+    rejected: {
+      where: { status: 'rejected' }
+    },
+    cancelled: {
+      where: { status: 'cancelled' }
+    },
+    active: function() {
+      const now = new Date();
+      return {
+        where: {
+          status: 'approved',
+          startDate: { [mainAppDb.Sequelize.Op.lte]: now },
+          endDate: { [mainAppDb.Sequelize.Op.gte]: now }
+        }
+      };
+    },
+    upcoming: function() {
+      const now = new Date();
+      return {
+        where: {
+          status: 'approved',
+          startDate: { [mainAppDb.Sequelize.Op.gt]: now }
+        }
+      };
+    }
+  },
+
+  // Hooks
+  hooks: {
+    beforeValidate: async (vacation) => {
+      // Automatically calculate duration excluding weekends
+      if (vacation.startDate && vacation.endDate) {
+        vacation.duration = Vacation.calculateWorkingDays(vacation.startDate, vacation.endDate);
+      }
+    }
+  }
 });
 
-// Static method to calculate working days excluding weekends (Friday and Saturday)
-vacationSchema.statics.calculateWorkingDays = function (startDate, endDate) {
+// Instance methods
+
+/**
+ * Check if vacation is currently active
+ */
+Vacation.prototype.getIsActive = function() {
+  const now = new Date();
+  return this.status === 'approved' &&
+    new Date(this.startDate) <= now &&
+    new Date(this.endDate) >= now;
+};
+
+/**
+ * Check if vacation is upcoming
+ */
+Vacation.prototype.getIsUpcoming = function() {
+  return this.status === 'approved' && new Date(this.startDate) > new Date();
+};
+
+/**
+ * Approve vacation
+ */
+Vacation.prototype.approve = async function(approverId, notes) {
+  this.status = 'approved';
+  this.approvedById = approverId;
+  this.approvedAt = new Date();
+  if (notes && typeof notes === 'string') {
+    this.approverNotes = notes.trim();
+  }
+  return await this.save();
+};
+
+/**
+ * Reject vacation
+ */
+Vacation.prototype.reject = async function(rejecterId, reason) {
+  this.status = 'rejected';
+  this.rejectedById = rejecterId;
+  this.rejectedAt = new Date();
+  this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
+  return await this.save({ validate: false });
+};
+
+/**
+ * Cancel vacation
+ */
+Vacation.prototype.cancel = async function(userId, reason) {
+  this.status = 'cancelled';
+  this.cancelledById = userId;
+  this.cancelledAt = new Date();
+  this.cancellationReason = reason && typeof reason === 'string' ? reason.trim() : '';
+  return await this.save();
+};
+
+// Static methods
+
+/**
+ * Calculate working days excluding weekends (Friday and Saturday)
+ */
+Vacation.calculateWorkingDays = function(startDate, endDate) {
   const start = new Date(startDate);
   const end = new Date(endDate);
 
@@ -148,193 +365,146 @@ vacationSchema.statics.calculateWorkingDays = function (startDate, endDate) {
   return workingDays;
 };
 
-// Pre-validate hook to automatically calculate duration excluding weekends
-// This runs before validation, so duration will be set before the required check
-vacationSchema.pre('validate', function (next) {
-  if (this.startDate && this.endDate) {
-    this.duration = this.constructor.calculateWorkingDays(this.startDate, this.endDate);
-  }
-  next();
-});
-
-// Virtual to check if vacation is active
-vacationSchema.virtual('isActive').get(function () {
-  const now = new Date();
-  return this.status === 'approved' &&
-    this.startDate <= now &&
-    this.endDate >= now;
-});
-
-// Virtual to check if vacation is upcoming
-vacationSchema.virtual('isUpcoming').get(function () {
-  return this.status === 'approved' && this.startDate > new Date();
-});
-
-// Instance method to approve vacation
-vacationSchema.methods.approve = async function (approverId, notes) {
-  this.status = 'approved';
-  this.approvedBy = approverId;
-  this.approvedAt = new Date();
-  if (notes && typeof notes === 'string') this.approverNotes = notes.trim();
-  return await this.save();
-};
-
-// Instance method to reject vacation
-vacationSchema.methods.reject = async function (rejecterId, reason) {
-  this.status = 'rejected';
-  this.rejectedBy = rejecterId;
-  this.rejectedAt = new Date();
-  this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
-  return await this.save({ validateBeforeSave: false });
-};
-
-// Instance method to cancel vacation
-vacationSchema.methods.cancel = async function (userId, reason) {
-  this.status = 'cancelled';
-  this.cancelledBy = userId;
-  this.cancelledAt = new Date();
-  this.cancellationReason = reason && typeof reason === 'string' ? reason.trim() : '';
-  return await this.save();
-};
-
-// Static method to get employee vacations with full details
-vacationSchema.statics.getVacationsByEmployee = function (employeeId, filters = {}) {
-  const query = { employee: employeeId, ...filters };
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('approvedBy rejectedBy cancelledBy', 'username employeeId personalInfo')
-    .populate('department', 'name code')
-    .populate('position', 'title')
-    .populate('vacationBalance')
-    .sort({ startDate: -1 });
-};
-
-// Static method to get pending vacations for approval
-vacationSchema.statics.getPendingVacations = function (departmentId = null) {
-  const query = {
-    status: 'pending'
-  };
-
-  // Filter by department if provided
-  if (departmentId) {
-    query.department = departmentId;
-  }
-
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('department', 'name code')
-    .populate('vacationBalance')
-    .sort({ createdAt: 1 });
-};
-
-// Static method to get active vacations (currently ongoing)
-vacationSchema.statics.getActiveVacations = function (departmentId = null) {
-  const now = new Date();
-  const query = {
-    status: 'approved',
-    startDate: { $lte: now },
-    endDate: { $gte: now }
-  };
-
-  if (departmentId) {
-    query.department = departmentId;
-  }
-
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId',
-      populate: [
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title' }
-      ]
-    })
-    .sort({ endDate: 1 });
-};
-
-// Static method to get vacations by department
-vacationSchema.statics.getVacationsByDepartment = function (departmentId, filters = {}) {
-  const query = { department: departmentId, ...filters };
-
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile position employeeId email',
-      populate: { path: 'position', select: 'title code' }
-    })
-    .populate('approvedBy rejectedBy cancelledBy', 'username employeeId personalInfo')
-    .populate('vacationBalance')
-    .sort({ startDate: -1 });
-};
-
-// Static method to check for overlapping vacations
-vacationSchema.statics.hasOverlappingVacation = async function (employeeId, startDate, endDate, excludeVacationId = null) {
-  const query = {
-    employee: employeeId,
-    status: { $in: ['pending', 'approved'] },
-    $or: [
+/**
+ * Get vacations by employee with full details
+ */
+Vacation.getVacationsByEmployee = async function(employeeId, filters = {}) {
+  const where = { employeeId, ...filters };
+  
+  return await Vacation.findAll({
+    where,
+    include: [
       {
-        startDate: { $lte: endDate },
-        endDate: { $gte: startDate }
+        association: 'employee',
+        attributes: ['firstName', 'lastName', 'email', 'employeeId'],
+        include: [
+          { association: 'department', attributes: ['name', 'code'] },
+          { association: 'position', attributes: ['title'] }
+        ]
+      },
+      { association: 'approvedBy', attributes: ['firstName', 'lastName', 'email'] },
+      { association: 'rejectedBy', attributes: ['firstName', 'lastName', 'email'] },
+      { association: 'cancelledBy', attributes: ['firstName', 'lastName', 'email'] },
+      { association: 'department', attributes: ['name', 'code'] },
+      { association: 'position', attributes: ['title'] }
+    ],
+    order: [['startDate', 'DESC']]
+  });
+};
+
+/**
+ * Get pending vacations for approval
+ */
+Vacation.getPendingVacations = async function(departmentId = null) {
+  const where = { status: 'pending' };
+  
+  if (departmentId) {
+    where.departmentId = departmentId;
+  }
+
+  return await Vacation.findAll({
+    where,
+    include: [
+      {
+        association: 'employee',
+        attributes: ['firstName', 'lastName', 'email', 'employeeId'],
+        include: [
+          { association: 'department', attributes: ['name', 'code'] },
+          { association: 'position', attributes: ['title'] }
+        ]
+      },
+      { association: 'department', attributes: ['name', 'code'] }
+    ],
+    order: [['createdAt', 'ASC']]
+  });
+};
+
+/**
+ * Get active vacations (currently ongoing)
+ */
+Vacation.getActiveVacations = async function(departmentId = null) {
+  const now = new Date();
+  const where = {
+    status: 'approved',
+    startDate: { [mainAppDb.Sequelize.Op.lte]: now },
+    endDate: { [mainAppDb.Sequelize.Op.gte]: now }
+  };
+
+  if (departmentId) {
+    where.departmentId = departmentId;
+  }
+
+  return await Vacation.findAll({
+    where,
+    include: [
+      {
+        association: 'employee',
+        attributes: ['firstName', 'lastName', 'email', 'employeeId'],
+        include: [
+          { association: 'department', attributes: ['name', 'code'] },
+          { association: 'position', attributes: ['title'] }
+        ]
+      }
+    ],
+    order: [['endDate', 'ASC']]
+  });
+};
+
+/**
+ * Check for overlapping vacations
+ */
+Vacation.hasOverlappingVacation = async function(employeeId, startDate, endDate, excludeVacationId = null) {
+  const where = {
+    employeeId,
+    status: { [mainAppDb.Sequelize.Op.in]: ['pending', 'approved'] },
+    [mainAppDb.Sequelize.Op.or]: [
+      {
+        startDate: { [mainAppDb.Sequelize.Op.lte]: endDate },
+        endDate: { [mainAppDb.Sequelize.Op.gte]: startDate }
       }
     ]
   };
 
   if (excludeVacationId) {
-    query._id = { $ne: excludeVacationId };
+    where.id = { [mainAppDb.Sequelize.Op.ne]: excludeVacationId };
   }
 
-  const overlapping = await this.findOne(query);
+  const overlapping = await Vacation.findOne({ where });
   return !!overlapping;
 };
 
-// Static method to get vacation statistics for a department
-vacationSchema.statics.getVacationStats = async function (departmentId, year = new Date().getFullYear()) {
-  const yearStart = new Date(year, 0, 1);
-  const yearEnd = new Date(year, 11, 31, 23, 59, 59);
-
-  const stats = await this.aggregate([
-    {
-      $match: {
-        department: new mongoose.Types.ObjectId(departmentId),
-        startDate: { $gte: yearStart, $lte: yearEnd }
-      }
-    },
-    {
-      $group: {
-        _id: {
-          vacationType: '$vacationType',
-          status: '$status'
-        },
-        count: { $sum: 1 },
-        totalDays: { $sum: '$duration' }
-      }
-    }
-  ]);
-
-  return stats;
+// Associations
+Vacation.associate = function(models) {
+  Vacation.belongsTo(User, { 
+    foreignKey: 'employeeId', 
+    as: 'employee',
+    onDelete: 'CASCADE'
+  });
+  Vacation.belongsTo(User, { 
+    foreignKey: 'approvedById', 
+    as: 'approvedBy',
+    onDelete: 'SET NULL'
+  });
+  Vacation.belongsTo(User, { 
+    foreignKey: 'rejectedById', 
+    as: 'rejectedBy',
+    onDelete: 'SET NULL'
+  });
+  Vacation.belongsTo(User, { 
+    foreignKey: 'cancelledById', 
+    as: 'cancelledBy',
+    onDelete: 'SET NULL'
+  });
+  Vacation.belongsTo(Department, { 
+    foreignKey: 'departmentId', 
+    as: 'department',
+    onDelete: 'SET NULL'
+  });
+  Vacation.belongsTo(Position, { 
+    foreignKey: 'positionId', 
+    as: 'position',
+    onDelete: 'SET NULL'
+  });
 };
 
-// Compound indexes for better performance
-vacationSchema.index({ employee: 1, status: 1 });
-vacationSchema.index({ employee: 1, vacationType: 1 });
-vacationSchema.index({ department: 1, status: 1 });
-vacationSchema.index({ startDate: 1, endDate: 1 });
-vacationSchema.index({ vacationType: 1, status: 1 });
-vacationSchema.index({ vacationBalance: 1 });
-
-export default mongoose.model('Vacation', vacationSchema);
+export default Vacation;
