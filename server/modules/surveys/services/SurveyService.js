@@ -1,4 +1,5 @@
 import SurveyRepository from '../../../repositories/modules/SurveyRepository.js';
+import { Op } from 'sequelize';
 
 /**
  * Survey Service - Business logic layer for survey operations
@@ -14,16 +15,16 @@ class SurveyService {
      */
     async getAllSurveys(tenantId, options = {}) {
         const queryOptions = {
-            populate: [
-                { path: 'createdBy', select: 'username email firstName lastName' },
-                { path: 'assignedTo.departments', select: 'name code' }
+            include: [
+                { association: 'createdBy', attributes: ['username', 'email', 'firstName', 'lastName'] },
+                { association: 'assignedToDepartments', attributes: ['name', 'code'] }
             ],
-            select: '-responses', // Don't return responses in list view
-            sort: { createdAt: -1 },
+            attributes: { exclude: ['responses'] }, // Don't return responses in list view
+            order: [['createdAt', 'DESC']],
             ...options
         };
 
-        return await this.surveyRepository.find({ tenantId }, queryOptions);
+        return await this.surveyRepository.findAll({ tenantId }, queryOptions);
     }
 
     /**
