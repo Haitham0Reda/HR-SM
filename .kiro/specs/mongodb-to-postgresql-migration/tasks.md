@@ -132,8 +132,8 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
   - ✅ Database schema ready for migration script implementation
   - No questions arise - proceeding to repository refactoring phase.
 
-- [ ] 7. Refactor BaseRepository for Sequelize
-  - [ ] 7.1 Update CRUD methods
+- [x] 7. Refactor BaseRepository for Sequelize
+  - [x] 7.1 Update CRUD methods
     - Rewrite create method with tenant_id injection
     - Rewrite findById with tenant_id filtering
     - Rewrite findOne with tenant_id filtering
@@ -142,7 +142,7 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - Rewrite delete with tenant_id filtering
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.10_
 
-  - [ ] 7.2 Update utility methods
+  - [x] 7.2 Update utility methods
     - Rewrite count with tenant_id filtering
     - Rewrite exists with tenant_id filtering
     - Rewrite paginate with tenant_id filtering
