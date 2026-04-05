@@ -45,19 +45,19 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - Define indexes
     - _Requirements: 4.1, 4.2, 4.9, 5.1_
 
-  - [ ] 4.2 Convert Tenant model
+  - [x] 4.2 Convert Tenant model
     - Create Sequelize model for tenants table
     - Map all fields with appropriate data types
     - Add indexes on tenant_id and domain
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
-  - [ ] 4.3 Convert Subscription model
+  - [x] 4.3 Convert Subscription model
     - Create Sequelize model for subscriptions table
     - Map billing and subscription fields
     - Add foreign key to tenants
     - _Requirements: 4.1, 4.2, 4.7_
 
-  - [ ] 4.4 Convert EnabledModules model
+  - [x] 4.4 Convert EnabledModules model
     - Create Sequelize model for enabled_modules table
     - Add tenant_id and module_id columns
     - Create composite unique index
