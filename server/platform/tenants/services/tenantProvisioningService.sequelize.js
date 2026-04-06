@@ -5,6 +5,8 @@ import { ROLES } from '../../../shared/constants/modules.js';
 import crypto from 'crypto';
 import { seedInsuranceProvidersForTenant } from '../../../modules/life-insurance/utils/seedInsuranceProviders.js';
 import { Op } from 'sequelize';
+import { withTransaction } from '../../../utils/transactionWrapper.js';
+import { getMainAppDb } from '../../../config/database.js';
 
 /**
  * Tenant Provisioning Service (Sequelize)
@@ -74,125 +76,131 @@ class TenantProvisioningService {
       );
     }
 
-    // Generate unique tenant ID
-    let tenantId = this.generateTenantId(name);
-    let attempts = 0;
-    const maxAttempts = 5;
+    // Use transaction for tenant creation to ensure atomicity
+    const db = getMainAppDb();
+    
+    return await withTransaction(db, async (transaction) => {
+      // Generate unique tenant ID
+      let tenantId = this.generateTenantId(name);
+      let attempts = 0;
+      const maxAttempts = 5;
 
-    // Ensure tenant ID is unique
-    while (attempts < maxAttempts) {
-      const existing = await Tenant.findOne({ where: { tenantId } });
-      if (!existing) {
-        break;
+      // Ensure tenant ID is unique
+      while (attempts < maxAttempts) {
+        const existing = await Tenant.findOne({ 
+          where: { tenantId },
+          transaction 
+        });
+        if (!existing) {
+          break;
+        }
+        tenantId = this.generateTenantId(name);
+        attempts++;
       }
-      tenantId = this.generateTenantId(name);
-      attempts++;
-    }
 
-    if (attempts === maxAttempts) {
-      throw new AppError(
-        'Failed to generate unique tenant ID',
-        500,
-        ERROR_TYPES.SYSTEM_ERROR
-      );
-    }
-
-    // Check if domain is already taken (if provided)
-    if (domain) {
-      const existingDomain = await Tenant.findOne({ where: { domain } });
-      if (existingDomain) {
+      if (attempts === maxAttempts) {
         throw new AppError(
-          'Domain is already in use',
-          400,
-          ERROR_TYPES.DUPLICATE_DOMAIN
+          'Failed to generate unique tenant ID',
+          500,
+          ERROR_TYPES.SYSTEM_ERROR
         );
       }
-    }
 
-    // Create tenant
-    const tenant = await Tenant.create({
-      tenantId,
-      name,
-      domain,
-      deploymentMode,
-      status: 'trial',
-      contactInfo: {
-        adminEmail: adminUser.email,
-        adminName: `${adminUser.firstName} ${adminUser.lastName}`,
-        ...contactInfo
-      },
-      metadata,
-      enabledModules: [
-        {
-          moduleId: 'hr-core',
-          enabledAt: new Date(),
-          enabledBy: 'system'
+      // Check if domain is already taken (if provided)
+      if (domain) {
+        const existingDomain = await Tenant.findOne({ 
+          where: { domain },
+          transaction 
+        });
+        if (existingDomain) {
+          throw new AppError(
+            'Domain is already in use',
+            400,
+            ERROR_TYPES.DUPLICATE_DOMAIN
+          );
         }
-      ],
-      config: {
-        timezone: 'UTC',
-        locale: 'en-US',
-        dateFormat: 'YYYY-MM-DD',
-        timeFormat: '24h',
-        currency: 'USD',
-        features: {}
-      },
-      limits: {
-        maxUsers: 100,
-        maxStorage: 10737418240, // 10GB
-        apiCallsPerMonth: 100000
-      },
-      usage: {
-        userCount: 0,
-        storageUsed: 0,
-        apiCallsThisMonth: 0,
-        lastResetDate: new Date()
       }
-    });
 
-    // Create admin user for tenant
-    let createdUser = null;
-    try {
-      createdUser = await this.createAdminUser(tenantId, adminUser);
-    } catch (error) {
-      // Rollback tenant creation if admin user creation fails
-      await tenant.destroy();
-      throw error;
-    }
+      // Create tenant
+      const tenant = await Tenant.create({
+        tenantId,
+        name,
+        domain,
+        deploymentMode,
+        status: 'trial',
+        contactInfo: {
+          adminEmail: adminUser.email,
+          adminName: `${adminUser.firstName} ${adminUser.lastName}`,
+          ...contactInfo
+        },
+        metadata,
+        enabledModules: [
+          {
+            moduleId: 'hr-core',
+            enabledAt: new Date(),
+            enabledBy: 'system'
+          }
+        ],
+        config: {
+          timezone: 'UTC',
+          locale: 'en-US',
+          dateFormat: 'YYYY-MM-DD',
+          timeFormat: '24h',
+          currency: 'USD',
+          features: {}
+        },
+        limits: {
+          maxUsers: 100,
+          maxStorage: 10737418240, // 10GB
+          apiCallsPerMonth: 100000
+        },
+        usage: {
+          userCount: 0,
+          storageUsed: 0,
+          apiCallsThisMonth: 0,
+          lastResetDate: new Date()
+        }
+      }, { transaction });
 
-    // Update tenant user count
-    tenant.usage = {
-      ...tenant.usage,
-      userCount: 1
-    };
-    await tenant.save();
+      // Create admin user for tenant (within same transaction)
+      const createdUser = await this.createAdminUser(tenantId, adminUser, transaction);
 
-    // Auto-seed default insurance providers for the new tenant (only if life-insurance module is enabled)
-    try {
-      // Check if life-insurance module is enabled for this tenant
-      const hasLifeInsuranceModule = tenant.enabledModules.some(
-        module => module.moduleId === 'life-insurance'
-      );
+      // Update tenant user count
+      tenant.usage = {
+        ...tenant.usage,
+        userCount: 1
+      };
+      await tenant.save({ transaction });
 
-      if (hasLifeInsuranceModule) {
-        const seedResult = await seedInsuranceProvidersForTenant(tenantId, createdUser.id);
-        if (seedResult.success) {
-          console.log(`✓ Auto-seeded ${seedResult.count} insurance providers for tenant ${tenantId} (life-insurance module enabled)`);
+      // Auto-seed default insurance providers for the new tenant (only if life-insurance module is enabled)
+      try {
+        // Check if life-insurance module is enabled for this tenant
+        const hasLifeInsuranceModule = tenant.enabledModules.some(
+          module => module.moduleId === 'life-insurance'
+        );
+
+        if (hasLifeInsuranceModule) {
+          const seedResult = await seedInsuranceProvidersForTenant(tenantId, createdUser.id, transaction);
+          if (seedResult.success) {
+            console.log(`✓ Auto-seeded ${seedResult.count} insurance providers for tenant ${tenantId} (life-insurance module enabled)`);
+          } else {
+            console.warn(`⚠️ Failed to auto-seed insurance providers for tenant ${tenantId}:`, seedResult.message);
+          }
         } else {
-          console.warn(`⚠️ Failed to auto-seed insurance providers for tenant ${tenantId}:`, seedResult.message);
+          console.log(`ℹ️ Skipping insurance provider seeding for tenant ${tenantId} (life-insurance module not enabled)`);
         }
-      } else {
-        console.log(`ℹ️ Skipping insurance provider seeding for tenant ${tenantId} (life-insurance module not enabled)`);
+      } catch (error) {
+        // Don't fail tenant creation if insurance provider seeding fails
+        console.error(`Error auto-seeding insurance providers for tenant ${tenantId}:`, error);
       }
-    } catch (error) {
-      // Don't fail tenant creation if insurance provider seeding fails
-      console.error(`Error auto-seeding insurance providers for tenant ${tenantId}:`, error);
-    }
 
-    return {
-      tenant,
-      adminUser: createdUser
-    };
+      return {
+        tenant,
+        adminUser: createdUser
+      };
+    }, {
+      operationName: 'createTenant'
+    });
   }
 
   /**
@@ -200,10 +208,11 @@ class TenantProvisioningService {
    * 
    * @param {string} tenantId - Tenant ID
    * @param {Object} userData - User data
+   * @param {Transaction} transaction - Sequelize transaction (optional)
    * @returns {Promise<Object>} Created user
    * @throws {AppError} If creation fails
    */
-  async createAdminUser(tenantId, userData) {
+  async createAdminUser(tenantId, userData, transaction = null) {
     const {
       email,
       password,
@@ -215,7 +224,10 @@ class TenantProvisioningService {
     const { default: User } = await import('../../../modules/hr-core/users/models/user.model.js');
 
     // Check if user already exists for this tenant
-    const existingUser = await User.findOne({ where: { tenantId, email } });
+    const existingUser = await User.findOne({ 
+      where: { tenantId, email },
+      transaction 
+    });
     if (existingUser) {
       throw new AppError(
         'User with this email already exists for this tenant',
@@ -238,7 +250,7 @@ class TenantProvisioningService {
       role: ROLES.ADMIN,
       status: 'active',
       permissions: []
-    });
+    }, { transaction });
 
     // Return user without password
     const userObj = user.toJSON();
