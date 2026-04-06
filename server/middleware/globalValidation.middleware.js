@@ -9,7 +9,6 @@
 
 import { body, param, query, validationResult } from 'express-validator';
 import sanitizeHtml from 'sanitize-html';
-import mongoose from 'mongoose';
 
 /**
  * Global input sanitization middleware
@@ -358,10 +357,11 @@ export const validateContentType = (req, res, next) => {
  */
 export const validateCommonParameters = (req, res, next) => {
     try {
-        // Validate MongoDB ObjectId parameters
+        // Validate ID parameters (PostgreSQL uses integer IDs)
         for (const [key, value] of Object.entries(req.params)) {
             if (key.endsWith('Id') || key === 'id') {
-                if (value && !mongoose.Types.ObjectId.isValid(value)) {
+                const numValue = parseInt(value);
+                if (value && (isNaN(numValue) || numValue < 1)) {
                     return res.status(400).json({
                         success: false,
                         message: `Invalid ${key} format`

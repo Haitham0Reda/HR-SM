@@ -12,9 +12,7 @@ import cacheRefreshJob from './jobs/cacheRefresh.job.js';
 import licenseValidationService from './services/licenseValidationService.js';
 import realtimeMonitoringService from './services/realtimeMonitoring.service.js';
 import BackupIntegration from './services/backupIntegration.js';
-import { enhanceSpecificModels } from './utils/modelCacheEnhancer.js';
 import cachePerformanceMonitor from './services/cachePerformanceMonitor.js';
-import mongoose from 'mongoose';
 import initializeSystemCollections from './utils/initializeSystemCollections.js';
 
 // Load environment variables
@@ -78,26 +76,6 @@ const startServer = async () => {
 
         // Initialize routes (legacy and modular)
         await initializeRoutes();
-
-        // Enhance Mongoose models with Redis caching
-        try {
-            const modelsToCache = [
-                'User', 'Department', 'Position', 'Tenant', 'License',
-                'InsurancePolicy', 'InsuranceClaim', 'FamilyMember',
-                'Attendance', 'Vacation', 'SickLeave', 'Mission',
-                'Payroll', 'Document', 'Announcement',
-                'Task', 'Request', 'Report', 'AuditLog'
-            ];
-            
-            const enhancedModels = enhanceSpecificModels(modelsToCache, mongoose, {
-                defaultTTL: 300, // 5 minutes
-                autoInvalidate: true
-            });
-            
-            console.log(`✓ Enhanced ${enhancedModels.length} models with Redis caching`);
-        } catch (error) {
-            console.warn('⚠️  Model cache enhancement failed:', error.message);
-        }
 
         // Create HTTP server
         const server = http.createServer(app);

@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import mongoSanitize from 'express-mongo-sanitize';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { tenantContext } from './shared/middleware/tenantContext.js';
@@ -18,12 +17,6 @@ import {
     globalRateLimit
 } from './middleware/enhancedRateLimit.middleware.js';
 
-// Import Redis caching middleware
-import {
-    cacheHeadersMiddleware,
-    conditionalRequestMiddleware,
-    cacheStatsMiddleware
-} from './middleware/mongooseCache.middleware.js';
 import { initializeSessionMiddleware } from './middleware/redisSession.middleware.js';
 
 // Import remaining legacy routes (not yet moved to modules)
@@ -108,7 +101,7 @@ app.use(requestBodyLogger); // Log problematic requests in development
 app.use(jsonErrorHandler);  // Handle JSON parsing errors
 
 // Data sanitization and security
-app.use(mongoSanitize());
+// Note: MongoDB sanitization removed as we're using PostgreSQL
 
 // Enhanced security middleware
 app.use(preventInjection);
@@ -133,9 +126,7 @@ try {
     console.warn('⚠️  Redis session middleware initialization failed:', error.message);
 }
 
-// Cache headers and conditional request middleware for API responses
-app.use('/api', cacheHeadersMiddleware);
-app.use('/api', conditionalRequestMiddleware);
+// Cache headers removed - using PostgreSQL instead of MongoDB
 
 // CORS is now properly configured - test endpoint removed
 

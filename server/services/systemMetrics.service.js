@@ -1,6 +1,5 @@
 import os from 'os';
 import process from 'process';
-import mongoose from 'mongoose';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 
