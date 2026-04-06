@@ -1,713 +1,392 @@
+import { DataTypes, Op } from 'sequelize';
+import sequelize from '../../../config/database.js';
+
 /**
  * Report Export Model
  * 
  * Manages report generation and export in multiple formats (HTML, Excel, PDF).
  * Tracks export history and integrates with all HR modules for comprehensive reporting.
  * 
- * Features:
- * - Multiple export formats (HTML, Excel, PDF)
- * - Report type tracking (Attendance, Leave, Payroll, etc.)
- * - Export history and audit trail
- * - Integration with ReportConfig for date ranges
- * - Formatted exports with titles, subtitles, summaries
- * - Department and employee-level filtering
+ * CRITICAL: All records must have tenant_id for multi-tenancy isolation
  */
-import mongoose from 'mongoose';
-import ReportConfig from './reportConfig.model.js';  // Add this import
 
-const reportExportSchema = new mongoose.Schema({
-    // Tenant ID for multi-tenancy
-    tenantId: {
-        type: String,
-        required: [true, 'Tenant ID is required'],
-        index: true,
-        trim: true
-    },
-
-    // Report metadata
-    reportType: {
-        type: String,
-        enum: [
-            'attendance-summary',
-            'attendance-detail',
-            'leave-summary',
-            'leave-detail',
-            'payroll-summary',
-            'payroll-detail',
-            'employee-roster',
-            'vacation-balance',
-            'permission-requests',
-            'department-summary',
-            'comprehensive-hr',
-            'custom'
-        ],
-        required: true,
-        index: true
-    },
-
-    // Report title and description
-    title: {
-        type: String,
-        required: true
-    },
-
-    subtitle: {
-        type: String  // Usually contains date range
-    },
-
-    description: String,
-
-    // Export format
-    exportFormat: {
-        type: String,
-        enum: ['html', 'excel', 'pdf'],
-        required: true,
-        default: 'html'
-    },
-
-    // Date range for the report
-    dateRange: {
-        rangeType: {
-            type: String,
-            enum: ['hr-month', 'current-month', 'previous-month', 'custom'],
-            default: 'hr-month'
-        },
-        startDate: {
-            type: Date,
-            required: true
-        },
-        endDate: {
-            type: Date,
-            required: true
-        },
-        label: String  // e.g., "HR Month (11/21/2024 - 12/20/2024)"
-    },
-
-    // Filters applied to the report
-    filters: {
-        // Department filter
-        department: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Department'
-        },
-        // Employee filter (for individual reports)
-        employee: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        // Position filter
-        position: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Position'
-        },
-        // Status filter (for leave, attendance, etc.)
-        status: [String],
-        // Leave type filter
-        leaveType: [String],
-        // Additional custom filters
-        customFilters: mongoose.Schema.Types.Mixed
-    },
-
-    // Summary data (stored for quick access)
-    summary: {
-        totalRecords: {
-            type: Number,
-            default: 0
-        },
-        // Key metrics vary by report type
-        metrics: mongoose.Schema.Types.Mixed,
-        // Additional summary fields
-        additionalData: mongoose.Schema.Types.Mixed
-    },
-
-    // Export file information
-    exportFile: {
-        fileName: String,
-        filePath: String,
-        fileSize: Number,  // in bytes
-        mimeType: String,
-        url: String  // Download URL
-    },
-
-    // Report configuration reference
-    reportConfig: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ReportConfig'
-    },
-
-    // User who generated the report
-    generatedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
-    },
-
-    // Organization/location
-    organization: {
-        type: String,
-        default: 'default',
-        index: true
-    },
-
-    // Report status
-    status: {
-        type: String,
-        enum: ['pending', 'generating', 'completed', 'failed', 'expired'],
-        default: 'pending',
-        index: true
-    },
-
-    // Processing information
-    processing: {
-        startedAt: Date,
-        completedAt: Date,
-        duration: Number,  // in milliseconds
-        errorMessage: String
-    },
-
-    // Export settings
-    settings: {
-        includeCharts: {
-            type: Boolean,
-            default: false
-        },
-        includeRawData: {
-            type: Boolean,
-            default: true
-        },
-        pageOrientation: {
-            type: String,
-            enum: ['portrait', 'landscape'],
-            default: 'portrait'
-        },
-        // Excel-specific settings
-        excelSettings: {
-            includeFilters: {
-                type: Boolean,
-                default: true
-            },
-            freezeHeader: {
-                type: Boolean,
-                default: true
-            },
-            autoColumnWidth: {
-                type: Boolean,
-                default: true
-            }
-        },
-        // PDF-specific settings
-        pdfSettings: {
-            includePageNumbers: {
-                type: Boolean,
-                default: true
-            },
-            includeHeader: {
-                type: Boolean,
-                default: true
-            },
-            includeFooter: {
-                type: Boolean,
-                default: true
-            }
-        }
-    },
-
-    // Access tracking
-    accessLog: [{
-        accessedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        accessedAt: {
-            type: Date,
-            default: Date.now
-        },
-        action: {
-            type: String,
-            enum: ['view', 'download', 'share']
-        }
-    }],
-
-    // Expiration (for temporary exports)
-    expiresAt: Date,
-
-    // Tags for categorization
-    tags: [String],
-
-    // Is this a scheduled/recurring report?
-    isScheduled: {
-        type: Boolean,
-        default: false
-    },
-
-    scheduleId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ReportSchedule'  // Future enhancement
+const ReportExport = sequelize.define('ReportExport', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  
+  // Tenant isolation - REQUIRED
+  tenant_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'tenant_id'
+  },
+  
+  // Report metadata
+  report_type: {
+    type: DataTypes.ENUM(
+      'attendance-summary', 'attendance-detail', 'leave-summary', 'leave-detail',
+      'payroll-summary', 'payroll-detail', 'employee-roster', 'vacation-balance',
+      'permission-requests', 'department-summary', 'comprehensive-hr', 'custom'
+    ),
+    allowNull: false,
+    field: 'report_type'
+  },
+  
+  // Report title and description
+  title: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  
+  subtitle: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  
+  // Export format
+  export_format: {
+    type: DataTypes.ENUM('html', 'excel', 'pdf'),
+    allowNull: false,
+    defaultValue: 'html',
+    field: 'export_format'
+  },
+  
+  // Date range for the report (JSONB)
+  date_range: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {},
+    field: 'date_range'
+    // Structure: { rangeType, startDate, endDate, label }
+  },
+  
+  // Filters applied to the report (JSONB)
+  filters: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { department, employee, position, status: [], leaveType: [], customFilters }
+  },
+  
+  // Summary data (JSONB)
+  summary: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { totalRecords: 0 }
+    // Structure: { totalRecords, metrics, additionalData }
+  },
+  
+  // Export file information (JSONB)
+  export_file: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null,
+    field: 'export_file'
+    // Structure: { fileName, filePath, fileSize, mimeType, url }
+  },
+  
+  // Report configuration reference
+  report_config_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'report_config_id'
+  },
+  
+  // User who generated the report
+  generated_by: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'generated_by'
+  },
+  
+  // Organization/location
+  organization: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'default'
+  },
+  
+  // Report status
+  status: {
+    type: DataTypes.ENUM('pending', 'generating', 'completed', 'failed', 'expired'),
+    allowNull: false,
+    defaultValue: 'pending'
+  },
+  
+  // Processing information (JSONB)
+  processing: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { startedAt, completedAt, duration, errorMessage }
+  },
+  
+  // Export settings (JSONB)
+  settings: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      includeCharts: false,
+      includeRawData: true,
+      pageOrientation: 'portrait'
     }
+    // Structure: { includeCharts, includeRawData, pageOrientation, excelSettings, pdfSettings }
+  },
+  
+  // Access tracking (JSONB array)
+  access_log: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    field: 'access_log'
+    // Structure: [{ accessedBy, accessedAt, action }]
+  },
+  
+  // Expiration (for temporary exports)
+  expires_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'expires_at'
+  },
+  
+  // Tags for categorization (JSONB array)
+  tags: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: []
+  },
+  
+  // Is this a scheduled/recurring report?
+  is_scheduled: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'is_scheduled'
+  },
+  
+  schedule_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'schedule_id'
+  }
 }, {
-    timestamps: true
+  tableName: 'report_exports',
+  timestamps: true,
+  underscored: true,
+  indexes: [
+    {
+      fields: ['tenant_id']
+    },
+    {
+      fields: ['tenant_id', 'generated_by', 'created_at']
+    },
+    {
+      fields: ['tenant_id', 'report_type', 'status']
+    },
+    {
+      fields: ['tenant_id', 'organization', 'report_type']
+    },
+    {
+      fields: ['tenant_id', 'expires_at']
+    },
+    {
+      fields: ['tenant_id', 'status', 'created_at']
+    },
+    {
+      fields: ['generated_by']
+    },
+    {
+      fields: ['report_type']
+    },
+    {
+      fields: ['status']
+    },
+    {
+      fields: ['organization']
+    }
+  ]
 });
 
-// Virtual to check if report has expired
-reportExportSchema.virtual('isExpired').get(function () {
-    return this.expiresAt && new Date() > this.expiresAt;
-});
+// Instance methods
+ReportExport.prototype.isExpired = function() {
+  return this.expires_at && new Date() > this.expires_at;
+};
 
-// Virtual to get file extension
-reportExportSchema.virtual('fileExtension').get(function () {
-    const extensions = {
-        'html': '.html',
-        'excel': '.xlsx',
-        'pdf': '.pdf'
-    };
-    return extensions[this.exportFormat] || '';
-});
+ReportExport.prototype.getFileExtension = function() {
+  const extensions = {
+    'html': '.html',
+    'excel': '.xlsx',
+    'pdf': '.pdf'
+  };
+  return extensions[this.export_format] || '';
+};
 
-// Note: Middleware hooks moved to reportExportMiddleware.js
-// Use middleware functions in routes for better separation of concerns
+ReportExport.prototype.markCompleted = async function(filePath, fileSize) {
+  this.status = 'completed';
+  this.processing = {
+    ...this.processing,
+    completedAt: new Date(),
+    duration: new Date() - new Date(this.processing.startedAt || new Date())
+  };
+  
+  const mimeTypes = {
+    'html': 'text/html',
+    'excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'pdf': 'application/pdf'
+  };
+  
+  this.export_file = {
+    filePath,
+    fileSize,
+    mimeType: mimeTypes[this.export_format]
+  };
+  
+  return this.save();
+};
 
-/**
- * Instance method to generate attendance report
- * 
- * @returns {Promise<Object>} Report data
- */
-reportExportSchema.methods.generateAttendanceReport = async function () {
-    const Attendance = mongoose.model('Attendance');
+ReportExport.prototype.markFailed = async function(errorMessage) {
+  this.status = 'failed';
+  this.processing = {
+    ...this.processing,
+    completedAt: new Date(),
+    duration: new Date() - new Date(this.processing.startedAt || new Date()),
+    errorMessage
+  };
+  return this.save();
+};
 
-    const query = {
-        date: {
-            $gte: this.dateRange.startDate,
-            $lte: this.dateRange.endDate
-        }
-    };
+ReportExport.prototype.logAccess = async function(userId, action = 'view') {
+  const accessLog = this.access_log || [];
+  accessLog.push({
+    accessedBy: userId,
+    accessedAt: new Date(),
+    action
+  });
+  this.access_log = accessLog;
+  return this.save();
+};
 
-    if (this.filters.department) query.department = this.filters.department;
-    if (this.filters.employee) query.employee = this.filters.employee;
-    if (this.filters.status && this.filters.status.length > 0) {
-        query.status = { $in: this.filters.status };
+// Static methods
+ReportExport.createReport = async function(reportData, userId) {
+  // Import ReportConfig dynamically to avoid circular dependency
+  const ReportConfig = require('./reportConfig.model.js').default;
+  
+  const config = await ReportConfig.getConfig(
+    reportData.tenantId,
+    reportData.organization || 'default'
+  );
+  
+  const dateRange = config.getDateRange(
+    reportData.rangeType || 'hr-month',
+    reportData.customStart,
+    reportData.customEnd
+  );
+  
+  const exportRecord = await this.create({
+    tenant_id: reportData.tenantId,
+    report_type: reportData.reportType,
+    title: reportData.title,
+    export_format: reportData.exportFormat || 'html',
+    date_range: {
+      rangeType: reportData.rangeType || 'hr-month',
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+      label: dateRange.label
+    },
+    filters: reportData.filters || {},
+    report_config_id: config.id,
+    generated_by: userId,
+    organization: reportData.organization || 'default',
+    settings: reportData.settings || {},
+    tags: reportData.tags || [],
+    status: 'generating',
+    processing: {
+      startedAt: new Date()
     }
-
-    const records = await Attendance.find(query)
-        .populate({
-            path: 'employee',
-            select: 'profile employeeId department position',
-            populate: [
-                { path: 'department', select: 'name code' },
-                { path: 'position', select: 'title' }
-            ]
-        })
-        .populate('leave', 'leaveType duration')
-        .sort({ date: 1, 'employee.employeeId': 1 });
-
-    // Calculate summary metrics
-    const metrics = {
-        totalRecords: records.length,
-        presentDays: records.filter(r => ['on-time', 'present', 'late', 'work-from-home'].includes(r.status)).length,
-        absentDays: records.filter(r => r.status === 'absent').length,
-        lateDays: records.filter(r => r.status === 'late').length,
-        earlyDepartureDays: records.filter(r => r.status === 'early-departure').length,
-        vacationDays: records.filter(r => r.status === 'vacation').length,
-        sickLeaveDays: records.filter(r => r.status === 'sick-leave').length,
-        missionDays: records.filter(r => r.status === 'mission').length,
-        wfhDays: records.filter(r => r.status === 'work-from-home').length,
-        totalHours: records.reduce((sum, r) => sum + (r.hours?.totalHours || 0), 0),
-        expectedHours: records.reduce((sum, r) => sum + (r.hours?.expected || 0), 0)
-    };
-
-    this.summary.totalRecords = records.length;
-    this.summary.metrics = metrics;
-
-    return {
-        title: this.title,
-        subtitle: this.subtitle,
-        dateRange: this.dateRange,
-        summary: metrics,
-        data: records
-    };
+  });
+  
+  return exportRecord;
 };
 
-/**
- * Instance method to generate leave report
- * 
- * @returns {Promise<Object>} Report data
- */
-reportExportSchema.methods.generateLeaveReport = async function () {
-    const Leave = mongoose.model('Leave');
+ReportExport.getUserExports = async function(userId, tenantId, filters = {}) {
+  const where = {
+    generated_by: userId,
+    tenant_id: tenantId,
+    ...filters
+  };
+  
+  return this.findAll({
+    where,
+    order: [['created_at', 'DESC']],
+    limit: 50
+  });
+};
 
-    const query = {
-        startDate: { $lte: this.dateRange.endDate },
-        endDate: { $gte: this.dateRange.startDate }
-    };
-
-    if (this.filters.department) query.department = this.filters.department;
-    if (this.filters.employee) query.employee = this.filters.employee;
-    if (this.filters.status && this.filters.status.length > 0) {
-        query.status = { $in: this.filters.status };
+ReportExport.cleanupExpired = async function(tenantId) {
+  const result = await this.destroy({
+    where: {
+      tenant_id: tenantId,
+      expires_at: { [Op.lt]: new Date() },
+      status: 'completed'
     }
-    if (this.filters.leaveType && this.filters.leaveType.length > 0) {
-        query.leaveType = { $in: this.filters.leaveType };
+  });
+  
+  return result;
+};
+
+ReportExport.getExportStats = async function(tenantId, organization = 'default', startDate, endDate) {
+  const { QueryTypes } = require('sequelize');
+  
+  let dateFilter = '';
+  const replacements = { tenantId, organization };
+  
+  if (startDate && endDate) {
+    dateFilter = 'AND created_at >= :startDate AND created_at <= :endDate';
+    replacements.startDate = startDate;
+    replacements.endDate = endDate;
+  }
+  
+  const stats = await sequelize.query(
+    `SELECT 
+      report_type,
+      export_format,
+      status,
+      COUNT(*) as count,
+      SUM((export_file->>'fileSize')::bigint) as total_size,
+      AVG((processing->>'duration')::bigint) as avg_duration
+    FROM report_exports
+    WHERE tenant_id = :tenantId
+      AND organization = :organization
+      ${dateFilter}
+    GROUP BY report_type, export_format, status`,
+    {
+      replacements,
+      type: QueryTypes.SELECT
     }
-
-    const leaves = await Leave.find(query)
-        .populate({
-            path: 'employee',
-            select: 'profile employeeId department position',
-            populate: [
-                { path: 'department', select: 'name code' },
-                { path: 'position', select: 'title' }
-            ]
-        })
-        .populate('approvedBy rejectedBy', 'username employeeId personalInfo')
-        .sort({ startDate: -1 });
-
-    // Calculate summary by type and status
-    const byType = leaves.reduce((acc, leave) => {
-        const key = leave.leaveType;
-        if (!acc[key]) {
-            acc[key] = { type: key, count: 0, totalDays: 0, approved: 0, pending: 0, rejected: 0 };
-        }
-        acc[key].count++;
-        acc[key].totalDays += leave.duration;
-        acc[key][leave.status]++;
-        return acc;
-    }, {});
-
-    const metrics = {
-        totalLeaves: leaves.length,
-        totalDays: leaves.reduce((sum, l) => sum + l.duration, 0),
-        approvedLeaves: leaves.filter(l => l.status === 'approved').length,
-        pendingLeaves: leaves.filter(l => l.status === 'pending').length,
-        rejectedLeaves: leaves.filter(l => l.status === 'rejected').length,
-        byType: Object.values(byType)
-    };
-
-    this.summary.totalRecords = leaves.length;
-    this.summary.metrics = metrics;
-
-    return {
-        title: this.title,
-        subtitle: this.subtitle,
-        dateRange: this.dateRange,
-        summary: metrics,
-        data: leaves
-    };
+  );
+  
+  return stats.map(row => ({
+    reportType: row.report_type,
+    format: row.export_format,
+    status: row.status,
+    count: parseInt(row.count),
+    totalSize: parseInt(row.total_size) || 0,
+    avgDuration: parseFloat(row.avg_duration) || 0
+  }));
 };
 
-/**
- * Instance method to generate payroll report
- * 
- * @returns {Promise<Object>} Report data
- */
-reportExportSchema.methods.generatePayrollReport = async function () {
-    const Payroll = mongoose.model('Payroll');
-    const User = mongoose.model('User');
-
-    // Generate period string from date range
-    const year = this.dateRange.startDate.getFullYear();
-    const month = String(this.dateRange.startDate.getMonth() + 1).padStart(2, '0');
-    const period = `${year}-${month}`;
-
-    const query = { period };
-
-    let employees = [];
-    if (this.filters.department) {
-        employees = await User.find({
-            department: this.filters.department,
-            isActive: true
-        });
-    } else if (this.filters.employee) {
-        employees = await User.find({
-            _id: this.filters.employee,
-            isActive: true
-        });
-    } else {
-        employees = await User.find({ isActive: true });
-    }
-
-    const employeeIds = employees.map(e => e._id);
-    query.employee = { $in: employeeIds };
-
-    const payrolls = await Payroll.find(query)
-        .populate({
-            path: 'employee',
-            select: 'profile employeeId department position',
-            populate: [
-                { path: 'department', select: 'name code' },
-                { path: 'position', select: 'title' }
-            ]
-        })
-        .sort({ 'employee.employeeId': 1 });
-
-    const metrics = {
-        totalEmployees: employees.length,
-        processedPayrolls: payrolls.length,
-        totalDeductions: payrolls.reduce((sum, p) => sum + (p.totalDeductions || 0), 0),
-        averageDeductions: payrolls.length > 0
-            ? payrolls.reduce((sum, p) => sum + (p.totalDeductions || 0), 0) / payrolls.length
-            : 0
-    };
-
-    this.summary.totalRecords = payrolls.length;
-    this.summary.metrics = metrics;
-
-    return {
-        title: this.title,
-        subtitle: this.subtitle,
-        dateRange: this.dateRange,
-        period,
-        summary: metrics,
-        data: payrolls
-    };
+ReportExport.withTenant = function(tenantId) {
+  return this.findAll({
+    where: { tenant_id: tenantId }
+  });
 };
 
-/**
- * Instance method to generate vacation balance report
- * 
- * @returns {Promise<Object>} Report data
- */
-reportExportSchema.methods.generateVacationBalanceReport = async function () {
-    const VacationBalance = mongoose.model('VacationBalance');
-    const User = mongoose.model('User');
-
-    let query = { year: this.dateRange.startDate.getFullYear() };
-
-    let employees = [];
-    if (this.filters.department) {
-        employees = await User.find({
-            department: this.filters.department,
-            isActive: true
-        });
-        const employeeIds = employees.map(e => e._id);
-        query.employee = { $in: employeeIds };
-    } else if (this.filters.employee) {
-        query.employee = this.filters.employee;
-    }
-
-    const balances = await VacationBalance.find(query)
-        .populate({
-            path: 'employee',
-            select: 'profile employeeId department position employment',
-            populate: [
-                { path: 'department', select: 'name code' },
-                { path: 'position', select: 'title' }
-            ]
-        })
-        .sort({ 'employee.employeeId': 1 });
-
-    const metrics = {
-        totalEmployees: balances.length,
-        totalAllocated: balances.reduce((sum, b) => sum + b.annual.allocated + b.casual.allocated, 0),
-        totalUsed: balances.reduce((sum, b) => sum + b.annual.used + b.casual.used, 0),
-        totalAvailable: balances.reduce((sum, b) => sum + b.annual.available + b.casual.available, 0),
-        totalCarriedOver: balances.reduce((sum, b) => sum + (b.annual.carriedOver || 0), 0)
-    };
-
-    this.summary.totalRecords = balances.length;
-    this.summary.metrics = metrics;
-
-    return {
-        title: this.title,
-        subtitle: this.subtitle,
-        dateRange: this.dateRange,
-        summary: metrics,
-        data: balances
-    };
-};
-
-/**
- * Instance method to mark export as completed
- * 
- * @param {String} filePath - Path to exported file
- * @param {Number} fileSize - File size in bytes
- * @returns {Promise<ReportExport>} Updated export record
- */
-reportExportSchema.methods.markCompleted = async function (filePath, fileSize) {
-    this.status = 'completed';
-    this.processing.completedAt = new Date();
-    this.processing.duration = this.processing.completedAt - this.processing.startedAt;
-    this.exportFile.filePath = filePath;
-    this.exportFile.fileSize = fileSize;
-
-    // Set MIME type
-    const mimeTypes = {
-        'html': 'text/html',
-        'excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'pdf': 'application/pdf'
-    };
-    this.exportFile.mimeType = mimeTypes[this.exportFormat];
-
-    return await this.save();
-};
-
-/**
- * Instance method to mark export as failed
- * 
- * @param {String} errorMessage - Error message
- * @returns {Promise<ReportExport>} Updated export record
- */
-reportExportSchema.methods.markFailed = async function (errorMessage) {
-    this.status = 'failed';
-    this.processing.completedAt = new Date();
-    this.processing.duration = this.processing.completedAt - this.processing.startedAt;
-    this.processing.errorMessage = errorMessage;
-    return await this.save();
-};
-
-/**
- * Instance method to log access
- * 
- * @param {ObjectId} userId - User accessing the report
- * @param {String} action - Action performed (view, download, share)
- * @returns {Promise<ReportExport>} Updated export record
- */
-reportExportSchema.methods.logAccess = async function (userId, action = 'view') {
-    this.accessLog.push({
-        accessedBy: userId,
-        accessedAt: new Date(),
-        action
-    });
-    return await this.save();
-};
-
-/**
- * Static method to create and generate report
- * 
- * @param {Object} reportData - Report configuration
- * @param {ObjectId} userId - User generating the report
- * @returns {Promise<ReportExport>} Created export record
- */
-reportExportSchema.statics.createReport = async function (reportData, userId) {
-    // Get report configuration
-    const config = await ReportConfig.getConfig(reportData.organization || 'default');
-
-    // Get date range
-    const dateRange = config.getDateRange(
-        reportData.rangeType || 'hr-month',
-        reportData.customStart,
-        reportData.customEnd
-    );
-
-    // Create export record
-    const exportRecord = new this({
-        reportType: reportData.reportType,
-        title: reportData.title,
-        exportFormat: reportData.exportFormat || 'html',
-        dateRange: {
-            rangeType: reportData.rangeType || 'hr-month',
-            startDate: dateRange.startDate,
-            endDate: dateRange.endDate,
-            label: dateRange.label
-        },
-        filters: reportData.filters || {},
-        reportConfig: config._id,
-        generatedBy: userId,
-        organization: reportData.organization || 'default',
-        settings: reportData.settings || {},
-        tags: reportData.tags || []
-    });
-
-    exportRecord.processing.startedAt = new Date();
-    exportRecord.status = 'generating';
-
-    await exportRecord.save();
-    return exportRecord;
-};
-
-/**
- * Static method to get user's export history
- * 
- * @param {ObjectId} userId - User ID
- * @param {Object} filters - Optional filters
- * @returns {Promise<ReportExport[]>} List of exports
- */
-reportExportSchema.statics.getUserExports = function (userId, filters = {}) {
-    const query = { generatedBy: userId, ...filters };
-
-    return this.find(query)
-        .populate('filters.department', 'name code')
-        .populate('filters.employee', 'profile employeeId')
-        .populate('reportConfig')
-        .sort({ createdAt: -1 })
-        .limit(50);
-};
-
-/**
- * Static method to cleanup expired exports
- * 
- * @returns {Promise<Number>} Number of deleted exports
- */
-reportExportSchema.statics.cleanupExpired = async function () {
-    const result = await this.deleteMany({
-        expiresAt: { $lt: new Date() },
-        status: 'completed'
-    });
-
-    return result.deletedCount;
-};
-
-/**
- * Static method to get export statistics
- * 
- * @param {String} organization - Organization name
- * @param {Date} startDate - Start date
- * @param {Date} endDate - End date
- * @returns {Promise<Object>} Statistics
- */
-reportExportSchema.statics.getExportStats = async function (organization = 'default', startDate, endDate) {
-    const query = { organization };
-
-    if (startDate && endDate) {
-        query.createdAt = { $gte: startDate, $lte: endDate };
-    }
-
-    const stats = await this.aggregate([
-        { $match: query },
-        {
-            $group: {
-                _id: {
-                    reportType: '$reportType',
-                    exportFormat: '$exportFormat',
-                    status: '$status'
-                },
-                count: { $sum: 1 },
-                totalSize: { $sum: '$exportFile.fileSize' },
-                avgDuration: { $avg: '$processing.duration' }
-            }
-        },
-        {
-            $group: {
-                _id: '$_id.reportType',
-                formats: {
-                    $push: {
-                        format: '$_id.exportFormat',
-                        status: '$_id.status',
-                        count: '$count',
-                        totalSize: '$totalSize',
-                        avgDuration: '$avgDuration'
-                    }
-                },
-                totalExports: { $sum: '$count' }
-            }
-        }
-    ]);
-
-    return stats;
-};
-
-// Compound indexes for tenant isolation and performance
-reportExportSchema.index({ tenantId: 1, generatedBy: 1, createdAt: -1 });
-reportExportSchema.index({ tenantId: 1, reportType: 1, status: 1 });
-reportExportSchema.index({ tenantId: 1, organization: 1, reportType: 1 });
-reportExportSchema.index({ tenantId: 1, 'dateRange.startDate': 1, 'dateRange.endDate': 1 });
-reportExportSchema.index({ tenantId: 1, expiresAt: 1 });
-reportExportSchema.index({ tenantId: 1, 'filters.department': 1 });
-reportExportSchema.index({ tenantId: 1, 'filters.employee': 1 });
-reportExportSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
-
-// Add withTenant static method for tenant-aware queries
-reportExportSchema.statics.withTenant = function (tenantId) {
-    return this.find({ tenantId });
-};
-
-export default mongoose.model('ReportExport', reportExportSchema);
+export default ReportExport;

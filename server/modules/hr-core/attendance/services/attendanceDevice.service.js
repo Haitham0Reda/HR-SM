@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import AttendanceDevice from '../models/attendanceDevice.model.js';
 import Attendance from '../models/attendance.model.js';
 import User from '../../users/models/user.model.js';
@@ -270,7 +271,9 @@ class AttendanceDeviceService {
     async saveAttendanceLog(normalizedLog, device) {
         try {
             // Find employee by employeeId
-            const employee = await User.findOne({ employeeId: normalizedLog.employeeId });
+            const employee = await User.findOne({ 
+                where: { employeeId: normalizedLog.employeeId }
+            });
             
             if (!employee) {
                 throw new Error(`Employee not found: ${normalizedLog.employeeId}`);
@@ -282,18 +285,20 @@ class AttendanceDeviceService {
             
             // Find or create attendance record for this date
             let attendance = await Attendance.findOne({
-                employee: employee._id,
-                date: date
+                where: {
+                    employee: employee.id,
+                    date: date
+                }
             });
             
             if (!attendance) {
-                attendance = new Attendance({
-                    employee: employee._id,
+                attendance = await Attendance.create({
+                    employee: employee.id,
                     department: employee.department,
                     position: employee.position,
                     date: date,
                     source: normalizedLog.source,
-                    device: device._id,
+                    device: device.id,
                     rawDeviceData: normalizedLog.rawData
                 });
             }
@@ -336,12 +341,12 @@ class AttendanceDeviceService {
      * @returns {Promise<Object>} Sync result
      */
     async syncDevice(deviceId, tenantId = null) {
-        const query = { _id: deviceId };
+        const query = { id: deviceId };
         if (tenantId) {
             query.tenantId = tenantId;
         }
         
-        const device = await AttendanceDevice.findOne(query);
+        const device = await AttendanceDevice.findOne({ where: query });
         
         if (!device) {
             throw new Error('Device not found');
@@ -417,12 +422,12 @@ class AttendanceDeviceService {
      * @returns {Promise<Object>} Connection test result
      */
     async testConnection(deviceId, tenantId = null) {
-        const query = { _id: deviceId };
+        const query = { id: deviceId };
         if (tenantId) {
             query.tenantId = tenantId;
         }
         
-        const device = await AttendanceDevice.findOne(query);
+        const device = await AttendanceDevice.findOne({ where: query });
         
         if (!device) {
             throw new Error('Device not found');
@@ -475,13 +480,13 @@ class AttendanceDeviceService {
             
             let device = null;
             if (deviceId) {
-                device = await AttendanceDevice.findById(deviceId);
+                device = await AttendanceDevice.findByPk(deviceId);
             }
             
             for (const row of csvData) {
                 try {
                     const normalizedLog = await this.normalizeLogData(row, 'csv');
-                    const result = await this.saveAttendanceLog(normalizedLog, device || { _id: null });
+                    const result = await this.saveAttendanceLog(normalizedLog, device || { id: null });
                     processedLogs.push(result);
                 } catch (error) {
                     logger.error(`Error processing CSV row:`, error);

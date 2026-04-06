@@ -1,340 +1,310 @@
-import mongoose from 'mongoose';
-import { baseSchemaPlugin } from '../../../shared/models/BaseModel.js';
+/**
+ * Insurance Policy Model (Sequelize)
+ */
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
 
-const insurancePolicySchema = new mongoose.Schema({
-    // Auto-generated policy number (format: INS-YYYY-NNNNNN)
-    policyNumber: {
-        type: String,
-        unique: true,
-        index: true
+const InsurancePolicy = mainAppDb.define('InsurancePolicy', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
     },
-    
-    // Employee information (references hr-core User model)
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
+    },
+    policyNumber: {
+        type: DataTypes.STRING(50),
+        unique: true,
+        field: 'policy_number'
+    },
     employeeId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'employee_id'
     },
     employeeNumber: {
-        type: String,
-        required: true,
-        index: true
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        field: 'employee_number'
     },
-    
-    // Policy details
     policyType: {
-        type: String,
-        enum: ['CAT_A', 'CAT_B', 'CAT_C'],
-        required: true,
-        index: true
+        type: DataTypes.ENUM('CAT_A', 'CAT_B', 'CAT_C'),
+        allowNull: false,
+        field: 'policy_type'
     },
     coverageAmount: {
-        type: Number,
-        required: true,
-        min: 0
+        type: DataTypes.DECIMAL(15, 2),
+        allowNull: false,
+        validate: { min: 0 },
+        field: 'coverage_amount'
     },
     premium: {
-        type: Number,
-        required: true,
-        min: 0
+        type: DataTypes.DECIMAL(15, 2),
+        allowNull: false,
+        validate: { min: 0 }
     },
     deductible: {
-        type: Number,
-        default: 0,
-        min: 0
+        type: DataTypes.DECIMAL(15, 2),
+        defaultValue: 0,
+        validate: { min: 0 }
     },
-    
-    // Policy dates
     startDate: {
-        type: Date,
-        required: true,
-        index: true
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'start_date'
     },
     endDate: {
-        type: Date,
-        required: true,
-        index: true
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'end_date'
     },
-    
-    // Policy status
     status: {
-        type: String,
-        enum: ['active', 'inactive', 'suspended', 'expired', 'cancelled'],
-        default: 'active',
-        index: true
+        type: DataTypes.ENUM('active', 'inactive', 'suspended', 'expired', 'cancelled'),
+        defaultValue: 'active'
     },
-    
-    // Family members covered under this policy
-    familyMembers: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'FamilyMember'
-    }],
-    
-    // Beneficiaries
-    beneficiaries: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Beneficiary'
-    }],
-    
-    // Claims associated with this policy
-    claims: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'InsuranceClaim'
-    }],
-    
-    // Policy history and audit trail
-    history: [{
-        action: {
-            type: String,
-            enum: ['created', 'updated', 'activated', 'suspended', 'cancelled', 'renewed'],
-            required: true
-        },
-        performedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
-        },
-        timestamp: {
-            type: Date,
-            default: Date.now
-        },
-        notes: String,
-        previousValues: mongoose.Schema.Types.Mixed
-    }],
-    
-    // Additional metadata
-    notes: String,
-    tags: [String]
+    // Family members - stored as JSONB array of UUIDs
+    familyMembers: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        field: 'family_members'
+    },
+    // Beneficiaries - stored as JSONB array of UUIDs
+    beneficiaries: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    },
+    // Claims - stored as JSONB array of UUIDs
+    claims: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    },
+    // History - stored as JSONB array
+    history: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    },
+    notes: {
+        type: DataTypes.TEXT
+    },
+    tags: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    }
 }, {
+    tableName: 'insurance_policies',
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['employee_id'] },
+        { fields: ['policy_number'], unique: true },
+        { fields: ['policy_type'] },
+        { fields: ['status'] },
+        { fields: ['start_date'] },
+        { fields: ['end_date'] },
+        { fields: ['tenant_id', 'employee_id'] },
+        { fields: ['tenant_id', 'policy_type', 'status'] },
+        { fields: ['tenant_id', 'start_date', 'end_date'] },
+        { fields: ['tenant_id', 'status', 'end_date'] }
+    ],
+    hooks: {
+        beforeCreate: (policy) => {
+            // Auto-generate policy number
+            if (!policy.policyNumber) {
+                const year = new Date().getFullYear();
+                const randomNum = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+                policy.policyNumber = `INS-${year}-${randomNum}`;
+            }
+        },
+        beforeSave: (policy) => {
+            // Validate dates
+            if (policy.startDate >= policy.endDate) {
+                throw new Error('End date must be after start date');
+            }
+            
+            // Update status based on dates
+            const now = new Date();
+            if (policy.status === 'active') {
+                if (now > policy.endDate) {
+                    policy.status = 'expired';
+                } else if (now < policy.startDate) {
+                    policy.status = 'inactive';
+                }
+            }
+        }
+    }
 });
 
-// Apply base schema plugin for multi-tenancy
-insurancePolicySchema.plugin(baseSchemaPlugin);
+/**
+ * Define associations
+ */
+InsurancePolicy.associate = (models) => {
+    InsurancePolicy.belongsTo(models.User, {
+        foreignKey: 'employeeId',
+        as: 'employee'
+    });
+};
 
-// Compound indexes for efficient queries
-insurancePolicySchema.index({ tenantId: 1, employeeId: 1 });
-insurancePolicySchema.index({ tenantId: 1, policyType: 1, status: 1 });
-insurancePolicySchema.index({ tenantId: 1, startDate: 1, endDate: 1 });
-insurancePolicySchema.index({ tenantId: 1, status: 1, endDate: 1 });
-
-// Virtual for checking if policy is active
-insurancePolicySchema.virtual('isActive').get(function() {
+/**
+ * Instance method: Check if policy is active
+ */
+InsurancePolicy.prototype.getIsActive = function () {
     const now = new Date();
     return this.status === 'active' && 
            this.startDate <= now && 
            this.endDate >= now;
-});
+};
 
-// Virtual for checking if policy is expired
-insurancePolicySchema.virtual('isExpired').get(function() {
+/**
+ * Instance method: Check if policy is expired
+ */
+InsurancePolicy.prototype.getIsExpired = function () {
     return new Date() > this.endDate;
-});
+};
 
-// Virtual for days until expiry
-insurancePolicySchema.virtual('daysUntilExpiry').get(function() {
+/**
+ * Instance method: Get days until expiry
+ */
+InsurancePolicy.prototype.getDaysUntilExpiry = function () {
     const now = new Date();
     const diffTime = this.endDate - now;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-});
-
-// Pre-save middleware to auto-generate policy number
-insurancePolicySchema.pre('save', function(next) {
-    if (this.isNew && !this.policyNumber) {
-        const year = new Date().getFullYear();
-        const randomNum = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-        this.policyNumber = `INS-${year}-${randomNum}`;
-    }
-    next();
-});
-
-// Pre-save middleware to validate dates
-insurancePolicySchema.pre('save', function(next) {
-    if (this.startDate >= this.endDate) {
-        const error = new Error('End date must be after start date');
-        error.name = 'ValidationError';
-        return next(error);
-    }
-    next();
-});
-
-// Pre-save middleware to update status based on dates
-insurancePolicySchema.pre('save', function(next) {
-    const now = new Date();
-    
-    if (this.status === 'active') {
-        if (now > this.endDate) {
-            this.status = 'expired';
-        } else if (now < this.startDate) {
-            this.status = 'inactive';
-        }
-    }
-    
-    next();
-});
-
-// Method to add family member
-insurancePolicySchema.methods.addFamilyMember = function(familyMemberId) {
-    if (!this.familyMembers.includes(familyMemberId)) {
-        this.familyMembers.push(familyMemberId);
-    }
-    return this.save();
 };
 
-// Method to remove family member
-insurancePolicySchema.methods.removeFamilyMember = function(familyMemberId) {
-    this.familyMembers = this.familyMembers.filter(
-        id => !id.equals(familyMemberId)
-    );
-    return this.save();
-};
-
-// Method to add beneficiary
-insurancePolicySchema.methods.addBeneficiary = function(beneficiaryId) {
-    if (!this.beneficiaries.includes(beneficiaryId)) {
-        this.beneficiaries.push(beneficiaryId);
+/**
+ * Instance method: Add family member
+ */
+InsurancePolicy.prototype.addFamilyMember = async function (familyMemberId) {
+    const members = [...(this.familyMembers || [])];
+    if (!members.includes(familyMemberId)) {
+        members.push(familyMemberId);
+        this.familyMembers = members;
     }
-    return this.save();
+    return await this.save();
 };
 
-// Method to add history entry
-insurancePolicySchema.methods.addHistoryEntry = function(action, performedBy, notes = '', previousValues = null) {
-    this.history.push({
+/**
+ * Instance method: Remove family member
+ */
+InsurancePolicy.prototype.removeFamilyMember = async function (familyMemberId) {
+    const members = [...(this.familyMembers || [])];
+    this.familyMembers = members.filter(id => id !== familyMemberId);
+    return await this.save();
+};
+
+/**
+ * Instance method: Add beneficiary
+ */
+InsurancePolicy.prototype.addBeneficiary = async function (beneficiaryId) {
+    const beneficiaries = [...(this.beneficiaries || [])];
+    if (!beneficiaries.includes(beneficiaryId)) {
+        beneficiaries.push(beneficiaryId);
+        this.beneficiaries = beneficiaries;
+    }
+    return await this.save();
+};
+
+/**
+ * Instance method: Add history entry
+ */
+InsurancePolicy.prototype.addHistoryEntry = async function (action, performedBy, notes = '', previousValues = null) {
+    const history = [...(this.history || [])];
+    history.push({
         action,
         performedBy,
         timestamp: new Date(),
         notes,
         previousValues
     });
-    return this.save();
+    this.history = history;
+    return await this.save();
 };
 
-// Pre-save middleware for tenant validation
-insurancePolicySchema.pre('save', function(next) {
-    if (!this.tenantId) {
-        const error = new Error('TenantId is required for insurance policy');
-        error.name = 'ValidationError';
-        return next(error);
-    }
-    next();
-});
-
-// Static method to find policies by tenant with role-based filtering
-insurancePolicySchema.statics.findByTenant = function(tenantId, filters = {}) {
-    return this.withTenant(tenantId).find(filters);
+/**
+ * Static method: Find policies by tenant
+ */
+InsurancePolicy.findByTenant = function (tenantId, filters = {}) {
+    return this.findAll({ where: { tenantId, ...filters } });
 };
 
-// Static method to find policies by tenant and employee with role-based access
-insurancePolicySchema.statics.findByTenantAndEmployee = function(tenantId, employeeId, userRole, userDepartment = null) {
-    const query = { tenantId };
-    
-    // Apply role-based filtering
-    if (userRole === 'employee') {
-        query.employeeId = employeeId;
-    } else if (userRole === 'manager' && userDepartment) {
-        // For managers, we need to join with User model to filter by department
-        // This will be handled in the controller layer with population
-        query.employeeId = employeeId; // Will be expanded in controller
-    }
-    // HR and Admin roles get access to all policies within tenant (no additional filtering)
-    
-    return this.find(query);
-};
-
-// Static method to find active policies with role-based access
-insurancePolicySchema.statics.findActivePolicies = function(tenantId, employeeId = null, userRole = null, userDepartment = null) {
-    const query = {
+/**
+ * Static method: Find active policies
+ */
+InsurancePolicy.findActivePolicies = function (tenantId, employeeId = null) {
+    const where = {
+        tenantId,
         status: 'active',
-        startDate: { $lte: new Date() },
-        endDate: { $gte: new Date() }
+        startDate: { [Op.lte]: new Date() },
+        endDate: { [Op.gte]: new Date() }
     };
     
-    // Apply role-based filtering
-    if (userRole === 'employee' && employeeId) {
-        query.employeeId = employeeId;
-    } else if (userRole === 'manager' && userDepartment && employeeId) {
-        // Manager access will be validated in controller layer
-        query.employeeId = employeeId;
+    if (employeeId) {
+        where.employeeId = employeeId;
     }
     
-    return this.withTenant(tenantId).find(query);
+    return this.findAll({ where });
 };
 
-// Static method to find expiring policies with role-based access
-insurancePolicySchema.statics.findExpiringPolicies = function(tenantId, daysAhead = 30, userRole = null, userDepartment = null, employeeId = null) {
+/**
+ * Static method: Find expiring policies
+ */
+InsurancePolicy.findExpiringPolicies = function (tenantId, daysAhead = 30, employeeId = null) {
     const now = new Date();
     const futureDate = new Date(now.getTime() + (daysAhead * 24 * 60 * 60 * 1000));
     
-    const query = {
+    const where = {
+        tenantId,
         status: 'active',
         endDate: {
-            $gte: now,
-            $lte: futureDate
+            [Op.gte]: now,
+            [Op.lte]: futureDate
         }
     };
     
-    // Apply role-based filtering
-    if (userRole === 'employee' && employeeId) {
-        query.employeeId = employeeId;
-    } else if (userRole === 'manager' && userDepartment && employeeId) {
-        // Manager access will be validated in controller layer
-        query.employeeId = employeeId;
+    if (employeeId) {
+        where.employeeId = employeeId;
     }
     
-    return this.withTenant(tenantId).find(query);
+    return this.findAll({ where });
 };
 
-// Static method for role-based policy queries
-insurancePolicySchema.statics.findWithRoleAccess = function(tenantId, userRole, userId, userDepartment = null, additionalFilters = {}) {
-    const query = { ...additionalFilters };
-    
-    switch (userRole) {
-        case 'employee':
-            query.employeeId = userId;
-            break;
-        case 'manager':
-            // Manager access requires department validation in controller
-            // This method returns base query, department filtering done in controller
-            break;
-        case 'hr':
-        case 'admin':
-            // Full tenant access - no additional filtering
-            break;
-        default:
-            // Unknown role - restrict to user's own data
-            query.employeeId = userId;
+/**
+ * Static method: Get policy statistics
+ */
+InsurancePolicy.getStatisticsByTenant = async function (tenantId, employeeId = null) {
+    const where = { tenantId };
+    if (employeeId) {
+        where.employeeId = employeeId;
     }
     
-    return this.withTenant(tenantId).find(query);
-};
-
-// Static method to get policy statistics by tenant
-insurancePolicySchema.statics.getStatisticsByTenant = function(tenantId, userRole = null, userId = null, userDepartment = null) {
-    const matchStage = { tenantId };
+    const policies = await this.findAll({ where });
     
-    // Apply role-based filtering for statistics
-    if (userRole === 'employee' && userId) {
-        matchStage.employeeId = userId;
-    } else if (userRole === 'manager' && userDepartment) {
-        // Manager statistics will be filtered in controller layer
-    }
-    
-    return this.aggregate([
-        { $match: matchStage },
-        {
-            $group: {
-                _id: '$status',
-                count: { $sum: 1 },
-                totalCoverage: { $sum: '$coverageAmount' },
-                totalPremium: { $sum: '$premium' }
-            }
+    const stats = policies.reduce((acc, policy) => {
+        const status = policy.status;
+        if (!acc[status]) {
+            acc[status] = {
+                count: 0,
+                totalCoverage: 0,
+                totalPremium: 0
+            };
         }
-    ]);
+        acc[status].count += 1;
+        acc[status].totalCoverage += parseFloat(policy.coverageAmount || 0);
+        acc[status].totalPremium += parseFloat(policy.premium || 0);
+        return acc;
+    }, {});
+    
+    return Object.entries(stats).map(([status, data]) => ({
+        _id: status,
+        ...data
+    }));
 };
-
-const InsurancePolicy = mongoose.model('InsurancePolicy', insurancePolicySchema);
 
 export default InsurancePolicy;

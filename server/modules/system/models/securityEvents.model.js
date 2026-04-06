@@ -1,127 +1,231 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../../../config/database.js';
 
 /**
- * SecurityEvents Model - Tenant-Specific
+ * SecurityEvents Model
+ * 
  * Tracks security events per tenant
+ * 
+ * CRITICAL: All records must have tenant_id for multi-tenancy isolation
  */
-const securityEventsSchema = new mongoose.Schema({
-  tenantId: {
-    type: String,
-    required: true,
-    index: true
+
+const SecurityEvents = sequelize.define('SecurityEvents', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
-  eventType: {
-    type: String,
-    required: true,
-    enum: [
-      'failed_login',
-      'successful_login',
-      'password_change',
-      'account_locked',
-      'suspicious_activity',
-      'unauthorized_access',
-      'privilege_escalation',
-      'data_breach_attempt',
-      'malicious_request',
-      'sql_injection_attempt',
-      'xss_attempt',
-      'csrf_attempt',
-      'brute_force_attack',
-      'session_hijack',
-      'token_manipulation',
-      'rate_limit_exceeded',
-      'ip_blocked',
-      'security_policy_violation'
-    ]
+  
+  // Tenant isolation - REQUIRED
+  tenant_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'tenant_id'
   },
+  
+  event_type: {
+    type: DataTypes.ENUM(
+      'failed_login', 'successful_login', 'password_change', 'account_locked',
+      'suspicious_activity', 'unauthorized_access', 'privilege_escalation',
+      'data_breach_attempt', 'malicious_request', 'sql_injection_attempt',
+      'xss_attempt', 'csrf_attempt', 'brute_force_attack', 'session_hijack',
+      'token_manipulation', 'rate_limit_exceeded', 'ip_blocked', 'security_policy_violation'
+    ),
+    allowNull: false,
+    field: 'event_type'
+  },
+  
   severity: {
-    type: String,
-    required: true,
-    enum: ['low', 'medium', 'high', 'critical'],
-    default: 'medium'
+    type: DataTypes.ENUM('low', 'medium', 'high', 'critical'),
+    allowNull: false,
+    defaultValue: 'medium'
   },
+  
   description: {
-    type: String,
-    required: true
+    type: DataTypes.TEXT,
+    allowNull: false
   },
-  userId: {
-    type: String
+  
+  user_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'user_id'
   },
-  ipAddress: {
-    type: String,
-    required: true
+  
+  ip_address: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'ip_address'
   },
-  userAgent: {
-    type: String
+  
+  user_agent: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'user_agent'
   },
-  requestPath: {
-    type: String
+  
+  request_path: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'request_path'
   },
-  requestMethod: {
-    type: String
+  
+  request_method: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'request_method'
   },
-  requestHeaders: {
-    type: mongoose.Schema.Types.Mixed
+  
+  request_headers: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    field: 'request_headers'
   },
-  requestBody: {
-    type: mongoose.Schema.Types.Mixed
+  
+  request_body: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    field: 'request_body'
   },
-  responseStatus: {
-    type: Number
+  
+  response_status: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'response_status'
   },
-  sessionId: {
-    type: String
+  
+  session_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'session_id'
   },
-  correlationId: {
-    type: String
+  
+  correlation_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'correlation_id'
   },
+  
   resolved: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
   },
-  resolvedAt: {
-    type: Date
+  
+  resolved_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'resolved_at'
   },
-  resolvedBy: {
-    type: String
+  
+  resolved_by: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'resolved_by'
   },
-  resolutionNotes: {
-    type: String
+  
+  resolution_notes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'resolution_notes'
   },
-  riskScore: {
-    type: Number,
-    min: 0,
-    max: 100,
-    default: 0
+  
+  risk_score: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    validate: {
+      min: 0,
+      max: 100
+    },
+    field: 'risk_score'
   },
+  
   geolocation: {
-    country: String,
-    region: String,
-    city: String,
-    latitude: Number,
-    longitude: Number
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+    // Structure: { country, region, city, latitude, longitude }
   },
+  
   timestamp: {
-    type: Date,
-    default: Date.now,
-    expires: 31536000 // 1 year TTL
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
   },
+  
   metadata: {
-    type: mongoose.Schema.Types.Mixed
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
   }
 }, {
+  tableName: 'security_events',
   timestamps: true,
-  collection: 'securityevents'
+  underscored: true,
+  indexes: [
+    {
+      fields: ['tenant_id']
+    },
+    {
+      fields: ['tenant_id', 'timestamp']
+    },
+    {
+      fields: ['tenant_id', 'event_type', 'severity']
+    },
+    {
+      fields: ['tenant_id', 'ip_address', 'timestamp']
+    },
+    {
+      fields: ['tenant_id', 'resolved', 'severity']
+    },
+    {
+      fields: ['tenant_id', 'user_id', 'event_type', 'timestamp']
+    },
+    {
+      fields: ['tenant_id', 'risk_score', 'timestamp']
+    }
+  ]
 });
 
-// Compound indexes for better query performance
-securityEventsSchema.index({ tenantId: 1, timestamp: -1 });
-securityEventsSchema.index({ tenantId: 1, eventType: 1, severity: 1 });
-securityEventsSchema.index({ tenantId: 1, ipAddress: 1, timestamp: -1 });
-securityEventsSchema.index({ tenantId: 1, resolved: 1, severity: 1 });
-securityEventsSchema.index({ tenantId: 1, userId: 1, eventType: 1, timestamp: -1 });
-securityEventsSchema.index({ tenantId: 1, riskScore: -1, timestamp: -1 });
+// Static methods
+SecurityEvents.getUnresolvedEvents = async function(tenantId, severity = null) {
+  const where = {
+    tenant_id: tenantId,
+    resolved: false
+  };
+  
+  if (severity) {
+    where.severity = severity;
+  }
+  
+  return this.findAll({
+    where,
+    order: [['risk_score', 'DESC'], ['timestamp', 'DESC']]
+  });
+};
 
-const SecurityEvents = mongoose.model('SecurityEvents', securityEventsSchema);
+SecurityEvents.getEventsByType = async function(tenantId, startDate, endDate) {
+  const { Op, QueryTypes } = require('sequelize');
+  
+  const results = await sequelize.query(
+    `SELECT 
+      event_type,
+      severity,
+      COUNT(*) as count
+    FROM security_events
+    WHERE tenant_id = :tenantId
+      AND timestamp >= :startDate
+      AND timestamp <= :endDate
+    GROUP BY event_type, severity
+    ORDER BY count DESC`,
+    {
+      replacements: { tenantId, startDate, endDate },
+      type: QueryTypes.SELECT
+    }
+  );
+  
+  return results;
+};
 
 export default SecurityEvents;

@@ -1,225 +1,183 @@
 /**
- * Mixed Vacation Model
+ * Mixed Vacation Model (Sequelize)
  * 
  * Manages vacation policies that combine official holidays with personal leave days
  */
-import mongoose from 'mongoose';
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
 
-const mixedVacationSchema = new mongoose.Schema({
-    // Tenant ID for multi-tenancy
-    tenantId: {
-        type: String,
-        required: true,
-        index: true
+const MixedVacation = mainAppDb.define('MixedVacation', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
     },
-    
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
+    },
     // Policy Information
     name: {
-        type: String,
-        required: true,
-        trim: true,
-        maxlength: 100
+        type: DataTypes.STRING(100),
+        allowNull: false
     },
-    description: String,
-
+    description: {
+        type: DataTypes.TEXT
+    },
     // Date Range
     startDate: {
-        type: Date,
-        required: true,
-        index: true
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'start_date'
     },
     endDate: {
-        type: Date,
-        required: true,
-        index: true
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'end_date'
     },
-
     // Total Days
     totalDays: {
-        type: Number,
-        required: true,
-        min: 1
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: { min: 1 },
+        field: 'total_days'
     },
-
-    // Official Holidays (automatically detected from Holiday model)
-    officialHolidays: [{
-        date: Date,
-        name: String,
-        dayOfWeek: String
-    }],
+    // Official Holidays - stored as JSONB array
+    officialHolidays: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        field: 'official_holidays'
+    },
     officialHolidayCount: {
-        type: Number,
-        default: 0
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+        field: 'official_holiday_count'
     },
-
     // Personal Days Required
     personalDaysRequired: {
-        type: Number,
-        required: true,
-        min: 0
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: { min: 0 },
+        field: 'personal_days_required'
     },
-
     // Deduction Strategy
     deductionStrategy: {
-        type: String,
-        enum: ['annual-first', 'casual-first', 'proportional', 'auto'],
-        default: 'auto' // Auto: annual first, fallback to casual
+        type: DataTypes.ENUM('annual-first', 'casual-first', 'proportional', 'auto'),
+        defaultValue: 'auto',
+        field: 'deduction_strategy'
     },
-
-    // location/Department Filter
+    // Applicable To - stored as JSONB
     applicableTo: {
-        departments: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Department'
-        }],
-        allEmployees: {
-            type: Boolean,
-            default: false
-        }
+        type: DataTypes.JSONB,
+        defaultValue: {
+            departments: [],
+            allEmployees: false
+        },
+        field: 'applicable_to'
     },
-
-    // Employee Applications
-    applications: [{
-        employee: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
-        },
-        appliedAt: {
-            type: Date,
-            default: Date.now
-        },
-        status: {
-            type: String,
-            enum: ['pending', 'approved', 'rejected', 'applied'],
-            default: 'pending'
-        },
-
-        // Deduction Breakdown
-        deduction: {
-            annualDays: {
-                type: Number,
-                default: 0
-            },
-            casualDays: {
-                type: Number,
-                default: 0
-            },
-            totalDeducted: {
-                type: Number,
-                default: 0
-            }
-        },
-
-        // Balance Before
-        balanceBefore: {
-            annual: Number,
-            casual: Number
-        },
-
-        // Balance After
-        balanceAfter: {
-            annual: Number,
-            casual: Number
-        },
-
-        approvedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        approvedAt: Date,
-        notes: String
-    }],
-
+    // Employee Applications - stored as JSONB array
+    applications: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    },
     // Policy Status
     status: {
-        type: String,
-        enum: ['draft', 'active', 'completed', 'cancelled'],
-        default: 'draft'
+        type: DataTypes.ENUM('draft', 'active', 'completed', 'cancelled'),
+        defaultValue: 'draft'
     },
-
-    // Auto-apply
+    // Auto-apply - stored as JSONB
     autoApply: {
-        enabled: {
-            type: Boolean,
-            default: false
+        type: DataTypes.JSONB,
+        defaultValue: {
+            enabled: false,
+            appliedAt: null,
+            appliedBy: null,
+            appliedCount: 0
         },
-        appliedAt: Date,
-        appliedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        appliedCount: {
-            type: Number,
-            default: 0
-        }
+        field: 'auto_apply'
     },
-
-    // Statistics
+    // Statistics - stored as JSONB
     stats: {
-        totalApplicants: {
-            type: Number,
-            default: 0
-        },
-        approvedCount: {
-            type: Number,
-            default: 0
-        },
-        rejectedCount: {
-            type: Number,
-            default: 0
-        },
-        totalAnnualDeducted: {
-            type: Number,
-            default: 0
-        },
-        totalCasualDeducted: {
-            type: Number,
-            default: 0
+        type: DataTypes.JSONB,
+        defaultValue: {
+            totalApplicants: 0,
+            approvedCount: 0,
+            rejectedCount: 0,
+            totalAnnualDeducted: 0,
+            totalCasualDeducted: 0
         }
     },
-
     // Metadata
     createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'created_by'
     },
     lastModifiedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'last_modified_by'
     }
 }, {
-    timestamps: true
+    tableName: 'mixed_vacations',
+    timestamps: true,
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['tenant_id', 'start_date', 'end_date'] },
+        { fields: ['tenant_id', 'status'] },
+        { fields: ['start_date', 'end_date'] },
+        { fields: ['status'] }
+    ]
 });
 
-// Indexes
-mixedVacationSchema.index({ tenantId: 1, startDate: 1, endDate: 1 });
-mixedVacationSchema.index({ tenantId: 1, status: 1 });
-mixedVacationSchema.index({ tenantId: 1, 'applications.employee': 1 });
-mixedVacationSchema.index({ startDate: 1, endDate: 1 });
-mixedVacationSchema.index({ status: 1 });
-mixedVacationSchema.index({ 'applications.employee': 1 });
+/**
+ * Define associations
+ */
+MixedVacation.associate = (models) => {
+    MixedVacation.belongsTo(models.User, {
+        foreignKey: 'createdBy',
+        as: 'creator'
+    });
+    MixedVacation.belongsTo(models.User, {
+        foreignKey: 'lastModifiedBy',
+        as: 'lastModifier'
+    });
+};
 
-// Virtual for duration in days
-mixedVacationSchema.virtual('durationDays').get(function () {
+/**
+ * Instance method: Get duration in days
+ */
+MixedVacation.prototype.getDurationDays = function () {
     const diffTime = this.endDate - this.startDate;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-});
+};
 
-// Method to calculate personal days required
-mixedVacationSchema.methods.calculatePersonalDays = function () {
+/**
+ * Instance method: Calculate personal days required
+ */
+MixedVacation.prototype.calculatePersonalDays = function () {
     this.personalDaysRequired = this.totalDays - this.officialHolidayCount;
     return this.personalDaysRequired;
 };
 
-// Method to detect official holidays in date range
-mixedVacationSchema.methods.detectOfficialHolidays = async function (locationId) {
-    const Holiday = mongoose.model('Holiday');
+/**
+ * Instance method: Detect official holidays in date range
+ */
+MixedVacation.prototype.detectOfficialHolidays = async function (locationId) {
+    const Holiday = mainAppDb.models.Holiday;
 
     const holidaySettings = await Holiday.getOrCreateForTenant(locationId);
 
-    const holidays = holidaySettings.officialHolidays.filter(h => {
+    const holidays = (holidaySettings.officialHolidays || []).filter(h => {
         const holidayDate = new Date(h.date);
         return holidayDate >= this.startDate && holidayDate <= this.endDate;
     });
@@ -236,11 +194,18 @@ mixedVacationSchema.methods.detectOfficialHolidays = async function (locationId)
     return this;
 };
 
-// Method to calculate deduction for employee
-mixedVacationSchema.methods.calculateDeduction = async function (employeeId) {
-    const VacationBalance = mongoose.model('VacationBalance');
+/**
+ * Instance method: Calculate deduction for employee
+ */
+MixedVacation.prototype.calculateDeduction = async function (employeeId) {
+    const VacationBalance = mainAppDb.models.VacationBalance;
 
-    const balance = await VacationBalance.findOne({ employee: employeeId });
+    const balance = await VacationBalance.findOne({ 
+        where: { 
+            employee: employeeId,
+            tenantId: this.tenantId
+        } 
+    });
 
     if (!balance) {
         throw new Error('Employee vacation balance not found');
@@ -254,33 +219,33 @@ mixedVacationSchema.methods.calculateDeduction = async function (employeeId) {
         case 'annual-first':
         case 'auto':
             // Try to deduct from annual first
-            annualDeduct = Math.min(personalDays, balance.annual.available);
+            annualDeduct = Math.min(personalDays, balance.annual?.available || 0);
             casualDeduct = personalDays - annualDeduct;
             break;
 
         case 'casual-first':
             // Try to deduct from casual first
-            casualDeduct = Math.min(personalDays, balance.casual.available);
+            casualDeduct = Math.min(personalDays, balance.casual?.available || 0);
             annualDeduct = personalDays - casualDeduct;
             break;
 
         case 'proportional':
             // Distribute proportionally
-            const totalAvailable = balance.annual.available + balance.casual.available;
+            const totalAvailable = (balance.annual?.available || 0) + (balance.casual?.available || 0);
             if (totalAvailable >= personalDays) {
-                const annualRatio = balance.annual.available / totalAvailable;
+                const annualRatio = (balance.annual?.available || 0) / totalAvailable;
                 annualDeduct = Math.floor(personalDays * annualRatio);
                 casualDeduct = personalDays - annualDeduct;
             } else {
-                annualDeduct = balance.annual.available;
-                casualDeduct = balance.casual.available;
+                annualDeduct = balance.annual?.available || 0;
+                casualDeduct = balance.casual?.available || 0;
             }
             break;
     }
 
     // Check if sufficient balance
     const totalDeduct = annualDeduct + casualDeduct;
-    const totalAvailable = balance.annual.available + balance.casual.available;
+    const totalAvailable = (balance.annual?.available || 0) + (balance.casual?.available || 0);
 
     if (totalDeduct > totalAvailable) {
         throw new Error(`Insufficient leave balance. Required: ${personalDays} days, Available: ${totalAvailable} days`);
@@ -291,19 +256,21 @@ mixedVacationSchema.methods.calculateDeduction = async function (employeeId) {
         casualDays: casualDeduct,
         totalDeducted: totalDeduct,
         balanceBefore: {
-            annual: balance.annual.available,
-            casual: balance.casual.available
+            annual: balance.annual?.available || 0,
+            casual: balance.casual?.available || 0
         },
         balanceAfter: {
-            annual: balance.annual.available - annualDeduct,
-            casual: balance.casual.available - casualDeduct
+            annual: (balance.annual?.available || 0) - annualDeduct,
+            casual: (balance.casual?.available || 0) - casualDeduct
         },
         sufficient: totalDeduct <= totalAvailable
     };
 };
 
-// Method to test policy on employee
-mixedVacationSchema.methods.testOnEmployee = async function (employeeId) {
+/**
+ * Instance method: Test policy on employee
+ */
+MixedVacation.prototype.testOnEmployee = async function (employeeId) {
     try {
         const deduction = await this.calculateDeduction(employeeId);
 
@@ -328,13 +295,16 @@ mixedVacationSchema.methods.testOnEmployee = async function (employeeId) {
     }
 };
 
-// Method to apply to employee
-mixedVacationSchema.methods.applyToEmployee = async function (employeeId, approvedBy = null) {
-    const VacationBalance = mongoose.model('VacationBalance');
+/**
+ * Instance method: Apply to employee
+ */
+MixedVacation.prototype.applyToEmployee = async function (employeeId, approvedBy = null) {
+    const VacationBalance = mainAppDb.models.VacationBalance;
 
     // Check if already applied
-    const existing = this.applications.find(
-        app => app.employee.toString() === employeeId.toString()
+    const applications = this.applications || [];
+    const existing = applications.find(
+        app => app.employee === employeeId
     );
 
     if (existing) {
@@ -349,24 +319,34 @@ mixedVacationSchema.methods.applyToEmployee = async function (employeeId, approv
     }
 
     // Deduct from balance
-    const balance = await VacationBalance.findOne({ employee: employeeId });
+    const balance = await VacationBalance.findOne({ 
+        where: { 
+            employee: employeeId,
+            tenantId: this.tenantId
+        } 
+    });
 
-    balance.annual.used += deduction.annualDays;
-    // Only subtract from pending if there are pending days
-    if (balance.annual.pending >= deduction.annualDays) {
-        balance.annual.pending -= deduction.annualDays;
+    const annual = { ...balance.annual };
+    annual.used = (annual.used || 0) + deduction.annualDays;
+    if ((annual.pending || 0) >= deduction.annualDays) {
+        annual.pending = (annual.pending || 0) - deduction.annualDays;
     }
-    balance.casual.used += deduction.casualDays;
-    // Only subtract from pending if there are pending days
-    if (balance.casual.pending >= deduction.casualDays) {
-        balance.casual.pending -= deduction.casualDays;
+    balance.annual = annual;
+
+    const casual = { ...balance.casual };
+    casual.used = (casual.used || 0) + deduction.casualDays;
+    if ((casual.pending || 0) >= deduction.casualDays) {
+        casual.pending = (casual.pending || 0) - deduction.casualDays;
     }
+    balance.casual = casual;
 
     await balance.save();
 
     // Add application
-    this.applications.push({
+    const newApplications = [...applications];
+    newApplications.push({
         employee: employeeId,
+        appliedAt: new Date(),
         status: approvedBy ? 'approved' : 'applied',
         deduction: {
             annualDays: deduction.annualDays,
@@ -378,40 +358,51 @@ mixedVacationSchema.methods.applyToEmployee = async function (employeeId, approv
         approvedBy,
         approvedAt: approvedBy ? new Date() : null
     });
+    this.applications = newApplications;
 
     // Update statistics
-    this.stats.totalApplicants += 1;
+    const stats = { ...this.stats };
+    stats.totalApplicants = (stats.totalApplicants || 0) + 1;
     if (approvedBy) {
-        this.stats.approvedCount += 1;
+        stats.approvedCount = (stats.approvedCount || 0) + 1;
     }
-    this.stats.totalAnnualDeducted += deduction.annualDays;
-    this.stats.totalCasualDeducted += deduction.casualDays;
+    stats.totalAnnualDeducted = (stats.totalAnnualDeducted || 0) + deduction.annualDays;
+    stats.totalCasualDeducted = (stats.totalCasualDeducted || 0) + deduction.casualDays;
+    this.stats = stats;
 
     await this.save();
 
     return this;
 };
 
-// Method to apply to all eligible employees
-mixedVacationSchema.methods.applyToAll = async function (approvedBy) {
-    const User = mongoose.model('User');
+/**
+ * Instance method: Apply to all eligible employees
+ */
+MixedVacation.prototype.applyToAll = async function (approvedBy) {
+    const User = mainAppDb.models.User;
 
-    let query = { isActive: true };
+    let where = { 
+        isActive: true,
+        tenantId: this.tenantId
+    };
 
     // Filter by location/department if specified
-    if (!this.applicableTo.allEmployees) {
+    if (!this.applicableTo?.allEmployees) {
         const filters = [];
 
-        if (this.applicableTo.departments.length > 0) {
-            filters.push({ department: { $in: this.applicableTo.departments } });
+        if (this.applicableTo?.departments?.length > 0) {
+            filters.push({ department: { [Op.in]: this.applicableTo.departments } });
         }
 
         if (filters.length > 0) {
-            query.$or = filters;
+            where[Op.or] = filters;
         }
     }
 
-    const employees = await User.find(query).select('_id');
+    const employees = await User.findAll({
+        where,
+        attributes: ['id']
+    });
 
     const results = {
         total: employees.length,
@@ -422,64 +413,73 @@ mixedVacationSchema.methods.applyToAll = async function (approvedBy) {
 
     for (const employee of employees) {
         try {
-            await this.applyToEmployee(employee._id, approvedBy);
+            await this.applyToEmployee(employee.id, approvedBy);
             results.success += 1;
         } catch (error) {
             results.failed += 1;
             results.errors.push({
-                employee: employee._id,
+                employee: employee.id,
                 error: error.message
             });
         }
     }
 
     // Update auto-apply info
-    this.autoApply.appliedAt = new Date();
-    this.autoApply.appliedBy = approvedBy;
-    this.autoApply.appliedCount = results.success;
+    const autoApply = { ...this.autoApply };
+    autoApply.appliedAt = new Date();
+    autoApply.appliedBy = approvedBy;
+    autoApply.appliedCount = results.success;
+    this.autoApply = autoApply;
 
     await this.save();
 
     return results;
 };
 
-// Static method to find active policies
-mixedVacationSchema.statics.findActivePolicies = async function (tenantId) {
+/**
+ * Static method: Find active policies
+ */
+MixedVacation.findActivePolicies = async function (tenantId) {
     const now = new Date();
 
-    const query = {
-        tenantId: tenantId,
-        status: 'active',
-        startDate: { $lte: now },
-        endDate: { $gte: now }
-    };
-
-    try {
-        const result = await this.find(query).populate('createdBy', 'username email');
-        return result;
-    } catch (err) {
-        throw err;
-    }
+    return await this.findAll({
+        where: {
+            tenantId,
+            status: 'active',
+            startDate: { [Op.lte]: now },
+            endDate: { [Op.gte]: now }
+        },
+        include: [{
+            model: mainAppDb.models.User,
+            as: 'creator',
+            attributes: ['username', 'email']
+        }]
+    });
 };
 
-// Static method to find upcoming policies
-mixedVacationSchema.statics.findUpcomingPolicies = async function (tenantId, days = 30) {
+/**
+ * Static method: Find upcoming policies
+ */
+MixedVacation.findUpcomingPolicies = async function (tenantId, days = 30) {
     const now = new Date();
     const future = new Date();
     future.setDate(future.getDate() + days);
 
-    const query = {
-        tenantId: tenantId,
-        status: 'active',
-        startDate: { $gte: now, $lte: future }
-    };
-
-    try {
-        const result = await this.find(query).populate('createdBy', 'username email');
-        return result;
-    } catch (err) {
-        throw err;
-    }
+    return await this.findAll({
+        where: {
+            tenantId,
+            status: 'active',
+            startDate: { 
+                [Op.gte]: now, 
+                [Op.lte]: future 
+            }
+        },
+        include: [{
+            model: mainAppDb.models.User,
+            as: 'creator',
+            attributes: ['username', 'email']
+        }]
+    });
 };
 
-export default mongoose.model('MixedVacation', mixedVacationSchema);
+export default MixedVacation;

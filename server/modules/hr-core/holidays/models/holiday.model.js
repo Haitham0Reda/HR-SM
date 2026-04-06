@@ -3,94 +3,89 @@
  * 
  * Manages official holidays, weekend work days, and holiday settings
  */
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
 
-const holidaySchema = new mongoose.Schema({
-    // Tenant identifier for multi-tenant support
-    tenantId: {
-        type: String,
-        required: true,
-        index: true
+const Holiday = mainAppDb.define('Holiday', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
     },
-
-    // Official Holidays
-    officialHolidays: [{
-        date: {
-            type: Date,
-            required: true
-        },
-        name: String,
-        dayOfWeek: String,
-        isWeekend: {
-            type: Boolean,
-            default: false
-        },
-        isIslamic: {
-            type: Boolean,
-            default: false
-        },
-        description: String
-    }],
-
-    // Weekend Work Days (makeup days)
-    weekendWorkDays: [{
-        date: {
-            type: Date,
-            required: true
-        },
-        reason: String,
-        dayOfWeek: String
-    }],
-
-    // Early Leave Dates
-    earlyLeaveDates: [{
-        date: {
-            type: Date,
-            required: true
-        },
-        reason: String,
-        earlyLeaveTime: String, // HH:mm format
-        dayOfWeek: String
-    }],
-
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id',
+        comment: 'Tenant identifier for multi-tenancy'
+    },
+    // Official Holidays stored as JSONB array
+    officialHolidays: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        field: 'official_holidays',
+        comment: 'Array of official holiday objects'
+    },
+    // Weekend Work Days stored as JSONB array
+    weekendWorkDays: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        field: 'weekend_work_days',
+        comment: 'Array of weekend work day objects'
+    },
+    // Early Leave Dates stored as JSONB array
+    earlyLeaveDates: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        field: 'early_leave_dates',
+        comment: 'Array of early leave date objects'
+    },
     // Weekend Configuration
     weekendDays: {
-        type: [Number], // 0 = Sunday, 6 = Saturday
-        default: [5, 6] // Friday and Saturday for Egypt
+        type: DataTypes.ARRAY(DataTypes.INTEGER),
+        defaultValue: [5, 6], // Friday and Saturday for Egypt
+        field: 'weekend_days',
+        comment: '0 = Sunday, 6 = Saturday'
     },
-
     // Metadata
     lastModified: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        field: 'last_modified'
     },
     lastModifiedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        type: DataTypes.UUID,
+        allowNull: true,
+        field: 'last_modified_by',
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     }
 }, {
-    timestamps: true
+    tableName: 'holidays',
+    timestamps: true,
+    underscored: true,
+    indexes: [
+        {
+            fields: ['tenant_id']
+        }
+    ]
 });
 
-// Indexes
-holidaySchema.index({ tenantId: 1 });
-holidaySchema.index({ 'officialHolidays.date': 1 });
-holidaySchema.index({ 'weekendWorkDays.date': 1 });
-
 // Static method to get day of week
-holidaySchema.statics.getDayOfWeek = function (date) {
+Holiday.getDayOfWeek = function (date) {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[new Date(date).getDay()];
 };
 
 // Static method to check if date is weekend
-holidaySchema.statics.isWeekend = function (date, weekendDays = [5, 6]) {
+Holiday.isWeekend = function (date, weekendDays = [5, 6]) {
     const dayOfWeek = new Date(date).getDay();
     return weekendDays.includes(dayOfWeek);
 };
 
 // Static method to parse DD-MM-YYYY format
-holidaySchema.statics.parseDate = function (dateString) {
+Holiday.parseDate = function (dateString) {
     const parts = dateString.trim().split('-');
     if (parts.length !== 3) return null;
 
@@ -111,27 +106,29 @@ holidaySchema.statics.parseDate = function (dateString) {
     return date;
 };
 
-// Method to add official holiday
-holidaySchema.methods.addOfficialHoliday = function (dateString, name, description = '') {
-    const date = this.constructor.parseDate(dateString);
+// Instance method to add official holiday
+Holiday.prototype.addOfficialHoliday = function (dateString, name, description = '') {
+    const date = Holiday.parseDate(dateString);
     if (!date) {
         throw new Error(`Invalid date format: ${dateString}. Use DD-MM-YYYY format.`);
     }
 
+    const holidays = this.officialHolidays || [];
+    
     // Check if already exists
-    const exists = this.officialHolidays.some(h =>
-        h.date.toDateString() === date.toDateString()
+    const exists = holidays.some(h =>
+        new Date(h.date).toDateString() === date.toDateString()
     );
 
     if (exists) {
         throw new Error(`Holiday already exists for date: ${dateString}`);
     }
 
-    const dayOfWeek = this.constructor.getDayOfWeek(date);
-    const isWeekend = this.constructor.isWeekend(date, this.weekendDays);
+    const dayOfWeek = Holiday.getDayOfWeek(date);
+    const isWeekend = Holiday.isWeekend(date, this.weekendDays);
 
-    this.officialHolidays.push({
-        date,
+    holidays.push({
+        date: date.toISOString(),
         name: name || 'Official Holiday',
         dayOfWeek,
         isWeekend,
@@ -139,13 +136,14 @@ holidaySchema.methods.addOfficialHoliday = function (dateString, name, descripti
     });
 
     // Sort by date
-    this.officialHolidays.sort((a, b) => a.date - b.date);
-
+    holidays.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    this.officialHolidays = holidays;
     return this;
 };
 
-// Method to add multiple holidays from comma-separated string
-holidaySchema.methods.addMultipleHolidays = function (dateString, name = 'Official Holiday') {
+// Instance method to add multiple holidays
+Holiday.prototype.addMultipleHolidays = function (dateString, name = 'Official Holiday') {
     const dates = dateString.split(',').map(d => d.trim()).filter(d => d);
     const added = [];
     const errors = [];
@@ -162,62 +160,67 @@ holidaySchema.methods.addMultipleHolidays = function (dateString, name = 'Offici
     return { added, errors };
 };
 
-// Method to add weekend work day
-holidaySchema.methods.addWeekendWorkDay = function (dateString, reason = '') {
-    const date = this.constructor.parseDate(dateString);
+// Instance method to add weekend work day
+Holiday.prototype.addWeekendWorkDay = function (dateString, reason = '') {
+    const date = Holiday.parseDate(dateString);
     if (!date) {
         throw new Error(`Invalid date format: ${dateString}. Use DD-MM-YYYY format.`);
     }
 
+    const workDays = this.weekendWorkDays || [];
+    
     // Check if already exists
-    const exists = this.weekendWorkDays.some(w =>
-        w.date.toDateString() === date.toDateString()
+    const exists = workDays.some(w =>
+        new Date(w.date).toDateString() === date.toDateString()
     );
 
     if (exists) {
         throw new Error(`Weekend work day already exists for date: ${dateString}`);
     }
 
-    const dayOfWeek = this.constructor.getDayOfWeek(date);
+    const dayOfWeek = Holiday.getDayOfWeek(date);
 
-    this.weekendWorkDays.push({
-        date,
+    workDays.push({
+        date: date.toISOString(),
         reason,
         dayOfWeek
     });
 
     // Sort by date
-    this.weekendWorkDays.sort((a, b) => a.date - b.date);
-
+    workDays.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    this.weekendWorkDays = workDays;
     return this;
 };
 
-// Method to check if date is holiday
-holidaySchema.methods.isHoliday = function (date) {
+// Instance method to check if date is holiday
+Holiday.prototype.isHoliday = function (date) {
     const checkDate = new Date(date);
     checkDate.setHours(0, 0, 0, 0);
 
-    return this.officialHolidays.some(h => {
+    const holidays = this.officialHolidays || [];
+    return holidays.some(h => {
         const holidayDate = new Date(h.date);
         holidayDate.setHours(0, 0, 0, 0);
         return holidayDate.getTime() === checkDate.getTime();
     });
 };
 
-// Method to check if date is weekend work day
-holidaySchema.methods.isWeekendWorkDay = function (date) {
+// Instance method to check if date is weekend work day
+Holiday.prototype.isWeekendWorkDay = function (date) {
     const checkDate = new Date(date);
     checkDate.setHours(0, 0, 0, 0);
 
-    return this.weekendWorkDays.some(w => {
+    const workDays = this.weekendWorkDays || [];
+    return workDays.some(w => {
         const workDate = new Date(w.date);
         workDate.setHours(0, 0, 0, 0);
         return workDate.getTime() === checkDate.getTime();
     });
 };
 
-// Method to check if date is working day
-holidaySchema.methods.isWorkingDay = function (date) {
+// Instance method to check if date is working day
+Holiday.prototype.isWorkingDay = function (date) {
     const checkDate = new Date(date);
 
     // If it's a holiday, it's not a working day
@@ -231,16 +234,16 @@ holidaySchema.methods.isWorkingDay = function (date) {
     }
 
     // Check if it's a regular weekend
-    return !this.constructor.isWeekend(checkDate, this.weekendDays);
+    return !Holiday.isWeekend(checkDate, this.weekendDays);
 };
 
 // Static method to get or create holiday settings for tenant
-holidaySchema.statics.getOrCreateForTenant = async function (tenantId) {
-    let settings = await this.findOne({ tenantId: tenantId });
+Holiday.getOrCreateForTenant = async function (tenantId) {
+    let settings = await this.findOne({ where: { tenantId } });
 
     if (!settings) {
         settings = await this.create({
-            tenantId: tenantId,
+            tenantId,
             officialHolidays: [],
             weekendWorkDays: [],
             earlyLeaveDates: [],
@@ -252,7 +255,7 @@ holidaySchema.statics.getOrCreateForTenant = async function (tenantId) {
 };
 
 // Static method to identify Islamic holidays
-holidaySchema.statics.isIslamicHoliday = function (name) {
+Holiday.isIslamicHoliday = function (name) {
     const islamicKeywords = [
         'eid', 'ramadan', 'muharram', 'hijri', 'islamic',
         'mawlid', 'ashura', 'laylat', 'rajab', 'sha\'ban',
@@ -263,4 +266,12 @@ holidaySchema.statics.isIslamicHoliday = function (name) {
     return islamicKeywords.some(keyword => lowerName.includes(keyword));
 };
 
-export default mongoose.model('Holiday', holidaySchema);
+// Define associations
+Holiday.associate = (models) => {
+    Holiday.belongsTo(models.User, {
+        foreignKey: 'lastModifiedBy',
+        as: 'modifier'
+    });
+};
+
+export default Holiday;

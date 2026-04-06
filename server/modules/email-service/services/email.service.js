@@ -3,6 +3,7 @@
  * Consolidates all email functionality with Gmail API and SMTP support
  */
 import nodemailer from 'nodemailer';
+import { Op } from 'sequelize';
 import User from '../../hr-core/users/models/user.model.js';
 import Department from '../../hr-core/users/models/department.model.js';
 
@@ -150,8 +151,13 @@ class EmailService {
      */
     async getEmployeeManager(employee) {
         try {
-            const department = await Department.findById(employee.department)
-                .populate('manager', 'username email profile');
+            const department = await Department.findByPk(employee.department, {
+                include: [{
+                    model: User,
+                    as: 'manager',
+                    attributes: ['username', 'email', 'profile']
+                }]
+            });
             return department?.manager || null;
         } catch (error) {
 
@@ -164,8 +170,13 @@ class EmailService {
      */
     async getHREmployee() {
         try {
-            const hrUser = await User.findOne({ role: 'hr', isActive: true })
-                .select('username email profile');
+            const hrUser = await User.findOne({ 
+                where: {
+                    role: 'hr',
+                    isActive: true
+                },
+                attributes: ['username', 'email', 'profile']
+            });
             return hrUser || null;
         } catch (error) {
 
@@ -179,9 +190,16 @@ class EmailService {
     async getDoctor() {
         try {
             const doctor = await User.findOne({ 
-                $or: [{ role: 'hr' }, { role: 'admin' }, { role: 'manager' }],
-                isActive: true 
-            }).select('username email profile');
+                where: {
+                    [Op.or]: [
+                        { role: 'hr' },
+                        { role: 'admin' },
+                        { role: 'manager' }
+                    ],
+                    isActive: true
+                },
+                attributes: ['username', 'email', 'profile']
+            });
             return doctor || null;
         } catch (error) {
 

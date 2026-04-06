@@ -1,3 +1,6 @@
+import { DataTypes, Op } from 'sequelize';
+import sequelize from '../../../config/database.js';
+
 /**
  * ID Card Batch Model
  * 
@@ -10,411 +13,369 @@
  * - Progress monitoring
  * - Error handling and retry logic
  * - Print queue management
+ * 
+ * CRITICAL: All records must have tenant_id for multi-tenancy isolation
  */
-import mongoose from 'mongoose';
 
-const idCardBatchSchema = new mongoose.Schema({
-    // Batch identification
-    batchNumber: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true
-    },
-
-    // Batch name/description
-    name: {
-        type: String,
-        required: true
-    },
-
-    description: String,
-
-    // Batch type
-    batchType: {
-        type: String,
-        enum: ['new-hire', 'renewal', 'replacement', 'all-employees', 'department', 'custom'],
-        required: true
-    },
-
-    // Filters used to select cards for this batch
-    filters: {
-        department: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Department'
-        },
-        position: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Position'
-        },
-        cardType: String,
-        employeeIds: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        }],
-        customFilters: mongoose.Schema.Types.Mixed
-    },
-
-    // Cards included in this batch
-    cards: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'IDCard'
-    }],
-
-    // Batch status
-    status: {
-        type: String,
-        enum: ['pending', 'queued', 'processing', 'completed', 'failed', 'cancelled', 'partially-completed'],
-        default: 'pending'
-    },
-
-    // Processing information
-    processing: {
-        startedAt: Date,
-        completedAt: Date,
-        duration: Number,  // in milliseconds
-        totalCards: {
-            type: Number,
-            default: 0
-        },
-        processedCards: {
-            type: Number,
-            default: 0
-        },
-        successfulCards: {
-            type: Number,
-            default: 0
-        },
-        failedCards: {
-            type: Number,
-            default: 0
-        },
-        progress: {
-            type: Number,
-            min: 0,
-            max: 100,
-            default: 0
-        }
-    },
-
-    // Failed cards details
-    failures: [{
-        card: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'IDCard'
-        },
-        employee: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        errorMessage: String,
-        errorCode: String,
-        attemptedAt: {
-            type: Date,
-            default: Date.now
-        }
-    }],
-
-    // Batch creator
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
-    },
-
-    // Organization/location
-    organization: {
-        type: String,
-        default: 'default'
-    },
-
-    // Printer configuration
-    printer: {
-        printerName: String,
-        printerModel: String,
-        printerLocation: String
-    },
-
-    // Print settings
-    settings: {
-        template: String,
-        orientation: {
-            type: String,
-            enum: ['portrait', 'landscape'],
-            default: 'portrait'
-        },
-        copies: {
-            type: Number,
-            min: 1,
-            default: 1
-        },
-        duplex: {
-            type: Boolean,
-            default: false
-        },
-        colorMode: {
-            type: String,
-            enum: ['color', 'grayscale'],
-            default: 'color'
-        }
-    },
-
-    // Notifications
-    notifications: {
-        onStart: {
-            sent: Boolean,
-            sentAt: Date
-        },
-        onComplete: {
-            sent: Boolean,
-            sentAt: Date
-        },
-        onFailure: {
-            sent: Boolean,
-            sentAt: Date
-        }
-    },
-
-    // Priority (for queue management)
-    priority: {
-        type: Number,
-        min: 1,
-        max: 10,
-        default: 5
-    },
-
-    // Scheduled execution
-    scheduledFor: Date,
-
-    // Notes
-    notes: String,
-
-    // Tags for categorization
-    tags: [String]
+const IDCardBatch = sequelize.define('IDCardBatch', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  
+  // Tenant isolation - REQUIRED
+  tenant_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'tenant_id'
+  },
+  
+  // Batch identification
+  batch_number: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    field: 'batch_number'
+  },
+  
+  // Batch name/description
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  
+  // Batch type
+  batch_type: {
+    type: DataTypes.ENUM('new-hire', 'renewal', 'replacement', 'all-employees', 'department', 'custom'),
+    allowNull: false,
+    field: 'batch_type'
+  },
+  
+  // Filters used to select cards for this batch (JSONB)
+  filters: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { department, position, cardType, employeeIds: [], customFilters }
+  },
+  
+  // Cards included in this batch (JSONB array of UUIDs)
+  cards: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: []
+    // Array of card IDs
+  },
+  
+  // Batch status
+  status: {
+    type: DataTypes.ENUM('pending', 'queued', 'processing', 'completed', 'failed', 'cancelled', 'partially-completed'),
+    allowNull: false,
+    defaultValue: 'pending'
+  },
+  
+  // Processing information (JSONB)
+  processing: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      totalCards: 0,
+      processedCards: 0,
+      successfulCards: 0,
+      failedCards: 0,
+      progress: 0
+    }
+    // Structure: { startedAt, completedAt, duration, totalCards, processedCards, successfulCards, failedCards, progress }
+  },
+  
+  // Failed cards details (JSONB array)
+  failures: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: []
+    // Structure: [{ card, employee, errorMessage, errorCode, attemptedAt }]
+  },
+  
+  // Batch creator
+  created_by: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'created_by'
+  },
+  
+  // Organization/location
+  organization: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'default'
+  },
+  
+  // Printer configuration (JSONB)
+  printer: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { printerName, printerModel, printerLocation }
+  },
+  
+  // Print settings (JSONB)
+  settings: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { template, orientation, copies, duplex, colorMode }
+  },
+  
+  // Notifications (JSONB)
+  notifications: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { onStart: { sent, sentAt }, onComplete: { sent, sentAt }, onFailure: { sent, sentAt } }
+  },
+  
+  // Priority (for queue management)
+  priority: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 5,
+    validate: {
+      min: 1,
+      max: 10
+    }
+  },
+  
+  // Scheduled execution
+  scheduled_for: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'scheduled_for'
+  },
+  
+  // Notes
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  
+  // Tags for categorization (JSONB array)
+  tags: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: []
+  }
 }, {
-    timestamps: true
+  tableName: 'id_card_batches',
+  timestamps: true,
+  underscored: true,
+  indexes: [
+    {
+      fields: ['tenant_id']
+    },
+    {
+      fields: ['tenant_id', 'created_by']
+    },
+    {
+      fields: ['tenant_id', 'created_by', 'created_at']
+    },
+    {
+      fields: ['tenant_id', 'status', 'priority']
+    },
+    {
+      fields: ['tenant_id', 'status', 'created_at']
+    },
+    {
+      fields: ['tenant_id', 'organization', 'status']
+    },
+    {
+      fields: ['tenant_id', 'scheduled_for', 'status']
+    },
+    {
+      unique: true,
+      fields: ['batch_number']
+    },
+    {
+      fields: ['status']
+    },
+    {
+      fields: ['created_by']
+    }
+  ],
+  hooks: {
+    beforeCreate: async (batch) => {
+      // Auto-generate batch number if not provided
+      if (!batch.batch_number) {
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 10000);
+        batch.batch_number = `BATCH-${timestamp}-${random}`;
+      }
+      
+      // Initialize processing if not set
+      if (!batch.processing || !batch.processing.totalCards) {
+        batch.processing = {
+          ...batch.processing,
+          totalCards: batch.cards ? batch.cards.length : 0,
+          processedCards: 0,
+          successfulCards: 0,
+          failedCards: 0,
+          progress: 0
+        };
+      }
+    }
+  }
 });
 
-// Virtual for completion percentage
-idCardBatchSchema.virtual('completionPercentage').get(function () {
-    if (this.processing.totalCards === 0) return 0;
-    return Math.round((this.processing.processedCards / this.processing.totalCards) * 100);
-});
-
-// Virtual to check if batch is complete
-idCardBatchSchema.virtual('isComplete').get(function () {
-    return this.status === 'completed' || this.status === 'partially-completed';
-});
-
-// Virtual to check if batch has failures
-idCardBatchSchema.virtual('hasFailures').get(function () {
-    return this.failures.length > 0;
-});
-
-// Note: Middleware hooks moved to idCardBatchMiddleware.js
-// Use middleware functions in routes for better separation of concerns
-
-/**
- * Instance method to start batch processing
- * 
- * @returns {Promise<IDCardBatch>} Updated batch
- */
-idCardBatchSchema.methods.start = async function () {
-    this.status = 'processing';
-    this.processing.startedAt = new Date();
-    this.processing.totalCards = this.cards.length;
-    return await this.save();
+// Instance methods
+IDCardBatch.prototype.getCompletionPercentage = function() {
+  if (!this.processing || this.processing.totalCards === 0) {
+    return 0;
+  }
+  return Math.round((this.processing.processedCards / this.processing.totalCards) * 100);
 };
 
-/**
- * Instance method to update progress
- * 
- * @param {Number} processed - Number of cards processed
- * @param {Number} successful - Number of successful prints
- * @param {Number} failed - Number of failed prints
- * @returns {Promise<IDCardBatch>} Updated batch
- */
-idCardBatchSchema.methods.updateProgress = async function (processed, successful, failed) {
-    this.processing.processedCards = processed;
-    this.processing.successfulCards = successful;
-    this.processing.failedCards = failed;
-    return await this.save();
+IDCardBatch.prototype.isComplete = function() {
+  return this.status === 'completed' || this.status === 'partially-completed';
 };
 
-/**
- * Instance method to add failure
- * 
- * @param {ObjectId} cardId - Card ID
- * @param {ObjectId} employeeId - Employee ID
- * @param {String} errorMessage - Error message
- * @param {String} errorCode - Error code
- * @returns {Promise<IDCardBatch>} Updated batch
- */
-idCardBatchSchema.methods.addFailure = async function (cardId, employeeId, errorMessage, errorCode = null) {
-    this.failures.push({
-        card: cardId,
-        employee: employeeId,
-        errorMessage,
-        errorCode,
-        attemptedAt: new Date()
-    });
-    return await this.save();
+IDCardBatch.prototype.hasFailures = function() {
+  return this.failures && this.failures.length > 0;
 };
 
-/**
- * Instance method to mark batch as completed
- * 
- * @returns {Promise<IDCardBatch>} Updated batch
- */
-idCardBatchSchema.methods.complete = async function () {
-    this.processing.completedAt = new Date();
-    this.processing.duration = this.processing.completedAt - this.processing.startedAt;
+IDCardBatch.prototype.start = async function() {
+  this.status = 'processing';
+  this.processing = {
+    ...this.processing,
+    startedAt: new Date(),
+    totalCards: this.cards ? this.cards.length : 0
+  };
+  return this.save();
+};
 
-    if (this.processing.failedCards > 0 && this.processing.successfulCards > 0) {
-        this.status = 'partially-completed';
-    } else if (this.processing.failedCards === this.processing.totalCards) {
-        this.status = 'failed';
-    } else {
-        this.status = 'completed';
+IDCardBatch.prototype.updateProgress = async function(processed, successful, failed) {
+  this.processing = {
+    ...this.processing,
+    processedCards: processed,
+    successfulCards: successful,
+    failedCards: failed,
+    progress: this.processing.totalCards > 0 
+      ? Math.round((processed / this.processing.totalCards) * 100) 
+      : 0
+  };
+  return this.save();
+};
+
+IDCardBatch.prototype.addFailure = async function(cardId, employeeId, errorMessage, errorCode = null) {
+  const failures = this.failures || [];
+  failures.push({
+    card: cardId,
+    employee: employeeId,
+    errorMessage,
+    errorCode,
+    attemptedAt: new Date()
+  });
+  this.failures = failures;
+  return this.save();
+};
+
+IDCardBatch.prototype.complete = async function() {
+  const completedAt = new Date();
+  const startedAt = this.processing.startedAt ? new Date(this.processing.startedAt) : completedAt;
+  
+  this.processing = {
+    ...this.processing,
+    completedAt,
+    duration: completedAt - startedAt
+  };
+  
+  if (this.processing.failedCards > 0 && this.processing.successfulCards > 0) {
+    this.status = 'partially-completed';
+  } else if (this.processing.failedCards === this.processing.totalCards) {
+    this.status = 'failed';
+  } else {
+    this.status = 'completed';
+  }
+  
+  return this.save();
+};
+
+IDCardBatch.prototype.cancel = async function() {
+  const completedAt = new Date();
+  const startedAt = this.processing.startedAt ? new Date(this.processing.startedAt) : completedAt;
+  
+  this.status = 'cancelled';
+  this.processing = {
+    ...this.processing,
+    completedAt,
+    duration: completedAt - startedAt
+  };
+  return this.save();
+};
+
+// Static methods
+IDCardBatch.getPendingBatches = async function(tenantId, limit = 10) {
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      status: { [Op.in]: ['pending', 'queued'] }
+    },
+    order: [
+      ['priority', 'DESC'],
+      ['created_at', 'ASC']
+    ],
+    limit
+  });
+};
+
+IDCardBatch.getBatchStatistics = async function(tenantId, startDate, endDate) {
+  const { QueryTypes } = require('sequelize');
+  
+  const results = await sequelize.query(
+    `SELECT 
+      status,
+      COUNT(*) as count,
+      SUM((processing->>'totalCards')::int) as total_cards,
+      SUM((processing->>'successfulCards')::int) as successful_cards,
+      SUM((processing->>'failedCards')::int) as failed_cards,
+      AVG((processing->>'duration')::bigint) as avg_duration
+    FROM id_card_batches
+    WHERE tenant_id = :tenantId
+      AND created_at >= :startDate
+      AND created_at <= :endDate
+    GROUP BY status`,
+    {
+      replacements: { tenantId, startDate, endDate },
+      type: QueryTypes.SELECT
     }
-
-    return await this.save();
+  );
+  
+  return results.map(row => ({
+    _id: row.status,
+    count: parseInt(row.count),
+    totalCards: parseInt(row.total_cards) || 0,
+    successfulCards: parseInt(row.successful_cards) || 0,
+    failedCards: parseInt(row.failed_cards) || 0,
+    avgDuration: parseFloat(row.avg_duration) || 0
+  }));
 };
 
-/**
- * Instance method to cancel batch
- * 
- * @returns {Promise<IDCardBatch>} Updated batch
- */
-idCardBatchSchema.methods.cancel = async function () {
-    this.status = 'cancelled';
-    this.processing.completedAt = new Date();
-    this.processing.duration = this.processing.completedAt - this.processing.startedAt;
-    return await this.save();
+IDCardBatch.getUserBatches = async function(userId, tenantId, filters = {}) {
+  const where = {
+    created_by: userId,
+    tenant_id: tenantId,
+    ...filters
+  };
+  
+  return this.findAll({
+    where,
+    order: [['created_at', 'DESC']],
+    limit: 50
+  });
 };
 
-/**
- * Static method to create batch from filters
- * 
- * @param {Object} batchData - Batch configuration
- * @param {ObjectId} userId - User creating the batch
- * @returns {Promise<IDCardBatch>} Created batch
- */
-idCardBatchSchema.statics.createBatch = async function (batchData, userId) {
-    const IDCard = mongoose.model('IDCard');
-
-    // Build query from filters
-    const query = {
-        status: 'active',
-        isActive: true
-    };
-
-    if (batchData.filters.department) {
-        query.department = batchData.filters.department;
-    }
-
-    if (batchData.filters.cardType) {
-        query.cardType = batchData.filters.cardType;
-    }
-
-    if (batchData.filters.employeeIds && batchData.filters.employeeIds.length > 0) {
-        query.employee = { $in: batchData.filters.employeeIds };
-    }
-
-    // Get cards matching filters
-    const cards = await IDCard.find(query).select('_id');
-    const cardIds = cards.map(c => c._id);
-
-    // Create batch
-    const batch = new this({
-        name: batchData.name,
-        description: batchData.description,
-        batchType: batchData.batchType,
-        filters: batchData.filters,
-        cards: cardIds,
-        createdBy: userId,
-        organization: batchData.organization || 'default',
-        printer: batchData.printer || {},
-        settings: batchData.settings || {},
-        priority: batchData.priority || 5,
-        scheduledFor: batchData.scheduledFor,
-        tags: batchData.tags || []
-    });
-
-    batch.processing.totalCards = cardIds.length;
-
-    await batch.save();
-    return batch;
-};
-
-/**
- * Static method to get pending batches
- * 
- * @param {Number} limit - Maximum number of batches
- * @returns {Promise<IDCardBatch[]>} Pending batches
- */
-idCardBatchSchema.statics.getPendingBatches = function (limit = 10) {
-    return this.find({
-        status: { $in: ['pending', 'queued'] }
-    })
-        .populate('createdBy', 'username employeeId personalInfo')
-        .populate('filters.department', 'name code')
-        .sort({ priority: -1, createdAt: 1 })
-        .limit(limit);
-};
-
-/**
- * Static method to get batch statistics
- * 
- * @param {Date} startDate - Start date
- * @param {Date} endDate - End date
- * @returns {Promise<Object>} Batch statistics
- */
-idCardBatchSchema.statics.getBatchStatistics = async function (startDate, endDate) {
-    const query = {
-        createdAt: { $gte: startDate, $lte: endDate }
-    };
-
-    const stats = await this.aggregate([
-        { $match: query },
-        {
-            $group: {
-                _id: '$status',
-                count: { $sum: 1 },
-                totalCards: { $sum: '$processing.totalCards' },
-                successfulCards: { $sum: '$processing.successfulCards' },
-                failedCards: { $sum: '$processing.failedCards' },
-                avgDuration: { $avg: '$processing.duration' }
-            }
-        }
-    ]);
-
-    return stats;
-};
-
-/**
- * Static method to get user's batches
- * 
- * @param {ObjectId} userId - User ID
- * @param {Object} filters - Additional filters
- * @returns {Promise<IDCardBatch[]>} User's batches
- */
-idCardBatchSchema.statics.getUserBatches = function (userId, filters = {}) {
-    const query = { createdBy: userId, ...filters };
-
-    return this.find(query)
-        .populate('filters.department', 'name code')
-        .sort({ createdAt: -1 })
-        .limit(50);
-};
-
-// Compound indexes for better performance
-idCardBatchSchema.index({ createdBy: 1, createdAt: -1 });
-idCardBatchSchema.index({ status: 1, priority: -1 });
-idCardBatchSchema.index({ status: 1, createdAt: 1 });
-idCardBatchSchema.index({ 'filters.department': 1 });
-idCardBatchSchema.index({ organization: 1, status: 1 });
-idCardBatchSchema.index({ scheduledFor: 1, status: 1 });
-
-export default mongoose.model('IDCardBatch', idCardBatchSchema);
+export default IDCardBatch;

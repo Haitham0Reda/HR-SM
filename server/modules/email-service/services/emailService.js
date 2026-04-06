@@ -197,22 +197,24 @@ class EmailService {
    * @param {string} tenantId - Tenant identifier
    * @param {Object} options - Query options
    * @param {number} [options.limit=50] - Maximum number of logs
-   * @param {number} [options.skip=0] - Number of logs to skip
+   * @param {number} [options.offset=0] - Number of logs to skip
    * @param {string} [options.status] - Filter by status
    * @returns {Promise<Array>} Email logs
    */
   async getLogs(tenantId, options = {}) {
-    const query = { tenantId };
+    const where = { tenantId };
     
     if (options.status) {
-      query.status = options.status;
+      where.status = options.status;
     }
 
-    const logs = await EmailLog.find(query)
-      .sort({ createdAt: -1 })
-      .limit(options.limit || 50)
-      .skip(options.skip || 0)
-      .lean();
+    const logs = await EmailLog.findAll({
+      where,
+      order: [['createdAt', 'DESC']],
+      limit: options.limit || 50,
+      offset: options.offset || options.skip || 0,
+      raw: true
+    });
 
     return logs;
   }

@@ -1,350 +1,330 @@
-import mongoose from 'mongoose';
+/**
+ * Appointment Model (Sequelize)
+ * 
+ * Manages scheduled medical appointments
+ */
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+
+const Appointment = mainAppDb.define('Appointment', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
+    },
+    patientId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'patient_id'
+    },
+    medicalProfileId: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'medical_profiles',
+            key: 'id'
+        },
+        field: 'medical_profile_id'
+    },
+    appointmentDate: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'appointment_date'
+    },
+    appointmentTime: {
+        type: DataTypes.STRING(10),
+        allowNull: false,
+        field: 'appointment_time'
+    },
+    duration: {
+        type: DataTypes.INTEGER,
+        defaultValue: 30
+    },
+    appointmentType: {
+        type: DataTypes.ENUM('routine', 'follow-up', 'consultation', 'vaccination', 'screening', 'emergency'),
+        allowNull: false,
+        field: 'appointment_type'
+    },
+    // Doctor - stored as JSONB
+    doctor: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: {}
+    },
+    reason: {
+        type: DataTypes.TEXT,
+        allowNull: false
+    },
+    notes: {
+        type: DataTypes.TEXT
+    },
+    status: {
+        type: DataTypes.ENUM('scheduled', 'confirmed', 'in-progress', 'completed', 'cancelled', 'no-show', 'rescheduled'),
+        defaultValue: 'scheduled'
+    },
+    // Cancellation - stored as JSONB
+    cancellation: {
+        type: DataTypes.JSONB,
+        defaultValue: {}
+    },
+    // Rescheduling - stored as JSONB
+    rescheduling: {
+        type: DataTypes.JSONB,
+        defaultValue: {}
+    },
+    // Reminders - stored as JSONB
+    reminders: {
+        type: DataTypes.JSONB,
+        defaultValue: {
+            enabled: true,
+            sent: [],
+            reminderHours: 24
+        }
+    },
+    visitId: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'visits',
+            key: 'id'
+        },
+        field: 'visit_id'
+    },
+    // Check-in - stored as JSONB
+    checkIn: {
+        type: DataTypes.JSONB,
+        defaultValue: {
+            checkedIn: false
+        },
+        field: 'check_in'
+    },
+    priority: {
+        type: DataTypes.ENUM('low', 'normal', 'high', 'urgent'),
+        defaultValue: 'normal'
+    },
+    createdBy: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'created_by'
+    },
+    updatedBy: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'updated_by'
+    }
+}, {
+    tableName: 'appointments',
+    timestamps: true,
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['patient_id'] },
+        { fields: ['status'] },
+        { fields: ['appointment_date'] },
+        { fields: ['tenant_id', 'patient_id', 'appointment_date'] },
+        { fields: ['tenant_id', 'appointment_date', 'appointment_time'] },
+        { fields: ['tenant_id', 'status'] }
+    ]
+});
 
 /**
- * Appointment Model
- * 
- * Manages scheduled medical appointments including:
- * - Appointment scheduling
- * - Patient and doctor information
- * - Appointment status tracking
- * - Reminder notifications
- * 
- * CRITICAL: All records must have tenantId for multi-tenancy isolation
+ * Define associations
  */
+Appointment.associate = (models) => {
+    Appointment.belongsTo(models.User, {
+        foreignKey: 'patientId',
+        as: 'patient'
+    });
+    Appointment.belongsTo(models.MedicalProfile, {
+        foreignKey: 'medicalProfileId',
+        as: 'medicalProfile'
+    });
+    Appointment.belongsTo(models.Visit, {
+        foreignKey: 'visitId',
+        as: 'visit'
+    });
+};
 
-const appointmentSchema = new mongoose.Schema({
-  // Tenant isolation - REQUIRED
-  tenantId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  
-  // Patient reference (links to HR-Core User model)
-  patientId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  
-  // Medical profile reference
-  medicalProfileId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'MedicalProfile'
-  },
-  
-  // Appointment scheduling
-  appointmentDate: {
-    type: Date,
-    required: true
-  },
-  
-  appointmentTime: {
-    type: String,
-    required: true
-  },
-  
-  duration: {
-    type: Number,  // Duration in minutes
-    default: 30
-  },
-  
-  // Appointment type
-  appointmentType: {
-    type: String,
-    enum: ['routine', 'follow-up', 'consultation', 'vaccination', 'screening', 'emergency'],
-    required: true
-  },
-  
-  // Medical staff
-  doctor: {
-    name: {
-      type: String,
-      required: true
-    },
-    specialization: String,
-    licenseNumber: String
-  },
-  
-  // Reason for appointment
-  reason: {
-    type: String,
-    required: true
-  },
-  
-  // Additional notes
-  notes: String,
-  
-  // Appointment status
-  status: {
-    type: String,
-    enum: ['scheduled', 'confirmed', 'in-progress', 'completed', 'cancelled', 'no-show', 'rescheduled'],
-    default: 'scheduled'
-  },
-  
-  // Cancellation details
-  cancellation: {
-    cancelledAt: Date,
-    cancelledBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    reason: String
-  },
-  
-  // Rescheduling details
-  rescheduling: {
-    originalDate: Date,
-    originalTime: String,
-    rescheduledAt: Date,
-    rescheduledBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    reason: String
-  },
-  
-  // Reminder notifications
-  reminders: {
-    enabled: {
-      type: Boolean,
-      default: true
-    },
-    sent: [{
-      sentAt: Date,
-      method: {
-        type: String,
-        enum: ['email', 'sms', 'push'],
-        default: 'email'
-      },
-      status: {
-        type: String,
-        enum: ['sent', 'failed', 'pending'],
-        default: 'pending'
-      }
-    }],
-    reminderHours: {
-      type: Number,
-      default: 24  // Send reminder 24 hours before appointment
-    }
-  },
-  
-  // Visit reference (created after appointment is completed)
-  visitId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Visit'
-  },
-  
-  // Check-in details
-  checkIn: {
-    checkedIn: {
-      type: Boolean,
-      default: false
-    },
-    checkInTime: Date,
-    checkInBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }
-  },
-  
-  // Priority
-  priority: {
-    type: String,
-    enum: ['low', 'normal', 'high', 'urgent'],
-    default: 'normal'
-  },
-  
-  // Metadata
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  updatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  
-  // Timestamps
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-}, {
-  timestamps: true
-});
-
-// Compound indexes for efficient querying
-appointmentSchema.index({ tenantId: 1, patientId: 1, appointmentDate: -1 });
-appointmentSchema.index({ tenantId: 1, appointmentDate: 1, appointmentTime: 1 });
-appointmentSchema.index({ tenantId: 1, status: 1 });
-appointmentSchema.index({ tenantId: 1, 'doctor.name': 1, appointmentDate: 1 });
-
-// Pre-save middleware
-appointmentSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
-
-// Instance methods
-appointmentSchema.methods = {
-  /**
-   * Check if appointment is upcoming
-   */
-  isUpcoming() {
+/**
+ * Instance method: Check if appointment is upcoming
+ */
+Appointment.prototype.isUpcoming = function () {
     const appointmentDateTime = new Date(this.appointmentDate);
     return appointmentDateTime > new Date() && 
            ['scheduled', 'confirmed'].includes(this.status);
-  },
-  
-  /**
-   * Check if appointment is past
-   */
-  isPast() {
+};
+
+/**
+ * Instance method: Check if appointment is past
+ */
+Appointment.prototype.isPast = function () {
     const appointmentDateTime = new Date(this.appointmentDate);
     return appointmentDateTime < new Date();
-  },
-  
-  /**
-   * Check if reminder should be sent
-   */
-  shouldSendReminder() {
-    if (!this.reminders.enabled || this.status !== 'scheduled') {
-      return false;
+};
+
+/**
+ * Instance method: Check if reminder should be sent
+ */
+Appointment.prototype.shouldSendReminder = function () {
+    if (!this.reminders?.enabled || this.status !== 'scheduled') {
+        return false;
     }
     
     const appointmentDateTime = new Date(this.appointmentDate);
-    const reminderTime = new Date(appointmentDateTime.getTime() - (this.reminders.reminderHours * 60 * 60 * 1000));
+    const reminderTime = new Date(appointmentDateTime.getTime() - ((this.reminders.reminderHours || 24) * 60 * 60 * 1000));
     const now = new Date();
     
-    // Check if it's time to send reminder and hasn't been sent yet
+    const sent = this.reminders.sent || [];
     return now >= reminderTime && 
            now < appointmentDateTime &&
-           !this.reminders.sent.some(r => r.status === 'sent');
-  },
-  
-  /**
-   * Cancel appointment
-   */
-  async cancel(userId, reason) {
+           !sent.some(r => r.status === 'sent');
+};
+
+/**
+ * Instance method: Cancel appointment
+ */
+Appointment.prototype.cancel = async function (userId, reason) {
     this.status = 'cancelled';
     this.cancellation = {
-      cancelledAt: new Date(),
-      cancelledBy: userId,
-      reason
+        cancelledAt: new Date(),
+        cancelledBy: userId,
+        reason
     };
-    return this.save();
-  },
-  
-  /**
-   * Reschedule appointment
-   */
-  async reschedule(newDate, newTime, userId, reason) {
+    return await this.save();
+};
+
+/**
+ * Instance method: Reschedule appointment
+ */
+Appointment.prototype.reschedule = async function (newDate, newTime, userId, reason) {
     this.rescheduling = {
-      originalDate: this.appointmentDate,
-      originalTime: this.appointmentTime,
-      rescheduledAt: new Date(),
-      rescheduledBy: userId,
-      reason
+        originalDate: this.appointmentDate,
+        originalTime: this.appointmentTime,
+        rescheduledAt: new Date(),
+        rescheduledBy: userId,
+        reason
     };
     this.appointmentDate = newDate;
     this.appointmentTime = newTime;
     this.status = 'rescheduled';
-    return this.save();
-  },
-  
-  /**
-   * Check in patient
-   */
-  async checkInPatient(userId) {
-    this.checkIn = {
-      checkedIn: true,
-      checkInTime: new Date(),
-      checkInBy: userId
-    };
-    this.status = 'in-progress';
-    return this.save();
-  }
+    return await this.save();
 };
 
-// Static methods
-appointmentSchema.statics = {
-  /**
-   * Find appointments by patient and tenant
-   */
-  async findByPatientAndTenant(patientId, tenantId, options = {}) {
-    const { page = 1, limit = 50, sort = { appointmentDate: -1 } } = options;
-    const skip = (page - 1) * limit;
+/**
+ * Instance method: Check in patient
+ */
+Appointment.prototype.checkInPatient = async function (userId) {
+    this.checkIn = {
+        checkedIn: true,
+        checkInTime: new Date(),
+        checkInBy: userId
+    };
+    this.status = 'in-progress';
+    return await this.save();
+};
+
+/**
+ * Static method: Find appointments by patient and tenant
+ */
+Appointment.findByPatientAndTenant = async function (patientId, tenantId, options = {}) {
+    const { page = 1, limit = 50, sort = [['appointmentDate', 'DESC']] } = options;
+    const offset = (page - 1) * limit;
     
-    return this.find({ patientId, tenantId })
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .populate('patientId', 'firstName lastName email');
-  },
-  
-  /**
-   * Find upcoming appointments for a tenant
-   */
-  async findUpcoming(tenantId, options = {}) {
+    return await this.findAll({
+        where: { patientId, tenantId },
+        order: sort,
+        offset,
+        limit,
+        include: [{
+            model: mainAppDb.models.User,
+            as: 'patient',
+            attributes: ['firstName', 'lastName', 'email']
+        }]
+    });
+};
+
+/**
+ * Static method: Find upcoming appointments for a tenant
+ */
+Appointment.findUpcoming = async function (tenantId, options = {}) {
     const { days = 7 } = options;
     const now = new Date();
     const futureDate = new Date(now.getTime() + (days * 24 * 60 * 60 * 1000));
     
-    return this.find({
-      tenantId,
-      appointmentDate: {
-        $gte: now,
-        $lte: futureDate
-      },
-      status: { $in: ['scheduled', 'confirmed'] }
-    })
-    .sort({ appointmentDate: 1, appointmentTime: 1 })
-    .populate('patientId', 'firstName lastName email');
-  },
-  
-  /**
-   * Find appointments that need reminders
-   */
-  async findNeedingReminders(tenantId) {
-    const now = new Date();
-    
-    return this.find({
-      tenantId,
-      status: 'scheduled',
-      'reminders.enabled': true,
-      appointmentDate: { $gt: now }
+    return await this.findAll({
+        where: {
+            tenantId,
+            appointmentDate: {
+                [Op.gte]: now,
+                [Op.lte]: futureDate
+            },
+            status: { [Op.in]: ['scheduled', 'confirmed'] }
+        },
+        order: [['appointmentDate', 'ASC'], ['appointmentTime', 'ASC']],
+        include: [{
+            model: mainAppDb.models.User,
+            as: 'patient',
+            attributes: ['firstName', 'lastName', 'email']
+        }]
     });
-  },
-  
-  /**
-   * Get appointment statistics
-   */
-  async getStatistics(tenantId, startDate, endDate) {
-    const match = {
-      tenantId,
-      appointmentDate: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      }
-    };
-    
-    return this.aggregate([
-      { $match: match },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-  }
 };
 
-const Appointment = mongoose.model('Appointment', appointmentSchema);
+/**
+ * Static method: Find appointments that need reminders
+ */
+Appointment.findNeedingReminders = async function (tenantId) {
+    const now = new Date();
+    
+    return await this.findAll({
+        where: {
+            tenantId,
+            status: 'scheduled',
+            'reminders.enabled': true,
+            appointmentDate: { [Op.gt]: now }
+        }
+    });
+};
+
+/**
+ * Static method: Get appointment statistics
+ */
+Appointment.getStatistics = async function (tenantId, startDate, endDate) {
+    const appointments = await this.findAll({
+        where: {
+            tenantId,
+            appointmentDate: {
+                [Op.gte]: new Date(startDate),
+                [Op.lte]: new Date(endDate)
+            }
+        }
+    });
+    
+    const stats = appointments.reduce((acc, appt) => {
+        const status = appt.status;
+        if (!acc[status]) {
+            acc[status] = { count: 0 };
+        }
+        acc[status].count += 1;
+        return acc;
+    }, {});
+    
+    return Object.entries(stats).map(([status, data]) => ({
+        _id: status,
+        ...data
+    }));
+};
 
 export default Appointment;

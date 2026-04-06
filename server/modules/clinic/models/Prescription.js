@@ -1,4 +1,5 @@
-import mongoose from 'mongoose';
+import { DataTypes, Op } from 'sequelize';
+import sequelize from '../../../config/database.js';
 
 /**
  * Prescription Model
@@ -9,422 +10,401 @@ import mongoose from 'mongoose';
  * - Duration and refills
  * - Prescription status
  * 
- * CRITICAL: All records must have tenantId for multi-tenancy isolation
+ * CRITICAL: All records must have tenant_id for multi-tenancy isolation
  */
 
-const prescriptionSchema = new mongoose.Schema({
+const Prescription = sequelize.define('Prescription', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  
   // Tenant isolation - REQUIRED
-  tenantId: {
-    type: String,
-    required: true,
-    index: true
+  tenant_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'tenant_id'
   },
   
   // Patient reference (links to HR-Core User model)
-  patientId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+  patient_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'patient_id'
   },
   
   // Medical profile reference
-  medicalProfileId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'MedicalProfile'
+  medical_profile_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'medical_profile_id'
   },
   
   // Visit reference (if prescribed during a visit)
-  visitId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Visit'
+  visit_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'visit_id'
   },
   
   // Prescription number (unique identifier)
-  prescriptionNumber: {
-    type: String,
-    required: true,
-    unique: true
+  prescription_number: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'prescription_number'
   },
   
-  // Prescribing doctor
-  prescribedBy: {
-    name: {
-      type: String,
-      required: true
-    },
-    specialization: String,
-    licenseNumber: String,
-    signature: String  // Digital signature or reference
+  // Prescribing doctor (JSONB)
+  prescribed_by: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    field: 'prescribed_by',
+    defaultValue: {}
+    // Structure: { name, specialization, licenseNumber, signature }
   },
   
   // Prescription date
-  prescriptionDate: {
-    type: Date,
-    required: true,
-    default: Date.now
+  prescription_date: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
+    field: 'prescription_date'
   },
   
-  // Medication details
+  // Medication details (JSONB)
   medication: {
-    name: {
-      type: String,
-      required: true
-    },
-    genericName: String,
-    brandName: String,
-    strength: {
-      type: String,
-      required: true
-    },
-    form: {
-      type: String,
-      enum: ['tablet', 'capsule', 'liquid', 'injection', 'cream', 'ointment', 'inhaler', 'drops', 'patch', 'other'],
-      required: true
-    },
-    drugCode: String  // NDC or other drug identification code
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { name, genericName, brandName, strength, form, drugCode }
   },
   
-  // Dosage instructions
+  // Dosage instructions (JSONB)
   dosage: {
-    amount: {
-      type: String,
-      required: true
-    },
-    frequency: {
-      type: String,
-      required: true
-    },
-    route: {
-      type: String,
-      enum: ['oral', 'topical', 'injection', 'inhalation', 'sublingual', 'rectal', 'other'],
-      default: 'oral'
-    },
-    timing: String,  // e.g., "with food", "before bed"
-    specialInstructions: String
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { amount, frequency, route, timing, specialInstructions }
   },
   
-  // Duration
+  // Duration (JSONB)
   duration: {
-    value: {
-      type: Number,
-      required: true
-    },
-    unit: {
-      type: String,
-      enum: ['days', 'weeks', 'months', 'ongoing'],
-      required: true
-    }
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { value, unit }
   },
   
-  // Quantity
+  // Quantity (JSONB)
   quantity: {
-    prescribed: {
-      type: Number,
-      required: true
-    },
-    dispensed: Number,
-    unit: {
-      type: String,
-      default: 'units'
-    }
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { prescribed, dispensed, unit }
   },
   
-  // Refills
+  // Refills (JSONB with history array)
   refills: {
-    authorized: {
-      type: Number,
-      default: 0
-    },
-    remaining: {
-      type: Number,
-      default: 0
-    },
-    history: [{
-      date: Date,
-      quantity: Number,
-      dispensedBy: String
-    }]
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { authorized: 0, remaining: 0, history: [] }
+    // Structure: { authorized, remaining, history: [{ date, quantity, dispensedBy }] }
   },
   
   // Indication (reason for prescription)
   indication: {
-    type: String,
-    required: true
+    type: DataTypes.TEXT,
+    allowNull: false
   },
   
   // Start and end dates
-  startDate: {
-    type: Date,
-    required: true,
-    default: Date.now
+  start_date: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
+    field: 'start_date'
   },
   
-  endDate: Date,
+  end_date: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'end_date'
+  },
   
   // Status
   status: {
-    type: String,
-    enum: ['active', 'completed', 'discontinued', 'expired', 'cancelled'],
-    default: 'active'
+    type: DataTypes.ENUM('active', 'completed', 'discontinued', 'expired', 'cancelled'),
+    allowNull: false,
+    defaultValue: 'active'
   },
   
-  // Discontinuation details
+  // Discontinuation details (JSONB)
   discontinuation: {
-    date: Date,
-    reason: String,
-    discontinuedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+    // Structure: { date, reason, discontinuedBy }
   },
   
-  // Warnings and interactions
+  // Warnings and interactions (JSONB)
   warnings: {
-    allergies: [String],
-    interactions: [String],
-    contraindications: [String],
-    sideEffects: [String]
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { allergies: [], interactions: [], contraindications: [], sideEffects: [] }
+    // Structure: { allergies: [], interactions: [], contraindications: [], sideEffects: [] }
   },
   
-  // Pharmacy information
+  // Pharmacy information (JSONB)
   pharmacy: {
-    name: String,
-    address: String,
-    phone: String,
-    dispensedDate: Date
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+    // Structure: { name, address, phone, dispensedDate }
   },
   
-  // Insurance and billing
+  // Insurance and billing (JSONB)
   billing: {
-    cost: Number,
-    insuranceCovered: Number,
-    patientResponsibility: Number,
-    paymentStatus: {
-      type: String,
-      enum: ['pending', 'paid', 'partially-paid', 'waived'],
-      default: 'pending'
-    }
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { paymentStatus: 'pending' }
+    // Structure: { cost, insuranceCovered, patientResponsibility, paymentStatus }
   },
   
   // Notes
-  notes: String,
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   
   // Metadata
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  updatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+  created_by: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'created_by'
   },
   
-  // Timestamps
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  updated_by: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'updated_by'
   }
 }, {
-  timestamps: true
-});
-
-// Compound indexes for efficient querying
-prescriptionSchema.index({ tenantId: 1, patientId: 1, prescriptionDate: -1 });
-prescriptionSchema.index({ tenantId: 1, prescriptionNumber: 1 }, { unique: true });
-prescriptionSchema.index({ tenantId: 1, status: 1 });
-prescriptionSchema.index({ tenantId: 1, 'medication.name': 1 });
-
-// Pre-save middleware
-prescriptionSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  
-  // Auto-generate prescription number if not provided
-  if (!this.prescriptionNumber) {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 10000);
-    this.prescriptionNumber = `RX-${timestamp}-${random}`;
-  }
-  
-  // Set end date based on duration if not provided
-  if (!this.endDate && this.startDate && this.duration) {
-    const start = new Date(this.startDate);
-    let daysToAdd = 0;
-    
-    switch (this.duration.unit) {
-      case 'days':
-        daysToAdd = this.duration.value;
-        break;
-      case 'weeks':
-        daysToAdd = this.duration.value * 7;
-        break;
-      case 'months':
-        daysToAdd = this.duration.value * 30;
-        break;
-      case 'ongoing':
-        // No end date for ongoing prescriptions
-        break;
+  tableName: 'prescriptions',
+  timestamps: true,
+  underscored: true,
+  indexes: [
+    {
+      fields: ['tenant_id']
+    },
+    {
+      fields: ['tenant_id', 'patient_id', 'prescription_date']
+    },
+    {
+      unique: true,
+      fields: ['tenant_id', 'prescription_number']
+    },
+    {
+      fields: ['tenant_id', 'status']
+    },
+    {
+      fields: ['patient_id']
+    },
+    {
+      fields: ['medical_profile_id']
+    },
+    {
+      fields: ['visit_id']
     }
-    
-    if (daysToAdd > 0) {
-      this.endDate = new Date(start.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
+  ],
+  hooks: {
+    beforeCreate: async (prescription) => {
+      // Auto-generate prescription number if not provided
+      if (!prescription.prescription_number) {
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 10000);
+        prescription.prescription_number = `RX-${timestamp}-${random}`;
+      }
+      
+      // Set end date based on duration if not provided
+      if (!prescription.end_date && prescription.start_date && prescription.duration) {
+        const start = new Date(prescription.start_date);
+        let daysToAdd = 0;
+        
+        switch (prescription.duration.unit) {
+          case 'days':
+            daysToAdd = prescription.duration.value;
+            break;
+          case 'weeks':
+            daysToAdd = prescription.duration.value * 7;
+            break;
+          case 'months':
+            daysToAdd = prescription.duration.value * 30;
+            break;
+          case 'ongoing':
+            // No end date for ongoing prescriptions
+            break;
+        }
+        
+        if (daysToAdd > 0) {
+          prescription.end_date = new Date(start.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
+        }
+      }
+      
+      // Initialize remaining refills
+      if (prescription.refills && prescription.refills.remaining === undefined) {
+        prescription.refills = {
+          ...prescription.refills,
+          remaining: prescription.refills.authorized || 0
+        };
+      }
     }
   }
-  
-  // Initialize remaining refills
-  if (this.isNew && this.refills.remaining === undefined) {
-    this.refills.remaining = this.refills.authorized;
-  }
-  
-  next();
 });
 
 // Instance methods
-prescriptionSchema.methods = {
-  /**
-   * Check if prescription is active
-   */
-  isActive() {
-    if (this.status !== 'active') {
-      return false;
-    }
-    
-    const now = new Date();
-    if (this.endDate && now > this.endDate) {
-      return false;
-    }
-    
-    return true;
-  },
-  
-  /**
-   * Check if prescription is expired
-   */
-  isExpired() {
-    if (!this.endDate) {
-      return false;
-    }
-    return new Date() > this.endDate;
-  },
-  
-  /**
-   * Check if refills are available
-   */
-  hasRefillsAvailable() {
-    return this.refills.remaining > 0;
-  },
-  
-  /**
-   * Process a refill
-   */
-  async processRefill(quantity, dispensedBy) {
-    if (!this.hasRefillsAvailable()) {
-      throw new Error('No refills remaining');
-    }
-    
-    this.refills.remaining -= 1;
-    this.refills.history.push({
-      date: new Date(),
-      quantity,
-      dispensedBy
-    });
-    
-    return this.save();
-  },
-  
-  /**
-   * Discontinue prescription
-   */
-  async discontinue(userId, reason) {
-    this.status = 'discontinued';
-    this.discontinuation = {
-      date: new Date(),
-      reason,
-      discontinuedBy: userId
-    };
-    return this.save();
+Prescription.prototype.isActive = function() {
+  if (this.status !== 'active') {
+    return false;
   }
+  
+  const now = new Date();
+  if (this.end_date && now > this.end_date) {
+    return false;
+  }
+  
+  return true;
+};
+
+Prescription.prototype.isExpired = function() {
+  if (!this.end_date) {
+    return false;
+  }
+  return new Date() > this.end_date;
+};
+
+Prescription.prototype.hasRefillsAvailable = function() {
+  return this.refills && this.refills.remaining > 0;
+};
+
+Prescription.prototype.processRefill = async function(quantity, dispensedBy) {
+  if (!this.hasRefillsAvailable()) {
+    throw new Error('No refills remaining');
+  }
+  
+  const updatedRefills = {
+    ...this.refills,
+    remaining: this.refills.remaining - 1,
+    history: [
+      ...(this.refills.history || []),
+      {
+        date: new Date(),
+        quantity,
+        dispensedBy
+      }
+    ]
+  };
+  
+  this.refills = updatedRefills;
+  return this.save();
+};
+
+Prescription.prototype.discontinue = async function(userId, reason) {
+  this.status = 'discontinued';
+  this.discontinuation = {
+    date: new Date(),
+    reason,
+    discontinuedBy: userId
+  };
+  return this.save();
 };
 
 // Static methods
-prescriptionSchema.statics = {
-  /**
-   * Find prescriptions by patient and tenant
-   */
-  async findByPatientAndTenant(patientId, tenantId, options = {}) {
-    const { page = 1, limit = 50, sort = { prescriptionDate: -1 } } = options;
-    const skip = (page - 1) * limit;
-    
-    return this.find({ patientId, tenantId })
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .populate('patientId', 'firstName lastName email');
-  },
+Prescription.findByPatientAndTenant = async function(patientId, tenantId, options = {}) {
+  const { page = 1, limit = 50, sort = [['prescription_date', 'DESC']] } = options;
+  const offset = (page - 1) * limit;
   
-  /**
-   * Find active prescriptions for a patient
-   */
-  async findActiveByPatient(patientId, tenantId) {
-    return this.find({
-      patientId,
-      tenantId,
-      status: 'active',
-      $or: [
-        { endDate: { $exists: false } },
-        { endDate: { $gte: new Date() } }
-      ]
-    })
-    .sort({ prescriptionDate: -1 })
-    .populate('patientId', 'firstName lastName email');
-  },
-  
-  /**
-   * Find prescriptions needing refill reminders
-   */
-  async findNeedingRefillReminders(tenantId, daysBeforeExpiry = 7) {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + daysBeforeExpiry);
-    
-    return this.find({
-      tenantId,
-      status: 'active',
-      'refills.remaining': { $gt: 0 },
-      endDate: {
-        $gte: new Date(),
-        $lte: futureDate
-      }
-    });
-  },
-  
-  /**
-   * Get prescription statistics
-   */
-  async getStatistics(tenantId, startDate, endDate) {
-    const match = {
-      tenantId,
-      prescriptionDate: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      }
-    };
-    
-    return this.aggregate([
-      { $match: match },
+  return this.findAll({
+    where: {
+      patient_id: patientId,
+      tenant_id: tenantId
+    },
+    order: sort,
+    offset,
+    limit,
+    include: [
       {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 },
-          totalCost: { $sum: '$billing.cost' }
-        }
+        association: 'patient',
+        attributes: ['id', 'firstName', 'lastName', 'email']
       }
-    ]);
-  }
+    ]
+  });
 };
 
-const Prescription = mongoose.model('Prescription', prescriptionSchema);
+Prescription.findActiveByPatient = async function(patientId, tenantId) {
+  return this.findAll({
+    where: {
+      patient_id: patientId,
+      tenant_id: tenantId,
+      status: 'active',
+      [Op.or]: [
+        { end_date: null },
+        { end_date: { [Op.gte]: new Date() } }
+      ]
+    },
+    order: [['prescription_date', 'DESC']],
+    include: [
+      {
+        association: 'patient',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }
+    ]
+  });
+};
+
+Prescription.findNeedingRefillReminders = async function(tenantId, daysBeforeExpiry = 7) {
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + daysBeforeExpiry);
+  
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      status: 'active',
+      end_date: {
+        [Op.gte]: new Date(),
+        [Op.lte]: futureDate
+      },
+      refills: {
+        remaining: { [Op.gt]: 0 }
+      }
+    }
+  });
+};
+
+Prescription.getStatistics = async function(tenantId, startDate, endDate) {
+  const { QueryTypes } = require('sequelize');
+  
+  const results = await sequelize.query(
+    `SELECT 
+      status,
+      COUNT(*) as count,
+      SUM(CAST(billing->>'cost' AS DECIMAL)) as total_cost
+    FROM prescriptions
+    WHERE tenant_id = :tenantId
+      AND prescription_date >= :startDate
+      AND prescription_date <= :endDate
+    GROUP BY status`,
+    {
+      replacements: { tenantId, startDate, endDate },
+      type: QueryTypes.SELECT
+    }
+  );
+  
+  return results.map(row => ({
+    _id: row.status,
+    count: parseInt(row.count),
+    totalCost: parseFloat(row.total_cost) || 0
+  }));
+};
 
 export default Prescription;

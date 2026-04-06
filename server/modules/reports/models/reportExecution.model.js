@@ -1,178 +1,282 @@
+import { DataTypes, Op } from 'sequelize';
+import sequelize from '../../../config/database.js';
+
 /**
  * Report Execution Model
  * 
  * Stores report execution history and results
+ * 
+ * CRITICAL: All records must have tenant_id for multi-tenancy isolation
  */
-import mongoose from 'mongoose';
 
-const reportExecutionSchema = new mongoose.Schema({
-    // Tenant ID for multi-tenancy
-    tenantId: {
-        type: String,
-        required: [true, 'Tenant ID is required'],
-        index: true,
-        trim: true
-    },
-
-    // Report Reference
-    report: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Report',
-        required: true,
-        index: true
-    },
-    reportName: String,
-
-    // Execution Details
-    executedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        index: true
-    },
-    executionType: {
-        type: String,
-        enum: ['manual', 'scheduled', 'api'],
-        default: 'manual'
-    },
-
-    // Parameters
-    parameters: {
-        startDate: Date,
-        endDate: Date,
-        filters: mongoose.Schema.Types.Mixed,
-        additionalParams: mongoose.Schema.Types.Mixed
-    },
-
-    // Results
-    status: {
-        type: String,
-        enum: ['pending', 'running', 'completed', 'failed', 'cancelled'],
-        default: 'pending',
-        index: true
-    },
-    startTime: {
-        type: Date,
-        default: Date.now
-    },
-    endTime: Date,
-    duration: Number, // milliseconds
-
-    // Data
-    resultCount: {
-        type: Number,
-        default: 0
-    },
-    resultData: mongoose.Schema.Types.Mixed, // Store small results
-    resultFile: String, // Path to file for large results
-
-    // Export
-    exportFormat: {
-        type: String,
-        enum: ['excel', 'pdf', 'csv', 'html', 'json']
-    },
-    exportPath: String,
-    exportSize: Number, // bytes
-
-    // Error Information
-    error: {
-        message: String,
-        stack: String,
-        code: String
-    },
-
-    // Delivery (for scheduled reports)
-    emailSent: {
-        type: Boolean,
-        default: false
-    },
-    emailRecipients: [String],
-    emailSentAt: Date,
-
-    // Metadata
-    executionTime: Date,
-    ipAddress: String,
-    userAgent: String
+const ReportExecution = sequelize.define('ReportExecution', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  
+  // Tenant isolation - REQUIRED
+  tenant_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'tenant_id'
+  },
+  
+  // Report Reference
+  report_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'report_id'
+  },
+  
+  report_name: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'report_name'
+  },
+  
+  // Execution Details
+  executed_by: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'executed_by'
+  },
+  
+  execution_type: {
+    type: DataTypes.ENUM('manual', 'scheduled', 'api'),
+    allowNull: false,
+    defaultValue: 'manual',
+    field: 'execution_type'
+  },
+  
+  // Parameters (JSONB)
+  parameters: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { startDate, endDate, filters, additionalParams }
+  },
+  
+  // Results
+  status: {
+    type: DataTypes.ENUM('pending', 'running', 'completed', 'failed', 'cancelled'),
+    allowNull: false,
+    defaultValue: 'pending'
+  },
+  
+  start_time: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
+    field: 'start_time'
+  },
+  
+  end_time: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'end_time'
+  },
+  
+  duration: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  
+  // Data
+  result_count: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    field: 'result_count'
+  },
+  
+  result_data: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    field: 'result_data'
+  },
+  
+  result_file: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'result_file'
+  },
+  
+  // Export
+  export_format: {
+    type: DataTypes.ENUM('excel', 'pdf', 'csv', 'html', 'json'),
+    allowNull: true,
+    field: 'export_format'
+  },
+  
+  export_path: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'export_path'
+  },
+  
+  export_size: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'export_size'
+  },
+  
+  // Error Information (JSONB)
+  error: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+    // Structure: { message, stack, code }
+  },
+  
+  // Delivery (for scheduled reports)
+  email_sent: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'email_sent'
+  },
+  
+  email_recipients: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    field: 'email_recipients'
+  },
+  
+  email_sent_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'email_sent_at'
+  },
+  
+  // Metadata
+  execution_time: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'execution_time'
+  },
+  
+  ip_address: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'ip_address'
+  },
+  
+  user_agent: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'user_agent'
+  }
 }, {
-    timestamps: true
+  tableName: 'report_executions',
+  timestamps: true,
+  underscored: true,
+  indexes: [
+    {
+      fields: ['tenant_id']
+    },
+    {
+      fields: ['tenant_id', 'report_id', 'created_at']
+    },
+    {
+      fields: ['tenant_id', 'executed_by', 'created_at']
+    },
+    {
+      fields: ['tenant_id', 'status', 'created_at']
+    },
+    {
+      fields: ['tenant_id', 'execution_type', 'created_at']
+    },
+    {
+      fields: ['report_id']
+    },
+    {
+      fields: ['executed_by']
+    },
+    {
+      fields: ['status']
+    }
+  ]
 });
 
-// Compound indexes for tenant isolation and performance
-reportExecutionSchema.index({ tenantId: 1, report: 1, createdAt: -1 });
-reportExecutionSchema.index({ tenantId: 1, executedBy: 1, createdAt: -1 });
-reportExecutionSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
-reportExecutionSchema.index({ tenantId: 1, executionType: 1, createdAt: -1 });
-
-// TTL index to auto-delete old executions after 90 days
-reportExecutionSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7776000 });
-
-// Add withTenant static method for tenant-aware queries
-reportExecutionSchema.statics.withTenant = function (tenantId) {
-    return this.find({ tenantId });
+// Instance methods
+ReportExecution.prototype.markCompleted = async function(resultCount, resultData = null) {
+  this.status = 'completed';
+  this.end_time = new Date();
+  this.duration = this.end_time - this.start_time;
+  this.result_count = resultCount;
+  
+  if (resultData) {
+    this.result_data = resultData;
+  }
+  
+  return this.save();
 };
 
-// Method to mark as completed
-reportExecutionSchema.methods.markCompleted = async function (resultCount, resultData = null) {
-    this.status = 'completed';
-    this.endTime = new Date();
-    this.duration = this.endTime - this.startTime;
-    this.resultCount = resultCount;
+ReportExecution.prototype.markFailed = async function(error) {
+  this.status = 'failed';
+  this.end_time = new Date();
+  this.duration = this.end_time - this.start_time;
+  this.error = {
+    message: error.message,
+    stack: error.stack,
+    code: error.code
+  };
+  
+  return this.save();
+};
 
-    if (resultData) {
-        this.resultData = resultData;
+// Static methods
+ReportExecution.getHistory = async function(reportId, tenantId, options = {}) {
+  const { limit = 50, offset = 0 } = options;
+  
+  return this.findAll({
+    where: {
+      report_id: reportId,
+      tenant_id: tenantId
+    },
+    order: [['created_at', 'DESC']],
+    limit,
+    offset
+  });
+};
+
+ReportExecution.getStatistics = async function(reportId, tenantId, days = 30) {
+  const { QueryTypes } = require('sequelize');
+  const dateThreshold = new Date();
+  dateThreshold.setDate(dateThreshold.getDate() - days);
+  
+  const stats = await sequelize.query(
+    `SELECT 
+      status as _id,
+      COUNT(*) as count,
+      AVG(duration) as avg_duration,
+      SUM(result_count) as total_records
+    FROM report_executions
+    WHERE report_id = :reportId
+      AND tenant_id = :tenantId
+      AND created_at >= :dateThreshold
+    GROUP BY status`,
+    {
+      replacements: { reportId, tenantId, dateThreshold },
+      type: QueryTypes.SELECT
     }
-
-    return await this.save();
+  );
+  
+  return stats.map(row => ({
+    _id: row._id,
+    count: parseInt(row.count),
+    avgDuration: parseFloat(row.avg_duration) || 0,
+    totalRecords: parseInt(row.total_records) || 0
+  }));
 };
 
-// Method to mark as failed
-reportExecutionSchema.methods.markFailed = async function (error) {
-    this.status = 'failed';
-    this.endTime = new Date();
-    this.duration = this.endTime - this.startTime;
-    this.error = {
-        message: error.message,
-        stack: error.stack,
-        code: error.code
-    };
-
-    return await this.save();
+ReportExecution.withTenant = function(tenantId) {
+  return this.findAll({
+    where: { tenant_id: tenantId }
+  });
 };
 
-// Static method to get execution history
-reportExecutionSchema.statics.getHistory = async function (reportId, options = {}) {
-    const { limit = 50, skip = 0 } = options;
-
-    return await this.find({ report: reportId })
-        .populate('executedBy', 'username email employeeId personalInfo')
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .skip(skip)
-        .exec();
-};
-
-// Static method to get statistics
-reportExecutionSchema.statics.getStatistics = async function (reportId, days = 30) {
-    const dateThreshold = new Date();
-    dateThreshold.setDate(dateThreshold.getDate() - days);
-
-    const stats = await this.aggregate([
-        {
-            $match: {
-                report: new mongoose.Types.ObjectId(reportId),
-                createdAt: { $gte: dateThreshold }
-            }
-        },
-        {
-            $group: {
-                _id: '$status',
-                count: { $sum: 1 },
-                avgDuration: { $avg: '$duration' },
-                totalRecords: { $sum: '$resultCount' }
-            }
-        }
-    ]);
-
-    return stats;
-};
-
-export default mongoose.model('ReportExecution', reportExecutionSchema);
+export default ReportExecution;
