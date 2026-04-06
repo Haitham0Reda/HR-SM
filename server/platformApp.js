@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import mongoSanitize from 'express-mongo-sanitize';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './core/errors/errorHandler.js';
@@ -30,7 +29,7 @@ app.use(cors({
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
-app.use(mongoSanitize());
+// Note: MongoDB sanitization removed as we're using PostgreSQL
 app.use(compression());
 
 // Enhanced rate limiting with Redis support and license-based limits

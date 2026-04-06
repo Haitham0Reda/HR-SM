@@ -9,7 +9,6 @@
 
 import { body, param, query, validationResult, matchedData } from 'express-validator';
 import sanitizeHtml from 'sanitize-html';
-import mongoose from 'mongoose';
 
 /**
  * Enhanced error handler for validation results
@@ -76,21 +75,17 @@ export const sanitizeStrictHtml = (field) => {
 };
 
 /**
- * Enhanced MongoDB ID validation with existence check
+ * Enhanced ID validation with existence check (PostgreSQL)
  */
 export const validateMongoIdWithExistence = (field, model) => {
     return [
         param(field)
-            .isMongoId()
+            .isInt({ min: 1 })
             .withMessage(`Invalid ${field} format`)
             .custom(async (value, { req }) => {
-                if (!mongoose.Types.ObjectId.isValid(value)) {
-                    throw new Error(`Invalid ${field} format`);
-                }
-                
                 // Check if document exists (if model is provided)
                 if (model) {
-                    const doc = await model.findById(value);
+                    const doc = await model.findByPk(value);
                     if (!doc) {
                         throw new Error(`${field} not found`);
                     }

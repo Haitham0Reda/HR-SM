@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import mongoSanitize from 'express-mongo-sanitize';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './core/errors/errorHandler.js';
@@ -39,7 +38,7 @@ app.use(cookieParser());
 import { jsonErrorHandler, requestBodyLogger } from './middleware/jsonErrorHandler.js';
 app.use(requestBodyLogger); // Log problematic requests in development
 app.use(jsonErrorHandler);  // Handle JSON parsing errors
-app.use(mongoSanitize());
+// Note: MongoDB sanitization removed as we're using PostgreSQL
 app.use(compression());
 
 // Enhanced rate limiting with Redis support and license-based limits

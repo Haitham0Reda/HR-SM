@@ -4,7 +4,6 @@ import crypto from 'crypto';
 import archiver from 'archiver';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import mongoose from 'mongoose';
 import winston from 'winston';
 import CloudStorageService from './cloudStorageService.js';
 // Note: BackupLog is now tenant-specific and should be accessed through getModelForConnection

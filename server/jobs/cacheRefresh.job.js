@@ -3,7 +3,6 @@ import { createLicenseDataService } from '../services/licenseDataService.js';
 import { getCacheStats } from '../services/licenseCache.js';
 import { getModelForConnection } from '../config/sharedModels.js';
 import logger from '../utils/logger.js';
-import mongoose from 'mongoose';
 
 /**
  * Cache Refresh Job

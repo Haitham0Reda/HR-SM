@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer';
-import mongoose from 'mongoose';
 import os from 'os';
 import systemMetricsService from './systemMetrics.service.js';
 import mongoMetricsService from './mongoMetrics.service.js';

@@ -1,9 +1,9 @@
-import mongoose from 'mongoose';
+import { sequelize } from '../config/database.js';
 import logger from '../utils/logger.js';
 
 /**
  * Database Connection Monitor
- * Monitors database connection health and provides reconnection logic
+ * Monitors PostgreSQL connection health and provides reconnection logic
  */
 class DatabaseMonitor {
     constructor() {
@@ -34,9 +34,6 @@ class DatabaseMonitor {
         this.isMonitoring = true;
         logger.info('Database monitor started');
 
-        // Set up event listeners
-        this.setupEventListeners();
-
         // Start periodic health checks
         this.startHealthChecks();
     }
@@ -60,52 +57,38 @@ class DatabaseMonitor {
     }
 
     /**
-     * Set up mongoose event listeners
+     * Start periodic health checks
      */
-    setupEventListeners() {
-        mongoose.connection.on('connected', () => {
-            this.connectionMetrics.totalConnections++;
-            this.connectionMetrics.lastConnected = new Date();
-            this.reconnectAttempts = 0;
-            
-            logger.info('Database connected', {
-                host: mongoose.connection.host,
-                database: mongoose.connection.name,
-                totalConnections: this.connectionMetrics.totalConnections
-            });
-        });
+    startHealthChecks() {
+        this.healthCheckTimer = setInterval(async () => {
+            await this.performHealthCheck();
+        }, this.healthCheckInterval);
+    }
 
-        mongoose.connection.on('disconnected', () => {
-            this.connectionMetrics.totalDisconnections++;
-            this.connectionMetrics.lastDisconnected = new Date();
+    /**
+     * Perform database health check
+     */
+    async performHealthCheck() {
+        try {
+            const startTime = Date.now();
+            await sequelize.authenticate();
+            const responseTime = Date.now() - startTime;
             
-            logger.warn('Database disconnected', {
-                totalDisconnections: this.connectionMetrics.totalDisconnections,
+            logger.debug('Database health check passed', {
+                responseTime: `${responseTime}ms`,
+                state: 'connected'
+            });
+        } catch (error) {
+            logger.error('Database health check error', {
+                error: error.message,
                 reconnectAttempts: this.reconnectAttempts
             });
 
             // Attempt reconnection if monitoring is active
             if (this.isMonitoring && this.reconnectAttempts < this.maxReconnectAttempts) {
-                this.attemptReconnection();
+                await this.attemptReconnection();
             }
-        });
-
-        mongoose.connection.on('reconnected', () => {
-            this.connectionMetrics.totalReconnections++;
-            this.reconnectAttempts = 0;
-            
-            logger.info('Database reconnected successfully', {
-                totalReconnections: this.connectionMetrics.totalReconnections
-            });
-        });
-
-        mongoose.connection.on('error', (error) => {
-            logger.error('Database connection error', {
-                error: error.message,
-                stack: error.stack,
-                reconnectAttempts: this.reconnectAttempts
-            });
-        });
+        }
     }
 
     /**
@@ -128,10 +111,14 @@ class DatabaseMonitor {
 
         try {
             await new Promise(resolve => setTimeout(resolve, this.reconnectInterval));
+            await sequelize.authenticate();
             
-            // Mongoose will automatically attempt to reconnect
-            // We just need to wait and let the event handlers track the result
+            this.connectionMetrics.totalReconnections++;
+            this.reconnectAttempts = 0;
             
+            logger.info('Database reconnected successfully', {
+                totalReconnections: this.connectionMetrics.totalReconnections
+            });
         } catch (error) {
             logger.error('Reconnection attempt failed', {
                 attempt: this.reconnectAttempts,
@@ -141,81 +128,41 @@ class DatabaseMonitor {
     }
 
     /**
-     * Start periodic health checks
-     */
-    startHealthChecks() {
-        this.healthCheckTimer = setInterval(async () => {
-            await this.performHealthCheck();
-        }, this.healthCheckInterval);
-    }
-
-    /**
-     * Perform database health check
-     */
-    async performHealthCheck() {
-        try {
-            const state = mongoose.connection.readyState;
-            
-            if (state === 1) {
-                // Test connection with ping
-                const startTime = Date.now();
-                await mongoose.connection.db.admin().ping();
-                const responseTime = Date.now() - startTime;
-                
-                logger.debug('Database health check passed', {
-                    responseTime: `${responseTime}ms`,
-                    state: this.getConnectionState(state)
-                });
-            } else {
-                logger.warn('Database health check failed', {
-                    state: this.getConnectionState(state),
-                    reconnectAttempts: this.reconnectAttempts
-                });
-            }
-        } catch (error) {
-            logger.error('Database health check error', {
-                error: error.message,
-                state: this.getConnectionState(mongoose.connection.readyState)
-            });
-        }
-    }
-
-    /**
      * Get current connection status
      */
-    getConnectionStatus() {
-        const state = mongoose.connection.readyState;
-        const now = new Date();
-        
-        // Calculate uptime
-        if (this.connectionMetrics.lastConnected) {
-            this.connectionMetrics.uptime = now - this.connectionMetrics.lastConnected;
-        }
-
-        return {
-            state: this.getConnectionState(state),
-            isConnected: state === 1,
-            host: mongoose.connection.host,
-            database: mongoose.connection.name,
-            metrics: {
-                ...this.connectionMetrics,
-                reconnectAttempts: this.reconnectAttempts,
-                maxReconnectAttempts: this.maxReconnectAttempts
+    async getConnectionStatus() {
+        try {
+            await sequelize.authenticate();
+            const now = new Date();
+            
+            // Calculate uptime
+            if (this.connectionMetrics.lastConnected) {
+                this.connectionMetrics.uptime = now - this.connectionMetrics.lastConnected;
             }
-        };
-    }
 
-    /**
-     * Get readable connection state
-     */
-    getConnectionState(state) {
-        const states = {
-            0: 'disconnected',
-            1: 'connected',
-            2: 'connecting',
-            3: 'disconnecting'
-        };
-        return states[state] || 'unknown';
+            return {
+                state: 'connected',
+                isConnected: true,
+                database: sequelize.config.database,
+                host: sequelize.config.host,
+                metrics: {
+                    ...this.connectionMetrics,
+                    reconnectAttempts: this.reconnectAttempts,
+                    maxReconnectAttempts: this.maxReconnectAttempts
+                }
+            };
+        } catch (error) {
+            return {
+                state: 'disconnected',
+                isConnected: false,
+                error: error.message,
+                metrics: {
+                    ...this.connectionMetrics,
+                    reconnectAttempts: this.reconnectAttempts,
+                    maxReconnectAttempts: this.maxReconnectAttempts
+                }
+            };
+        }
     }
 
     /**
@@ -226,8 +173,7 @@ class DatabaseMonitor {
             ...this.connectionMetrics,
             reconnectAttempts: this.reconnectAttempts,
             maxReconnectAttempts: this.maxReconnectAttempts,
-            isMonitoring: this.isMonitoring,
-            currentState: this.getConnectionState(mongoose.connection.readyState)
+            isMonitoring: this.isMonitoring
         };
     }
 
