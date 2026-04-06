@@ -1,203 +1,335 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../../../config/database.js';
 
 /**
- * SystemAlerts Model - Tenant-Specific
+ * SystemAlerts Model
+ * 
  * Tracks system alerts and issues per tenant
+ * 
+ * CRITICAL: All records must have tenant_id for multi-tenancy isolation
  */
-const systemAlertsSchema = new mongoose.Schema({
-  tenantId: {
-    type: String,
-    required: true,
-    index: true
+
+const SystemAlerts = sequelize.define('SystemAlerts', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
+  
+  // Tenant isolation - REQUIRED
+  tenant_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'tenant_id'
+  },
+  
   type: {
-    type: String,
-    required: true,
-    enum: [
-      'system_error',
-      'performance_degradation',
-      'high_memory_usage',
-      'high_cpu_usage',
-      'disk_space_low',
-      'database_connection_issue',
-      'license_expiry_warning',
-      'security_threat',
-      'backup_failure',
-      'service_unavailable',
-      'rate_limit_exceeded',
-      'integration_failure',
-      'data_inconsistency',
-      'maintenance_required',
-      'configuration_error',
-      'network_issue',
-      'authentication_service_down',
-      'email_service_failure',
-      'file_storage_issue',
-      'cache_failure'
-    ]
+    type: DataTypes.ENUM(
+      'system_error', 'performance_degradation', 'high_memory_usage', 'high_cpu_usage',
+      'disk_space_low', 'database_connection_issue', 'license_expiry_warning',
+      'security_threat', 'backup_failure', 'service_unavailable', 'rate_limit_exceeded',
+      'integration_failure', 'data_inconsistency', 'maintenance_required',
+      'configuration_error', 'network_issue', 'authentication_service_down',
+      'email_service_failure', 'file_storage_issue', 'cache_failure'
+    ),
+    allowNull: false
   },
+  
   category: {
-    type: String,
-    required: true,
-    enum: ['system', 'security', 'performance', 'business', 'infrastructure'],
-    default: 'system'
+    type: DataTypes.ENUM('system', 'security', 'performance', 'business', 'infrastructure'),
+    allowNull: false,
+    defaultValue: 'system'
   },
+  
   severity: {
-    type: String,
-    required: true,
-    enum: ['info', 'warning', 'error', 'critical'],
-    default: 'warning'
+    type: DataTypes.ENUM('info', 'warning', 'error', 'critical'),
+    allowNull: false,
+    defaultValue: 'warning'
   },
+  
   status: {
-    type: String,
-    required: true,
-    enum: ['active', 'acknowledged', 'resolved', 'suppressed'],
-    default: 'active'
+    type: DataTypes.ENUM('active', 'acknowledged', 'resolved', 'suppressed'),
+    allowNull: false,
+    defaultValue: 'active'
   },
+  
   title: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
+  
   description: {
-    type: String,
-    required: true
+    type: DataTypes.TEXT,
+    allowNull: false
   },
+  
   source: {
-    type: String,
-    required: true // e.g., 'database', 'auth-service', 'payment-gateway'
+    type: DataTypes.STRING,
+    allowNull: false
   },
-  sourceDetails: {
-    service: String,
-    component: String,
-    version: String,
-    environment: String
+  
+  source_details: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null,
+    field: 'source_details'
+    // Structure: { service, component, version, environment }
   },
-  affectedUsers: [{
-    userId: String,
-    tenantId: String,
-    impact: String
-  }],
+  
+  affected_users: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    field: 'affected_users'
+    // Structure: [{ userId, tenantId, impact }]
+  },
+  
   metrics: {
-    errorCount: Number,
-    affectedRequests: Number,
-    responseTime: Number,
-    memoryUsage: Number,
-    cpuUsage: Number,
-    diskUsage: Number
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+    // Structure: { errorCount, affectedRequests, responseTime, memoryUsage, cpuUsage, diskUsage }
   },
+  
   thresholds: {
-    warning: Number,
-    critical: Number,
-    unit: String
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+    // Structure: { warning, critical, unit }
   },
-  actions: [{
-    action: String,
-    performedBy: String,
-    performedAt: Date,
-    result: String,
-    notes: String
-  }],
-  acknowledgedBy: {
-    type: String
+  
+  actions: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: []
+    // Structure: [{ action, performedBy, performedAt, result, notes }]
   },
-  acknowledgedAt: {
-    type: Date
+  
+  acknowledged_by: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'acknowledged_by'
   },
-  resolvedBy: {
-    type: String
+  
+  acknowledged_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'acknowledged_at'
   },
-  resolvedAt: {
-    type: Date
+  
+  resolved_by: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'resolved_by'
   },
-  resolutionNotes: {
-    type: String
+  
+  resolved_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'resolved_at'
   },
-  suppressedUntil: {
-    type: Date
+  
+  resolution_notes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'resolution_notes'
   },
-  suppressedBy: {
-    type: String
+  
+  suppressed_until: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'suppressed_until'
   },
-  suppressionReason: {
-    type: String
+  
+  suppressed_by: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'suppressed_by'
   },
-  escalationLevel: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 5
+  
+  suppression_reason: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'suppression_reason'
   },
-  escalatedAt: {
-    type: Date
+  
+  escalation_level: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    validate: {
+      min: 0,
+      max: 5
+    },
+    field: 'escalation_level'
   },
-  escalatedTo: {
-    type: String
+  
+  escalated_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'escalated_at'
   },
-  notificationsSent: [{
-    channel: String, // email, sms, slack, webhook
-    recipient: String,
-    sentAt: Date,
-    status: String,
-    response: String
-  }],
-  relatedAlerts: [{
-    alertId: mongoose.Schema.Types.ObjectId,
-    relationship: String // 'duplicate', 'related', 'caused_by', 'causes'
-  }],
-  tags: [String],
+  
+  escalated_to: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'escalated_to'
+  },
+  
+  notifications_sent: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    field: 'notifications_sent'
+    // Structure: [{ channel, recipient, sentAt, status, response }]
+  },
+  
+  related_alerts: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    field: 'related_alerts'
+    // Structure: [{ alertId, relationship }]
+  },
+  
+  tags: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: []
+  },
+  
   priority: {
-    type: Number,
-    default: 3,
-    min: 1,
-    max: 5
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 3,
+    validate: {
+      min: 1,
+      max: 5
+    }
   },
-  autoResolve: {
-    type: Boolean,
-    default: false
+  
+  auto_resolve: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'auto_resolve'
   },
-  autoResolveAfter: {
-    type: Number // minutes
+  
+  auto_resolve_after: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'auto_resolve_after'
   },
+  
   recurrence: {
-    isRecurring: Boolean,
-    pattern: String,
-    count: Number,
-    lastOccurrence: Date,
-    nextExpected: Date
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+    // Structure: { isRecurring, pattern, count, lastOccurrence, nextExpected }
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  },
+  
   metadata: {
-    type: mongoose.Schema.Types.Mixed
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
   }
 }, {
+  tableName: 'system_alerts',
   timestamps: true,
-  collection: 'systemalerts'
+  underscored: true,
+  indexes: [
+    {
+      fields: ['tenant_id']
+    },
+    {
+      fields: ['tenant_id', 'created_at']
+    },
+    {
+      fields: ['tenant_id', 'status', 'severity']
+    },
+    {
+      fields: ['tenant_id', 'type', 'category']
+    },
+    {
+      fields: ['tenant_id', 'severity', 'status', 'created_at']
+    },
+    {
+      fields: ['tenant_id', 'source', 'type', 'created_at']
+    },
+    {
+      fields: ['tenant_id', 'priority', 'created_at']
+    }
+  ]
 });
 
-// Compound indexes for better query performance
-systemAlertsSchema.index({ tenantId: 1, createdAt: -1 });
-systemAlertsSchema.index({ tenantId: 1, status: 1, severity: 1 });
-systemAlertsSchema.index({ tenantId: 1, type: 1, category: 1 });
-systemAlertsSchema.index({ tenantId: 1, severity: 1, status: 1, createdAt: -1 });
-systemAlertsSchema.index({ tenantId: 1, source: 1, type: 1, createdAt: -1 });
-systemAlertsSchema.index({ tenantId: 1, priority: -1, createdAt: -1 });
+// Instance methods
+SystemAlerts.prototype.acknowledge = async function(userId) {
+  this.status = 'acknowledged';
+  this.acknowledged_by = userId;
+  this.acknowledged_at = new Date();
+  return this.save();
+};
 
-// TTL index for auto-cleanup of resolved alerts after 6 months
-systemAlertsSchema.index(
-  { resolvedAt: 1 }, 
-  { 
-    expireAfterSeconds: 15552000, // 6 months
-    partialFilterExpression: { status: 'resolved' }
+SystemAlerts.prototype.resolve = async function(userId, notes) {
+  this.status = 'resolved';
+  this.resolved_by = userId;
+  this.resolved_at = new Date();
+  this.resolution_notes = notes;
+  return this.save();
+};
+
+SystemAlerts.prototype.suppress = async function(userId, until, reason) {
+  this.status = 'suppressed';
+  this.suppressed_by = userId;
+  this.suppressed_until = until;
+  this.suppression_reason = reason;
+  return this.save();
+};
+
+SystemAlerts.prototype.escalate = async function(level, escalatedTo) {
+  this.escalation_level = level;
+  this.escalated_at = new Date();
+  this.escalated_to = escalatedTo;
+  return this.save();
+};
+
+// Static methods
+SystemAlerts.getActiveAlerts = async function(tenantId, severity = null) {
+  const where = {
+    tenant_id: tenantId,
+    status: 'active'
+  };
+  
+  if (severity) {
+    where.severity = severity;
   }
-);
+  
+  return this.findAll({
+    where,
+    order: [['priority', 'DESC'], ['created_at', 'DESC']]
+  });
+};
 
-const SystemAlerts = mongoose.model('SystemAlerts', systemAlertsSchema);
+SystemAlerts.getCriticalAlerts = async function(tenantId) {
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      severity: 'critical',
+      status: ['active', 'acknowledged']
+    },
+    order: [['created_at', 'DESC']]
+  });
+};
+
+SystemAlerts.getAlertsByCategory = async function(tenantId, category) {
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      category
+    },
+    order: [['created_at', 'DESC']],
+    limit: 50
+  });
+};
 
 export default SystemAlerts;

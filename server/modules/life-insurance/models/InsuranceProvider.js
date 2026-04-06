@@ -1,282 +1,255 @@
-import mongoose from 'mongoose';
-import { baseSchemaPlugin } from '../../../shared/models/BaseModel.js';
+/**
+ * Insurance Provider Model (Sequelize)
+ */
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
 
-const insuranceProviderSchema = new mongoose.Schema({
-    // Basic Information
+const InsuranceProvider = mainAppDb.define('InsuranceProvider', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
+    },
     name: {
-        type: String,
-        required: true,
-        trim: true,
-        maxlength: 100
+        type: DataTypes.STRING(100),
+        allowNull: false
     },
     nameArabic: {
-        type: String,
-        trim: true,
-        maxlength: 100
+        type: DataTypes.STRING(100),
+        field: 'name_arabic'
     },
     code: {
-        type: String,
-        required: true,
-        unique: true,
-        uppercase: true,
-        trim: true,
-        maxlength: 10
+        type: DataTypes.STRING(10),
+        allowNull: false
     },
-
-    // Contact Information
+    // Contact information - stored as JSONB
     contactInfo: {
-        email: {
-            type: String,
-            trim: true,
-            lowercase: true
-        },
-        phone: {
-            type: String,
-            trim: true
-        },
-        website: {
-            type: String,
-            trim: true
-        },
-        address: {
-            street: String,
-            city: String,
-            governorate: String,
-            postalCode: String,
-            country: {
-                type: String,
-                default: 'Egypt'
-            }
-        }
+        type: DataTypes.JSONB,
+        defaultValue: {},
+        field: 'contact_info'
     },
-
-    // Business Information
     licenseNumber: {
-        type: String,
-        trim: true
+        type: DataTypes.STRING(100),
+        field: 'license_number'
     },
     establishedYear: {
-        type: Number,
-        min: 1900,
-        max: new Date().getFullYear()
+        type: DataTypes.INTEGER,
+        validate: {
+            min: 1900,
+            max: () => new Date().getFullYear()
+        },
+        field: 'established_year'
     },
-
-    // Insurance Details
-    insuranceTypes: [{
-        type: String,
-        enum: ['health', 'life', 'dental', 'vision', 'disability', 'accident', 'travel', 'other']
-    }],
-
-    // Coverage Areas
-    coverageAreas: [{
-        type: String,
-        enum: ['cairo', 'alexandria', 'giza', 'luxor', 'aswan', 'nationwide', 'international']
-    }],
-
-    // Financial Information
+    // Insurance types - stored as JSONB array
+    insuranceTypes: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        field: 'insurance_types'
+    },
+    // Coverage areas - stored as JSONB array
+    coverageAreas: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        field: 'coverage_areas'
+    },
+    // Financial information - stored as JSONB
     financialInfo: {
-        currency: {
-            type: String,
-            default: 'EGP',
-            enum: ['EGP', 'USD', 'EUR']
+        type: DataTypes.JSONB,
+        defaultValue: {
+            currency: 'EGP',
+            paymentTerms: 'monthly',
+            commissionRate: 0
         },
-        paymentTerms: {
-            type: String,
-            enum: ['monthly', 'quarterly', 'semi-annual', 'annual'],
-            default: 'monthly'
-        },
-        commissionRate: {
-            type: Number,
-            min: 0,
-            max: 100,
-            default: 0
-        }
+        field: 'financial_info'
     },
-
-    // Status and Ratings
     status: {
-        type: String,
-        enum: ['active', 'inactive', 'suspended', 'pending'],
-        default: 'active'
+        type: DataTypes.ENUM('active', 'inactive', 'suspended', 'pending'),
+        defaultValue: 'active'
     },
-
     rating: {
-        type: Number,
-        min: 1,
-        max: 5,
-        default: 3
+        type: DataTypes.DECIMAL(2, 1),
+        defaultValue: 3.0,
+        validate: { min: 1, max: 5 }
     },
-
-    // Contract Information
+    // Contract information - stored as JSONB
     contractInfo: {
-        startDate: Date,
-        endDate: Date,
-        renewalDate: Date,
-        contractNumber: String,
-        terms: String
+        type: DataTypes.JSONB,
+        defaultValue: {},
+        field: 'contract_info'
     },
-
-    // Additional Information
     description: {
-        type: String,
-        maxlength: 1000
+        type: DataTypes.TEXT
     },
-
     notes: {
-        type: String,
-        maxlength: 500
+        type: DataTypes.TEXT
     },
-
-    // Tenant Information
-    tenantId: {
-        type: String,
-        required: true,
-        index: true
-    },
-
-    // Audit Fields
     createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'created_by'
     },
-
     updatedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'updated_by'
     },
-
-    // History tracking
-    history: [{
-        action: {
-            type: String,
-            enum: ['created', 'updated', 'activated', 'deactivated', 'suspended', 'contract_renewed'],
-            required: true
-        },
-        performedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
-        },
-        timestamp: {
-            type: Date,
-            default: Date.now
-        },
-        changes: {
-            type: mongoose.Schema.Types.Mixed
-        },
-        notes: String
-    }]
+    // History - stored as JSONB array
+    history: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    }
 }, {
+    tableName: 'insurance_providers',
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
-});
-
-// Indexes
-insuranceProviderSchema.index({ tenantId: 1, code: 1 }, { unique: true });
-insuranceProviderSchema.index({ tenantId: 1, name: 1 });
-insuranceProviderSchema.index({ tenantId: 1, status: 1 });
-insuranceProviderSchema.index({ 'contactInfo.email': 1 });
-
-// Virtual for full name with Arabic
-insuranceProviderSchema.virtual('fullName').get(function () {
-    return this.nameArabic ? `${this.name} (${this.nameArabic})` : this.name;
-});
-
-// Virtual for active policies count (to be populated)
-insuranceProviderSchema.virtual('activePoliciesCount', {
-    ref: 'InsurancePolicy',
-    localField: '_id',
-    foreignField: 'providerId',
-    count: true,
-    match: { status: 'active' }
-});
-
-// Pre-save middleware
-insuranceProviderSchema.pre('save', function (next) {
-    // Auto-generate code if not provided
-    if (!this.code && this.name) {
-        this.code = this.name.replace(/[^A-Z0-9]/gi, '').substring(0, 10).toUpperCase();
-    }
-
-    // Add history entry for updates
-    if (!this.isNew && this.isModified()) {
-        const changes = {};
-        this.modifiedPaths().forEach(path => {
-            if (path !== 'history' && path !== 'updatedAt') {
-                changes[path] = {
-                    from: this.get(path),
-                    to: this.get(path)
-                };
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['tenant_id', 'code'], unique: true },
+        { fields: ['tenant_id', 'name'] },
+        { fields: ['tenant_id', 'status'] },
+        { fields: ['status'] }
+    ],
+    hooks: {
+        beforeCreate: (provider) => {
+            // Auto-generate code if not provided
+            if (!provider.code && provider.name) {
+                provider.code = provider.name.replace(/[^A-Z0-9]/gi, '').substring(0, 10).toUpperCase();
             }
-        });
-
-        this.history.push({
-            action: 'updated',
-            performedBy: this.updatedBy,
-            timestamp: new Date(),
-            changes: changes
-        });
+        },
+        beforeUpdate: (provider) => {
+            // Add history entry for updates
+            if (provider.changed()) {
+                const changes = {};
+                provider.changed().forEach(field => {
+                    if (field !== 'history' && field !== 'updatedAt') {
+                        changes[field] = {
+                            from: provider._previousDataValues[field],
+                            to: provider.getDataValue(field)
+                        };
+                    }
+                });
+                
+                const history = [...(provider.history || [])];
+                history.push({
+                    action: 'updated',
+                    performedBy: provider.updatedBy,
+                    timestamp: new Date(),
+                    changes
+                });
+                provider.history = history;
+            }
+        }
     }
-
-    next();
 });
 
-// Static methods
-insuranceProviderSchema.statics.findByTenant = function (tenantId, options = {}) {
-    const query = { tenantId };
-
-    if (options.status) {
-        query.status = options.status;
-    }
-
-    if (options.insuranceType) {
-        query.insuranceTypes = { $in: [options.insuranceType] };
-    }
-
-    return this.find(query)
-        .populate('createdBy', 'firstName lastName email')
-        .populate('updatedBy', 'firstName lastName email')
-        .sort(options.sort || { name: 1 });
+/**
+ * Define associations
+ */
+InsuranceProvider.associate = (models) => {
+    InsuranceProvider.belongsTo(models.User, {
+        foreignKey: 'createdBy',
+        as: 'creator'
+    });
+    InsuranceProvider.belongsTo(models.User, {
+        foreignKey: 'updatedBy',
+        as: 'updater'
+    });
 };
 
-insuranceProviderSchema.statics.findActiveProviders = function (tenantId) {
-    return this.findByTenant(tenantId, { status: 'active' });
+/**
+ * Instance method: Get full name with Arabic
+ */
+InsuranceProvider.prototype.getFullName = function () {
+    return this.nameArabic ? `${this.name} (${this.nameArabic})` : this.name;
 };
 
-// Instance methods
-insuranceProviderSchema.methods.activate = function (userId) {
+/**
+ * Instance method: Activate provider
+ */
+InsuranceProvider.prototype.activate = async function (userId) {
     this.status = 'active';
     this.updatedBy = userId;
-    this.history.push({
+    
+    const history = [...(this.history || [])];
+    history.push({
         action: 'activated',
         performedBy: userId,
         timestamp: new Date()
     });
-    return this.save();
+    this.history = history;
+    
+    return await this.save();
 };
 
-insuranceProviderSchema.methods.deactivate = function (userId, reason) {
+/**
+ * Instance method: Deactivate provider
+ */
+InsuranceProvider.prototype.deactivate = async function (userId, reason) {
     this.status = 'inactive';
     this.updatedBy = userId;
-    this.history.push({
+    
+    const history = [...(this.history || [])];
+    history.push({
         action: 'deactivated',
         performedBy: userId,
         timestamp: new Date(),
         notes: reason
     });
-    return this.save();
+    this.history = history;
+    
+    return await this.save();
 };
 
-// Apply base schema plugin for multi-tenancy
-insuranceProviderSchema.plugin(baseSchemaPlugin);
+/**
+ * Static method: Find providers by tenant
+ */
+InsuranceProvider.findByTenant = function (tenantId, options = {}) {
+    const where = { tenantId };
+    
+    if (options.status) {
+        where.status = options.status;
+    }
+    
+    if (options.insuranceType) {
+        // For JSONB array contains query
+        where.insuranceTypes = { [Op.contains]: [options.insuranceType] };
+    }
+    
+    return this.findAll({
+        where,
+        include: [
+            {
+                model: mainAppDb.models.User,
+                as: 'creator',
+                attributes: ['firstName', 'lastName', 'email']
+            },
+            {
+                model: mainAppDb.models.User,
+                as: 'updater',
+                attributes: ['firstName', 'lastName', 'email']
+            }
+        ],
+        order: options.sort || [['name', 'ASC']]
+    });
+};
 
-// Compound indexes for tenant isolation and performance
-insuranceProviderSchema.index({ tenantId: 1, code: 1 }, { unique: true });
-insuranceProviderSchema.index({ tenantId: 1, name: 1 });
-insuranceProviderSchema.index({ tenantId: 1, status: 1 });
-
-const InsuranceProvider = mongoose.model('InsuranceProvider', insuranceProviderSchema);
+/**
+ * Static method: Find active providers
+ */
+InsuranceProvider.findActiveProviders = function (tenantId) {
+    return this.findByTenant(tenantId, { status: 'active' });
+};
 
 export default InsuranceProvider;

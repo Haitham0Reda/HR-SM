@@ -1,57 +1,98 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
 
-const taskSchema = new mongoose.Schema({
+const Task = mainAppDb.define('Task', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id',
+        comment: 'Tenant identifier for multi-tenancy'
+    },
     title: {
-        type: String,
-        required: true,
-        trim: true
+        type: DataTypes.STRING(255),
+        allowNull: false,
+        validate: {
+            notEmpty: true
+        }
     },
     description: {
-        type: String,
-        required: true
+        type: DataTypes.TEXT,
+        allowNull: false
     },
     priority: {
-        type: String,
-        enum: ['low', 'medium', 'high', 'urgent'],
-        default: 'medium'
+        type: DataTypes.ENUM('low', 'medium', 'high', 'urgent'),
+        defaultValue: 'medium',
+        allowNull: false
     },
     assignee: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     },
     assigner: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     },
     startDate: {
-        type: Date,
-        required: true
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'start_date'
     },
     dueDate: {
-        type: Date,
-        required: true
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'due_date'
     },
     status: {
-        type: String,
-        enum: ['assigned', 'in-progress', 'submitted', 'reviewed', 'completed', 'rejected'],
-        default: 'assigned'
-    },
-    // Multi-tenant support
-    tenantId: {
-        type: String,
-        required: true,
-        index: true
+        type: DataTypes.ENUM('assigned', 'in-progress', 'submitted', 'reviewed', 'completed', 'rejected'),
+        defaultValue: 'assigned',
+        allowNull: false
     }
 }, {
-    timestamps: true
+    tableName: 'tasks',
+    timestamps: true,
+    underscored: true,
+    indexes: [
+        {
+            fields: ['tenant_id']
+        },
+        {
+            fields: ['assignee', 'status']
+        },
+        {
+            fields: ['assigner', 'status']
+        },
+        {
+            fields: ['tenant_id', 'status']
+        },
+        {
+            fields: ['due_date']
+        }
+    ]
 });
 
-// Index for efficient querying
-taskSchema.index({ assignee: 1, status: 1 });
-taskSchema.index({ assigner: 1, status: 1 });
-taskSchema.index({ tenantId: 1, status: 1 });
-taskSchema.index({ dueDate: 1 });
+// Define associations
+Task.associate = (models) => {
+    Task.belongsTo(models.User, {
+        foreignKey: 'assignee',
+        as: 'assignedUser'
+    });
+    Task.belongsTo(models.User, {
+        foreignKey: 'assigner',
+        as: 'assigningUser'
+    });
+};
 
-export default mongoose.model('Task', taskSchema);
+export default Task;

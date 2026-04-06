@@ -1,167 +1,213 @@
-import mongoose from 'mongoose';
-import { baseSchemaPlugin } from '../../../shared/models/BaseModel.js';
+/**
+ * Insurance Claim Model (Sequelize)
+ */
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
 
-const insuranceClaimSchema = new mongoose.Schema({
-    // Auto-generated claim number (format: CLM-YYYY-NNNNNN)
-    claimNumber: {
-        type: String,
-        unique: true,
-        index: true
+const InsuranceClaim = mainAppDb.define('InsuranceClaim', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
     },
-    
-    // References
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
+    },
+    claimNumber: {
+        type: DataTypes.STRING(50),
+        unique: true,
+        field: 'claim_number'
+    },
     policyId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'InsurancePolicy',
-        required: true,
-        index: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'insurance_policies',
+            key: 'id'
+        },
+        field: 'policy_id'
     },
     employeeId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'employee_id'
     },
-    
-    // Claimant information (could be employee or family member)
     claimantType: {
-        type: String,
-        enum: ['employee', 'family_member'],
-        required: true
+        type: DataTypes.ENUM('employee', 'family_member'),
+        allowNull: false,
+        field: 'claimant_type'
     },
     claimantId: {
-        type: mongoose.Schema.Types.ObjectId,
-        refPath: 'claimantModel',
-        required: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        field: 'claimant_id'
     },
     claimantModel: {
-        type: String,
-        enum: ['User', 'FamilyMember'],
-        required: true
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        field: 'claimant_model'
     },
-    
-    // Claim details
     claimType: {
-        type: String,
-        enum: ['death', 'disability', 'medical', 'accident', 'other'],
-        required: true,
-        index: true
+        type: DataTypes.ENUM('death', 'disability', 'medical', 'accident', 'other'),
+        allowNull: false,
+        field: 'claim_type'
     },
     incidentDate: {
-        type: Date,
-        required: true,
-        index: true
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'incident_date'
     },
     claimAmount: {
-        type: Number,
-        required: true,
-        min: 0
+        type: DataTypes.DECIMAL(15, 2),
+        allowNull: false,
+        validate: { min: 0 },
+        field: 'claim_amount'
     },
     description: {
-        type: String,
-        required: true
+        type: DataTypes.TEXT,
+        allowNull: false
     },
-    
-    // Claim status and workflow
     status: {
-        type: String,
-        enum: ['pending', 'under_review', 'approved', 'rejected', 'paid', 'cancelled'],
-        default: 'pending',
-        index: true
+        type: DataTypes.ENUM('pending', 'under_review', 'approved', 'rejected', 'paid', 'cancelled'),
+        defaultValue: 'pending'
     },
     priority: {
-        type: String,
-        enum: ['low', 'medium', 'high', 'urgent'],
-        default: 'medium',
-        index: true
+        type: DataTypes.ENUM('low', 'medium', 'high', 'urgent'),
+        defaultValue: 'medium'
     },
-    
-    // Review information
     reviewedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'reviewed_by'
     },
-    reviewedAt: Date,
-    reviewNotes: String,
-    
-    // Payment information
+    reviewedAt: {
+        type: DataTypes.DATE,
+        field: 'reviewed_at'
+    },
+    reviewNotes: {
+        type: DataTypes.TEXT,
+        field: 'review_notes'
+    },
     approvedAmount: {
-        type: Number,
-        min: 0
+        type: DataTypes.DECIMAL(15, 2),
+        validate: { min: 0 },
+        field: 'approved_amount'
     },
-    paymentDate: Date,
+    paymentDate: {
+        type: DataTypes.DATE,
+        field: 'payment_date'
+    },
     paymentMethod: {
-        type: String,
-        enum: ['bank_transfer', 'check', 'cash', 'other']
+        type: DataTypes.ENUM('bank_transfer', 'check', 'cash', 'other'),
+        field: 'payment_method'
     },
-    paymentReference: String,
-    
-    // Documents and attachments
-    documents: [{
-        filename: String,
-        originalName: String,
-        mimetype: String,
-        size: Number,
-        uploadedAt: {
-            type: Date,
-            default: Date.now
-        },
-        uploadedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        documentType: {
-            type: String,
-            enum: ['medical_report', 'death_certificate', 'police_report', 'invoice', 'receipt', 'other']
-        }
-    }],
-    
-    // Workflow history
-    workflow: [{
-        status: {
-            type: String,
-            enum: ['pending', 'under_review', 'approved', 'rejected', 'paid', 'cancelled'],
-            required: true
-        },
-        performedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
-        },
-        timestamp: {
-            type: Date,
-            default: Date.now
-        },
-        notes: String,
-        previousStatus: String
-    }],
-    
-    // Additional information
-    notes: String,
-    tags: [String],
-    
-    // Deadline tracking
-    submissionDeadline: Date,
-    reviewDeadline: Date,
-    paymentDeadline: Date
+    paymentReference: {
+        type: DataTypes.STRING(100),
+        field: 'payment_reference'
+    },
+    // Documents - stored as JSONB array
+    documents: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    },
+    // Workflow history - stored as JSONB array
+    workflow: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    },
+    notes: {
+        type: DataTypes.TEXT
+    },
+    tags: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    },
+    submissionDeadline: {
+        type: DataTypes.DATE,
+        field: 'submission_deadline'
+    },
+    reviewDeadline: {
+        type: DataTypes.DATE,
+        field: 'review_deadline'
+    },
+    paymentDeadline: {
+        type: DataTypes.DATE,
+        field: 'payment_deadline'
+    }
 }, {
+    tableName: 'insurance_claims',
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['employee_id'] },
+        { fields: ['policy_id'] },
+        { fields: ['claim_number'], unique: true },
+        { fields: ['claim_type'] },
+        { fields: ['status'] },
+        { fields: ['priority'] },
+        { fields: ['incident_date'] },
+        { fields: ['tenant_id', 'employee_id', 'status'] },
+        { fields: ['tenant_id', 'policy_id', 'status'] },
+        { fields: ['tenant_id', 'claim_type', 'status'] },
+        { fields: ['tenant_id', 'status', 'priority'] }
+    ],
+    hooks: {
+        beforeCreate: (claim) => {
+            // Auto-generate claim number
+            if (!claim.claimNumber) {
+                const year = new Date().getFullYear();
+                const randomNum = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+                claim.claimNumber = `CLM-${year}-${randomNum}`;
+            }
+            
+            // Set claimant model based on type
+            if (claim.claimantType === 'employee') {
+                claim.claimantModel = 'User';
+            } else if (claim.claimantType === 'family_member') {
+                claim.claimantModel = 'FamilyMember';
+            }
+        },
+        beforeSave: (claim) => {
+            // Validate incident date
+            if (claim.incidentDate > new Date()) {
+                throw new Error('Incident date cannot be in the future');
+            }
+        }
+    }
 });
 
-// Apply base schema plugin for multi-tenancy
-insuranceClaimSchema.plugin(baseSchemaPlugin);
+/**
+ * Define associations
+ */
+InsuranceClaim.associate = (models) => {
+    InsuranceClaim.belongsTo(models.InsurancePolicy, {
+        foreignKey: 'policyId',
+        as: 'policy'
+    });
+    InsuranceClaim.belongsTo(models.User, {
+        foreignKey: 'employeeId',
+        as: 'employee'
+    });
+    InsuranceClaim.belongsTo(models.User, {
+        foreignKey: 'reviewedBy',
+        as: 'reviewer'
+    });
+};
 
-// Compound indexes for efficient queries
-insuranceClaimSchema.index({ tenantId: 1, employeeId: 1, status: 1 });
-insuranceClaimSchema.index({ tenantId: 1, policyId: 1, status: 1 });
-insuranceClaimSchema.index({ tenantId: 1, claimType: 1, status: 1 });
-insuranceClaimSchema.index({ tenantId: 1, incidentDate: 1 });
-insuranceClaimSchema.index({ tenantId: 1, status: 1, priority: 1 });
-
-// Virtual for checking if claim is overdue
-insuranceClaimSchema.virtual('isOverdue').get(function() {
+/**
+ * Instance method: Check if claim is overdue
+ */
+InsuranceClaim.prototype.getIsOverdue = function () {
     const now = new Date();
     
     if (this.status === 'pending' && this.submissionDeadline && now > this.submissionDeadline) {
@@ -177,293 +223,205 @@ insuranceClaimSchema.virtual('isOverdue').get(function() {
     }
     
     return false;
-});
+};
 
-// Virtual for days since submission
-insuranceClaimSchema.virtual('daysSinceSubmission').get(function() {
+/**
+ * Instance method: Get days since submission
+ */
+InsuranceClaim.prototype.getDaysSinceSubmission = function () {
     const diffTime = new Date() - this.createdAt;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-});
+};
 
-// Virtual for processing time (if completed)
-insuranceClaimSchema.virtual('processingDays').get(function() {
+/**
+ * Instance method: Get processing days
+ */
+InsuranceClaim.prototype.getProcessingDays = function () {
     if (!this.reviewedAt) return null;
     
     const diffTime = this.reviewedAt - this.createdAt;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-});
+};
 
-// Pre-save middleware to auto-generate claim number
-insuranceClaimSchema.pre('save', function(next) {
-    if (this.isNew && !this.claimNumber) {
-        const year = new Date().getFullYear();
-        const randomNum = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-        this.claimNumber = `CLM-${year}-${randomNum}`;
-    }
-    next();
-});
-
-// Pre-save middleware to validate incident date
-insuranceClaimSchema.pre('save', function(next) {
-    if (this.incidentDate > new Date()) {
-        const error = new Error('Incident date cannot be in the future');
-        error.name = 'ValidationError';
-        return next(error);
-    }
-    next();
-});
-
-// Pre-save middleware to set claimant model based on type
-insuranceClaimSchema.pre('save', function(next) {
-    if (this.claimantType === 'employee') {
-        this.claimantModel = 'User';
-    } else if (this.claimantType === 'family_member') {
-        this.claimantModel = 'FamilyMember';
-    }
-    next();
-});
-
-// Pre-save middleware to track status changes
-insuranceClaimSchema.pre('save', function(next) {
-    // Check if we have workflow data to add (from updateStatus, approve, or reject methods)
-    if (this._workflowPerformedBy && !this.isNew) {
-        // Use the stored previous status or current status if no change
-        const previousStatus = this._previousStatus || this.status;
-            
-        // Use the performedBy and notes from updateStatus method
-        const performedBy = this._workflowPerformedBy;
-        const notes = this._workflowNotes || '';
-            
-        this.workflow.push({
-            status: this.status,
-            performedBy: performedBy,
-            timestamp: new Date(),
-            notes: notes,
-            previousStatus: previousStatus
-        });
-        
-        // Clean up temporary fields
-        delete this._workflowNotes;
-        delete this._workflowPerformedBy;
-        delete this._previousStatus;
-        
-        // Set review timestamp if status changed to reviewed states
-        if (['approved', 'rejected'].includes(this.status) && !this.reviewedAt) {
-            this.reviewedAt = new Date();
-        }
-    } 
-    // Also track direct status changes (when status is modified but no method was used)
-    else if (this.isModified('status') && !this.isNew) {
-        // For direct status changes, use a default performer
-        const performedBy = this.reviewedBy || this.employeeId;
-        
-        this.workflow.push({
-            status: this.status,
-            performedBy: performedBy,
-            timestamp: new Date(),
-            notes: '',
-            previousStatus: 'pending' // Default since we don't have the previous status
-        });
-        
-        // Set review timestamp if status changed to reviewed states
-        if (['approved', 'rejected'].includes(this.status) && !this.reviewedAt) {
-            this.reviewedAt = new Date();
-        }
-    }
-    next();
-});
-
-// Method to add document
-insuranceClaimSchema.methods.addDocument = function(documentData) {
-    this.documents.push({
+/**
+ * Instance method: Add document
+ */
+InsuranceClaim.prototype.addDocument = async function (documentData) {
+    const documents = [...(this.documents || [])];
+    documents.push({
         ...documentData,
         uploadedAt: new Date()
     });
-    return this.save();
+    this.documents = documents;
+    return await this.save();
 };
 
-// Method to update status with workflow tracking
-insuranceClaimSchema.methods.updateStatus = function(newStatus, performedBy, notes = '') {
-    // Store the previous status before changing it
-    this._previousStatus = this.status;
+/**
+ * Instance method: Update status with workflow tracking
+ */
+InsuranceClaim.prototype.updateStatus = async function (newStatus, performedBy, notes = '') {
+    const previousStatus = this.status;
     this.status = newStatus;
     
     if (performedBy) {
         this.reviewedBy = performedBy;
     }
     
-    // Store notes for the pre-save middleware to use
-    this._workflowNotes = notes;
-    this._workflowPerformedBy = performedBy;
+    // Add workflow entry
+    const workflow = [...(this.workflow || [])];
+    workflow.push({
+        status: newStatus,
+        performedBy,
+        timestamp: new Date(),
+        notes,
+        previousStatus
+    });
+    this.workflow = workflow;
     
-    return this.save();
+    // Set review timestamp if status changed to reviewed states
+    if (['approved', 'rejected'].includes(newStatus) && !this.reviewedAt) {
+        this.reviewedAt = new Date();
+    }
+    
+    return await this.save();
 };
 
-// Method to approve claim
-insuranceClaimSchema.methods.approve = function(approvedAmount, performedBy, notes = '') {
-    // Store the previous status before changing it
-    this._previousStatus = this.status;
+/**
+ * Instance method: Approve claim
+ */
+InsuranceClaim.prototype.approve = async function (approvedAmount, performedBy, notes = '') {
+    const previousStatus = this.status;
     this.status = 'approved';
     this.approvedAmount = approvedAmount;
     this.reviewedBy = performedBy;
     this.reviewedAt = new Date();
     this.reviewNotes = notes;
     
-    // Store notes for the pre-save middleware to use
-    this._workflowNotes = `Approved for amount: ${approvedAmount}. ${notes}`;
-    this._workflowPerformedBy = performedBy;
+    // Add workflow entry
+    const workflow = [...(this.workflow || [])];
+    workflow.push({
+        status: 'approved',
+        performedBy,
+        timestamp: new Date(),
+        notes: `Approved for amount: ${approvedAmount}. ${notes}`,
+        previousStatus
+    });
+    this.workflow = workflow;
     
-    return this.save();
+    return await this.save();
 };
 
-// Method to reject claim
-insuranceClaimSchema.methods.reject = function(performedBy, reason) {
-    // Store the previous status before changing it
-    this._previousStatus = this.status;
+/**
+ * Instance method: Reject claim
+ */
+InsuranceClaim.prototype.reject = async function (performedBy, reason) {
+    const previousStatus = this.status;
     this.status = 'rejected';
     this.reviewedBy = performedBy;
     this.reviewedAt = new Date();
     this.reviewNotes = reason;
     
-    // Store notes for the pre-save middleware to use
-    this._workflowNotes = `Rejected: ${reason}`;
-    this._workflowPerformedBy = performedBy;
+    // Add workflow entry
+    const workflow = [...(this.workflow || [])];
+    workflow.push({
+        status: 'rejected',
+        performedBy,
+        timestamp: new Date(),
+        notes: `Rejected: ${reason}`,
+        previousStatus
+    });
+    this.workflow = workflow;
     
-    return this.save();
+    return await this.save();
 };
 
-// Pre-save middleware for tenant validation
-insuranceClaimSchema.pre('save', function(next) {
-    if (!this.tenantId) {
-        const error = new Error('TenantId is required for insurance claim');
-        error.name = 'ValidationError';
-        return next(error);
+/**
+ * Static method: Find claims by tenant
+ */
+InsuranceClaim.findByTenant = function (tenantId, filters = {}) {
+    return this.findAll({ where: { tenantId, ...filters } });
+};
+
+/**
+ * Static method: Find claims by status
+ */
+InsuranceClaim.findByStatus = function (tenantId, status, employeeId = null) {
+    const where = { tenantId, status };
+    if (employeeId) {
+        where.employeeId = employeeId;
     }
-    next();
-});
-
-// Static method to find claims by tenant
-insuranceClaimSchema.statics.findByTenant = function(tenantId, filters = {}) {
-    return this.withTenant(tenantId).find(filters);
+    return this.findAll({ where, order: [['createdAt', 'DESC']] });
 };
 
-// Static method to find claims by tenant and employee with role-based access
-insuranceClaimSchema.statics.findByTenantAndEmployee = function(tenantId, employeeId, userRole, userDepartment = null) {
-    const query = { tenantId };
-    
-    // Apply role-based filtering
-    if (userRole === 'employee') {
-        query.employeeId = employeeId;
-    } else if (userRole === 'manager' && userDepartment) {
-        // Manager access will be validated in controller layer
-        query.employeeId = employeeId;
-    }
-    // HR and Admin roles get access to all claims within tenant
-    
-    return this.find(query);
-};
-
-// Static method to find claims by status with role-based access
-insuranceClaimSchema.statics.findByStatus = function(tenantId, status, userRole = null, userId = null, userDepartment = null) {
-    const query = { status };
-    
-    // Apply role-based filtering
-    if (userRole === 'employee' && userId) {
-        query.employeeId = userId;
-    } else if (userRole === 'manager' && userDepartment && userId) {
-        // Manager access will be validated in controller layer
-        query.employeeId = userId;
-    }
-    
-    return this.withTenant(tenantId).find(query).sort({ createdAt: -1 });
-};
-
-// Static method to find overdue claims with role-based access
-insuranceClaimSchema.statics.findOverdueClaims = function(tenantId, userRole = null, userId = null, userDepartment = null) {
+/**
+ * Static method: Find overdue claims
+ */
+InsuranceClaim.findOverdueClaims = function (tenantId, employeeId = null) {
     const now = new Date();
     
-    const query = {
-        $or: [
+    const where = {
+        tenantId,
+        [Op.or]: [
             {
                 status: 'pending',
-                submissionDeadline: { $lt: now }
+                submissionDeadline: { [Op.lt]: now }
             },
             {
                 status: 'under_review',
-                reviewDeadline: { $lt: now }
+                reviewDeadline: { [Op.lt]: now }
             },
             {
                 status: 'approved',
-                paymentDeadline: { $lt: now }
+                paymentDeadline: { [Op.lt]: now }
             }
         ]
     };
     
-    // Apply role-based filtering
-    if (userRole === 'employee' && userId) {
-        query.employeeId = userId;
-    } else if (userRole === 'manager' && userDepartment && userId) {
-        // Manager access will be validated in controller layer
-        query.employeeId = userId;
+    if (employeeId) {
+        where.employeeId = employeeId;
     }
     
-    return this.withTenant(tenantId).find(query);
+    return this.findAll({ where });
 };
 
-// Static method for role-based claim queries
-insuranceClaimSchema.statics.findWithRoleAccess = function(tenantId, userRole, userId, userDepartment = null, additionalFilters = {}) {
-    const query = { ...additionalFilters };
-    
-    switch (userRole) {
-        case 'employee':
-            query.employeeId = userId;
-            break;
-        case 'manager':
-            // Manager access requires department validation in controller
-            break;
-        case 'hr':
-        case 'admin':
-            // Full tenant access - no additional filtering
-            break;
-        default:
-            // Unknown role - restrict to user's own data
-            query.employeeId = userId;
-    }
-    
-    return this.withTenant(tenantId).find(query);
-};
-
-// Static method to get claims statistics with role-based access
-insuranceClaimSchema.statics.getStatistics = function(tenantId, dateRange = null, userRole = null, userId = null, userDepartment = null) {
-    const matchStage = { tenantId };
+/**
+ * Static method: Get claims statistics
+ */
+InsuranceClaim.getStatistics = async function (tenantId, dateRange = null, employeeId = null) {
+    const where = { tenantId };
     
     if (dateRange) {
-        matchStage.createdAt = {
-            $gte: dateRange.startDate,
-            $lte: dateRange.endDate
+        where.createdAt = {
+            [Op.gte]: dateRange.startDate,
+            [Op.lte]: dateRange.endDate
         };
     }
     
-    // Apply role-based filtering
-    if (userRole === 'employee' && userId) {
-        matchStage.employeeId = userId;
-    } else if (userRole === 'manager' && userDepartment) {
-        // Manager statistics will be filtered in controller layer
+    if (employeeId) {
+        where.employeeId = employeeId;
     }
     
-    return this.aggregate([
-        { $match: matchStage },
-        {
-            $group: {
-                _id: '$status',
-                count: { $sum: 1 },
-                totalAmount: { $sum: '$claimAmount' },
-                approvedAmount: { $sum: '$approvedAmount' }
-            }
+    const claims = await this.findAll({ where });
+    
+    const stats = claims.reduce((acc, claim) => {
+        const status = claim.status;
+        if (!acc[status]) {
+            acc[status] = {
+                count: 0,
+                totalAmount: 0,
+                approvedAmount: 0
+            };
         }
-    ]);
+        acc[status].count += 1;
+        acc[status].totalAmount += parseFloat(claim.claimAmount || 0);
+        acc[status].approvedAmount += parseFloat(claim.approvedAmount || 0);
+        return acc;
+    }, {});
+    
+    return Object.entries(stats).map(([status, data]) => ({
+        _id: status,
+        ...data
+    }));
 };
-
-const InsuranceClaim = mongoose.model('InsuranceClaim', insuranceClaimSchema);
 
 export default InsuranceClaim;

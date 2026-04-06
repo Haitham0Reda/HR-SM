@@ -1,43 +1,117 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../../../config/database.js';
 
-const emailLogSchema = new mongoose.Schema({
-  tenantId: {
-    type: String,
-    required: true,
-    index: true
+/**
+ * EmailLog Model
+ * 
+ * Tracks email sending history and status
+ * 
+ * CRITICAL: All records must have tenant_id for multi-tenancy isolation
+ */
+
+const EmailLog = sequelize.define('EmailLog', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
+  
+  // Tenant isolation - REQUIRED
+  tenant_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'tenant_id'
+  },
+  
   to: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
-  from: String,
+  
+  from: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  
   subject: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
-  template: String,
+  
+  template: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  
   provider: {
-    type: String,
-    enum: ['smtp', 'sendgrid', 'ses']
+    type: DataTypes.ENUM('smtp', 'sendgrid', 'ses'),
+    allowNull: true
   },
+  
   status: {
-    type: String,
-    enum: ['sent', 'failed', 'queued'],
-    required: true
+    type: DataTypes.ENUM('sent', 'failed', 'queued'),
+    allowNull: false
   },
-  error: String,
-  messageId: String,
-  metadata: mongoose.Schema.Types.Mixed,
-  sentAt: Date,
-  createdAt: {
-    type: Date,
-    default: Date.now
+  
+  error: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  
+  message_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'message_id'
+  },
+  
+  metadata: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+  },
+  
+  sent_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'sent_at'
   }
+}, {
+  tableName: 'email_logs',
+  timestamps: true,
+  underscored: true,
+  indexes: [
+    {
+      fields: ['tenant_id']
+    },
+    {
+      fields: ['tenant_id', 'status', 'created_at']
+    },
+    {
+      fields: ['to']
+    },
+    {
+      fields: ['status']
+    }
+  ]
 });
 
-// Compound index for efficient querying
-emailLogSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
+// Static methods
+EmailLog.getRecentEmails = async function(tenantId, limit = 50) {
+  return this.findAll({
+    where: { tenant_id: tenantId },
+    order: [['created_at', 'DESC']],
+    limit
+  });
+};
 
-const EmailLog = mongoose.model('EmailLog', emailLogSchema);
+EmailLog.getFailedEmails = async function(tenantId) {
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      status: 'failed'
+    },
+    order: [['created_at', 'DESC']]
+  });
+};
 
 export default EmailLog;

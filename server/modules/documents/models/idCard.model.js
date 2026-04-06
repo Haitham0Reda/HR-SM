@@ -1,3 +1,6 @@
+import { DataTypes, Op } from 'sequelize';
+import sequelize from '../../../config/database.js';
+
 /**
  * ID Card Model
  * 
@@ -12,581 +15,424 @@
  * - Card status tracking (active, expired, lost, replaced)
  * - QR code generation for verification
  * - Integration with employee data
+ * 
+ * CRITICAL: All records must have tenant_id for multi-tenancy isolation
  */
-import mongoose from 'mongoose';
 
-const idCardSchema = new mongoose.Schema({
-    // Employee reference
-    employee: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
-    },
-
-    // Employee's department (denormalized for faster queries)
-    department: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department',
-        index: true
-    },
-
-    // Employee's position (denormalized)
-    position: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Position'
-    },
-
-    // Card number (unique identifier)
-    cardNumber: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true
-    },
-
-    // Card type
-    cardType: {
-        type: String,
-        enum: ['employee', 'contractor', 'visitor', 'temporary'],
-        default: 'employee',
-        index: true
-    },
-
-    // Card status
-    status: {
-        type: String,
-        enum: ['active', 'expired', 'suspended', 'lost', 'stolen', 'replaced', 'cancelled'],
-        default: 'active',
-        index: true
-    },
-
-    // Issue information
-    issue: {
-        issuedDate: {
-            type: Date,
-            default: Date.now,
-            required: true
-        },
-        issuedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
-        },
-        issueReason: {
-            type: String,
-            enum: ['new-hire', 'replacement', 'renewal', 'lost', 'damaged', 'upgrade'],
-            default: 'new-hire'
-        },
-        issueNotes: String
-    },
-
-    // Expiry information
-    expiry: {
-        expiryDate: {
-            type: Date,
-            required: true,
-            index: true
-        },
-        autoRenew: {
-            type: Boolean,
-            default: true
-        },
-        renewalNoticeSent: {
-            type: Boolean,
-            default: false
-        },
-        renewalNoticeDate: Date
-    },
-
-    // Print history tracking
-    printHistory: [{
-        printedAt: {
-            type: Date,
-            default: Date.now
-        },
-        printedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
-        },
-        printType: {
-            type: String,
-            enum: ['individual', 'bulk', 'reprint'],
-            default: 'individual'
-        },
-        batchId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'IDCardBatch'
-        },
-        printReason: String,
-        printStatus: {
-            type: String,
-            enum: ['success', 'failed', 'pending'],
-            default: 'success'
-        },
-        printerName: String,
-        errorMessage: String
-    }],
-
-    // Card design/template
-    template: {
-        templateId: String,
-        templateName: String,
-        orientation: {
-            type: String,
-            enum: ['portrait', 'landscape'],
-            default: 'portrait'
-        },
-        includePhoto: {
-            type: Boolean,
-            default: true
-        },
-        includeQRCode: {
-            type: Boolean,
-            default: true
-        },
-        includeBarcode: {
-            type: Boolean,
-            default: false
-        }
-    },
-
-    // QR Code data for verification
-    qrCode: {
-        data: String,  // Encrypted employee data
-        generatedAt: Date,
-        url: String   // URL to QR code image
-    },
-
-    // Barcode (if applicable)
-    barcode: {
-        data: String,
-        format: {
-            type: String,
-            enum: ['CODE128', 'CODE39', 'EAN13', 'UPC'],
-            default: 'CODE128'
-        }
-    },
-
-    // Access permissions (if integrated with access control)
-    accessPermissions: {
-        buildings: [String],
-        floors: [String],
-        rooms: [String],
-        timeRestrictions: {
-            startTime: String,  // HH:MM format
-            endTime: String     // HH:MM format
-        }
-    },
-
-    // Previous card reference (for replacements)
-    previousCard: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'IDCard'
-    },
-
-    // Replacement information (if this card was replaced)
-    replacement: {
-        replacedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'IDCard'
-        },
-        originalCard: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'IDCard'
-        },
-        replacementDate: Date,
-        replacementReason: {
-            type: String,
-            enum: ['lost', 'stolen', 'damaged', 'expired', 'upgrade']
-        }
-    },
-
-    // Physical card status
-    physical: {
-        received: {
-            type: Boolean,
-            default: false
-        },
-        receivedDate: Date,
-        receivedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        signature: String  // URL to signature image
-    },
-
-    // Notifications sent
-    notifications: {
-        issued: {
-            sent: Boolean,
-            sentAt: Date
-        },
-        renewal: {
-            sent: Boolean,
-            sentAt: Date
-        },
-        expired: {
-            sent: Boolean,
-            sentAt: Date
-        }
-    },
-
-    // Additional metadata
-    metadata: {
-        bloodType: String,
-        emergencyContact: {
-            name: String,
-            phone: String
-        },
-        customFields: mongoose.Schema.Types.Mixed
-    },
-
-    // Notes and remarks
-    notes: String,
-
-    // Active flag
-    isActive: {
-        type: Boolean,
-        default: true,
-        index: true
-    }
+const IDCard = sequelize.define('IDCard', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  
+  // Tenant isolation - REQUIRED
+  tenant_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'tenant_id'
+  },
+  
+  // Employee reference
+  employee_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'employee_id'
+  },
+  
+  // Department reference (denormalized for faster queries)
+  department_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'department_id'
+  },
+  
+  // Position reference (denormalized)
+  position_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'position_id'
+  },
+  
+  // Card number (unique identifier)
+  card_number: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    field: 'card_number'
+  },
+  
+  // Card type
+  card_type: {
+    type: DataTypes.ENUM('employee', 'contractor', 'visitor', 'temporary'),
+    allowNull: false,
+    defaultValue: 'employee',
+    field: 'card_type'
+  },
+  
+  // Card status
+  status: {
+    type: DataTypes.ENUM('active', 'expired', 'suspended', 'lost', 'stolen', 'replaced', 'cancelled'),
+    allowNull: false,
+    defaultValue: 'active'
+  },
+  
+  // Issue information (JSONB)
+  issue: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { issuedDate, issuedBy, issueReason, issueNotes }
+  },
+  
+  // Expiry information (JSONB)
+  expiry: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { expiryDate, autoRenew, renewalNoticeSent, renewalNoticeDate }
+  },
+  
+  // Print history tracking (JSONB array)
+  print_history: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    field: 'print_history'
+    // Structure: [{ printedAt, printedBy, printType, batchId, printReason, printStatus, printerName, errorMessage }]
+  },
+  
+  // Card design/template (JSONB)
+  template: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { templateId, templateName, orientation, includePhoto, includeQRCode, includeBarcode }
+  },
+  
+  // QR Code data for verification (JSONB)
+  qr_code: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null,
+    field: 'qr_code'
+    // Structure: { data, generatedAt, url }
+  },
+  
+  // Barcode (JSONB)
+  barcode: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+    // Structure: { data, format }
+  },
+  
+  // Access permissions (JSONB)
+  access_permissions: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {},
+    field: 'access_permissions'
+    // Structure: { buildings: [], floors: [], rooms: [], timeRestrictions: { startTime, endTime } }
+  },
+  
+  // Previous card reference
+  previous_card_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'previous_card_id'
+  },
+  
+  // Replacement information (JSONB)
+  replacement: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+    // Structure: { replacedBy, originalCard, replacementDate, replacementReason }
+  },
+  
+  // Physical card status (JSONB)
+  physical: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { received, receivedDate, receivedBy, signature }
+  },
+  
+  // Notifications sent (JSONB)
+  notifications: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { issued: { sent, sentAt }, renewal: { sent, sentAt }, expired: { sent, sentAt } }
+  },
+  
+  // Additional metadata (JSONB)
+  metadata: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { bloodType, emergencyContact: { name, phone }, customFields }
+  },
+  
+  // Notes and remarks
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  
+  // Active flag
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+    field: 'is_active'
+  }
 }, {
-    timestamps: true
-});
-
-// Virtual to check if card is expired
-idCardSchema.virtual('isExpired').get(function () {
-    return new Date() > this.expiry.expiryDate;
-});
-
-// Virtual to check if card needs renewal soon (within 30 days)
-idCardSchema.virtual('needsRenewal').get(function () {
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-    return this.expiry.expiryDate <= thirtyDaysFromNow && !this.isExpired;
-});
-
-// Virtual to get days until expiry
-idCardSchema.virtual('daysUntilExpiry').get(function () {
-    const today = new Date();
-    const expiry = new Date(this.expiry.expiryDate);
-    const diffTime = expiry - today;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-});
-
-// Virtual to get total print count
-idCardSchema.virtual('printCount').get(function () {
-    return this.printHistory.length;
-});
-
-// Note: Middleware hooks moved to idCardMiddleware.js
-// Use middleware functions in routes for better separation of concerns
-
-/**
- * Instance method to log print activity
- * 
- * @param {ObjectId} printedBy - User who printed the card
- * @param {String} printType - Type of print (individual, bulk, reprint)
- * @param {String} reason - Reason for printing
- * @param {ObjectId} batchId - Batch ID (for bulk prints)
- * @returns {Promise<IDCard>} Updated card
- */
-idCardSchema.methods.logPrint = async function (printedBy, printType = 'individual', reason = '', batchId = null) {
-    this.printHistory.push({
-        printedAt: new Date(),
-        printedBy,
-        printType,
-        printReason: reason,
-        batchId,
-        printStatus: 'success'
-    });
-
-    return await this.save();
-};
-
-/**
- * Instance method to mark card as expired
- * 
- * @returns {Promise<IDCard>} Updated card
- */
-idCardSchema.methods.markExpired = async function () {
-    this.status = 'expired';
-    this.isActive = false;
-    return await this.save();
-};
-
-/**
- * Instance method to replace card
- * 
- * @param {ObjectId} issuedBy - User issuing replacement
- * @param {String} reason - Reason for replacement
- * @returns {Promise<IDCard>} New replacement card
- */
-idCardSchema.methods.replaceCard = async function (issuedBy, reason) {
-    // Mark current card as replaced
-    this.status = 'replaced';
-    this.isActive = false;
-
-    // Generate card number
-    const User = mongoose.model('User');
-    const employee = await User.findById(this.employee).select('employeeId');
-    const year = new Date().getFullYear();
-    const cardNumber = `CARD-${employee.employeeId}-${year}-${Date.now()}`;
-
-    // Set expiry date (1 year from now)
-    const expiryDate = new Date();
-    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-
-    // Create new card
-    const newCard = new this.constructor({
-        employee: this.employee,
-        department: this.department,
-        position: this.position,
-        cardType: this.cardType,
-        cardNumber: cardNumber,
-        'expiry.expiryDate': expiryDate,
-        issue: {
-            issuedBy,
-            issueReason: 'replacement'
-        },
-        template: this.template,
-        previousCard: this._id,
-        replacement: {
-            originalCard: this._id,
-            replacementReason: reason
-        }
-    });
-
-    // Link replacement
-    this.replacement.replacedBy = newCard._id;
-    this.replacement.replacementDate = new Date();
-    this.replacement.replacementReason = reason;
-
-    await this.save();
-    await newCard.save();
-
-    return newCard;
-};
-
-/**
- * Instance method to renew card
- * 
- * @param {ObjectId} issuedBy - User issuing renewal
- * @returns {Promise<IDCard>} Renewed card (this instance)
- */
-idCardSchema.methods.renewCard = async function (issuedBy) {
-    const newExpiryDate = new Date();
-    newExpiryDate.setFullYear(newExpiryDate.getFullYear() + 1);
-
-    this.expiry.expiryDate = newExpiryDate;
-    this.expiry.renewalNoticeSent = false;
-    this.status = 'active';
-    this.isActive = true;
-
-    this.printHistory.push({
-        printedBy: issuedBy,
-        printType: 'individual',
-        printReason: 'renewal',
-        printStatus: 'success'
-    });
-
-    return await this.save();
-};
-
-/**
- * Static method to get employee's current active card
- * 
- * @param {ObjectId} employeeId - Employee ID
- * @returns {Promise<IDCard>} Active card or null
- */
-idCardSchema.statics.getEmployeeCard = function (employeeId) {
-    return this.findOne({
-        employee: employeeId,
-        status: 'active',
-        isActive: true
-    })
-        .populate('employee', 'profile employeeId email')
-        .populate('department', 'name code')
-        .populate('position', 'title')
-        .populate('issue.issuedBy', 'username employeeId personalInfo');
-};
-
-/**
- * Static method to get cards needing renewal
- * 
- * @param {Number} daysThreshold - Days until expiry (default: 30)
- * @returns {Promise<IDCard[]>} Cards needing renewal
- */
-idCardSchema.statics.getCardsNeedingRenewal = function (daysThreshold = 30) {
-    const thresholdDate = new Date();
-    thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
-
-    return this.find({
-        status: 'active',
-        isActive: true,
-        'expiry.expiryDate': { $lte: thresholdDate, $gte: new Date() },
-        'expiry.renewalNoticeSent': false
-    })
-        .populate('employee', 'profile employeeId email')
-        .populate('department', 'name code')
-        .sort({ 'expiry.expiryDate': 1 });
-};
-
-/**
- * Static method to get expired cards
- * 
- * @returns {Promise<IDCard[]>} Expired cards
- */
-idCardSchema.statics.getExpiredCards = function () {
-    return this.find({
-        'expiry.expiryDate': { $lt: new Date() },
-        status: { $ne: 'expired' },
-        isActive: true
-    })
-        .populate('employee', 'profile employeeId email')
-        .populate('department', 'name code');
-};
-
-/**
- * Static method to get cards by department
- * 
- * @param {ObjectId} departmentId - Department ID
- * @param {Object} filters - Additional filters
- * @returns {Promise<IDCard[]>} Department cards
- */
-idCardSchema.statics.getDepartmentCards = function (departmentId, filters = {}) {
-    const query = {
-        department: departmentId,
-        ...filters
-    };
-
-    return this.find(query)
-        .populate('employee', 'username employeeId email personalInfo')
-        .populate('position', 'title')
-        .populate('issue.issuedBy', 'username employeeId personalInfo')
-        .sort({ 'issue.issuedDate': -1 });
-};
-
-/**
- * Static method to get print statistics
- * 
- * @param {Date} startDate - Start date
- * @param {Date} endDate - End date
- * @param {ObjectId} departmentId - Department filter (optional)
- * @returns {Promise<Object>} Print statistics
- */
-idCardSchema.statics.getPrintStatistics = async function (startDate, endDate, departmentId = null) {
-    const matchStage = {
-        'printHistory.printedAt': {
-            $gte: startDate,
-            $lte: endDate
-        }
-    };
-
-    if (departmentId) {
-        matchStage.department = new mongoose.Types.ObjectId(departmentId);
+  tableName: 'id_cards',
+  timestamps: true,
+  underscored: true,
+  indexes: [
+    {
+      fields: ['tenant_id']
+    },
+    {
+      fields: ['tenant_id', 'employee_id']
+    },
+    {
+      fields: ['tenant_id', 'employee_id', 'status']
+    },
+    {
+      fields: ['tenant_id', 'employee_id', 'is_active']
+    },
+    {
+      fields: ['tenant_id', 'department_id', 'status']
+    },
+    {
+      fields: ['tenant_id', 'department_id', 'is_active']
+    },
+    {
+      fields: ['tenant_id', 'card_type', 'status']
+    },
+    {
+      unique: true,
+      fields: ['card_number']
+    },
+    {
+      fields: ['employee_id']
+    },
+    {
+      fields: ['department_id']
+    },
+    {
+      fields: ['status']
+    },
+    {
+      fields: ['card_type']
+    },
+    {
+      fields: ['is_active']
     }
+  ],
+  hooks: {
+    beforeCreate: async (idCard) => {
+      // Auto-generate card number if not provided
+      if (!idCard.card_number) {
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 10000);
+        idCard.card_number = `CARD-${timestamp}-${random}`;
+      }
+      
+      // Set default issue date if not provided
+      if (!idCard.issue || !idCard.issue.issuedDate) {
+        idCard.issue = {
+          ...idCard.issue,
+          issuedDate: new Date()
+        };
+      }
+      
+      // Set default expiry date if not provided (1 year from now)
+      if (!idCard.expiry || !idCard.expiry.expiryDate) {
+        const expiryDate = new Date();
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+        idCard.expiry = {
+          ...idCard.expiry,
+          expiryDate,
+          autoRenew: true,
+          renewalNoticeSent: false
+        };
+      }
+    }
+  }
+});
 
-    const stats = await this.aggregate([
-        { $match: matchStage },
-        { $unwind: '$printHistory' },
-        {
-            $match: {
-                'printHistory.printedAt': {
-                    $gte: startDate,
-                    $lte: endDate
-                }
-            }
-        },
-        {
-            $group: {
-                _id: {
-                    printType: '$printHistory.printType',
-                    status: '$printHistory.printStatus'
-                },
-                count: { $sum: 1 },
-                uniqueCards: { $addToSet: '$_id' }
-            }
-        },
-        {
-            $group: {
-                _id: '$_id.printType',
-                statuses: {
-                    $push: {
-                        status: '$_id.status',
-                        count: '$count',
-                        uniqueCards: { $size: '$uniqueCards' }
-                    }
-                },
-                totalPrints: { $sum: '$count' }
-            }
-        }
-    ]);
-
-    return stats;
+// Instance methods
+IDCard.prototype.isExpired = function() {
+  if (!this.expiry || !this.expiry.expiryDate) {
+    return false;
+  }
+  return new Date() > new Date(this.expiry.expiryDate);
 };
 
-/**
- * Static method to get card statistics overview
- * 
- * @param {ObjectId} departmentId - Department filter (optional)
- * @returns {Promise<Object>} Card statistics
- */
-idCardSchema.statics.getCardStatistics = async function (departmentId = null) {
-    const query = departmentId ? { department: departmentId } : {};
-
-    const totalCards = await this.countDocuments(query);
-    const activeCards = await this.countDocuments({ ...query, status: 'active' });
-    const expiredCards = await this.countDocuments({
-        ...query,
-        'expiry.expiryDate': { $lt: new Date() }
-    });
-
-    const needingRenewal = await this.countDocuments({
-        ...query,
-        status: 'active',
-        'expiry.expiryDate': {
-            $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            $gte: new Date()
-        }
-    });
-
-    const lostOrStolen = await this.countDocuments({
-        ...query,
-        status: { $in: ['lost', 'stolen'] }
-    });
-
-    const byType = await this.aggregate([
-        { $match: query },
-        {
-            $group: {
-                _id: '$cardType',
-                count: { $sum: 1 }
-            }
-        }
-    ]);
-
-    return {
-        total: totalCards,
-        active: activeCards,
-        expired: expiredCards,
-        needingRenewal,
-        lostOrStolen,
-        byType
-    };
+IDCard.prototype.needsRenewal = function(daysThreshold = 30) {
+  if (!this.expiry || !this.expiry.expiryDate) {
+    return false;
+  }
+  const thresholdDate = new Date();
+  thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
+  return new Date(this.expiry.expiryDate) <= thresholdDate && !this.isExpired();
 };
 
-// Compound indexes for better performance
-idCardSchema.index({ employee: 1, status: 1 });
-idCardSchema.index({ employee: 1, isActive: 1 });
-idCardSchema.index({ department: 1, status: 1 });
-idCardSchema.index({ department: 1, isActive: 1 });
-idCardSchema.index({ 'expiry.expiryDate': 1, status: 1 });
-idCardSchema.index({ 'issue.issuedDate': 1 });
-idCardSchema.index({ 'printHistory.printedAt': 1 });
-idCardSchema.index({ 'printHistory.printedBy': 1 });
-idCardSchema.index({ cardType: 1, status: 1 });
+IDCard.prototype.getDaysUntilExpiry = function() {
+  if (!this.expiry || !this.expiry.expiryDate) {
+    return null;
+  }
+  const today = new Date();
+  const expiry = new Date(this.expiry.expiryDate);
+  const diffTime = expiry - today;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
 
-export default mongoose.model('IDCard', idCardSchema);
+IDCard.prototype.getPrintCount = function() {
+  return this.print_history ? this.print_history.length : 0;
+};
+
+IDCard.prototype.logPrint = async function(printedBy, printType = 'individual', reason = '', batchId = null) {
+  const printHistory = this.print_history || [];
+  printHistory.push({
+    printedAt: new Date(),
+    printedBy,
+    printType,
+    printReason: reason,
+    batchId,
+    printStatus: 'success'
+  });
+  
+  this.print_history = printHistory;
+  return this.save();
+};
+
+IDCard.prototype.markExpired = async function() {
+  this.status = 'expired';
+  this.is_active = false;
+  return this.save();
+};
+
+IDCard.prototype.renewCard = async function(issuedBy) {
+  const newExpiryDate = new Date();
+  newExpiryDate.setFullYear(newExpiryDate.getFullYear() + 1);
+  
+  this.expiry = {
+    ...this.expiry,
+    expiryDate: newExpiryDate,
+    renewalNoticeSent: false
+  };
+  this.status = 'active';
+  this.is_active = true;
+  
+  const printHistory = this.print_history || [];
+  printHistory.push({
+    printedBy: issuedBy,
+    printType: 'individual',
+    printReason: 'renewal',
+    printStatus: 'success',
+    printedAt: new Date()
+  });
+  this.print_history = printHistory;
+  
+  return this.save();
+};
+
+// Static methods
+IDCard.getEmployeeCard = async function(employeeId, tenantId) {
+  return this.findOne({
+    where: {
+      employee_id: employeeId,
+      tenant_id: tenantId,
+      status: 'active',
+      is_active: true
+    }
+  });
+};
+
+IDCard.getCardsNeedingRenewal = async function(tenantId, daysThreshold = 30) {
+  const thresholdDate = new Date();
+  thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
+  
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      status: 'active',
+      is_active: true,
+      'expiry.expiryDate': {
+        [Op.lte]: thresholdDate,
+        [Op.gte]: new Date()
+      },
+      'expiry.renewalNoticeSent': false
+    },
+    order: [
+      [sequelize.literal("(expiry->>'expiryDate')::timestamp"), 'ASC']
+    ]
+  });
+};
+
+IDCard.getExpiredCards = async function(tenantId) {
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      status: { [Op.ne]: 'expired' },
+      is_active: true,
+      'expiry.expiryDate': {
+        [Op.lt]: new Date()
+      }
+    }
+  });
+};
+
+IDCard.getDepartmentCards = async function(departmentId, tenantId, filters = {}) {
+  const where = {
+    department_id: departmentId,
+    tenant_id: tenantId,
+    ...filters
+  };
+  
+  return this.findAll({
+    where,
+    order: [
+      [sequelize.literal("(issue->>'issuedDate')::timestamp"), 'DESC']
+    ]
+  });
+};
+
+IDCard.getCardStatistics = async function(tenantId, departmentId = null) {
+  const { QueryTypes } = require('sequelize');
+  
+  const departmentFilter = departmentId ? `AND department_id = '${departmentId}'` : '';
+  
+  const results = await sequelize.query(
+    `SELECT 
+      status,
+      card_type,
+      COUNT(*) as count
+    FROM id_cards
+    WHERE tenant_id = :tenantId ${departmentFilter}
+    GROUP BY status, card_type`,
+    {
+      replacements: { tenantId },
+      type: QueryTypes.SELECT
+    }
+  );
+  
+  const totalCards = results.reduce((sum, row) => sum + parseInt(row.count), 0);
+  const activeCards = results
+    .filter(row => row.status === 'active')
+    .reduce((sum, row) => sum + parseInt(row.count), 0);
+  
+  return {
+    total: totalCards,
+    active: activeCards,
+    byStatus: results
+  };
+};
+
+export default IDCard;

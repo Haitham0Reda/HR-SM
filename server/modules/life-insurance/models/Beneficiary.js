@@ -1,185 +1,213 @@
-import mongoose from 'mongoose';
-import { baseSchemaPlugin } from '../../../shared/models/BaseModel.js';
+/**
+ * Beneficiary Model (Sequelize)
+ */
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
 
-const beneficiarySchema = new mongoose.Schema({
-    // References
+const Beneficiary = mainAppDb.define('Beneficiary', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
+    },
     policyId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'InsurancePolicy',
-        required: true,
-        index: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'insurance_policies',
+            key: 'id'
+        },
+        field: 'policy_id'
     },
     employeeId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'employee_id'
     },
-    
-    // Beneficiary information
     firstName: {
-        type: String,
-        required: true,
-        trim: true
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'first_name'
     },
     lastName: {
-        type: String,
-        required: true,
-        trim: true
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'last_name'
     },
     dateOfBirth: {
-        type: Date,
-        required: true
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'date_of_birth'
     },
     gender: {
-        type: String,
-        enum: ['male', 'female', 'other'],
-        required: true
+        type: DataTypes.ENUM('male', 'female', 'other'),
+        allowNull: false
     },
-    
-    // Relationship to insured
     relationship: {
-        type: String,
-        enum: ['spouse', 'child', 'parent', 'sibling', 'other'],
-        required: true,
-        index: true
+        type: DataTypes.ENUM('spouse', 'child', 'parent', 'sibling', 'other'),
+        allowNull: false
     },
     relationshipDescription: {
-        type: String,
-        // Required if relationship is 'other'
-        required: function() {
-            return this.relationship === 'other';
-        }
+        type: DataTypes.STRING(255),
+        field: 'relationship_description'
     },
-    
-    // Contact information
     phone: {
-        type: String,
-        required: true
+        type: DataTypes.STRING(20),
+        allowNull: false
     },
     email: {
-        type: String,
-        lowercase: true,
-        trim: true
+        type: DataTypes.STRING(255)
     },
-    
-    // Address
+    // Address - stored as JSONB
     address: {
-        street: {
-            type: String,
-            required: true
-        },
-        city: {
-            type: String,
-            required: true
-        },
-        state: {
-            type: String,
-            required: true
-        },
-        zipCode: {
-            type: String,
-            required: true
-        },
-        country: {
-            type: String,
-            required: true,
-            default: 'US'
-        }
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: {}
     },
-    
-    // Benefit details
     benefitPercentage: {
-        type: Number,
-        required: true,
-        min: 0,
-        max: 100,
-        index: true
+        type: DataTypes.DECIMAL(5, 2),
+        allowNull: false,
+        validate: { min: 0, max: 100 },
+        field: 'benefit_percentage'
     },
     benefitAmount: {
-        type: Number,
-        min: 0
+        type: DataTypes.DECIMAL(15, 2),
+        validate: { min: 0 },
+        field: 'benefit_amount'
     },
-    
-    // Beneficiary type
     beneficiaryType: {
-        type: String,
-        enum: ['primary', 'contingent'],
-        required: true,
-        default: 'primary',
-        index: true
+        type: DataTypes.ENUM('primary', 'contingent'),
+        allowNull: false,
+        defaultValue: 'primary',
+        field: 'beneficiary_type'
     },
-    
-    // Priority order (for multiple beneficiaries of same type)
     priority: {
-        type: Number,
-        default: 1,
-        min: 1
+        type: DataTypes.INTEGER,
+        defaultValue: 1,
+        validate: { min: 1 }
     },
-    
-    // Status
     status: {
-        type: String,
-        enum: ['active', 'inactive', 'removed'],
-        default: 'active',
-        index: true
+        type: DataTypes.ENUM('active', 'inactive', 'removed'),
+        defaultValue: 'active'
     },
-    
-    // Additional information
-    notes: String,
-    
-    // Legal guardian information (for minor beneficiaries)
+    notes: {
+        type: DataTypes.TEXT
+    },
+    // Guardian - stored as JSONB
     guardian: {
-        name: String,
-        relationship: String,
-        phone: String,
-        address: {
-            street: String,
-            city: String,
-            state: String,
-            zipCode: String,
-            country: String
-        }
+        type: DataTypes.JSONB,
+        defaultValue: {}
     },
-    
-    // Document verification
+    // Identification document - stored as JSONB
     identificationDocument: {
-        type: {
-            type: String,
-            enum: ['ssn', 'passport', 'drivers_license', 'other']
-        },
-        number: String,
-        verified: {
-            type: Boolean,
-            default: false
-        },
-        verifiedAt: Date,
-        verifiedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        }
+        type: DataTypes.JSONB,
+        defaultValue: {},
+        field: 'identification_document'
     }
 }, {
+    tableName: 'beneficiaries',
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['policy_id'] },
+        { fields: ['employee_id'] },
+        { fields: ['relationship'] },
+        { fields: ['beneficiary_type'] },
+        { fields: ['status'] },
+        { fields: ['benefit_percentage'] },
+        { fields: ['tenant_id', 'policy_id', 'status'] },
+        { fields: ['tenant_id', 'employee_id'] },
+        { fields: ['tenant_id', 'beneficiary_type', 'priority'] }
+    ],
+    hooks: {
+        beforeSave: async (beneficiary) => {
+            // Validate relationship description for 'other'
+            if (beneficiary.relationship === 'other' && !beneficiary.relationshipDescription) {
+                throw new Error('Relationship description is required when relationship is "other"');
+            }
+            
+            // Require guardian for minors
+            const age = beneficiary.getAge();
+            if (age !== null && age < 18 && (!beneficiary.guardian || !beneficiary.guardian.name)) {
+                throw new Error('Guardian information is required for minor beneficiaries');
+            }
+            
+            // Validate percentage totals
+            if (beneficiary.isNewRecord || beneficiary.changed('benefitPercentage')) {
+                const where = {
+                    policyId: beneficiary.policyId,
+                    beneficiaryType: beneficiary.beneficiaryType,
+                    status: 'active'
+                };
+                
+                if (!beneficiary.isNewRecord && beneficiary.id) {
+                    where.id = { [Op.ne]: beneficiary.id };
+                }
+                
+                const otherBeneficiaries = await Beneficiary.findAll({ where });
+                
+                const otherPercentageTotal = otherBeneficiaries.reduce(
+                    (sum, b) => sum + parseFloat(b.benefitPercentage || 0), 
+                    0
+                );
+                const totalPercentage = otherPercentageTotal + parseFloat(beneficiary.benefitPercentage || 0);
+                
+                if (totalPercentage > 100) {
+                    throw new Error(
+                        `Total benefit percentage for ${beneficiary.beneficiaryType} beneficiaries cannot exceed 100%. ` +
+                        `Current total would be ${totalPercentage}%`
+                    );
+                }
+            }
+            
+            // Calculate benefit amount based on policy coverage
+            if (beneficiary.changed('benefitPercentage') || beneficiary.isNewRecord) {
+                const InsurancePolicy = mainAppDb.models.InsurancePolicy;
+                const policy = await InsurancePolicy.findByPk(beneficiary.policyId);
+                
+                if (policy) {
+                    beneficiary.benefitAmount = (parseFloat(policy.coverageAmount) * parseFloat(beneficiary.benefitPercentage)) / 100;
+                }
+            }
+        }
+    }
 });
 
-// Apply base schema plugin for multi-tenancy
-beneficiarySchema.plugin(baseSchemaPlugin);
+/**
+ * Define associations
+ */
+Beneficiary.associate = (models) => {
+    Beneficiary.belongsTo(models.InsurancePolicy, {
+        foreignKey: 'policyId',
+        as: 'policy'
+    });
+    Beneficiary.belongsTo(models.User, {
+        foreignKey: 'employeeId',
+        as: 'employee'
+    });
+};
 
-// Compound indexes for efficient queries
-beneficiarySchema.index({ tenantId: 1, policyId: 1, status: 1 });
-beneficiarySchema.index({ tenantId: 1, employeeId: 1 });
-beneficiarySchema.index({ tenantId: 1, beneficiaryType: 1, priority: 1 });
-
-// Virtual for full name
-beneficiarySchema.virtual('fullName').get(function() {
+/**
+ * Instance method: Get full name
+ */
+Beneficiary.prototype.getFullName = function () {
     return `${this.firstName} ${this.lastName}`;
-});
+};
 
-// Virtual for age calculation
-beneficiarySchema.virtual('age').get(function() {
+/**
+ * Instance method: Calculate age
+ */
+Beneficiary.prototype.getAge = function () {
     if (!this.dateOfBirth) return null;
     
     const today = new Date();
@@ -192,94 +220,30 @@ beneficiarySchema.virtual('age').get(function() {
     }
     
     return age;
-});
+};
 
-// Virtual for checking if beneficiary is a minor
-beneficiarySchema.virtual('isMinor').get(function() {
-    return this.age !== null && this.age < 18;
-});
+/**
+ * Instance method: Check if beneficiary is a minor
+ */
+Beneficiary.prototype.getIsMinor = function () {
+    const age = this.getAge();
+    return age !== null && age < 18;
+};
 
-// Virtual for full address
-beneficiarySchema.virtual('fullAddress').get(function() {
+/**
+ * Instance method: Get full address
+ */
+Beneficiary.prototype.getFullAddress = function () {
     if (!this.address) return '';
     
     const { street, city, state, zipCode, country } = this.address;
     return `${street}, ${city}, ${state} ${zipCode}, ${country}`;
-});
+};
 
-// Pre-save middleware to validate percentage totals
-beneficiarySchema.pre('save', async function(next) {
-    try {
-        // Only validate if this is a new beneficiary or percentage changed
-        if (this.isNew || this.isModified('benefitPercentage')) {
-            // Get all other active beneficiaries for the same policy and type
-            const query = {
-                policyId: this.policyId,
-                beneficiaryType: this.beneficiaryType,
-                status: 'active'
-            };
-            
-            // Only exclude current document if it has an _id (not new)
-            if (!this.isNew && this._id) {
-                query._id = { $ne: this._id };
-            }
-            
-            const otherBeneficiaries = await this.constructor.find(query);
-            
-            // Calculate total percentage including this beneficiary
-            const otherPercentageTotal = otherBeneficiaries.reduce(
-                (sum, beneficiary) => sum + beneficiary.benefitPercentage, 
-                0
-            );
-            const totalPercentage = otherPercentageTotal + this.benefitPercentage;
-            
-            // Validate that total doesn't exceed 100%
-            if (totalPercentage > 100) {
-                const error = new Error(
-                    `Total benefit percentage for ${this.beneficiaryType} beneficiaries cannot exceed 100%. ` +
-                    `Current total would be ${totalPercentage}%`
-                );
-                error.name = 'ValidationError';
-                return next(error);
-            }
-        }
-        
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Pre-save middleware to require guardian for minors
-beneficiarySchema.pre('save', function(next) {
-    if (this.isMinor && (!this.guardian || !this.guardian.name)) {
-        const error = new Error('Guardian information is required for minor beneficiaries');
-        error.name = 'ValidationError';
-        return next(error);
-    }
-    next();
-});
-
-// Pre-save middleware to calculate benefit amount based on policy coverage
-beneficiarySchema.pre('save', async function(next) {
-    try {
-        if (this.isModified('benefitPercentage') || this.isNew) {
-            // Get the associated policy to calculate benefit amount
-            const InsurancePolicy = mongoose.model('InsurancePolicy');
-            const policy = await InsurancePolicy.findById(this.policyId);
-            
-            if (policy) {
-                this.benefitAmount = (policy.coverageAmount * this.benefitPercentage) / 100;
-            }
-        }
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Method to verify identification
-beneficiarySchema.methods.verifyIdentification = function(verifiedBy, documentType, documentNumber) {
+/**
+ * Instance method: Verify identification
+ */
+Beneficiary.prototype.verifyIdentification = async function (verifiedBy, documentType, documentNumber) {
     this.identificationDocument = {
         type: documentType,
         number: documentNumber,
@@ -287,57 +251,42 @@ beneficiarySchema.methods.verifyIdentification = function(verifiedBy, documentTy
         verifiedAt: new Date(),
         verifiedBy
     };
-    return this.save();
+    return await this.save();
 };
 
-// Pre-save middleware for tenant validation
-beneficiarySchema.pre('save', function(next) {
-    if (!this.tenantId) {
-        const error = new Error('TenantId is required for beneficiary');
-        error.name = 'ValidationError';
-        return next(error);
-    }
-    next();
-});
-
-// Static method to find beneficiaries by tenant
-beneficiarySchema.statics.findByTenant = function(tenantId, filters = {}) {
-    return this.withTenant(tenantId).find(filters);
+/**
+ * Instance method: Update priority
+ */
+Beneficiary.prototype.updatePriority = async function (newPriority) {
+    this.priority = newPriority;
+    return await this.save();
 };
 
-// Static method to find beneficiaries by tenant and employee with role-based access
-beneficiarySchema.statics.findByTenantAndEmployee = function(tenantId, employeeId, userRole, userDepartment = null) {
-    const query = { tenantId };
-    
-    // Apply role-based filtering
-    if (userRole === 'employee') {
-        query.employeeId = employeeId;
-    } else if (userRole === 'manager' && userDepartment) {
-        // Manager access will be validated in controller layer
-        query.employeeId = employeeId;
-    }
-    // HR and Admin roles get access to all beneficiaries within tenant
-    
-    return this.find(query);
+/**
+ * Static method: Find beneficiaries by tenant
+ */
+Beneficiary.findByTenant = function (tenantId, filters = {}) {
+    return this.findAll({ where: { tenantId, ...filters } });
 };
 
-// Static method to validate total percentages for a policy with tenant validation
-beneficiarySchema.statics.validateTotalPercentages = async function(policyId, beneficiaryType = 'primary', tenantId = null) {
-    const query = {
+/**
+ * Static method: Validate total percentages for a policy
+ */
+Beneficiary.validateTotalPercentages = async function (policyId, beneficiaryType = 'primary', tenantId = null) {
+    const where = {
         policyId,
         beneficiaryType,
         status: 'active'
     };
     
-    // Add tenant validation if provided
     if (tenantId) {
-        query.tenantId = tenantId;
+        where.tenantId = tenantId;
     }
     
-    const beneficiaries = await this.find(query);
+    const beneficiaries = await this.findAll({ where });
     
     const totalPercentage = beneficiaries.reduce(
-        (sum, beneficiary) => sum + beneficiary.benefitPercentage, 
+        (sum, beneficiary) => sum + parseFloat(beneficiary.benefitPercentage || 0), 
         0
     );
     
@@ -351,103 +300,82 @@ beneficiarySchema.statics.validateTotalPercentages = async function(policyId, be
     };
 };
 
-// Static method to find beneficiaries by type with role-based access
-beneficiarySchema.statics.findByType = function(tenantId, policyId, beneficiaryType = 'primary', userRole = null, userId = null) {
-    const query = {
+/**
+ * Static method: Find beneficiaries by type
+ */
+Beneficiary.findByType = function (tenantId, policyId, beneficiaryType = 'primary', employeeId = null) {
+    const where = {
+        tenantId,
         policyId,
         beneficiaryType,
         status: 'active'
     };
     
-    // Apply role-based filtering for employee access
-    if (userRole === 'employee' && userId) {
-        query.employeeId = userId;
+    if (employeeId) {
+        where.employeeId = employeeId;
     }
     
-    return this.withTenant(tenantId).find(query).sort({ priority: 1 });
+    return this.findAll({ where, order: [['priority', 'ASC']] });
 };
 
-// Static method to find minor beneficiaries with role-based access
-beneficiarySchema.statics.findMinors = function(tenantId, policyId = null, userRole = null, userId = null, userDepartment = null) {
+/**
+ * Static method: Find minor beneficiaries
+ */
+Beneficiary.findMinors = function (tenantId, policyId = null, employeeId = null) {
     const cutoffDate = new Date();
     cutoffDate.setFullYear(cutoffDate.getFullYear() - 18);
     
-    const query = {
+    const where = {
+        tenantId,
         status: 'active',
-        dateOfBirth: { $gt: cutoffDate }
+        dateOfBirth: { [Op.gt]: cutoffDate }
     };
     
     if (policyId) {
-        query.policyId = policyId;
+        where.policyId = policyId;
     }
     
-    // Apply role-based filtering
-    if (userRole === 'employee' && userId) {
-        query.employeeId = userId;
-    } else if (userRole === 'manager' && userDepartment && userId) {
-        // Manager access will be validated in controller layer
-        query.employeeId = userId;
+    if (employeeId) {
+        where.employeeId = employeeId;
     }
     
-    return this.withTenant(tenantId).find(query);
+    return this.findAll({ where });
 };
 
-// Static method for role-based beneficiary queries
-beneficiarySchema.statics.findWithRoleAccess = function(tenantId, userRole, userId, userDepartment = null, additionalFilters = {}) {
-    const query = { ...additionalFilters };
-    
-    switch (userRole) {
-        case 'employee':
-            query.employeeId = userId;
-            break;
-        case 'manager':
-            // Manager access requires department validation in controller
-            break;
-        case 'hr':
-        case 'admin':
-            // Full tenant access - no additional filtering
-            break;
-        default:
-            // Unknown role - restrict to user's own data
-            query.employeeId = userId;
+/**
+ * Static method: Get beneficiary statistics
+ */
+Beneficiary.getStatisticsByTenant = async function (tenantId, employeeId = null) {
+    const where = { tenantId };
+    if (employeeId) {
+        where.employeeId = employeeId;
     }
     
-    return this.withTenant(tenantId).find(query);
-};
-
-// Static method to get beneficiary statistics by tenant
-beneficiarySchema.statics.getStatisticsByTenant = function(tenantId, userRole = null, userId = null, userDepartment = null) {
-    const matchStage = { tenantId };
+    const beneficiaries = await this.findAll({ where });
     
-    // Apply role-based filtering
-    if (userRole === 'employee' && userId) {
-        matchStage.employeeId = userId;
-    } else if (userRole === 'manager' && userDepartment) {
-        // Manager statistics will be filtered in controller layer
-    }
-    
-    return this.aggregate([
-        { $match: matchStage },
-        {
-            $group: {
-                _id: {
-                    beneficiaryType: '$beneficiaryType',
-                    relationship: '$relationship'
-                },
-                count: { $sum: 1 },
-                totalBenefitAmount: { $sum: '$benefitAmount' },
-                averagePercentage: { $avg: '$benefitPercentage' }
-            }
+    const stats = beneficiaries.reduce((acc, beneficiary) => {
+        const key = `${beneficiary.beneficiaryType}-${beneficiary.relationship}`;
+        if (!acc[key]) {
+            acc[key] = {
+                beneficiaryType: beneficiary.beneficiaryType,
+                relationship: beneficiary.relationship,
+                count: 0,
+                totalBenefitAmount: 0,
+                totalPercentage: 0
+            };
         }
-    ]);
+        acc[key].count += 1;
+        acc[key].totalBenefitAmount += parseFloat(beneficiary.benefitAmount || 0);
+        acc[key].totalPercentage += parseFloat(beneficiary.benefitPercentage || 0);
+        return acc;
+    }, {});
+    
+    return Object.values(stats).map(data => ({
+        _id: { beneficiaryType: data.beneficiaryType, relationship: data.relationship },
+        count: data.count,
+        totalBenefitAmount: data.totalBenefitAmount,
+        averagePercentage: data.totalPercentage / data.count
+    }));
 };
-
-// Method to update priority
-beneficiarySchema.methods.updatePriority = function(newPriority) {
-    this.priority = newPriority;
-    return this.save();
-};
-
-const Beneficiary = mongoose.model('Beneficiary', beneficiarySchema);
 
 export default Beneficiary;

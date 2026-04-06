@@ -1,345 +1,311 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../../../config/database.js';
 
 /**
- * DataArchive Model - Tenant-Specific
+ * DataArchive Model
+ * 
  * Manages data archival per tenant
+ * 
+ * CRITICAL: All records must have tenant_id for multi-tenancy isolation
  */
-const dataArchiveSchema = new mongoose.Schema({
-  tenantId: { 
-    type: String,
-    required: true,
-    index: true
+
+const DataArchive = sequelize.define('DataArchive', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  
+  // Tenant isolation - REQUIRED
+  tenant_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'tenant_id'
   },
   
   // Archive identification
-  archiveId: { 
-    type: String, 
-    required: true, 
+  archive_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
-    index: true
+    field: 'archive_id'
   },
   
   // Source information
-  sourceCollection: { 
-    type: String, 
-    required: true,
-    index: true
+  source_collection: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'source_collection'
   },
-  sourceDatabase: { 
-    type: String, 
-    required: true 
+  
+  source_database: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'source_database'
   },
   
   // Data type and policy reference
-  dataType: { 
-    type: String, 
-    required: true,
-    enum: [
-      'audit_logs',
-      'security_logs', 
-      'user_data',
-      'employee_records',
-      'insurance_policies',
-      'insurance_claims',
-      'family_members',
-      'beneficiaries',
-      'license_data',
-      'backup_logs',
-      'performance_logs',
-      'system_logs',
-      'compliance_logs',
-      'financial_records',
-      'documents',
-      'reports'
-    ],
-    index: true
+  data_type: {
+    type: DataTypes.ENUM(
+      'audit_logs', 'security_logs', 'user_data', 'employee_records',
+      'insurance_policies', 'insurance_claims', 'family_members', 'beneficiaries',
+      'license_data', 'backup_logs', 'performance_logs', 'system_logs',
+      'compliance_logs', 'financial_records', 'documents', 'reports'
+    ),
+    allowNull: false,
+    field: 'data_type'
   },
   
-  retentionPolicyId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'DataRetentionPolicy', 
-    required: true 
+  retention_policy_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'retention_policy_id'
   },
   
   // Archive content information
-  recordCount: { 
-    type: Number, 
-    required: true, 
-    min: 0 
+  record_count: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: { min: 0 },
+    field: 'record_count'
   },
   
-  dateRange: {
-    startDate: { type: Date, required: true },
-    endDate: { type: Date, required: true }
+  // Date range (JSONB)
+  date_range: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    field: 'date_range'
+    // Structure: { startDate, endDate }
   },
   
-  // Storage information
+  // Storage information (JSONB)
   storage: {
-    location: {
-      type: String,
-      enum: ['local', 'cloud_storage', 'both'],
-      required: true
-    },
-    localPath: String,
-    cloudPath: String,
-    cloudProvider: {
-      type: String,
-      enum: ['aws_s3', 'google_cloud', 'azure_blob']
-    },
-    cloudBucket: String,
-    cloudRegion: String
+    type: DataTypes.JSONB,
+    allowNull: false,
+    field: 'storage'
+    // Structure: { location, localPath, cloudPath, cloudProvider, cloudBucket, cloudRegion }
   },
   
-  // File information
-  fileInfo: {
-    originalSize: { type: Number, required: true }, // in bytes
-    compressedSize: Number, // in bytes
-    compressionRatio: Number, // percentage
-    format: {
-      type: String,
-      enum: ['json', 'bson', 'csv', 'parquet'],
-      default: 'json'
-    },
-    encoding: {
-      type: String,
-      enum: ['utf8', 'base64'],
-      default: 'utf8'
-    },
-    checksum: String, // for integrity verification
-    checksumAlgorithm: {
-      type: String,
-      enum: ['md5', 'sha256', 'sha512'],
-      default: 'sha256'
-    }
+  // File information (JSONB)
+  file_info: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    field: 'file_info'
+    // Structure: { originalSize, compressedSize, compressionRatio, format, encoding, checksum, checksumAlgorithm }
   },
   
-  // Encryption information
+  // Encryption information (JSONB)
   encryption: {
-    enabled: { type: Boolean, default: false },
-    algorithm: {
-      type: String,
-      enum: ['aes-256-cbc', 'aes-256-gcm'],
-      default: 'aes-256-cbc'
-    },
-    keyId: String, // reference to encryption key
-    iv: String // initialization vector
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { enabled: false }
+    // Structure: { enabled, algorithm, keyId, iv }
   },
   
-  // Compression information
+  // Compression information (JSONB)
   compression: {
-    enabled: { type: Boolean, default: false },
-    algorithm: {
-      type: String,
-      enum: ['gzip', 'bzip2', 'lz4'],
-      default: 'gzip'
-    },
-    level: {
-      type: Number,
-      min: 1,
-      max: 9,
-      default: 6
-    }
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { enabled: false }
+    // Structure: { enabled, algorithm, level }
   },
   
   // Archive status
   status: {
-    type: String,
-    enum: ['creating', 'completed', 'failed', 'verifying', 'verified', 'corrupted'],
-    default: 'creating',
-    index: true
+    type: DataTypes.ENUM('creating', 'completed', 'failed', 'verifying', 'verified', 'corrupted'),
+    allowNull: false,
+    defaultValue: 'creating'
   },
   
-  // Metadata for search and retrieval
+  // Metadata for search and retrieval (JSONB)
   metadata: {
-    tags: [String],
-    description: String,
-    searchableFields: mongoose.Schema.Types.Mixed,
-    customAttributes: mongoose.Schema.Types.Mixed
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {}
+    // Structure: { tags: [], description, searchableFields, customAttributes }
   },
   
-  // Access control
-  accessControl: {
-    restrictedAccess: { type: Boolean, default: false },
-    authorizedRoles: [String],
-    authorizedUsers: [{ 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User' 
-    }],
-    accessLog: [{
-      userId: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User' 
-      },
-      accessedAt: { type: Date, default: Date.now },
-      accessType: {
-        type: String,
-        enum: ['view', 'download', 'restore']
-      },
-      ipAddress: String,
-      userAgent: String
-    }]
+  // Access control (JSONB)
+  access_control: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { restrictedAccess: false, authorizedRoles: [], authorizedUsers: [], accessLog: [] },
+    field: 'access_control'
+    // Structure: { restrictedAccess, authorizedRoles: [], authorizedUsers: [], accessLog: [] }
   },
   
-  // Restoration information
+  // Restoration information (JSONB)
   restoration: {
-    canRestore: { type: Boolean, default: true },
-    restorationComplexity: {
-      type: String,
-      enum: ['simple', 'moderate', 'complex'],
-      default: 'simple'
-    },
-    estimatedRestoreTime: Number, // in minutes
-    restorationHistory: [{
-      restoredAt: Date,
-      restoredBy: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User' 
-      },
-      targetLocation: String,
-      status: {
-        type: String,
-        enum: ['success', 'failed', 'partial']
-      },
-      recordsRestored: Number,
-      notes: String
-    }]
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { canRestore: true, restorationComplexity: 'simple', restorationHistory: [] }
+    // Structure: { canRestore, restorationComplexity, estimatedRestoreTime, restorationHistory: [] }
   },
   
-  // Legal and compliance
-  legalHold: {
-    isOnHold: { type: Boolean, default: false },
-    holdReason: String,
-    holdStartDate: Date,
-    holdEndDate: Date,
-    holdRequestedBy: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User' 
-    },
-    legalCaseReference: String
+  // Legal and compliance (JSONB)
+  legal_hold: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { isOnHold: false },
+    field: 'legal_hold'
+    // Structure: { isOnHold, holdReason, holdStartDate, holdEndDate, holdRequestedBy, legalCaseReference }
   },
   
-  // Audit trail
-  auditTrail: [{
-    action: {
-      type: String,
-      enum: ['created', 'verified', 'accessed', 'restored', 'deleted', 'moved']
-    },
-    performedBy: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User' 
-    },
-    performedAt: { type: Date, default: Date.now },
-    details: mongoose.Schema.Types.Mixed,
-    ipAddress: String
-  }],
+  // Audit trail (JSONB array)
+  audit_trail: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    field: 'audit_trail'
+    // Structure: [{ action, performedBy, performedAt, details, ipAddress }]
+  },
   
-  // Scheduled deletion
-  scheduledDeletion: {
-    deleteAfter: Date,
-    deletionReason: String,
-    approvalRequired: { type: Boolean, default: false },
-    approvedBy: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User' 
-    },
-    approvedAt: Date
+  // Scheduled deletion (JSONB)
+  scheduled_deletion: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null,
+    field: 'scheduled_deletion'
+    // Structure: { deleteAfter, deletionReason, approvalRequired, approvedBy, approvedAt }
   },
   
   // Creation information
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
+  created_by: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'created_by'
   },
   
-  // Processing information
-  processingInfo: {
-    startTime: Date,
-    endTime: Date,
-    processingDuration: Number, // in milliseconds
-    errors: [String],
-    warnings: [String]
+  // Processing information (JSONB)
+  processing_info: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null,
+    field: 'processing_info'
+    // Structure: { startTime, endTime, processingDuration, errors: [], warnings: [] }
   }
-}, { 
+}, {
+  tableName: 'data_archives',
   timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  underscored: true,
+  indexes: [
+    {
+      fields: ['tenant_id']
+    },
+    {
+      unique: true,
+      fields: ['archive_id']
+    },
+    {
+      fields: ['tenant_id', 'data_type']
+    },
+    {
+      fields: ['tenant_id', 'status', 'created_at']
+    },
+    {
+      fields: ['source_collection']
+    },
+    {
+      fields: ['data_type']
+    },
+    {
+      fields: ['status']
+    }
+  ],
+  hooks: {
+    beforeCreate: (archive) => {
+      // Auto-generate archive ID if not provided
+      if (!archive.archive_id) {
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substr(2, 5);
+        archive.archive_id = `ARC-${timestamp}-${random}`.toUpperCase();
+      }
+    }
+  }
 });
 
-// Indexes for performance
-dataArchiveSchema.index({ tenantId: 1, dataType: 1 });
-dataArchiveSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
-dataArchiveSchema.index({ tenantId: 1, 'dateRange.startDate': 1, 'dateRange.endDate': 1 });
-dataArchiveSchema.index({ tenantId: 1, 'scheduledDeletion.deleteAfter': 1 });
-dataArchiveSchema.index({ tenantId: 1, 'legalHold.isOnHold': 1 });
+// Instance methods
+DataArchive.prototype.getAgeInDays = function() {
+  return Math.floor((Date.now() - this.created_at.getTime()) / (1000 * 60 * 60 * 24));
+};
 
-// Virtual for archive age in days
-dataArchiveSchema.virtual('ageInDays').get(function() {
-  return Math.floor((Date.now() - this.createdAt.getTime()) / (1000 * 60 * 60 * 24));
-});
-
-// Virtual for file size in human readable format
-dataArchiveSchema.virtual('fileSizeFormatted').get(function() {
+DataArchive.prototype.getFileSizeFormatted = function() {
   const size = this.compression.enabled ? 
-    this.fileInfo.compressedSize : 
-    this.fileInfo.originalSize;
+    this.file_info.compressedSize : 
+    this.file_info.originalSize;
   
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`;
   if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(2)} MB`;
   return `${(size / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-});
+};
 
-// Pre-save middleware to generate archive ID
-dataArchiveSchema.pre('save', function(next) {
-  if (this.isNew && !this.archiveId) {
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substr(2, 5);
-    this.archiveId = `ARC-${timestamp}-${random}`.toUpperCase();
-  }
-  next();
-});
-
-// Method to add audit trail entry
-dataArchiveSchema.methods.addAuditEntry = function(action, performedBy, details, ipAddress) {
-  this.auditTrail.push({
+DataArchive.prototype.addAuditEntry = async function(action, performedBy, details, ipAddress) {
+  const auditTrail = this.audit_trail || [];
+  auditTrail.push({
     action,
     performedBy,
     details,
     ipAddress,
     performedAt: new Date()
   });
+  this.audit_trail = auditTrail;
+  return this.save();
 };
 
-// Method to log access
-dataArchiveSchema.methods.logAccess = function(userId, accessType, ipAddress, userAgent) {
-  this.accessControl.accessLog.push({
+DataArchive.prototype.logAccess = async function(userId, accessType, ipAddress, userAgent) {
+  const accessControl = this.access_control || { accessLog: [] };
+  accessControl.accessLog.push({
     userId,
     accessType,
     ipAddress,
     userAgent,
     accessedAt: new Date()
   });
+  this.access_control = accessControl;
+  return this.save();
 };
 
-// Method to verify integrity
-dataArchiveSchema.methods.verifyIntegrity = async function() {
-  // This would implement actual file integrity checking
-  // For now, we'll just update the status
+DataArchive.prototype.verifyIntegrity = async function() {
   if (this.status === 'completed') {
     this.status = 'verified';
-    this.addAuditEntry('verified', null, { 
+    await this.addAuditEntry('verified', null, { 
       verificationMethod: 'checksum',
       result: 'passed'
     });
   }
+  return this.save();
 };
 
-// Method to check if archive is due for deletion
-dataArchiveSchema.methods.isDueForDeletion = function() {
-  if (this.legalHold.isOnHold) return false;
-  if (!this.scheduledDeletion.deleteAfter) return false;
-  return new Date() >= this.scheduledDeletion.deleteAfter;
+DataArchive.prototype.isDueForDeletion = function() {
+  if (this.legal_hold && this.legal_hold.isOnHold) return false;
+  if (!this.scheduled_deletion || !this.scheduled_deletion.deleteAfter) return false;
+  return new Date() >= new Date(this.scheduled_deletion.deleteAfter);
 };
 
-export default mongoose.model('DataArchive', dataArchiveSchema);
+// Static methods
+DataArchive.findByDataType = async function(tenantId, dataType) {
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      data_type: dataType
+    },
+    order: [['created_at', 'DESC']]
+  });
+};
+
+DataArchive.findDueForDeletion = async function(tenantId) {
+  const { Op } = require('sequelize');
+  
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      'legal_hold.isOnHold': false,
+      'scheduled_deletion.deleteAfter': {
+        [Op.lte]: new Date()
+      }
+    }
+  });
+};
+
+export default DataArchive;

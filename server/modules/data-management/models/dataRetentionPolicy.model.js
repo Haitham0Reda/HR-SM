@@ -1,222 +1,222 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../../../config/database.js';
 
 /**
- * DataRetentionPolicy Model - Tenant-Specific
+ * DataRetentionPolicy Model
+ * 
  * Manages data retention policies per tenant
+ * 
+ * CRITICAL: All records must have tenant_id for multi-tenancy isolation
  */
-const dataRetentionPolicySchema = new mongoose.Schema({
-  tenantId: { 
-    type: String,
-    required: true,
-    index: true
+
+const DataRetentionPolicy = sequelize.define('DataRetentionPolicy', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  
+  // Tenant isolation - REQUIRED
+  tenant_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'tenant_id'
   },
   
   // Policy identification
-  policyName: { 
-    type: String, 
-    required: true 
+  policy_name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'policy_name'
   },
-  description: String,
+  
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   
   // Data type configuration
-  dataType: { 
-    type: String, 
-    required: true,
-    enum: [
-      'audit_logs',
-      'security_logs', 
-      'user_data',
-      'employee_records',
-      'insurance_policies',
-      'insurance_claims',
-      'family_members',
-      'beneficiaries',
-      'license_data',
-      'backup_logs',
-      'performance_logs',
-      'system_logs',
-      'compliance_logs',
-      'financial_records',
-      'documents',
-      'reports'
-    ],
-    index: true
+  data_type: {
+    type: DataTypes.ENUM(
+      'audit_logs', 'security_logs', 'user_data', 'employee_records',
+      'insurance_policies', 'insurance_claims', 'family_members', 'beneficiaries',
+      'license_data', 'backup_logs', 'performance_logs', 'system_logs',
+      'compliance_logs', 'financial_records', 'documents', 'reports'
+    ),
+    allowNull: false,
+    field: 'data_type'
   },
   
-  // Retention configuration
-  retentionPeriod: {
-    value: { type: Number, required: true, min: 1 },
-    unit: { 
-      type: String, 
-      required: true, 
-      enum: ['days', 'months', 'years'],
-      default: 'days'
-    }
+  // Retention configuration (JSONB)
+  retention_period: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    field: 'retention_period'
+    // Structure: { value, unit }
   },
   
-  // Archival configuration
-  archivalSettings: {
-    enabled: { type: Boolean, default: false },
-    archiveAfter: {
-      value: { type: Number, min: 1 },
-      unit: { 
-        type: String, 
-        enum: ['days', 'months', 'years'],
-        default: 'months'
-      }
-    },
-    archiveLocation: {
-      type: String,
-      enum: ['local', 'cloud_storage', 'both'],
-      default: 'local'
-    },
-    compressionEnabled: { type: Boolean, default: true },
-    encryptionEnabled: { type: Boolean, default: true }
+  // Archival configuration (JSONB)
+  archival_settings: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { enabled: false },
+    field: 'archival_settings'
+    // Structure: { enabled, archiveAfter: { value, unit }, archiveLocation, compressionEnabled, encryptionEnabled }
   },
   
-  // Deletion configuration
-  deletionSettings: {
-    softDelete: { type: Boolean, default: true },
-    hardDeleteAfter: {
-      value: { type: Number, min: 1 },
-      unit: { 
-        type: String, 
-        enum: ['days', 'months', 'years'],
-        default: 'days'
-      }
-    },
-    requireApproval: { type: Boolean, default: false },
-    approvalRequired: [{ 
-      type: String,
-      enum: ['admin', 'compliance_officer', 'data_protection_officer']
-    }]
+  // Deletion configuration (JSONB)
+  deletion_settings: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { softDelete: true },
+    field: 'deletion_settings'
+    // Structure: { softDelete, hardDeleteAfter: { value, unit }, requireApproval, approvalRequired: [] }
   },
   
-  // Legal and compliance requirements
-  legalRequirements: {
-    minimumRetention: {
-      value: Number,
-      unit: { 
-        type: String, 
-        enum: ['days', 'months', 'years']
-      }
-    },
-    maximumRetention: {
-      value: Number,
-      unit: { 
-        type: String, 
-        enum: ['days', 'months', 'years']
-      }
-    },
-    jurisdiction: String, // 'US', 'EU', 'GDPR', etc.
-    regulatoryFramework: [String], // ['GDPR', 'SOX', 'HIPAA', etc.]
-    dataClassification: {
-      type: String,
-      enum: ['public', 'internal', 'confidential', 'restricted'],
-      default: 'internal'
-    }
+  // Legal and compliance requirements (JSONB)
+  legal_requirements: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {},
+    field: 'legal_requirements'
+    // Structure: { minimumRetention: { value, unit }, maximumRetention: { value, unit }, jurisdiction, regulatoryFramework: [], dataClassification }
   },
   
-  // Execution configuration
-  executionSchedule: {
-    frequency: {
-      type: String,
-      enum: ['daily', 'weekly', 'monthly'],
-      default: 'daily'
-    },
-    time: { type: String, default: '02:00' }, // HH:MM format
-    timezone: { type: String, default: 'UTC' }
+  // Execution configuration (JSONB)
+  execution_schedule: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: { frequency: 'daily', time: '02:00', timezone: 'UTC' },
+    field: 'execution_schedule'
+    // Structure: { frequency, time, timezone }
   },
   
   // Status and tracking
   status: {
-    type: String,
-    enum: ['active', 'inactive', 'suspended'],
-    default: 'active'
+    type: DataTypes.ENUM('active', 'inactive', 'suspended'),
+    allowNull: false,
+    defaultValue: 'active'
   },
   
-  lastExecuted: Date,
-  nextExecution: Date,
+  last_executed: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'last_executed'
+  },
   
-  // Statistics
+  next_execution: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'next_execution'
+  },
+  
+  // Statistics (JSONB)
   statistics: {
-    totalRecordsProcessed: { type: Number, default: 0 },
-    recordsArchived: { type: Number, default: 0 },
-    recordsDeleted: { type: Number, default: 0 },
-    lastProcessedCount: { type: Number, default: 0 },
-    averageProcessingTime: { type: Number, default: 0 }, // in milliseconds
-    lastError: String,
-    successfulExecutions: { type: Number, default: 0 },
-    failedExecutions: { type: Number, default: 0 }
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      totalRecordsProcessed: 0,
+      recordsArchived: 0,
+      recordsDeleted: 0,
+      lastProcessedCount: 0,
+      averageProcessingTime: 0,
+      successfulExecutions: 0,
+      failedExecutions: 0
+    }
+    // Structure: { totalRecordsProcessed, recordsArchived, recordsDeleted, lastProcessedCount, averageProcessingTime, lastError, successfulExecutions, failedExecutions }
   },
   
   // Audit trail
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
-  },
-  updatedBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+  created_by: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'created_by'
   },
   
-  // Configuration history
-  configurationHistory: [{
-    changedBy: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User' 
-    },
-    changedAt: { type: Date, default: Date.now },
-    changes: mongoose.Schema.Types.Mixed,
-    reason: String
-  }]
-}, { 
+  updated_by: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'updated_by'
+  },
+  
+  // Configuration history (JSONB array)
+  configuration_history: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    field: 'configuration_history'
+    // Structure: [{ changedBy, changedAt, changes, reason }]
+  }
+}, {
+  tableName: 'data_retention_policies',
   timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  underscored: true,
+  indexes: [
+    {
+      fields: ['tenant_id']
+    },
+    {
+      fields: ['tenant_id', 'data_type']
+    },
+    {
+      fields: ['tenant_id', 'status', 'next_execution']
+    },
+    {
+      fields: ['data_type']
+    },
+    {
+      fields: ['status']
+    }
+  ],
+  hooks: {
+    beforeCreate: (policy) => {
+      // Calculate next execution on creation
+      if (!policy.next_execution) {
+        policy.next_execution = policy.calculateNextExecution();
+      }
+    },
+    beforeUpdate: (policy) => {
+      // Recalculate next execution if schedule changed
+      if (policy.changed('execution_schedule')) {
+        policy.next_execution = policy.calculateNextExecution();
+      }
+    }
+  }
 });
 
-// Indexes for performance
-dataRetentionPolicySchema.index({ tenantId: 1, dataType: 1 });
-dataRetentionPolicySchema.index({ tenantId: 1, status: 1, nextExecution: 1 });
-dataRetentionPolicySchema.index({ tenantId: 1, 'legalRequirements.jurisdiction': 1 });
-
-// Virtual for retention period in days
-dataRetentionPolicySchema.virtual('retentionPeriodInDays').get(function() {
-  const { value, unit } = this.retentionPeriod;
+// Instance methods
+DataRetentionPolicy.prototype.getRetentionPeriodInDays = function() {
+  const { value, unit } = this.retention_period;
   switch (unit) {
     case 'days': return value;
     case 'months': return value * 30;
     case 'years': return value * 365;
     default: return value;
   }
-});
+};
 
-// Virtual for archival period in days
-dataRetentionPolicySchema.virtual('archivalPeriodInDays').get(function() {
-  if (!this.archivalSettings.enabled) return null;
+DataRetentionPolicy.prototype.getArchivalPeriodInDays = function() {
+  if (!this.archival_settings.enabled) return null;
   
-  const { value, unit } = this.archivalSettings.archiveAfter;
+  const { value, unit } = this.archival_settings.archiveAfter;
   switch (unit) {
     case 'days': return value;
     case 'months': return value * 30;
     case 'years': return value * 365;
     default: return value;
   }
-});
+};
 
-// Method to calculate next execution time
-dataRetentionPolicySchema.methods.calculateNextExecution = function() {
+DataRetentionPolicy.prototype.calculateNextExecution = function() {
   const now = new Date();
-  const [hours, minutes] = this.executionSchedule.time.split(':').map(Number);
+  const [hours, minutes] = this.execution_schedule.time.split(':').map(Number);
   
   let nextExecution = new Date(now);
   nextExecution.setHours(hours, minutes, 0, 0);
   
   // If the time has passed today, schedule for tomorrow/next period
   if (nextExecution <= now) {
-    switch (this.executionSchedule.frequency) {
+    switch (this.execution_schedule.frequency) {
       case 'daily':
         nextExecution.setDate(nextExecution.getDate() + 1);
         break;
@@ -232,44 +232,64 @@ dataRetentionPolicySchema.methods.calculateNextExecution = function() {
   return nextExecution;
 };
 
-// Method to check if policy is due for execution
-dataRetentionPolicySchema.methods.isDueForExecution = function() {
-  if (!this.nextExecution) return true;
-  return new Date() >= this.nextExecution;
+DataRetentionPolicy.prototype.isDueForExecution = function() {
+  if (!this.next_execution) return true;
+  return new Date() >= this.next_execution;
 };
 
-// Pre-save middleware to calculate next execution
-dataRetentionPolicySchema.pre('save', function(next) {
-  if (this.isNew || this.isModified('executionSchedule')) {
-    this.nextExecution = this.calculateNextExecution();
-  }
-  next();
-});
-
-// Method to update statistics
-dataRetentionPolicySchema.methods.updateStatistics = function(stats) {
-  this.statistics.lastProcessedCount = stats.processed || 0;
-  this.statistics.totalRecordsProcessed += stats.processed || 0;
-  this.statistics.recordsArchived += stats.archived || 0;
-  this.statistics.recordsDeleted += stats.deleted || 0;
+DataRetentionPolicy.prototype.updateStatistics = async function(stats) {
+  const currentStats = this.statistics || {};
+  
+  currentStats.lastProcessedCount = stats.processed || 0;
+  currentStats.totalRecordsProcessed = (currentStats.totalRecordsProcessed || 0) + (stats.processed || 0);
+  currentStats.recordsArchived = (currentStats.recordsArchived || 0) + (stats.archived || 0);
+  currentStats.recordsDeleted = (currentStats.recordsDeleted || 0) + (stats.deleted || 0);
   
   if (stats.processingTime) {
-    const currentAvg = this.statistics.averageProcessingTime;
-    const executions = this.statistics.successfulExecutions;
-    this.statistics.averageProcessingTime = 
+    const currentAvg = currentStats.averageProcessingTime || 0;
+    const executions = currentStats.successfulExecutions || 0;
+    currentStats.averageProcessingTime = 
       (currentAvg * executions + stats.processingTime) / (executions + 1);
   }
   
   if (stats.error) {
-    this.statistics.lastError = stats.error;
-    this.statistics.failedExecutions += 1;
+    currentStats.lastError = stats.error;
+    currentStats.failedExecutions = (currentStats.failedExecutions || 0) + 1;
   } else {
-    this.statistics.successfulExecutions += 1;
-    this.statistics.lastError = null;
+    currentStats.successfulExecutions = (currentStats.successfulExecutions || 0) + 1;
+    currentStats.lastError = null;
   }
   
-  this.lastExecuted = new Date();
-  this.nextExecution = this.calculateNextExecution();
+  this.statistics = currentStats;
+  this.last_executed = new Date();
+  this.next_execution = this.calculateNextExecution();
+  
+  return this.save();
 };
 
-export default mongoose.model('DataRetentionPolicy', dataRetentionPolicySchema);
+// Static methods
+DataRetentionPolicy.findActiveByDataType = async function(tenantId, dataType) {
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      data_type: dataType,
+      status: 'active'
+    }
+  });
+};
+
+DataRetentionPolicy.findDueForExecution = async function(tenantId) {
+  const { Op } = require('sequelize');
+  
+  return this.findAll({
+    where: {
+      tenant_id: tenantId,
+      status: 'active',
+      next_execution: {
+        [Op.lte]: new Date()
+      }
+    }
+  });
+};
+
+export default DataRetentionPolicy;

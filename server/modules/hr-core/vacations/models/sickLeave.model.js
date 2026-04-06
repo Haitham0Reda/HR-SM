@@ -1,400 +1,563 @@
-// models/SickLeave.js
-import mongoose from 'mongoose';
+/**
+ * SickLeave Model (Sequelize)
+ */
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
 
-const sickLeaveSchema = new mongoose.Schema({
-  tenantId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  employee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
-  },
-  startDate: {
-    type: Date,
-    required: true
-  },
-  endDate: {
-    type: Date,
-    required: true,
-    validate: {
-      validator: function (v) {
-        return !v || v >= this.startDate;
-      },
-      message: 'End date must be after or equal to start date'
+const SickLeave = mainAppDb.define('SickLeave', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
+    },
+    employee: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
+    },
+    startDate: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'start_date'
+    },
+    endDate: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'end_date',
+        validate: {
+            isAfterStart(value) {
+                if (value && value < this.startDate) {
+                    throw new Error('End date must be after or equal to start date');
+                }
+            }
+        }
+    },
+    duration: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false
+    },
+    reason: {
+        type: DataTypes.STRING(500)
+    },
+    status: {
+        type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'),
+        defaultValue: 'pending'
+    },
+    // Medical Documentation - stored as JSONB
+    medicalDocumentation: {
+        type: DataTypes.JSONB,
+        defaultValue: {
+            required: false,
+            provided: false,
+            documents: [],
+            reviewedByDoctor: false,
+            doctorReviewedBy: null,
+            doctorReviewedAt: null,
+            doctorNotes: null,
+            additionalDocRequested: false,
+            requestNotes: null
+        },
+        field: 'medical_documentation'
+    },
+    // Workflow - stored as JSONB
+    workflow: {
+        type: DataTypes.JSONB,
+        defaultValue: {
+            supervisorApprovalStatus: 'pending',
+            doctorApprovalStatus: 'pending',
+            currentStep: 'supervisor-review'
+        }
+    },
+    approvedBy: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'approved_by'
+    },
+    approvedAt: {
+        type: DataTypes.DATE,
+        field: 'approved_at'
+    },
+    rejectedBy: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'rejected_by'
+    },
+    rejectedAt: {
+        type: DataTypes.DATE,
+        field: 'rejected_at'
+    },
+    rejectionReason: {
+        type: DataTypes.TEXT,
+        field: 'rejection_reason'
+    },
+    cancelledBy: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'cancelled_by'
+    },
+    cancelledAt: {
+        type: DataTypes.DATE,
+        field: 'cancelled_at'
+    },
+    cancellationReason: {
+        type: DataTypes.TEXT,
+        field: 'cancellation_reason'
+    },
+    approverNotes: {
+        type: DataTypes.TEXT,
+        field: 'approver_notes'
+    },
+    vacationBalance: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'vacation_balances',
+            key: 'id'
+        },
+        field: 'vacation_balance'
+    },
+    department: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'departments',
+            key: 'id'
+        }
+    },
+    position: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'positions',
+            key: 'id'
+        }
+    },
+    // Notifications - stored as JSONB
+    notifications: {
+        type: DataTypes.JSONB,
+        defaultValue: {
+            submitted: { sent: false, sentAt: null },
+            supervisorApproved: { sent: false, sentAt: null },
+            doctorApproved: { sent: false, sentAt: null },
+            rejected: { sent: false, sentAt: null }
+        }
     }
-  },
-  duration: {
-    type: Number, // in days
-    required: true
-  },
-  reason: {
-    type: String,
-    trim: true,
-    maxlength: 500
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected', 'cancelled'],
-    default: 'pending',
-    index: true
-  },
-  medicalDocumentation: {
-    required: {
-      type: Boolean,
-      default: false
-    },
-    provided: {
-      type: Boolean,
-      default: false
-    },
-    documents: [{
-      filename: {
-        type: String,
-        trim: true
-      },
-      url: String,
-      uploadedAt: {
-        type: Date,
-        default: Date.now
-      },
-      uploadedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      }
-    }],
-    reviewedByDoctor: {
-      type: Boolean,
-      default: false
-    },
-    doctorReviewedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    doctorReviewedAt: Date,
-    doctorNotes: {
-      type: String,
-      trim: true
-    },
-    additionalDocRequested: {
-      type: Boolean,
-      default: false
-    },
-    requestNotes: {
-      type: String,
-      trim: true
-    }
-  },
-  workflow: {
-    supervisorApprovalStatus: {
-      type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'pending'
-    },
-    doctorApprovalStatus: {
-      type: String,
-      enum: ['pending', 'approved', 'rejected', 'not-required'],
-      default: 'pending'
-    },
-    currentStep: {
-      type: String,
-      enum: ['supervisor-review', 'doctor-review', 'completed', 'rejected'],
-      default: 'supervisor-review'
-    }
-  },
-  approvedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  approvedAt: Date,
-  rejectedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  rejectedAt: Date,
-  rejectionReason: {
-    type: String,
-    trim: true
-  },
-  cancelledBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  cancelledAt: Date,
-  cancellationReason: {
-    type: String,
-    trim: true
-  },
-  approverNotes: {
-    type: String,
-    trim: true
-  },
-  vacationBalance: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'VacationBalance'
-  },
-  // Employee's department (denormalized for faster queries)
-  department: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department',
-    index: true
-  },
-  // Employee's position (denormalized for faster queries)
-  position: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Position'
-  },
-  // Email notification tracking
-  notifications: {
-    submitted: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    supervisorApproved: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    doctorApproved: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    rejected: {
-      sent: Boolean,
-      sentAt: Date
-    }
-  }
 }, {
-  timestamps: true
+    tableName: 'sick_leaves',
+    timestamps: true,
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['employee'] },
+        { fields: ['status'] },
+        { fields: ['department'] },
+        { fields: ['tenant_id', 'employee', 'status'] },
+        { fields: ['tenant_id', 'department', 'status'] },
+        { fields: ['tenant_id', 'start_date', 'end_date'] }
+    ],
+    hooks: {
+        beforeSave: async (sickLeave) => {
+            // Set medical documentation requirement based on duration
+            if (sickLeave.changed('duration') || sickLeave.isNewRecord) {
+                const medDoc = { ...sickLeave.medicalDocumentation };
+                medDoc.required = sickLeave.duration > 3;
+                sickLeave.medicalDocumentation = medDoc;
+            }
+        }
+    }
 });
 
-// Pre-save hook to set medical documentation requirement based on duration
-sickLeaveSchema.pre('save', function (next) {
-  if (this.isNew || this.isModified('duration')) {
-    this.medicalDocumentation.required = this.duration > 3;
-  }
-  next();
-});
+/**
+ * Define associations
+ */
+SickLeave.associate = (models) => {
+    SickLeave.belongsTo(models.User, {
+        foreignKey: 'employee',
+        as: 'employeeDetails'
+    });
+    SickLeave.belongsTo(models.User, {
+        foreignKey: 'approvedBy',
+        as: 'approver'
+    });
+    SickLeave.belongsTo(models.User, {
+        foreignKey: 'rejectedBy',
+        as: 'rejecter'
+    });
+    SickLeave.belongsTo(models.User, {
+        foreignKey: 'cancelledBy',
+        as: 'canceller'
+    });
+    SickLeave.belongsTo(models.Department, {
+        foreignKey: 'department',
+        as: 'departmentDetails'
+    });
+    SickLeave.belongsTo(models.Position, {
+        foreignKey: 'position',
+        as: 'positionDetails'
+    });
+    SickLeave.belongsTo(models.VacationBalance, {
+        foreignKey: 'vacationBalance',
+        as: 'balance'
+    });
+};
 
-// Virtual to check if sick leave is active
-sickLeaveSchema.virtual('isActive').get(function () {
-  const now = new Date();
-  return this.status === 'approved' &&
-    this.startDate <= now &&
-    this.endDate >= now;
-});
+/**
+ * Instance method: Check if sick leave is active
+ */
+SickLeave.prototype.getIsActive = function () {
+    const now = new Date();
+    return this.status === 'approved' &&
+        this.startDate <= now &&
+        this.endDate >= now;
+};
 
-// Instance method to approve by supervisor
-sickLeaveSchema.methods.approveBySupervisor = async function (supervisorId, notes) {
-  this.workflow.supervisorApprovalStatus = 'approved';
+/**
+ * Instance method: Approve by supervisor
+ */
+SickLeave.prototype.approveBySupervisor = async function (supervisorId, notes) {
+    const workflow = { ...this.workflow };
+    workflow.supervisorApprovalStatus = 'approved';
 
-  // If medical documentation is required and not reviewed by doctor yet, move to doctor review
-  if (this.medicalDocumentation.required && !this.medicalDocumentation.reviewedByDoctor) {
-    this.workflow.currentStep = 'doctor-review';
-    this.workflow.doctorApprovalStatus = 'pending';
-  } else {
-    // If no doctor review needed, complete the approval
-    this.workflow.currentStep = 'completed';
-    this.workflow.doctorApprovalStatus = 'not-required';
+    // If medical documentation is required and not reviewed by doctor yet, move to doctor review
+    if (this.medicalDocumentation?.required && !this.medicalDocumentation?.reviewedByDoctor) {
+        workflow.currentStep = 'doctor-review';
+        workflow.doctorApprovalStatus = 'pending';
+    } else {
+        // If no doctor review needed, complete the approval
+        workflow.currentStep = 'completed';
+        workflow.doctorApprovalStatus = 'not-required';
+        this.status = 'approved';
+        this.approvedBy = supervisorId;
+        this.approvedAt = new Date();
+    }
+
+    this.workflow = workflow;
+    if (notes && typeof notes === 'string') this.approverNotes = notes.trim();
+    return await this.save();
+};
+
+/**
+ * Instance method: Approve by doctor
+ */
+SickLeave.prototype.approveByDoctor = async function (doctorId, notes) {
+    // Validate that supervisor has already approved
+    if (this.workflow?.supervisorApprovalStatus !== 'approved') {
+        throw new Error('Supervisor must approve before doctor can approve');
+    }
+
+    const workflow = { ...this.workflow };
+    workflow.doctorApprovalStatus = 'approved';
+    workflow.currentStep = 'completed';
+    this.workflow = workflow;
+
     this.status = 'approved';
-    this.approvedBy = supervisorId;
+    this.approvedBy = doctorId;
     this.approvedAt = new Date();
-  }
 
-  if (notes && typeof notes === 'string') this.approverNotes = notes.trim();
-  return await this.save();
+    const medDoc = { ...this.medicalDocumentation };
+    medDoc.reviewedByDoctor = true;
+    medDoc.doctorReviewedBy = doctorId;
+    medDoc.doctorReviewedAt = new Date();
+    if (notes && typeof notes === 'string') {
+        medDoc.doctorNotes = notes.trim();
+    }
+    this.medicalDocumentation = medDoc;
+
+    return await this.save();
 };
 
-// Instance method to approve by doctor
-sickLeaveSchema.methods.approveByDoctor = async function (doctorId, notes) {
-  // Validate that supervisor has already approved
-  if (this.workflow.supervisorApprovalStatus !== 'approved') {
-    throw new Error('Supervisor must approve before doctor can approve');
-  }
+/**
+ * Instance method: Reject by supervisor
+ */
+SickLeave.prototype.rejectBySupervisor = async function (supervisorId, reason) {
+    const workflow = { ...this.workflow };
+    workflow.supervisorApprovalStatus = 'rejected';
+    workflow.currentStep = 'rejected';
+    this.workflow = workflow;
 
-  this.workflow.doctorApprovalStatus = 'approved';
-  this.workflow.currentStep = 'completed';
-  this.status = 'approved';
-  this.approvedBy = doctorId;
-  this.approvedAt = new Date();
-  this.medicalDocumentation.reviewedByDoctor = true;
-  this.medicalDocumentation.doctorReviewedBy = doctorId;
-  this.medicalDocumentation.doctorReviewedAt = new Date();
-
-  if (notes && typeof notes === 'string') {
-    this.medicalDocumentation.doctorNotes = notes.trim();
-  }
-
-  return await this.save();
+    this.status = 'rejected';
+    this.rejectedBy = supervisorId;
+    this.rejectedAt = new Date();
+    this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
+    return await this.save({ validate: false });
 };
 
-// Instance method to reject by supervisor
-sickLeaveSchema.methods.rejectBySupervisor = async function (supervisorId, reason) {
-  this.workflow.supervisorApprovalStatus = 'rejected';
-  this.workflow.currentStep = 'rejected';
-  this.status = 'rejected';
-  this.rejectedBy = supervisorId;
-  this.rejectedAt = new Date();
-  this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
-  return await this.save({ validateBeforeSave: false });
+/**
+ * Instance method: Reject by doctor
+ */
+SickLeave.prototype.rejectByDoctor = async function (doctorId, reason) {
+    // Validate that supervisor has already approved
+    if (this.workflow?.supervisorApprovalStatus !== 'approved') {
+        throw new Error('Supervisor must approve before doctor can reject');
+    }
+
+    const workflow = { ...this.workflow };
+    workflow.doctorApprovalStatus = 'rejected';
+    workflow.currentStep = 'rejected';
+    this.workflow = workflow;
+
+    this.status = 'rejected';
+    this.rejectedBy = doctorId;
+    this.rejectedAt = new Date();
+    this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
+
+    const medDoc = { ...this.medicalDocumentation };
+    medDoc.reviewedByDoctor = true;
+    medDoc.doctorReviewedBy = doctorId;
+    medDoc.doctorReviewedAt = new Date();
+    this.medicalDocumentation = medDoc;
+
+    return await this.save({ validate: false });
 };
 
-// Instance method to reject by doctor
-sickLeaveSchema.methods.rejectByDoctor = async function (doctorId, reason) {
-  // Validate that supervisor has already approved
-  if (this.workflow.supervisorApprovalStatus !== 'approved') {
-    throw new Error('Supervisor must approve before doctor can reject');
-  }
+/**
+ * Instance method: Request additional documentation
+ */
+SickLeave.prototype.requestAdditionalDocs = async function (doctorId, requestNotes) {
+    const medDoc = { ...this.medicalDocumentation };
+    medDoc.additionalDocRequested = true;
+    medDoc.requestNotes = requestNotes && typeof requestNotes === 'string' ? requestNotes.trim() : '';
+    medDoc.doctorReviewedBy = doctorId;
+    medDoc.doctorReviewedAt = new Date();
+    this.medicalDocumentation = medDoc;
 
-  this.workflow.doctorApprovalStatus = 'rejected';
-  this.workflow.currentStep = 'rejected';
-  this.status = 'rejected';
-  this.rejectedBy = doctorId;
-  this.rejectedAt = new Date();
-  this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
-  this.medicalDocumentation.reviewedByDoctor = true;
-  this.medicalDocumentation.doctorReviewedBy = doctorId;
-  this.medicalDocumentation.doctorReviewedAt = new Date();
-
-  return await this.save({ validateBeforeSave: false });
+    return await this.save();
 };
 
-// Instance method to request additional documentation
-sickLeaveSchema.methods.requestAdditionalDocs = async function (doctorId, requestNotes) {
-  this.medicalDocumentation.additionalDocRequested = true;
-  this.medicalDocumentation.requestNotes = requestNotes && typeof requestNotes === 'string' ? requestNotes.trim() : '';
-  this.medicalDocumentation.doctorReviewedBy = doctorId;
-  this.medicalDocumentation.doctorReviewedAt = new Date();
-
-  return await this.save();
+/**
+ * Instance method: Cancel sick leave
+ */
+SickLeave.prototype.cancel = async function (userId, reason) {
+    this.status = 'cancelled';
+    this.cancelledBy = userId;
+    this.cancelledAt = new Date();
+    this.cancellationReason = reason && typeof reason === 'string' ? reason.trim() : '';
+    return await this.save();
 };
 
-// Instance method to cancel sick leave
-sickLeaveSchema.methods.cancel = async function (userId, reason) {
-  this.status = 'cancelled';
-  this.cancelledBy = userId;
-  this.cancelledAt = new Date();
-  this.cancellationReason = reason && typeof reason === 'string' ? reason.trim() : '';
-  return await this.save();
+/**
+ * Static method: Get employee sick leaves with full details
+ */
+SickLeave.getSickLeavesByEmployee = function (employeeId, filters = {}) {
+    return this.findAll({
+        where: { employee: employeeId, ...filters },
+        include: [
+            {
+                model: mainAppDb.models.User,
+                as: 'employeeDetails',
+                attributes: ['profile', 'employeeId', 'email'],
+                include: [
+                    {
+                        model: mainAppDb.models.Department,
+                        as: 'departmentDetails',
+                        attributes: ['name', 'code', 'manager']
+                    },
+                    {
+                        model: mainAppDb.models.Position,
+                        as: 'positionDetails',
+                        attributes: ['title', 'code']
+                    }
+                ]
+            },
+            {
+                model: mainAppDb.models.User,
+                as: 'approver',
+                attributes: ['username', 'employeeId', 'personalInfo']
+            },
+            {
+                model: mainAppDb.models.User,
+                as: 'rejecter',
+                attributes: ['username', 'employeeId', 'personalInfo']
+            },
+            {
+                model: mainAppDb.models.User,
+                as: 'canceller',
+                attributes: ['username', 'employeeId', 'personalInfo']
+            },
+            {
+                model: mainAppDb.models.Department,
+                as: 'departmentDetails',
+                attributes: ['name', 'code']
+            },
+            {
+                model: mainAppDb.models.Position,
+                as: 'positionDetails',
+                attributes: ['title']
+            },
+            {
+                model: mainAppDb.models.VacationBalance,
+                as: 'balance'
+            }
+        ],
+        order: [['startDate', 'DESC']]
+    });
 };
 
-// Static method to get employee sick leaves with full details
-sickLeaveSchema.statics.getSickLeavesByEmployee = function (employeeId, filters = {}) {
-  const query = { employee: employeeId, ...filters };
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('approvedBy rejectedBy cancelledBy', 'username employeeId personalInfo')
-    .populate('medicalDocumentation.doctorReviewedBy', 'username employeeId personalInfo')
-    .populate('department', 'name code')
-    .populate('position', 'title')
-    .populate('vacationBalance')
-    .sort({ startDate: -1 });
+/**
+ * Static method: Get sick leaves pending supervisor review
+ */
+SickLeave.getPendingSupervisorReview = function (departmentId = null) {
+    const where = {
+        'workflow.currentStep': 'supervisor-review',
+        'workflow.supervisorApprovalStatus': 'pending'
+    };
+
+    if (departmentId) {
+        where.department = departmentId;
+    }
+
+    return this.findAll({
+        where,
+        include: [
+            {
+                model: mainAppDb.models.User,
+                as: 'employeeDetails',
+                attributes: ['profile', 'department', 'position', 'employeeId', 'email'],
+                include: [
+                    {
+                        model: mainAppDb.models.Department,
+                        as: 'departmentDetails',
+                        attributes: ['name', 'code', 'manager']
+                    },
+                    {
+                        model: mainAppDb.models.Position,
+                        as: 'positionDetails',
+                        attributes: ['title', 'code']
+                    }
+                ]
+            },
+            {
+                model: mainAppDb.models.Department,
+                as: 'departmentDetails',
+                attributes: ['name', 'code']
+            }
+        ],
+        order: [['createdAt', 'ASC']]
+    });
 };
 
-// Static method to get sick leaves pending supervisor review
-sickLeaveSchema.statics.getPendingSupervisorReview = function (departmentId = null) {
-  const query = {
-    'workflow.currentStep': 'supervisor-review',
-    'workflow.supervisorApprovalStatus': 'pending'
-  };
+/**
+ * Static method: Get sick leaves pending doctor review
+ */
+SickLeave.getPendingDoctorReview = function (departmentId = null) {
+    const where = {
+        'workflow.currentStep': 'doctor-review',
+        'workflow.doctorApprovalStatus': 'pending'
+    };
 
-  if (departmentId) {
-    query.department = departmentId;
-  }
+    if (departmentId) {
+        where.department = departmentId;
+    }
 
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('department', 'name code')
-    .sort({ createdAt: 1 });
+    return this.findAll({
+        where,
+        include: [
+            {
+                model: mainAppDb.models.User,
+                as: 'employeeDetails',
+                attributes: ['profile', 'department', 'position', 'employeeId', 'email'],
+                include: [
+                    {
+                        model: mainAppDb.models.Department,
+                        as: 'departmentDetails',
+                        attributes: ['name', 'code', 'manager']
+                    },
+                    {
+                        model: mainAppDb.models.Position,
+                        as: 'positionDetails',
+                        attributes: ['title', 'code']
+                    }
+                ]
+            },
+            {
+                model: mainAppDb.models.Department,
+                as: 'departmentDetails',
+                attributes: ['name', 'code']
+            }
+        ],
+        order: [['createdAt', 'ASC']]
+    });
 };
 
-// Static method to get sick leaves pending doctor review
-sickLeaveSchema.statics.getPendingDoctorReview = function (departmentId = null) {
-  const query = {
-    'workflow.currentStep': 'doctor-review',
-    'workflow.doctorApprovalStatus': 'pending'
-  };
-
-  if (departmentId) {
-    query.department = departmentId;
-  }
-
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('department', 'name code')
-    .sort({ createdAt: 1 });
+/**
+ * Static method: Get sick leaves by department
+ */
+SickLeave.getSickLeavesByDepartment = function (departmentId, filters = {}) {
+    return this.findAll({
+        where: { department: departmentId, ...filters },
+        include: [
+            {
+                model: mainAppDb.models.User,
+                as: 'employeeDetails',
+                attributes: ['profile', 'position', 'employeeId', 'email'],
+                include: [{
+                    model: mainAppDb.models.Position,
+                    as: 'positionDetails',
+                    attributes: ['title', 'code']
+                }]
+            },
+            {
+                model: mainAppDb.models.User,
+                as: 'approver',
+                attributes: ['username', 'employeeId', 'personalInfo']
+            },
+            {
+                model: mainAppDb.models.User,
+                as: 'rejecter',
+                attributes: ['username', 'employeeId', 'personalInfo']
+            },
+            {
+                model: mainAppDb.models.User,
+                as: 'canceller',
+                attributes: ['username', 'employeeId', 'personalInfo']
+            }
+        ],
+        order: [['startDate', 'DESC']]
+    });
 };
 
-// Static method to get sick leaves by department
-sickLeaveSchema.statics.getSickLeavesByDepartment = function (departmentId, filters = {}) {
-  const query = { department: departmentId, ...filters };
+/**
+ * Static method: Check for overlapping sick leaves
+ */
+SickLeave.hasOverlappingSickLeave = async function (employeeId, startDate, endDate, excludeSickLeaveId = null) {
+    const where = {
+        employee: employeeId,
+        status: { [Op.in]: ['pending', 'approved'] },
+        [Op.or]: [
+            {
+                startDate: { [Op.lte]: endDate },
+                endDate: { [Op.gte]: startDate }
+            }
+        ]
+    };
 
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile position employeeId email',
-      populate: { path: 'position', select: 'title code' }
-    })
-    .populate('approvedBy rejectedBy cancelledBy', 'username employeeId personalInfo')
-    .populate('medicalDocumentation.doctorReviewedBy', 'username employeeId personalInfo')
-    .sort({ startDate: -1 });
+    if (excludeSickLeaveId) {
+        where.id = { [Op.ne]: excludeSickLeaveId };
+    }
+
+    const overlapping = await this.findOne({ where });
+    return !!overlapping;
 };
 
-// Static method to check for overlapping sick leaves
-sickLeaveSchema.statics.hasOverlappingSickLeave = async function (employeeId, startDate, endDate, excludeSickLeaveId = null) {
-  const query = {
-    employee: employeeId,
-    status: { $in: ['pending', 'approved'] },
-    $or: [
-      {
-        startDate: { $lte: endDate },
-        endDate: { $gte: startDate }
-      }
-    ]
-  };
-
-  if (excludeSickLeaveId) {
-    query._id = { $ne: excludeSickLeaveId };
-  }
-
-  const overlapping = await this.findOne(query);
-  return !!overlapping;
+/**
+ * Static method: Tenant-aware queries
+ */
+SickLeave.withTenant = function (tenantId) {
+    return this.findAll({ where: { tenantId } });
 };
 
-// Compound indexes for tenant isolation and performance
-sickLeaveSchema.index({ tenantId: 1, employee: 1, status: 1 });
-sickLeaveSchema.index({ tenantId: 1, department: 1, status: 1 });
-sickLeaveSchema.index({ tenantId: 1, 'workflow.currentStep': 1 });
-sickLeaveSchema.index({ tenantId: 1, 'workflow.supervisorApprovalStatus': 1 });
-sickLeaveSchema.index({ tenantId: 1, 'workflow.doctorApprovalStatus': 1 });
-sickLeaveSchema.index({ tenantId: 1, startDate: 1, endDate: 1 });
-
-// Add withTenant static method for tenant-aware queries
-sickLeaveSchema.statics.withTenant = function (tenantId) {
-  return this.find({ tenantId });
-};
-
-export default mongoose.model('SickLeave', sickLeaveSchema);
+export default SickLeave;

@@ -1,321 +1,256 @@
-import mongoose from 'mongoose';
+/**
+ * Visit Model (Sequelize)
+ * 
+ * Records medical visits
+ */
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+
+const Visit = mainAppDb.define('Visit', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
+    },
+    patientId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'patient_id'
+    },
+    medicalProfileId: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'medical_profiles',
+            key: 'id'
+        },
+        field: 'medical_profile_id'
+    },
+    visitDate: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+        field: 'visit_date'
+    },
+    visitType: {
+        type: DataTypes.ENUM('routine', 'emergency', 'follow-up', 'consultation', 'vaccination', 'screening'),
+        allowNull: false,
+        field: 'visit_type'
+    },
+    // Doctor - stored as JSONB
+    doctor: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: {}
+    },
+    chiefComplaint: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        field: 'chief_complaint'
+    },
+    // Vital signs - stored as JSONB
+    vitalSigns: {
+        type: DataTypes.JSONB,
+        defaultValue: {},
+        field: 'vital_signs'
+    },
+    examination: {
+        type: DataTypes.TEXT
+    },
+    // Diagnosis - stored as JSONB
+    diagnosis: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: {}
+    },
+    // Treatment - stored as JSONB
+    treatment: {
+        type: DataTypes.JSONB,
+        defaultValue: {}
+    },
+    // Lab tests - stored as JSONB array
+    labTests: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        field: 'lab_tests'
+    },
+    // Follow-up - stored as JSONB
+    followUp: {
+        type: DataTypes.JSONB,
+        defaultValue: {
+            required: false
+        },
+        field: 'follow_up'
+    },
+    // Medical leave - stored as JSONB
+    medicalLeave: {
+        type: DataTypes.JSONB,
+        defaultValue: {
+            recommended: false
+        },
+        field: 'medical_leave'
+    },
+    notes: {
+        type: DataTypes.TEXT
+    },
+    status: {
+        type: DataTypes.ENUM('scheduled', 'in-progress', 'completed', 'cancelled', 'no-show'),
+        defaultValue: 'completed'
+    },
+    // Billing - stored as JSONB
+    billing: {
+        type: DataTypes.JSONB,
+        defaultValue: {}
+    },
+    createdBy: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'created_by'
+    },
+    updatedBy: {
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'updated_by'
+    }
+}, {
+    tableName: 'visits',
+    timestamps: true,
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['patient_id'] },
+        { fields: ['visit_date'] },
+        { fields: ['status'] },
+        { fields: ['visit_type'] },
+        { fields: ['tenant_id', 'patient_id', 'visit_date'] },
+        { fields: ['tenant_id', 'visit_date'] },
+        { fields: ['tenant_id', 'status'] },
+        { fields: ['tenant_id', 'visit_type'] }
+    ]
+});
 
 /**
- * Visit Model
- * 
- * Records medical visits including:
- * - Visit date and time
- * - Doctor/medical staff
- * - Diagnosis and treatment
- * - Follow-up requirements
- * 
- * CRITICAL: All records must have tenantId for multi-tenancy isolation
+ * Define associations
  */
+Visit.associate = (models) => {
+    Visit.belongsTo(models.User, {
+        foreignKey: 'patientId',
+        as: 'patient'
+    });
+    Visit.belongsTo(models.MedicalProfile, {
+        foreignKey: 'medicalProfileId',
+        as: 'medicalProfile'
+    });
+};
 
-const visitSchema = new mongoose.Schema({
-  // Tenant isolation - REQUIRED
-  tenantId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  
-  // Patient reference (links to HR-Core User model)
-  patientId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  
-  // Medical profile reference
-  medicalProfileId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'MedicalProfile'
-  },
-  
-  // Visit details
-  visitDate: {
-    type: Date,
-    required: true,
-    default: Date.now
-  },
-  
-  visitType: {
-    type: String,
-    enum: ['routine', 'emergency', 'follow-up', 'consultation', 'vaccination', 'screening'],
-    required: true
-  },
-  
-  // Medical staff
-  doctor: {
-    name: {
-      type: String,
-      required: true
-    },
-    specialization: String,
-    licenseNumber: String
-  },
-  
-  // Chief complaint
-  chiefComplaint: {
-    type: String,
-    required: true
-  },
-  
-  // Vital signs
-  vitalSigns: {
-    temperature: {
-      value: Number,
-      unit: {
-        type: String,
-        enum: ['celsius', 'fahrenheit'],
-        default: 'celsius'
-      }
-    },
-    bloodPressure: {
-      systolic: Number,
-      diastolic: Number
-    },
-    heartRate: Number,
-    respiratoryRate: Number,
-    oxygenSaturation: Number,
-    weight: {
-      value: Number,
-      unit: {
-        type: String,
-        enum: ['kg', 'lbs'],
-        default: 'kg'
-      }
-    },
-    height: {
-      value: Number,
-      unit: {
-        type: String,
-        enum: ['cm', 'inches'],
-        default: 'cm'
-      }
-    }
-  },
-  
-  // Examination findings
-  examination: {
-    type: String
-  },
-  
-  // Diagnosis
-  diagnosis: {
-    primary: {
-      type: String,
-      required: true
-    },
-    secondary: [String],
-    icdCodes: [String]
-  },
-  
-  // Treatment provided
-  treatment: {
-    description: String,
-    procedures: [{
-      name: String,
-      code: String,
-      notes: String
-    }],
-    medications: [{
-      name: String,
-      dosage: String,
-      frequency: String,
-      duration: String,
-      prescriptionId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Prescription'
-      }
-    }]
-  },
-  
-  // Lab tests ordered
-  labTests: [{
-    testName: String,
-    testCode: String,
-    status: {
-      type: String,
-      enum: ['ordered', 'pending', 'completed', 'cancelled'],
-      default: 'ordered'
-    },
-    results: String,
-    resultDate: Date
-  }],
-  
-  // Follow-up
-  followUp: {
-    required: {
-      type: Boolean,
-      default: false
-    },
-    date: Date,
-    reason: String,
-    appointmentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Appointment'
-    }
-  },
-  
-  // Medical leave recommendation
-  medicalLeave: {
-    recommended: {
-      type: Boolean,
-      default: false
-    },
-    startDate: Date,
-    endDate: Date,
-    reason: String,
-    requestId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Request'  // HR-Core Request model
-    }
-  },
-  
-  // Visit notes
-  notes: {
-    type: String
-  },
-  
-  // Visit status
-  status: {
-    type: String,
-    enum: ['scheduled', 'in-progress', 'completed', 'cancelled', 'no-show'],
-    default: 'completed'
-  },
-  
-  // Billing information
-  billing: {
-    cost: Number,
-    insuranceCovered: Number,
-    patientResponsibility: Number,
-    paymentStatus: {
-      type: String,
-      enum: ['pending', 'paid', 'partially-paid', 'waived'],
-      default: 'pending'
-    }
-  },
-  
-  // Metadata
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  updatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  
-  // Timestamps
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-}, {
-  timestamps: true
-});
-
-// Compound indexes for efficient querying
-visitSchema.index({ tenantId: 1, patientId: 1, visitDate: -1 });
-visitSchema.index({ tenantId: 1, visitDate: -1 });
-visitSchema.index({ tenantId: 1, status: 1 });
-visitSchema.index({ tenantId: 1, visitType: 1 });
-
-// Pre-save middleware
-visitSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
-
-// Instance methods
-visitSchema.methods = {
-  /**
-   * Check if visit requires follow-up
-   */
-  requiresFollowUp() {
+/**
+ * Instance method: Check if visit requires follow-up
+ */
+Visit.prototype.requiresFollowUp = function () {
     return this.followUp && this.followUp.required;
-  },
-  
-  /**
-   * Check if medical leave was recommended
-   */
-  hasMedicalLeaveRecommendation() {
+};
+
+/**
+ * Instance method: Check if medical leave was recommended
+ */
+Visit.prototype.hasMedicalLeaveRecommendation = function () {
     return this.medicalLeave && this.medicalLeave.recommended;
-  },
-  
-  /**
-   * Calculate total visit duration (if needed)
-   */
-  getDuration() {
-    // Could be enhanced to track actual visit duration
+};
+
+/**
+ * Instance method: Calculate total visit duration
+ */
+Visit.prototype.getDuration = function () {
     return null;
-  }
 };
 
-// Static methods
-visitSchema.statics = {
-  /**
-   * Find visits by patient and tenant
-   */
-  async findByPatientAndTenant(patientId, tenantId, options = {}) {
-    const { page = 1, limit = 50, sort = { visitDate: -1 } } = options;
-    const skip = (page - 1) * limit;
+/**
+ * Static method: Find visits by patient and tenant
+ */
+Visit.findByPatientAndTenant = async function (patientId, tenantId, options = {}) {
+    const { page = 1, limit = 50, sort = [['visitDate', 'DESC']] } = options;
+    const offset = (page - 1) * limit;
     
-    return this.find({ patientId, tenantId })
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .populate('patientId', 'firstName lastName email');
-  },
-  
-  /**
-   * Find visits by date range
-   */
-  async findByDateRange(tenantId, startDate, endDate, options = {}) {
-    const query = {
-      tenantId,
-      visitDate: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      }
-    };
-    
-    return this.find(query)
-      .sort({ visitDate: -1 })
-      .populate('patientId', 'firstName lastName email');
-  },
-  
-  /**
-   * Get visit statistics for a tenant
-   */
-  async getStatistics(tenantId, startDate, endDate) {
-    const match = {
-      tenantId,
-      visitDate: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      }
-    };
-    
-    return this.aggregate([
-      { $match: match },
-      {
-        $group: {
-          _id: '$visitType',
-          count: { $sum: 1 },
-          avgCost: { $avg: '$billing.cost' }
+    return await this.findAll({
+        where: { patientId, tenantId },
+        order: sort,
+        offset,
+        limit,
+        include: [{
+            model: mainAppDb.models.User,
+            as: 'patient',
+            attributes: ['firstName', 'lastName', 'email']
+        }]
+    });
+};
+
+/**
+ * Static method: Find visits by date range
+ */
+Visit.findByDateRange = async function (tenantId, startDate, endDate, options = {}) {
+    return await this.findAll({
+        where: {
+            tenantId,
+            visitDate: {
+                [Op.gte]: new Date(startDate),
+                [Op.lte]: new Date(endDate)
+            }
+        },
+        order: [['visitDate', 'DESC']],
+        include: [{
+            model: mainAppDb.models.User,
+            as: 'patient',
+            attributes: ['firstName', 'lastName', 'email']
+        }]
+    });
+};
+
+/**
+ * Static method: Get visit statistics for a tenant
+ */
+Visit.getStatistics = async function (tenantId, startDate, endDate) {
+    const visits = await this.findAll({
+        where: {
+            tenantId,
+            visitDate: {
+                [Op.gte]: new Date(startDate),
+                [Op.lte]: new Date(endDate)
+            }
         }
-      }
-    ]);
-  }
+    });
+    
+    const stats = visits.reduce((acc, visit) => {
+        const type = visit.visitType;
+        if (!acc[type]) {
+            acc[type] = {
+                count: 0,
+                totalCost: 0
+            };
+        }
+        acc[type].count += 1;
+        acc[type].totalCost += parseFloat(visit.billing?.cost || 0);
+        return acc;
+    }, {});
+    
+    return Object.entries(stats).map(([type, data]) => ({
+        _id: type,
+        count: data.count,
+        avgCost: data.count > 0 ? data.totalCost / data.count : 0
+    }));
 };
-
-const Visit = mongoose.model('Visit', visitSchema);
 
 export default Visit;

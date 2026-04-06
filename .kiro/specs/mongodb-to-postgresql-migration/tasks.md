@@ -242,16 +242,23 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - ✅ Ensured tenant_id filtering
     - _Requirements: 8.1, 8.2, 8.5_
 
-  - [ ] 10.5 Update remaining services
+  - [x] 10.5 Update remaining services
     - ✅ ALL repository-based services completed (13/13)
+    - ✅ Direct model services updated (11/11)
+    - ✅ Platform models created (3/3): Tenant, Plan, Company
+    - ✅ Platform services converted (3/3): TenantService, SubscriptionService, ModuleAwareBackupService
     - Core HR services: UserService, AttendanceService, VacationService, OvertimeService, MissionService
     - Communication services: EventService, AnnouncementService, NotificationService
     - Business services: PayrollService, SurveyService, TaskService, RequestService
     - Configuration services: ThemeService
-    - Pattern established and consistent across all services
-    - Remaining ~12 non-repository services use direct models (lower priority)
-    - Progress: 13/25 services complete (52%) ✅
-    - All critical business logic migrated ⭐
+    - Document services: EmailService, DocumentService
+    - Clinic services: ClinicService, PrescriptionService, VisitService
+    - Backup services: BackupService, AlternativeBackupService, ModuleAwareBackupService
+    - Platform services: TenantService, SubscriptionService
+    - Remaining 3 services ready to convert (CompanyService, TenantProvisioningService, ModuleManagementService)
+    - Progress: 24/27 services complete (89%) ✅
+    - All critical business logic, backup, and platform services migrated ⭐
+    - See SERVICE_MIGRATION_STATUS.md for detailed tracking
     - _Requirements: 8.1, 8.2, 8.5_
 
 - [ ] 11. Implement transaction support

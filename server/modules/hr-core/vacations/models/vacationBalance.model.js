@@ -1,5 +1,5 @@
 /**
- * VacationBalance Model
+ * VacationBalance Model (Sequelize)
  * 
  * Tracks employee vacation and leave balances for different leave types.
  * Automatically calculates allocations based on tenure and manages balance usage.
@@ -11,186 +11,146 @@
  * - Supports carry-over of up to 5 annual days to next year
  * - Auto-recalculation based on approved/pending leaves
  */
-import mongoose from 'mongoose';
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
 
-const vacationBalanceSchema = new mongoose.Schema({
-    // Multi-tenant support
+const VacationBalance = mainAppDb.define('VacationBalance', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
     tenantId: {
-        type: String,
-        required: true,
-        index: true
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
     },
-    // Reference to the employee (User)
     employee: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true  // Indexed for queries, uniqueness enforced by compound index below
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     },
-    // Year for which this balance applies
     year: {
-        type: Number,
-        required: true,
-        default: () => new Date().getFullYear()
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: () => new Date().getFullYear()
     },
-    // Annual vacation balance - based on tenure
+    // Annual vacation balance - stored as JSONB
     annual: {
-        allocated: {        // Total days allocated for the year based on tenure
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        used: {             // Days already used (approved leaves)
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        pending: {          // Days reserved for pending leave requests
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        available: {        // Days available to request (allocated + carriedOver - used - pending)
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        carriedOver: {      // Days carried over from previous year (max 5)
-            type: Number,
-            default: 0,
-            min: 0
+        type: DataTypes.JSONB,
+        defaultValue: {
+            allocated: 0,
+            used: 0,
+            pending: 0,
+            available: 0,
+            carriedOver: 0
         }
     },
-    // Casual leave balance - for short-notice personal matters
+    // Casual leave balance - stored as JSONB
     casual: {
-        allocated: {        // Fixed allocation: 7 days per year
-            type: Number,
-            default: 7,
-            min: 0
-        },
-        used: {             // Days already used
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        pending: {          // Days reserved for pending requests
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        available: {        // Days available to request
-            type: Number,
-            default: 7,
-            min: 0
+        type: DataTypes.JSONB,
+        defaultValue: {
+            allocated: 7,
+            used: 0,
+            pending: 0,
+            available: 7
         }
     },
-    // Sick leave balance - requires medical documentation if > 2 days
+    // Sick leave balance - stored as JSONB
     sick: {
-        allocated: {        // Fixed allocation: 10 days per year
-            type: Number,
-            default: 10,
-            min: 0
-        },
-        used: {             // Days already used
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        pending: {          // Days reserved for pending requests
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        available: {        // Days available to request
-            type: Number,
-            default: 10,
-            min: 0
+        type: DataTypes.JSONB,
+        defaultValue: {
+            allocated: 10,
+            used: 0,
+            pending: 0,
+            available: 10
         }
     },
-    // Eligibility tracking based on hire date and tenure
+    // Eligibility tracking - stored as JSONB
     eligibility: {
-        isEligible: {       // True if employee has completed 3 months from hire date
-            type: Boolean,
-            default: false
-        },
-        eligibleFrom: Date, // Date when employee becomes eligible (hire date + 3 months)
-        probationEnds: Date,// Same as eligibleFrom - end of probation period
-        tenure: {           // Current tenure in years (calculated from hire date)
-            type: Number,
-            default: 0
+        type: DataTypes.JSONB,
+        defaultValue: {
+            isEligible: false,
+            eligibleFrom: null,
+            probationEnds: null,
+            tenure: 0
         }
     },
-    // Flexible hours tracking - 8 hours equals 1 day
+    // Flexible hours tracking - stored as JSONB
     flexibleHours: {
-        allocated: {        // Total flexible hours per year (8 hours = 1 day)
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        used: {             // Flexible hours already used
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        pending: {          // Flexible hours reserved for pending requests
-            type: Number,
-            default: 0,
-            min: 0
-        },
-        available: {        // Flexible hours available
-            type: Number,
-            default: 0,
-            min: 0
+        type: DataTypes.JSONB,
+        defaultValue: {
+            allocated: 0,
+            used: 0,
+            pending: 0,
+            available: 0
         }
     },
-    // History of vacation usage and returns
-    history: [{
-        type: {             // Type of leave (annual, casual, sick)
-            type: String,
-            required: true
-        },
-        days: {             // Number of days
-            type: Number,
-            required: true
-        },
-        action: {           // Action performed (used, returned, reserved, etc.)
-            type: String,
-            required: true
-        },
-        date: {             // Date of action
-            type: Date,
-            default: Date.now
-        },
-        reason: String      // Reason for the action
-    }],
-    // Timestamp of last balance recalculation
+    // History of vacation usage - stored as JSONB array
+    history: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    },
     lastCalculated: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        field: 'last_calculated'
     }
 }, {
-    timestamps: true
+    tableName: 'vacation_balances',
+    timestamps: true,
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['employee'] },
+        { fields: ['tenant_id', 'employee', 'year'], unique: true }
+    ]
 });
 
-// Virtual for total available days across all types
-vacationBalanceSchema.virtual('totalAvailable').get(function () {
-    return this.annual.available + this.casual.available + this.sick.available;
-});
+/**
+ * Define associations
+ */
+VacationBalance.associate = (models) => {
+    VacationBalance.belongsTo(models.User, {
+        foreignKey: 'employee',
+        as: 'employeeDetails'
+    });
+};
 
-// Virtual for total used days
-vacationBalanceSchema.virtual('totalUsed').get(function () {
-    return this.annual.used + this.casual.used + this.sick.used;
-});
+/**
+ * Instance method: Get total available days across all types
+ */
+VacationBalance.prototype.getTotalAvailable = function () {
+    return (this.annual?.available || 0) + 
+           (this.casual?.available || 0) + 
+           (this.sick?.available || 0);
+};
 
-// Virtual to convert flexible hours to days (8 hours = 1 day)
-vacationBalanceSchema.virtual('flexibleHours.availableDays').get(function () {
-    return this.flexibleHours.available / 8;
-});
+/**
+ * Instance method: Get total used days
+ */
+VacationBalance.prototype.getTotalUsed = function () {
+    return (this.annual?.used || 0) + 
+           (this.casual?.used || 0) + 
+           (this.sick?.used || 0);
+};
 
-// Virtual to convert flexible hours used to days
-vacationBalanceSchema.virtual('flexibleHours.usedDays').get(function () {
-    return this.flexibleHours.used / 8;
-});
+/**
+ * Instance method: Convert flexible hours to days (8 hours = 1 day)
+ */
+VacationBalance.prototype.getFlexibleHoursAvailableDays = function () {
+    return (this.flexibleHours?.available || 0) / 8;
+};
+
+/**
+ * Instance method: Convert flexible hours used to days
+ */
+VacationBalance.prototype.getFlexibleHoursUsedDays = function () {
+    return (this.flexibleHours?.used || 0) / 8;
+};
 
 /**
  * Calculate annual vacation allocation based on employee tenure
@@ -204,7 +164,7 @@ vacationBalanceSchema.virtual('flexibleHours.usedDays').get(function () {
  * @param {Number} tenureYears - Employee's tenure in years
  * @returns {Number} Number of annual vacation days allocated
  */
-vacationBalanceSchema.statics.calculateAnnualAllocation = function (tenureYears) {
+VacationBalance.calculateAnnualAllocation = function (tenureYears) {
     if (tenureYears < 0.5) return 0;   // 3-5 months: 0 days
     if (tenureYears < 1) return 8;     // 6+ months: 8 days
     if (tenureYears < 10) return 14;   // 1+ years: 14 days
@@ -223,13 +183,13 @@ vacationBalanceSchema.statics.calculateAnnualAllocation = function (tenureYears)
  * 
  * @returns {Promise<VacationBalance>} Updated balance document
  */
-vacationBalanceSchema.methods.recalculate = async function () {
+VacationBalance.prototype.recalculate = async function () {
     try {
-        const User = mongoose.model('User');
-        const Leave = mongoose.model('Leave');
+        const User = mainAppDb.models.User;
+        const Leave = mainAppDb.models.Leave;
 
         // Fetch employee details to get hire date
-        const employee = await User.findById(this.employee);
+        const employee = await User.findByPk(this.employee);
         if (!employee || !employee.employment?.hireDate) {
             return this; // Cannot calculate without hire date
         }
@@ -241,45 +201,59 @@ vacationBalanceSchema.methods.recalculate = async function () {
         const tenureYears = tenureMonths / 12;
 
         // Update eligibility status (3-month minimum employment requirement)
-        this.eligibility.tenure = Math.floor(tenureYears * 10) / 10; // Round to 1 decimal
-        this.eligibility.isEligible = tenureYears >= 0.25; // Eligible after 3 months
+        const eligibility = { ...this.eligibility };
+        eligibility.tenure = Math.floor(tenureYears * 10) / 10; // Round to 1 decimal
+        eligibility.isEligible = tenureYears >= 0.25; // Eligible after 3 months
 
         // Set eligibility date (3 months from hire date)
         if (tenureYears >= 0.25) {
             const eligibilityDate = new Date(hireDate);
             eligibilityDate.setMonth(eligibilityDate.getMonth() + 3);
-            this.eligibility.eligibleFrom = eligibilityDate;
-            this.eligibility.probationEnds = eligibilityDate;
+            eligibility.eligibleFrom = eligibilityDate;
+            eligibility.probationEnds = eligibilityDate;
         }
+        this.eligibility = eligibility;
 
         // Calculate and set annual allocation based on current tenure
-        const annualAllocation = this.constructor.calculateAnnualAllocation(tenureYears);
-        this.annual.allocated = annualAllocation;
+        const annualAllocation = VacationBalance.calculateAnnualAllocation(tenureYears);
+        const annual = { ...this.annual };
+        annual.allocated = annualAllocation;
+        this.annual = annual;
 
         // Set casual leave allocation (always 7 days for eligible employees)
-        this.casual.allocated = tenureYears >= 0.25 ? 7 : 0;
+        const casual = { ...this.casual };
+        casual.allocated = tenureYears >= 0.25 ? 7 : 0;
+        this.casual = casual;
 
         // Set flexible hours allocation (8 hours = 1 day)
-        this.flexibleHours.allocated = 8;
+        const flexibleHours = { ...this.flexibleHours };
+        flexibleHours.allocated = 8;
+        this.flexibleHours = flexibleHours;
 
         // Fetch all leaves for this employee within the balance year
         const yearStart = new Date(this.year, 0, 1);              // January 1st
         const yearEnd = new Date(this.year, 11, 31, 23, 59, 59); // December 31st
 
-        const leaves = await Leave.find({
-            employee: this.employee,
-            startDate: { $gte: yearStart, $lte: yearEnd }
+        const leaves = await Leave.findAll({
+            where: {
+                employee: this.employee,
+                startDate: {
+                    [Op.gte]: yearStart,
+                    [Op.lte]: yearEnd
+                }
+            }
         });
 
         // Reset all counters before recalculation
-        this.annual.used = 0;
-        this.annual.pending = 0;
-        this.casual.used = 0;
-        this.casual.pending = 0;
-        this.sick.used = 0;
-        this.sick.pending = 0;
-        this.flexibleHours.used = 0;
-        this.flexibleHours.pending = 0;
+        annual.used = 0;
+        annual.pending = 0;
+        casual.used = 0;
+        casual.pending = 0;
+        const sick = { ...this.sick };
+        sick.used = 0;
+        sick.pending = 0;
+        flexibleHours.used = 0;
+        flexibleHours.pending = 0;
 
         // Aggregate leave days by type and status
         leaves.forEach(leave => {
@@ -287,38 +261,41 @@ vacationBalanceSchema.methods.recalculate = async function () {
 
             // Add to 'used' if approved
             if (leave.status === 'approved') {
-                if (leave.leaveType === 'annual') this.annual.used += duration;
-                else if (leave.leaveType === 'casual') this.casual.used += duration;
-                else if (leave.leaveType === 'sick') this.sick.used += duration;
+                if (leave.leaveType === 'annual') annual.used += duration;
+                else if (leave.leaveType === 'casual') casual.used += duration;
+                else if (leave.leaveType === 'sick') sick.used += duration;
             }
             // Add to 'pending' if awaiting approval
             else if (leave.status === 'pending') {
-                if (leave.leaveType === 'annual') this.annual.pending += duration;
-                else if (leave.leaveType === 'casual') this.casual.pending += duration;
-                else if (leave.leaveType === 'sick') this.sick.pending += duration;
+                if (leave.leaveType === 'annual') annual.pending += duration;
+                else if (leave.leaveType === 'casual') casual.pending += duration;
+                else if (leave.leaveType === 'sick') sick.pending += duration;
             }
         });
 
         // Calculate remaining available days for each leave type
         // Formula: available = allocated + carriedOver - used - pending
-        this.annual.available = Math.max(0,
-            this.annual.allocated + this.annual.carriedOver - this.annual.used - this.annual.pending
+        annual.available = Math.max(0,
+            annual.allocated + annual.carriedOver - annual.used - annual.pending
         );
-        this.casual.available = Math.max(0,
-            this.casual.allocated - this.casual.used - this.casual.pending
+        casual.available = Math.max(0,
+            casual.allocated - casual.used - casual.pending
         );
-        this.sick.available = Math.max(0,
-            this.sick.allocated - this.sick.used - this.sick.pending
+        sick.available = Math.max(0,
+            sick.allocated - sick.used - sick.pending
         );
-        this.flexibleHours.available = Math.max(0,
-            this.flexibleHours.allocated - this.flexibleHours.used - this.flexibleHours.pending
+        flexibleHours.available = Math.max(0,
+            flexibleHours.allocated - flexibleHours.used - flexibleHours.pending
         );
 
+        this.annual = annual;
+        this.casual = casual;
+        this.sick = sick;
+        this.flexibleHours = flexibleHours;
         this.lastCalculated = new Date();
 
         return await this.save();
     } catch (error) {
-
         throw error;
     }
 };
@@ -330,10 +307,10 @@ vacationBalanceSchema.methods.recalculate = async function () {
  * @param {Number} duration - Number of days requested
  * @returns {Boolean} True if sufficient balance available
  */
-vacationBalanceSchema.methods.hasSufficientBalance = function (leaveType, duration) {
+VacationBalance.prototype.hasSufficientBalance = function (leaveType, duration) {
     const type = this[leaveType];
     if (!type) return false;
-    return type.available >= duration;
+    return (type.available || 0) >= duration;
 };
 
 /**
@@ -345,14 +322,15 @@ vacationBalanceSchema.methods.hasSufficientBalance = function (leaveType, durati
  * @returns {Promise<VacationBalance>} Updated balance
  * @throws {Error} If insufficient balance
  */
-vacationBalanceSchema.methods.reserveBalance = async function (leaveType, duration) {
-    const type = this[leaveType];
-    if (!type || type.available < duration) {
+VacationBalance.prototype.reserveBalance = async function (leaveType, duration) {
+    const type = { ...this[leaveType] };
+    if (!type || (type.available || 0) < duration) {
         throw new Error(`Insufficient ${leaveType} leave balance`);
     }
 
-    type.pending += duration;    // Add to pending
-    type.available -= duration;  // Subtract from available
+    type.pending = (type.pending || 0) + duration;    // Add to pending
+    type.available = (type.available || 0) - duration;  // Subtract from available
+    this[leaveType] = type;
     return await this.save();
 };
 
@@ -364,12 +342,13 @@ vacationBalanceSchema.methods.reserveBalance = async function (leaveType, durati
  * @param {Number} duration - Number of days to release
  * @returns {Promise<VacationBalance>} Updated balance
  */
-vacationBalanceSchema.methods.releaseBalance = async function (leaveType, duration) {
-    const type = this[leaveType];
+VacationBalance.prototype.releaseBalance = async function (leaveType, duration) {
+    const type = { ...this[leaveType] };
     if (!type) return this;
 
-    type.pending = Math.max(0, type.pending - duration); // Remove from pending
-    type.available += duration;                          // Return to available
+    type.pending = Math.max(0, (type.pending || 0) - duration); // Remove from pending
+    type.available = (type.available || 0) + duration;          // Return to available
+    this[leaveType] = type;
     return await this.save();
 };
 
@@ -381,12 +360,13 @@ vacationBalanceSchema.methods.releaseBalance = async function (leaveType, durati
  * @param {Number} duration - Number of days to confirm
  * @returns {Promise<VacationBalance>} Updated balance
  */
-vacationBalanceSchema.methods.confirmUsage = async function (leaveType, duration) {
-    const type = this[leaveType];
+VacationBalance.prototype.confirmUsage = async function (leaveType, duration) {
+    const type = { ...this[leaveType] };
     if (!type) return this;
 
-    type.pending = Math.max(0, type.pending - duration); // Remove from pending
-    type.used += duration;                                // Add to used
+    type.pending = Math.max(0, (type.pending || 0) - duration); // Remove from pending
+    type.used = (type.used || 0) + duration;                    // Add to used
+    this[leaveType] = type;
     return await this.save();
 };
 
@@ -398,25 +378,25 @@ vacationBalanceSchema.methods.confirmUsage = async function (leaveType, duration
  * @param {String} reason - Reason for using vacation
  * @returns {Promise<VacationBalance>} Updated balance
  */
-vacationBalanceSchema.methods.useVacation = async function (leaveType, duration, reason) {
-    const type = this[leaveType];
+VacationBalance.prototype.useVacation = async function (leaveType, duration, reason) {
+    const type = { ...this[leaveType] };
     if (!type) return this;
 
     // Directly use available days (not pending days)
-    type.used += duration;                                // Add to used
-    type.available -= duration;                           // Remove from available
+    type.used = (type.used || 0) + duration;                    // Add to used
+    type.available = (type.available || 0) - duration;          // Remove from available
+    this[leaveType] = type;
 
     // Add history tracking
-    if (!this.history) {
-        this.history = [];
-    }
-    this.history.push({
+    const history = [...(this.history || [])];
+    history.push({
         type: leaveType,
         days: duration,
         action: 'used',
         date: new Date(),
         reason: reason
     });
+    this.history = history;
 
     return await this.save();
 };
@@ -429,24 +409,24 @@ vacationBalanceSchema.methods.useVacation = async function (leaveType, duration,
  * @param {String} reason - Reason for returning vacation
  * @returns {Promise<VacationBalance>} Updated balance
  */
-vacationBalanceSchema.methods.returnVacation = async function (leaveType, duration, reason) {
-    const type = this[leaveType];
+VacationBalance.prototype.returnVacation = async function (leaveType, duration, reason) {
+    const type = { ...this[leaveType] };
     if (!type) return this;
 
-    type.used = Math.max(0, type.used - duration);        // Remove from used
-    type.available += duration;                           // Add to available
+    type.used = Math.max(0, (type.used || 0) - duration);       // Remove from used
+    type.available = (type.available || 0) + duration;          // Add to available
+    this[leaveType] = type;
 
     // Add history tracking
-    if (!this.history) {
-        this.history = [];
-    }
-    this.history.push({
+    const history = [...(this.history || [])];
+    history.push({
         type: leaveType,
         days: duration,
         action: 'returned',
         date: new Date(),
         reason: reason
     });
+    this.history = history;
 
     return await this.save();
 };
@@ -455,13 +435,14 @@ vacationBalanceSchema.methods.returnVacation = async function (leaveType, durati
  * Initialize vacation balance for a new employee or current year
  * Creates a new balance record and calculates initial values
  * 
- * @param {ObjectId} employeeId - Employee's user ID
+ * @param {UUID} employeeId - Employee's user ID
+ * @param {String} tenantId - Tenant ID
  * @returns {Promise<VacationBalance>} Initialized balance
  * @throws {Error} If employee not found
  */
-vacationBalanceSchema.statics.initializeForEmployee = async function (employeeId) {
-    const User = mongoose.model('User');
-    const employee = await User.findById(employeeId);
+VacationBalance.initializeForEmployee = async function (employeeId, tenantId) {
+    const User = mainAppDb.models.User;
+    const employee = await User.findByPk(employeeId);
 
     if (!employee) {
         throw new Error('Employee not found');
@@ -470,12 +451,19 @@ vacationBalanceSchema.statics.initializeForEmployee = async function (employeeId
     const year = new Date().getFullYear();
 
     // Check if balance already exists for current year
-    let balance = await this.findOne({ employee: employeeId, year });
+    let balance = await this.findOne({ 
+        where: { 
+            employee: employeeId, 
+            year,
+            tenantId
+        } 
+    });
 
     if (!balance) {
         // Create new balance record
-        balance = new this({
+        balance = await this.create({
             employee: employeeId,
+            tenantId,
             year
         });
     }
@@ -488,44 +476,56 @@ vacationBalanceSchema.statics.initializeForEmployee = async function (employeeId
  * Carry over unused annual vacation days to next year
  * Maximum 5 days can be carried over
  * 
- * @param {ObjectId} employeeId - Employee's user ID
+ * @param {UUID} employeeId - Employee's user ID
+ * @param {String} tenantId - Tenant ID
  * @param {Number} currentYear - Current year to carry over from
  * @returns {Promise<VacationBalance>} Next year's balance with carry-over applied
  */
-vacationBalanceSchema.statics.carryOverToNextYear = async function (employeeId, currentYear) {
+VacationBalance.carryOverToNextYear = async function (employeeId, tenantId, currentYear) {
     const currentBalance = await this.findOne({
-        employee: employeeId,
-        year: currentYear
+        where: {
+            employee: employeeId,
+            tenantId,
+            year: currentYear
+        }
     });
 
     if (!currentBalance) return null;
 
     const maxCarryOver = 5; // Policy: maximum 5 days can be carried over
-    const unusedDays = Math.min(currentBalance.annual.available, maxCarryOver);
+    const unusedDays = Math.min(currentBalance.annual?.available || 0, maxCarryOver);
 
     const nextYear = currentYear + 1;
     let nextBalance = await this.findOne({
-        employee: employeeId,
-        year: nextYear
+        where: {
+            employee: employeeId,
+            tenantId,
+            year: nextYear
+        }
     });
 
     // Create or update next year's balance with carried over days
     if (!nextBalance) {
-        nextBalance = new this({
+        nextBalance = await this.create({
             employee: employeeId,
+            tenantId,
             year: nextYear,
             annual: {
+                allocated: 0,
+                used: 0,
+                pending: 0,
+                available: 0,
                 carriedOver: unusedDays
             }
         });
     } else {
-        nextBalance.annual.carriedOver = unusedDays;
+        const annual = { ...nextBalance.annual };
+        annual.carriedOver = unusedDays;
+        nextBalance.annual = annual;
+        await nextBalance.save();
     }
 
     return await nextBalance.recalculate();
 };
 
-// Compound indexes for query optimization
-vacationBalanceSchema.index({ tenantId: 1, employee: 1, year: 1 }, { unique: true }); // Ensure one balance per employee per year per tenant
-
-export default mongoose.model('VacationBalance', vacationBalanceSchema);
+export default VacationBalance;

@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import MedicalProfile from '../models/MedicalProfile.js';
 
 /**
@@ -24,16 +25,17 @@ class ClinicService {
     try {
       // Check if profile already exists for this user
       const existingProfile = await MedicalProfile.findOne({
-        tenantId: profileData.tenantId,
-        userId: profileData.userId
+        where: {
+          tenantId: profileData.tenantId,
+          userId: profileData.userId
+        }
       });
       
       if (existingProfile) {
         throw new Error('Medical profile already exists for this user');
       }
       
-      const profile = new MedicalProfile(profileData);
-      await profile.save();
+      const profile = await MedicalProfile.create(profileData);
       
       return profile;
     } catch (error) {
@@ -70,9 +72,16 @@ class ClinicService {
   async getMedicalProfileById(profileId, tenantId) {
     try {
       const profile = await MedicalProfile.findOne({
-        _id: profileId,
-        tenantId
-      }).populate('userId', 'firstName lastName email');
+        where: {
+          id: profileId,
+          tenantId
+        },
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['firstName', 'lastName', 'email']
+        }]
+      });
       
       if (!profile) {
         throw new Error('Medical profile not found');
@@ -109,8 +118,10 @@ class ClinicService {
   async updateMedicalProfile(profileId, tenantId, updateData, updatedBy) {
     try {
       const profile = await MedicalProfile.findOne({
-        _id: profileId,
-        tenantId
+        where: {
+          id: profileId,
+          tenantId
+        }
       });
       
       if (!profile) {
@@ -142,15 +153,17 @@ class ClinicService {
   async deleteMedicalProfile(profileId, tenantId) {
     try {
       const profile = await MedicalProfile.findOne({
-        _id: profileId,
-        tenantId
+        where: {
+          id: profileId,
+          tenantId
+        }
       });
       
       if (!profile) {
         throw new Error('Medical profile not found');
       }
       
-      await profile.deleteOne();
+      await profile.destroy();
       
       return { success: true, message: 'Medical profile deleted successfully' };
     } catch (error) {
@@ -168,15 +181,19 @@ class ClinicService {
   async addAllergy(profileId, tenantId, allergyData) {
     try {
       const profile = await MedicalProfile.findOne({
-        _id: profileId,
-        tenantId
+        where: {
+          id: profileId,
+          tenantId
+        }
       });
       
       if (!profile) {
         throw new Error('Medical profile not found');
       }
       
-      profile.allergies.push(allergyData);
+      const allergies = profile.allergies || [];
+      allergies.push(allergyData);
+      profile.allergies = allergies;
       await profile.save();
       
       return profile;
@@ -195,15 +212,19 @@ class ClinicService {
   async addChronicCondition(profileId, tenantId, conditionData) {
     try {
       const profile = await MedicalProfile.findOne({
-        _id: profileId,
-        tenantId
+        where: {
+          id: profileId,
+          tenantId
+        }
       });
       
       if (!profile) {
         throw new Error('Medical profile not found');
       }
       
-      profile.chronicConditions.push(conditionData);
+      const conditions = profile.chronicConditions || [];
+      conditions.push(conditionData);
+      profile.chronicConditions = conditions;
       await profile.save();
       
       return profile;
@@ -222,8 +243,10 @@ class ClinicService {
   async addEmergencyContact(profileId, tenantId, contactData) {
     try {
       const profile = await MedicalProfile.findOne({
-        _id: profileId,
-        tenantId
+        where: {
+          id: profileId,
+          tenantId
+        }
       });
       
       if (!profile) {
@@ -231,13 +254,15 @@ class ClinicService {
       }
       
       // If this is marked as primary, unmark other primary contacts
+      const contacts = profile.emergencyContacts || [];
       if (contactData.isPrimary) {
-        profile.emergencyContacts.forEach(contact => {
+        contacts.forEach(contact => {
           contact.isPrimary = false;
         });
       }
       
-      profile.emergencyContacts.push(contactData);
+      contacts.push(contactData);
+      profile.emergencyContacts = contacts;
       await profile.save();
       
       return profile;
@@ -256,8 +281,10 @@ class ClinicService {
   async updateInsurance(profileId, tenantId, insuranceData) {
     try {
       const profile = await MedicalProfile.findOne({
-        _id: profileId,
-        tenantId
+        where: {
+          id: profileId,
+          tenantId
+        }
       });
       
       if (!profile) {
@@ -280,10 +307,17 @@ class ClinicService {
    */
   async getProfilesWithCriticalAllergies(tenantId) {
     try {
-      const profiles = await MedicalProfile.find({
-        tenantId,
-        'allergies.severity': { $in: ['severe', 'life-threatening'] }
-      }).populate('userId', 'firstName lastName email');
+      const profiles = await MedicalProfile.findAll({
+        where: {
+          tenantId,
+          'allergies.severity': { [Op.in]: ['severe', 'life-threatening'] }
+        },
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['firstName', 'lastName', 'email']
+        }]
+      });
       
       return profiles;
     } catch (error) {

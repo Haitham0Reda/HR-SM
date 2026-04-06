@@ -1,188 +1,211 @@
 /**
- * Survey Notification Model
+ * Survey Notification Model (Sequelize)
  * 
  * Tracks survey-related notifications and reminders
  */
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
 
-const surveyNotificationSchema = new mongoose.Schema({
-    // Tenant ID for multi-tenancy
-    tenantId: {
-        type: String,
-        required: [true, 'Tenant ID is required'],
-        index: true,
-        trim: true
+const SurveyNotification = mainAppDb.define('SurveyNotification', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
     },
-
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
+    },
     // Survey reference
     survey: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Survey',
-        required: true,
-        index: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'surveys',
+            key: 'id'
+        }
     },
-
     // Notification type
     notificationType: {
-        type: String,
-        enum: [
-            'survey-assigned',    // Initial assignment
-            'survey-reminder',    // Reminder to complete
-            'survey-due-soon',    // Due date approaching
-            'survey-closed',      // Survey closed notification
-            'survey-published'    // Survey published notification
-        ],
-        required: true,
-        index: true
+        type: DataTypes.ENUM(
+            'survey-assigned',
+            'survey-reminder',
+            'survey-due-soon',
+            'survey-closed',
+            'survey-published'
+        ),
+        allowNull: false,
+        field: 'notification_type'
     },
-
-    // Recipients
-    recipients: [{
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
-        },
-        sent: {
-            type: Boolean,
-            default: false
-        },
-        sentAt: Date,
-        read: {
-            type: Boolean,
-            default: false
-        },
-        readAt: Date,
-        emailSent: {
-            type: Boolean,
-            default: false
-        },
-        emailSentAt: Date,
-        error: String
-    }],
-
-    // Message content
+    // Recipients - stored as JSONB array
+    recipients: {
+        type: DataTypes.JSONB,
+        defaultValue: []
+    },
+    // Message content - stored as JSONB
     message: {
-        subject: {
-            type: String,
-            required: true
-        },
-        body: {
-            type: String,
-            required: true
-        },
-        priority: {
-            type: String,
-            enum: ['low', 'normal', 'high', 'urgent'],
-            default: 'normal'
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: {
+            subject: '',
+            body: '',
+            priority: 'normal'
         }
     },
-
     // Metadata
     createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'created_by'
     },
-    scheduledFor: Date,
-    sentAt: Date,
-
-    // Statistics
+    scheduledFor: {
+        type: DataTypes.DATE,
+        field: 'scheduled_for'
+    },
+    sentAt: {
+        type: DataTypes.DATE,
+        field: 'sent_at'
+    },
+    // Statistics - stored as JSONB
     stats: {
-        totalRecipients: {
-            type: Number,
-            default: 0
-        },
-        sentCount: {
-            type: Number,
-            default: 0
-        },
-        readCount: {
-            type: Number,
-            default: 0
-        },
-        failedCount: {
-            type: Number,
-            default: 0
+        type: DataTypes.JSONB,
+        defaultValue: {
+            totalRecipients: 0,
+            sentCount: 0,
+            readCount: 0,
+            failedCount: 0
         }
     },
-
     // Status
     status: {
-        type: String,
-        enum: ['pending', 'sending', 'sent', 'failed', 'cancelled'],
-        default: 'pending',
-        index: true
+        type: DataTypes.ENUM('pending', 'sending', 'sent', 'failed', 'cancelled'),
+        defaultValue: 'pending'
     }
 }, {
-    timestamps: true
+    tableName: 'survey_notifications',
+    timestamps: true,
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['survey'] },
+        { fields: ['notification_type'] },
+        { fields: ['status'] },
+        { fields: ['tenant_id', 'survey', 'notification_type'] },
+        { fields: ['tenant_id', 'status', 'scheduled_for'] }
+    ]
 });
 
-// Compound indexes for tenant isolation and performance
-surveyNotificationSchema.index({ tenantId: 1, survey: 1, notificationType: 1 });
-surveyNotificationSchema.index({ tenantId: 1, 'recipients.user': 1 });
-surveyNotificationSchema.index({ tenantId: 1, status: 1, scheduledFor: 1 });
-
-// Method to mark as sent
-surveyNotificationSchema.methods.markAsSent = function () {
-    this.status = 'sent';
-    this.sentAt = new Date();
-    this.stats.sentCount = this.recipients.filter(r => r.sent).length;
-    this.stats.failedCount = this.recipients.filter(r => r.error).length;
+/**
+ * Define associations
+ */
+SurveyNotification.associate = (models) => {
+    SurveyNotification.belongsTo(models.Survey, {
+        foreignKey: 'survey',
+        as: 'surveyDetails'
+    });
+    SurveyNotification.belongsTo(models.User, {
+        foreignKey: 'createdBy',
+        as: 'creator'
+    });
 };
 
-// Method to mark recipient as read
-surveyNotificationSchema.methods.markAsRead = function (userId) {
-    const recipient = this.recipients.find(r => r.user.toString() === userId.toString());
+/**
+ * Instance method: Mark as sent
+ */
+SurveyNotification.prototype.markAsSent = async function () {
+    this.status = 'sent';
+    this.sentAt = new Date();
+    
+    const recipients = this.recipients || [];
+    const stats = { ...this.stats };
+    stats.sentCount = recipients.filter(r => r.sent).length;
+    stats.failedCount = recipients.filter(r => r.error).length;
+    this.stats = stats;
+    
+    return await this.save();
+};
+
+/**
+ * Instance method: Mark recipient as read
+ */
+SurveyNotification.prototype.markAsRead = async function (userId) {
+    const recipients = [...(this.recipients || [])];
+    const recipient = recipients.find(r => r.user === userId);
+    
     if (recipient && !recipient.read) {
         recipient.read = true;
         recipient.readAt = new Date();
-        this.stats.readCount = this.recipients.filter(r => r.read).length;
+        this.recipients = recipients;
+        
+        const stats = { ...this.stats };
+        stats.readCount = recipients.filter(r => r.read).length;
+        this.stats = stats;
+        
+        return await this.save();
     }
+    
+    return this;
 };
 
-// Static method to create survey assignment notification
-surveyNotificationSchema.statics.createAssignmentNotification = async function (survey, recipientIds, tenantId) {
-    const notification = new this({
+/**
+ * Static method: Create survey assignment notification
+ */
+SurveyNotification.createAssignmentNotification = async function (survey, recipientIds, tenantId) {
+    const notification = await this.create({
         tenantId,
-        survey: survey._id,
+        survey: survey.id,
         notificationType: 'survey-assigned',
         message: {
             subject: `New Survey: ${survey.title}`,
-            body: `You have been assigned a new survey${survey.settings.isMandatory ? ' (Mandatory)' : ''}. Please complete it by ${survey.settings.endDate ? new Date(survey.settings.endDate).toLocaleDateString() : 'as soon as possible'}.`,
-            priority: survey.settings.isMandatory ? 'high' : 'normal'
+            body: `You have been assigned a new survey${survey.settings?.isMandatory ? ' (Mandatory)' : ''}. Please complete it by ${survey.settings?.endDate ? new Date(survey.settings.endDate).toLocaleDateString() : 'as soon as possible'}.`,
+            priority: survey.settings?.isMandatory ? 'high' : 'normal'
         },
-        recipients: recipientIds.map(userId => ({ user: userId })),
+        recipients: recipientIds.map(userId => ({ user: userId, sent: false, read: false, emailSent: false })),
         stats: {
-            totalRecipients: recipientIds.length
+            totalRecipients: recipientIds.length,
+            sentCount: 0,
+            readCount: 0,
+            failedCount: 0
         }
     });
 
-    return await notification.save();
+    return notification;
 };
 
-// Static method to create reminder notification
-surveyNotificationSchema.statics.createReminderNotification = async function (survey, recipientIds, tenantId) {
-    const notification = new this({
+/**
+ * Static method: Create reminder notification
+ */
+SurveyNotification.createReminderNotification = async function (survey, recipientIds, tenantId) {
+    const notification = await this.create({
         tenantId,
-        survey: survey._id,
+        survey: survey.id,
         notificationType: 'survey-reminder',
         message: {
             subject: `Reminder: ${survey.title}`,
-            body: `This is a reminder to complete the survey "${survey.title}". ${survey.settings.endDate ? `Due date: ${new Date(survey.settings.endDate).toLocaleDateString()}` : ''}`,
-            priority: survey.settings.isMandatory ? 'high' : 'normal'
+            body: `This is a reminder to complete the survey "${survey.title}". ${survey.settings?.endDate ? `Due date: ${new Date(survey.settings.endDate).toLocaleDateString()}` : ''}`,
+            priority: survey.settings?.isMandatory ? 'high' : 'normal'
         },
-        recipients: recipientIds.map(userId => ({ user: userId })),
+        recipients: recipientIds.map(userId => ({ user: userId, sent: false, read: false, emailSent: false })),
         stats: {
-            totalRecipients: recipientIds.length
+            totalRecipients: recipientIds.length,
+            sentCount: 0,
+            readCount: 0,
+            failedCount: 0
         }
     });
 
-    return await notification.save();
+    return notification;
 };
 
-// Add withTenant static method for tenant-aware queries
-surveyNotificationSchema.statics.withTenant = function (tenantId) {
-    return this.find({ tenantId });
+/**
+ * Static method: Tenant-aware queries
+ */
+SurveyNotification.withTenant = function (tenantId) {
+    return this.findAll({ where: { tenantId } });
 };
 
-export default mongoose.model('SurveyNotification', surveyNotificationSchema);
+export default SurveyNotification;

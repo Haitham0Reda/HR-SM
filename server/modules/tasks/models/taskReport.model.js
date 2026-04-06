@@ -1,51 +1,105 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
 
-const taskReportSchema = new mongoose.Schema({
+const TaskReport = mainAppDb.define('TaskReport', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    tenantId: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id',
+        comment: 'Tenant identifier for multi-tenancy'
+    },
     taskId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Task',
-        required: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        field: 'task_id',
+        references: {
+            model: 'tasks',
+            key: 'id'
+        }
     },
     reportText: {
-        type: String,
-        required: true
+        type: DataTypes.TEXT,
+        allowNull: false,
+        field: 'report_text'
     },
     timeSpent: {
-        type: Number, // in minutes
-        min: 0
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        field: 'time_spent',
+        comment: 'Time spent in minutes',
+        validate: {
+            min: 0
+        }
     },
-    files: [{
-        filename: String,
-        originalName: String,
-        path: String,
-        size: Number,
-        mimeType: String
-    }],
+    files: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        comment: 'Array of file metadata objects'
+    },
     status: {
-        type: String,
-        enum: ['draft', 'submitted', 'approved', 'rejected'],
-        default: 'draft'
+        type: DataTypes.ENUM('draft', 'submitted', 'approved', 'rejected'),
+        defaultValue: 'draft',
+        allowNull: false
     },
-    reviewComments: String,
-    submittedAt: Date,
-    reviewedAt: Date,
+    reviewComments: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        field: 'review_comments'
+    },
+    submittedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: 'submitted_at'
+    },
+    reviewedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: 'reviewed_at'
+    },
     reviewedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    // Multi-tenant support
-    tenantId: {
-        type: String,
-        required: true,
-        index: true
+        type: DataTypes.UUID,
+        allowNull: true,
+        field: 'reviewed_by',
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     }
 }, {
-    timestamps: true
+    tableName: 'task_reports',
+    timestamps: true,
+    underscored: true,
+    indexes: [
+        {
+            fields: ['tenant_id']
+        },
+        {
+            fields: ['task_id']
+        },
+        {
+            fields: ['tenant_id', 'status']
+        },
+        {
+            fields: ['submitted_at']
+        }
+    ]
 });
 
-// Index for efficient querying
-taskReportSchema.index({ taskId: 1 });
-taskReportSchema.index({ tenantId: 1, status: 1 });
-taskReportSchema.index({ submittedAt: 1 });
+// Define associations
+TaskReport.associate = (models) => {
+    TaskReport.belongsTo(models.Task, {
+        foreignKey: 'taskId',
+        as: 'task'
+    });
+    TaskReport.belongsTo(models.User, {
+        foreignKey: 'reviewedBy',
+        as: 'reviewer'
+    });
+};
 
-export default mongoose.model('TaskReport', taskReportSchema);
+export default TaskReport;

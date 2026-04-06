@@ -1,60 +1,109 @@
-// Vacation Model - Moved to HR-Core module
-import mongoose from 'mongoose';
+/**
+ * Vacation Model (Sequelize) - Moved to HR-Core module
+ */
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
 
-const vacationSchema = new mongoose.Schema({
+const Vacation = mainAppDb.define('Vacation', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
     tenantId: {
-        type: String,
-        required: [true, 'Tenant ID is required'],
-        index: true,
-        trim: true
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        field: 'tenant_id'
     },
     employee: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     },
     department: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department'
+        type: DataTypes.UUID,
+        references: {
+            model: 'departments',
+            key: 'id'
+        }
     },
     vacationType: {
-        type: String,
-        enum: ['annual', 'sick', 'casual', 'unpaid', 'other'],
-        required: true
+        type: DataTypes.ENUM('annual', 'sick', 'casual', 'unpaid', 'other'),
+        allowNull: false,
+        field: 'vacation_type'
     },
     startDate: {
-        type: Date,
-        required: true
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'start_date'
     },
     endDate: {
-        type: Date,
-        required: true
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'end_date'
     },
     days: {
-        type: Number,
-        required: true
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false
     },
-    reason: String,
+    reason: {
+        type: DataTypes.TEXT
+    },
     status: {
-        type: String,
-        enum: ['pending', 'approved', 'rejected', 'cancelled'],
-        default: 'pending',
-        index: true
+        type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'),
+        defaultValue: 'pending'
     },
     approvedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        type: DataTypes.UUID,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        field: 'approved_by'
     },
-    approvedAt: Date,
-    rejectionReason: String,
-    notes: String
+    approvedAt: {
+        type: DataTypes.DATE,
+        field: 'approved_at'
+    },
+    rejectionReason: {
+        type: DataTypes.TEXT,
+        field: 'rejection_reason'
+    },
+    notes: {
+        type: DataTypes.TEXT
+    }
 }, {
-    timestamps: true
+    tableName: 'vacations',
+    timestamps: true,
+    underscored: true,
+    indexes: [
+        { fields: ['tenant_id'] },
+        { fields: ['employee'] },
+        { fields: ['status'] },
+        { fields: ['tenant_id', 'employee', 'status'] },
+        { fields: ['tenant_id', 'start_date', 'end_date'] }
+    ]
 });
 
-// Compound indexes for tenant isolation
-vacationSchema.index({ tenantId: 1, employee: 1, status: 1 });
-vacationSchema.index({ tenantId: 1, startDate: 1, endDate: 1 });
+/**
+ * Define associations
+ */
+Vacation.associate = (models) => {
+    Vacation.belongsTo(models.User, {
+        foreignKey: 'employee',
+        as: 'employeeDetails'
+    });
+    Vacation.belongsTo(models.User, {
+        foreignKey: 'approvedBy',
+        as: 'approver'
+    });
+    Vacation.belongsTo(models.Department, {
+        foreignKey: 'department',
+        as: 'departmentDetails'
+    });
+};
 
-export default mongoose.model('Vacation', vacationSchema);
+export default Vacation;
