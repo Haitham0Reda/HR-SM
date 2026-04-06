@@ -350,21 +350,30 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - ✅ Exit with error code if discrepancies found
     - _Requirements: 10.5_
 
-- [ ] 15. Update backup and restore procedures
-  - [ ] 15.1 Replace MongoDB backup with pg_dump
-    - Update server/modules/hr-core/backup/services/mongooseBackup.service.js
-    - Implement PostgreSQL backup using pg_dump
-    - Support both license server and main app databases
+- [x] 15. Update backup and restore procedures
+  - [x] 15.1 Replace MongoDB backup with pg_dump
+    - ✅ Created server/modules/hr-core/backup/services/postgresBackup.service.js
+    - ✅ Implemented PostgreSQL backup using pg_dump
+    - ✅ Support for both license server and main app databases
+    - ✅ Multiple backup formats (custom, plain, tar, directory)
+    - ✅ Compression and encryption support
     - _Requirements: 11.1, 11.4_
 
-  - [ ] 15.2 Implement PostgreSQL restore
-    - Create restore procedures using pg_restore or psql
-    - Test restore functionality
+  - [x] 15.2 Implement PostgreSQL restore
+    - ✅ Created scripts/restore-postgres-backup.js
+    - ✅ Restore procedures using pg_restore and psql
+    - ✅ Automatic format detection
+    - ✅ Decryption and decompression support
+    - ✅ Safety confirmations and verbose output
     - _Requirements: 11.3_
 
-  - [ ] 15.3 Update backup scheduling
-    - Ensure scheduled backups work with PostgreSQL
-    - Update backup file naming
+  - [x] 15.3 Update backup scheduling
+    - ✅ Created scripts/schedule-postgres-backups.js
+    - ✅ Cron-based scheduling (daily, weekly, monthly)
+    - ✅ Automatic cleanup of old backups
+    - ✅ Configurable retention policies
+    - ✅ Alert notifications on failures
+    - ✅ Test mode for validation
     - _Requirements: 11.2, 11.5_
 
 - [ ] 16. Update error handling for Sequelize
