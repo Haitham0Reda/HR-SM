@@ -1,7 +1,6 @@
 // testing/services/tenantRestrictionEnforcement.property.test.js
 import fc from 'fast-check';
-import mongoose from 'mongoose';
-import Tenant from '../../platform/tenants/models/Tenant.js';
+import Tenant from '../../models/Tenant.js';
 import tenantService from '../../platform/tenants/services/tenantService.js';
 import AppError from '../../core/errors/AppError.js';
 

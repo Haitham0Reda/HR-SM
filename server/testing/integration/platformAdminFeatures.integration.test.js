@@ -8,9 +8,8 @@
  */
 
 import request from 'supertest';
-import mongoose from 'mongoose';
 import app, { initializeRoutes } from '../../app.js';
-import Tenant from '../../platform/tenants/models/Tenant.js';
+import Tenant from '../../models/Tenant.js';
 import PlatformUser from '../../platform/models/PlatformUser.js';
 import { generatePlatformToken } from '../../platform/middleware/platformAuth.js';
 

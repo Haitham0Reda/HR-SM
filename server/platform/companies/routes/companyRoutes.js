@@ -1,8 +1,8 @@
 import express from 'express';
 import { authenticatePlatformUser } from '../../middleware/platformAuth.js';
 import { validatePlatformPermission } from '../../middleware/platformPermissions.js';
-import Company from '../../models/Company.js';
-import ModuleManagementService from '../../services/ModuleManagementService.js';
+import Company from '../../models/Company.sequelize.js';
+import ModuleManagementService from '../../services/ModuleManagementService.sequelize.js';
 
 const router = express.Router();
 

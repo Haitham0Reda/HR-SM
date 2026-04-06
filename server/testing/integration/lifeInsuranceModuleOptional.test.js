@@ -15,7 +15,7 @@ import { tenantContext } from '../../core/middleware/tenantContext.js';
 import { dynamicModuleLoader } from '../../middleware/dynamicModuleLoader.middleware.js';
 import { requireModuleAvailability } from '../../middleware/dynamicModuleLoader.middleware.js';
 import moduleAvailabilityRoutes from '../../routes/moduleAvailability.routes.js';
-import Tenant from '../../platform/tenants/models/Tenant.js';
+import Tenant from '../../models/Tenant.js';
 import { MODULES } from '../../shared/constants/modules.js';
 
 describe('Life Insurance Module Optional Integration', () => {

@@ -8,9 +8,66 @@
 
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import { configureSequelizeLogging } from '../utils/sequelizeLogger.js';
+import { connectionPoolMonitor } from '../monitoring/connectionPoolMonitor.js';
+import { performanceMonitor } from '../monitoring/performanceMonitor.js';
 
 // Load environment variables
 dotenv.config();
+
+/**
+ * Get SSL configuration based on environment variables
+ * Supports custom SSL certificates for secure connections
+ * @returns {Object|boolean} SSL configuration object or false
+ */
+const getSSLConfig = () => {
+    // If PG_SSL_ENABLED is explicitly set to true, use custom SSL configuration
+    if (process.env.PG_SSL_ENABLED === 'true') {
+        const sslConfig = {
+            require: true,
+            rejectUnauthorized: process.env.PG_SSL_REJECT_UNAUTHORIZED !== 'false'
+        };
+
+        // Add custom SSL certificates if provided
+        if (process.env.PG_SSL_CA_PATH) {
+            try {
+                sslConfig.ca = fs.readFileSync(process.env.PG_SSL_CA_PATH).toString();
+            } catch (error) {
+                console.warn(`Warning: Could not read SSL CA certificate from ${process.env.PG_SSL_CA_PATH}`);
+            }
+        }
+
+        if (process.env.PG_SSL_KEY_PATH) {
+            try {
+                sslConfig.key = fs.readFileSync(process.env.PG_SSL_KEY_PATH).toString();
+            } catch (error) {
+                console.warn(`Warning: Could not read SSL key from ${process.env.PG_SSL_KEY_PATH}`);
+            }
+        }
+
+        if (process.env.PG_SSL_CERT_PATH) {
+            try {
+                sslConfig.cert = fs.readFileSync(process.env.PG_SSL_CERT_PATH).toString();
+            } catch (error) {
+                console.warn(`Warning: Could not read SSL certificate from ${process.env.PG_SSL_CERT_PATH}`);
+            }
+        }
+
+        return sslConfig;
+    }
+
+    // Default: Enable SSL in production with basic configuration
+    if (process.env.NODE_ENV === 'production') {
+        return {
+            require: true,
+            rejectUnauthorized: false
+        };
+    }
+
+    // Development: No SSL
+    return false;
+};
 
 // License Server Database Connection
 export const licenseServerDb = new Sequelize(process.env.LICENSE_DATABASE_URL, {
@@ -24,10 +81,7 @@ export const licenseServerDb = new Sequelize(process.env.LICENSE_DATABASE_URL, {
     },
     timezone: '+00:00', // UTC
     dialectOptions: {
-        ssl: process.env.NODE_ENV === 'production' ? {
-            require: true,
-            rejectUnauthorized: false
-        } : false
+        ssl: getSSLConfig()
     },
     define: {
         timestamps: true,
@@ -48,10 +102,7 @@ export const mainAppDb = new Sequelize(process.env.MAIN_DATABASE_URL, {
     },
     timezone: '+00:00', // UTC
     dialectOptions: {
-        ssl: process.env.NODE_ENV === 'production' ? {
-            require: true,
-            rejectUnauthorized: false
-        } : false
+        ssl: getSSLConfig()
     },
     define: {
         timestamps: true,
@@ -74,6 +125,7 @@ export const connectDatabases = async () => {
         console.log(`  Host: ${licenseServerDb.config.host}`);
         console.log(`  Database: ${licenseServerDb.config.database}`);
         console.log(`  Pool: max=${licenseServerDb.config.pool.max}, min=${licenseServerDb.config.pool.min}`);
+        console.log(`  SSL: ${licenseServerDb.config.dialectOptions.ssl ? 'enabled' : 'disabled'}`);
 
         // Authenticate Main Application Database
         await mainAppDb.authenticate();
@@ -81,6 +133,24 @@ export const connectDatabases = async () => {
         console.log(`  Host: ${mainAppDb.config.host}`);
         console.log(`  Database: ${mainAppDb.config.database}`);
         console.log(`  Pool: max=${mainAppDb.config.pool.max}, min=${mainAppDb.config.pool.min}`);
+        console.log(`  SSL: ${mainAppDb.config.dialectOptions.ssl ? 'enabled' : 'disabled'}`);
+
+        // Configure logging for both databases
+        configureSequelizeLogging(licenseServerDb, 'licenseServer');
+        configureSequelizeLogging(mainAppDb, 'mainApp');
+
+        // Register pools for monitoring
+        connectionPoolMonitor.registerPool('licenseServer', licenseServerDb);
+        connectionPoolMonitor.registerPool('mainApp', mainAppDb);
+
+        // Start monitoring if enabled
+        if (process.env.ENABLE_PERFORMANCE_MONITORING !== 'false') {
+            performanceMonitor.startMonitoring(
+                parseInt(process.env.PERFORMANCE_MONITORING_INTERVAL) || 60000
+            );
+            connectionPoolMonitor.startMonitoring();
+            console.log('✓ Performance monitoring enabled');
+        }
 
         // Set up connection event handlers
         setupConnectionHandlers();
@@ -135,6 +205,14 @@ const setupGracefulShutdown = () => {
         console.log(`\n${signal} received. Closing database connections...`);
         
         try {
+            // Stop monitoring
+            if (performanceMonitor.isMonitoring) {
+                performanceMonitor.stopMonitoring();
+            }
+            if (connectionPoolMonitor.isMonitoring) {
+                connectionPoolMonitor.stopMonitoring();
+            }
+
             await licenseServerDb.close();
             console.log('✓ License Server database connection closed');
             
@@ -172,7 +250,8 @@ export const checkDatabaseHealth = async () => {
             host: licenseServerDb.config.host,
             database: licenseServerDb.config.database,
             poolSize: licenseServerDb.connectionManager.pool.size,
-            poolAvailable: licenseServerDb.connectionManager.pool.available
+            poolAvailable: licenseServerDb.connectionManager.pool.available,
+            ssl: licenseServerDb.config.dialectOptions.ssl ? 'enabled' : 'disabled'
         };
     } catch (error) {
         health.licenseServer = {
@@ -189,7 +268,8 @@ export const checkDatabaseHealth = async () => {
             host: mainAppDb.config.host,
             database: mainAppDb.config.database,
             poolSize: mainAppDb.connectionManager.pool.size,
-            poolAvailable: mainAppDb.connectionManager.pool.available
+            poolAvailable: mainAppDb.connectionManager.pool.available,
+            ssl: mainAppDb.config.dialectOptions.ssl ? 'enabled' : 'disabled'
         };
     } catch (error) {
         health.mainApp = {

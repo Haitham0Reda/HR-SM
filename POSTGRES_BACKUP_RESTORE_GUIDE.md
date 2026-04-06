@@ -605,6 +605,13 @@ PostgreSQL backup and restore procedures provide:
 - ✅ Retention policies
 - ✅ Monitoring and alerts
 
+**Related Documentation**:
+- [Database Schema Documentation](./docs/DATABASE_SCHEMA_POSTGRESQL.md)
+- [Sequelize Models Reference](./docs/SEQUELIZE_MODELS_REFERENCE.md)
+- [Migration Runbook](./MIGRATION_RUNBOOK.md)
+- [PostgreSQL Configuration Guide](./POSTGRESQL_CONFIGURATION_GUIDE.md)
+- [Troubleshooting Guide](./docs/POSTGRESQL_TROUBLESHOOTING.md)
+
 **Next Steps**:
 1. Set up automated backups
 2. Test restore procedures

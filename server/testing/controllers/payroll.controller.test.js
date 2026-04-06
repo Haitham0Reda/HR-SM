@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 import Payroll from '../../modules/payroll/models/payroll.model.js';
 import * as payrollController from '../../modules/payroll/controllers/payroll.controller.js';
 import { createMockResponse, createMockRequest, createTestUser, createTestDepartment, cleanupTestData } from './testHelpers.js';
@@ -11,14 +11,14 @@ describe('Payroll Controller - All 5 Functions', () => {
 
     beforeEach(async () => {
         testorganization = await createTestDepartment();
-        testUser = await createTestUser(testorganization._id, null, null);
+        testUser = await createTestUser(testorganization.id, null, null);
         
-        mockReq = createMockRequest({ user: { id: testUser._id } });
+        mockReq = createMockRequest({ user: { id: testUser.id } });
         mockRes = createMockResponse();
     });
 
     afterEach(async () => {
-        await Payroll.deleteMany({});
+        await Payroll.destroy({ where: {}, force: true });
         await cleanupTestData();
     });
 
@@ -60,7 +60,7 @@ describe('Payroll Controller - All 5 Functions', () => {
         });
 
         it('should handle invalid ID in getPayrollById', async () => {
-            mockReq.params.id = 'invalid-id';
+            mockReq.params.id = 'invalid-uuid';
             await payrollController.getPayrollById(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
             expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
@@ -75,7 +75,7 @@ describe('Payroll Controller - All 5 Functions', () => {
         });
 
         it('should handle invalid ID in updatePayroll', async () => {
-            mockReq.params.id = 'invalid-id';
+            mockReq.params.id = 'invalid-uuid';
             await payrollController.updatePayroll(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
             expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);
@@ -90,7 +90,7 @@ describe('Payroll Controller - All 5 Functions', () => {
         });
 
         it('should handle invalid ID in deletePayroll', async () => {
-            mockReq.params.id = 'invalid-id';
+            mockReq.params.id = 'invalid-uuid';
             await payrollController.deletePayroll(mockReq, mockRes);
             expect(mockRes.statusCode).toBeDefined();
             expect([200, 201, 400, 404, 500]).toContain(mockRes.statusCode);

@@ -293,8 +293,9 @@ const sequelizeLogger = new SequelizeLogger();
 /**
  * Configure Sequelize logging options
  * @param {Object} sequelize - Sequelize instance
+ * @param {string} dbName - Database name for logging context
  */
-function configureSequelizeLogging(sequelize) {
+function configureSequelizeLogging(sequelize, dbName = 'unknown') {
   // Set up query logging
   sequelize.options.logging = sequelizeLogger.createSequelizeLogger();
 
@@ -305,6 +306,7 @@ function configureSequelizeLogging(sequelize) {
   // Hook into query lifecycle
   sequelize.addHook('beforeQuery', (options) => {
     options.startTime = Date.now();
+    options.dbName = dbName;
   });
 
   sequelize.addHook('afterQuery', (options, query) => {
@@ -315,13 +317,16 @@ function configureSequelizeLogging(sequelize) {
       executionTime,
       {
         type: options.type,
-        model: options.model?.name
+        model: options.model?.name,
+        database: options.dbName
       }
     );
   });
 
   // Hook into transaction lifecycle
   sequelize.addHook('beforeTransaction', (transaction) => {
+    transaction.startTime = Date.now();
+    transaction.dbName = dbName;
     sequelizeLogger.logTransactionStart(transaction);
   });
 
@@ -335,6 +340,7 @@ function configureSequelizeLogging(sequelize) {
   });
 
   logger.info('Sequelize logging configured', {
+    database: dbName,
     slowQueryThreshold: sequelizeLogger.slowQueryThreshold,
     logAllQueries: sequelizeLogger.logAllQueries
   });

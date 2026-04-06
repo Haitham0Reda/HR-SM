@@ -9,9 +9,8 @@
  */
 
 import fc from 'fast-check';
-import mongoose from 'mongoose';
 import { randomUUID } from 'crypto';
-import Tenant from '../../platform/tenants/models/Tenant.js';
+import Tenant from '../../models/Tenant.js';
 import User from '../../modules/hr-core/users/models/user.model.js';
 import Department from '../../modules/hr-core/users/models/department.model.js';
 import { generateTenantToken, verifyTenantToken } from '../../core/auth/tenantAuth.js';

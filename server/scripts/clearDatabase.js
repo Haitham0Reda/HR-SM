@@ -79,7 +79,7 @@ import ThemeConfig from '../modules/theme/models/themeConfig.model.js';
 // Platform Models
 import Company from '../platform/models/Company.js';
 import PlatformUser from '../platform/models/PlatformUser.js';
-import Tenant from '../platform/tenants/models/Tenant.js';
+import Tenant from '../models/Tenant.js';
 
 // Platform System Models
 import License from '../platform/system/models/license.model.js';

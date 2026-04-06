@@ -1,6 +1,4 @@
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import Tenant from '../../platform/tenants/models/Tenant.js';
+import Tenant from '../../models/Tenant.js';
 
 describe('Enhanced Tenant Model Integration Tests', () => {
   let mongoServer;

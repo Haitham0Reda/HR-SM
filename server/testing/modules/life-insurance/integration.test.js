@@ -17,7 +17,7 @@ import User from '../../../modules/hr-core/users/models/user.model.js';
 import InsurancePolicy from '../../../modules/life-insurance/models/InsurancePolicy.js';
 import FamilyMember from '../../../modules/life-insurance/models/FamilyMember.js';
 import InsuranceClaim from '../../../modules/life-insurance/models/InsuranceClaim.js';
-import Tenant from '../../../platform/tenants/models/Tenant.js';
+import Tenant from '../../../models/Tenant.js';
 import { ROLES, MODULES } from '../../../shared/constants/modules.js';
 
 describe('Life Insurance Module - Integration Tests', () => {

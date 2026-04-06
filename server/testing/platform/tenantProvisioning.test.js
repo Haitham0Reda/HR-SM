@@ -9,8 +9,7 @@
  * Requirements: 5.3, 18.1
  */
 
-import mongoose from 'mongoose';
-import Tenant from '../../platform/tenants/models/Tenant.js';
+import Tenant from '../../models/Tenant.js';
 import User from '../../modules/hr-core/users/models/user.model.js';
 import tenantProvisioningService from '../../platform/tenants/services/tenantProvisioningService.js';
 import AppError from '../../core/errors/AppError.js';

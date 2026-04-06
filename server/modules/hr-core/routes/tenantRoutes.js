@@ -2,7 +2,7 @@ import express from 'express';
 import { requireAuth, requireRole } from '../../../shared/middleware/auth.js';
 import { ROLES } from '../../../shared/constants/modules.js';
 import TenantConfig from '../models/TenantConfig.js';
-import Tenant from '../../../platform/tenants/models/Tenant.js';
+import Tenant from '../../../models/Tenant.js';
 import { clearModuleCache } from '../../../shared/middleware/moduleGuard.js';
 
 const router = express.Router();
