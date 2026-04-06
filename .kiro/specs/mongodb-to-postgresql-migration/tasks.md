@@ -425,44 +425,60 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - ✅ Improve JOIN performance
     - _Requirements: 13.4_
 
-- [ ] 18. Update test suite for PostgreSQL
-  - [ ] 18.1 Configure test database
-    - Set up PostgreSQL test database
-    - Update test configuration
+- [x] 18. Update test suite for PostgreSQL
+  - [x] 18.1 Configure test database
+    - ✅ Created test/setup/postgres-test-config.js
+    - ✅ Set up PostgreSQL test databases (main and license)
+    - ✅ Created Jest configuration (jest.config.postgres.js)
+    - ✅ Global setup and teardown scripts
+    - ✅ Database initialization and cleanup utilities
     - _Requirements: 15.1_
 
-  - [ ] 18.2 Update unit tests
-    - Replace Mongoose mocks with Sequelize mocks
-    - Update test data setup
-    - Update assertions for Sequelize models
+  - [x] 18.2 Update unit tests
+    - ✅ Created test/setup/jest-setup-postgres.js
+    - ✅ Replace Mongoose mocks with Sequelize mocks
+    - ✅ Update test data setup with createTestTenant, createTestUser
+    - ✅ Update assertions for Sequelize models (UUID, tenant_id)
+    - ✅ Example test file: test/examples/user.service.postgres.test.js
     - _Requirements: 15.3, 15.4_
 
-  - [ ] 18.3 Update integration tests
-    - Update database setup and teardown
-    - Use Sequelize for test data
+  - [x] 18.3 Update integration tests
+    - ✅ Database setup and teardown in beforeAll/afterAll
+    - ✅ Table cleanup in beforeEach for test isolation
+    - ✅ Use Sequelize for test data creation
+    - ✅ Transaction support for test isolation
     - _Requirements: 15.2_
 
-  - [ ] 18.4 Add property-based tests
-    - Write property tests for tenant isolation
-    - Write property tests for data migration
-    - Write property tests for transaction atomicity
+  - [x] 18.4 Add property-based tests
+    - ✅ Created test/property-based/tenant-isolation.property.test.js
+    - ✅ Property tests for tenant isolation (queries, updates, deletes)
+    - ✅ Property tests for cross-tenant access prevention
+    - ✅ Uses fast-check for property-based testing
+    - ✅ 10+ test runs per property with random data
     - _Requirements: All correctness properties_
 
-- [ ] 19. Verify license validation between databases
-  - [ ] 19.1 Test license validation flow
-    - Verify main app queries license server database
-    - Test license validation API endpoints
-    - Verify cache fallback works
+- [x] 19. Verify license validation between databases
+  - [x] 19.1 Test license validation flow
+    - ✅ Created test/integration/license-validation.postgres.test.js
+    - ✅ Verify main app queries license server database
+    - ✅ Test license validation API endpoints
+    - ✅ Verify cache fallback works
+    - ✅ Test expired and inactive license handling
     - _Requirements: 21.1, 21.2, 21.3, 21.5_
 
-  - [ ] 19.2 Test cache synchronization
-    - Verify cache updates after license changes
-    - Test cache invalidation
+  - [x] 19.2 Test cache synchronization
+    - ✅ Verify cache updates after license changes
+    - ✅ Test cache invalidation
+    - ✅ Test cache staleness detection (24-hour threshold)
+    - ✅ Test cache refresh mechanism
     - _Requirements: 21.4, 21.7_
 
-  - [ ] 19.3 Verify API contract preservation
-    - Ensure request/response formats unchanged
-    - Test all license endpoints
+  - [x] 19.3 Verify API contract preservation
+    - ✅ Ensure request/response formats unchanged
+    - ✅ Test all license endpoints
+    - ✅ Verify license validation response format
+    - ✅ Verify tenant info response format
+    - ✅ Test module access control
     - _Requirements: 21.6_
 
 - [ ] 20. Update configuration management
