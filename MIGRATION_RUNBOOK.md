@@ -4,6 +4,44 @@
 
 This runbook provides step-by-step instructions for migrating data from MongoDB to PostgreSQL. Follow these steps carefully to ensure a successful migration.
 
+## Pre-Migration Checklist
+
+Before starting the migration, ensure all items are checked:
+
+### Infrastructure
+- [ ] PostgreSQL 14+ installed and running
+- [ ] MongoDB 4.4+ accessible
+- [ ] Sufficient disk space (3x current MongoDB size)
+- [ ] Network connectivity between databases
+- [ ] Backup storage configured
+
+### Access & Permissions
+- [ ] PostgreSQL superuser access
+- [ ] MongoDB read access to all databases
+- [ ] File system write permissions for backups
+- [ ] Environment variables configured
+
+### Application
+- [ ] All Sequelize models created
+- [ ] Migration scripts tested in development
+- [ ] Validation scripts ready
+- [ ] Rollback plan documented
+- [ ] Team trained on new system
+
+### Communication
+- [ ] Stakeholders notified
+- [ ] Maintenance window scheduled
+- [ ] User communication sent
+- [ ] Support team briefed
+- [ ] Escalation contacts identified
+
+### Testing
+- [ ] Dry run completed successfully
+- [ ] Sample data migrated and validated
+- [ ] Performance benchmarks established
+- [ ] Test suite passing with PostgreSQL
+- [ ] License validation tested
+
 ## Prerequisites
 
 ### 1. Environment Setup
@@ -514,15 +552,217 @@ Recommended maintenance window for production migration:
 - **DevOps Team**: devops@company.com
 - **On-Call Engineer**: +1-XXX-XXX-XXXX
 
+## Pre-Migration Checklist
+
+Before starting the migration, ensure all items are checked:
+
+### Infrastructure
+- [ ] PostgreSQL 14+ installed and running
+- [ ] MongoDB 4.4+ accessible
+- [ ] Sufficient disk space (3x current MongoDB size)
+- [ ] Network connectivity between databases
+- [ ] Backup storage configured
+
+### Access & Permissions
+- [ ] PostgreSQL superuser access
+- [ ] MongoDB read access to all databases
+- [ ] File system write permissions for backups
+- [ ] Environment variables configured
+
+### Application
+- [ ] All Sequelize models created
+- [ ] Migration scripts tested in development
+- [ ] Validation scripts ready
+- [ ] Rollback plan documented
+- [ ] Team trained on new system
+
+### Communication
+- [ ] Stakeholders notified
+- [ ] Maintenance window scheduled
+- [ ] User communication sent
+- [ ] Support team briefed
+- [ ] Escalation contacts identified
+
+### Testing
+- [ ] Dry run completed successfully
+- [ ] Sample data migrated and validated
+- [ ] Performance benchmarks established
+- [ ] Test suite passing with PostgreSQL
+- [ ] License validation tested
+
+## Post-Migration Verification
+
+After migration, verify these critical items:
+
+### Data Integrity
+- [ ] Record counts match between MongoDB and PostgreSQL
+- [ ] No validation errors reported
+- [ ] All relationships intact
+- [ ] Foreign key constraints valid
+- [ ] Unique constraints enforced
+
+### Application Functionality
+- [ ] User authentication works
+- [ ] CRUD operations successful
+- [ ] License validation functional
+- [ ] Multi-tenant isolation verified
+- [ ] API endpoints responding correctly
+
+### Performance
+- [ ] Query response times acceptable
+- [ ] Connection pool stable
+- [ ] No memory leaks
+- [ ] CPU usage normal
+- [ ] Disk I/O reasonable
+
+### Monitoring
+- [ ] Application logs clean
+- [ ] Database logs reviewed
+- [ ] Error rates normal
+- [ ] Slow query log configured
+- [ ] Alerts configured
+
+### Security
+- [ ] SSL connections enabled
+- [ ] Access controls verified
+- [ ] Audit logging active
+- [ ] Sensitive data encrypted
+- [ ] Backup encryption enabled
+
+## Common Migration Patterns
+
+### Pattern 1: Incremental Migration
+
+Migrate tenants one at a time to reduce risk:
+
+```bash
+# Get list of tenants
+node -e "
+  const mongoose = require('mongoose');
+  mongoose.connect(process.env.MONGODB_URI).then(async () => {
+    const admin = mongoose.connection.db.admin();
+    const { databases } = await admin.listDatabases();
+    databases.forEach(db => console.log(db.name));
+    process.exit(0);
+  });
+"
+
+# Migrate each tenant
+for tenant in tenant1 tenant2 tenant3; do
+  echo "Migrating $tenant..."
+  node scripts/migrate-mongo-to-postgres.js --tenant=$tenant
+  node scripts/validate-migration.js --tenant=$tenant
+  
+  if [ $? -eq 0 ]; then
+    echo "✓ $tenant migrated successfully"
+  else
+    echo "✗ $tenant migration failed"
+    exit 1
+  fi
+done
+```
+
+### Pattern 2: Parallel Migration
+
+Migrate multiple collections simultaneously:
+
+```bash
+# Migrate collections in parallel
+node scripts/migrate-mongo-to-postgres.js --collection=users &
+node scripts/migrate-mongo-to-postgres.js --collection=departments &
+node scripts/migrate-mongo-to-postgres.js --collection=attendances &
+wait
+
+echo "All collections migrated"
+```
+
+### Pattern 3: Blue-Green Deployment
+
+Run both databases simultaneously during transition:
+
+```bash
+# 1. Migrate data to PostgreSQL
+node scripts/migrate-mongo-to-postgres.js
+
+# 2. Run application with dual writes (MongoDB + PostgreSQL)
+export DUAL_WRITE_MODE=true
+pm2 restart hr-sm
+
+# 3. Monitor for 24-48 hours
+
+# 4. Switch to PostgreSQL only
+export DUAL_WRITE_MODE=false
+export USE_MONGODB=false
+pm2 restart hr-sm
+
+# 5. Keep MongoDB as backup for 30 days
+```
+
+## Migration Metrics
+
+Track these metrics during migration:
+
+### Performance Metrics
+- **Migration Speed**: Records per second
+- **Batch Processing Time**: Time per batch
+- **Total Migration Time**: Start to finish
+- **Downtime**: Actual vs. planned
+
+### Data Metrics
+- **Total Records**: MongoDB vs. PostgreSQL
+- **Data Size**: Before and after
+- **Compression Ratio**: Storage efficiency
+- **Index Size**: Index overhead
+
+### Quality Metrics
+- **Validation Pass Rate**: Percentage of records validated
+- **Error Rate**: Errors per 1000 records
+- **Data Loss**: Missing records
+- **Corruption**: Invalid data
+
+### Example Metrics Report
+
+```
+Migration Metrics Report
+========================
+Start Time: 2026-04-06 02:00:00
+End Time: 2026-04-06 04:30:00
+Duration: 2h 30m
+
+Records Migrated:
+- License Server: 1,250 records
+- Main Application: 125,000 records
+- Total: 126,250 records
+
+Migration Speed:
+- Average: 14 records/second
+- Peak: 25 records/second
+
+Data Size:
+- MongoDB: 2.5 GB
+- PostgreSQL: 1.8 GB (28% reduction)
+
+Validation:
+- Pass Rate: 100%
+- Errors: 0
+- Warnings: 3 (non-critical)
+
+Status: ✓ SUCCESS
+```
+
 ## Additional Resources
 
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
 - [Sequelize Documentation](https://sequelize.org/docs/)
-- [Migration Best Practices](./MIGRATION_BEST_PRACTICES.md)
+- [Database Schema Documentation](./docs/DATABASE_SCHEMA_POSTGRESQL.md)
+- [Sequelize Models Reference](./docs/SEQUELIZE_MODELS_REFERENCE.md)
+- [PostgreSQL Configuration Guide](./POSTGRESQL_CONFIGURATION_GUIDE.md)
+- [Backup and Restore Guide](./POSTGRES_BACKUP_RESTORE_GUIDE.md)
 - [Transaction Usage Guide](./TRANSACTION_USAGE_GUIDE.md)
+- [Troubleshooting Guide](./docs/POSTGRESQL_TROUBLESHOOTING.md)
 
 ---
 
 **Last Updated**: April 6, 2026  
-**Version**: 1.0  
+**Version**: 1.1  
 **Status**: Ready for Use

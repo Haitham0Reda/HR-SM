@@ -10,9 +10,8 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
-import Tenant from './platform/tenants/models/Tenant.js';
+import Tenant from './models/Tenant.js';
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);

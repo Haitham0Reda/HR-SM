@@ -7,8 +7,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import archiver from 'archiver';
-import { getLoggerForTenant, getCompanyLogStats } from '../utils/companyLogger.js';
-import Tenant from '../platform/tenants/models/Tenant.js';
+import { getCompanyLogStats } from '../utils/companyLogger.js';
+import Tenant from '../models/Tenant.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

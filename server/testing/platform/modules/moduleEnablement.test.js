@@ -8,9 +8,8 @@
  */
 
 import request from 'supertest';
-import mongoose from 'mongoose';
 import express from 'express';
-import Tenant from '../../../platform/tenants/models/Tenant.js';
+import Tenant from '../../../models/Tenant.js';
 import moduleManagementService from '../../../platform/modules/services/moduleManagementService.js';
 import moduleLoader from '../../../core/registry/moduleLoader.js';
 import moduleRegistry from '../../../core/registry/moduleRegistry.js';

@@ -1,5 +1,5 @@
 import fc from 'fast-check';
-import Tenant from '../../platform/tenants/models/Tenant.js';
+import Tenant from '../../models/Tenant.js';
 import tenantService from '../../platform/tenants/services/tenantService.js';
 
 describe('Bulk Operation Atomicity Property-Based Tests', () => {

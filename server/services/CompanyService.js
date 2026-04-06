@@ -2,12 +2,13 @@
  * Company Service
  * 
  * Business logic layer for company operations
- * Updated to use License Server API for tenant metadata (Requirements: 4.1, 4.2, 4.3)
+ * Updated to use License Server API for tenant metadata and Sequelize for local operations
  */
 
-import Company from '../platform/models/Company.js';
+import Company from '../platform/models/Company.sequelize.js';
 import { createLicenseDataService } from './licenseDataService.js';
 import logger from '../utils/logger.js';
+import { Op } from 'sequelize';
 
 // Initialize License Data Service
 const licenseDataService = createLicenseDataService({
@@ -194,13 +195,15 @@ class CompanyService {
    */
   async updateCompanyEmailDomain(tenantId, emailDomain) {
     try {
-      const company = await Company.findOneAndUpdate(
-        { slug: tenantId },
+      const [updatedCount, [company]] = await Company.update(
         { emailDomain },
-        { new: true, runValidators: true }
+        {
+          where: { slug: tenantId },
+          returning: true
+        }
       );
       
-      if (!company) {
+      if (updatedCount === 0) {
         throw new Error('Company not found');
       }
       
@@ -217,12 +220,11 @@ class CompanyService {
    */
   async createCompany(companyData) {
     try {
-      const company = new Company(companyData);
-      await company.save();
+      const company = await Company.create(companyData);
       return company;
     } catch (error) {
-      if (error.code === 11000) {
-        const field = Object.keys(error.keyPattern)[0];
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const field = error.errors[0]?.path || 'field';
         throw new Error(`${field.charAt(0).toUpperCase() + field.slice(1)} already exists`);
       }
       throw new Error(`Failed to create company: ${error.message}`);
@@ -239,28 +241,28 @@ class CompanyService {
     try {
       const { status, plan, page = 1, limit = 20, search } = filters;
       
-      const filter = {};
+      const where = {};
       
-      if (status) filter.status = status;
-      if (plan) filter['subscription.plan'] = plan;
+      if (status) where.status = status;
+      if (plan) where['subscription.plan'] = plan;
       
       if (search) {
-        filter.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { slug: { $regex: search, $options: 'i' } },
-          { adminEmail: { $regex: search, $options: 'i' } },
-          { emailDomain: { $regex: search, $options: 'i' } }
+        where[Op.or] = [
+          { name: { [Op.iLike]: `%${search}%` } },
+          { slug: { [Op.iLike]: `%${search}%` } },
+          { adminEmail: { [Op.iLike]: `%${search}%` } },
+          { emailDomain: { [Op.iLike]: `%${search}%` } }
         ];
       }
 
       const queryOptions = {
-        sort: { createdAt: -1 },
+        where,
+        order: [['createdAt', 'DESC']],
         limit: parseInt(limit),
-        skip: (parseInt(page) - 1) * parseInt(limit)
+        offset: (parseInt(page) - 1) * parseInt(limit)
       };
 
-      const companies = await Company.find(filter, null, queryOptions);
-      const count = await Company.countDocuments(filter);
+      const { rows: companies, count } = await Company.findAndCountAll(queryOptions);
 
       return {
         companies,
@@ -283,20 +285,22 @@ class CompanyService {
    */
   async updateCompany(tenantId, updateData) {
     try {
-      const company = await Company.findOneAndUpdate(
-        { slug: tenantId },
+      const [updatedCount, [company]] = await Company.update(
         updateData,
-        { new: true, runValidators: true }
+        {
+          where: { slug: tenantId },
+          returning: true
+        }
       );
       
-      if (!company) {
+      if (updatedCount === 0) {
         throw new Error('Company not found');
       }
       
       return company;
     } catch (error) {
-      if (error.code === 11000) {
-        const field = Object.keys(error.keyPattern)[0];
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const field = error.errors[0]?.path || 'field';
         throw new Error(`${field.charAt(0).toUpperCase() + field.slice(1)} already exists`);
       }
       throw new Error(`Failed to update company: ${error.message}`);
@@ -310,13 +314,15 @@ class CompanyService {
    */
   async deleteCompany(tenantId) {
     try {
-      const company = await Company.findOneAndUpdate(
-        { slug: tenantId },
+      const [updatedCount, [company]] = await Company.update(
         { status: 'inactive' },
-        { new: true }
+        {
+          where: { slug: tenantId },
+          returning: true
+        }
       );
       
-      if (!company) {
+      if (updatedCount === 0) {
         throw new Error('Company not found');
       }
       

@@ -1,4 +1,4 @@
-import Tenant from '../../platform/tenants/models/Tenant.js';
+import Tenant from '../../models/Tenant.js';
 import logger from '../../utils/logger.js';
 
 // Cache for tenant data to reduce DB queries
@@ -38,9 +38,15 @@ export const tenantContext = async (req, res, next) => {
                 req.tenant = cached.tenant;
             } else {
                 // Fetch tenant from database with license information
-                const tenant = await Tenant.findOne({ tenantId }).select(
-                    'tenantId name status enabledModules license usage restrictions billing'
-                ).lean();
+                const tenant = await Tenant.findOne({
+                    where: { tenantId },
+                    attributes: [
+                        'tenantId', 'name', 'status', 'enabledModules',
+                        'usageLimits', 'billing', 'subscriptionStatus',
+                        'subscriptionPlan', 'subscriptionExpiresAt'
+                    ],
+                    raw: true
+                });
 
                 if (tenant) {
                     // Cache the tenant data

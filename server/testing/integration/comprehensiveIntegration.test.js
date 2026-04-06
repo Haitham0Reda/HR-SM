@@ -12,9 +12,8 @@
  * Requirements: 2.1, 4.2, 8.1
  */
 
-import mongoose from 'mongoose';
 import { jest } from '@jest/globals';
-import Tenant from '../../platform/tenants/models/Tenant.js';
+import Tenant from '../../models/Tenant.js';
 import moduleManagementService from '../../platform/modules/services/moduleManagementService.js';
 import licenseValidationService from '../../services/licenseValidationService.js';
 import backupService from '../../services/backupService.js';

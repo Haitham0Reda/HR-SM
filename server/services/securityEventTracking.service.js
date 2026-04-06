@@ -1,5 +1,4 @@
-import mongoose from 'mongoose';
-import Tenant from '../platform/tenants/models/Tenant.js';
+import Tenant from '../models/Tenant.js';
 
 /**
  * Security Event Schema for MongoDB storage

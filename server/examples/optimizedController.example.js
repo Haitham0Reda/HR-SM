@@ -5,7 +5,7 @@
 
 import asyncHandler from '../core/utils/asyncHandler.js';
 import User from '../modules/hr-core/users/models/user.model.js';
-import Tenant from '../platform/tenants/models/Tenant.js';
+import Tenant from '../models/Tenant.js';
 import { 
   leanQuery, 
   leanFindOne, 

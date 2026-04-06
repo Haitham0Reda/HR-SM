@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 import User from '../../modules/hr-core/users/models/user.model.js';
 import Department from '../../modules/hr-core/users/models/department.model.js';
 import Position from '../../modules/hr-core/users/models/position.model.js';
@@ -24,7 +24,7 @@ describe('User Controller - All 7 Functions', () => {
       title: 'Developer',
       arabicTitle: 'مطور',
       code: 'DEV001',
-      department: testDepartment._id
+      departmentId: testDepartment.id
     });
 
     testUser = await User.create({
@@ -33,8 +33,8 @@ describe('User Controller - All 7 Functions', () => {
       email: 'test@test.com',
       password: 'password123',
       role: 'employee',
-      department: testDepartment._id,
-      position: testPosition._id,
+      departmentId: testDepartment.id,
+      positionId: testPosition.id,
       personalInfo: {
         firstName: 'Test',
         lastName: 'User',
@@ -45,14 +45,14 @@ describe('User Controller - All 7 Functions', () => {
       }
     });
 
-    mockReq = createMockRequest({ user: { _id: testUser._id, tenantId: 'test_tenant_123' } });
+    mockReq = createMockRequest({ user: { id: testUser.id, tenantId: 'test_tenant_123' } });
     mockRes = createMockResponse();
   });
 
   afterEach(async () => {
-    await User.deleteMany({});
-    await Position.deleteMany({});
-    await Department.deleteMany({});
+    await User.destroy({ where: {}, force: true });
+    await Position.destroy({ where: {}, force: true });
+    await Department.destroy({ where: {}, force: true });
   });
 
   describe('1. getAllUsers', () => {
@@ -80,7 +80,7 @@ describe('User Controller - All 7 Functions', () => {
 
   describe('2. getUserById', () => {
     it('should get user by ID successfully', async () => {
-      mockReq.params.id = testUser._id.toString();
+      mockReq.params.id = testUser.id.toString();
 
       await userController.getUserById(mockReq, mockRes);
 
@@ -90,7 +90,7 @@ describe('User Controller - All 7 Functions', () => {
     });
 
     it('should return 404 for non-existent user', async () => {
-      mockReq.params.id = new mongoose.Types.ObjectId().toString();
+      mockReq.params.id = uuidv4();
 
       await userController.getUserById(mockReq, mockRes);
 
@@ -99,7 +99,7 @@ describe('User Controller - All 7 Functions', () => {
     });
 
     it('should handle invalid ID format', async () => {
-      mockReq.params.id = 'invalid-id';
+      mockReq.params.id = 'invalid-uuid';
 
       await userController.getUserById(mockReq, mockRes);
 
@@ -114,8 +114,8 @@ describe('User Controller - All 7 Functions', () => {
         email: 'new@test.com',
         password: 'password123',
         role: 'employee',
-        department: testDepartment._id,
-        position: testPosition._id,
+        departmentId: testDepartment.id,
+        positionId: testPosition.id,
         personalInfo: {
           firstName: 'New',
           lastName: 'User',

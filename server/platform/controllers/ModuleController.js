@@ -1,5 +1,5 @@
-import ModuleManagementService from '../services/ModuleManagementService.js';
-import Company from '../models/Company.js';
+import ModuleManagementService from '../services/ModuleManagementService.sequelize.js';
+import Company from '../models/Company.sequelize.js';
 import logger from '../../utils/logger.js';
 
 /**

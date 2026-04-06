@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import Tenant from './platform/tenants/models/Tenant.js';
+import Tenant from './models/Tenant.js';
 
 dotenv.config();
 
