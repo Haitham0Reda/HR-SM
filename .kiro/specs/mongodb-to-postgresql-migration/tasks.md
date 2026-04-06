@@ -376,37 +376,53 @@ This implementation plan breaks down the MongoDB to PostgreSQL migration into di
     - ✅ Test mode for validation
     - _Requirements: 11.2, 11.5_
 
-- [ ] 16. Update error handling for Sequelize
-  - [ ] 16.1 Add Sequelize error handlers
-    - Handle UniqueConstraintError
-    - Handle ForeignKeyConstraintError
-    - Handle ValidationError
-    - Handle ConnectionError
+- [x] 16. Update error handling for Sequelize
+  - [x] 16.1 Add Sequelize error handlers
+    - ✅ Created server/middleware/sequelizeErrorHandler.js
+    - ✅ Handle UniqueConstraintError with field extraction
+    - ✅ Handle ForeignKeyConstraintError with relationship details
+    - ✅ Handle ValidationError with field-level errors
+    - ✅ Handle ConnectionError with retry suggestions
+    - ✅ Handle TimeoutError, OptimisticLockError, EmptyResultError
+    - ✅ Handle DatabaseError with PostgreSQL error code mapping
+    - ✅ Comprehensive PostgreSQL error code reference (23xxx, 08xxx, 40xxx, 53xxx, 57xxx)
     - _Requirements: 14.1, 14.2, 14.3, 14.4_
 
-  - [ ] 16.2 Enhance error logging
-    - Log SQL queries on errors
-    - Log query parameters
-    - Include stack traces
+  - [x] 16.2 Enhance error logging
+    - ✅ Created server/utils/sequelizeLogger.js
+    - ✅ Log SQL queries on errors with formatting
+    - ✅ Log query parameters with sensitive data sanitization
+    - ✅ Include full stack traces
+    - ✅ Track query statistics (total, slow, errors)
+    - ✅ Configurable slow query threshold
+    - ✅ Transaction lifecycle logging
+    - ✅ Connection pool status logging
     - _Requirements: 14.5_
 
-- [ ] 17. Create indexes for performance
-  - [ ] 17.1 Create tenant_id indexes
-    - Add index on tenant_id for all tenant-scoped tables
+- [x] 17. Create indexes for performance
+  - [x] 17.1 Create tenant_id indexes
+    - ✅ Created scripts/create-performance-indexes.js
+    - ✅ Add index on tenant_id for all tenant-scoped tables
+    - ✅ 8 tenant_id indexes for main tables (users, departments, attendances, etc.)
     - _Requirements: 13.1_
 
-  - [ ] 17.2 Create query-specific indexes
-    - Identify frequently queried columns
-    - Create indexes on those columns
+  - [x] 17.2 Create query-specific indexes
+    - ✅ Identify frequently queried columns (email, username, date, status)
+    - ✅ Create indexes on those columns
+    - ✅ 10+ query-specific indexes for common queries
     - _Requirements: 13.2_
 
-  - [ ] 17.3 Create composite indexes
-    - Create composite indexes for common query patterns
-    - Include tenant_id in composite indexes
+  - [x] 17.3 Create composite indexes
+    - ✅ Create composite indexes for common query patterns
+    - ✅ Include tenant_id in composite indexes
+    - ✅ 15+ composite indexes (tenant_id + email, tenant_id + status, etc.)
+    - ✅ Unique composite indexes where appropriate
     - _Requirements: 13.3_
 
-  - [ ] 17.4 Create foreign key indexes
-    - Add indexes on all foreign key columns
+  - [x] 17.4 Create foreign key indexes
+    - ✅ Add indexes on all foreign key columns
+    - ✅ 10+ foreign key indexes (department_id, user_id, position_id, etc.)
+    - ✅ Improve JOIN performance
     - _Requirements: 13.4_
 
 - [ ] 18. Update test suite for PostgreSQL
