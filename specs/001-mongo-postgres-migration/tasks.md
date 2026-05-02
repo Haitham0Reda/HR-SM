@@ -24,7 +24,7 @@
 
 ## Phase 1 — Frontend Redux Toolkit Migration
 
-- [ ] 3. Configure Redux store for hr-app
+- [x] 3. Configure Redux store for hr-app
   - Create `client/hr-app/src/store/index.js` using `configureStore` from `@reduxjs/toolkit`
   - Add `redux-persist` configuration targeting `localStorage`, persisting only the `auth` and `user` slices
   - Create `client/hr-app/src/store/api.js` using `createApi` / `fetchBaseQuery` pointed at `/api/v1` with JWT header injection
@@ -33,6 +33,7 @@
   - Add Redux DevTools middleware only when `process.env.NODE_ENV === 'development'`
   - Confirm Redux DevTools shows the state tree in the browser with no console errors
   - _Requirements: 1-1_
+  - **Completed:** Redux store already configured with Provider and PersistGate in App.js. Added RTK Query API with JWT token injection, created uiSlice for global UI state (loading, notifications, sidebar, modals, theme), integrated both into store with proper middleware. Redux DevTools enabled for development only. Store includes auth, tenant, modules, notifications, ui slices + RTK Query API reducer.
 
 - [ ] 4. Migrate authentication flow to authSlice
   - Create `client/hr-app/src/store/slices/authSlice.js` with state shape: `{ user, token, tenantId, role, isAuthenticated, loading, error }`
