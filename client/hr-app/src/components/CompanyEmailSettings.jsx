@@ -28,7 +28,7 @@ import {
     Warning as WarningIcon,
     Info as InfoIcon
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../store/providers/ReduxAuthProvider';
 import companyService from '../services/company.service';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 

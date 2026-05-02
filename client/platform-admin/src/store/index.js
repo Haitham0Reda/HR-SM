@@ -11,6 +11,9 @@ import moduleManagementSlice from './slices/moduleManagementSlice';
 import systemSettingsSlice from './slices/systemSettingsSlice';
 import licenseManagementSlice from './slices/licenseManagementSlice';
 
+// Import RTK Query API
+import { baseApi } from './api';
+
 // Combine reducers
 const rootReducer = combineReducers({
   platformAuth: platformAuthSlice,
@@ -19,6 +22,8 @@ const rootReducer = combineReducers({
   moduleManagement: moduleManagementSlice,
   systemSettings: systemSettingsSlice,
   licenseManagement: licenseManagementSlice,
+  // Add RTK Query API reducer
+  [baseApi.reducerPath]: baseApi.reducer,
 });
 
 // Persist configuration
@@ -26,6 +31,7 @@ const persistConfig = {
   key: 'platform-admin-root',
   storage,
   whitelist: ['platformAuth', 'systemSettings'], // Only persist auth and settings
+  blacklist: [baseApi.reducerPath], // Don't persist API cache
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -38,7 +44,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
-    }),
+    }).concat(baseApi.middleware), // Add RTK Query middleware
   devTools: process.env.NODE_ENV !== 'production',
 });
 
