@@ -9,7 +9,7 @@
 
 ![Architecture](https://img.shields.io/badge/multi--tenant-SaaS-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
-![MongoDB](https://img.shields.io/badge/mongodb-8.19.2-green.svg)
+![PostgreSQL](https://img.shields.io/badge/postgresql-16-blue.svg)
 ![React](https://img.shields.io/badge/react-19.2.0-blue.svg)
 ![Express](https://img.shields.io/badge/express-4.19.2-green.svg)
 ![Material-UI](https://img.shields.io/badge/MUI-7.3.4-blue.svg)
@@ -111,9 +111,9 @@ HR-SM is an enterprise-grade SaaS platform that automates HR workflows for **HR 
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  MULTI-TENANT DATABASE ARCHITECTURE                                            │
 │                                                                                 │
-│  MongoDB with Tenant Isolation       │  Redis Caching Layer                   │
+│  PostgreSQL with Tenant Isolation    │  Redis Caching Layer                   │
 │  ├── Automatic tenant scoping        │  ├── Feature flag caching              │
-│  ├── Tenant-specific collections     │  ├── Session management                │
+│  ├── Tenant-specific data isolation  │  ├── Session management                │
 │  ├── Data isolation & security       │  ├── Performance optimization          │
 │  ├── Backup & recovery per tenant    │  └── Real-time data sync               │
 │  └── Usage tracking & analytics      │                                         │
@@ -204,8 +204,8 @@ The backend follows a **modular monolith** architecture with clear separation of
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │                   DATABASE LAYER                           │   │
 │  │  ┌──────────────────────────────────────────────────────┐  │   │
-│  │  │  MongoDB (Multi-Tenant with Automatic Isolation)   │  │   │
-│  │  │  - Tenant-Scoped Collections                        │  │   │
+│  │  │  PostgreSQL (Multi-Tenant with Automatic Isolation) │  │   │
+│  │  │  - Tenant-Scoped Data with tenant_id                │  │   │
 │  │  │  - Automatic Data Filtering                         │  │   │
 │  │  │  - Backup & Recovery per Tenant                     │  │   │
 │  │  └──────────────────────────────────────────────────────┘  │   │
@@ -389,7 +389,8 @@ docker run -d \
   -p 5000:5000 \
   -p 3000:3000 \
   -p 3001:3001 \
-  -e MONGODB_URI=mongodb://mongo:27017/hrms \
+  -e LICENSE_DATABASE_URL=postgresql://postgres:password@postgres:5432/hrsm-licenses \
+  -e MAIN_DATABASE_URL=postgresql://postgres:password@postgres:5432/hrsm_platform \
   -e JWT_SECRET=your-secret-key \
   --name hrms-platform \
   hrms:latest
@@ -424,7 +425,7 @@ For detailed implementation tasks, timelines, and success criteria, refer to [MO
 ### Prerequisites
 
 - Node.js >= 18.0.0
-- MongoDB >= 6.0
+- PostgreSQL >= 16.0
 - Redis >= 5.0
 - npm or yarn
 
