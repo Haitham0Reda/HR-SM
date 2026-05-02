@@ -12,12 +12,13 @@
   - _Requirements: P0-1_
   - **Completed:** Purged `.env` and `keys/` from git history (257 commits rewritten), generated new 256-bit secrets, hardened `.gitignore`, created verification tools (`verify-secrets.cjs`, `generate-secrets.cjs`, `generate-rsa-keys.cjs`). RSA keys now stored outside repo. Documentation in `SECURITY-ROTATION-COMPLETE.md` and `POST-ROTATION-INSTRUCTIONS.md`. **Next:** Update PostgreSQL/Redis passwords, test services, force push to remote.
 
-- [ ] 2. Fix README badge mismatch and archive stale migration docs
+- [x] 2. Fix README badge mismatch and archive stale migration docs
   - Replace the MongoDB badge in `README.md` with a PostgreSQL 16 badge
   - Update all architecture ASCII diagrams in README to reference Postgres instead of MongoDB
   - Create folder `docs/archive/` and move all `MIGRATION_*.md`, `CONVERSION_*.md`, `LEGACY_*.md`, `MODEL_CONVERSION_*.md` files into it
   - Update `DOCUMENTATION_INDEX.md` to remove links to the archived files and add a note pointing to `docs/archive/`
   - _Requirements: P0-2_
+  - **Completed:** Replaced MongoDB badge with PostgreSQL 16, updated all architecture diagrams (data layer, backend, Docker examples), archived 31 migration/conversion/legacy docs to `docs/archive/`, updated DOCUMENTATION_INDEX.md with archive notice, created archive README. Repository now reflects current PostgreSQL architecture.
 
 ---
 
