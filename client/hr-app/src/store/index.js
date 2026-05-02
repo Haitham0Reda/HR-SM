@@ -8,6 +8,10 @@ import authSlice from './slices/authSlice';
 import tenantSlice from './slices/tenantSlice';
 import moduleSlice from './slices/moduleSlice';
 import notificationSlice from './slices/notificationSlice';
+import uiSlice from './slices/uiSlice';
+
+// Import RTK Query API
+import { baseApi } from './api';
 
 // Persist configuration
 const persistConfig = {
@@ -22,6 +26,8 @@ const rootReducer = combineReducers({
   tenant: tenantSlice,
   modules: moduleSlice,
   notifications: notificationSlice,
+  ui: uiSlice,
+  [baseApi.reducerPath]: baseApi.reducer, // Add RTK Query API reducer
 });
 
 // Persisted reducer
@@ -35,8 +41,8 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
-    }),
-  devTools: process.env.NODE_ENV !== 'production',
+    }).concat(baseApi.middleware), // Add RTK Query middleware
+  devTools: process.env.NODE_ENV !== 'production', // Enable Redux DevTools only in development
 });
 
 // Create persistor
