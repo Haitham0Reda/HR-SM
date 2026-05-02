@@ -9,7 +9,6 @@
 
 import { body, param, query, validationResult, matchedData } from 'express-validator';
 import sanitizeHtml from 'sanitize-html';
-import mongoose from 'mongoose';
 
 /**
  * Enhanced error handler for validation results
@@ -248,6 +247,30 @@ export const validateTenantId = [
 ];
 
 /**
+ * Validate UUID parameter (replaces MongoDB ObjectId validation)
+ */
+export const validateUUID = (paramName = 'id') => [
+    param(paramName)
+        .trim()
+        .isUUID(4)
+        .withMessage(`${paramName} must be a valid UUID`),
+    
+    handleValidationErrors
+];
+
+/**
+ * Validate license ID parameter (UUID format)
+ */
+export const validateLicenseId = [
+    param('licenseId')
+        .trim()
+        .isUUID(4)
+        .withMessage('License ID must be a valid UUID'),
+    
+    handleValidationErrors
+];
+
+/**
  * Validate license renewal request
  */
 export const validateLicenseRenewal = [
@@ -447,6 +470,8 @@ export default {
     validateLicenseValidation,
     validateLicenseNumber,
     validateTenantId,
+    validateUUID,
+    validateLicenseId,
     validateLicenseRenewal,
     validateLicenseRevocation,
     validatePagination,

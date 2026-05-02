@@ -5,7 +5,7 @@
  * Logs SQL queries, parameters, execution time, and errors
  */
 
-const logger = require('./logger');
+import logger from './logger.js';
 
 class SequelizeLogger {
   constructor() {
@@ -295,7 +295,7 @@ const sequelizeLogger = new SequelizeLogger();
  * @param {Object} sequelize - Sequelize instance
  * @param {string} dbName - Database name for logging context
  */
-function configureSequelizeLogging(sequelize, dbName = 'unknown') {
+export function configureSequelizeLogging(sequelize, dbName = 'unknown') {
   // Set up query logging
   sequelize.options.logging = sequelizeLogger.createSequelizeLogger();
 
@@ -349,7 +349,7 @@ function configureSequelizeLogging(sequelize, dbName = 'unknown') {
 /**
  * Middleware to log query statistics
  */
-function queryStatsMiddleware(req, res, next) {
+export function queryStatsMiddleware(req, res, next) {
   // Attach stats to request
   req.queryStats = sequelizeLogger.getStats();
   next();
@@ -358,7 +358,7 @@ function queryStatsMiddleware(req, res, next) {
 /**
  * Express route to get query statistics
  */
-function getQueryStatsRoute(req, res) {
+export function getQueryStatsRoute(req, res) {
   const stats = sequelizeLogger.getStats();
   res.json({
     success: true,
@@ -369,7 +369,7 @@ function getQueryStatsRoute(req, res) {
 /**
  * Express route to reset query statistics
  */
-function resetQueryStatsRoute(req, res) {
+export function resetQueryStatsRoute(req, res) {
   sequelizeLogger.resetStats();
   res.json({
     success: true,
@@ -377,10 +377,5 @@ function resetQueryStatsRoute(req, res) {
   });
 }
 
-module.exports = {
-  sequelizeLogger,
-  configureSequelizeLogging,
-  queryStatsMiddleware,
-  getQueryStatsRoute,
-  resetQueryStatsRoute
-};
+export { sequelizeLogger };
+export default sequelizeLogger;

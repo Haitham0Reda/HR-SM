@@ -8,8 +8,8 @@
  * @module models/Role
  */
 
-import { DataTypes } from 'sequelize';
-import { mainAppDb } from '../../../config/database.js';
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
 
 const Role = mainAppDb.define('Role', {
   // Primary Key - UUID
@@ -90,13 +90,13 @@ const Role = mainAppDb.define('Role', {
       name: 'idx_roles_name_system',
       fields: ['name'],
       unique: true,
-      where: { isSystemRole: true }
+      where: { is_system_role: true }
     },
     {
       name: 'idx_roles_tenant_id_name_custom',
       fields: ['tenant_id', 'name'],
       unique: true,
-      where: { isSystemRole: false }
+      where: { is_system_role: false }
     },
     {
       name: 'idx_roles_tenant_id_is_system_role',
@@ -115,7 +115,7 @@ const Role = mainAppDb.define('Role', {
     byTenant: (tenantId) => {
       return {
         where: {
-          [require('sequelize').Op.or]: [
+          [Op.or]: [
             { isSystemRole: true },
             { tenantId }
           ]
@@ -161,7 +161,7 @@ Role.findByName = async function(name, tenantId = null) {
     // For tenant-specific search, look for both system roles and tenant roles
     return this.findOne({
       where: {
-        [require('sequelize').Op.or]: [
+        [Op.or]: [
           { name: name.toLowerCase(), isSystemRole: true },
           { name: name.toLowerCase(), tenantId, isSystemRole: false }
         ]
@@ -193,3 +193,10 @@ Role.getCustomRoles = async function(tenantId) {
 };
 
 export default Role;
+
+
+
+
+
+
+

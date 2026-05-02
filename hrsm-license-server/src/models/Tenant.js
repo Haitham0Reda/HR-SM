@@ -1,209 +1,198 @@
-import mongoose from 'mongoose';
+import { DataTypes, Model, Op } from 'sequelize';
+import { licenseServerDb as sequelize } from '../../config/database.js';
 
 /**
- * Tenant Model - License Server Database
- * This is the authoritative source for tenant metadata
- * 
- * Requirements: 1.1, 1.2, 1.3 - Store tenant metadata in license server
+ * Tenant Model - License Server Database (Sequelize)
+ *
+ * Subscription state lives in flat columns on this table (subscriptionStatus,
+ * subscriptionPlan, subscriptionStartDate, subscriptionExpiresAt, billingCycle,
+ * autoRenew). The separate `Subscription` model (subscriptions table) is the
+ * detailed billing-history record; queries that need a single current
+ * subscription value should read these flat columns rather than joining.
  */
-const tenantSchema = new mongoose.Schema({
-  // Tenant Identification
+class Tenant extends Model {
+  isActive() {
+    return this.status === 'active' && this.subscriptionStatus === 'active';
+  }
+
+  isExpired() {
+    if (!this.subscriptionExpiresAt) return null;
+    return this.subscriptionExpiresAt <= new Date();
+  }
+
+  daysUntilExpiry() {
+    if (!this.subscriptionExpiresAt) return null;
+    const now = new Date();
+    const diffTime = this.subscriptionExpiresAt - now;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  hasModule(moduleId) {
+    return this.enabledModules.includes(moduleId);
+  }
+
+  async enableModule(moduleId) {
+    if (!this.hasModule(moduleId)) {
+      this.enabledModules.push(moduleId);
+      this.changed('enabledModules', true);
+      await this.save();
+    }
+  }
+
+  async disableModule(moduleId) {
+    this.enabledModules = this.enabledModules.filter(m => m !== moduleId);
+    this.changed('enabledModules', true);
+    await this.save();
+  }
+
+  async softDelete() {
+    this.status = 'deleted';
+    this.deletedAt = new Date();
+    await this.save();
+  }
+
+  static async findByTenantId(tenantId) {
+    return this.findOne({
+      where: {
+        tenantId,
+        status: { [Op.ne]: 'deleted' }
+      }
+    });
+  }
+
+  static async findActive() {
+    return this.findAll({
+      where: {
+        status: 'active',
+        subscriptionStatus: 'active'
+      }
+    });
+  }
+
+  static async findExpiring(days = 30) {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + days);
+    return this.findAll({
+      where: {
+        status: 'active',
+        subscriptionExpiresAt: {
+          [Op.lte]: futureDate,
+          [Op.gt]: new Date()
+        }
+      }
+    });
+  }
+}
+
+Tenant.init({
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   tenantId: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
-    index: true
+    field: 'tenant_id'
   },
   name: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   domain: {
-    type: String,
-    required: true,
-    index: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   contactEmail: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'contact_email',
+    validate: { isEmail: true }
   },
   contactPhone: {
-    type: String,
-    default: null
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'contact_phone'
   },
-  
-  // Subscription Information
-  subscription: {
-    status: {
-      type: String,
-      enum: ['active', 'suspended', 'expired', 'trial'],
-      default: 'trial',
-      index: true
-    },
-    plan: {
-      type: String,
-      enum: ['basic', 'professional', 'enterprise', 'unlimited'],
-      default: 'basic'
-    },
-    startDate: {
-      type: Date,
-      default: Date.now
-    },
-    expiresAt: {
-      type: Date,
-      required: true
-    },
-    billingCycle: {
-      type: String,
-      enum: ['monthly', 'annual'],
-      default: 'monthly'
-    },
-    autoRenew: {
-      type: Boolean,
-      default: false
-    }
+
+  // Flat subscription columns (canonical state — match the actual DB schema)
+  subscriptionStatus: {
+    type: DataTypes.ENUM('active', 'suspended', 'expired', 'trial', 'cancelled'),
+    allowNull: false,
+    defaultValue: 'trial',
+    field: 'subscription_status'
   },
-  
-  // Enabled Modules
-  enabledModules: [{
-    type: String
-  }],
-  
-  // Usage Limits
+  subscriptionPlan: {
+    type: DataTypes.ENUM('basic', 'professional', 'enterprise', 'unlimited'),
+    allowNull: false,
+    defaultValue: 'basic',
+    field: 'subscription_plan'
+  },
+  subscriptionStartDate: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
+    field: 'subscription_start_date'
+  },
+  subscriptionExpiresAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    field: 'subscription_expires_at'
+  },
+  billingCycle: {
+    type: DataTypes.ENUM('monthly', 'annual'),
+    allowNull: false,
+    defaultValue: 'monthly',
+    field: 'billing_cycle'
+  },
+  autoRenew: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'auto_renew'
+  },
+
+  enabledModules: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+    field: 'enabled_modules'
+  },
   usageLimits: {
-    maxUsers: {
-      type: Number,
-      default: 10
-    },
-    maxStorage: {
-      type: Number, // in GB
-      default: 5
-    },
-    maxApiCalls: {
-      type: Number, // per day
-      default: 10000
-    }
+    type: DataTypes.JSONB,
+    defaultValue: { maxUsers: 10, maxStorage: 5, maxApiCalls: 10000 },
+    field: 'usage_limits'
   },
-  
-  // Billing Information
   billing: {
-    currency: {
-      type: String,
-      default: 'USD'
-    },
-    amount: {
-      type: Number,
-      default: 0
-    },
-    lastPaymentDate: {
-      type: Date,
-      default: null
-    },
-    nextBillingDate: {
-      type: Date,
-      default: null
-    }
+    type: DataTypes.JSONB,
+    defaultValue: { currency: 'USD', amount: 0, lastPaymentDate: null, nextBillingDate: null }
   },
-  
-  // Metadata
   metadata: {
-    industry: {
-      type: String,
-      default: null
-    },
-    companySize: {
-      type: String,
-      enum: ['small', 'medium', 'large', 'enterprise', null],
-      default: null
-    },
-    country: {
-      type: String,
-      default: null
-    },
-    timezone: {
-      type: String,
-      default: 'UTC'
-    }
+    type: DataTypes.JSONB,
+    defaultValue: { industry: null, companySize: null, country: null, timezone: 'UTC' }
   },
-  
-  // Status
   status: {
-    type: String,
-    enum: ['active', 'suspended', 'deleted'],
-    default: 'active',
-    index: true
+    type: DataTypes.ENUM('active', 'suspended', 'deleted'),
+    defaultValue: 'active'
   },
-  
-  // Soft Delete
   deletedAt: {
-    type: Date,
-    default: null
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'deleted_at'
   }
 }, {
+  sequelize,
+  modelName: 'Tenant',
+  tableName: 'tenants',
   timestamps: true,
-  collection: 'tenants'
+  underscored: true,
+  indexes: [
+    { fields: ['tenant_id'], unique: true },
+    { fields: ['tenant_id', 'status'] },
+    { fields: ['domain'] },
+    { fields: ['status'] }
+  ]
 });
-
-// Indexes for performance
-tenantSchema.index({ tenantId: 1, status: 1 });
-tenantSchema.index({ domain: 1 });
-tenantSchema.index({ 'subscription.status': 1 });
-tenantSchema.index({ 'subscription.expiresAt': 1 });
-tenantSchema.index({ status: 1 });
-
-// Instance Methods
-tenantSchema.methods.isActive = function() {
-  return this.status === 'active' && this.subscription.status === 'active';
-};
-
-tenantSchema.methods.isExpired = function() {
-  return this.subscription.expiresAt <= new Date();
-};
-
-tenantSchema.methods.daysUntilExpiry = function() {
-  const now = new Date();
-  const diffTime = this.subscription.expiresAt - now;
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-};
-
-tenantSchema.methods.hasModule = function(moduleId) {
-  return this.enabledModules.includes(moduleId);
-};
-
-tenantSchema.methods.enableModule = function(moduleId) {
-  if (!this.hasModule(moduleId)) {
-    this.enabledModules.push(moduleId);
-  }
-};
-
-tenantSchema.methods.disableModule = function(moduleId) {
-  this.enabledModules = this.enabledModules.filter(m => m !== moduleId);
-};
-
-tenantSchema.methods.softDelete = function() {
-  this.status = 'deleted';
-  this.deletedAt = new Date();
-};
-
-// Static Methods
-tenantSchema.statics.findByTenantId = function(tenantId) {
-  return this.findOne({ tenantId, status: { $ne: 'deleted' } });
-};
-
-tenantSchema.statics.findActive = function() {
-  return this.find({ status: 'active', 'subscription.status': 'active' });
-};
-
-tenantSchema.statics.findExpiring = function(days = 30) {
-  const futureDate = new Date();
-  futureDate.setDate(futureDate.getDate() + days);
-  
-  return this.find({
-    status: 'active',
-    'subscription.expiresAt': { $lte: futureDate, $gt: new Date() }
-  });
-};
-
-const Tenant = mongoose.model('Tenant', tenantSchema);
 
 export default Tenant;

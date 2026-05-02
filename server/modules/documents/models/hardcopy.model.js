@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../../../config/database.js';
+import User from '../../hr-core/users/models/user.model.js';
 
 /**
  * Hardcopy Model
@@ -140,4 +141,31 @@ Hardcopy.findPublicDocuments = async function(tenantId) {
   });
 };
 
+// Associations
+Hardcopy.associate = (models) => {
+  Hardcopy.belongsTo(models.User, {
+    foreignKey: 'created_by',
+    as: 'creator'
+  });
+  
+  Hardcopy.belongsTo(models.User, {
+    foreignKey: 'updated_by',
+    as: 'updater'
+  });
+};
+
+// Set up associations immediately
+Hardcopy.belongsTo(User, {
+  foreignKey: 'created_by',
+  as: 'creator'
+});
+
+Hardcopy.belongsTo(User, {
+  foreignKey: 'updated_by',
+  as: 'updater'
+});
+
 export default Hardcopy;
+
+
+

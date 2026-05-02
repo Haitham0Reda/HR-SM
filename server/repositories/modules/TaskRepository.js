@@ -1,6 +1,547 @@
 import BaseRepository from '../BaseRepository.js';
 import Task from '../../modules/tasks/models/Task.js';
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
+
+/**
+ * Repository for Task model operations with status and assignment queries
+ */
+class TaskRepository extends BaseRepository {
+    constructor() {
+        super(Task);
+    }
+
+    /**
+     * Find tasks by assigned user
+     * @param {string} userId - User ID
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Task records
+     */
+    async findByAssignedTo(userId, options = {}) {
+        try {
+            const where = { assigned_to: userId };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            if (options.status) {
+                where.status = options.status;
+            }
+
+            if (options.priority) {
+                where.priority = options.priority;
+            }
+
+            if (options.dateRange) {
+                if (options.dateRange.startDate) {
+                    where.start_date = { [Op.gte]: options.dateRange.startDate };
+                }
+                if (options.dateRange.endDate) {
+                    where.due_date = { [Op.lte]: options.dateRange.endDate };
+                }
+            }
+
+            return await this.findAll(where, {
+                ...options,
+                include: [
+                    { association: 'assignedToUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { association: 'assignedByUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
+                ],
+                order: [['due_date', 'ASC'], ['priority', 'DESC']]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findByAssignedTo');
+        }
+    }
+
+    /**
+     * Find tasks by assigner
+     * @param {string} userId - User ID who assigned the tasks
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Task records
+     */
+    async findByAssignedBy(userId, options = {}) {
+        try {
+            const where = { assigned_by: userId };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            if (options.status) {
+                where.status = options.status;
+            }
+
+            if (options.priority) {
+                where.priority = options.priority;
+            }
+
+            return await this.findAll(where, {
+                ...options,
+                include: [
+                    { association: 'assignedToUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { association: 'assignedByUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
+                ],
+                order: [['created_at', 'DESC']]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findByAssignedBy');
+        }
+    }
+
+    /**
+     * Find tasks by status
+     * @param {string} status - Task status
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Task records
+     */
+    async findByStatus(status, options = {}) {
+        try {
+            const where = { status };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            if (options.assignedTo) {
+                where.assigned_to = options.assignedTo;
+            }
+
+            if (options.assignedBy) {
+                where.assigned_by = options.assignedBy;
+            }
+
+            if (options.priority) {
+                where.priority = options.priority;
+            }
+
+            return await this.findAll(where, {
+                ...options,
+                include: [
+                    { association: 'assignedToUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { association: 'assignedByUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
+                ],
+                order: [['due_date', 'ASC'], ['priority', 'DESC']]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findByStatus');
+        }
+    }
+
+    /**
+     * Find tasks by priority
+     * @param {string} priority - Task priority
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Task records
+     */
+    async findByPriority(priority, options = {}) {
+        try {
+            const where = { priority };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            if (options.status) {
+                where.status = options.status;
+            }
+
+            if (options.assignedTo) {
+                where.assigned_to = options.assignedTo;
+            }
+
+            return await this.findAll(where, {
+                ...options,
+                include: [
+                    { association: 'assignedToUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { association: 'assignedByUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
+                ],
+                order: [['due_date', 'ASC']]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findByPriority');
+        }
+    }
+
+    /**
+     * Find overdue tasks
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Overdue task records
+     */
+    async findOverdueTasks(options = {}) {
+        try {
+            const now = new Date();
+            const where = {
+                due_date: { [Op.lt]: now },
+                status: { [Op.notIn]: ['completed', 'rejected'] }
+            };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            if (options.assignedTo) {
+                where.assigned_to = options.assignedTo;
+            }
+
+            if (options.assignedBy) {
+                where.assigned_by = options.assignedBy;
+            }
+
+            return await this.findAll(where, {
+                ...options,
+                include: [
+                    { association: 'assignedToUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { association: 'assignedByUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
+                ],
+                order: [['due_date', 'ASC'], ['priority', 'DESC']]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findOverdueTasks');
+        }
+    }
+
+    /**
+     * Find tasks due soon
+     * @param {number} [daysAhead=7] - Number of days to look ahead
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Tasks due soon
+     */
+    async findTasksDueSoon(daysAhead = 7, options = {}) {
+        try {
+            const now = new Date();
+            const futureDate = new Date();
+            futureDate.setDate(now.getDate() + daysAhead);
+
+            const where = {
+                due_date: { [Op.between]: [now, futureDate] },
+                status: { [Op.notIn]: ['completed', 'rejected'] }
+            };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            if (options.assignedTo) {
+                where.assigned_to = options.assignedTo;
+            }
+
+            return await this.findAll(where, {
+                ...options,
+                include: [
+                    { association: 'assignedToUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { association: 'assignedByUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
+                ],
+                order: [['due_date', 'ASC'], ['priority', 'DESC']]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findTasksDueSoon');
+        }
+    }
+
+    /**
+     * Find tasks by tags
+     * @param {Array} tags - Array of tags to search for
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Task records
+     */
+    async findByTags(tags, options = {}) {
+        try {
+            const where = {
+                tags: { [Op.overlap]: tags }
+            };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            if (options.status) {
+                where.status = options.status;
+            }
+
+            return await this.findAll(where, {
+                ...options,
+                include: [
+                    { association: 'assignedToUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { association: 'assignedByUser', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
+                ],
+                order: [['due_date', 'ASC']]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findByTags');
+        }
+    }
+
+    /**
+     * Get task statistics for a user
+     * @param {string} userId - User ID
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Object>} Task statistics
+     */
+    async getUserTaskStats(userId, options = {}) {
+        try {
+            const where = { assigned_to: userId };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            if (options.dateRange) {
+                where.created_at = {
+                    [Op.between]: [options.dateRange.startDate, options.dateRange.endDate]
+                };
+            }
+
+            const statusBreakdown = await this.model.findAll({
+                where,
+                attributes: [
+                    'status',
+                    'priority',
+                    [this.model.sequelize.fn('COUNT', this.model.sequelize.col('id')), 'count']
+                ],
+                group: ['status', 'priority'],
+                raw: true
+            });
+
+            // Calculate additional metrics
+            const now = new Date();
+            const overdueCount = await this.count({
+                ...where,
+                due_date: { [Op.lt]: now },
+                status: { [Op.notIn]: ['completed', 'rejected'] }
+            });
+
+            const completedOnTimeCount = await this.count({
+                ...where,
+                status: 'completed',
+                completed_at: { [Op.lte]: this.model.sequelize.col('due_date') }
+            });
+
+            const totalCompleted = await this.count({
+                ...where,
+                status: 'completed'
+            });
+
+            return {
+                statusBreakdown,
+                overdue: overdueCount,
+                completedOnTime: completedOnTimeCount,
+                totalCompleted,
+                onTimeRate: totalCompleted > 0 ? (completedOnTimeCount / totalCompleted) * 100 : 0
+            };
+        } catch (error) {
+            throw this._handleError(error, 'getUserTaskStats');
+        }
+    }
+
+    /**
+     * Get task analytics for reporting
+     * @param {Object} filters - Filter criteria
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Object>} Task analytics
+     */
+    async getTaskAnalytics(filters = {}, options = {}) {
+        try {
+            const where = {};
+
+            if (filters.tenantId) {
+                where.tenant_id = filters.tenantId;
+            }
+
+            if (filters.assignedBy) {
+                where.assigned_by = filters.assignedBy;
+            }
+
+            if (filters.assignedTo) {
+                where.assigned_to = filters.assignedTo;
+            }
+
+            if (filters.dateRange) {
+                where.created_at = {
+                    [Op.between]: [filters.dateRange.startDate, filters.dateRange.endDate]
+                };
+            }
+
+            const results = await this.model.findAll({
+                where,
+                attributes: [
+                    'status',
+                    'priority',
+                    [this.model.sequelize.fn('EXTRACT', this.model.sequelize.literal('MONTH FROM created_at')), 'month'],
+                    [this.model.sequelize.fn('EXTRACT', this.model.sequelize.literal('YEAR FROM created_at')), 'year'],
+                    [this.model.sequelize.fn('COUNT', this.model.sequelize.col('id')), 'count'],
+                    [this.model.sequelize.fn('AVG', 
+                        this.model.sequelize.literal(
+                            "CASE WHEN status = 'completed' THEN EXTRACT(EPOCH FROM (completed_at - created_at)) / 86400 ELSE NULL END"
+                        )
+                    ), 'avgDuration']
+                ],
+                group: ['status', 'priority', this.model.sequelize.literal('EXTRACT(MONTH FROM created_at)'), this.model.sequelize.literal('EXTRACT(YEAR FROM created_at)')],
+                order: [[this.model.sequelize.literal('EXTRACT(YEAR FROM created_at)'), 'DESC'], [this.model.sequelize.literal('EXTRACT(MONTH FROM created_at)'), 'DESC'], ['priority', 'DESC']],
+                raw: true
+            });
+
+            return results;
+        } catch (error) {
+            throw this._handleError(error, 'getTaskAnalytics');
+        }
+    }
+
+    /**
+     * Update task status
+     * @param {string} taskId - Task ID
+     * @param {string} status - New status
+     * @param {Object} [options] - Update options
+     * @returns {Promise<Object>} Updated task
+     */
+    async updateTaskStatus(taskId, status, options = {}) {
+        try {
+            const updateData = { status };
+
+            // Set completion timestamp if completing task
+            if (status === 'completed') {
+                updateData.completed_at = new Date();
+            }
+
+            return await this.update(taskId, updateData, options);
+        } catch (error) {
+            throw this._handleError(error, 'updateTaskStatus');
+        }
+    }
+
+    /**
+     * Add attachment to task
+     * @param {string} taskId - Task ID
+     * @param {Object} attachment - Attachment object
+     * @param {Object} [options] - Update options
+     * @returns {Promise<Object>} Updated task
+     */
+    async addAttachment(taskId, attachment, options = {}) {
+        try {
+            const task = await this.findById(taskId, options);
+            if (!task) {
+                throw new Error('Task not found');
+            }
+
+            const attachmentData = {
+                ...attachment,
+                uploaded_at: new Date()
+            };
+
+            const attachments = task.attachments || [];
+            attachments.push(attachmentData);
+
+            return await this.update(taskId, { attachments }, options);
+        } catch (error) {
+            throw this._handleError(error, 'addAttachment');
+        }
+    }
+
+    /**
+     * Remove attachment from task
+     * @param {string} taskId - Task ID
+     * @param {number} attachmentIndex - Index of attachment to remove
+     * @param {Object} [options] - Update options
+     * @returns {Promise<Object>} Updated task
+     */
+    async removeAttachment(taskId, attachmentIndex, options = {}) {
+        try {
+            const task = await this.findById(taskId, options);
+            if (!task) {
+                throw new Error('Task not found');
+            }
+
+            const attachments = task.attachments || [];
+            if (attachmentIndex < 0 || attachmentIndex >= attachments.length) {
+                throw new Error('Invalid attachment index');
+            }
+
+            attachments.splice(attachmentIndex, 1);
+
+            return await this.update(taskId, { attachments }, options);
+        } catch (error) {
+            throw this._handleError(error, 'removeAttachment');
+        }
+    }
+
+    /**
+     * Add tags to task
+     * @param {string} taskId - Task ID
+     * @param {Array} tags - Array of tags to add
+     * @param {Object} [options] - Update options
+     * @returns {Promise<Object>} Updated task
+     */
+    async addTags(taskId, tags, options = {}) {
+        try {
+            const task = await this.findById(taskId, options);
+            if (!task) {
+                throw new Error('Task not found');
+            }
+
+            // Add new tags, avoiding duplicates
+            const existingTags = task.tags || [];
+            const newTags = tags.filter(tag => !existingTags.includes(tag));
+            const updatedTags = [...existingTags, ...newTags];
+
+            return await this.update(taskId, { tags: updatedTags }, options);
+        } catch (error) {
+            throw this._handleError(error, 'addTags');
+        }
+    }
+
+    /**
+     * Remove tags from task
+     * @param {string} taskId - Task ID
+     * @param {Array} tags - Array of tags to remove
+     * @param {Object} [options] - Update options
+     * @returns {Promise<Object>} Updated task
+     */
+    async removeTags(taskId, tags, options = {}) {
+        try {
+            const task = await this.findById(taskId, options);
+            if (!task) {
+                throw new Error('Task not found');
+            }
+
+            const updatedTags = (task.tags || []).filter(tag => !tags.includes(tag));
+
+            return await this.update(taskId, { tags: updatedTags }, options);
+        } catch (error) {
+            throw this._handleError(error, 'removeTags');
+        }
+    }
+
+    /**
+     * Get all unique tags
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Array of unique tags
+     */
+    async getAllTags(options = {}) {
+        try {
+            const where = {};
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            const results = await this.model.findAll({
+                where,
+                attributes: [
+                    [this.model.sequelize.fn('UNNEST', this.model.sequelize.col('tags')), 'tag']
+                ],
+                group: [this.model.sequelize.literal('UNNEST(tags)')],
+                order: [[this.model.sequelize.literal('UNNEST(tags)'), 'ASC']],
+                raw: true
+            });
+
+            return results.map(result => result.tag);
+        } catch (error) {
+            throw this._handleError(error, 'getAllTags');
+        }
+    }
+}
+
+export default TaskRepository;
 
 /**
  * Repository for Task model operations with status and assignment queries

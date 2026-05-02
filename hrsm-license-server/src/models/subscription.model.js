@@ -7,9 +7,9 @@
  * @module models/Subscription
  */
 
-import { DataTypes } from 'sequelize';
-import { licenseServerDb } from '../../config/database.js';
-import Tenant from './tenant.model.js';
+import { DataTypes, Op } from 'sequelize';
+import licenseServerDb from '../../config/database.js';
+import Tenant from './Tenant.js';
 
 const Subscription = licenseServerDb.define('Subscription', {
   // Primary Key - UUID
@@ -161,8 +161,8 @@ const Subscription = licenseServerDb.define('Subscription', {
         where: {
           status: 'active',
           expiresAt: {
-            [require('sequelize').Op.lte]: futureDate,
-            [require('sequelize').Op.gt]: new Date()
+            [Op.lte]: futureDate,
+            [Op.gt]: new Date()
           }
         }
       };
@@ -171,7 +171,7 @@ const Subscription = licenseServerDb.define('Subscription', {
       where: {
         status: 'active',
         expiresAt: {
-          [require('sequelize').Op.lte]: new Date()
+          [Op.lte]: new Date()
         }
       }
     },
@@ -182,8 +182,8 @@ const Subscription = licenseServerDb.define('Subscription', {
         where: {
           autoRenew: true,
           nextBillingDate: {
-            [require('sequelize').Op.lte]: futureDate,
-            [require('sequelize').Op.gte]: new Date()
+            [Op.lte]: futureDate,
+            [Op.gte]: new Date()
           }
         }
       };
@@ -269,8 +269,8 @@ Subscription.findExpiring = async function(days = 30) {
     where: {
       status: 'active',
       expiresAt: {
-        [require('sequelize').Op.lte]: futureDate,
-        [require('sequelize').Op.gt]: new Date()
+        [Op.lte]: futureDate,
+        [Op.gt]: new Date()
       }
     },
     include: [{

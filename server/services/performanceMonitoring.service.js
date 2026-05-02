@@ -1,6 +1,9 @@
 import os from 'os';
 import process from 'process';
-import mongoose from 'mongoose';
+import { QueryTypes } from 'sequelize';
+import { mainAppDb } from '../config/database.js';
+import SystemMetrics from '../platform/system/models/systemMetrics.model.js';
+import PerformanceAlert from '../platform/system/models/performanceAlert.model.js';
 import performanceMonitoringMiddleware from '../middleware/performanceMonitoring.middleware.js';
 
 /**
@@ -174,32 +177,27 @@ class PerformanceMonitoringService {
    */
   async getDatabaseMetrics() {
     try {
-      const connection = mongoose.connection;
+      // Check PostgreSQL connection
+      await mainAppDb.authenticate();
 
-      if (connection.readyState !== 1) {
-        return {
-          connected: false,
-          readyState: connection.readyState
-        };
-      }
-
-      // Get database statistics
-      const dbStats = await connection.db.stats();
+      // Get database statistics using raw SQL
+      const [stats] = await mainAppDb.query(`
+        SELECT 
+          current_database() as name,
+          pg_database_size(current_database()) as data_size,
+          (SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public') as collections,
+          (SELECT count(*) FROM pg_indexes WHERE schemaname = 'public') as indexes
+      `, { type: QueryTypes.SELECT });
 
       return {
         connected: true,
-        readyState: connection.readyState,
-        name: connection.name,
-        host: connection.host,
-        port: connection.port,
+        name: stats.name,
+        host: mainAppDb.config.host,
+        port: mainAppDb.config.port,
         stats: {
-          collections: dbStats.collections,
-          dataSize: dbStats.dataSize,
-          storageSize: dbStats.storageSize,
-          indexes: dbStats.indexes,
-          indexSize: dbStats.indexSize,
-          objects: dbStats.objects,
-          avgObjSize: dbStats.avgObjSize
+          collections: parseInt(stats.collections),
+          dataSize: parseInt(stats.data_size),
+          indexes: parseInt(stats.indexes)
         }
       };
     } catch (error) {
@@ -215,41 +213,7 @@ class PerformanceMonitoringService {
    */
   async storeSystemMetrics(metrics) {
     try {
-      // Create a simplified metrics document for storage
-      const SystemMetrics = mongoose.model('SystemMetrics', new mongoose.Schema({
-        timestamp: { type: Date, default: Date.now, index: true },
-        cpu: {
-          cores: Number,
-          utilization: Number,
-          loadAverage: {
-            '1min': Number,
-            '5min': Number,
-            '15min': Number
-          }
-        },
-        memory: {
-          total: Number,
-          used: Number,
-          utilization: Number,
-          processHeapUsed: Number
-        },
-        process: {
-          uptime: Number,
-          cpuUsage: {
-            user: Number,
-            system: Number
-          },
-          activeHandles: Number,
-          activeRequests: Number
-        },
-        database: {
-          connected: Boolean,
-          dataSize: Number,
-          collections: Number
-        }
-      }, { collection: 'system_metrics' }));
-
-      const systemMetric = new SystemMetrics({
+      await SystemMetrics.create({
         timestamp: metrics.timestamp,
         cpu: {
           cores: metrics.cpu.cores,
@@ -274,8 +238,6 @@ class PerformanceMonitoringService {
           collections: metrics.database.stats?.collections || 0
         }
       });
-
-      await systemMetric.save();
     } catch (error) {
       console.error('Error storing system metrics:', error);
     }
@@ -403,20 +365,7 @@ class PerformanceMonitoringService {
    */
   async storeAlert(alert) {
     try {
-      const PerformanceAlert = mongoose.model('PerformanceAlert', new mongoose.Schema({
-        type: { type: String, required: true },
-        severity: { type: String, enum: ['info', 'warning', 'critical'], required: true },
-        message: { type: String, required: true },
-        value: mongoose.Schema.Types.Mixed,
-        threshold: mongoose.Schema.Types.Mixed,
-        timestamp: { type: Date, default: Date.now },
-        resolved: { type: Boolean, default: false },
-        resolvedAt: Date,
-        resolvedBy: String
-      }, { collection: 'performance_alerts' }));
-
-      const performanceAlert = new PerformanceAlert(alert);
-      await performanceAlert.save();
+      await PerformanceAlert.create(alert);
     } catch (error) {
       console.error('Error storing performance alert:', error);
     }
@@ -498,56 +447,48 @@ class PerformanceMonitoringService {
     } = options;
 
     try {
-      const SystemMetrics = mongoose.model('SystemMetrics');
-
-      const result = await SystemMetrics.aggregate([
-        {
-          $match: {
-            timestamp: { $gte: startDate, $lte: endDate }
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            avgCpuUtilization: { $avg: '$cpu.utilization' },
-            maxCpuUtilization: { $max: '$cpu.utilization' },
-            avgMemoryUtilization: { $avg: '$memory.utilization' },
-            maxMemoryUtilization: { $max: '$memory.utilization' },
-            avgLoadAverage: { $avg: '$cpu.loadAverage.1min' },
-            maxLoadAverage: { $max: '$cpu.loadAverage.1min' },
-            avgProcessUptime: { $avg: '$process.uptime' },
-            avgActiveHandles: { $avg: '$process.activeHandles' },
-            avgActiveRequests: { $avg: '$process.activeRequests' },
-            sampleCount: { $sum: 1 }
-          }
-        }
-      ]);
-
-      const stats = result[0] || {};
+      const [stats] = await mainAppDb.query(`
+        SELECT 
+          AVG((cpu->>'utilization')::float) as avg_cpu_utilization,
+          MAX((cpu->>'utilization')::float) as max_cpu_utilization,
+          AVG((memory->>'utilization')::float) as avg_memory_utilization,
+          MAX((memory->>'utilization')::float) as max_memory_utilization,
+          AVG((cpu->'loadAverage'->>'1min')::float) as avg_load_average,
+          MAX((cpu->'loadAverage'->>'1min')::float) as max_load_average,
+          AVG((process->>'uptime')::float) as avg_process_uptime,
+          AVG((process->>'activeHandles')::float) as avg_active_handles,
+          AVG((process->>'activeRequests')::float) as avg_active_requests,
+          COUNT(*) as sample_count
+        FROM system_metrics
+        WHERE timestamp >= :startDate AND timestamp <= :endDate
+      `, {
+        replacements: { startDate, endDate },
+        type: QueryTypes.SELECT
+      });
 
       return {
         cpu: {
-          average: stats.avgCpuUtilization || 0,
-          peak: stats.maxCpuUtilization || 0,
-          loadAverage: stats.avgLoadAverage || 0,
-          peakLoadAverage: stats.maxLoadAverage || 0
+          average: parseFloat(stats.avg_cpu_utilization) || 0,
+          peak: parseFloat(stats.max_cpu_utilization) || 0,
+          loadAverage: parseFloat(stats.avg_load_average) || 0,
+          peakLoadAverage: parseFloat(stats.max_load_average) || 0
         },
         memory: {
-          average: stats.avgMemoryUtilization || 0,
-          peak: stats.maxMemoryUtilization || 0
+          average: parseFloat(stats.avg_memory_utilization) || 0,
+          peak: parseFloat(stats.max_memory_utilization) || 0
         },
         process: {
-          uptime: stats.avgProcessUptime || 0,
-          activeHandles: stats.avgActiveHandles || 0,
-          activeRequests: stats.avgActiveRequests || 0
+          uptime: parseFloat(stats.avg_process_uptime) || 0,
+          activeHandles: parseFloat(stats.avg_active_handles) || 0,
+          activeRequests: parseFloat(stats.avg_active_requests) || 0
         },
         period: { start: startDate, end: endDate },
-        sampleCount: stats.sampleCount || 0
+        sampleCount: parseInt(stats.sample_count) || 0
       };
     } catch (error) {
       console.error('Error getting system capacity utilization:', error);
       return {
-        cpu: { average: 0, peak: 0 },
+        cpu: { average: 0, peak: 0, loadAverage: 0, peakLoadAverage: 0 },
         memory: { average: 0, peak: 0 },
         process: { uptime: 0, activeHandles: 0, activeRequests: 0 },
         period: { start: startDate, end: endDate },

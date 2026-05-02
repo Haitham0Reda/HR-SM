@@ -253,3 +253,6 @@ Salary.associate = (models) => {
 };
 
 export default Salary;
+
+
+

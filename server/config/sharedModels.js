@@ -5,7 +5,7 @@
  * Multi-tenant model management is now handled through Sequelize connections.
  */
 
-import { sequelize } from './database.js';
+import { mainAppDb as sequelize } from './database.js';
 
 // Model Registry - Placeholder for Sequelize models
 // In Sequelize, models are registered directly with the sequelize instance

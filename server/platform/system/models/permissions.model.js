@@ -1,219 +1,260 @@
-// models/Permissions.js
-import mongoose from 'mongoose';
+/**
+ * Permissions Model - PostgreSQL (Sequelize)
+ * Manages employee permissions for late arrivals and early departures
+ */
 
-const permissionsSchema = new mongoose.Schema({
+import { DataTypes, Op } from 'sequelize';
+import sequelize from '../../../config/database.js';
+
+const Permissions = sequelize.define('Permissions', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   employee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   },
   permissionType: {
-    type: String,
-    enum: ['late-arrival', 'early-departure'],
-    required: true
+    type: DataTypes.ENUM('late-arrival', 'early-departure'),
+    allowNull: false
   },
   date: {
-    type: Date,
-    required: true,
-    index: true
+    type: DataTypes.DATEONLY,
+    allowNull: false
   },
   time: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING(5),
+    allowNull: false,
     validate: {
-      validator: function (v) {
-        // Validate HH:MM format (24-hour)
-        return /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
-      },
-      message: 'Time must be in HH:MM format (24-hour)'
+      is: /^([01]\d|2[0-3]):([0-5]\d)$/
     }
   },
   duration: {
-    type: Number, // in hours
-    required: true
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    comment: 'Duration in hours'
   },
   reason: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 300
+    type: DataTypes.STRING(300),
+    allowNull: false
   },
   status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending',
-    index: true
+    type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+    defaultValue: 'pending'
   },
   approvedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    field: 'approved_by'
   },
-  approvedAt: Date,
+  approvedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'approved_at'
+  },
   rejectedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    field: 'rejected_by'
   },
-  rejectedAt: Date,
+  rejectedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'rejected_at'
+  },
   rejectionReason: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'rejection_reason'
   },
   approverNotes: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'approver_notes'
   },
-  // Employee's department (denormalized for faster queries)
   department: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department',
-    index: true
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'departments',
+      key: 'id'
+    }
   },
-  // Employee's position (denormalized for faster queries)
   position: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Position'
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'positions',
+      key: 'id'
+    }
   },
-  // Email notification tracking
   notifications: {
-    submitted: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    approved: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    rejected: {
-      sent: Boolean,
-      sentAt: Date
+    type: DataTypes.JSONB,
+    defaultValue: {
+      submitted: { sent: false, sentAt: null },
+      approved: { sent: false, sentAt: null },
+      rejected: { sent: false, sentAt: null }
     }
   }
 }, {
-  timestamps: true
+  tableName: 'permissions',
+  timestamps: true,
+  underscored: true,
+  indexes: [
+    { fields: ['employee', 'date'] },
+    { fields: ['employee', 'status'] },
+    { fields: ['department', 'status'] },
+    { fields: ['date', 'status'] },
+    { fields: ['permission_type', 'status'] },
+    { fields: ['employee'] },
+    { fields: ['date'] },
+    { fields: ['status'] }
+  ]
 });
 
 // Instance method to approve permission
-permissionsSchema.methods.approve = async function (approverId, notes) {
+Permissions.prototype.approve = async function(approverId, notes) {
   this.status = 'approved';
   this.approvedBy = approverId;
   this.approvedAt = new Date();
-  if (notes && typeof notes === 'string') this.approverNotes = notes.trim();
+  if (notes && typeof notes === 'string') {
+    this.approverNotes = notes.trim();
+  }
   return await this.save();
 };
 
 // Instance method to reject permission
-permissionsSchema.methods.reject = async function (rejecterId, reason) {
+Permissions.prototype.reject = async function(rejecterId, reason) {
   this.status = 'rejected';
   this.rejectedBy = rejecterId;
   this.rejectedAt = new Date();
   this.rejectionReason = reason && typeof reason === 'string' ? reason.trim() : '';
-  return await this.save({ validateBeforeSave: false });
+  return await this.save({ validate: false });
 };
 
 // Static method to get employee permissions with full details
-permissionsSchema.statics.getPermissionsByEmployee = function (employeeId, filters = {}) {
-  const query = { employee: employeeId, ...filters };
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('approvedBy rejectedBy', 'username employeeId personalInfo')
-    .populate('department', 'name code')
-    .populate('position', 'title')
-    .sort({ date: -1 });
+Permissions.getPermissionsByEmployee = function(employeeId, filters = {}) {
+  const where = { employee: employeeId, ...filters };
+  return this.findAll({
+    where,
+    include: [
+      {
+        association: 'employeeUser',
+        attributes: ['profile', 'employeeId', 'email'],
+        include: [
+          { association: 'department', attributes: ['name', 'code', 'manager'] },
+          { association: 'position', attributes: ['title', 'code'] }
+        ]
+      },
+      { association: 'approver', attributes: ['username', 'employeeId', 'personalInfo'] },
+      { association: 'rejecter', attributes: ['username', 'employeeId', 'personalInfo'] },
+      { association: 'departmentRef', attributes: ['name', 'code'] },
+      { association: 'positionRef', attributes: ['title'] }
+    ],
+    order: [['date', 'DESC']]
+  });
 };
 
 // Static method to get pending permissions for approval
-permissionsSchema.statics.getPendingPermissions = function (departmentId = null) {
-  const query = {
-    status: 'pending'
-  };
-
-  // Filter by department if provided
+Permissions.getPendingPermissions = function(departmentId = null) {
+  const where = { status: 'pending' };
+  
   if (departmentId) {
-    query.department = departmentId;
+    where.department = departmentId;
   }
 
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId email',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title code' }
-      ]
-    })
-    .populate('department', 'name code')
-    .sort({ createdAt: 1 });
+  return this.findAll({
+    where,
+    include: [
+      {
+        association: 'employeeUser',
+        attributes: ['profile', 'department', 'position', 'employeeId', 'email'],
+        include: [
+          { association: 'department', attributes: ['name', 'code', 'manager'] },
+          { association: 'position', attributes: ['title', 'code'] }
+        ]
+      },
+      { association: 'departmentRef', attributes: ['name', 'code'] }
+    ],
+    order: [['createdAt', 'ASC']]
+  });
 };
 
 // Static method to get permissions by department
-permissionsSchema.statics.getPermissionsByDepartment = function (departmentId, filters = {}) {
-  const query = { department: departmentId, ...filters };
+Permissions.getPermissionsByDepartment = function(departmentId, filters = {}) {
+  const where = { department: departmentId, ...filters };
 
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile position employeeId email',
-      populate: { path: 'position', select: 'title code' }
-    })
-    .populate('approvedBy rejectedBy', 'username employeeId personalInfo')
-    .sort({ date: -1 });
+  return this.findAll({
+    where,
+    include: [
+      {
+        association: 'employeeUser',
+        attributes: ['profile', 'position', 'employeeId', 'email'],
+        include: [{ association: 'position', attributes: ['title', 'code'] }]
+      },
+      { association: 'approver', attributes: ['username', 'employeeId', 'personalInfo'] },
+      { association: 'rejecter', attributes: ['username', 'employeeId', 'personalInfo'] }
+    ],
+    order: [['date', 'DESC']]
+  });
 };
 
 // Static method to get permissions by date range
-permissionsSchema.statics.getPermissionsByDateRange = function (employeeId, startDate, endDate) {
-  const query = {
-    employee: employeeId,
-    date: {
-      $gte: startDate,
-      $lte: endDate
-    }
-  };
-
-  return this.find(query)
-    .populate('approvedBy rejectedBy', 'username employeeId personalInfo')
-    .sort({ date: 1 });
+Permissions.getPermissionsByDateRange = function(employeeId, startDate, endDate) {
+  return this.findAll({
+    where: {
+      employee: employeeId,
+      date: {
+        [Op.gte]: startDate,
+        [Op.lte]: endDate
+      }
+    },
+    include: [
+      { association: 'approver', attributes: ['username', 'employeeId', 'personalInfo'] },
+      { association: 'rejecter', attributes: ['username', 'employeeId', 'personalInfo'] }
+    ],
+    order: [['date', 'ASC']]
+  });
 };
 
 // Static method to get monthly statistics
-permissionsSchema.statics.getMonthlyStats = async function (employeeId, year, month) {
+Permissions.getMonthlyStats = async function(employeeId, year, month) {
   const monthStart = new Date(year, month - 1, 1);
   const monthEnd = new Date(year, month, 0, 23, 59, 59);
 
-  const stats = await this.aggregate([
-    {
-      $match: {
-        employee: new mongoose.Types.ObjectId(employeeId),
-        date: { $gte: monthStart, $lte: monthEnd }
+  const permissions = await this.findAll({
+    where: {
+      employee: employeeId,
+      date: {
+        [Op.gte]: monthStart,
+        [Op.lte]: monthEnd
       }
     },
-    {
-      $group: {
-        _id: {
-          permissionType: '$permissionType',
-          status: '$status'
-        },
-        count: { $sum: 1 },
-        totalHours: { $sum: '$duration' }
-      }
-    }
-  ]);
+    attributes: [
+      'permissionType',
+      'status',
+      [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+      [sequelize.fn('SUM', sequelize.col('duration')), 'totalHours']
+    ],
+    group: ['permissionType', 'status'],
+    raw: true
+  });
 
-  return stats;
+  return permissions;
 };
 
-// Compound indexes for better performance
-permissionsSchema.index({ employee: 1, date: 1 });
-permissionsSchema.index({ employee: 1, status: 1 });
-permissionsSchema.index({ department: 1, status: 1 });
-permissionsSchema.index({ date: 1, status: 1 });
-permissionsSchema.index({ permissionType: 1, status: 1 });
-
-export default mongoose.model('Permissions', permissionsSchema);
+export default Permissions;

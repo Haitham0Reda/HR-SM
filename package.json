@@ -107,7 +107,10 @@
     "db:seed": "node server/seed.js",
     "db:seed-companies": "node server/scripts/seedFullCompanies.js",
     "license:sync": "node server/scripts/syncLicenses.js",
-    "license:validate": "node server/scripts/validateLicenses.js"
+    "license:validate": "node server/scripts/validateLicenses.js",
+    "check:postgresql": "node scripts/check-postgresql-readiness.js",
+    "db:sync": "node scripts/sync-postgresql-tables.js",
+    "db:sync:simple": "node scripts/simple-db-sync.js"
   },
   "keywords": [],
   "author": "",
@@ -153,6 +156,7 @@
     "helmet": "^7.1.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^7.2.0",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "node-fetch": "^3.3.2",

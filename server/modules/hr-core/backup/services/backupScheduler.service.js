@@ -4,9 +4,10 @@
  */
 import cron from 'node-cron';
 import os from 'os';
+import { Op } from 'sequelize';
 import Backup from '../models/backup.model.js';
 import BackupExecution from '../models/backupExecution.model.js';
-import mongooseBackup from './mongooseBackup.service.js';
+import postgresBackup from './postgresBackup.service.js';
 import backupEmail from './backupEmail.service.js';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
@@ -26,10 +27,11 @@ class BackupSchedulerService {
      */
     async initialize() {
         try {
-
-            const scheduledBackups = await Backup.find({
-                'schedule.enabled': true,
-                isActive: true
+            const scheduledBackups = await Backup.findAll({
+                where: {
+                    'schedule.enabled': true,
+                    is_active: true
+                }
             });
 
             for (const backup of scheduledBackups) {
@@ -46,7 +48,7 @@ class BackupSchedulerService {
      */
     scheduleBackup(backup) {
         // Remove existing job if any
-        this.cancelBackup(backup._id.toString());
+        this.cancelBackup(backup.id.toString());
 
         const cronExpression = this.getCronExpression(backup.schedule);
         
@@ -60,7 +62,7 @@ class BackupSchedulerService {
             await this.executeBackup(backup);
         });
 
-        this.scheduledJobs.set(backup._id.toString(), job);
+        this.scheduledJobs.set(backup.id.toString(), job);
 
     }
 
@@ -110,29 +112,27 @@ class BackupSchedulerService {
         
         try {
             // Create execution record
-            execution = new BackupExecution({
-                backup: backup._id,
-                backupName: backup.name,
-                executionType: 'scheduled',
+            execution = await BackupExecution.create({
+                backup_id: backup.id,
+                backup_name: backup.name,
+                execution_type: 'scheduled',
                 status: 'running',
-                serverInfo: {
+                server_info: {
                     hostname: os.hostname(),
                     nodeVersion: process.version,
                     platform: process.platform
                 }
             });
 
-            await execution.save();
-
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const backupDir = path.join(backup.storage.location, backup.backupType);
+            const backupDir = path.join(backup.storage.location, backup.backup_type);
 
             // Ensure backup directory exists
             await fs.mkdir(backupDir, { recursive: true });
 
             let result = {};
 
-            switch (backup.backupType) {
+            switch (backup.backup_type) {
                 case 'database':
                     result = await this.performDatabaseBackup(backup, backupDir, timestamp);
                     break;
@@ -143,7 +143,7 @@ class BackupSchedulerService {
                     result = await this.performFullBackup(backup, backupDir, timestamp);
                     break;
                 default:
-                    throw new Error(`Unsupported backup type: ${backup.backupType}`);
+                    throw new Error(`Unsupported backup type: ${backup.backup_type}`);
             }
 
             // Mark execution as completed
@@ -182,8 +182,8 @@ class BackupSchedulerService {
      * Perform database backup
      */
     async performDatabaseBackup(backup, backupDir, timestamp) {
-        // Use Mongoose-based backup (works without mongodump)
-        return await mongooseBackup.performDatabaseBackup(backup, backupDir, timestamp);
+        // Use PostgreSQL-based backup (works with pg_dump)
+        return await postgresBackup.performDatabaseBackup(backup, backupDir, timestamp);
     }
 
     /**
@@ -346,22 +346,24 @@ class BackupSchedulerService {
             const cutoffDate = new Date();
             cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
-            const oldExecutions = await BackupExecution.find({
-                backup: backup._id,
-                createdAt: { $lt: cutoffDate },
-                status: 'completed'
+            const oldExecutions = await BackupExecution.findAll({
+                where: {
+                    backup_id: backup.id,
+                    created_at: { [Op.lt]: cutoffDate },
+                    status: 'completed'
+                }
             });
 
             for (const execution of oldExecutions) {
-                if (execution.backupPath) {
+                if (execution.backup_path) {
                     try {
-                        await fs.unlink(execution.backupPath);
+                        await fs.unlink(execution.backup_path);
 
                     } catch (err) {
 
                     }
                 }
-                await execution.deleteOne();
+                await execution.destroy();
             }
 
             if (oldExecutions.length > 0) {

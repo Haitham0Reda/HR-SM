@@ -1,173 +1,235 @@
-// models/Request.js
-import mongoose from 'mongoose';
+/**
+ * Request Model - PostgreSQL (Sequelize)
+ * 
+ * Generic request management system for various HR request types.
+ * Supports approval chains and multi-level approval workflows.
+ * 
+ * @module models/Request
+ */
 
-const requestSchema = new mongoose.Schema({
-    tenantId: {
-        type: String,
-        required: [true, 'Tenant ID is required'],
-        index: true,
-        trim: true
-    },
-    requestType: {
-        type: String,
-        enum: ['overtime', 'vacation', 'mission', 'forget-check', 'permission', 'sick-leave', 'day-swap'],
-        required: true,
-        index: true
-    },
-    requestedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
-    },
-    status: {
-        type: String,
-        enum: ['pending', 'approved', 'rejected', 'cancelled'],
-        default: 'pending',
-        index: true
-    },
-    requestData: {
-        type: mongoose.Schema.Types.Mixed,
-        required: true
-    },
-    approvalChain: [{
-        approver: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        status: {
-            type: String,
-            enum: ['pending', 'approved', 'rejected']
-        },
-        comments: String,
-        timestamp: {
-            type: Date,
-            default: Date.now
-        }
-    }],
-    // Final reviewer (for backward compatibility)
-    reviewer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    reviewedAt: Date,
-    comments: String,
-    // Metadata
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
-    }
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
+
+const Request = mainAppDb.define('Request', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the request (UUID)'
+  },
+
+  // Tenant ID for multi-tenancy
+  tenantId: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'tenant_id',
+    comment: 'Tenant/Company identifier'
+  },
+
+  // Request Type
+  requestType: {
+    type: DataTypes.ENUM('overtime', 'vacation', 'mission', 'forget-check', 'permission', 'sick-leave', 'day-swap'),
+    allowNull: false,
+    field: 'request_type',
+    comment: 'Type of request'
+  },
+
+  // Requested By
+  requestedById: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'requested_by_id',
+    comment: 'User who made the request'
+  },
+
+  // Status
+  status: {
+    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'),
+    allowNull: false,
+    defaultValue: 'pending',
+    comment: 'Request status'
+  },
+
+  // Request Data - stored as JSONB
+  requestData: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    field: 'request_data',
+    comment: 'Request-specific data'
+  },
+
+  // Approval Chain - stored as JSONB
+  approvalChain: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: [],
+    field: 'approval_chain',
+    comment: 'Approval chain with approvers and their decisions'
+  },
+
+  // Final Reviewer (for backward compatibility)
+  reviewerId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'reviewer_id',
+    comment: 'Final reviewer'
+  },
+  reviewedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'reviewed_at',
+    comment: 'Review timestamp'
+  },
+
+  // Comments
+  comments: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Comments or notes'
+  }
 }, {
-    timestamps: true
+  tableName: 'requests',
+  timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+
+  // Indexes for performance optimization
+  indexes: [
+    {
+      name: 'idx_requests_tenant_id_requested_by_id',
+      fields: ['tenant_id', 'requested_by_id']
+    },
+    {
+      name: 'idx_requests_tenant_id_status',
+      fields: ['tenant_id', 'status']
+    },
+    {
+      name: 'idx_requests_tenant_id_requested_by_id_status',
+      fields: ['tenant_id', 'requested_by_id', 'status']
+    },
+    {
+      name: 'idx_requests_tenant_id_request_type_status',
+      fields: ['tenant_id', 'request_type', 'status']
+    },
+    {
+      name: 'idx_requests_tenant_id_created_at',
+      fields: ['tenant_id', 'created_at']
+    }
+  ]
 });
 
-// Compound indexes for tenant isolation and performance
-requestSchema.index({ tenantId: 1, requestedBy: 1, status: 1 });
-requestSchema.index({ tenantId: 1, requestType: 1, status: 1 });
-requestSchema.index({ tenantId: 1, createdAt: -1 });
+// Instance Methods
+Request.prototype.approve = async function(approverId, comments = '') {
+  // Validate status transition
+  if (this.status !== 'pending') {
+    throw new Error(`Cannot approve request with status: ${this.status}`);
+  }
 
-/**
- * Instance method to approve request
- */
-requestSchema.methods.approve = async function (approverId, comments = '') {
-    // Validate status transition
-    if (this.status !== 'pending') {
-        throw new Error(`Cannot approve request with status: ${this.status}`);
-    }
-    
-    this.status = 'approved';
-    this.reviewer = approverId;
-    this.reviewedAt = new Date();
-    this.comments = comments;
-    
-    // Add to approval chain
-    this.approvalChain.push({
-        approver: approverId,
-        status: 'approved',
-        comments,
-        timestamp: new Date()
-    });
-    
-    return await this.save();
+  this.status = 'approved';
+  this.reviewerId = approverId;
+  this.reviewedAt = new Date();
+  this.comments = comments;
+
+  // Add to approval chain
+  const approvalChain = [...this.approvalChain];
+  approvalChain.push({
+    approver: approverId,
+    status: 'approved',
+    comments,
+    timestamp: new Date()
+  });
+  this.approvalChain = approvalChain;
+
+  return await this.save();
 };
 
-/**
- * Instance method to reject request
- */
-requestSchema.methods.reject = async function (approverId, comments = '') {
-    // Validate status transition
-    if (this.status !== 'pending') {
-        throw new Error(`Cannot reject request with status: ${this.status}`);
-    }
-    
-    this.status = 'rejected';
-    this.reviewer = approverId;
-    this.reviewedAt = new Date();
-    this.comments = comments;
-    
-    // Add to approval chain
-    this.approvalChain.push({
-        approver: approverId,
-        status: 'rejected',
-        comments,
-        timestamp: new Date()
-    });
-    
-    return await this.save();
+Request.prototype.reject = async function(approverId, comments = '') {
+  // Validate status transition
+  if (this.status !== 'pending') {
+    throw new Error(`Cannot reject request with status: ${this.status}`);
+  }
+
+  this.status = 'rejected';
+  this.reviewerId = approverId;
+  this.reviewedAt = new Date();
+  this.comments = comments;
+
+  // Add to approval chain
+  const approvalChain = [...this.approvalChain];
+  approvalChain.push({
+    approver: approverId,
+    status: 'rejected',
+    comments,
+    timestamp: new Date()
+  });
+  this.approvalChain = approvalChain;
+
+  return await this.save();
 };
 
-/**
- * Instance method to cancel request
- */
-requestSchema.methods.cancel = async function (userId, comments = '') {
-    // Validate status transition
-    if (this.status !== 'pending') {
-        throw new Error(`Cannot cancel request with status: ${this.status}`);
-    }
-    
-    // Only the requester can cancel
-    if (this.requestedBy.toString() !== userId.toString()) {
-        throw new Error('Only the requester can cancel the request');
-    }
-    
-    this.status = 'cancelled';
-    this.comments = comments;
-    
-    return await this.save();
+Request.prototype.cancel = async function(userId, comments = '') {
+  // Validate status transition
+  if (this.status !== 'pending') {
+    throw new Error(`Cannot cancel request with status: ${this.status}`);
+  }
+
+  // Only the requester can cancel
+  if (this.requestedById !== userId) {
+    throw new Error('Only the requester can cancel the request');
+  }
+
+  this.status = 'cancelled';
+  this.comments = comments;
+
+  return await this.save();
 };
 
-/**
- * Static method to get requests by tenant and status
- */
-requestSchema.statics.getByTenantAndStatus = function (tenantId, status) {
-    return this.find({ tenantId, status })
-        .populate('requestedBy', 'username email employeeId personalInfo')
-        .populate('reviewer', 'username email')
-        .sort({ createdAt: -1 });
+// Static Methods
+Request.getByTenantAndStatus = function(tenantId, status) {
+  return this.findAll({
+    where: { tenantId, status },
+    order: [['createdAt', 'DESC']]
+  });
 };
 
-/**
- * Static method to get requests by type
- */
-requestSchema.statics.getByType = function (tenantId, requestType) {
-    return this.find({ tenantId, requestType })
-        .populate('requestedBy', 'username email employeeId personalInfo')
-        .populate('reviewer', 'username email')
-        .sort({ createdAt: -1 });
+Request.getByType = function(tenantId, requestType) {
+  return this.findAll({
+    where: { tenantId, requestType },
+    order: [['createdAt', 'DESC']]
+  });
 };
 
-/**
- * Static method to get pending requests for approval
- */
-requestSchema.statics.getPendingRequests = function (tenantId) {
-    return this.find({ tenantId, status: 'pending' })
-        .populate('requestedBy', 'username email employeeId personalInfo department')
-        .populate('approvalChain.approver', 'username email')
-        .sort({ createdAt: 1 });
+Request.getPendingRequests = function(tenantId) {
+  return this.findAll({
+    where: { tenantId, status: 'pending' },
+    order: [['createdAt', 'ASC']]
+  });
 };
 
-export default mongoose.model('Request', requestSchema);
+Request.getUserRequests = function(tenantId, userId, filters = {}) {
+  return this.findAll({
+    where: {
+      tenantId,
+      requestedById: userId,
+      ...filters
+    },
+    order: [['createdAt', 'DESC']]
+  });
+};
+
+Request.getRequestsByDateRange = function(tenantId, startDate, endDate, filters = {}) {
+  return this.findAll({
+    where: {
+      tenantId,
+      createdAt: {
+        [Op.between]: [startDate, endDate]
+      },
+      ...filters
+    },
+    order: [['createdAt', 'DESC']]
+  });
+};
+
+export default Request;

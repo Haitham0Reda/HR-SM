@@ -3,7 +3,7 @@
  * 
  * Validation and business logic for holidays
  */
-import mongoose from 'mongoose';
+// No mongoose imports needed - this middleware only does validation
 
 /**
  * Validate date format (DD-MM-YYYY)
@@ -45,7 +45,9 @@ export const validatelocation = async (req, res, next) => {
             });
         }
 
-        if (!mongoose.Types.ObjectId.isValid(locationId)) {
+        // Validate UUID format (Sequelize uses UUIDs instead of ObjectIds)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(locationId)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid location ID'

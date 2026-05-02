@@ -3,7 +3,8 @@
  * 
  * Validates user creation and updates.
  */
-import mongoose from 'mongoose';
+import User from '../modules/hr-core/users/models/user.model.js';
+import { Op } from 'sequelize';
 
 /**
  * Validate email uniqueness middleware
@@ -12,15 +13,14 @@ import mongoose from 'mongoose';
 export const checkEmailUnique = async (req, res, next) => {
     try {
         if (req.body.email) {
-            const User = mongoose.model('User');
             const userId = req.params.id;
 
-            const query = { email: req.body.email };
+            const where = { email: req.body.email };
             if (userId) {
-                query._id = { $ne: userId };
+                where.id = { [Op.ne]: userId };
             }
 
-            const existingUser = await User.findOne(query);
+            const existingUser = await User.findOne({ where });
 
             if (existingUser) {
                 return res.status(400).json({
@@ -31,7 +31,7 @@ export const checkEmailUnique = async (req, res, next) => {
         }
         next();
     } catch (error) {
-
+        console.error('Check email unique error:', error);
         next();
     }
 };
@@ -43,15 +43,14 @@ export const checkEmailUnique = async (req, res, next) => {
 export const checkUsernameUnique = async (req, res, next) => {
     try {
         if (req.body.username) {
-            const User = mongoose.model('User');
             const userId = req.params.id;
 
-            const query = { username: req.body.username };
+            const where = { username: req.body.username };
             if (userId) {
-                query._id = { $ne: userId };
+                where.id = { [Op.ne]: userId };
             }
 
-            const existingUser = await User.findOne(query);
+            const existingUser = await User.findOne({ where });
 
             if (existingUser) {
                 return res.status(400).json({
@@ -62,7 +61,7 @@ export const checkUsernameUnique = async (req, res, next) => {
         }
         next();
     } catch (error) {
-
+        console.error('Check username unique error:', error);
         next();
     }
 };

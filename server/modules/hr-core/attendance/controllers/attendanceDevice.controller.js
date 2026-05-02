@@ -2,7 +2,8 @@ import AttendanceDevice from '../models/attendanceDevice.model.js';
 import attendanceDeviceService from '../services/attendanceDevice.service.js';
 import logger from '../../../../utils/logger.js';
 import xlsx from 'xlsx';
-import mongoose from 'mongoose';
+import Department from '../../users/models/department.model.js';
+import User from '../../users/models/user.model.js';
 
 /**
  * Get all attendance devices (tenant-aware)
@@ -17,10 +18,23 @@ export const getAllDevices = async (req, res) => {
             });
         }
         
-        const devices = await AttendanceDevice.find({ tenantId: req.tenantId })
-            .populate('departments', 'name code')
-            .populate('createdBy', 'username employeeId')
-            .sort({ createdAt: -1 });
+        const devices = await AttendanceDevice.findAll({
+            where: { tenantId: req.tenantId },
+            include: [
+                {
+                    model: Department,
+                    as: 'departmentList',
+                    attributes: ['name', 'code'],
+                    through: { attributes: [] }
+                },
+                {
+                    model: User,
+                    as: 'createdBy',
+                    attributes: ['username', 'employeeId']
+                }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
         
         res.json({
             success: true,
@@ -41,12 +55,25 @@ export const getAllDevices = async (req, res) => {
  */
 export const getDeviceById = async (req, res) => {
     try {
-        const device = await AttendanceDevice.findOne({ 
-            _id: req.params.id, 
-            tenantId: req.tenantId 
-        })
-            .populate('departments', 'name code')
-            .populate('createdBy', 'username employeeId');
+        const device = await AttendanceDevice.findOne({
+            where: {
+                id: req.params.id,
+                tenantId: req.tenantId
+            },
+            include: [
+                {
+                    model: Department,
+                    as: 'departmentList',
+                    attributes: ['name', 'code'],
+                    through: { attributes: [] }
+                },
+                {
+                    model: User,
+                    as: 'createdBy',
+                    attributes: ['username', 'employeeId']
+                }
+            ]
+        });
         
         if (!device) {
             return res.status(404).json({
@@ -76,21 +103,34 @@ export const registerDevice = async (req, res) => {
         const deviceData = {
             ...req.body,
             tenantId: req.tenantId,
-            createdBy: req.user._id
+            createdById: req.user.id
         };
         
-        const device = new AttendanceDevice(deviceData);
-        await device.save();
+        const device = await AttendanceDevice.create(deviceData);
         
-        await device.populate('departments', 'name code');
-        await device.populate('createdBy', 'username employeeId');
+        // Reload with associations
+        const deviceWithAssociations = await AttendanceDevice.findByPk(device.id, {
+            include: [
+                {
+                    model: Department,
+                    as: 'departmentList',
+                    attributes: ['name', 'code'],
+                    through: { attributes: [] }
+                },
+                {
+                    model: User,
+                    as: 'createdBy',
+                    attributes: ['username', 'employeeId']
+                }
+            ]
+        });
         
         logger.info(`New device registered: ${device.deviceName} by user ${req.user.username} for tenant ${req.tenantId}`);
         
         res.status(201).json({
             success: true,
             message: 'Device registered successfully',
-            data: device
+            data: deviceWithAssociations
         });
     } catch (error) {
         logger.error('Error registering device:', error);
@@ -106,20 +146,43 @@ export const registerDevice = async (req, res) => {
  */
 export const updateDevice = async (req, res) => {
     try {
-        const device = await AttendanceDevice.findOneAndUpdate(
-            { _id: req.params.id, tenantId: req.tenantId },
+        const [affectedCount] = await AttendanceDevice.update(
             req.body,
-            { new: true, runValidators: true }
-        )
-            .populate('departments', 'name code')
-            .populate('createdBy', 'username employeeId');
+            {
+                where: {
+                    id: req.params.id,
+                    tenantId: req.tenantId
+                }
+            }
+        );
         
-        if (!device) {
+        if (affectedCount === 0) {
             return res.status(404).json({
                 success: false,
                 error: 'Device not found'
             });
         }
+        
+        // Fetch updated device with associations
+        const device = await AttendanceDevice.findOne({
+            where: {
+                id: req.params.id,
+                tenantId: req.tenantId
+            },
+            include: [
+                {
+                    model: Department,
+                    as: 'departmentList',
+                    attributes: ['name', 'code'],
+                    through: { attributes: [] }
+                },
+                {
+                    model: User,
+                    as: 'createdBy',
+                    attributes: ['username', 'employeeId']
+                }
+            ]
+        });
         
         logger.info(`Device updated: ${device.deviceName} by user ${req.user.username} for tenant ${req.tenantId}`);
         
@@ -142,9 +205,12 @@ export const updateDevice = async (req, res) => {
  */
 export const deleteDevice = async (req, res) => {
     try {
-        const device = await AttendanceDevice.findOneAndDelete({ 
-            _id: req.params.id, 
-            tenantId: req.tenantId 
+        // First fetch the device to get its name for logging
+        const device = await AttendanceDevice.findOne({
+            where: {
+                id: req.params.id,
+                tenantId: req.tenantId
+            }
         });
         
         if (!device) {
@@ -153,6 +219,13 @@ export const deleteDevice = async (req, res) => {
                 error: 'Device not found'
             });
         }
+        
+        await AttendanceDevice.destroy({
+            where: {
+                id: req.params.id,
+                tenantId: req.tenantId
+            }
+        });
         
         logger.info(`Device deleted: ${device.deviceName} by user ${req.user.username} for tenant ${req.tenantId}`);
         
@@ -224,7 +297,7 @@ export const syncAllDevices = async (req, res) => {
         
         for (const device of devices) {
             try {
-                const result = await attendanceDeviceService.syncDevice(device._id, req.tenantId);
+                const result = await attendanceDeviceService.syncDevice(device.id, req.tenantId);
                 results.push(result);
             } catch (error) {
                 logger.error(`Error syncing device ${device.deviceName}:`, error);
@@ -290,12 +363,12 @@ export const receivePushedLogs = async (req, res) => {
         }
         
         // Find device with tenant validation
-        const query = { _id: deviceId };
+        const where = { id: deviceId };
         if (tenantId) {
-            query.tenantId = tenantId;
+            where.tenantId = tenantId;
         }
         
-        const device = await AttendanceDevice.findOne(query);
+        const device = await AttendanceDevice.findOne({ where });
         
         if (!device) {
             return res.status(404).json({

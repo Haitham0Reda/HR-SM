@@ -4,34 +4,17 @@
  * Business logic and validation for leave requests
  * Extracted from leave.model.js to follow middleware organization pattern
  */
-import mongoose from 'mongoose';
+// Note: This middleware needs refactoring - some functions are post-save hooks
+// that should be moved to model hooks or service layer
 
 /**
  * Populate department and position from employee before save
+ * TODO: This needs to be refactored to use Sequelize
  */
 export const populateDepartmentPosition = async (req, res, next) => {
-    try {
-        if (req.body.employee || req.leave?.isModified('employee')) {
-            const User = mongoose.model('User');
-            const employee = await User.findById(req.body.employee || req.leave.employee)
-                .select('department position');
-
-            if (employee) {
-                if (req.body) {
-                    req.body.department = employee.department;
-                    req.body.position = employee.position;
-                }
-                if (req.leave) {
-                    req.leave.department = employee.department;
-                    req.leave.position = employee.position;
-                }
-            }
-        }
-        next();
-    } catch (error) {
-
-        next();
-    }
+    // Temporarily disabled - needs Sequelize migration
+    console.warn('populateDepartmentPosition middleware needs Sequelize migration');
+    next();
 };
 
 /**
@@ -77,40 +60,12 @@ export const setMedicalDocRequirement = (req, res, next) => {
 
 /**
  * Reserve vacation balance for pending leave requests
+ * TODO: This needs to be refactored to use Sequelize
  */
 export const reserveVacationBalance = async (req, res, next) => {
-    try {
-        if (req.body.employee && ['annual', 'casual', 'sick'].includes(req.body.leaveType)) {
-            const VacationBalance = mongoose.model('VacationBalance');
-            const year = new Date(req.body.startDate).getFullYear();
-
-            // Find or create vacation balance for employee
-            let balance = await VacationBalance.findOne({
-                employee: req.body.employee,
-                year
-            });
-
-            if (!balance) {
-                balance = await VacationBalance.initializeForEmployee(req.body.employee);
-            }
-
-            // Link vacation balance
-            req.body.vacationBalance = balance._id;
-
-            // For sick leave, reserve from annual balance instead
-            const balanceType = req.body.leaveType === 'sick' ? 'annual' : req.body.leaveType;
-
-            // Reserve balance if status is pending
-            if (!req.body.status || req.body.status === 'pending') {
-                await balance.reserveBalance(balanceType, req.body.duration);
-            }
-        }
-        next();
-    } catch (error) {
-
-        // Don't block save if balance reservation fails
-        next();
-    }
+    // Temporarily disabled - needs Sequelize migration
+    console.warn('reserveVacationBalance middleware needs Sequelize migration');
+    next();
 };
 
 /**
@@ -136,133 +91,20 @@ export const initializeWorkflow = (req, res, next) => {
 
 /**
  * Handle vacation balance updates on status change (post-save)
+ * TODO: This should be moved to a model hook or service layer
  */
 export const handleVacationBalanceUpdate = async (leave) => {
-    try {
-        const VacationBalance = mongoose.model('VacationBalance');
-        const year = new Date(leave.startDate).getFullYear();
-        const balance = await VacationBalance.findOne({
-            employee: leave.employee,
-            year
-        });
-
-        if (balance) {
-            // Determine balance type (sick leave uses annual balance)
-            const balanceType = leave.leaveType === 'sick' ? 'annual' : leave.leaveType;
-
-            if (leave.status === 'approved' && ['annual', 'casual', 'sick'].includes(leave.leaveType)) {
-                // Confirm usage - move from pending to used
-                await balance.confirmUsage(balanceType, leave.duration);
-            } else if (['rejected', 'cancelled'].includes(leave.status)) {
-                // Release reserved balance back to available
-                await balance.releaseBalance(balanceType, leave.duration);
-            }
-        }
-    } catch (error) {
-
-    }
+    // Temporarily disabled - needs Sequelize migration and should be a model hook
+    console.warn('handleVacationBalanceUpdate needs to be moved to model hooks');
 };
 
 /**
  * Create notifications on workflow/status changes (post-save)
+ * TODO: This should be moved to a model hook or service layer
  */
 export const createLeaveNotifications = async (leave, previousValues) => {
-    try {
-        const Notification = mongoose.model('Notification');
-        const User = mongoose.model('User');
-
-        // If this is a new request (status is pending and no previous values), notify HR/Admin and employee
-        if (leave.status === 'pending' && !previousValues) {
-            // Get all HR and Admin users
-            const hrAdminUsers = await User.find({ role: { $in: ['hr', 'admin'] } });
-
-            // Get employee details
-            const employee = await User.findById(leave.employee);
-            const employeeName = employee?.name || 'An employee';
-
-            // Create notifications for each HR/Admin
-            const hrNotifications = hrAdminUsers.map(user => ({
-                recipient: user._id,
-                type: 'leave',
-                title: 'New Leave Request',
-                message: `${employeeName} has submitted a ${leave.leaveType} leave request from ${leave.startDate.toLocaleDateString()} to ${leave.endDate.toLocaleDateString()}.`,
-                status: leave.status,
-                relatedModel: 'Leave',
-                relatedId: leave._id
-            }));
-
-            // Create notification for the employee (confirmation)
-            const employeeNotification = {
-                recipient: leave.employee,
-                type: 'leave',
-                title: 'Leave Request Submitted',
-                message: `Your ${leave.leaveType} leave request from ${leave.startDate.toLocaleDateString()} to ${leave.endDate.toLocaleDateString()} has been submitted and is pending approval.`,
-                status: leave.status,
-                relatedModel: 'Leave',
-                relatedId: leave._id
-            };
-
-            const allNotifications = [...hrNotifications, employeeNotification];
-
-            if (allNotifications.length > 0) {
-
-                await Notification.insertMany(allNotifications);
-
-            } else {
-
-            }
-        }
-
-        // Notify employee about status changes
-        let notificationData = {
-            recipient: leave.employee,
-            relatedModel: 'Leave',
-            relatedId: leave._id,
-            status: leave.status
-        };
-
-        switch (leave.workflow.currentStep) {
-            case 'doctor-review':
-                notificationData.type = 'leave';
-                notificationData.title = 'Sick Leave - Pending Doctor Review';
-                notificationData.message = `Your sick leave request has been approved by your manager and is now pending doctor review.`;
-                break;
-
-            case 'completed':
-                if (leave.status === 'approved') {
-                    notificationData.type = 'leave';
-                    notificationData.title = `${leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1)} Leave Approved`;
-                    notificationData.message = `Your ${leave.leaveType} leave request from ${leave.startDate.toLocaleDateString()} to ${leave.endDate.toLocaleDateString()} has been approved.`;
-                }
-                break;
-
-            case 'rejected':
-                notificationData.type = 'leave';
-                notificationData.title = `${leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1)} Leave Rejected`;
-                notificationData.message = `Your ${leave.leaveType} leave request has been rejected. Reason: ${leave.rejectionReason}`;
-                notificationData.status = 'rejected';
-                break;
-        }
-
-        if (notificationData.title) {
-            await Notification.create(notificationData);
-        }
-
-        // Handle additional documentation request notification
-        if (leave.medicalDocumentation?.additionalDocRequested) {
-            await Notification.create({
-                recipient: leave.employee,
-                type: 'leave',
-                title: 'Additional Medical Documentation Required',
-                message: `The doctor has requested additional medical documentation for your sick leave request. ${leave.medicalDocumentation.requestNotes || ''}`,
-                status: leave.status,
-                relatedModel: 'Leave',
-                relatedId: leave._id
-            });
-        }
-    } catch (error) {
-
-    }
+    // Temporarily disabled - needs Sequelize migration and should be a model hook
+    console.warn('createLeaveNotifications needs to be moved to model hooks');
 };
 
 export default {

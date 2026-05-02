@@ -3,7 +3,7 @@
  * 
  * Validates and processes payroll-related requests.
  */
-import mongoose from 'mongoose';
+import Payroll from '../modules/payroll/models/payroll.model.js';
 
 /**
  * Validate payroll period middleware
@@ -40,25 +40,25 @@ export const validatePayrollPeriod = (req, res, next) => {
 export const checkDuplicatePayroll = async (req, res, next) => {
     try {
         if (req.body.employee && req.body.period?.startDate && req.body.period?.endDate) {
-            const Payroll = mongoose.model('Payroll');
-
             const existing = await Payroll.findOne({
-                employee: req.body.employee,
-                'period.startDate': req.body.period.startDate,
-                'period.endDate': req.body.period.endDate
+                where: {
+                    employee_id: req.body.employee,
+                    period_start_date: req.body.period.startDate,
+                    period_end_date: req.body.period.endDate
+                }
             });
 
             if (existing) {
                 return res.status(400).json({
                     success: false,
                     message: 'Payroll already exists for this employee and period',
-                    existingPayroll: existing._id
+                    existingPayroll: existing.id
                 });
             }
         }
         next();
     } catch (error) {
-
+        console.error('Check duplicate payroll error:', error);
         next();
     }
 };

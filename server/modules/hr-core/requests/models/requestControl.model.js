@@ -12,325 +12,180 @@
  * - Schedule-based controls (optional)
  * - Audit trail of control changes
  */
-import mongoose from 'mongoose';
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
 
-const requestControlSchema = new mongoose.Schema({
+const RequestControl = mainAppDb.define('RequestControl', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+
     // Tenant ID for multi-tenancy
     tenantId: {
-        type: String,
-        required: [true, 'Tenant ID is required'],
-        index: true,
-        trim: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        field: 'tenant_id'
     },
 
     // Organization/location reference
     organization: {
-        type: String,
-        default: 'default',
-        index: true
+        type: DataTypes.STRING,
+        defaultValue: 'default'
     },
 
     // System-wide control
     systemWide: {
-        enabled: {
-            type: Boolean,
-            default: true
+        type: DataTypes.JSONB,
+        defaultValue: {
+            enabled: true,
+            disabledMessage: 'Request submissions are currently disabled. Please contact HR for more information.'
         },
-        disabledMessage: {
-            type: String,
-            default: 'Request submissions are currently disabled. Please contact HR for more information.'
-        },
-        disabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        disabledAt: Date,
-        enabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        enabledAt: Date,
-        reason: String  // Reason for disabling
+        field: 'system_wide'
+        // Structure: { enabled, disabledMessage, disabledBy, disabledAt, enabledBy, enabledAt, reason }
     },
 
     // Vacation requests control (Annual and Casual leave)
     vacationRequests: {
-        enabled: {
-            type: Boolean,
-            default: true
-        },
-        disabledMessage: {
-            type: String,
-            default: 'Vacation requests are currently disabled. Please try again later.'
-        },
-        disabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        disabledAt: Date,
-        enabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        enabledAt: Date,
-        reason: String,
-        // Specific leave types under vacation
-        leaveTypes: {
-            'annual': {
-                enabled: {
-                    type: Boolean,
-                    default: true
-                },
-                disabledMessage: String
-            },
-            'casual': {
-                enabled: {
-                    type: Boolean,
-                    default: true
-                },
-                disabledMessage: String
+        type: DataTypes.JSONB,
+        defaultValue: {
+            enabled: true,
+            disabledMessage: 'Vacation requests are currently disabled. Please try again later.',
+            leaveTypes: {
+                annual: { enabled: true },
+                casual: { enabled: true }
             }
-        }
+        },
+        field: 'vacation_requests'
+        // Structure: { enabled, disabledMessage, disabledBy, disabledAt, enabledBy, enabledAt, reason, leaveTypes }
     },
 
     // Permission requests control (Late arrival, Early departure, Overtime)
     permissionRequests: {
-        enabled: {
-            type: Boolean,
-            default: true
-        },
-        disabledMessage: {
-            type: String,
-            default: 'Permission requests are currently disabled. Please contact your supervisor.'
-        },
-        disabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        disabledAt: Date,
-        enabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        enabledAt: Date,
-        reason: String,
-        // Specific permission types
-        permissionTypes: {
-            'late-arrival': {
-                enabled: {
-                    type: Boolean,
-                    default: true
-                },
-                disabledMessage: String
-            },
-            'early-departure': {
-                enabled: {
-                    type: Boolean,
-                    default: true
-                },
-                disabledMessage: String
-            },
-            'overtime': {
-                enabled: {
-                    type: Boolean,
-                    default: true
-                },
-                disabledMessage: String
+        type: DataTypes.JSONB,
+        defaultValue: {
+            enabled: true,
+            disabledMessage: 'Permission requests are currently disabled. Please contact your supervisor.',
+            permissionTypes: {
+                'late-arrival': { enabled: true },
+                'early-departure': { enabled: true },
+                'overtime': { enabled: true }
             }
-        }
+        },
+        field: 'permission_requests'
+        // Structure: { enabled, disabledMessage, disabledBy, disabledAt, enabledBy, enabledAt, reason, permissionTypes }
     },
 
     // Sick leave requests control
     sickLeave: {
-        enabled: {
-            type: Boolean,
-            default: true
+        type: DataTypes.JSONB,
+        defaultValue: {
+            enabled: true,
+            disabledMessage: 'Sick leave requests are currently disabled. For urgent medical situations, please contact HR directly.'
         },
-        disabledMessage: {
-            type: String,
-            default: 'Sick leave requests are currently disabled. For urgent medical situations, please contact HR directly.'
-        },
-        disabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        disabledAt: Date,
-        enabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        enabledAt: Date,
-        reason: String
+        field: 'sick_leave'
+        // Structure: { enabled, disabledMessage, disabledBy, disabledAt, enabledBy, enabledAt, reason }
     },
 
     // Mission requests control
     missionRequests: {
-        enabled: {
-            type: Boolean,
-            default: true
+        type: DataTypes.JSONB,
+        defaultValue: {
+            enabled: true,
+            disabledMessage: 'Mission requests are currently disabled. Please contact HR for assistance.'
         },
-        disabledMessage: {
-            type: String,
-            default: 'Mission requests are currently disabled. Please contact HR for assistance.'
-        },
-        disabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        disabledAt: Date,
-        enabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        enabledAt: Date,
-        reason: String
+        field: 'mission_requests'
+        // Structure: { enabled, disabledMessage, disabledBy, disabledAt, enabledBy, enabledAt, reason }
     },
 
     // Forgot check-in/out requests control
     forgotCheck: {
-        enabled: {
-            type: Boolean,
-            default: true
+        type: DataTypes.JSONB,
+        defaultValue: {
+            enabled: true,
+            disabledMessage: 'Forgot check-in/out corrections are currently disabled. Please submit a formal request to HR.'
         },
-        disabledMessage: {
-            type: String,
-            default: 'Forgot check-in/out corrections are currently disabled. Please submit a formal request to HR.'
-        },
-        disabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        disabledAt: Date,
-        enabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        enabledAt: Date,
-        reason: String
+        field: 'forgot_check'
+        // Structure: { enabled, disabledMessage, disabledBy, disabledAt, enabledBy, enabledAt, reason }
     },
 
     // Other leave types control
     otherLeaveTypes: {
-        emergency: {
-            enabled: {
-                type: Boolean,
-                default: true
-            },
-            disabledMessage: String,
-            disabledBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User'
-            },
-            disabledAt: Date
+        type: DataTypes.JSONB,
+        defaultValue: {
+            emergency: { enabled: true },
+            maternity: { enabled: true },
+            paternity: { enabled: true },
+            unpaid: { enabled: true }
         },
-        maternity: {
-            enabled: {
-                type: Boolean,
-                default: true
-            },
-            disabledMessage: String,
-            disabledBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User'
-            },
-            disabledAt: Date
-        },
-        paternity: {
-            enabled: {
-                type: Boolean,
-                default: true
-            },
-            disabledMessage: String,
-            disabledBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User'
-            },
-            disabledAt: Date
-        },
-        unpaid: {
-            enabled: {
-                type: Boolean,
-                default: true
-            },
-            disabledMessage: String,
-            disabledBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User'
-            },
-            disabledAt: Date
-        }
+        field: 'other_leave_types'
+        // Structure: { emergency, maternity, paternity, unpaid } - each with { enabled, disabledMessage, disabledBy, disabledAt }
     },
 
     // Scheduled control (optional - for planned maintenance or blackout periods)
     scheduledControl: {
-        enabled: {
-            type: Boolean,
-            default: false
+        type: DataTypes.JSONB,
+        defaultValue: {
+            enabled: false,
+            schedules: []
         },
-        schedules: [{
-            startDate: Date,
-            endDate: Date,
-            affectedTypes: [{
-                type: String,
-                enum: ['all', 'vacation', 'permission', 'sick-leave', 'mission', 'forgot-check']
-            }],
-            message: String,
-            reason: String,
-            createdBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User'
-            }
-        }]
+        field: 'scheduled_control'
+        // Structure: { enabled, schedules: [{ startDate, endDate, affectedTypes, message, reason, createdBy }] }
     },
 
     // Change history/audit trail
-    changeHistory: [{
-        changedAt: {
-            type: Date,
-            default: Date.now
-        },
-        changedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
-        },
-        requestType: {
-            type: String,
-            enum: ['system-wide', 'vacation', 'permission', 'sick-leave', 'mission', 'forgot-check', 'emergency', 'maternity', 'paternity', 'unpaid'],
-            required: true
-        },
-        action: {
-            type: String,
-            enum: ['enabled', 'disabled'],
-            required: true
-        },
-        previousState: Boolean,
-        newState: Boolean,
-        reason: String,
-        message: String
-    }],
+    changeHistory: {
+        type: DataTypes.JSONB,
+        defaultValue: [],
+        field: 'change_history'
+        // Structure: [{ changedAt, changedBy, requestType, action, previousState, newState, reason, message }]
+    },
 
     // Active status
     isActive: {
-        type: Boolean,
-        default: true
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
+        field: 'is_active'
     }
 }, {
-    timestamps: true
+    tableName: 'request_controls',
+    timestamps: true,
+    underscored: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    indexes: [
+        {
+            fields: ['tenant_id', 'organization', 'is_active'],
+            unique: true
+        },
+        {
+            fields: ['tenant_id']
+        },
+        {
+            fields: ['organization']
+        }
+    ]
 });
 
-// Virtual to check if any request type is disabled
-requestControlSchema.virtual('hasDisabledRequests').get(function () {
+// Virtual Properties
+
+/**
+ * Check if any request type is disabled
+ */
+RequestControl.prototype.getHasDisabledRequests = function () {
     return !this.systemWide.enabled ||
         !this.vacationRequests.enabled ||
         !this.permissionRequests.enabled ||
         !this.sickLeave.enabled ||
         !this.missionRequests.enabled ||
         !this.forgotCheck.enabled;
-});
+};
 
-// Virtual to get count of disabled request types
-requestControlSchema.virtual('disabledCount').get(function () {
+/**
+ * Get count of disabled request types
+ */
+RequestControl.prototype.getDisabledCount = function () {
     let count = 0;
     if (!this.vacationRequests.enabled) count++;
     if (!this.permissionRequests.enabled) count++;
@@ -338,30 +193,36 @@ requestControlSchema.virtual('disabledCount').get(function () {
     if (!this.missionRequests.enabled) count++;
     if (!this.forgotCheck.enabled) count++;
     return count;
-});
+};
+
+// Instance Methods
 
 /**
- * Instance method to disable system-wide requests
- * 
- * @param {ObjectId} userId - User making the change
+ * Disable system-wide requests
+ * @param {String} userId - User making the change
  * @param {String} message - Custom message
  * @param {String} reason - Reason for disabling
- * @returns {Promise<RequestControl>} Updated control
+ * @returns {Promise<RequestControl>}
  */
-requestControlSchema.methods.disableSystemWide = async function (userId, message = null, reason = '') {
+RequestControl.prototype.disableSystemWide = async function (userId, message = null, reason = '') {
     const previousState = this.systemWide.enabled;
 
-    this.systemWide.enabled = false;
-    this.systemWide.disabledBy = userId;
-    this.systemWide.disabledAt = new Date();
-    this.systemWide.reason = reason;
+    this.systemWide = {
+        ...this.systemWide,
+        enabled: false,
+        disabledBy: userId,
+        disabledAt: new Date(),
+        reason
+    };
 
     if (message) {
         this.systemWide.disabledMessage = message;
     }
 
     // Log change
-    this.changeHistory.push({
+    const history = this.changeHistory || [];
+    history.push({
+        changedAt: new Date(),
         changedBy: userId,
         requestType: 'system-wide',
         action: 'disabled',
@@ -370,27 +231,34 @@ requestControlSchema.methods.disableSystemWide = async function (userId, message
         reason,
         message: message || this.systemWide.disabledMessage
     });
+    this.changeHistory = history;
 
+    this.changed('systemWide', true);
+    this.changed('changeHistory', true);
     return await this.save();
 };
 
 /**
- * Instance method to enable system-wide requests
- * 
- * @param {ObjectId} userId - User making the change
+ * Enable system-wide requests
+ * @param {String} userId - User making the change
  * @param {String} reason - Reason for enabling
- * @returns {Promise<RequestControl>} Updated control
+ * @returns {Promise<RequestControl>}
  */
-requestControlSchema.methods.enableSystemWide = async function (userId, reason = '') {
+RequestControl.prototype.enableSystemWide = async function (userId, reason = '') {
     const previousState = this.systemWide.enabled;
 
-    this.systemWide.enabled = true;
-    this.systemWide.enabledBy = userId;
-    this.systemWide.enabledAt = new Date();
-    this.systemWide.reason = reason;
+    this.systemWide = {
+        ...this.systemWide,
+        enabled: true,
+        enabledBy: userId,
+        enabledAt: new Date(),
+        reason
+    };
 
     // Log change
-    this.changeHistory.push({
+    const history = this.changeHistory || [];
+    history.push({
+        changedAt: new Date(),
         changedBy: userId,
         requestType: 'system-wide',
         action: 'enabled',
@@ -398,20 +266,22 @@ requestControlSchema.methods.enableSystemWide = async function (userId, reason =
         newState: true,
         reason
     });
+    this.changeHistory = history;
 
+    this.changed('systemWide', true);
+    this.changed('changeHistory', true);
     return await this.save();
 };
 
 /**
- * Instance method to disable specific request type
- * 
+ * Disable specific request type
  * @param {String} requestType - Type of request to disable
- * @param {ObjectId} userId - User making the change
+ * @param {String} userId - User making the change
  * @param {String} message - Custom message
  * @param {String} reason - Reason for disabling
- * @returns {Promise<RequestControl>} Updated control
+ * @returns {Promise<RequestControl>}
  */
-requestControlSchema.methods.disableRequestType = async function (requestType, userId, message = null, reason = '') {
+RequestControl.prototype.disableRequestType = async function (requestType, userId, message = null, reason = '') {
     const typeMap = {
         'vacation': 'vacationRequests',
         'permission': 'permissionRequests',
@@ -427,17 +297,22 @@ requestControlSchema.methods.disableRequestType = async function (requestType, u
 
     const previousState = this[field].enabled;
 
-    this[field].enabled = false;
-    this[field].disabledBy = userId;
-    this[field].disabledAt = new Date();
-    this[field].reason = reason;
+    this[field] = {
+        ...this[field],
+        enabled: false,
+        disabledBy: userId,
+        disabledAt: new Date(),
+        reason
+    };
 
     if (message) {
         this[field].disabledMessage = message;
     }
 
     // Log change
-    this.changeHistory.push({
+    const history = this.changeHistory || [];
+    history.push({
+        changedAt: new Date(),
         changedBy: userId,
         requestType,
         action: 'disabled',
@@ -446,19 +321,21 @@ requestControlSchema.methods.disableRequestType = async function (requestType, u
         reason,
         message: message || this[field].disabledMessage
     });
+    this.changeHistory = history;
 
+    this.changed(field, true);
+    this.changed('changeHistory', true);
     return await this.save();
 };
 
 /**
- * Instance method to enable specific request type
- * 
+ * Enable specific request type
  * @param {String} requestType - Type of request to enable
- * @param {ObjectId} userId - User making the change
+ * @param {String} userId - User making the change
  * @param {String} reason - Reason for enabling
- * @returns {Promise<RequestControl>} Updated control
+ * @returns {Promise<RequestControl>}
  */
-requestControlSchema.methods.enableRequestType = async function (requestType, userId, reason = '') {
+RequestControl.prototype.enableRequestType = async function (requestType, userId, reason = '') {
     const typeMap = {
         'vacation': 'vacationRequests',
         'permission': 'permissionRequests',
@@ -474,13 +351,18 @@ requestControlSchema.methods.enableRequestType = async function (requestType, us
 
     const previousState = this[field].enabled;
 
-    this[field].enabled = true;
-    this[field].enabledBy = userId;
-    this[field].enabledAt = new Date();
-    this[field].reason = reason;
+    this[field] = {
+        ...this[field],
+        enabled: true,
+        enabledBy: userId,
+        enabledAt: new Date(),
+        reason
+    };
 
     // Log change
-    this.changeHistory.push({
+    const history = this.changeHistory || [];
+    history.push({
+        changedAt: new Date(),
         changedBy: userId,
         requestType,
         action: 'enabled',
@@ -488,18 +370,20 @@ requestControlSchema.methods.enableRequestType = async function (requestType, us
         newState: true,
         reason
     });
+    this.changeHistory = history;
 
+    this.changed(field, true);
+    this.changed('changeHistory', true);
     return await this.save();
 };
 
 /**
- * Instance method to check if a specific request type is allowed
- * 
+ * Check if a specific request type is allowed
  * @param {String} requestType - Type of request to check
  * @param {String} subType - Optional sub-type (e.g., 'annual', 'late-arrival')
  * @returns {Object} { allowed: Boolean, message: String }
  */
-requestControlSchema.methods.isRequestAllowed = function (requestType, subType = null) {
+RequestControl.prototype.isRequestAllowed = function (requestType, subType = null) {
     // Check system-wide first
     if (!this.systemWide.enabled) {
         return {
@@ -576,11 +460,10 @@ requestControlSchema.methods.isRequestAllowed = function (requestType, subType =
 };
 
 /**
- * Instance method to get all disabled request types
- * 
+ * Get all disabled request types
  * @returns {Array} Array of disabled request types with messages
  */
-requestControlSchema.methods.getDisabledRequests = function () {
+RequestControl.prototype.getDisabledRequests = function () {
     const disabled = [];
 
     if (!this.systemWide.enabled) {
@@ -616,20 +499,26 @@ requestControlSchema.methods.getDisabledRequests = function () {
     return disabled;
 };
 
+// Static Methods
+
 /**
- * Static method to get or create control configuration
- * 
+ * Get or create control configuration
+ * @param {String} tenantId - Tenant ID
  * @param {String} organization - Organization name
- * @returns {Promise<RequestControl>} Control configuration
+ * @returns {Promise<RequestControl>}
  */
-requestControlSchema.statics.getControl = async function (organization = 'default') {
+RequestControl.getControl = async function (tenantId, organization = 'default') {
     let control = await this.findOne({
-        organization,
-        isActive: true
+        where: {
+            tenantId,
+            organization,
+            isActive: true
+        }
     });
 
     if (!control) {
         control = await this.create({
+            tenantId,
             organization
         });
     }
@@ -638,29 +527,29 @@ requestControlSchema.statics.getControl = async function (organization = 'defaul
 };
 
 /**
- * Static method to check if request is allowed (static version)
- * 
+ * Check if request is allowed (static version)
+ * @param {String} tenantId - Tenant ID
  * @param {String} requestType - Type of request
  * @param {String} organization - Organization name
  * @returns {Promise<Object>} { allowed: Boolean, message: String }
  */
-requestControlSchema.statics.checkRequestAllowed = async function (requestType, organization = 'default') {
-    const control = await this.getControl(organization);
+RequestControl.checkRequestAllowed = async function (tenantId, requestType, organization = 'default') {
+    const control = await this.getControl(tenantId, organization);
     return control.isRequestAllowed(requestType);
 };
 
 /**
- * Static method to get change history
- * 
+ * Get change history
+ * @param {String} tenantId - Tenant ID
  * @param {String} organization - Organization name
  * @param {Date} startDate - Start date
  * @param {Date} endDate - End date
- * @returns {Promise<Array>} Change history
+ * @returns {Promise<Array>}
  */
-requestControlSchema.statics.getChangeHistory = async function (organization = 'default', startDate, endDate) {
-    const control = await this.getControl(organization);
+RequestControl.getChangeHistory = async function (tenantId, organization = 'default', startDate, endDate) {
+    const control = await this.getControl(tenantId, organization);
 
-    let history = control.changeHistory;
+    let history = control.changeHistory || [];
 
     if (startDate || endDate) {
         history = history.filter(h => {
@@ -671,24 +560,24 @@ requestControlSchema.statics.getChangeHistory = async function (organization = '
         });
     }
 
-    return history.sort((a, b) => b.changedAt - a.changedAt);
+    return history.sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
 };
 
 /**
- * Static method to get control statistics
- * 
+ * Get control statistics
+ * @param {String} tenantId - Tenant ID
  * @param {String} organization - Organization name
- * @returns {Promise<Object>} Control statistics
+ * @returns {Promise<Object>}
  */
-requestControlSchema.statics.getControlStats = async function (organization = 'default') {
-    const control = await this.getControl(organization);
+RequestControl.getControlStats = async function (tenantId, organization = 'default') {
+    const control = await this.getControl(tenantId, organization);
 
     const stats = {
         systemWideEnabled: control.systemWide.enabled,
         enabledTypes: 0,
         disabledTypes: 0,
-        totalChanges: control.changeHistory.length,
-        recentChanges: control.changeHistory.slice(-10).reverse(),
+        totalChanges: (control.changeHistory || []).length,
+        recentChanges: (control.changeHistory || []).slice(-10).reverse(),
         disabledRequests: control.getDisabledRequests()
     };
 
@@ -705,83 +594,52 @@ requestControlSchema.statics.getControlStats = async function (organization = 'd
 };
 
 /**
- * Static method to notify specific users about request control changes
- * 
- * @param {Array} userIds - Array of user IDs to notify
- * @param {String} title - Notification title
- * @param {String} message - Notification message
- * @param {ObjectId} controlId - Request control ID
- * @returns {Promise<void>}
+ * Get active controls across all organizations
+ * @param {String} tenantId - Tenant ID
+ * @returns {Promise<Array>}
  */
-requestControlSchema.statics.notifyUsers = async function (userIds, title, message, controlId) {
-    try {
-        const Notification = mongoose.model('Notification');
-
-        const notifications = userIds.map(userId => ({
-            recipient: userId,
-            type: 'request-control',
-            title,
-            message,
-            relatedModel: 'RequestControl',
-            relatedId: controlId
-        }));
-
-        if (notifications.length > 0) {
-            await Notification.insertMany(notifications);
-        }
-    } catch (error) {
-
-    }
+RequestControl.getAllActiveControls = function (tenantId) {
+    return this.findAll({
+        where: {
+            tenantId,
+            isActive: true
+        },
+        order: [['organization', 'ASC']]
+    });
 };
 
 /**
- * Static method to get active controls across all organizations
- * 
- * @returns {Promise<Array>} Active control configurations
- */
-requestControlSchema.statics.getAllActiveControls = function () {
-    return this.find({ isActive: true })
-        .sort({ organization: 1 });
-};
-
-/**
- * Static method to validate request before creation
- * Use in controllers before creating leave/permission requests
- * 
- * @param {String} requestType - Type of request (vacation, permission, sick-leave, etc.)
- * @param {ObjectId} employeeId - Employee ID
+ * Validate request before creation
+ * @param {String} tenantId - Tenant ID
+ * @param {String} requestType - Type of request
+ * @param {String} employeeId - Employee ID
  * @param {String} subType - Optional sub-type
  * @returns {Promise<Object>} { allowed: Boolean, message: String }
  */
-requestControlSchema.statics.validateRequest = async function (requestType, employeeId, subType = null) {
+RequestControl.validateRequest = async function (tenantId, requestType, employeeId, subType = null) {
     try {
-        const User = mongoose.model('User');
-        const employee = await User.findById(employeeId);
-
-        if (!employee) {
-            return { allowed: false, message: 'Employee not found' };
-        }
-
-        const control = await this.getControl('default');
+        const control = await this.getControl(tenantId, 'default');
         return control.isRequestAllowed(requestType, subType);
     } catch (error) {
-
         // On error, allow the request to prevent blocking legitimate requests
         return { allowed: true, message: '' };
     }
 };
 
-// Note: Post-save notification logic moved to requestControlMiddleware.js
-// Call sendRequestControlNotifications function after save in controllers
-
-// Compound indexes for tenant isolation and performance
-requestControlSchema.index({ tenantId: 1, organization: 1, isActive: 1 }, { unique: true });
-requestControlSchema.index({ tenantId: 1, 'changeHistory.changedAt': -1 });
-requestControlSchema.index({ tenantId: 1, 'changeHistory.changedBy': 1 });
-
-// Add withTenant static method for tenant-aware queries
-requestControlSchema.statics.withTenant = function (tenantId) {
-    return this.find({ tenantId });
+/**
+ * Get controls by tenant
+ * @param {String} tenantId - Tenant ID
+ * @returns {Query}
+ */
+RequestControl.withTenant = function (tenantId) {
+    return this.findAll({ where: { tenantId } });
 };
 
-export default mongoose.model('RequestControl', requestControlSchema);
+export default RequestControl;
+
+
+
+
+
+
+

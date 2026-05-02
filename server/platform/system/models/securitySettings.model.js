@@ -1,306 +1,214 @@
 /**
- * Security Settings Model
- * 
+ * Security Settings Model - PostgreSQL (Sequelize)
  * Global security configuration for the system
  */
-import mongoose from 'mongoose';
 
-const securitySettingsSchema = new mongoose.Schema({
-    // Tenant ID for multi-tenancy
-    tenantId: {
-        type: String,
-        required: true,
-        index: true
-    },
+import { DataTypes } from 'sequelize';
+import sequelize from '../../../config/database.js';
 
-    // Two-Factor Authentication
-    twoFactorAuth: {
-        enabled: {
-            type: Boolean,
-            default: false
-        },
-        enforced: {
-            type: Boolean,
-            default: false // Force all users to enable 2FA
-        },
-        backupCodesCount: {
-            type: Number,
-            default: 8,
-            min: 5,
-            max: 20
-        }
+const SecuritySettings = sequelize.define('SecuritySettings', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  tenantId: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    unique: true,
+    field: 'tenant_id'
+  },
+  twoFactorAuth: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      enabled: false,
+      enforced: false,
+      backupCodesCount: 8
     },
-
-    // Password Policies
-    passwordPolicy: {
-        minLength: {
-            type: Number,
-            default: 8,
-            min: 6,
-            max: 128
-        },
-        requireUppercase: {
-            type: Boolean,
-            default: true
-        },
-        requireLowercase: {
-            type: Boolean,
-            default: true
-        },
-        requireNumbers: {
-            type: Boolean,
-            default: true
-        },
-        requireSpecialChars: {
-            type: Boolean,
-            default: false
-        },
-        expirationDays: {
-            type: Number,
-            default: 90, // 0 = never expire
-            min: 0
-        },
-        historyCount: {
-            type: Number,
-            default: 5, // Prevent reuse of last N passwords
-            min: 0,
-            max: 24
-        },
-        expirationWarningDays: {
-            type: Number,
-            default: 14
-        }
+    field: 'two_factor_auth'
+  },
+  passwordPolicy: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      minLength: 8,
+      requireUppercase: true,
+      requireLowercase: true,
+      requireNumbers: true,
+      requireSpecialChars: false,
+      expirationDays: 90,
+      historyCount: 5,
+      expirationWarningDays: 14
     },
-
-    // Account Lockout
-    accountLockout: {
-        enabled: {
-            type: Boolean,
-            default: true
-        },
-        maxAttempts: {
-            type: Number,
-            default: 5,
-            min: 3,
-            max: 10
-        },
-        lockoutDuration: {
-            type: Number,
-            default: 30, // Minutes
-            min: 5,
-            max: 1440
-        },
-        resetOnSuccess: {
-            type: Boolean,
-            default: true
-        }
+    field: 'password_policy'
+  },
+  accountLockout: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      enabled: true,
+      maxAttempts: 5,
+      lockoutDuration: 30,
+      resetOnSuccess: true
     },
-
-    // IP Whitelisting
-    ipWhitelist: {
-        enabled: {
-            type: Boolean,
-            default: false
-        },
-        allowedIPs: [{
-            ip: String,
-            description: String,
-            addedBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User'
-            },
-            addedDate: {
-                type: Date,
-                default: Date.now
-            }
-        }],
-        blockUnauthorized: {
-            type: Boolean,
-            default: true
-        }
+    field: 'account_lockout'
+  },
+  ipWhitelist: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      enabled: false,
+      allowedIPs: [],
+      blockUnauthorized: true
     },
-
-    // Session Management
-    sessionManagement: {
-        maxConcurrentSessions: {
-            type: Number,
-            default: 3,
-            min: 1,
-            max: 10
-        },
-        sessionTimeout: {
-            type: Number,
-            default: 480, // Minutes (8 hours)
-            min: 15,
-            max: 1440
-        },
-        idleTimeout: {
-            type: Number,
-            default: 60, // Minutes
-            min: 5,
-            max: 240
-        },
-        rememberMeDuration: {
-            type: Number,
-            default: 30, // Days
-            min: 1,
-            max: 90
-        }
+    field: 'ip_whitelist'
+  },
+  sessionManagement: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      maxConcurrentSessions: 3,
+      sessionTimeout: 480,
+      idleTimeout: 60,
+      rememberMeDuration: 30
     },
-
-    // Development Mode
-    developmentMode: {
-        enabled: {
-            type: Boolean,
-            default: false
-        },
-        allowedUsers: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        }],
-        maintenanceMessage: {
-            type: String,
-            default: 'System is currently under maintenance. Please try again later.'
-        },
-        enabledDate: Date,
-        enabledBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        }
+    field: 'session_management'
+  },
+  developmentMode: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      enabled: false,
+      allowedUsers: [],
+      maintenanceMessage: 'System is currently under maintenance. Please try again later.',
+      enabledDate: null,
+      enabledBy: null
     },
-
-    // Audit Settings
-    auditSettings: {
-        enabled: {
-            type: Boolean,
-            default: true
-        },
-        logLoginAttempts: {
-            type: Boolean,
-            default: true
-        },
-        logDataChanges: {
-            type: Boolean,
-            default: true
-        },
-        logSecurityEvents: {
-            type: Boolean,
-            default: true
-        },
-        retentionDays: {
-            type: Number,
-            default: 365,
-            min: 30
-        }
+    field: 'development_mode'
+  },
+  auditSettings: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      enabled: true,
+      logLoginAttempts: true,
+      logDataChanges: true,
+      logSecurityEvents: true,
+      retentionDays: 365
     },
-
-    // Metadata
-    lastModified: {
-        type: Date,
-        default: Date.now
+    field: 'audit_settings'
+  },
+  lastModified: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+    field: 'last_modified'
+  },
+  lastModifiedBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
     },
-    lastModifiedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }
+    field: 'last_modified_by'
+  }
 }, {
-    timestamps: true
+  tableName: 'security_settings',
+  timestamps: true,
+  underscored: true,
+  indexes: [
+    { fields: ['tenant_id'], unique: true }
+  ]
 });
 
-// Pre-save hook to handle boolean values for twoFactorAuth
-securitySettingsSchema.pre('save', function (next) {
-    // Handle case where twoFactorAuth is set as boolean instead of object
-    if (typeof this.twoFactorAuth === 'boolean') {
-        this.twoFactorAuth = {
-            enabled: this.twoFactorAuth,
-            enforced: this.twoFactorAuth
-        };
-    }
-    next();
+// Hook to handle boolean values for twoFactorAuth
+SecuritySettings.beforeSave(async (instance) => {
+  if (typeof instance.twoFactorAuth === 'boolean') {
+    instance.twoFactorAuth = {
+      enabled: instance.twoFactorAuth,
+      enforced: instance.twoFactorAuth,
+      backupCodesCount: 8
+    };
+  }
 });
 
 // Static method to get current settings for a tenant
-securitySettingsSchema.statics.getSettings = async function (tenantId) {
-    if (!tenantId) {
-        throw new Error('Tenant ID is required');
-    }
+SecuritySettings.getSettings = async function(tenantId) {
+  if (!tenantId) {
+    throw new Error('Tenant ID is required');
+  }
 
-    let settings = await this.findOne({ tenantId });
+  let settings = await this.findOne({ where: { tenantId } });
 
-    if (!settings) {
-        // Create default settings for this tenant
-        settings = await this.create({ tenantId });
-    }
+  if (!settings) {
+    settings = await this.create({ tenantId });
+  }
 
-    return settings;
+  return settings;
 };
 
 // Static method to update settings for a tenant
-securitySettingsSchema.statics.updateSettings = async function (tenantId, updates, userId) {
-    let settings = await this.getSettings(tenantId);
+SecuritySettings.updateSettings = async function(tenantId, updates, userId) {
+  let settings = await this.getSettings(tenantId);
 
-    // Handle dot notation updates properly
-    for (const [key, value] of Object.entries(updates)) {
-        if (key.includes('.')) {
-            // Handle nested properties using dot notation
-            const parts = key.split('.');
-            let current = settings;
-            for (let i = 0; i < parts.length - 1; i++) {
-                // Ensure the current level is an object, not a primitive
-                if (typeof current[parts[i]] !== 'object' || current[parts[i]] === null) {
-                    current[parts[i]] = {};
-                }
-                current = current[parts[i]];
-            }
-            current[parts[parts.length - 1]] = value;
-        } else {
-            // Handle top-level properties
-            settings[key] = value;
+  // Handle dot notation updates
+  for (const [key, value] of Object.entries(updates)) {
+    if (key.includes('.')) {
+      const parts = key.split('.');
+      const topLevel = parts[0];
+      const nested = { ...settings[topLevel] };
+      
+      let current = nested;
+      for (let i = 1; i < parts.length - 1; i++) {
+        if (typeof current[parts[i]] !== 'object' || current[parts[i]] === null) {
+          current[parts[i]] = {};
         }
+        current = current[parts[i]];
+      }
+      current[parts[parts.length - 1]] = value;
+      
+      settings[topLevel] = nested;
+    } else {
+      settings[key] = value;
     }
+  }
 
-    settings.lastModified = new Date();
-    settings.lastModifiedBy = userId;
+  settings.lastModified = new Date();
+  settings.lastModifiedBy = userId;
 
-    return await settings.save();
+  return await settings.save();
 };
 
 // Method to check if IP is whitelisted
-securitySettingsSchema.methods.isIPWhitelisted = function (ip) {
-    if (!this.ipWhitelist.enabled) return true;
+SecuritySettings.prototype.isIPWhitelisted = function(ip) {
+  if (!this.ipWhitelist.enabled) return true;
 
-    return this.ipWhitelist.allowedIPs.some(entry => entry.ip === ip);
+  return this.ipWhitelist.allowedIPs.some(entry => entry.ip === ip);
 };
 
 // Method to validate password against policy
-securitySettingsSchema.methods.validatePassword = function (password) {
-    const policy = this.passwordPolicy;
-    const errors = [];
+SecuritySettings.prototype.validatePassword = function(password) {
+  const policy = this.passwordPolicy;
+  const errors = [];
 
-    if (password.length < policy.minLength) {
-        errors.push(`Password must be at least ${policy.minLength} characters`);
-    }
+  if (password.length < policy.minLength) {
+    errors.push(`Password must be at least ${policy.minLength} characters`);
+  }
 
-    if (policy.requireUppercase && !/[A-Z]/.test(password)) {
-        errors.push('Password must contain at least one uppercase letter');
-    }
+  if (policy.requireUppercase && !/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
 
-    if (policy.requireLowercase && !/[a-z]/.test(password)) {
-        errors.push('Password must contain at least one lowercase letter');
-    }
+  if (policy.requireLowercase && !/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
 
-    if (policy.requireNumbers && !/\d/.test(password)) {
-        errors.push('Password must contain at least one number');
-    }
+  if (policy.requireNumbers && !/\d/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
 
-    if (policy.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-        errors.push('Password must contain at least one special character');
-    }
+  if (policy.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    errors.push('Password must contain at least one special character');
+  }
 
-    return {
-        valid: errors.length === 0,
-        errors
-    };
+  return {
+    valid: errors.length === 0,
+    errors
+  };
 };
 
-export default mongoose.model('SecuritySettings', securitySettingsSchema);
+export default SecuritySettings;

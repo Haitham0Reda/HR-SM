@@ -1,150 +1,183 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../config/database.js';
 import bcrypt from 'bcryptjs';
 
 /**
- * Platform User Schema
+ * Platform User Model (Sequelize)
  * Represents system administrators who manage the platform
  * Separate from tenant users
  */
-const platformUserSchema = new mongoose.Schema({
+const PlatformUser = mainAppDb.define('PlatformUser', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   email: {
-    type: String,
-    required: [true, 'Email is required'],
+    type: DataTypes.STRING(255),
+    allowNull: false,
     unique: true,
-    lowercase: true,
-    trim: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
+    validate: {
+      isEmail: {
+        msg: 'Please provide a valid email address'
+      }
+    },
+    set(value) {
+      this.setDataValue('email', value.toLowerCase().trim());
+    }
   },
   password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters long'],
-    select: false // Don't include password in queries by default
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      len: {
+        args: [8, 255],
+        msg: 'Password must be at least 8 characters long'
+      }
+    }
   },
   firstName: {
-    type: String,
-    required: [true, 'First name is required'],
-    trim: true
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'first_name',
+    set(value) {
+      this.setDataValue('firstName', value.trim());
+    }
   },
   lastName: {
-    type: String,
-    required: [true, 'Last name is required'],
-    trim: true
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'last_name',
+    set(value) {
+      this.setDataValue('lastName', value.trim());
+    }
   },
   role: {
-    type: String,
-    enum: {
-      values: ['super-admin', 'support', 'operations'],
-      message: '{VALUE} is not a valid role'
-    },
-    required: [true, 'Role is required']
+    type: DataTypes.ENUM('super-admin', 'support', 'operations'),
+    allowNull: false,
+    validate: {
+      isIn: {
+        args: [['super-admin', 'support', 'operations']],
+        msg: 'Invalid role'
+      }
+    }
   },
-  permissions: [{
-    type: String,
-    trim: true
-  }],
+  permissions: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
   status: {
-    type: String,
-    enum: {
-      values: ['active', 'inactive', 'locked'],
-      message: '{VALUE} is not a valid status'
-    },
-    default: 'active'
+    type: DataTypes.ENUM('active', 'inactive', 'locked'),
+    defaultValue: 'active'
   },
   lastLogin: {
-    type: Date,
-    default: null
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-    immutable: true
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'last_login'
   }
 }, {
+  tableName: 'platform_users',
   timestamps: true,
-  collection: 'platform_users'
+  underscored: true,
+  indexes: [
+    { fields: ['email'], unique: true },
+    { fields: ['role', 'status'] }
+  ],
+  hooks: {
+    beforeSave: async (user) => {
+      // Only hash the password if it has been modified (or is new)
+      if (user.changed('password')) {
+        try {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        } catch (error) {
+          throw new Error('Password hashing failed');
+        }
+      }
+    }
+  },
+  defaultScope: {
+    attributes: { exclude: ['password'] }
+  },
+  scopes: {
+    withPassword: {
+      attributes: { include: ['password'] }
+    }
+  }
 });
 
-// Index for role-based queries
-platformUserSchema.index({ role: 1, status: 1 });
+// Instance methods
 
 /**
- * Pre-save middleware to hash password
- */
-platformUserSchema.pre('save', async function(next) {
-  // Only hash the password if it has been modified (or is new)
-  if (!this.isModified('password')) {
-    return next();
-  }
-
-  try {
-    // Generate salt and hash password
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * Method to compare password for authentication
+ * Compare password for authentication
  * @param {string} candidatePassword - Password to compare
  * @returns {Promise<boolean>} True if password matches
  */
-platformUserSchema.methods.comparePassword = async function(candidatePassword) {
+PlatformUser.prototype.comparePassword = async function(candidatePassword) {
   try {
-    return await bcrypt.compare(candidatePassword, this.password);
+    // Need to get the password field explicitly since it's excluded by default
+    const userWithPassword = await PlatformUser.scope('withPassword').findByPk(this.id);
+    return await bcrypt.compare(candidatePassword, userWithPassword.password);
   } catch (error) {
     throw new Error('Password comparison failed');
   }
 };
 
 /**
- * Method to get full name
+ * Get full name
  * @returns {string} Full name
  */
-platformUserSchema.methods.getFullName = function() {
+PlatformUser.prototype.getFullName = function() {
   return `${this.firstName} ${this.lastName}`;
 };
 
 /**
- * Method to check if user has specific permission
+ * Check if user has specific permission
  * @param {string} permission - Permission to check
  * @returns {boolean} True if user has permission
  */
-platformUserSchema.methods.hasPermission = function(permission) {
+PlatformUser.prototype.hasPermission = function(permission) {
   // Super-admin has all permissions
   if (this.role === 'super-admin') {
     return true;
   }
   
-  return this.permissions.includes(permission);
+  const permissions = this.permissions || [];
+  return permissions.includes(permission);
 };
 
 /**
- * Method to sanitize user object (remove sensitive data)
+ * Sanitize user object (remove sensitive data)
  * @returns {Object} Sanitized user object
  */
-platformUserSchema.methods.toSafeObject = function() {
-  const obj = this.toObject();
+PlatformUser.prototype.toSafeObject = function() {
+  const obj = this.toJSON();
   delete obj.password;
   return obj;
 };
 
+// Static methods
+
 /**
- * Static method to find active users by role
+ * Find active users by role
  * @param {string} role - Role to filter by
  * @returns {Promise<Array>} Array of users
  */
-platformUserSchema.statics.findActiveByRole = function(role) {
-  return this.find({ role, status: 'active' });
+PlatformUser.findActiveByRole = function(role) {
+  return this.findAll({
+    where: { role, status: 'active' }
+  });
 };
 
-const PlatformUser = mongoose.model('PlatformUser', platformUserSchema);
+/**
+ * Find user by email with password
+ * @param {string} email - Email address
+ * @returns {Promise<PlatformUser>} User with password
+ */
+PlatformUser.findByEmailWithPassword = function(email) {
+  return this.scope('withPassword').findOne({
+    where: { email: email.toLowerCase().trim() }
+  });
+};
 
 export default PlatformUser;

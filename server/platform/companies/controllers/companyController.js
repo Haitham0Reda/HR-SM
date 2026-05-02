@@ -4,42 +4,9 @@
  * Handles CRUD operations for multi-tenant companies from the platform interface
  */
 
-import multiTenantDB from '../../../config/multiTenant.js';
+import Company from '../../models/Company.js';
+import { Op } from 'sequelize';
 import { getAvailableModels, MODEL_REGISTRY } from '../../../config/sharedModels.js';
-import mongoose from 'mongoose';
-
-// Helper function to get Company model safely
-const getCompanyModel = (connection) => {
-    const companySchema = new mongoose.Schema({
-        name: String,
-        sanitizedName: String,
-        industry: String,
-        adminEmail: String,
-        phone: String,
-        address: String,
-        modules: [String],
-        settings: {
-            timezone: String,
-            currency: String,
-            language: String,
-            workingHours: {
-                start: String,
-                end: String
-            },
-            weekendDays: [Number]
-        },
-        createdAt: Date,
-        isActive: Boolean,
-        updatedAt: { type: Date, default: Date.now }
-    });
-
-    // Check if model already exists to avoid compilation error
-    try {
-        return connection.model('Company');
-    } catch (error) {
-        return connection.model('Company', companySchema);
-    }
-};
 
 // Cache for company data (5 minutes)
 let companiesCache = null;
@@ -64,53 +31,38 @@ export const getAllCompanies = async (req, res) => {
             });
         }
 
-        const companies = await multiTenantDB.listCompanyDatabases();
-        const companiesData = [];
+        // Get all companies from the platform_companies table
+        const companies = await Company.findAll({
+            order: [['createdAt', 'DESC']]
+        });
 
-        for (const companyName of companies) {
-            try {
-                const connection = await multiTenantDB.getCompanyConnection(companyName);
-                
-                // Get company metadata
-                const CompanyModel = getCompanyModel(connection);
-                const companyInfo = await CompanyModel.findOne();
-
-                // Get statistics
-                const stats = await getCompanyStatistics(connection);
-                
-                // Get collections info
-                const collections = await connection.db.listCollections().toArray();
-                
-                companiesData.push({
-                    sanitizedName: companyName,
-                    metadata: companyInfo || {
-                        name: companyName,
-                        sanitizedName: companyName,
-                        isActive: true
-                    },
-                    statistics: stats,
-                    collections: collections.map(col => ({
-                        name: col.name,
-                        type: col.type || 'collection'
-                    })),
-                    database: `hrsm_${companyName}`,
-                    backupPath: multiTenantDB.getCompanyBackupPath(companyName),
-                    uploadPath: multiTenantDB.getCompanyUploadPath(companyName)
-                });
-
-            } catch (error) {
-                console.error(`Error getting data for company ${companyName}:`, error.message);
-                companiesData.push({
-                    sanitizedName: companyName,
-                    metadata: { name: companyName, sanitizedName: companyName, isActive: false },
-                    statistics: { error: error.message },
-                    collections: [],
-                    database: `hrsm_${companyName}`,
-                    backupPath: multiTenantDB.getCompanyBackupPath(companyName),
-                    uploadPath: multiTenantDB.getCompanyUploadPath(companyName)
-                });
-            }
-        }
+        const companiesData = companies.map(company => ({
+            id: company.id,
+            name: company.name,
+            slug: company.slug,
+            sanitizedName: company.slug, // For backward compatibility
+            metadata: {
+                name: company.name,
+                sanitizedName: company.slug,
+                adminEmail: company.adminEmail,
+                phone: company.phone,
+                address: company.address,
+                status: company.status,
+                isActive: company.status === 'active'
+            },
+            modules: company.getEnabledModules(),
+            settings: company.settings,
+            subscription: company.subscription,
+            database: company.databaseName,
+            statistics: {
+                employees: company.usage?.employees || 0,
+                storage: company.usage?.storage || 0,
+                apiCalls: company.usage?.apiCalls || 0
+            },
+            // Note: Collections info not available in single-DB architecture
+            // This was MongoDB-specific per-tenant database information
+            collections: []
+        }));
 
         // Update cache
         companiesCache = companiesData;
@@ -154,15 +106,19 @@ export const getCompanyDetails = async (req, res) => {
     try {
         const { companyName } = req.params;
         
-        const connection = await multiTenantDB.getCompanyConnection(companyName);
-        
-        // Get company metadata
-        const CompanyModel = getCompanyModel(connection);
-        const companyInfo = await CompanyModel.findOne();
+        // Find company by slug (sanitizedName)
+        const company = await Company.findOne({
+            where: {
+                [Op.or]: [
+                    { slug: companyName },
+                    { name: companyName }
+                ]
+            }
+        });
 
-        if (!companyInfo) {
+        if (!company) {
             return res.status(404).json({
-                success: false,
+                success: true,
                 error: {
                     code: 'COMPANY_NOT_FOUND',
                     message: 'Company metadata not found'
@@ -170,25 +126,46 @@ export const getCompanyDetails = async (req, res) => {
             });
         }
 
-        // Get detailed statistics
-        const stats = await getDetailedCompanyStatistics(connection);
-        
-        // Get all collections with document counts
-        const collections = await getCollectionsWithCounts(connection);
-        
-        // Get sample data from key collections
-        const sampleData = await getSampleData(connection);
+        // Build detailed response
+        const detailedData = {
+            id: company.id,
+            name: company.name,
+            slug: company.slug,
+            sanitizedName: company.slug,
+            adminEmail: company.adminEmail,
+            emailDomain: company.emailDomain,
+            phone: company.phone,
+            address: company.address,
+            status: company.status,
+            isActive: company.status === 'active',
+            subscription: company.subscription,
+            modules: company.modules,
+            settings: company.settings,
+            licenseKey: company.licenseKey,
+            licenseData: company.licenseData,
+            usage: company.usage,
+            database: company.databaseName,
+            createdAt: company.createdAt,
+            updatedAt: company.updatedAt
+        };
+
+        // Get enabled modules list
+        const enabledModules = company.getEnabledModules();
 
         res.json({
             success: true,
             data: {
-                company: companyInfo,
-                statistics: stats,
-                collections: collections,
-                sampleData: sampleData,
-                database: `hrsm_${companyName}`,
-                backupPath: multiTenantDB.getCompanyBackupPath(companyName),
-                uploadPath: multiTenantDB.getCompanyUploadPath(companyName)
+                company: detailedData,
+                enabledModules,
+                statistics: {
+                    employees: company.usage?.employees || 0,
+                    storage: company.usage?.storage || 0,
+                    apiCalls: company.usage?.apiCalls || 0
+                },
+                // Note: Collections and sample data not available in single-DB architecture
+                // This was MongoDB-specific per-tenant database information
+                collections: [],
+                sampleData: {}
             },
             meta: {
                 timestamp: new Date().toISOString(),
@@ -235,11 +212,22 @@ export const createCompany = async (req, res) => {
             });
         }
 
+        // Generate slug from name
+        const slug = name.toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
         // Check if company already exists
-        const sanitizedName = multiTenantDB.sanitizeCompanyName(name);
-        const existingCompanies = await multiTenantDB.listCompanyDatabases();
+        const existingCompany = await Company.findOne({
+            where: {
+                [Op.or]: [
+                    { slug },
+                    { name }
+                ]
+            }
+        });
         
-        if (existingCompanies.includes(sanitizedName)) {
+        if (existingCompany) {
             return res.status(409).json({
                 success: false,
                 error: {
@@ -249,43 +237,79 @@ export const createCompany = async (req, res) => {
             });
         }
 
+        // Extract email domain
+        const emailDomain = adminEmail.split('@')[1];
+
         // Set default settings
         const defaultSettings = {
             timezone: 'UTC',
             currency: 'USD',
             language: 'en',
+            dateFormat: 'YYYY-MM-DD',
             workingHours: { start: '09:00', end: '17:00' },
             weekendDays: [0, 6], // Sunday, Saturday
             ...settings
         };
 
-        // Create company database and metadata
-        const companyData = {
+        // Build modules configuration
+        const modulesConfig = {};
+        const modulesList = ['hr-core', ...modules.filter(m => m !== 'hr-core')];
+        
+        modulesList.forEach(moduleKey => {
+            modulesConfig[moduleKey] = {
+                enabled: true,
+                tier: 'starter',
+                limits: {
+                    employees: null,
+                    devices: null,
+                    storage: null,
+                    apiCalls: null
+                },
+                enabledAt: new Date(),
+                disabledAt: null
+            };
+        });
+
+        // Create company record
+        const company = await Company.create({
+            name,
+            slug,
+            databaseName: `hrsm_${slug}`,
             adminEmail,
+            emailDomain,
             phone,
             address,
-            industry,
-            modules,
-            settings: defaultSettings
-        };
-
-        const connection = await multiTenantDB.createCompanyDatabase(name, companyData);
-
-        // Create initial data structure
-        await createInitialCompanyStructure(connection, {
-            name,
-            sanitizedName,
-            ...companyData
+            status: 'trial',
+            subscription: {
+                plan: 'trial',
+                autoRenew: false,
+                startDate: new Date(),
+                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days trial
+            },
+            modules: modulesConfig,
+            settings: defaultSettings,
+            usage: {
+                employees: 0,
+                storage: 0,
+                apiCalls: 0
+            }
         });
 
         res.status(201).json({
             success: true,
             data: {
                 company: {
-                    name,
-                    sanitizedName,
-                    database: `hrsm_${sanitizedName}`,
-                    ...companyData
+                    id: company.id,
+                    name: company.name,
+                    slug: company.slug,
+                    sanitizedName: company.slug,
+                    database: company.databaseName,
+                    adminEmail: company.adminEmail,
+                    phone: company.phone,
+                    address: company.address,
+                    status: company.status,
+                    modules: modulesList,
+                    settings: company.settings
                 },
                 message: 'Company created successfully'
             },
@@ -316,17 +340,17 @@ export const updateCompany = async (req, res) => {
         const { companyName } = req.params;
         const updates = req.body;
 
-        const connection = await multiTenantDB.getCompanyConnection(companyName);
+        // Find company by slug or name
+        const company = await Company.findOne({
+            where: {
+                [Op.or]: [
+                    { slug: companyName },
+                    { name: companyName }
+                ]
+            }
+        });
         
-        const CompanyModel = getCompanyModel(connection);
-        
-        const updatedCompany = await CompanyModel.findOneAndUpdate(
-            { sanitizedName: companyName },
-            { ...updates, updatedAt: new Date() },
-            { new: true, runValidators: true }
-        );
-
-        if (!updatedCompany) {
+        if (!company) {
             return res.status(404).json({
                 success: false,
                 error: {
@@ -336,10 +360,39 @@ export const updateCompany = async (req, res) => {
             });
         }
 
+        // Update allowed fields
+        const allowedUpdates = ['phone', 'address', 'settings', 'status'];
+        allowedUpdates.forEach(field => {
+            if (updates[field] !== undefined) {
+                company[field] = updates[field];
+            }
+        });
+
+        // Handle settings merge
+        if (updates.settings) {
+            company.settings = {
+                ...company.settings,
+                ...updates.settings
+            };
+            company.changed('settings', true); // Mark JSONB field as changed
+        }
+
+        await company.save();
+
         res.json({
             success: true,
             data: {
-                company: updatedCompany,
+                company: {
+                    id: company.id,
+                    name: company.name,
+                    slug: company.slug,
+                    adminEmail: company.adminEmail,
+                    phone: company.phone,
+                    address: company.address,
+                    status: company.status,
+                    settings: company.settings,
+                    updatedAt: company.updatedAt
+                },
                 message: 'Company updated successfully'
             },
             meta: {
@@ -369,39 +422,51 @@ export const deleteCompany = async (req, res) => {
         const { companyName } = req.params;
         const { permanent = false } = req.query;
 
-        const connection = await multiTenantDB.getCompanyConnection(companyName);
+        // Find company by slug or name
+        const company = await Company.findOne({
+            where: {
+                [Op.or]: [
+                    { slug: companyName },
+                    { name: companyName }
+                ]
+            }
+        });
         
+        if (!company) {
+            return res.status(404).json({
+                success: false,
+                error: {
+                    code: 'COMPANY_NOT_FOUND',
+                    message: 'Company not found'
+                }
+            });
+        }
+
         if (permanent === 'true') {
-            // Permanent deletion - drop the entire database
-            await connection.dropDatabase();
-            console.log(`Permanently deleted database: hrsm_${companyName}`);
+            // Permanent deletion - remove the company record
+            // Note: In single-DB architecture, we don't drop databases
+            // The tenant data is filtered by tenantId in all queries
+            await company.destroy();
+            console.log(`Permanently deleted company: ${company.name} (${company.slug})`);
             
             res.json({
                 success: true,
                 data: {
                     message: 'Company permanently deleted',
-                    companyName,
+                    companyName: company.slug,
                     action: 'permanent_delete'
                 }
             });
         } else {
             // Soft delete - mark as inactive
-            const CompanyModel = getCompanyModel(connection);
-            
-            await CompanyModel.findOneAndUpdate(
-                { sanitizedName: companyName },
-                { 
-                    isActive: false, 
-                    deletedAt: new Date(),
-                    updatedAt: new Date()
-                }
-            );
+            company.status = 'inactive';
+            await company.save();
 
             res.json({
                 success: true,
                 data: {
                     message: 'Company archived successfully',
-                    companyName,
+                    companyName: company.slug,
                     action: 'archive'
                 }
             });
@@ -471,152 +536,6 @@ export const getAvailableModulesAndModels = async (req, res) => {
     }
 };
 
-// Helper functions
-
-async function getCompanyStatistics(connection) {
-    try {
-        const stats = {};
-        
-        // Get user count
-        try {
-            const userCount = await connection.collection('users').countDocuments();
-            stats.users = userCount;
-        } catch (error) {
-            stats.users = 0;
-        }
-
-        // Get department count
-        try {
-            const deptCount = await connection.collection('departments').countDocuments();
-            stats.departments = deptCount;
-        } catch (error) {
-            stats.departments = 0;
-        }
-
-        // Get total collections
-        const collections = await connection.db.listCollections().toArray();
-        stats.totalCollections = collections.length;
-
-        return stats;
-    } catch (error) {
-        return { error: error.message };
-    }
-}
-
-async function getDetailedCompanyStatistics(connection) {
-    const stats = {};
-    const collections = ['users', 'departments', 'positions', 'attendance', 'holidays', 'vacations', 'missions', 'requests', 'documents', 'events', 'announcements', 'notifications', 'payroll', 'reports', 'surveys'];
-
-    for (const collectionName of collections) {
-        try {
-            const count = await connection.collection(collectionName).countDocuments();
-            stats[collectionName] = count;
-        } catch (error) {
-            stats[collectionName] = 0;
-        }
-    }
-
-    return stats;
-}
-
-async function getCollectionsWithCounts(connection) {
-    try {
-        const collections = await connection.db.listCollections().toArray();
-        const collectionsWithCounts = [];
-
-        for (const collection of collections) {
-            try {
-                const count = await connection.collection(collection.name).countDocuments();
-                collectionsWithCounts.push({
-                    name: collection.name,
-                    type: collection.type || 'collection',
-                    documentCount: count
-                });
-            } catch (error) {
-                collectionsWithCounts.push({
-                    name: collection.name,
-                    type: collection.type || 'collection',
-                    documentCount: 0,
-                    error: error.message
-                });
-            }
-        }
-
-        return collectionsWithCounts;
-    } catch (error) {
-        return [];
-    }
-}
-
-async function getSampleData(connection) {
-    const sampleData = {};
-    const collections = ['users', 'departments', 'companies'];
-
-    for (const collectionName of collections) {
-        try {
-            const sample = await connection.collection(collectionName)
-                .find({})
-                .limit(3)
-                .toArray();
-            sampleData[collectionName] = sample;
-        } catch (error) {
-            sampleData[collectionName] = [];
-        }
-    }
-
-    return sampleData;
-}
-
-async function createInitialCompanyStructure(connection, companyData) {
-    try {
-        // Create basic departments
-        const departments = [
-            { name: 'Human Resources', code: 'HR', arabicName: 'الموارد البشرية' },
-            { name: 'Administration', code: 'ADMIN', arabicName: 'الإدارة' }
-        ];
-
-        const DepartmentModel = connection.model('Department', new mongoose.Schema({
-            tenantId: String,
-            name: String,
-            code: String,
-            arabicName: String,
-            createdAt: { type: Date, default: Date.now }
-        }));
-
-        for (const dept of departments) {
-            await DepartmentModel.create({
-                tenantId: companyData.sanitizedName,
-                ...dept
-            });
-        }
-
-        // Create basic positions
-        const positions = [
-            { title: 'Administrator', code: 'ADMIN', arabicTitle: 'مدير' },
-            { title: 'HR Manager', code: 'HR-MGR', arabicTitle: 'مدير الموارد البشرية' }
-        ];
-
-        const PositionModel = connection.model('Position', new mongoose.Schema({
-            tenantId: String,
-            title: String,
-            code: String,
-            arabicTitle: String,
-            createdAt: { type: Date, default: Date.now }
-        }));
-
-        for (const pos of positions) {
-            await PositionModel.create({
-                tenantId: companyData.sanitizedName,
-                ...pos
-            });
-        }
-
-        console.log(`Created initial structure for company: ${companyData.name}`);
-    } catch (error) {
-        console.error('Error creating initial company structure:', error);
-    }
-}
-
 /**
  * Get company modules
  */
@@ -624,12 +543,17 @@ export const getCompanyModules = async (req, res) => {
     try {
         const { companyName } = req.params;
         
-        const connection = await multiTenantDB.getCompanyConnection(companyName);
-        
-        const CompanyModel = getCompanyModel(connection);
-        const companyInfo = await CompanyModel.findOne({ sanitizedName: companyName });
+        // Find company by slug or name
+        const company = await Company.findOne({
+            where: {
+                [Op.or]: [
+                    { slug: companyName },
+                    { name: companyName }
+                ]
+            }
+        });
 
-        if (!companyInfo) {
+        if (!company) {
             return res.status(404).json({
                 success: false,
                 error: {
@@ -658,7 +582,7 @@ export const getCompanyModules = async (req, res) => {
             'theme': { name: 'Theme', description: 'UI customization and themes' }
         };
 
-        const enabledModules = companyInfo.modules || [];
+        const enabledModules = company.getEnabledModules();
         const moduleStatus = {};
 
         Object.keys(availableModules).forEach(moduleKey => {
@@ -672,7 +596,7 @@ export const getCompanyModules = async (req, res) => {
         res.json({
             success: true,
             data: {
-                companyName,
+                companyName: company.slug,
                 enabledModules,
                 availableModules: moduleStatus,
                 totalAvailable: Object.keys(availableModules).length,
@@ -715,23 +639,17 @@ export const updateCompanyModules = async (req, res) => {
             });
         }
 
-        // Ensure hr-core is always included
-        const updatedModules = [...new Set(['hr-core', ...modules])];
-
-        const connection = await multiTenantDB.getCompanyConnection(companyName);
+        // Find company by slug or name
+        const company = await Company.findOne({
+            where: {
+                [Op.or]: [
+                    { slug: companyName },
+                    { name: companyName }
+                ]
+            }
+        });
         
-        const CompanyModel = getCompanyModel(connection);
-        
-        const updatedCompany = await CompanyModel.findOneAndUpdate(
-            { sanitizedName: companyName },
-            { 
-                modules: updatedModules,
-                updatedAt: new Date()
-            },
-            { new: true, runValidators: true }
-        );
-
-        if (!updatedCompany) {
+        if (!company) {
             return res.status(404).json({
                 success: false,
                 error: {
@@ -741,11 +659,33 @@ export const updateCompanyModules = async (req, res) => {
             });
         }
 
+        // Ensure hr-core is always included
+        const updatedModules = [...new Set(['hr-core', ...modules])];
+
+        // Update modules configuration
+        const modulesConfig = company.modules || {};
+        
+        // Disable modules not in the list
+        Object.keys(modulesConfig).forEach(moduleKey => {
+            if (!updatedModules.includes(moduleKey) && moduleKey !== 'hr-core') {
+                company.disableModule(moduleKey);
+            }
+        });
+
+        // Enable new modules
+        updatedModules.forEach(moduleKey => {
+            if (!company.isModuleEnabled(moduleKey)) {
+                company.enableModule(moduleKey);
+            }
+        });
+
+        await company.save();
+
         res.json({
             success: true,
             data: {
-                companyName,
-                modules: updatedCompany.modules,
+                companyName: company.slug,
+                modules: company.getEnabledModules(),
                 message: 'Company modules updated successfully'
             },
             meta: {
@@ -774,10 +714,15 @@ export const enableModule = async (req, res) => {
     try {
         const { companyName, moduleName } = req.params;
 
-        const connection = await multiTenantDB.getCompanyConnection(companyName);
-        
-        const CompanyModel = getCompanyModel(connection);
-        const company = await CompanyModel.findOne({ sanitizedName: companyName });
+        // Find company by slug or name
+        const company = await Company.findOne({
+            where: {
+                [Op.or]: [
+                    { slug: companyName },
+                    { name: companyName }
+                ]
+            }
+        });
 
         if (!company) {
             return res.status(404).json({
@@ -789,9 +734,7 @@ export const enableModule = async (req, res) => {
             });
         }
 
-        const currentModules = company.modules || [];
-        
-        if (currentModules.includes(moduleName)) {
+        if (company.isModuleEnabled(moduleName)) {
             return res.status(400).json({
                 success: false,
                 error: {
@@ -801,22 +744,15 @@ export const enableModule = async (req, res) => {
             });
         }
 
-        const updatedModules = [...currentModules, moduleName];
-        
-        await CompanyModel.findOneAndUpdate(
-            { sanitizedName: companyName },
-            { 
-                modules: updatedModules,
-                updatedAt: new Date()
-            }
-        );
+        company.enableModule(moduleName);
+        await company.save();
 
         res.json({
             success: true,
             data: {
-                companyName,
+                companyName: company.slug,
                 moduleName,
-                modules: updatedModules,
+                modules: company.getEnabledModules(),
                 message: `Module '${moduleName}' enabled successfully`
             },
             meta: {
@@ -856,10 +792,15 @@ export const disableModule = async (req, res) => {
             });
         }
 
-        const connection = await multiTenantDB.getCompanyConnection(companyName);
-        
-        const CompanyModel = getCompanyModel(connection);
-        const company = await CompanyModel.findOne({ sanitizedName: companyName });
+        // Find company by slug or name
+        const company = await Company.findOne({
+            where: {
+                [Op.or]: [
+                    { slug: companyName },
+                    { name: companyName }
+                ]
+            }
+        });
 
         if (!company) {
             return res.status(404).json({
@@ -871,9 +812,7 @@ export const disableModule = async (req, res) => {
             });
         }
 
-        const currentModules = company.modules || [];
-        
-        if (!currentModules.includes(moduleName)) {
+        if (!company.isModuleEnabled(moduleName)) {
             return res.status(400).json({
                 success: false,
                 error: {
@@ -883,22 +822,15 @@ export const disableModule = async (req, res) => {
             });
         }
 
-        const updatedModules = currentModules.filter(module => module !== moduleName);
-        
-        await CompanyModel.findOneAndUpdate(
-            { sanitizedName: companyName },
-            { 
-                modules: updatedModules,
-                updatedAt: new Date()
-            }
-        );
+        company.disableModule(moduleName);
+        await company.save();
 
         res.json({
             success: true,
             data: {
-                companyName,
+                companyName: company.slug,
                 moduleName,
-                modules: updatedModules,
+                modules: company.getEnabledModules(),
                 message: `Module '${moduleName}' disabled successfully`
             },
             meta: {

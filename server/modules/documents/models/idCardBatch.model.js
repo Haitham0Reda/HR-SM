@@ -1,4 +1,4 @@
-import { DataTypes, Op } from 'sequelize';
+import { DataTypes, Op, QueryTypes } from 'sequelize';
 import sequelize from '../../../config/database.js';
 
 /**
@@ -333,7 +333,6 @@ IDCardBatch.getPendingBatches = async function(tenantId, limit = 10) {
 };
 
 IDCardBatch.getBatchStatistics = async function(tenantId, startDate, endDate) {
-  const { QueryTypes } = require('sequelize');
   
   const results = await sequelize.query(
     `SELECT 
@@ -379,3 +378,7 @@ IDCardBatch.getUserBatches = async function(userId, tenantId, filters = {}) {
 };
 
 export default IDCardBatch;
+
+
+
+

@@ -1,8 +1,9 @@
 import Tenant from '../models/Tenant.js';
 import logger from '../utils/logger.js';
+import { Op } from 'sequelize';
 
 /**
- * Tenant Controller - License Server
+ * Tenant Controller - License Server (PostgreSQL/Sequelize)
  * Handles all tenant management operations
  * 
  * Requirements: 3.1-3.10 - Tenant management API endpoints
@@ -26,36 +27,35 @@ class TenantController {
       } = req.query;
 
       // Build filter query
-      const filter = { status: { $ne: 'deleted' } };
+      const where = { status: { [Op.ne]: 'deleted' } };
       
       if (status) {
-        filter.status = status;
+        where.status = status;
       }
       
       if (subscriptionStatus) {
-        filter['subscription.status'] = subscriptionStatus;
+        where.subscriptionStatus = subscriptionStatus;
       }
       
       if (plan) {
-        filter['subscription.plan'] = plan;
+        where.subscriptionPlan = plan;
       }
 
       // Calculate pagination
-      const skip = (parseInt(page) - 1) * parseInt(limit);
-      const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+      const order = [[sortBy, sortOrder.toUpperCase()]];
 
       // Execute query
-      const tenants = await Tenant.find(filter)
-        .sort(sort)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .select('-__v');
-
-      const total = await Tenant.countDocuments(filter);
+      const { count, rows: tenants } = await Tenant.findAndCountAll({
+        where,
+        order,
+        offset,
+        limit: parseInt(limit)
+      });
 
       logger.info('Tenants retrieved successfully', {
         count: tenants.length,
-        total,
+        total: count,
         page,
         limit
       });
@@ -68,7 +68,11 @@ class TenantController {
             name: tenant.name,
             domain: tenant.domain,
             contactEmail: tenant.contactEmail,
-            subscription: tenant.subscription,
+            subscription: {
+              status: tenant.subscriptionStatus,
+              plan: tenant.subscriptionPlan,
+              expiresAt: tenant.subscriptionExpiresAt
+            },
             enabledModules: tenant.enabledModules,
             status: tenant.status,
             createdAt: tenant.createdAt,
@@ -77,8 +81,8 @@ class TenantController {
           pagination: {
             page: parseInt(page),
             limit: parseInt(limit),
-            total,
-            pages: Math.ceil(total / parseInt(limit))
+            total: count,
+            pages: Math.ceil(count / parseInt(limit))
           }
         }
       });
@@ -133,7 +137,14 @@ class TenantController {
           domain: tenant.domain,
           contactEmail: tenant.contactEmail,
           contactPhone: tenant.contactPhone,
-          subscription: tenant.subscription,
+          subscription: {
+            status: tenant.subscriptionStatus,
+            plan: tenant.subscriptionPlan,
+            startDate: tenant.subscriptionStartDate,
+            expiresAt: tenant.subscriptionExpiresAt,
+            billingCycle: tenant.billingCycle,
+            autoRenew: tenant.autoRenew
+          },
           enabledModules: tenant.enabledModules,
           usageLimits: tenant.usageLimits,
           billing: tenant.billing,
@@ -199,7 +210,7 @@ class TenantController {
       }
 
       // Check if tenant already exists
-      const existingTenant = await Tenant.findOne({ tenantId });
+      const existingTenant = await Tenant.findOne({ where: { tenantId } });
       if (existingTenant) {
         return res.status(409).json({
           success: false,
@@ -212,24 +223,22 @@ class TenantController {
       }
 
       // Create tenant
-      const tenant = new Tenant({
+      const tenant = await Tenant.create({
         tenantId,
         name,
         domain,
         contactEmail,
         contactPhone,
-        subscription: subscription || {
-          status: 'trial',
-          plan: 'basic',
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days trial
-        },
+        subscriptionStatus: subscription?.status || 'trial',
+        subscriptionPlan: subscription?.plan || 'basic',
+        subscriptionExpiresAt: subscription?.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        billingCycle: subscription?.billingCycle || 'monthly',
+        autoRenew: subscription?.autoRenew || false,
         enabledModules: enabledModules || [],
         usageLimits: usageLimits || {},
         billing: billing || {},
         metadata: metadata || {}
       });
-
-      await tenant.save();
 
       logger.info('Tenant created successfully', {
         tenantId: tenant.tenantId,
@@ -243,7 +252,11 @@ class TenantController {
           name: tenant.name,
           domain: tenant.domain,
           contactEmail: tenant.contactEmail,
-          subscription: tenant.subscription,
+          subscription: {
+            status: tenant.subscriptionStatus,
+            plan: tenant.subscriptionPlan,
+            expiresAt: tenant.subscriptionExpiresAt
+          },
           enabledModules: tenant.enabledModules,
           status: tenant.status,
           createdAt: tenant.createdAt,
@@ -258,14 +271,14 @@ class TenantController {
         stack: error.stack
       });
 
-      // Handle duplicate key error
-      if (error.code === 11000) {
+      // Handle unique constraint error
+      if (error.name === 'SequelizeUniqueConstraintError') {
         return res.status(409).json({
           success: false,
           error: {
             code: 'DUPLICATE_TENANT',
             message: 'Tenant with this ID or domain already exists',
-            details: error.keyValue
+            details: error.errors.map(e => e.message)
           }
         });
       }
@@ -318,20 +331,30 @@ class TenantController {
       // Update fields
       const allowedUpdates = [
         'name', 'domain', 'contactEmail', 'contactPhone',
-        'subscription', 'enabledModules', 'usageLimits',
+        'subscriptionStatus', 'subscriptionPlan', 'subscriptionExpiresAt',
+        'billingCycle', 'autoRenew', 'enabledModules', 'usageLimits',
         'billing', 'metadata', 'status'
       ];
 
       allowedUpdates.forEach(field => {
         if (updates[field] !== undefined) {
-          if (field === 'subscription' || field === 'usageLimits' || field === 'billing' || field === 'metadata') {
+          if (['usageLimits', 'billing', 'metadata'].includes(field)) {
             // Merge nested objects
-            tenant[field] = { ...tenant[field].toObject(), ...updates[field] };
+            tenant[field] = { ...tenant[field], ...updates[field] };
           } else {
             tenant[field] = updates[field];
           }
         }
       });
+
+      // Handle subscription object updates
+      if (updates.subscription) {
+        if (updates.subscription.status) tenant.subscriptionStatus = updates.subscription.status;
+        if (updates.subscription.plan) tenant.subscriptionPlan = updates.subscription.plan;
+        if (updates.subscription.expiresAt) tenant.subscriptionExpiresAt = updates.subscription.expiresAt;
+        if (updates.subscription.billingCycle) tenant.billingCycle = updates.subscription.billingCycle;
+        if (updates.subscription.autoRenew !== undefined) tenant.autoRenew = updates.subscription.autoRenew;
+      }
 
       await tenant.save();
 
@@ -348,7 +371,14 @@ class TenantController {
           domain: tenant.domain,
           contactEmail: tenant.contactEmail,
           contactPhone: tenant.contactPhone,
-          subscription: tenant.subscription,
+          subscription: {
+            status: tenant.subscriptionStatus,
+            plan: tenant.subscriptionPlan,
+            startDate: tenant.subscriptionStartDate,
+            expiresAt: tenant.subscriptionExpiresAt,
+            billingCycle: tenant.billingCycle,
+            autoRenew: tenant.autoRenew
+          },
           enabledModules: tenant.enabledModules,
           usageLimits: tenant.usageLimits,
           billing: tenant.billing,
@@ -399,8 +429,7 @@ class TenantController {
       }
 
       // Soft delete
-      tenant.softDelete();
-      await tenant.save();
+      await tenant.softDelete();
 
       logger.info('Tenant deleted successfully', {
         tenantId: tenant.tenantId
@@ -508,8 +537,7 @@ class TenantController {
       }
 
       // Enable module (idempotent)
-      tenant.enableModule(moduleId);
-      await tenant.save();
+      await tenant.enableModule(moduleId);
 
       logger.info('Module enabled for tenant', {
         tenantId: tenant.tenantId,
@@ -567,8 +595,7 @@ class TenantController {
       }
 
       // Disable module (idempotent)
-      tenant.disableModule(moduleId);
-      await tenant.save();
+      await tenant.disableModule(moduleId);
 
       logger.info('Module disabled for tenant', {
         tenantId: tenant.tenantId,

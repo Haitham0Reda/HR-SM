@@ -343,7 +343,6 @@ ReportExport.cleanupExpired = async function(tenantId) {
 };
 
 ReportExport.getExportStats = async function(tenantId, organization = 'default', startDate, endDate) {
-  const { QueryTypes } = require('sequelize');
   
   let dateFilter = '';
   const replacements = { tenantId, organization };
@@ -390,3 +389,7 @@ ReportExport.withTenant = function(tenantId) {
 };
 
 export default ReportExport;
+
+
+
+

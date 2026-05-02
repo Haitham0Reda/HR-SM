@@ -1,8 +1,8 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { licenseServerDb } from '../../config/database.js';
 
 const router = express.Router();
 
@@ -24,13 +24,8 @@ router.get('/', async (req, res) => {
 
     // Check database connection
     try {
-      if (mongoose.connection.readyState === 1) {
-        await mongoose.connection.db.admin().ping();
-        health.checks.database = 'healthy';
-      } else {
-        health.checks.database = 'disconnected';
-        health.status = 'degraded';
-      }
+      await licenseServerDb.authenticate();
+      health.checks.database = 'healthy';
     } catch (error) {
       health.checks.database = 'unhealthy';
       health.status = 'unhealthy';
@@ -112,24 +107,37 @@ router.get('/detailed', async (req, res) => {
 
     // Database check with details
     try {
-      if (mongoose.connection.readyState === 1) {
-        const dbStats = await mongoose.connection.db.stats();
-        detailed.checks.database = {
-          status: 'healthy',
-          connected: true,
-          collections: dbStats.collections,
-          dataSize: `${Math.round(dbStats.dataSize / 1024 / 1024)}MB`,
-          storageSize: `${Math.round(dbStats.storageSize / 1024 / 1024)}MB`,
-          indexes: dbStats.indexes
-        };
-      } else {
-        detailed.checks.database = {
-          status: 'disconnected',
-          connected: false,
-          readyState: mongoose.connection.readyState
-        };
-        detailed.status = 'degraded';
-      }
+      await licenseServerDb.authenticate();
+      
+      // Get PostgreSQL database size and statistics
+      const [dbSizeResult] = await licenseServerDb.query(
+        'SELECT pg_database_size(current_database()) as size'
+      );
+      const dbSize = dbSizeResult[0]?.size || 0;
+      
+      // Get table count
+      const [tableCountResult] = await licenseServerDb.query(
+        `SELECT COUNT(*) as count FROM information_schema.tables 
+         WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`
+      );
+      const tableCount = tableCountResult[0]?.count || 0;
+      
+      // Get index count
+      const [indexCountResult] = await licenseServerDb.query(
+        `SELECT COUNT(*) as count FROM pg_indexes 
+         WHERE schemaname = 'public'`
+      );
+      const indexCount = indexCountResult[0]?.count || 0;
+      
+      detailed.checks.database = {
+        status: 'healthy',
+        connected: true,
+        tables: parseInt(tableCount),
+        dataSize: `${Math.round(dbSize / 1024 / 1024)}MB`,
+        indexes: parseInt(indexCount),
+        poolSize: licenseServerDb.connectionManager?.pool?.size || 0,
+        poolAvailable: licenseServerDb.connectionManager?.pool?.available || 0
+      };
     } catch (error) {
       detailed.checks.database = {
         status: 'unhealthy',

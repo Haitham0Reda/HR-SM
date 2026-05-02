@@ -4,7 +4,8 @@
  * General validation and business logic for requests
  * Note: Permission requests have their own dedicated middleware (permissionMiddleware.js)
  */
-import mongoose from 'mongoose';
+import User from '../modules/hr-core/users/models/user.model.js';
+import Notification from '../modules/notifications/models/notification.model.js';
 
 /**
  * Validate request type
@@ -27,8 +28,7 @@ export const validateRequestType = (req, res, next) => {
 export const validateRequestEmployee = async (req, res, next) => {
     try {
         if (req.body.employee) {
-            const User = mongoose.model('User');
-            const employee = await User.findById(req.body.employee);
+            const employee = await User.findByPk(req.body.employee);
 
             if (!employee) {
                 return res.status(404).json({
@@ -37,7 +37,7 @@ export const validateRequestEmployee = async (req, res, next) => {
                 });
             }
 
-            if (!employee.isActive) {
+            if (!employee.is_active) {
                 return res.status(400).json({
                     success: false,
                     message: 'Employee is not active'
@@ -56,7 +56,7 @@ export const validateRequestEmployee = async (req, res, next) => {
  */
 export const setRequestEmployee = (req, res, next) => {
     if (req.user && !req.body.employee) {
-        req.body.employee = req.user._id;
+        req.body.employee = req.user.id;
     }
     next();
 };
@@ -67,8 +67,7 @@ export const setRequestEmployee = (req, res, next) => {
 export const validateReviewer = async (req, res, next) => {
     try {
         if (req.body.reviewer) {
-            const User = mongoose.model('User');
-            const reviewer = await User.findById(req.body.reviewer);
+            const reviewer = await User.findByPk(req.body.reviewer);
 
             if (!reviewer) {
                 return res.status(404).json({
@@ -97,7 +96,7 @@ export const validateReviewer = async (req, res, next) => {
 export const setReviewMetadata = (req, res, next) => {
     if (req.body.status && req.body.status !== 'pending') {
         if (req.user && !req.body.reviewer) {
-            req.body.reviewer = req.user._id;
+            req.body.reviewer = req.user.id;
         }
         if (!req.body.reviewedAt) {
             req.body.reviewedAt = new Date();
@@ -116,12 +115,11 @@ export const createRequestNotification = async (request, previousStatus) => {
             return;
         }
 
-        const Notification = mongoose.model('Notification');
-
         let notificationData = {
-            recipient: request.employee,
+            recipientId: request.employee,
+            tenantId: request.tenantId || request.tenant_id,
             relatedModel: 'Request',
-            relatedId: request._id
+            relatedId: request.id
         };
 
         switch (request.status) {

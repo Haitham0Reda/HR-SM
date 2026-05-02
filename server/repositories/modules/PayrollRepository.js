@@ -1,6 +1,431 @@
 import BaseRepository from '../BaseRepository.js';
 import Payroll from '../../modules/payroll/models/payroll.model.js';
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
+
+/**
+ * Repository for Payroll model operations with salary calculations and analytics
+ */
+class PayrollRepository extends BaseRepository {
+    constructor() {
+        super(Payroll);
+    }
+
+    /**
+     * Find payroll records by employee
+     * @param {string} employeeId - Employee ID
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Payroll records
+     */
+    async findByEmployee(employeeId, options = {}) {
+        try {
+            const where = { employee_id: employeeId };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            if (options.period) {
+                where.period = options.period;
+            }
+
+            if (options.periodRange) {
+                where.period = {
+                    [Op.between]: [options.periodRange.start, options.periodRange.end]
+                };
+            }
+
+            return await this.findAll(where, {
+                ...options,
+                include: [
+                    { association: 'employee', attributes: ['id', 'first_name', 'last_name', 'employee_id', 'department_id', 'position_id'] }
+                ],
+                order: [['period', 'DESC']]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findByEmployee');
+        }
+    }
+
+    /**
+     * Find payroll records by period
+     * @param {string} period - Period (e.g., '2025-10')
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Payroll records
+     */
+    async findByPeriod(period, options = {}) {
+        try {
+            const where = { period };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            const includeOptions = [
+                { 
+                    association: 'employee', 
+                    attributes: ['id', 'first_name', 'last_name', 'employee_id', 'department_id', 'position_id']
+                }
+            ];
+
+            // If filtering by department, add it to where clause on the include
+            if (options.departmentId) {
+                includeOptions[0].where = { department_id: options.departmentId };
+                includeOptions[0].required = true;
+            }
+
+            return await this.findAll(where, {
+                ...options,
+                include: includeOptions,
+                order: [[{ model: this.model.associations.employee.target, as: 'employee' }, 'first_name', 'ASC']]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findByPeriod');
+        }
+    }
+
+    /**
+     * Find payroll record by employee and period
+     * @param {string} employeeId - Employee ID
+     * @param {string} period - Period (e.g., '2025-10')
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Object|null>} Payroll record
+     */
+    async findByEmployeeAndPeriod(employeeId, period, options = {}) {
+        try {
+            const where = { employee_id: employeeId, period };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            return await this.findOne(where, {
+                ...options,
+                include: [
+                    { association: 'employee', attributes: ['id', 'first_name', 'last_name', 'employee_id', 'department_id', 'position_id'] }
+                ]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findByEmployeeAndPeriod');
+        }
+    }
+
+    /**
+     * Calculate total deductions for a payroll record
+     * @param {Array} deductions - Array of deduction objects
+     * @returns {number} Total deductions amount
+     */
+    calculateTotalDeductions(deductions) {
+        if (!Array.isArray(deductions)) {
+            return 0;
+        }
+
+        return deductions.reduce((total, deduction) => {
+            return total + (deduction.amount || 0);
+        }, 0);
+    }
+
+    /**
+     * Create or update payroll record with automatic total calculation
+     * @param {Object} payrollData - Payroll data
+     * @param {Object} [options] - Creation options
+     * @returns {Promise<Object>} Created/updated payroll record
+     */
+    async createOrUpdatePayroll(payrollData, options = {}) {
+        try {
+            // Calculate total deductions
+            if (payrollData.deductions) {
+                payrollData.total_deductions = this.calculateTotalDeductions(payrollData.deductions);
+            }
+
+            // Check if payroll already exists for this employee and period
+            const existingPayroll = await this.findByEmployeeAndPeriod(
+                payrollData.employee_id || payrollData.employee,
+                payrollData.period,
+                { tenantId: options.tenantId }
+            );
+
+            if (existingPayroll) {
+                // Update existing record
+                return await this.update(existingPayroll.id, payrollData, options);
+            } else {
+                // Create new record
+                return await this.create(payrollData, options);
+            }
+        } catch (error) {
+            throw this._handleError(error, 'createOrUpdatePayroll');
+        }
+    }
+
+    /**
+     * Add deduction to existing payroll record
+     * @param {string} payrollId - Payroll record ID
+     * @param {Object} deduction - Deduction object
+     * @param {Object} [options] - Update options
+     * @returns {Promise<Object>} Updated payroll record
+     */
+    async addDeduction(payrollId, deduction, options = {}) {
+        try {
+            const payroll = await this.findById(payrollId, options);
+            if (!payroll) {
+                throw new Error('Payroll record not found');
+            }
+
+            // Add deduction to array
+            const deductions = payroll.deductions || [];
+            deductions.push(deduction);
+
+            // Recalculate total deductions
+            const totalDeductions = this.calculateTotalDeductions(deductions);
+
+            return await this.update(payrollId, {
+                deductions,
+                total_deductions: totalDeductions
+            }, options);
+        } catch (error) {
+            throw this._handleError(error, 'addDeduction');
+        }
+    }
+
+    /**
+     * Remove deduction from payroll record
+     * @param {string} payrollId - Payroll record ID
+     * @param {number} deductionIndex - Index of deduction to remove
+     * @param {Object} [options] - Update options
+     * @returns {Promise<Object>} Updated payroll record
+     */
+    async removeDeduction(payrollId, deductionIndex, options = {}) {
+        try {
+            const payroll = await this.findById(payrollId, options);
+            if (!payroll) {
+                throw new Error('Payroll record not found');
+            }
+
+            const deductions = payroll.deductions || [];
+            if (deductionIndex < 0 || deductionIndex >= deductions.length) {
+                throw new Error('Invalid deduction index');
+            }
+
+            // Remove deduction from array
+            deductions.splice(deductionIndex, 1);
+
+            // Recalculate total deductions
+            const totalDeductions = this.calculateTotalDeductions(deductions);
+
+            return await this.update(payrollId, {
+                deductions,
+                total_deductions: totalDeductions
+            }, options);
+        } catch (error) {
+            throw this._handleError(error, 'removeDeduction');
+        }
+    }
+
+    /**
+     * Get payroll summary by deduction type
+     * @param {Object} filters - Filter criteria
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Payroll summary by deduction type
+     */
+    async getDeductionSummary(filters = {}, options = {}) {
+        try {
+            const where = {};
+
+            if (filters.tenantId) {
+                where.tenant_id = filters.tenantId;
+            }
+
+            if (filters.period) {
+                where.period = filters.period;
+            }
+
+            if (filters.periodRange) {
+                where.period = {
+                    [Op.between]: [filters.periodRange.start, filters.periodRange.end]
+                };
+            }
+
+            if (filters.employeeIds && filters.employeeIds.length > 0) {
+                where.employee_id = { [Op.in]: filters.employeeIds };
+            }
+
+            // Use raw SQL for JSONB array unnesting and aggregation
+            const results = await this.model.sequelize.query(`
+                SELECT 
+                    deduction->>'type' as type,
+                    period,
+                    SUM((deduction->>'amount')::numeric) as "totalAmount",
+                    COUNT(*) as count,
+                    AVG((deduction->>'amount')::numeric) as "avgAmount",
+                    COUNT(DISTINCT employee_id) as "employeeCount"
+                FROM ${this.model.tableName},
+                     jsonb_array_elements(deductions) as deduction
+                WHERE ${Object.keys(where).map((key, i) => `${key} = $${i + 1}`).join(' AND ')}
+                GROUP BY deduction->>'type', period
+                ORDER BY period DESC, type ASC
+            `, {
+                bind: Object.values(where),
+                type: this.model.sequelize.QueryTypes.SELECT
+            });
+
+            return results;
+        } catch (error) {
+            throw this._handleError(error, 'getDeductionSummary');
+        }
+    }
+
+    /**
+     * Get payroll analytics for reporting
+     * @param {Object} filters - Filter criteria
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Object>} Payroll analytics
+     */
+    async getPayrollAnalytics(filters = {}, options = {}) {
+        try {
+            const where = {};
+
+            if (filters.tenantId) {
+                where.tenant_id = filters.tenantId;
+            }
+
+            if (filters.period) {
+                where.period = filters.period;
+            }
+
+            if (filters.periodRange) {
+                where.period = {
+                    [Op.between]: [filters.periodRange.start, filters.periodRange.end]
+                };
+            }
+
+            const periodAnalytics = await this.model.findAll({
+                where,
+                attributes: [
+                    'period',
+                    [this.model.sequelize.fn('COUNT', this.model.sequelize.col('id')), 'totalEmployees'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.col('total_deductions')), 'totalDeductions'],
+                    [this.model.sequelize.fn('AVG', this.model.sequelize.col('total_deductions')), 'avgDeductions'],
+                    [this.model.sequelize.fn('MAX', this.model.sequelize.col('total_deductions')), 'maxDeductions'],
+                    [this.model.sequelize.fn('MIN', this.model.sequelize.col('total_deductions')), 'minDeductions']
+                ],
+                group: ['period'],
+                order: [['period', 'DESC']],
+                raw: true
+            });
+
+            // Get deduction type breakdown
+            const deductionBreakdown = await this.getDeductionSummary(filters, options);
+
+            return {
+                periodAnalytics,
+                deductionBreakdown
+            };
+        } catch (error) {
+            throw this._handleError(error, 'getPayrollAnalytics');
+        }
+    }
+
+    /**
+     * Get employee payroll history
+     * @param {string} employeeId - Employee ID
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Employee payroll history
+     */
+    async getEmployeePayrollHistory(employeeId, options = {}) {
+        try {
+            const where = { employee_id: employeeId };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            const queryOptions = {
+                ...options,
+                include: [
+                    { association: 'employee', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
+                ],
+                order: [['period', 'DESC']]
+            };
+
+            if (options.limit) {
+                queryOptions.limit = parseInt(options.limit);
+            }
+
+            return await this.findAll(where, queryOptions);
+        } catch (error) {
+            throw this._handleError(error, 'getEmployeePayrollHistory');
+        }
+    }
+
+    /**
+     * Get payroll records by deduction type
+     * @param {string} deductionType - Type of deduction
+     * @param {Object} [options] - Query options
+     * @returns {Promise<Array>} Payroll records with specified deduction type
+     */
+    async findByDeductionType(deductionType, options = {}) {
+        try {
+            const where = {
+                deductions: {
+                    [Op.contains]: [{ type: deductionType }]
+                }
+            };
+
+            if (options.tenantId) {
+                where.tenant_id = options.tenantId;
+            }
+
+            if (options.period) {
+                where.period = options.period;
+            }
+
+            return await this.findAll(where, {
+                ...options,
+                include: [
+                    { 
+                        association: 'employee', 
+                        attributes: ['id', 'first_name', 'last_name', 'employee_id', 'department_id'],
+                        include: [{ association: 'department', attributes: ['id', 'name', 'code'] }]
+                    }
+                ],
+                order: [['period', 'DESC'], [{ model: this.model.associations.employee.target, as: 'employee' }, 'first_name', 'ASC']]
+            });
+        } catch (error) {
+            throw this._handleError(error, 'findByDeductionType');
+        }
+    }
+
+    /**
+     * Bulk create payroll records
+     * @param {Array} payrollRecords - Array of payroll data objects
+     * @param {Object} [options] - Creation options
+     * @returns {Promise<Array>} Created payroll records
+     */
+    async bulkCreatePayroll(payrollRecords, options = {}) {
+        try {
+            // Calculate total deductions for each record
+            const processedRecords = payrollRecords.map(record => ({
+                ...record,
+                total_deductions: this.calculateTotalDeductions(record.deductions || [])
+            }));
+
+            // Use transaction for bulk operations
+            return await this.withTransaction(async (transaction) => {
+                const results = [];
+                
+                for (const recordData of processedRecords) {
+                    const result = await this.create(recordData, { ...options, transaction });
+                    results.push(result);
+                }
+                
+                return results;
+            });
+        } catch (error) {
+            throw this._handleError(error, 'bulkCreatePayroll');
+        }
+    }
+}
+
+export default PayrollRepository;
 
 /**
  * Repository for Payroll model operations with salary calculations and analytics

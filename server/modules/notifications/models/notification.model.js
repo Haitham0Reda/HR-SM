@@ -1,6 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { mainAppDb } from '../../../config/database.js';
-import User from '../../users/models/user.model.js';
+import User from '../../hr-core/users/models/user.model.js';
 
 const Notification = mainAppDb.define('Notification', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
@@ -43,3 +43,7 @@ Notification.associate = function(models) {
 };
 
 export default Notification;
+
+
+
+

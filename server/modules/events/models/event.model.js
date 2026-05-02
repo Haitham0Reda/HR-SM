@@ -7,7 +7,7 @@
  * @module models/Event
  */
 
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { mainAppDb } from '../../../config/database.js';
 import User from '../../hr-core/users/models/user.model.js';
 
@@ -115,7 +115,7 @@ const Event = mainAppDb.define('Event', {
     upcoming: {
       where: {
         startDate: {
-          [require('sequelize').Op.gte]: new Date()
+          [Op.gte]: new Date()
         }
       },
       order: [['startDate', 'ASC']]
@@ -123,7 +123,7 @@ const Event = mainAppDb.define('Event', {
     past: {
       where: {
         endDate: {
-          [require('sequelize').Op.lt]: new Date()
+          [Op.lt]: new Date()
         }
       },
       order: [['startDate', 'DESC']]
@@ -187,7 +187,7 @@ Event.findUpcoming = async function(tenantId, limit = 10) {
     where: {
       tenantId,
       startDate: {
-        [require('sequelize').Op.gte]: new Date()
+        [Op.gte]: new Date()
       }
     },
     order: [['startDate', 'ASC']],
@@ -200,8 +200,8 @@ Event.findByDateRange = async function(tenantId, startDate, endDate) {
     where: {
       tenantId,
       startDate: {
-        [require('sequelize').Op.gte]: startDate,
-        [require('sequelize').Op.lte]: endDate
+        [Op.gte]: startDate,
+        [Op.lte]: endDate
       }
     },
     order: [['startDate', 'ASC']]
@@ -209,3 +209,7 @@ Event.findByDateRange = async function(tenantId, startDate, endDate) {
 };
 
 export default Event;
+
+
+
+

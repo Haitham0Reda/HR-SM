@@ -3,13 +3,12 @@
  * License Synchronization Script
  * Manually sync licenses from License Server to Company Databases
  */
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import licenseSyncService from '../services/licenseSyncService.js';
-import connectDB from '../config/database.js';
+import { connectDatabases } from '../config/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,10 +20,10 @@ const syncLicenses = async () => {
     console.log(chalk.blue('🔄 License Synchronization Tool'));
     console.log(chalk.gray('═'.repeat(50)));
 
-    // Connect to database
-    console.log(chalk.blue('\n🔌 Connecting to database...'));
-    await connectDB();
-    console.log(chalk.green('✅ Database connected'));
+    // Connect to databases
+    console.log(chalk.blue('\n🔌 Connecting to databases...'));
+    await connectDatabases();
+    console.log(chalk.green('✅ Databases connected'));
 
     // Initialize sync service
     console.log(chalk.blue('\n🚀 Initializing license sync service...'));

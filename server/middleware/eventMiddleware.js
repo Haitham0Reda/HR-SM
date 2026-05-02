@@ -3,7 +3,9 @@
  * 
  * Validation and business logic for events
  */
-import mongoose from 'mongoose';
+import User from '../modules/hr-core/users/models/user.model.js';
+import Notification from '../modules/notifications/models/notification.model.js';
+import { Op } from 'sequelize';
 
 /**
  * Validate event dates
@@ -36,7 +38,7 @@ export const validateEventDates = (req, res, next) => {
  */
 export const setEventCreatedBy = (req, res, next) => {
     if (req.user && !req.body.createdBy) {
-        req.body.createdBy = req.user._id;
+        req.body.createdBy = req.user.id;
     }
     next();
 };
@@ -47,10 +49,11 @@ export const setEventCreatedBy = (req, res, next) => {
 export const validateAttendees = async (req, res, next) => {
     try {
         if (req.body.attendees && req.body.attendees.length > 0) {
-            const User = mongoose.model('User');
-            const users = await User.find({
-                _id: { $in: req.body.attendees },
-                isActive: true
+            const users = await User.findAll({ 
+                where: { 
+                    id: { [Op.in]: req.body.attendees },
+                    is_active: true 
+                } 
             });
 
             if (users.length !== req.body.attendees.length) {
@@ -72,22 +75,21 @@ export const validateAttendees = async (req, res, next) => {
  */
 export const createEventNotifications = async (event) => {
     try {
-        const Notification = mongoose.model('Notification');
-
         if (event.attendees && event.attendees.length > 0) {
             const notifications = event.attendees.map(attendeeId => ({
-                recipient: attendeeId,
+                recipientId: attendeeId,
+                tenantId: event.tenantId || event.tenant_id,
                 type: 'event',
                 title: `Event: ${event.title}`,
-                message: `You have been invited to an event on ${event.startDate.toLocaleDateString()}. Location: ${event.location || 'TBD'}`,
+                message: `You have been invited to an event on ${new Date(event.startDate).toLocaleDateString()}. Location: ${event.location || 'TBD'}`,
                 relatedModel: 'Event',
-                relatedId: event._id
+                relatedId: event.id
             }));
 
-            await Notification.insertMany(notifications);
+            await Notification.bulkCreate(notifications);
         }
     } catch (error) {
-
+        console.error('Error creating event notifications:', error);
     }
 };
 

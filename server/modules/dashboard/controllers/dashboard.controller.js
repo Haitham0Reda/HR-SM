@@ -18,22 +18,22 @@ export const getDashboardConfig = async (req, res) => {
 
         const config = await DashboardConfig.getConfig(tenantId);
         
-        // Manually fetch the employee from tenant database instead of using populate
+        // Fetch the employee directly using Sequelize model with tenant filtering
         let employeeData = null;
         if (config.employeeOfTheMonth?.selectedEmployee) {
             try {
-                // Get tenant-specific database connection
-                const { default: multiTenantDB } = await import('../../../config/multiTenant.js');
-                const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+                employeeData = await User.findOne({
+                    where: {
+                        id: config.employeeOfTheMonth.selectedEmployee,
+                        tenant_id: tenantId
+                    },
+                    attributes: ['id', 'username', 'email', 'employee_id', 'personal_info']
+                });
                 
-                // Register models on tenant connection
-                const { registerHRModels } = await import('../../../utils/tenantModelRegistry.js');
-                const models = await registerHRModels(tenantConnection);
-                
-                // Fetch the employee
-                employeeData = await models.User.findById(config.employeeOfTheMonth.selectedEmployee)
-                    .select('username email employeeId personalInfo')
-                    .lean();
+                // Convert to plain object for response
+                if (employeeData) {
+                    employeeData = employeeData.toJSON();
+                }
             } catch (error) {
                 logger.error('Error fetching employee for dashboard config:', error);
             }
@@ -116,22 +116,22 @@ export const updateDashboardConfig = async (req, res) => {
         
         console.log('Config after save:', JSON.stringify(config.employeeOfTheMonth, null, 2));
 
-        // Manually fetch the employee from tenant database instead of using populate
+        // Fetch the employee directly using Sequelize model with tenant filtering
         let employeeData = null;
         if (config.employeeOfTheMonth?.selectedEmployee) {
             try {
-                // Get tenant-specific database connection
-                const { default: multiTenantDB } = await import('../../../config/multiTenant.js');
-                const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+                employeeData = await User.findOne({
+                    where: {
+                        id: config.employeeOfTheMonth.selectedEmployee,
+                        tenant_id: tenantId
+                    },
+                    attributes: ['id', 'username', 'email', 'employee_id', 'personal_info']
+                });
                 
-                // Register models on tenant connection
-                const { registerHRModels } = await import('../../../utils/tenantModelRegistry.js');
-                const models = await registerHRModels(tenantConnection);
-                
-                // Fetch the employee
-                employeeData = await models.User.findById(config.employeeOfTheMonth.selectedEmployee)
-                    .select('username email employeeId personalInfo')
-                    .lean();
+                // Convert to plain object for response
+                if (employeeData) {
+                    employeeData = employeeData.toJSON();
+                }
                     
                 console.log('Fetched employee data:', JSON.stringify(employeeData, null, 2));
             } catch (error) {
@@ -261,22 +261,22 @@ export const getEmployeeOfTheMonth = async (req, res) => {
 
         const config = await DashboardConfig.getConfig(tenantId);
         
-        // Manually fetch the employee from tenant database instead of using populate
+        // Fetch the employee directly using Sequelize model with tenant filtering
         let employeeData = null;
         if (config.employeeOfTheMonth?.selectedEmployee) {
             try {
-                // Get tenant-specific database connection
-                const { default: multiTenantDB } = await import('../../../config/multiTenant.js');
-                const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
+                employeeData = await User.findOne({
+                    where: {
+                        id: config.employeeOfTheMonth.selectedEmployee,
+                        tenant_id: tenantId
+                    },
+                    attributes: ['id', 'username', 'email', 'employee_id', 'personal_info']
+                });
                 
-                // Register models on tenant connection
-                const { registerHRModels } = await import('../../../utils/tenantModelRegistry.js');
-                const models = await registerHRModels(tenantConnection);
-                
-                // Fetch the employee
-                employeeData = await models.User.findById(config.employeeOfTheMonth.selectedEmployee)
-                    .select('username email employeeId personalInfo')
-                    .lean();
+                // Convert to plain object for response
+                if (employeeData) {
+                    employeeData = employeeData.toJSON();
+                }
             } catch (error) {
                 logger.error('Error fetching employee for employee of the month:', error);
             }

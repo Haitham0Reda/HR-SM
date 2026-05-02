@@ -3,7 +3,7 @@
  * 
  * Validates notification operations.
  */
-import mongoose from 'mongoose';
+import User from '../modules/hr-core/users/models/user.model.js';
 
 /**
  * Validate notification recipient middleware
@@ -12,8 +12,9 @@ import mongoose from 'mongoose';
 export const validateNotificationRecipient = async (req, res, next) => {
     try {
         if (req.body.recipient) {
-            const User = mongoose.model('User');
-            const user = await User.findById(req.body.recipient).select('_id isActive');
+            const user = await User.findByPk(req.body.recipient, {
+                attributes: ['id', 'is_active']
+            });
 
             if (!user) {
                 return res.status(404).json({
@@ -22,7 +23,7 @@ export const validateNotificationRecipient = async (req, res, next) => {
                 });
             }
 
-            if (!user.isActive) {
+            if (!user.is_active) {
                 return res.status(400).json({
                     success: false,
                     message: 'Cannot send notification to inactive user'
@@ -31,7 +32,7 @@ export const validateNotificationRecipient = async (req, res, next) => {
         }
         next();
     } catch (error) {
-
+        console.error('Validate notification recipient error:', error);
         next();
     }
 };
@@ -60,7 +61,7 @@ export const validateBulkNotification = async (req, res, next) => {
         }
         next();
     } catch (error) {
-
+        console.error('Validate bulk notification error:', error);
         next();
     }
 };

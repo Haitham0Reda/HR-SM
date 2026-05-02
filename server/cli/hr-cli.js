@@ -5,10 +5,11 @@
  */
 import { Command } from 'commander';
 import chalk from 'chalk';
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { mainAppDb } from '../config/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +28,7 @@ const program = new Command();
 // Connect to database
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
+        await mainAppDb.authenticate();
         console.log(chalk.green('✓ Connected to database'));
     } catch (error) {
         console.error(chalk.red('✗ Database connection failed:'), error.message);
@@ -37,7 +38,7 @@ const connectDB = async () => {
 
 // Disconnect from database
 const disconnectDB = async () => {
-    await mongoose.disconnect();
+    await mainAppDb.close();
     console.log(chalk.gray('Database disconnected'));
 };
 
@@ -55,10 +56,12 @@ program
     .action(async (options) => {
         await connectDB();
         
-        const query = options.role ? { role: options.role } : {};
-        const users = await User.find(query)
-            .limit(parseInt(options.limit))
-            .select('firstName lastName email role status');
+        const where = options.role ? { role: options.role } : {};
+        const users = await User.findAll({
+            where,
+            limit: parseInt(options.limit),
+            attributes: ['firstName', 'lastName', 'email', 'role', 'status']
+        });
         
         console.log(chalk.yellow(`\nFound ${users.length} users:\n`));
         users.forEach(user => {
@@ -92,7 +95,7 @@ program
             });
             
             console.log(chalk.green('\n✓ User created successfully!'));
-            console.log(chalk.gray(`ID: ${user._id}`));
+            console.log(chalk.gray(`ID: ${user.id}`));
             console.log(chalk.gray(`Email: ${user.email}`));
         } catch (error) {
             console.error(chalk.red('\n✗ Error creating user:'), error.message);
@@ -109,11 +112,14 @@ program
         await connectDB();
         
         try {
-            const user = await User.findOneAndDelete({ email: options.email });
+            const user = await User.findOne({ where: { email: options.email } });
             
             if (user) {
+                const firstName = user.firstName;
+                const lastName = user.lastName;
+                await user.destroy();
                 console.log(chalk.green('\n✓ User deleted successfully!'));
-                console.log(chalk.gray(`Deleted: ${user.firstName} ${user.lastName}`));
+                console.log(chalk.gray(`Deleted: ${firstName} ${lastName}`));
             } else {
                 console.log(chalk.yellow('\n⚠ User not found'));
             }
@@ -131,8 +137,13 @@ program
     .action(async () => {
         await connectDB();
         
-        const departments = await Department.find()
-            .populate('manager', 'firstName lastName');
+        const departments = await Department.findAll({
+            include: [{ 
+                model: User, 
+                as: 'manager', 
+                attributes: ['firstName', 'lastName'] 
+            }]
+        });
         
         console.log(chalk.yellow(`\nFound ${departments.length} departments:\n`));
         departments.forEach(dept => {
@@ -157,8 +168,10 @@ program
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
         
-        const attendance = await Attendance.find({
-            date: { $gte: startDate }
+        const attendance = await Attendance.findAll({
+            where: {
+                date: { [Op.gte]: startDate }
+            }
         });
         
         const stats = {
@@ -185,9 +198,21 @@ program
         await connectDB();
         
         // Fetch from all leave types
-        const vacations = await Vacation.find({ status: 'pending' }).populate('employee', 'personalInfo').sort({ createdAt: -1 });
-        const missions = await Mission.find({ status: 'pending' }).populate('employee', 'personalInfo').sort({ createdAt: -1 });
-        const sickLeaves = await SickLeave.find({ status: 'pending' }).populate('employee', 'personalInfo').sort({ createdAt: -1 });
+        const vacations = await Vacation.findAll({ 
+            where: { status: 'pending' },
+            include: [{ model: User, as: 'employee', attributes: ['personalInfo'] }],
+            order: [['createdAt', 'DESC']]
+        });
+        const missions = await Mission.findAll({ 
+            where: { status: 'pending' },
+            include: [{ model: User, as: 'employee', attributes: ['personalInfo'] }],
+            order: [['createdAt', 'DESC']]
+        });
+        const sickLeaves = await SickLeave.findAll({ 
+            where: { status: 'pending' },
+            include: [{ model: User, as: 'employee', attributes: ['personalInfo'] }],
+            order: [['createdAt', 'DESC']]
+        });
         
         const leaves = [...vacations, ...missions, ...sickLeaves];
         
@@ -195,7 +220,7 @@ program
         leaves.forEach(leave => {
             const user = leave.employee?.personalInfo?.fullName || 'Unknown';
             const dates = `${leave.startDate.toLocaleDateString()} - ${leave.endDate.toLocaleDateString()}`;
-            const type = leave.constructor.modelName;
+            const type = leave.constructor.name;
             console.log(`${chalk.bold(user)} - ${chalk.cyan(type)} - ${dates}`);
             console.log(chalk.gray(`  Reason: ${(leave.reason || leave.purpose || 'N/A').substring(0, 60)}...`));
         });
@@ -210,12 +235,12 @@ program
     .action(async () => {
         await connectDB();
         
-        const userCount = await User.countDocuments();
-        const deptCount = await Department.countDocuments();
-        const attendanceCount = await Attendance.countDocuments();
-        const vacationCount = await Vacation.countDocuments();
-        const missionCount = await Mission.countDocuments();
-        const sickLeaveCount = await SickLeave.countDocuments();
+        const userCount = await User.count();
+        const deptCount = await Department.count();
+        const attendanceCount = await Attendance.count();
+        const vacationCount = await Vacation.count();
+        const missionCount = await Mission.count();
+        const sickLeaveCount = await SickLeave.count();
         const totalLeaves = vacationCount + missionCount + sickLeaveCount;
         
         console.log(chalk.yellow('\nDatabase Statistics:\n'));

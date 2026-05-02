@@ -1,25 +1,37 @@
 // Backup Service - Tenant-scoped backup for HR-Core data only
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
 import logger from '../../../../utils/logger.js';
+import User from '../../users/models/user.model.js';
+import Department from '../../users/models/department.model.js';
+import Position from '../../users/models/position.model.js';
+import Attendance from '../../attendance/models/attendance.model.js';
+import Request from '../../requests/models/request.model.js';
+import Holiday from '../../holidays/models/holiday.model.js';
+import Mission from '../../missions/models/mission.model.js';
+import Vacation from '../../vacations/models/vacation.model.js';
+import MixedVacation from '../../vacations/models/mixedVacation.model.js';
+import VacationBalance from '../../vacations/models/vacationBalance.model.js';
+import Overtime from '../../overtime/models/overtime.model.js';
+import ForgetCheck from '../../attendance/models/forgetCheck.model.js';
 
 /**
  * HARD RULE: Backup ONLY HR-Core collections
  * NEVER backup optional module data (tasks, payroll, documents, etc.)
  */
-const HR_CORE_COLLECTIONS = [
-    'attendances',
-    'requests',
-    'holidays',
-    'missions',
-    'vacations',
-    'mixedvacations',
-    'vacationbalances',
-    'overtimes',
-    'users',
-    'departments',
-    'positions',
-    'forgetchecks'
-];
+const HR_CORE_MODELS = {
+    attendances: Attendance,
+    requests: Request,
+    holidays: Holiday,
+    missions: Mission,
+    vacations: Vacation,
+    mixedvacations: MixedVacation,
+    vacationbalances: VacationBalance,
+    overtimes: Overtime,
+    users: User,
+    departments: Department,
+    positions: Position,
+    forgetchecks: ForgetCheck
+};
 
 /**
  * Backup service for tenant-scoped HR-Core data
@@ -51,12 +63,13 @@ class BackupService {
             };
             
             // Backup only HR-Core collections
-            for (const collectionName of HR_CORE_COLLECTIONS) {
+            for (const [collectionName, Model] of Object.entries(HR_CORE_MODELS)) {
                 try {
-                    const collection = mongoose.connection.collection(collectionName);
-                    
                     // Query only documents for this tenant
-                    const documents = await collection.find({ tenantId }).toArray();
+                    const documents = await Model.findAll({
+                        where: { tenant_id: tenantId },
+                        raw: true
+                    });
                     
                     if (documents.length > 0) {
                         backup.collections[collectionName] = documents;
@@ -106,32 +119,27 @@ class BackupService {
                 errors: []
             };
             
-            // Restore only HR-Core collections
-            for (const collectionName of Object.keys(backupData.collections)) {
-                // Validate collection is in whitelist
-                if (!HR_CORE_COLLECTIONS.includes(collectionName)) {
-                    const error = `Collection ${collectionName} is not in HR-Core whitelist - skipping`;
-                    logger.warn(error);
-                    result.errors.push(error);
-                    continue;
-                }
-                
+            // Restore each collection
+            for (const [collectionName, documents] of Object.entries(backupData.collections)) {
                 try {
-                    const collection = mongoose.connection.collection(collectionName);
-                    const documents = backupData.collections[collectionName];
-                    
-                    // Verify all documents belong to the tenant
-                    const invalidDocs = documents.filter(doc => doc.tenantId !== tenantId);
-                    if (invalidDocs.length > 0) {
-                        throw new Error(`Found ${invalidDocs.length} documents with incorrect tenantId in ${collectionName}`);
+                    const Model = HR_CORE_MODELS[collectionName];
+                    if (!Model) {
+                        logger.warn(`Model not found for collection: ${collectionName}`);
+                        continue;
                     }
                     
                     // Delete existing documents for this tenant in this collection
-                    await collection.deleteMany({ tenantId });
+                    await Model.destroy({
+                        where: { tenant_id: tenantId }
+                    });
                     
                     // Insert backup documents
                     if (documents.length > 0) {
-                        await collection.insertMany(documents);
+                        await Model.bulkCreate(documents, {
+                            validate: true,
+                            individualHooks: false
+                        });
+                        
                         result.collectionsRestored++;
                         result.documentsRestored += documents.length;
                         
@@ -154,81 +162,29 @@ class BackupService {
     }
     
     /**
-     * Validate a backup file
-     * @param {Object} backupData - Backup data to validate
-     * @returns {Object} Validation result
-     */
-    validateBackup(backupData) {
-        const errors = [];
-        const warnings = [];
-        
-        // Check required fields
-        if (!backupData.tenantId) {
-            errors.push('Missing tenantId');
-        }
-        
-        if (!backupData.timestamp) {
-            errors.push('Missing timestamp');
-        }
-        
-        if (!backupData.collections || typeof backupData.collections !== 'object') {
-            errors.push('Missing or invalid collections object');
-        }
-        
-        // Check for non-HR-Core collections
-        if (backupData.collections) {
-            for (const collectionName of Object.keys(backupData.collections)) {
-                if (!HR_CORE_COLLECTIONS.includes(collectionName)) {
-                    warnings.push(`Collection ${collectionName} is not in HR-Core whitelist`);
-                }
-            }
-        }
-        
-        // Check tenant isolation
-        if (backupData.collections) {
-            for (const [collectionName, documents] of Object.entries(backupData.collections)) {
-                const invalidDocs = documents.filter(doc => doc.tenantId !== backupData.tenantId);
-                if (invalidDocs.length > 0) {
-                    errors.push(`Collection ${collectionName} contains ${invalidDocs.length} documents with incorrect tenantId`);
-                }
-            }
-        }
-        
-        return {
-            valid: errors.length === 0,
-            errors,
-            warnings
-        };
-    }
-    
-    /**
      * Get backup statistics for a tenant
      * @param {string} tenantId - Tenant identifier
      * @returns {Promise<Object>} Backup statistics
      */
     async getBackupStats(tenantId) {
         try {
-            if (!tenantId) {
-                throw new Error('Tenant ID is required');
-            }
-            
             const stats = {
                 tenantId,
                 collections: {},
                 totalDocuments: 0
             };
             
-            for (const collectionName of HR_CORE_COLLECTIONS) {
+            for (const [collectionName, Model] of Object.entries(HR_CORE_MODELS)) {
                 try {
-                    const collection = mongoose.connection.collection(collectionName);
-                    const count = await collection.countDocuments({ tenantId });
+                    const count = await Model.count({
+                        where: { tenant_id: tenantId }
+                    });
                     
-                    if (count > 0) {
-                        stats.collections[collectionName] = count;
-                        stats.totalDocuments += count;
-                    }
+                    stats.collections[collectionName] = count;
+                    stats.totalDocuments += count;
                 } catch (error) {
-                    logger.warn(`Error getting stats for ${collectionName}: ${error.message}`);
+                    logger.warn(`Error counting ${collectionName}: ${error.message}`);
+                    stats.collections[collectionName] = 0;
                 }
             }
             

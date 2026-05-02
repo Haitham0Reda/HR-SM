@@ -110,3 +110,7 @@ DocumentTemplate.findByNameAndTenant = async function(name, tenantId) {
 };
 
 export default DocumentTemplate;
+
+
+
+

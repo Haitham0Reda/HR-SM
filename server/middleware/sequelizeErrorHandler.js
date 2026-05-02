@@ -5,7 +5,7 @@
  * Provides detailed error logging with SQL queries and parameters
  */
 
-const { 
+import { 
   UniqueConstraintError,
   ForeignKeyConstraintError,
   ValidationError,
@@ -14,9 +14,9 @@ const {
   DatabaseError,
   OptimisticLockError,
   EmptyResultError
-} = require('sequelize');
+} from 'sequelize';
 
-const logger = require('../utils/logger');
+import logger from '../utils/logger.js';
 
 /**
  * Sequelize Error Handler Middleware
@@ -475,7 +475,7 @@ function getErrorDescription(code) {
   return PG_ERROR_CODES[code] || 'unknown_error';
 }
 
-module.exports = {
+export {
   sequelizeErrorHandler,
   handleUniqueConstraintError,
   handleForeignKeyConstraintError,
@@ -488,3 +488,5 @@ module.exports = {
   PG_ERROR_CODES,
   getErrorDescription
 };
+
+export default sequelizeErrorHandler;

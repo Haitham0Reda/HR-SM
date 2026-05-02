@@ -1,44 +1,59 @@
+import { Op } from 'sequelize';
 import ForgetCheck from '../models/forgetCheck.model.js';
 import User from '../../users/models/user.model.js';
 import Department from '../../users/models/department.model.js';
 import Position from '../../users/models/position.model.js';
-import mongoose from 'mongoose';
-import multiTenantDB from '../../../../config/multiTenant.js';
 
 export const getAllForgetChecks = async (req, res) => {
     try {
-        // Get tenant-specific database connection
-        const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
-        
-        // Register models on tenant connection
-        const TenantUser = tenantConnection.model('User', User.schema);
-        const TenantForgetCheck = tenantConnection.model('ForgetCheck', ForgetCheck.schema);
-        const TenantDepartment = tenantConnection.model('Department', Department.schema);
-        const TenantPosition = tenantConnection.model('Position', Position.schema);
-
-        const query = { tenantId: req.tenantId };
+        const where = { tenantId: req.tenantId };
         const { user } = req;
 
         // Filter by user/employee if provided
         if (req.query.user) {
-            query.employee = req.query.user;
+            where.employeeId = req.query.user;
         } else if (req.query.employee) {
-            query.employee = req.query.employee;
+            where.employeeId = req.query.employee;
         }
 
         // Role-based filtering - check user role
         const isHR = user.role === 'hr' || user.role === 'admin';
         if (!isHR) {
             // Regular users see only their own requests
-            query.employee = user._id;
+            where.employeeId = user.id;
         }
 
-        const forgetChecks = await TenantForgetCheck.find(query)
-            .populate('employee', 'username email personalInfo')
-            .populate('approvedBy rejectedBy', 'username personalInfo')
-            .populate('department', 'name')
-            .populate('position', 'title')
-            .sort({ createdAt: -1 });
+        const forgetChecks = await ForgetCheck.findAll({
+            where,
+            include: [
+                {
+                    model: User,
+                    as: 'employee',
+                    attributes: ['username', 'email', 'personalInfo']
+                },
+                {
+                    model: User,
+                    as: 'approvedBy',
+                    attributes: ['username', 'personalInfo']
+                },
+                {
+                    model: User,
+                    as: 'rejectedBy',
+                    attributes: ['username', 'personalInfo']
+                },
+                {
+                    model: Department,
+                    as: 'department',
+                    attributes: ['name']
+                },
+                {
+                    model: Position,
+                    as: 'position',
+                    attributes: ['title']
+                }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
 
         res.json({
             success: true,
@@ -60,17 +75,8 @@ export const createForgetCheck = async (req, res) => {
         console.log('Authenticated user:', JSON.stringify(req.user, null, 2));
         console.log('Tenant ID:', req.tenantId);
 
-        // Get tenant-specific database connection
-        const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
-        
-        // Register models on tenant connection
-        const TenantUser = tenantConnection.model('User', User.schema);
-        const TenantForgetCheck = tenantConnection.model('ForgetCheck', ForgetCheck.schema);
-        const TenantDepartment = tenantConnection.model('Department', Department.schema);
-        const TenantPosition = tenantConnection.model('Position', Position.schema);
-
         // Determine the employee ID - use from request body or fall back to authenticated user
-        let employeeId = req.body.employee || req.body.user || req.user._id || req.user.id;
+        let employeeId = req.body.employee || req.body.user || req.user.id;
         
         if (!employeeId) {
             console.log('❌ No employee ID found');
@@ -82,42 +88,25 @@ export const createForgetCheck = async (req, res) => {
 
         console.log('🔍 Using employee ID:', employeeId);
 
-        // Convert string ID to ObjectId if needed
-        let objectId;
-        try {
-            objectId = new mongoose.Types.ObjectId(employeeId);
-        } catch (error) {
-            console.log('❌ Invalid ObjectId format:', employeeId);
-            return res.status(400).json({ 
-                error: 'Invalid employee ID format',
-                details: 'Employee ID must be a valid ObjectId'
-            });
-        }
-
-        // Get employee details from tenant-specific database
-        console.log('🔍 Looking up employee in tenant database...');
-        console.log('🔍 Search criteria:', { _id: objectId, tenantId: req.tenantId });
+        // Get employee details
+        console.log('🔍 Looking up employee in database...');
+        console.log('🔍 Search criteria:', { id: employeeId, tenantId: req.tenantId });
         
-        // First, let's try to find all users in this tenant to debug
-        const allUsersInTenant = await TenantUser.find({ tenantId: req.tenantId }).select('_id username email');
-        console.log('🔍 All users in tenant database:', allUsersInTenant);
-        
-        // Try to find the specific user by ID only (no tenant filter since we're already in tenant DB)
-        const userById = await TenantUser.findById(objectId);
-        console.log('🔍 User found by ID in tenant DB:', userById ? { _id: userById._id, tenantId: userById.tenantId, username: userById.username } : 'Not found');
-        
-        const employee = await TenantUser.findOne({ 
-            _id: objectId, 
-            tenantId: req.tenantId 
-        })
-            .populate('department')
-            .populate('position');
+        const employee = await User.findOne({ 
+            where: {
+                id: employeeId, 
+                tenantId: req.tenantId 
+            },
+            include: [
+                { model: Department, as: 'department' },
+                { model: Position, as: 'position' }
+            ]
+        });
 
         if (!employee) {
-            console.log('❌ Employee not found in tenant database:', employeeId);
+            console.log('❌ Employee not found in database:', employeeId);
             console.log('🔍 Available user fields:', Object.keys(req.user || {}));
             console.log('🔍 User ID variations:', {
-                'req.user._id': req.user?._id,
                 'req.user.id': req.user?.id,
                 'req.user.userId': req.user?.userId,
                 'req.body.employee': req.body.employee
@@ -134,8 +123,7 @@ export const createForgetCheck = async (req, res) => {
                     searchedId: employeeId,
                     tenantId: req.tenantId,
                     userFields: Object.keys(req.user || {}),
-                    userTenantId: req.user?.tenantId,
-                    databaseName: tenantConnection.name
+                    userTenantId: req.user?.tenantId
                 }
             });
         }
@@ -144,9 +132,9 @@ export const createForgetCheck = async (req, res) => {
 
         // Prepare the forget check data
         const forgetCheckData = {
-            employee: employee._id,
-            department: employee.department?._id,
-            position: employee.position?._id,
+            employeeId: employee.id,
+            departmentId: employee.department?.id,
+            positionId: employee.position?.id,
             date: req.body.date,
             requestType: req.body.requestType,
             requestedTime: req.body.requestedTime,
@@ -156,10 +144,9 @@ export const createForgetCheck = async (req, res) => {
 
         console.log('🔍 Creating forget check with data:', JSON.stringify(forgetCheckData, null, 2));
 
-        const forgetCheck = new TenantForgetCheck(forgetCheckData);
-        const savedForgetCheck = await forgetCheck.save();
+        const savedForgetCheck = await ForgetCheck.create(forgetCheckData);
 
-        console.log('✅ Forget check created successfully:', savedForgetCheck._id);
+        console.log('✅ Forget check created successfully:', savedForgetCheck.id);
 
         res.status(201).json(savedForgetCheck);
     } catch (err) {
@@ -167,42 +154,62 @@ export const createForgetCheck = async (req, res) => {
         console.error('❌ Error stack:', err.stack);
         
         // Don't let errors become 404s - return proper error codes
-        if (err.name === 'ValidationError') {
+        if (err.name === 'SequelizeValidationError') {
             return res.status(400).json({
                 error: 'Validation error',
                 message: err.message,
-                details: err.errors ? Object.keys(err.errors).map(key => ({
-                    field: key,
-                    message: err.errors[key].message
+                details: err.errors ? err.errors.map(e => ({
+                    field: e.path,
+                    message: e.message
                 })) : null
             });
         }
         
-        if (err.name === 'CastError') {
+        if (err.name === 'SequelizeDatabaseError') {
             return res.status(400).json({
-                error: 'Invalid ID format',
+                error: 'Database error',
                 message: err.message
             });
         }
         
         res.status(500).json({
             error: 'Internal server error',
-            message: err.message,
-            details: err.errors ? Object.keys(err.errors).map(key => ({
-                field: key,
-                message: err.errors[key].message
-            })) : null
+            message: err.message
         });
     }
 };
 
 export const getForgetCheckById = async (req, res) => {
     try {
-        const forgetCheck = await ForgetCheck.findById(req.params.id)
-            .populate('employee', 'username email personalInfo')
-            .populate('approvedBy rejectedBy', 'username personalInfo')
-            .populate('department', 'name')
-            .populate('position', 'title');
+        const forgetCheck = await ForgetCheck.findByPk(req.params.id, {
+            include: [
+                {
+                    model: User,
+                    as: 'employee',
+                    attributes: ['username', 'email', 'personalInfo']
+                },
+                {
+                    model: User,
+                    as: 'approvedBy',
+                    attributes: ['username', 'personalInfo']
+                },
+                {
+                    model: User,
+                    as: 'rejectedBy',
+                    attributes: ['username', 'personalInfo']
+                },
+                {
+                    model: Department,
+                    as: 'department',
+                    attributes: ['name']
+                },
+                {
+                    model: Position,
+                    as: 'position',
+                    attributes: ['title']
+                }
+            ]
+        });
 
         if (!forgetCheck) {
             return res.status(404).json({ error: 'Forget check request not found' });
@@ -216,16 +223,16 @@ export const getForgetCheckById = async (req, res) => {
 
 export const updateForgetCheck = async (req, res) => {
     try {
-        const forgetCheck = await ForgetCheck.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true, runValidators: true }
-        );
+        const [updated] = await ForgetCheck.update(req.body, {
+            where: { id: req.params.id },
+            returning: true
+        });
 
-        if (!forgetCheck) {
+        if (!updated) {
             return res.status(404).json({ error: 'Forget check request not found' });
         }
 
+        const forgetCheck = await ForgetCheck.findByPk(req.params.id);
         res.json(forgetCheck);
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -234,9 +241,11 @@ export const updateForgetCheck = async (req, res) => {
 
 export const deleteForgetCheck = async (req, res) => {
     try {
-        const forgetCheck = await ForgetCheck.findByIdAndDelete(req.params.id);
+        const deleted = await ForgetCheck.destroy({
+            where: { id: req.params.id }
+        });
 
-        if (!forgetCheck) {
+        if (!deleted) {
             return res.status(404).json({ error: 'Forget check request not found' });
         }
 
@@ -248,7 +257,7 @@ export const deleteForgetCheck = async (req, res) => {
 
 export const approveForgetCheck = async (req, res) => {
     try {
-        const forgetCheck = await ForgetCheck.findById(req.params.id);
+        const forgetCheck = await ForgetCheck.findByPk(req.params.id);
 
         if (!forgetCheck) {
             return res.status(404).json({ error: 'Forget check request not found' });
@@ -260,18 +269,17 @@ export const approveForgetCheck = async (req, res) => {
             return res.status(403).json({ error: 'You do not have permission to approve forget check requests' });
         }
 
-        await forgetCheck.approve(req.user._id);
+        await forgetCheck.approve(req.user.id);
 
         res.json(forgetCheck);
     } catch (err) {
-
         res.status(400).json({ error: err.message });
     }
 };
 
 export const rejectForgetCheck = async (req, res) => {
     try {
-        const forgetCheck = await ForgetCheck.findById(req.params.id);
+        const forgetCheck = await ForgetCheck.findByPk(req.params.id);
 
         if (!forgetCheck) {
             return res.status(404).json({ error: 'Forget check request not found' });
@@ -290,11 +298,10 @@ export const rejectForgetCheck = async (req, res) => {
             return res.status(400).json({ error: 'Rejection reason must be at least 10 characters long' });
         }
 
-        await forgetCheck.reject(req.user._id, reason.trim());
+        await forgetCheck.reject(req.user.id, reason.trim());
 
         res.json(forgetCheck);
     } catch (err) {
-
         res.status(400).json({ error: err.message });
     }
 };

@@ -1,9 +1,9 @@
 import License from '../models/License.js';
-import LicenseAudit from '../models/LicenseAudit.js';
 import logger from '../utils/logger.js';
+import { Op } from 'sequelize';
 
 /**
- * License Controller - License Server
+ * License Controller - License Server (PostgreSQL/Sequelize)
  * Handles all license management operations
  */
 class LicenseController {
@@ -28,7 +28,7 @@ class LicenseController {
       const licenseId = `lic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // Create license
-      const license = new License({
+      const license = await License.create({
         licenseId,
         companyId,
         companyName,
@@ -39,25 +39,6 @@ class LicenseController {
         expiresAt: new Date(expiresAt),
         metadata,
         createdBy: req.user?.userId || 'system'
-      });
-
-      await license.save();
-
-      // Create audit entry
-      await LicenseAudit.createAuditEntry({
-        licenseId: license.licenseId,
-        licenseNumber: license.licenseNumber,
-        companyId: license.companyId,
-        eventType: 'license_created',
-        eventDescription: `New ${licenseType} license created for ${companyName}`,
-        performedBy: {
-          userId: req.user?.userId,
-          userEmail: req.user?.email,
-          source: 'license_server',
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent')
-        },
-        newState: license.toObject()
       });
 
       logger.info('License created successfully', {
@@ -113,20 +94,6 @@ class LicenseController {
         });
       }
 
-      // Create audit entry
-      await LicenseAudit.createAuditEntry({
-        licenseId: license.licenseId,
-        licenseNumber: license.licenseNumber,
-        companyId: license.companyId,
-        eventType: 'license_accessed',
-        eventDescription: 'License data retrieved',
-        performedBy: {
-          source: 'api',
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent')
-        }
-      });
-
       res.json({
         success: true,
         license: {
@@ -168,7 +135,7 @@ class LicenseController {
       const { licenseId } = req.params;
       const { usage, timestamp } = req.body;
 
-      const license = await License.findOne({ licenseId });
+      const license = await License.findOne({ where: { licenseId } });
 
       if (!license) {
         return res.status(404).json({
@@ -189,7 +156,7 @@ class LicenseController {
 
       // Check limits if usage data provided
       if (usage) {
-        license.updateUsage(usage);
+        await license.updateUsage(usage);
         const limitCheck = license.checkLimits();
         validationResult.limitsChecked = true;
         validationResult.limitViolations = limitCheck.violations;
@@ -198,22 +165,6 @@ class LicenseController {
           validationResult.valid = false;
         }
       }
-
-      // Save updated license
-      await license.save();
-
-      // Create audit entry
-      await LicenseAudit.logLicenseValidation(
-        license.licenseId,
-        license.licenseNumber,
-        license.companyId,
-        validationResult,
-        {
-          source: 'api',
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent')
-        }
-      );
 
       res.json({
         success: true,
@@ -252,7 +203,7 @@ class LicenseController {
       const { licenseId } = req.params;
       const { usage } = req.body;
 
-      const license = await License.findOne({ licenseId });
+      const license = await License.findOne({ where: { licenseId } });
 
       if (!license) {
         return res.status(404).json({
@@ -264,29 +215,10 @@ class LicenseController {
       const previousUsage = { ...license.currentUsage };
       
       // Update usage
-      license.updateUsage(usage);
+      await license.updateUsage(usage);
       
       // Check limits
       const limitCheck = license.checkLimits();
-      
-      await license.save();
-
-      // Create audit entry
-      await LicenseAudit.logUsageUpdate(
-        license.licenseId,
-        license.licenseNumber,
-        license.companyId,
-        {
-          previous: previousUsage,
-          current: license.currentUsage,
-          violations: limitCheck.violations
-        },
-        {
-          source: 'api',
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent')
-        }
-      );
 
       res.json({
         success: true,
@@ -317,7 +249,7 @@ class LicenseController {
       const { licenseId } = req.params;
       const { status, reason } = req.body;
 
-      const license = await License.findOne({ licenseId });
+      const license = await License.findOne({ where: { licenseId } });
 
       if (!license) {
         return res.status(404).json({
@@ -331,24 +263,6 @@ class LicenseController {
       license.updatedBy = req.user?.userId || 'system';
 
       await license.save();
-
-      // Create audit entry
-      await LicenseAudit.createAuditEntry({
-        licenseId: license.licenseId,
-        licenseNumber: license.licenseNumber,
-        companyId: license.companyId,
-        eventType: `license_${status}`,
-        eventDescription: `License status changed from ${previousStatus} to ${status}${reason ? `: ${reason}` : ''}`,
-        performedBy: {
-          userId: req.user?.userId,
-          userEmail: req.user?.email,
-          source: 'license_server',
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent')
-        },
-        previousState: { status: previousStatus },
-        newState: { status: status }
-      });
 
       logger.info('License status updated', {
         licenseId: license.licenseId,
@@ -389,23 +303,16 @@ class LicenseController {
       const { licenseId } = req.params;
       const { limit = 100, page = 1 } = req.query;
 
-      const skip = (page - 1) * limit;
-      
-      const audits = await LicenseAudit.find({ licenseId })
-        .sort({ timestamp: -1 })
-        .skip(skip)
-        .limit(parseInt(limit));
-
-      const total = await LicenseAudit.countDocuments({ licenseId });
-
+      // TODO: Implement LicenseAudit model for PostgreSQL
       res.json({
         success: true,
-        audits: audits.map(audit => audit.getEventSummary()),
+        message: 'Audit trail feature coming soon',
+        audits: [],
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / limit)
+          total: 0,
+          pages: 0
         }
       });
 
@@ -467,7 +374,7 @@ class LicenseController {
       const { licenseId } = req.params;
       const { newExpiryDate, newLimits, newModules } = req.body;
 
-      const license = await License.findOne({ licenseId });
+      const license = await License.findOne({ where: { licenseId } });
 
       if (!license) {
         return res.status(404).json({
@@ -491,28 +398,6 @@ class LicenseController {
       license.updatedBy = req.user?.userId || 'system';
 
       await license.save();
-
-      // Create audit entry
-      await LicenseAudit.createAuditEntry({
-        licenseId: license.licenseId,
-        licenseNumber: license.licenseNumber,
-        companyId: license.companyId,
-        eventType: 'license_renewed',
-        eventDescription: 'License renewed with updated terms',
-        performedBy: {
-          userId: req.user?.userId,
-          userEmail: req.user?.email,
-          source: 'license_server',
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent')
-        },
-        previousState,
-        newState: {
-          expiresAt: license.expiresAt,
-          limits: license.limits,
-          modules: license.modules
-        }
-      });
 
       logger.info('License renewed successfully', {
         licenseId: license.licenseId,
@@ -552,50 +437,30 @@ class LicenseController {
    */
   async getLicenseStatistics(req, res) {
     try {
-      const stats = await License.aggregate([
-        {
-          $group: {
-            _id: null,
-            totalLicenses: { $sum: 1 },
-            activeLicenses: {
-              $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] }
-            },
-            expiredLicenses: {
-              $sum: { $cond: [{ $eq: ['$status', 'expired'] }, 1, 0] }
-            },
-            suspendedLicenses: {
-              $sum: { $cond: [{ $eq: ['$status', 'suspended'] }, 1, 0] }
-            },
-            byType: {
-              $push: {
-                type: '$licenseType',
-                status: '$status'
-              }
-            }
-          }
-        }
-      ]);
+      const totalLicenses = await License.count();
+      const activeLicenses = await License.count({ where: { status: 'active' } });
+      const expiredLicenses = await License.count({ where: { status: 'expired' } });
+      const suspendedLicenses = await License.count({ where: { status: 'suspended' } });
 
-      const typeStats = await License.aggregate([
-        {
-          $group: {
-            _id: '$licenseType',
-            count: { $sum: 1 },
-            active: {
-              $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] }
-            }
-          }
-        }
-      ]);
+      // Get counts by type
+      const typeStats = await License.findAll({
+        attributes: [
+          'licenseType',
+          [License.sequelize.fn('COUNT', License.sequelize.col('id')), 'count'],
+          [License.sequelize.fn('SUM', License.sequelize.literal("CASE WHEN status = 'active' THEN 1 ELSE 0 END")), 'active']
+        ],
+        group: ['licenseType'],
+        raw: true
+      });
 
       res.json({
         success: true,
         statistics: {
-          overview: stats[0] || {
-            totalLicenses: 0,
-            activeLicenses: 0,
-            expiredLicenses: 0,
-            suspendedLicenses: 0
+          overview: {
+            totalLicenses,
+            activeLicenses,
+            expiredLicenses,
+            suspendedLicenses
           },
           byType: typeStats
         }

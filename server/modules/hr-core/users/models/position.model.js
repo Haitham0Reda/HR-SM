@@ -8,8 +8,8 @@
  */
 
 import { DataTypes } from 'sequelize';
-import { mainAppDb } from '../../../config/database.js';
-import Department from '../users/models/department.model.js';
+import { mainAppDb } from '../../../../config/database.js';
+import Department from './department.model.js';
 
 const Position = mainAppDb.define('Position', {
   // Primary Key - UUID
@@ -156,3 +156,10 @@ Position.findByDepartment = async function(tenantId, departmentId) {
 };
 
 export default Position;
+
+
+
+
+
+
+

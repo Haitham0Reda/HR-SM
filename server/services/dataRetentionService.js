@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-// Note: DataRetentionPolicy and DataArchive are now tenant-specific
+import { QueryTypes, Op } from 'sequelize';
+import { mainAppDb } from '../config/database.js';
 import { getModelForConnection } from '../config/sharedModels.js';
 import { companyLogger } from '../utils/companyLogger.js';
 import fs from 'fs/promises';
@@ -8,30 +8,30 @@ import zlib from 'zlib';
 import crypto from 'crypto';
 import { promisify } from 'util';
 
+import AuditLog from '../../hrsm-license-server/src/models/AuditLog.js';
+import SecurityEvent from '../platform/system/models/securityEvent.model.js';
+import User from '../modules/hr-core/users/models/user.model.js';
+import License from '../platform/system/models/license.model.js';
+import DataRetentionPolicy from '../modules/data-management/models/dataRetentionPolicy.model.js';
+import DataArchive from '../modules/data-management/models/dataArchive.model.js';
+
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
 
 class DataRetentionService {
   constructor() {
     this.archiveBasePath = process.env.ARCHIVE_BASE_PATH || './archives';
-    this.supportedCollections = new Map([
-      ['audit_logs', { model: 'AuditLog', dateField: 'timestamp' }],
-      ['security_logs', { model: 'SecurityEvent', dateField: 'timestamp' }],
-      ['user_data', { model: 'User', dateField: 'createdAt' }],
-      ['employee_records', { model: 'User', dateField: 'createdAt' }],
-      ['insurance_policies', { model: 'InsurancePolicy', dateField: 'createdAt' }],
-      ['insurance_claims', { model: 'InsuranceClaim', dateField: 'createdAt' }],
-      ['family_members', { model: 'FamilyMember', dateField: 'createdAt' }],
-      ['beneficiaries', { model: 'Beneficiary', dateField: 'createdAt' }],
-      ['license_data', { model: 'License', dateField: 'createdAt' }],
-      ['backup_logs', { model: 'BackupLog', dateField: 'createdAt' }],
-      ['performance_logs', { model: 'PerformanceLog', dateField: 'timestamp' }],
-      ['system_logs', { model: 'SystemLog', dateField: 'timestamp' }],
-      ['compliance_logs', { model: 'ComplianceLog', dateField: 'timestamp' }],
-      ['financial_records', { model: 'FinancialRecord', dateField: 'createdAt' }],
-      ['documents', { model: 'Document', dateField: 'createdAt' }],
-      ['reports', { model: 'Report', dateField: 'createdAt' }]
+
+    // Model registry mapping data types to Sequelize models
+    this.modelRegistry = new Map([
+      ['audit_logs', { model: AuditLog, dateField: 'timestamp' }],
+      ['security_logs', { model: SecurityEvent, dateField: 'timestamp' }],
+      ['user_data', { model: User, dateField: 'createdAt' }],
+      ['employee_records', { model: User, dateField: 'createdAt' }],
+      ['license_data', { model: License, dateField: 'createdAt' }]
     ]);
+
+    this.supportedCollections = this.modelRegistry;
   }
 
   /**
@@ -39,19 +39,24 @@ class DataRetentionService {
    */
   async createRetentionPolicy(tenantId, policyData, createdBy) {
     try {
-      const policy = new DataRetentionPolicy({
-        tenantId,
-        ...policyData,
-        createdBy
+      const policy = await DataRetentionPolicy.create({
+        tenant_id: tenantId,
+        policy_name: policyData.policyName || policyData.policy_name,
+        description: policyData.description,
+        data_type: policyData.dataType || policyData.data_type,
+        retention_period: policyData.retentionPeriod || policyData.retention_period,
+        archival_settings: policyData.archivalSettings || policyData.archival_settings || { enabled: false },
+        deletion_settings: policyData.deletionSettings || policyData.deletion_settings || { softDelete: true },
+        legal_requirements: policyData.legalRequirements || policyData.legal_requirements || {},
+        execution_schedule: policyData.executionSchedule || policyData.execution_schedule || { frequency: 'daily', time: '02:00', timezone: 'UTC' },
+        status: policyData.status || 'active',
+        created_by: createdBy
       });
 
-      await policy.save();
-
-      // Log policy creation
       companyLogger(tenantId).compliance('Data retention policy created', {
-        policyId: policy._id,
-        dataType: policy.dataType,
-        retentionPeriod: policy.retentionPeriod,
+        policyId: policy.id,
+        dataType: policy.data_type,
+        retentionPeriod: policy.retention_period,
         createdBy,
         compliance: true,
         audit: true
@@ -74,42 +79,58 @@ class DataRetentionService {
   async updateRetentionPolicy(tenantId, policyId, updates, updatedBy) {
     try {
       const policy = await DataRetentionPolicy.findOne({
-        _id: policyId,
-        tenantId
+        where: { id: policyId, tenant_id: tenantId }
       });
 
       if (!policy) {
         throw new Error('Retention policy not found');
       }
 
-      // Store configuration history
+      // Map incoming camelCase keys to snake_case attribute names
+      const fieldMap = {
+        policyName: 'policy_name',
+        dataType: 'data_type',
+        retentionPeriod: 'retention_period',
+        archivalSettings: 'archival_settings',
+        deletionSettings: 'deletion_settings',
+        executionSchedule: 'execution_schedule',
+        legalRequirements: 'legal_requirements'
+      };
+
+      // Record changes for configuration history
       const changes = {};
       Object.keys(updates).forEach(key => {
-        if (policy[key] !== updates[key]) {
-          changes[key] = {
-            from: policy[key],
-            to: updates[key]
-          };
+        const snakeKey = fieldMap[key] || key;
+        const currentVal = policy[snakeKey];
+        const newVal = updates[key];
+        if (JSON.stringify(currentVal) !== JSON.stringify(newVal)) {
+          changes[key] = { from: currentVal, to: newVal };
         }
       });
 
       if (Object.keys(changes).length > 0) {
-        policy.configurationHistory.push({
+        const history = [...(policy.configuration_history || [])];
+        history.push({
           changedBy: updatedBy,
+          changedAt: new Date(),
           changes,
           reason: updates.reason || 'Policy update'
         });
+        policy.configuration_history = history;
       }
 
       // Apply updates
-      Object.assign(policy, updates);
-      policy.updatedBy = updatedBy;
+      Object.keys(updates).forEach(key => {
+        if (key === 'reason') return;
+        const snakeKey = fieldMap[key] || key;
+        policy[snakeKey] = updates[key];
+      });
+      policy.updated_by = updatedBy;
 
       await policy.save();
 
-      // Log policy update
       companyLogger(tenantId).compliance('Data retention policy updated', {
-        policyId: policy._id,
+        policyId: policy.id,
         changes,
         updatedBy,
         compliance: true,
@@ -133,11 +154,14 @@ class DataRetentionService {
    */
   async getRetentionPolicies(tenantId, filters = {}) {
     try {
-      const query = { tenantId, ...filters };
-      const policies = await DataRetentionPolicy.find(query)
-        .populate('createdBy', 'firstName lastName email')
-        .populate('updatedBy', 'firstName lastName email')
-        .sort({ createdAt: -1 });
+      const where = { tenant_id: tenantId };
+      if (filters.dataType || filters.data_type) where.data_type = filters.dataType || filters.data_type;
+      if (filters.status) where.status = filters.status;
+
+      const policies = await DataRetentionPolicy.findAll({
+        where,
+        order: [['created_at', 'DESC']]
+      });
 
       return policies;
     } catch (error) {
@@ -154,19 +178,19 @@ class DataRetentionService {
    */
   async executeRetentionPolicies(tenantId = null) {
     try {
-      const query = {
+      const where = {
         status: 'active',
-        $or: [
-          { nextExecution: { $lte: new Date() } },
-          { nextExecution: null }
+        [Op.or]: [
+          { next_execution: { [Op.lte]: new Date() } },
+          { next_execution: null }
         ]
       };
 
       if (tenantId) {
-        query.tenantId = tenantId;
+        where.tenant_id = tenantId;
       }
 
-      const policies = await DataRetentionPolicy.find(query);
+      const policies = await DataRetentionPolicy.findAll({ where });
       const results = [];
 
       for (const policy of policies) {
@@ -174,18 +198,17 @@ class DataRetentionService {
           const result = await this.executeSinglePolicy(policy);
           results.push(result);
         } catch (error) {
-          companyLogger(policy.tenantId).error('Failed to execute retention policy', {
-            policyId: policy._id,
+          companyLogger(policy.tenant_id).error('Failed to execute retention policy', {
+            policyId: policy.id,
             error: error.message
           });
-          
-          policy.updateStatistics({
+
+          await policy.updateStatistics({
             processed: 0,
             archived: 0,
             deleted: 0,
             error: error.message
           });
-          await policy.save();
         }
       }
 
@@ -206,88 +229,71 @@ class DataRetentionService {
     let deleted = 0;
 
     try {
-      companyLogger(policy.tenantId).info('Executing retention policy', {
-        policyId: policy._id,
-        dataType: policy.dataType,
-        retentionPeriod: policy.retentionPeriod
+      companyLogger(policy.tenant_id).info('Executing retention policy', {
+        policyId: policy.id,
+        dataType: policy.data_type,
+        retentionPeriod: policy.retention_period
       });
 
-      // Get collection configuration
-      const collectionConfig = this.supportedCollections.get(policy.dataType);
+      const collectionConfig = this.supportedCollections.get(policy.data_type);
       if (!collectionConfig) {
-        throw new Error(`Unsupported data type: ${policy.dataType}`);
+        throw new Error(`Unsupported data type: ${policy.data_type}`);
       }
 
-      // Calculate cutoff dates
-      const retentionCutoff = this.calculateCutoffDate(policy.retentionPeriod);
-      const archivalCutoff = policy.archivalSettings.enabled ? 
-        this.calculateCutoffDate(policy.archivalSettings.archiveAfter) : null;
+      const retentionCutoff = this.calculateCutoffDate(policy.retention_period);
+      const archivalCutoff = policy.archival_settings.enabled
+        ? this.calculateCutoffDate(policy.archival_settings.archiveAfter)
+        : null;
 
-      // Get the model
-      const Model = mongoose.model(collectionConfig.model);
+      const Model = collectionConfig.model;
       const dateField = collectionConfig.dateField;
 
-      // Find records to process
       const query = {
-        tenantId: policy.tenantId,
-        [dateField]: { $lt: retentionCutoff }
+        tenant_id: policy.tenant_id,
+        [dateField]: { [Op.lt]: retentionCutoff }
       };
 
-      // If archival is enabled, first archive eligible records
-      if (policy.archivalSettings.enabled && archivalCutoff) {
+      // Archive eligible records first
+      if (policy.archival_settings.enabled && archivalCutoff) {
         const archiveQuery = {
-          tenantId: policy.tenantId,
-          [dateField]: { 
-            $lt: archivalCutoff,
-            $gte: retentionCutoff
+          tenant_id: policy.tenant_id,
+          [dateField]: {
+            [Op.lt]: archivalCutoff,
+            [Op.gte]: retentionCutoff
           }
         };
 
-        const recordsToArchive = await Model.find(archiveQuery).lean();
+        const recordsToArchive = await Model.findAll({ where: archiveQuery, raw: true });
+
         if (recordsToArchive.length > 0) {
-          const archiveResult = await this.archiveRecords(
-            policy, 
-            recordsToArchive, 
-            collectionConfig
-          );
-          archived = archiveResult.recordCount;
+          const archiveResult = await this.archiveRecords(policy, recordsToArchive, collectionConfig);
+          archived = archiveResult.record_count;
         }
       }
 
       // Delete records that exceed retention period
-      if (policy.deletionSettings.softDelete) {
-        // Soft delete - mark as deleted
-        const updateResult = await Model.updateMany(
-          query,
-          { 
+      if (policy.deletion_settings.softDelete) {
+        const [updateCount] = await Model.update(
+          {
             deletedAt: new Date(),
             deletedBy: 'retention_policy',
-            deletionReason: `Retention policy: ${policy.policyName}`
-          }
+            deletionReason: `Retention policy: ${policy.policy_name}`
+          },
+          { where: query }
         );
-        deleted = updateResult.modifiedCount;
+        deleted = updateCount;
       } else {
-        // Hard delete - remove from database
-        const deleteResult = await Model.deleteMany(query);
-        deleted = deleteResult.deletedCount;
+        deleted = await Model.destroy({ where: query });
       }
 
       processed = archived + deleted;
 
-      // Update policy statistics
       const processingTime = Date.now() - startTime;
-      policy.updateStatistics({
-        processed,
-        archived,
-        deleted,
-        processingTime
-      });
-      await policy.save();
+      await policy.updateStatistics({ processed, archived, deleted, processingTime });
 
-      // Log execution results
-      companyLogger(policy.tenantId).compliance('Retention policy executed', {
-        policyId: policy._id,
-        dataType: policy.dataType,
+      companyLogger(policy.tenant_id).compliance('Retention policy executed', {
+        policyId: policy.id,
+        dataType: policy.data_type,
         processed,
         archived,
         deleted,
@@ -297,8 +303,8 @@ class DataRetentionService {
       });
 
       return {
-        policyId: policy._id,
-        dataType: policy.dataType,
+        policyId: policy.id,
+        dataType: policy.data_type,
         processed,
         archived,
         deleted,
@@ -308,15 +314,7 @@ class DataRetentionService {
 
     } catch (error) {
       const processingTime = Date.now() - startTime;
-      policy.updateStatistics({
-        processed,
-        archived,
-        deleted,
-        processingTime,
-        error: error.message
-      });
-      await policy.save();
-
+      await policy.updateStatistics({ processed, archived, deleted, processingTime, error: error.message });
       throw error;
     }
   }
@@ -329,24 +327,22 @@ class DataRetentionService {
       const archiveId = this.generateArchiveId();
       const archivePath = path.join(
         this.archiveBasePath,
-        policy.tenantId.toString(),
-        policy.dataType,
+        policy.tenant_id.toString(),
+        policy.data_type,
         `${archiveId}.json`
       );
 
-      // Ensure directory exists
       await fs.mkdir(path.dirname(archivePath), { recursive: true });
 
-      // Prepare archive data
       const archiveData = {
         metadata: {
           archiveId,
-          tenantId: policy.tenantId,
-          dataType: policy.dataType,
-          sourceCollection: collectionConfig.model,
+          tenantId: policy.tenant_id,
+          dataType: policy.data_type,
+          sourceCollection: collectionConfig.model.name,
           recordCount: records.length,
           createdAt: new Date().toISOString(),
-          retentionPolicyId: policy._id
+          retentionPolicyId: policy.id
         },
         records
       };
@@ -356,15 +352,13 @@ class DataRetentionService {
       let compressedSize = originalSize;
       let checksum;
 
-      // Apply compression if enabled
-      if (policy.archivalSettings.compressionEnabled) {
+      if (policy.archival_settings.compressionEnabled) {
         const compressed = await gzip(fileData);
         fileData = compressed;
         compressedSize = compressed.length;
       }
 
-      // Apply encryption if enabled
-      if (policy.archivalSettings.encryptionEnabled) {
+      if (policy.archival_settings.encryptionEnabled) {
         const encryptionResult = this.encryptData(fileData);
         fileData = encryptionResult.encrypted;
         archiveData.metadata.encryption = {
@@ -374,22 +368,19 @@ class DataRetentionService {
         };
       }
 
-      // Calculate checksum
       checksum = crypto.createHash('sha256').update(fileData).digest('hex');
 
-      // Write archive file
       await fs.writeFile(archivePath, fileData);
 
-      // Create archive record
-      const archive = new DataArchive({
-        tenantId: policy.tenantId,
-        archiveId,
-        sourceCollection: collectionConfig.model,
-        sourceDatabase: mongoose.connection.name,
-        dataType: policy.dataType,
-        retentionPolicyId: policy._id,
-        recordCount: records.length,
-        dateRange: {
+      const archive = await DataArchive.create({
+        tenant_id: policy.tenant_id,
+        archive_id: archiveId,
+        source_collection: collectionConfig.model.name,
+        source_database: mainAppDb.config.database,
+        data_type: policy.data_type,
+        retention_policy_id: policy.id,
+        record_count: records.length,
+        date_range: {
           startDate: new Date(Math.min(...records.map(r => new Date(r[collectionConfig.dateField])))),
           endDate: new Date(Math.max(...records.map(r => new Date(r[collectionConfig.dateField]))))
         },
@@ -397,7 +388,7 @@ class DataRetentionService {
           location: 'local',
           localPath: archivePath
         },
-        fileInfo: {
+        file_info: {
           originalSize,
           compressedSize,
           compressionRatio: ((originalSize - compressedSize) / originalSize * 100).toFixed(2),
@@ -406,34 +397,29 @@ class DataRetentionService {
           checksumAlgorithm: 'sha256'
         },
         compression: {
-          enabled: policy.archivalSettings.compressionEnabled,
+          enabled: policy.archival_settings.compressionEnabled,
           algorithm: 'gzip',
           level: 6
         },
         encryption: {
-          enabled: policy.archivalSettings.encryptionEnabled,
+          enabled: policy.archival_settings.encryptionEnabled,
           algorithm: 'aes-256-cbc'
         },
         status: 'completed',
-        createdBy: policy.createdBy
+        created_by: policy.created_by
       });
 
-      await archive.save();
-
-      // Add audit entry
-      archive.addAuditEntry('created', policy.createdBy, {
+      await archive.addAuditEntry('created', policy.created_by, {
         recordCount: records.length,
         originalSize,
         compressedSize,
-        compressionEnabled: policy.archivalSettings.compressionEnabled,
-        encryptionEnabled: policy.archivalSettings.encryptionEnabled
+        compressionEnabled: policy.archival_settings.compressionEnabled,
+        encryptionEnabled: policy.archival_settings.encryptionEnabled
       });
 
-      await archive.save();
-
-      companyLogger(policy.tenantId).compliance('Data archived', {
+      companyLogger(policy.tenant_id).compliance('Data archived', {
         archiveId,
-        dataType: policy.dataType,
+        dataType: policy.data_type,
         recordCount: records.length,
         originalSize,
         compressedSize,
@@ -444,9 +430,9 @@ class DataRetentionService {
       return archive;
 
     } catch (error) {
-      companyLogger(policy.tenantId).error('Failed to archive records', {
+      companyLogger(policy.tenant_id).error('Failed to archive records', {
         error: error.message,
-        dataType: policy.dataType,
+        dataType: policy.data_type,
         recordCount: records.length
       });
       throw error;
@@ -459,8 +445,7 @@ class DataRetentionService {
   async restoreArchive(tenantId, archiveId, targetCollection = null, userId = null) {
     try {
       const archive = await DataArchive.findOne({
-        tenantId,
-        archiveId
+        where: { tenant_id: tenantId, archive_id: archiveId }
       });
 
       if (!archive) {
@@ -471,66 +456,59 @@ class DataRetentionService {
         throw new Error('Archive cannot be restored');
       }
 
-      // Read archive file
       let fileData = await fs.readFile(archive.storage.localPath);
 
-      // Decrypt if needed
       if (archive.encryption.enabled) {
         fileData = this.decryptData(fileData, archive.encryption);
       }
 
-      // Decompress if needed
       if (archive.compression.enabled) {
         fileData = await gunzip(fileData);
       }
 
-      // Parse archive data
       const archiveData = JSON.parse(fileData.toString());
       const records = archiveData.records;
 
-      // Get target model
-      const collectionConfig = this.supportedCollections.get(archive.dataType);
-      const Model = mongoose.model(collectionConfig.model);
+      const collectionConfig = this.supportedCollections.get(archive.data_type);
+      const Model = collectionConfig.model;
 
-      // Restore records
       const restoredRecords = [];
       for (const record of records) {
         try {
-          // Remove MongoDB-specific fields
-          delete record._id;
-          delete record.__v;
-          
-          const restoredRecord = new Model(record);
-          await restoredRecord.save();
+          delete record.id;
+          delete record.createdAt;
+          delete record.updatedAt;
+
+          const restoredRecord = await Model.create(record);
           restoredRecords.push(restoredRecord);
         } catch (error) {
           console.warn(`Failed to restore record: ${error.message}`);
         }
       }
 
-      // Update restoration history
-      archive.restoration.restorationHistory.push({
+      // Update restoration history in the JSONB field
+      const restoration = { ...(archive.restoration || { canRestore: true, restorationHistory: [] }) };
+      restoration.restorationHistory = [...(restoration.restorationHistory || [])];
+      restoration.restorationHistory.push({
         restoredAt: new Date(),
         restoredBy: userId,
-        targetLocation: targetCollection || archive.sourceCollection,
+        targetLocation: targetCollection || archive.source_collection,
         status: restoredRecords.length === records.length ? 'success' : 'partial',
         recordsRestored: restoredRecords.length,
         notes: `Restored ${restoredRecords.length} of ${records.length} records`
       });
+      archive.restoration = restoration;
+      await archive.save();
 
-      // Log access
       if (userId) {
-        archive.logAccess(userId, 'restore', null, null);
+        await archive.logAccess(userId, 'restore', null, null);
       }
 
-      // Add audit entry
-      archive.addAuditEntry('restored', userId, {
+      await archive.addAuditEntry('restored', userId, {
         recordsRestored: restoredRecords.length,
         totalRecords: records.length,
-        targetCollection: targetCollection || archive.sourceCollection
+        targetCollection: targetCollection || archive.source_collection
       });
-
-      await archive.save();
 
       companyLogger(tenantId).compliance('Archive restored', {
         archiveId,
@@ -563,11 +541,14 @@ class DataRetentionService {
    */
   async getArchives(tenantId, filters = {}) {
     try {
-      const query = { tenantId, ...filters };
-      const archives = await DataArchive.find(query)
-        .populate('retentionPolicyId', 'policyName')
-        .populate('createdBy', 'firstName lastName email')
-        .sort({ createdAt: -1 });
+      const where = { tenant_id: tenantId };
+      if (filters.status) where.status = filters.status;
+      if (filters.dataType || filters.data_type) where.data_type = filters.dataType || filters.data_type;
+
+      const archives = await DataArchive.findAll({
+        where,
+        order: [['created_at', 'DESC']]
+      });
 
       return archives;
     } catch (error) {
@@ -584,52 +565,49 @@ class DataRetentionService {
    */
   async deleteExpiredArchives(tenantId = null) {
     try {
-      const query = {
-        'scheduledDeletion.deleteAfter': { $lte: new Date() },
-        'legalHold.isOnHold': { $ne: true }
-      };
+      const where = {};
+      if (tenantId) where.tenant_id = tenantId;
 
-      if (tenantId) {
-        query.tenantId = tenantId;
-      }
+      const allArchives = await DataArchive.findAll({ where });
+      const now = new Date();
 
-      const expiredArchives = await DataArchive.find(query);
+      const expiredArchives = allArchives.filter(archive => {
+        if (archive.legal_hold && archive.legal_hold.isOnHold) return false;
+        if (!archive.scheduled_deletion || !archive.scheduled_deletion.deleteAfter) return false;
+        return new Date(archive.scheduled_deletion.deleteAfter) <= now;
+      });
+
       const results = [];
 
       for (const archive of expiredArchives) {
         try {
-          // Delete physical file
           if (archive.storage.localPath) {
             await fs.unlink(archive.storage.localPath);
           }
 
-          // Add audit entry
-          archive.addAuditEntry('deleted', null, {
+          await archive.addAuditEntry('deleted', null, {
             reason: 'Scheduled deletion',
-            deleteAfter: archive.scheduledDeletion.deleteAfter
+            deleteAfter: archive.scheduled_deletion.deleteAfter
           });
 
-          await archive.save();
+          await archive.destroy();
 
-          // Remove from database
-          await DataArchive.deleteOne({ _id: archive._id });
-
-          companyLogger(archive.tenantId).compliance('Archive deleted', {
-            archiveId: archive.archiveId,
+          companyLogger(archive.tenant_id).compliance('Archive deleted', {
+            archiveId: archive.archive_id,
             reason: 'Scheduled deletion',
             compliance: true,
             audit: true
           });
 
           results.push({
-            archiveId: archive.archiveId,
-            tenantId: archive.tenantId,
+            archiveId: archive.archive_id,
+            tenantId: archive.tenant_id,
             deleted: true
           });
 
         } catch (error) {
-          companyLogger(archive.tenantId).error('Failed to delete archive', {
-            archiveId: archive.archiveId,
+          companyLogger(archive.tenant_id).error('Failed to delete archive', {
+            archiveId: archive.archive_id,
             error: error.message
           });
         }
@@ -671,11 +649,11 @@ class DataRetentionService {
     const algorithm = 'aes-256-cbc';
     const key = crypto.randomBytes(32);
     const iv = crypto.randomBytes(16);
-    
+
     const cipher = crypto.createCipher(algorithm, key);
     let encrypted = cipher.update(data, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    
+
     return {
       encrypted,
       keyId: crypto.createHash('sha256').update(key).digest('hex'),
@@ -684,8 +662,6 @@ class DataRetentionService {
   }
 
   decryptData(encryptedData, encryptionInfo) {
-    // This is a simplified implementation
-    // In production, you would retrieve the actual key using the keyId
     const algorithm = 'aes-256-cbc';
     const decipher = crypto.createDecipher(algorithm, 'encryption-key');
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
@@ -698,48 +674,42 @@ class DataRetentionService {
    */
   async getRetentionStatistics(tenantId) {
     try {
-      const policies = await DataRetentionPolicy.find({ tenantId });
-      const archives = await DataArchive.find({ tenantId });
+      const policies = await DataRetentionPolicy.findAll({ where: { tenant_id: tenantId } });
+      const archives = await DataArchive.findAll({ where: { tenant_id: tenantId } });
 
       const stats = {
         totalPolicies: policies.length,
         activePolicies: policies.filter(p => p.status === 'active').length,
         totalArchives: archives.length,
-        totalArchivedRecords: archives.reduce((sum, a) => sum + a.recordCount, 0),
-        totalArchiveSize: archives.reduce((sum, a) => sum + (a.fileInfo.compressedSize || a.fileInfo.originalSize), 0),
+        totalArchivedRecords: archives.reduce((sum, a) => sum + a.record_count, 0),
+        totalArchiveSize: archives.reduce((sum, a) => sum + (a.file_info.compressedSize || a.file_info.originalSize), 0),
         archivesByDataType: {},
         policiesByDataType: {},
         recentExecutions: []
       };
 
-      // Group by data type
       policies.forEach(policy => {
-        stats.policiesByDataType[policy.dataType] = (stats.policiesByDataType[policy.dataType] || 0) + 1;
+        stats.policiesByDataType[policy.data_type] = (stats.policiesByDataType[policy.data_type] || 0) + 1;
       });
 
       archives.forEach(archive => {
-        if (!stats.archivesByDataType[archive.dataType]) {
-          stats.archivesByDataType[archive.dataType] = {
-            count: 0,
-            records: 0,
-            size: 0
-          };
+        if (!stats.archivesByDataType[archive.data_type]) {
+          stats.archivesByDataType[archive.data_type] = { count: 0, records: 0, size: 0 };
         }
-        stats.archivesByDataType[archive.dataType].count++;
-        stats.archivesByDataType[archive.dataType].records += archive.recordCount;
-        stats.archivesByDataType[archive.dataType].size += (archive.fileInfo.compressedSize || archive.fileInfo.originalSize);
+        stats.archivesByDataType[archive.data_type].count++;
+        stats.archivesByDataType[archive.data_type].records += archive.record_count;
+        stats.archivesByDataType[archive.data_type].size += (archive.file_info.compressedSize || archive.file_info.originalSize);
       });
 
-      // Recent executions
       stats.recentExecutions = policies
-        .filter(p => p.lastExecuted)
-        .sort((a, b) => b.lastExecuted - a.lastExecuted)
+        .filter(p => p.last_executed)
+        .sort((a, b) => b.last_executed - a.last_executed)
         .slice(0, 10)
         .map(p => ({
-          policyId: p._id,
-          policyName: p.policyName,
-          dataType: p.dataType,
-          lastExecuted: p.lastExecuted,
+          policyId: p.id,
+          policyName: p.policy_name,
+          dataType: p.data_type,
+          lastExecuted: p.last_executed,
           lastProcessedCount: p.statistics.lastProcessedCount,
           status: p.statistics.lastError ? 'failed' : 'success'
         }));

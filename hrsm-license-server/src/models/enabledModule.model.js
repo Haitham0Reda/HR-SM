@@ -7,9 +7,9 @@
  * @module models/EnabledModule
  */
 
-import { DataTypes } from 'sequelize';
-import { licenseServerDb } from '../../config/database.js';
-import Tenant from './tenant.model.js';
+import { DataTypes, Op } from 'sequelize';
+import licenseServerDb from '../../config/database.js';
+import Tenant from './Tenant.js';
 
 const EnabledModule = licenseServerDb.define('EnabledModule', {
   // Primary Key - UUID
@@ -136,8 +136,8 @@ const EnabledModule = licenseServerDb.define('EnabledModule', {
         where: {
           enabled: true,
           expiresAt: {
-            [require('sequelize').Op.lte]: futureDate,
-            [require('sequelize').Op.gt]: new Date()
+            [Op.lte]: futureDate,
+            [Op.gt]: new Date()
           }
         }
       };
@@ -148,7 +148,7 @@ const EnabledModule = licenseServerDb.define('EnabledModule', {
 // Define associations
 Tenant.hasMany(EnabledModule, {
   foreignKey: 'tenantId',
-  as: 'enabledModules',
+  as: 'moduleConfigurations',
   onDelete: 'CASCADE'
 });
 

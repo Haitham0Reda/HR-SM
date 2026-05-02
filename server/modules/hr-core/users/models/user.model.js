@@ -7,7 +7,7 @@
  * @module models/User
  */
 
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
 import { mainAppDb } from '../../../../config/database.js';
 import Department from './department.model.js';
@@ -205,7 +205,7 @@ const User = mainAppDb.define('User', {
       name: 'idx_users_tenant_id_employee_id',
       fields: ['tenant_id', 'employee_id'],
       unique: true,
-      where: { employeeId: { [require('sequelize').Op.ne]: null } }
+      where: { employee_id: { [Op.ne]: null } }
     },
     {
       name: 'idx_users_tenant_id_role',
@@ -341,3 +341,10 @@ User.findActive = async function(tenantId) {
 };
 
 export default User;
+
+
+
+
+
+
+

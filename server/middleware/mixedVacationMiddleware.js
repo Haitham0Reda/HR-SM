@@ -3,7 +3,7 @@
  * 
  * Validation and business logic for mixed vacation policies
  */
-import mongoose from 'mongoose';
+// No mongoose imports needed - this middleware only does validation
 
 /**
  * Validate date range
@@ -90,9 +90,10 @@ export const validateApplicableScope = (req, res, next) => {
             });
         }
 
-        // Validate ObjectIds for departments
+        // Validate UUIDs for departments (Sequelize uses UUIDs instead of ObjectIds)
         if (departments && departments.length > 0) {
-            const invalidIds = departments.filter(id => !mongoose.Types.ObjectId.isValid(id));
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            const invalidIds = departments.filter(id => !uuidRegex.test(id));
             if (invalidIds.length > 0) {
                 return res.status(400).json({
                     success: false,
@@ -112,11 +113,15 @@ export const validateApplicableScope = (req, res, next) => {
 export const validateEmployeeId = (req, res, next) => {
     const { employeeId } = req.params;
 
-    if (employeeId && !mongoose.Types.ObjectId.isValid(employeeId)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid employee ID'
-        });
+    if (employeeId) {
+        // Validate UUID format (Sequelize uses UUIDs instead of ObjectIds)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(employeeId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid employee ID'
+            });
+        }
     }
 
     next();

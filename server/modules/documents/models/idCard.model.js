@@ -1,4 +1,4 @@
-import { DataTypes, Op } from 'sequelize';
+import { DataTypes, Op, QueryTypes } from 'sequelize';
 import sequelize from '../../../config/database.js';
 
 /**
@@ -405,7 +405,6 @@ IDCard.getDepartmentCards = async function(departmentId, tenantId, filters = {})
 };
 
 IDCard.getCardStatistics = async function(tenantId, departmentId = null) {
-  const { QueryTypes } = require('sequelize');
   
   const departmentFilter = departmentId ? `AND department_id = '${departmentId}'` : '';
   
@@ -436,3 +435,7 @@ IDCard.getCardStatistics = async function(tenantId, departmentId = null) {
 };
 
 export default IDCard;
+
+
+
+

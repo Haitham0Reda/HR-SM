@@ -1,5 +1,5 @@
-const { Transaction } = require('sequelize');
-const logger = require('./logger');
+import { Transaction } from 'sequelize';
+import logger from './logger.js';
 
 /**
  * Transaction Wrapper Utility
@@ -169,7 +169,15 @@ const ISOLATION_LEVELS = {
   SERIALIZABLE: Transaction.ISOLATION_LEVELS.SERIALIZABLE
 };
 
-module.exports = {
+export {
+  withTransaction,
+  withTransactionBatch,
+  withTransactionRetry,
+  isRetryableError,
+  ISOLATION_LEVELS
+};
+
+export default {
   withTransaction,
   withTransactionBatch,
   withTransactionRetry,

@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { mainAppDb } from '../../../config/database.js';
-import User from '../../users/models/user.model.js';
-import Department from '../../users/models/department.model.js';
+import User from '../../hr-core/users/models/user.model.js';
+import Department from '../../hr-core/users/models/department.model.js';
 
 const Announcement = mainAppDb.define('Announcement', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
@@ -34,3 +34,7 @@ Announcement.associate = function(models) {
 };
 
 export default Announcement;
+
+
+
+

@@ -200,3 +200,6 @@ Document.findExpiringDocuments = async function(tenantId, daysThreshold = 30) {
 };
 
 export default Document;
+
+
+

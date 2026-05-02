@@ -9,7 +9,7 @@
  * @module models/Tenant
  */
 
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { licenseServerDb } from '../config/database.js';
 
 const Tenant = licenseServerDb.define('Tenant', {
@@ -203,8 +203,8 @@ const Tenant = licenseServerDb.define('Tenant', {
         where: {
           status: 'active',
           subscriptionExpiresAt: {
-            [DataTypes.Op.lte]: futureDate,
-            [DataTypes.Op.gt]: new Date()
+            [Op.lte]: futureDate,
+            [Op.gt]: new Date()
           }
         }
       };
@@ -212,7 +212,7 @@ const Tenant = licenseServerDb.define('Tenant', {
     expired: {
       where: {
         subscriptionExpiresAt: {
-          [DataTypes.Op.lte]: new Date()
+          [Op.lte]: new Date()
         }
       }
     },
@@ -220,7 +220,7 @@ const Tenant = licenseServerDb.define('Tenant', {
       return {
         where: {
           enabledModules: {
-            [DataTypes.Op.contains]: [moduleId]
+            [Op.contains]: [moduleId]
           }
         }
       };
@@ -279,7 +279,7 @@ Tenant.findByTenantId = async function(tenantId) {
   return this.findOne({
     where: { 
       tenantId, 
-      status: { [DataTypes.Op.ne]: 'deleted' } 
+      status: { [Op.ne]: 'deleted' } 
     }
   });
 };
@@ -301,8 +301,8 @@ Tenant.findExpiring = async function(days = 30) {
     where: {
       status: 'active',
       subscriptionExpiresAt: {
-        [DataTypes.Op.lte]: futureDate,
-        [DataTypes.Op.gt]: new Date()
+        [Op.lte]: futureDate,
+        [Op.gt]: new Date()
       }
     }
   });

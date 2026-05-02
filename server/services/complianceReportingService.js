@@ -1,7 +1,10 @@
-import mongoose from 'mongoose';
-// Note: DataRetentionPolicy and DataArchive are now tenant-specific
+import { QueryTypes, Op } from 'sequelize';
+import { mainAppDb } from '../config/database.js';
 import { getModelForConnection } from '../config/sharedModels.js';
 import { companyLogger } from '../utils/companyLogger.js';
+import User from '../modules/hr-core/users/models/user.model.js';
+import DataRetentionPolicy from '../modules/data-management/models/dataRetentionPolicy.model.js';
+import DataArchive from '../modules/data-management/models/dataArchive.model.js';
 import fs from 'fs/promises';
 import path from 'path';
 import PDFDocument from 'pdfkit';
@@ -125,15 +128,18 @@ class ComplianceReportingService {
   async generateDataRetentionReport(tenantId, startDate, endDate, includeDetails) {
     try {
       // Get retention policies
-      const policies = await DataRetentionPolicy.find({ tenantId })
-        .populate('createdBy', 'firstName lastName email')
-        .populate('updatedBy', 'firstName lastName email');
+      const policies = await DataRetentionPolicy.findAll({
+        where: { tenant_id: tenantId },
+        order: [['created_at', 'DESC']]
+      });
 
       // Get archives created in the period
-      const archives = await DataArchive.find({
-        tenantId,
-        createdAt: { $gte: startDate, $lte: endDate }
-      }).populate('retentionPolicyId', 'policyName dataType');
+      const archives = await DataArchive.findAll({
+        where: {
+          tenant_id: tenantId,
+          created_at: { [Op.gte]: startDate, [Op.lte]: endDate }
+        }
+      });
 
       // Calculate compliance metrics
       const activePolicies = policies.filter(p => p.status === 'active');
@@ -145,20 +151,20 @@ class ComplianceReportingService {
 
       // Policy compliance status
       const policyCompliance = activePolicies.map(policy => {
-        const isCompliant = !policy.statistics.lastError && 
-                           policy.lastExecuted && 
-                           policy.lastExecuted > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Within last 7 days
+        const isCompliant = !policy.statistics.lastError &&
+                           policy.last_executed &&
+                           policy.last_executed > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
         return {
-          policyId: policy._id,
-          policyName: policy.policyName,
-          dataType: policy.dataType,
+          policyId: policy.id,
+          policyName: policy.policy_name,
+          dataType: policy.data_type,
           status: isCompliant ? 'compliant' : 'non-compliant',
-          lastExecuted: policy.lastExecuted,
+          lastExecuted: policy.last_executed,
           lastError: policy.statistics.lastError,
-          retentionPeriod: policy.retentionPeriod,
+          retentionPeriod: policy.retention_period,
           totalProcessed: policy.statistics.totalRecordsProcessed,
-          successRate: policy.statistics.successfulExecutions / 
+          successRate: policy.statistics.successfulExecutions /
                       (policy.statistics.successfulExecutions + policy.statistics.failedExecutions) * 100 || 0
         };
       });
@@ -166,24 +172,24 @@ class ComplianceReportingService {
       // Archive analysis
       const archiveAnalysis = {
         totalArchives: archives.length,
-        totalArchivedRecords: archives.reduce((sum, a) => sum + a.recordCount, 0),
-        totalArchiveSize: archives.reduce((sum, a) => sum + (a.fileInfo.compressedSize || a.fileInfo.originalSize), 0),
+        totalArchivedRecords: archives.reduce((sum, a) => sum + a.record_count, 0),
+        totalArchiveSize: archives.reduce((sum, a) => sum + (a.file_info.compressedSize || a.file_info.originalSize), 0),
         archivesByDataType: {},
         archivesByStatus: {}
       };
 
       archives.forEach(archive => {
         // By data type
-        if (!archiveAnalysis.archivesByDataType[archive.dataType]) {
-          archiveAnalysis.archivesByDataType[archive.dataType] = {
+        if (!archiveAnalysis.archivesByDataType[archive.data_type]) {
+          archiveAnalysis.archivesByDataType[archive.data_type] = {
             count: 0,
             records: 0,
             size: 0
           };
         }
-        archiveAnalysis.archivesByDataType[archive.dataType].count++;
-        archiveAnalysis.archivesByDataType[archive.dataType].records += archive.recordCount;
-        archiveAnalysis.archivesByDataType[archive.dataType].size += (archive.fileInfo.compressedSize || archive.fileInfo.originalSize);
+        archiveAnalysis.archivesByDataType[archive.data_type].count++;
+        archiveAnalysis.archivesByDataType[archive.data_type].records += archive.record_count;
+        archiveAnalysis.archivesByDataType[archive.data_type].size += (archive.file_info.compressedSize || archive.file_info.originalSize);
 
         // By status
         archiveAnalysis.archivesByStatus[archive.status] = (archiveAnalysis.archivesByStatus[archive.status] || 0) + 1;
@@ -669,31 +675,35 @@ class ComplianceReportingService {
   }
 
   async getDataArchiveAudits(tenantId, startDate, endDate) {
-    const archives = await DataArchive.find({
-      tenantId,
-      createdAt: { $gte: startDate, $lte: endDate }
+    const archives = await DataArchive.findAll({
+      where: {
+        tenant_id: tenantId,
+        created_at: { [Op.gte]: startDate, [Op.lte]: endDate }
+      }
     });
 
-    return archives.flatMap(archive => 
-      archive.auditTrail.map(audit => ({
-        ...audit.toObject(),
-        archiveId: archive.archiveId,
-        dataType: archive.dataType
+    return archives.flatMap(archive =>
+      (archive.audit_trail || []).map(audit => ({
+        ...audit,
+        archiveId: archive.archive_id,
+        dataType: archive.data_type
       }))
     );
   }
 
   async getPolicyChanges(tenantId, startDate, endDate) {
-    const policies = await DataRetentionPolicy.find({ tenantId });
-    
+    const policies = await DataRetentionPolicy.findAll({
+      where: { tenant_id: tenantId }
+    });
+
     return policies.flatMap(policy =>
-      policy.configurationHistory
-        .filter(change => change.changedAt >= startDate && change.changedAt <= endDate)
+      (policy.configuration_history || [])
+        .filter(change => new Date(change.changedAt) >= startDate && new Date(change.changedAt) <= endDate)
         .map(change => ({
-          ...change.toObject(),
-          policyId: policy._id,
-          policyName: policy.policyName,
-          dataType: policy.dataType
+          ...change,
+          policyId: policy.id,
+          policyName: policy.policy_name,
+          dataType: policy.data_type
         }))
     );
   }
@@ -715,8 +725,12 @@ class ComplianceReportingService {
 
   async getCurrentUserCount(tenantId) {
     try {
-      const User = mongoose.model('User');
-      return await User.countDocuments({ tenantId, status: 'active' });
+      return await User.count({ 
+        where: { 
+          tenantId, 
+          status: 'active' 
+        } 
+      });
     } catch (error) {
       return 0;
     }

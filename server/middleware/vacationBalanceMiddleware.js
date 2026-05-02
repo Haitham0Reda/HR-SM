@@ -3,7 +3,8 @@
  * 
  * Validates vacation balance operations and calculations.
  */
-import mongoose from 'mongoose';
+import VacationBalance from '../modules/hr-core/vacations/models/vacationBalance.model.js';
+import User from '../modules/hr-core/users/models/user.model.js';
 
 /**
  * Validate balance operation middleware
@@ -13,12 +14,13 @@ export const validateSufficientBalance = (leaveType) => {
     return async (req, res, next) => {
         try {
             if (req.body.employee && req.body.days) {
-                const VacationBalance = mongoose.model('VacationBalance');
                 const year = req.body.year || new Date().getFullYear();
 
                 const balance = await VacationBalance.findOne({
-                    employee: req.body.employee,
-                    year
+                    where: {
+                        employee_id: req.body.employee,
+                        year
+                    }
                 });
 
                 if (!balance) {
@@ -28,17 +30,17 @@ export const validateSufficientBalance = (leaveType) => {
                     });
                 }
 
-                const typeBalance = balance.leaveTypes[leaveType];
-                if (typeBalance.available < req.body.days) {
+                const typeBalance = balance.leave_types?.[leaveType];
+                if (!typeBalance || typeBalance.available < req.body.days) {
                     return res.status(400).json({
                         success: false,
-                        message: `Insufficient ${leaveType} balance. Available: ${typeBalance.available}, Requested: ${req.body.days}`
+                        message: `Insufficient ${leaveType} balance. Available: ${typeBalance?.available || 0}, Requested: ${req.body.days}`
                     });
                 }
             }
             next();
         } catch (error) {
-
+            console.error('Validate sufficient balance error:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Error validating vacation balance'
@@ -54,11 +56,12 @@ export const validateSufficientBalance = (leaveType) => {
 export const calculateTenure = async (req, res, next) => {
     try {
         if (req.body.employee) {
-            const User = mongoose.model('User');
-            const employee = await User.findById(req.body.employee).select('employment.hireDate');
+            const employee = await User.findByPk(req.body.employee, {
+                attributes: ['id', 'hire_date']
+            });
 
-            if (employee?.employment?.hireDate) {
-                const hireDate = new Date(employee.employment.hireDate);
+            if (employee?.hire_date) {
+                const hireDate = new Date(employee.hire_date);
                 const now = new Date();
                 const diffMs = now - hireDate;
                 const years = diffMs / (1000 * 60 * 60 * 24 * 365.25);
@@ -73,7 +76,7 @@ export const calculateTenure = async (req, res, next) => {
         }
         next();
     } catch (error) {
-
+        console.error('Calculate tenure error:', error);
         next();
     }
 };

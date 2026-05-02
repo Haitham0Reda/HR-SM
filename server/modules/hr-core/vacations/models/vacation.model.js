@@ -9,7 +9,7 @@
  */
 
 import { DataTypes } from 'sequelize';
-import { mainAppDb } from '../../../config/database.js';
+import { mainAppDb } from '../../../../config/database.js';
 import User from '../../users/models/user.model.js';
 import Department from '../../users/models/department.model.js';
 import Position from '../../users/models/position.model.js';
@@ -508,3 +508,10 @@ Vacation.associate = function(models) {
 };
 
 export default Vacation;
+
+
+
+
+
+
+

@@ -3,7 +3,8 @@
  * 
  * Validation and business logic for documents
  */
-import mongoose from 'mongoose';
+import User from '../modules/hr-core/users/models/user.model.js';
+import Document from '../modules/documents/models/document.model.js';
 
 /**
  * Validate file upload
@@ -24,8 +25,7 @@ export const validateFileUpload = (req, res, next) => {
 export const validateDocumentEmployee = async (req, res, next) => {
     try {
         if (req.body.employee) {
-            const User = mongoose.model('User');
-            const employee = await User.findById(req.body.employee);
+            const employee = await User.findByPk(req.body.employee);
 
             if (!employee) {
                 return res.status(404).json({
@@ -46,7 +46,7 @@ export const validateDocumentEmployee = async (req, res, next) => {
  */
 export const setUploadedBy = (req, res, next) => {
     if (req.user && !req.body.uploadedBy) {
-        req.body.uploadedBy = req.user._id;
+        req.body.uploadedBy = req.user.id;
     }
     next();
 };
@@ -76,13 +76,12 @@ export const validateDocumentExpiry = (req, res, next) => {
 export const checkDocumentAccess = async (req, res, next) => {
     try {
         if (req.params.id) {
-            const Document = mongoose.model('Document');
-            const document = await Document.findById(req.params.id);
+            const document = await Document.findByPk(req.params.id);
 
-            if (document && document.isConfidential) {
+            if (document && document.is_confidential) {
                 // Only HR, Admin, document owner, or uploader can access
-                const isOwner = document.employee && document.employee.toString() === req.user._id.toString();
-                const isUploader = document.uploadedBy.toString() === req.user._id.toString();
+                const isOwner = document.employee && document.employee === req.user.id;
+                const isUploader = document.uploaded_by === req.user.id;
                 const isAuthorized = ['hr', 'admin'].includes(req.user.role);
 
                 if (!isOwner && !isUploader && !isAuthorized) {

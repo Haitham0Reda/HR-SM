@@ -3,7 +3,9 @@
  * 
  * Validates ID card operations and batch processing.
  */
-import mongoose from 'mongoose';
+import IDCard from '../modules/hr-core/users/models/idCard.model.js';
+import User from '../modules/hr-core/users/models/user.model.js';
+import { Op } from 'sequelize';
 
 /**
  * Validate ID card expiry middleware
@@ -40,25 +42,25 @@ export const validateIDCardExpiry = (req, res, next) => {
 export const checkActiveIDCard = async (req, res, next) => {
     try {
         if (req.body.employee) {
-            const IDCard = mongoose.model('IDCard');
-
             const activeCard = await IDCard.findOne({
-                employee: req.body.employee,
-                status: 'active',
-                isActive: true
+                where: {
+                    employee_id: req.body.employee,
+                    status: 'active',
+                    is_active: true
+                }
             });
 
             if (activeCard) {
                 return res.status(400).json({
                     success: false,
                     message: 'Employee already has an active ID card',
-                    existingCard: activeCard._id
+                    existingCard: activeCard.id
                 });
             }
         }
         next();
     } catch (error) {
-
+        console.error('Check active ID card error:', error);
         next();
     }
 };
@@ -70,17 +72,18 @@ export const checkActiveIDCard = async (req, res, next) => {
 export const generateCardNumber = async (req, res, next) => {
     try {
         if (!req.body.cardNumber && req.body.employee) {
-            const User = mongoose.model('User');
-            const employee = await User.findById(req.body.employee).select('employeeId');
+            const employee = await User.findByPk(req.body.employee, {
+                attributes: ['id', 'employee_id']
+            });
 
             if (employee) {
                 const year = new Date().getFullYear();
-                req.body.cardNumber = `CARD-${employee.employeeId}-${year}`;
+                req.body.cardNumber = `CARD-${employee.employee_id}-${year}`;
             }
         }
         next();
     } catch (error) {
-
+        console.error('Generate card number error:', error);
         next();
     }
 };
@@ -108,9 +111,12 @@ export const validateBatchCards = async (req, res, next) => {
             }
 
             // Verify all cards exist
-            const IDCard = mongoose.model('IDCard');
-            const cards = await IDCard.find({
-                _id: { $in: req.body.cards }
+            const cards = await IDCard.findAll({
+                where: {
+                    id: {
+                        [Op.in]: req.body.cards
+                    }
+                }
             });
 
             if (cards.length !== req.body.cards.length) {
@@ -122,7 +128,7 @@ export const validateBatchCards = async (req, res, next) => {
         }
         next();
     } catch (error) {
-
+        console.error('Validate batch cards error:', error);
         return res.status(500).json({
             success: false,
             message: 'Error validating batch cards'

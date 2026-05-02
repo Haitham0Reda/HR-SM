@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import sequelize from '../../../config/database.js';
 
 /**
@@ -123,7 +123,6 @@ const PerformanceMetrics = sequelize.define('PerformanceMetrics', {
 
 // Static methods
 PerformanceMetrics.getAverageResponseTime = async function(tenantId, startDate, endDate) {
-  const { Op } = require('sequelize');
   
   const result = await this.findOne({
     where: {
@@ -143,7 +142,6 @@ PerformanceMetrics.getAverageResponseTime = async function(tenantId, startDate, 
 };
 
 PerformanceMetrics.getSlowestEndpoints = async function(tenantId, limit = 10) {
-  const { Op } = require('sequelize');
   
   return this.findAll({
     where: { tenant_id: tenantId },
@@ -161,3 +159,6 @@ PerformanceMetrics.getSlowestEndpoints = async function(tenantId, limit = 10) {
 };
 
 export default PerformanceMetrics;
+
+
+

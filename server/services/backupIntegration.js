@@ -1,4 +1,4 @@
-import BackupService from './backupService.js';
+import BackupService from './backupService.sequelize.js';
 import BackupScheduler from './backupScheduler.js';
 // Note: BackupLog is now tenant-specific and should be accessed through getModelForConnection
 import { getModelForConnection } from '../config/sharedModels.js';

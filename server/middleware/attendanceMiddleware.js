@@ -3,7 +3,8 @@
  * 
  * Validates and processes attendance-related requests.
  */
-import mongoose from 'mongoose';
+import Attendance from '../modules/hr-core/attendance/models/Attendance.js';
+import { Op } from 'sequelize';
 
 /**
  * Validate attendance check-in middleware
@@ -107,13 +108,18 @@ export const validateWFHRequest = (req, res, next) => {
 export const checkDuplicateAttendance = async (req, res, next) => {
     try {
         if (req.body.employee && req.body.date) {
-            const Attendance = mongoose.model('Attendance');
+            const startOfDay = new Date(req.body.date);
+            startOfDay.setHours(0, 0, 0, 0);
+            
+            const endOfDay = new Date(req.body.date);
+            endOfDay.setHours(23, 59, 59, 999);
 
             const existingAttendance = await Attendance.findOne({
-                employee: req.body.employee,
-                date: {
-                    $gte: new Date(req.body.date).setHours(0, 0, 0, 0),
-                    $lte: new Date(req.body.date).setHours(23, 59, 59, 999)
+                where: {
+                    employee_id: req.body.employee,
+                    date: {
+                        [Op.between]: [startOfDay, endOfDay]
+                    }
                 }
             });
 
@@ -121,13 +127,13 @@ export const checkDuplicateAttendance = async (req, res, next) => {
                 return res.status(400).json({
                     success: false,
                     message: 'Attendance record already exists for this date',
-                    existingRecord: existingAttendance._id
+                    existingRecord: existingAttendance.id
                 });
             }
         }
         next();
     } catch (error) {
-
+        console.error('Check duplicate attendance error:', error);
         next();
     }
 };

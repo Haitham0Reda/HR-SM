@@ -1,121 +1,181 @@
-import mongoose from 'mongoose';
-import { MODULES, MODULE_METADATA } from '../../../shared/constants/modules.js';
+/**
+ * Tenant Config Model - PostgreSQL (Sequelize)
+ * 
+ * Manages tenant-specific configuration including modules, subscription, and license.
+ * 
+ * @module models/TenantConfig
+ */
 
-const tenantConfigSchema = new mongoose.Schema({
-    tenantId: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
+
+const TenantConfig = mainAppDb.define('TenantConfig', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the tenant config (UUID)'
+  },
+
+  // Tenant ID
+  tenantId: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    unique: true,
+    field: 'tenant_id',
+    comment: 'Tenant identifier'
+  },
+
+  // Company Name
+  companyName: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    field: 'company_name',
+    comment: 'Company name'
+  },
+
+  // Deployment Mode
+  deploymentMode: {
+    type: DataTypes.ENUM('saas', 'on-premise'),
+    allowNull: false,
+    defaultValue: 'saas',
+    field: 'deployment_mode',
+    comment: 'Deployment mode'
+  },
+
+  // Modules - stored as JSONB
+  modules: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      'hr-core': { enabled: true, enabledAt: new Date() }
     },
-    companyName: {
-        type: String,
-        required: true
+    comment: 'Module configuration map'
+  },
+
+  // Subscription - stored as JSONB
+  subscription: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      plan: 'free',
+      status: 'active',
+      startDate: null,
+      endDate: null,
+      maxEmployees: 10
     },
-    deploymentMode: {
-        type: String,
-        enum: ['saas', 'on-premise'],
-        default: 'saas'
+    comment: 'Subscription details'
+  },
+
+  // License - stored as JSONB
+  license: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {},
+    comment: 'License information'
+  },
+
+  // Settings - stored as JSONB
+  settings: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      timezone: 'UTC',
+      dateFormat: 'YYYY-MM-DD',
+      currency: 'USD',
+      language: 'en'
     },
-    modules: {
-        type: Map,
-        of: {
-            enabled: { type: Boolean, default: false },
-            enabledAt: Date,
-            disabledAt: Date
-        },
-        default: () => {
-            const defaultModules = new Map();
-            // HR Core is always enabled
-            defaultModules.set(MODULES.HR_CORE, { enabled: true, enabledAt: new Date() });
-            return defaultModules;
-        }
-    },
-    subscription: {
-        plan: {
-            type: String,
-            enum: ['free', 'basic', 'professional', 'enterprise'],
-            default: 'free'
-        },
-        status: {
-            type: String,
-            enum: ['active', 'suspended', 'cancelled'],
-            default: 'active'
-        },
-        startDate: Date,
-        endDate: Date,
-        maxEmployees: {
-            type: Number,
-            default: 10
-        }
-    },
-    license: {
-        key: String,
-        signature: String,
-        issuedAt: Date,
-        expiresAt: Date,
-        maxEmployees: Number,
-        enabledModules: [String]
-    },
-    settings: {
-        timezone: { type: String, default: 'UTC' },
-        dateFormat: { type: String, default: 'YYYY-MM-DD' },
-        currency: { type: String, default: 'USD' },
-        language: { type: String, default: 'en' }
-    }
+    comment: 'Tenant settings'
+  }
 }, {
-    timestamps: true
+  tableName: 'tenant_configs',
+  timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+
+  // Indexes for performance optimization
+  indexes: [
+    {
+      name: 'idx_tenant_configs_tenant_id',
+      fields: ['tenant_id'],
+      unique: true
+    }
+  ]
 });
 
-// Method to check if module is enabled
-tenantConfigSchema.methods.isModuleEnabled = function (moduleName) {
-    if (moduleName === MODULES.HR_CORE) return true;
-
-    const moduleConfig = this.modules.get(moduleName);
-    return moduleConfig?.enabled || false;
+// Instance Methods
+TenantConfig.prototype.isModuleEnabled = function(moduleName) {
+  if (moduleName === 'hr-core') return true;
+  return this.modules[moduleName]?.enabled || false;
 };
 
-// Method to enable module
-tenantConfigSchema.methods.enableModule = function (moduleName) {
-    if (!MODULE_METADATA[moduleName]) {
-        throw new Error(`Invalid module: ${moduleName}`);
-    }
-
-    this.modules.set(moduleName, {
-        enabled: true,
-        enabledAt: new Date()
-    });
+TenantConfig.prototype.enableModule = function(moduleName) {
+  const modules = { ...this.modules };
+  modules[moduleName] = {
+    enabled: true,
+    enabledAt: new Date()
+  };
+  this.modules = modules;
 };
 
-// Method to disable module
-tenantConfigSchema.methods.disableModule = function (moduleName) {
-    if (moduleName === MODULES.HR_CORE) {
-        throw new Error('Cannot disable HR Core module');
-    }
+TenantConfig.prototype.disableModule = function(moduleName) {
+  if (moduleName === 'hr-core') {
+    throw new Error('Cannot disable HR Core module');
+  }
 
-    const moduleConfig = this.modules.get(moduleName);
-    if (moduleConfig) {
-        moduleConfig.enabled = false;
-        moduleConfig.disabledAt = new Date();
-        this.modules.set(moduleName, moduleConfig);
-    }
+  const modules = { ...this.modules };
+  if (modules[moduleName]) {
+    modules[moduleName].enabled = false;
+    modules[moduleName].disabledAt = new Date();
+    this.modules = modules;
+  }
 };
 
-// Validate license for on-premise deployments
-tenantConfigSchema.methods.validateLicense = function () {
-    if (this.deploymentMode !== 'on-premise') return true;
+TenantConfig.prototype.validateLicense = function() {
+  if (this.deploymentMode !== 'on-premise') return true;
 
-    if (!this.license || !this.license.key) {
-        return false;
-    }
+  if (!this.license || !this.license.key) {
+    return false;
+  }
 
-    if (this.license.expiresAt && new Date() > this.license.expiresAt) {
-        return false;
-    }
+  if (this.license.expiresAt && new Date() > new Date(this.license.expiresAt)) {
+    return false;
+  }
 
-    return true;
+  return true;
 };
 
-const TenantConfig = mongoose.model('TenantConfig', tenantConfigSchema);
+// Static Methods
+TenantConfig.getByTenantId = function(tenantId) {
+  return this.findOne({ where: { tenantId } });
+};
+
+TenantConfig.getOrCreate = async function(tenantId, companyName) {
+  const [config] = await this.findOrCreate({
+    where: { tenantId },
+    defaults: {
+      tenantId,
+      companyName,
+      deploymentMode: 'saas',
+      modules: {
+        'hr-core': { enabled: true, enabledAt: new Date() }
+      },
+      subscription: {
+        plan: 'free',
+        status: 'active',
+        maxEmployees: 10
+      },
+      settings: {
+        timezone: 'UTC',
+        dateFormat: 'YYYY-MM-DD',
+        currency: 'USD',
+        language: 'en'
+      }
+    }
+  });
+  return config;
+};
 
 export default TenantConfig;

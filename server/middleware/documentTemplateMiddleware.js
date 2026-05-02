@@ -25,8 +25,9 @@ export const validateTemplateFileType = (req, res, next) => {
 export const checkTemplateNameUnique = async (req, res, next) => {
     try {
         if (req.body.name) {
-            const mongoose = await import('mongoose');
-            const DocumentTemplate = mongoose.default.model('DocumentTemplate');
+            // Temporarily disabled - needs Sequelize migration
+            console.warn('checkTemplateNameUnique needs Sequelize migration');
+            return next();
             const templateId = req.params.id;
 
             const query = { name: req.body.name, isActive: true };

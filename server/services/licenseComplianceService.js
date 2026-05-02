@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
 import { companyLogger } from '../utils/companyLogger.js';
 import axios from 'axios';
+import Tenant from '../platform/models/Tenant.js';
 
 class LicenseComplianceService {
   constructor() {
@@ -170,8 +170,9 @@ class LicenseComplianceService {
   async getLicenseInfo(tenantId) {
     try {
       // Get tenant's license information
-      const Tenant = mongoose.model('Tenant');
-      const tenant = await Tenant.findById(tenantId).select('license');
+      const tenant = await Tenant.findByPk(tenantId, {
+        attributes: ['license']
+      });
       
       if (!tenant || !tenant.license || !tenant.license.licenseKey) {
         throw new Error('No license found for tenant');
@@ -235,13 +236,14 @@ class LicenseComplianceService {
    */
   async getUsageStatistics(tenantId, startDate, endDate) {
     try {
-      const Tenant = mongoose.model('Tenant');
-      const tenant = await Tenant.findById(tenantId).select('metrics');
+      const tenant = await Tenant.findByPk(tenantId, {
+        attributes: ['metrics']
+      });
 
       // Get current usage
-      const currentUsers = tenant.metrics?.totalUsers || 0;
-      const currentStorage = tenant.metrics?.storageUsed || 0;
-      const currentAPICallsThisMonth = tenant.metrics?.apiCallsThisMonth || 0;
+      const currentUsers = tenant?.metrics?.totalUsers || 0;
+      const currentStorage = tenant?.metrics?.storageUsed || 0;
+      const currentAPICallsThisMonth = tenant?.metrics?.apiCallsThisMonth || 0;
 
       // Calculate trends (this would be more sophisticated in a real implementation)
       const userTrend = this.calculateTrend('users', tenantId, startDate, endDate);

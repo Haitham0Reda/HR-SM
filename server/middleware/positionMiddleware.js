@@ -3,7 +3,10 @@
  * 
  * Validation and business logic for positions
  */
-import mongoose from 'mongoose';
+import Position from '../modules/hr-core/users/models/position.model.js';
+import Department from '../modules/hr-core/users/models/department.model.js';
+import User from '../modules/hr-core/users/models/user.model.js';
+import { Op } from 'sequelize';
 
 /**
  * Validate position code uniqueness
@@ -11,15 +14,14 @@ import mongoose from 'mongoose';
 export const checkPositionCodeUnique = async (req, res, next) => {
     try {
         if (req.body.code) {
-            const Position = mongoose.model('Position');
             const positionId = req.params.id;
 
-            const query = { code: req.body.code };
+            const where = { code: req.body.code };
             if (positionId) {
-                query._id = { $ne: positionId };
+                where.id = { [Op.ne]: positionId };
             }
 
-            const existingPosition = await Position.findOne(query);
+            const existingPosition = await Position.findOne({ where });
 
             if (existingPosition) {
                 return res.status(400).json({
@@ -41,8 +43,7 @@ export const checkPositionCodeUnique = async (req, res, next) => {
 export const validatePositionDepartment = async (req, res, next) => {
     try {
         if (req.body.department) {
-            const Department = mongoose.model('Department');
-            const department = await Department.findById(req.body.department);
+            const department = await Department.findByPk(req.body.department);
 
             if (!department) {
                 return res.status(404).json({
@@ -51,7 +52,7 @@ export const validatePositionDepartment = async (req, res, next) => {
                 });
             }
 
-            if (!department.isActive) {
+            if (!department.is_active) {
                 return res.status(400).json({
                     success: false,
                     message: 'Cannot assign position to inactive department'
@@ -71,10 +72,7 @@ export const validatePositionDepartment = async (req, res, next) => {
  */
 export const validatePositionDeletion = async (req, res, next) => {
     try {
-        const Position = mongoose.model('Position');
-        const User = mongoose.model('User');
-
-        const position = await Position.findById(req.params.id);
+        const position = await Position.findByPk(req.params.id);
 
         if (!position) {
             return res.status(404).json({
@@ -83,9 +81,11 @@ export const validatePositionDeletion = async (req, res, next) => {
             });
         }
 
-        const usersWithPosition = await User.countDocuments({
-            position: req.params.id,
-            isActive: true
+        const usersWithPosition = await User.count({
+            where: {
+                position: req.params.id,
+                is_active: true
+            }
         });
 
         if (usersWithPosition > 0) {

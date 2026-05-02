@@ -7,7 +7,7 @@
  * @module models/Attendance
  */
 
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { mainAppDb } from '../../../../config/database.js';
 import User from '../../users/models/user.model.js';
 import Department from '../../users/models/department.model.js';
@@ -305,8 +305,8 @@ const Attendance = mainAppDb.define('Attendance', {
       return {
         where: {
           date: {
-            [require('sequelize').Op.gte]: startDate,
-            [require('sequelize').Op.lte]: endDate
+            [Op.gte]: startDate,
+            [Op.lte]: endDate
           }
         }
       };
@@ -314,7 +314,7 @@ const Attendance = mainAppDb.define('Attendance', {
     present: {
       where: {
         status: {
-          [require('sequelize').Op.in]: ['on-time', 'late', 'present', 'work-from-home']
+          [Op.in]: ['on-time', 'late', 'present', 'work-from-home']
         }
       }
     },
@@ -364,8 +364,8 @@ Attendance.getEmployeeAttendance = async function(employeeId, startDate, endDate
     where: {
       employeeId,
       date: {
-        [require('sequelize').Op.gte]: startDate,
-        [require('sequelize').Op.lte]: endDate
+        [Op.gte]: startDate,
+        [Op.lte]: endDate
       }
     },
     order: [['date', 'ASC']]
@@ -377,7 +377,7 @@ Attendance.getCurrentlyPresent = async function(tenantId, departmentId = null) {
   const query = {
     tenantId,
     date: today,
-    'checkIn.time': { [require('sequelize').Op.ne]: null }
+    'checkIn.time': { [Op.ne]: null }
   };
 
   if (departmentId) {
@@ -396,3 +396,10 @@ Attendance.getCurrentlyPresent = async function(tenantId, departmentId = null) {
 };
 
 export default Attendance;
+
+
+
+
+
+
+

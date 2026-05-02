@@ -1,4 +1,4 @@
-import { DataTypes, Op } from 'sequelize';
+import { DataTypes, Op, QueryTypes } from 'sequelize';
 import sequelize from '../../../config/database.js';
 
 /**
@@ -382,8 +382,6 @@ Prescription.findNeedingRefillReminders = async function(tenantId, daysBeforeExp
 };
 
 Prescription.getStatistics = async function(tenantId, startDate, endDate) {
-  const { QueryTypes } = require('sequelize');
-  
   const results = await sequelize.query(
     `SELECT 
       status,

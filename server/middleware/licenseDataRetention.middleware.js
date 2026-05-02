@@ -214,10 +214,9 @@ export const createLicenseRetentionPoliciesForAllTenants = async () => {
   try {
     console.log('🔄 Creating license data retention policies for all tenants...');
 
-    // Get all tenants (this would need to be adapted based on your tenant model)
-    const mongoose = await import('mongoose');
-    const Tenant = mongoose.model('Tenant');
-    const tenants = await Tenant.find({ status: 'active' });
+    // Temporarily disabled - needs Sequelize migration
+    console.warn('createLicenseRetentionPoliciesForAllTenants needs Sequelize migration');
+    return;
 
     let created = 0;
     let skipped = 0;

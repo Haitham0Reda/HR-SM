@@ -1,4 +1,4 @@
-import { sequelize } from '../config/database.js';
+import { mainAppDb as sequelize } from '../config/database.js';
 import logger from '../utils/logger.js';
 
 /**

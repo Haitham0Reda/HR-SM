@@ -8,7 +8,7 @@
  * @module models/CompanyLicense
  */
 
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { mainAppDb } from '../../../config/database.js';
 
 const CompanyLicense = mainAppDb.define('CompanyLicense', {
@@ -176,7 +176,7 @@ const CompanyLicense = mainAppDb.define('CompanyLicense', {
     needsSync: {
       where: {
         syncStatus: {
-          [require('sequelize').Op.in]: ['pending', 'outdated', 'failed']
+          [Op.in]: ['pending', 'outdated', 'failed']
         }
       }
     },
@@ -187,8 +187,8 @@ const CompanyLicense = mainAppDb.define('CompanyLicense', {
         where: {
           'quick_access.status': 'active',
           'quick_access.expiresAt': {
-            [require('sequelize').Op.lte]: futureDate,
-            [require('sequelize').Op.gt]: new Date()
+            [Op.lte]: futureDate,
+            [Op.gt]: new Date()
           }
         }
       };
@@ -272,10 +272,14 @@ CompanyLicense.findNeedsSync = async function() {
   return this.findAll({
     where: {
       syncStatus: {
-        [require('sequelize').Op.in]: ['pending', 'outdated', 'failed']
+        [Op.in]: ['pending', 'outdated', 'failed']
       }
     }
   });
 };
 
 export default CompanyLicense;
+
+
+
+

@@ -6,7 +6,12 @@
  */
 import { body, param, query, validationResult } from 'express-validator';
 import sanitizeHtml from 'sanitize-html';
-import mongoose from 'mongoose';
+import sequelize from '../config/database.js';
+
+// Helper to get Sequelize models
+const getModel = (modelName) => {
+  return sequelize.models[modelName];
+};
 
 /**
  * Middleware to handle validation errors
@@ -196,9 +201,13 @@ export default {
 export const populateEmployeeFields = async (req, res, next) => {
     try {
         if (req.body.employee) {
-            const User = mongoose.model('User');
-            const employee = await User.findById(req.body.employee)
-                .select('department position');
+            const User = getModel('User');
+            if (!User) {
+                return next();
+            }
+            const employee = await User.findByPk(req.body.employee, {
+                attributes: ['department', 'position']
+            });
 
             if (employee) {
                 req.employeeData = {
@@ -220,12 +229,17 @@ export const populateEmployeeFields = async (req, res, next) => {
 export const validateVacationBalance = async (req, res, next) => {
     try {
         if (['annual', 'casual', 'sick'].includes(req.body.leaveType)) {
-            const VacationBalance = mongoose.model('VacationBalance');
+            const VacationBalance = getModel('VacationBalance');
+            if (!VacationBalance) {
+                return next();
+            }
             const year = new Date(req.body.startDate).getFullYear();
 
             const balance = await VacationBalance.findOne({
-                employee: req.body.employee,
-                year
+                where: {
+                    employee: req.body.employee,
+                    year
+                }
             });
 
             if (!balance) {
@@ -299,17 +313,24 @@ export const validateDateNotPast = (fieldName = 'startDate') => {
 export const validateOverlappingLeave = async (req, res, next) => {
     try {
         if (req.body.employee && req.body.startDate && req.body.endDate) {
-            const Leave = mongoose.model('Leave');
+            const Leave = getModel('Leave');
+            if (!Leave) {
+                return next();
+            }
 
             const overlapping = await Leave.findOne({
-                employee: req.body.employee,
-                status: { $in: ['pending', 'approved'] },
-                $or: [
-                    {
-                        startDate: { $lte: req.body.endDate },
-                        endDate: { $gte: req.body.startDate }
-                    }
-                ]
+                where: {
+                    employee: req.body.employee,
+                    status: { [sequelize.Sequelize.Op.in]: ['pending', 'approved'] },
+                    [sequelize.Sequelize.Op.or]: [
+                        {
+                            [sequelize.Sequelize.Op.and]: [
+                                { startDate: { [sequelize.Sequelize.Op.lte]: req.body.endDate } },
+                                { endDate: { [sequelize.Sequelize.Op.gte]: req.body.startDate } }
+                            ]
+                        }
+                    ]
+                }
             });
 
             if (overlapping) {
@@ -333,9 +354,13 @@ export const validateOverlappingLeave = async (req, res, next) => {
 export const validateIDCardData = async (req, res, next) => {
     try {
         if (req.body.employee) {
-            const User = mongoose.model('User');
-            const employee = await User.findById(req.body.employee)
-                .select('profile employeeId department position');
+            const User = getModel('User');
+            if (!User) {
+                return next();
+            }
+            const employee = await User.findByPk(req.body.employee, {
+                attributes: ['profile', 'employeeId', 'department', 'position']
+            });
 
             if (!employee) {
                 return res.status(404).json({

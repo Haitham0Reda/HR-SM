@@ -7,9 +7,10 @@
  * @module models/AttendanceDevice
  */
 
-import { DataTypes } from 'sequelize';
-import { mainAppDb } from '../../../config/database.js';
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
 import Department from '../../users/models/department.model.js';
+import User from '../../users/models/user.model.js';
 
 const AttendanceDevice = mainAppDb.define('AttendanceDevice', {
   // Primary Key - UUID
@@ -210,7 +211,7 @@ const AttendanceDevice = mainAppDb.define('AttendanceDevice', {
       where: {
         isActive: true,
         autoSync: true,
-        status: { [require('sequelize').Op.ne]: 'syncing' }
+        status: { [Op.ne]: 'syncing' }
       }
     },
     byType: (deviceType) => {
@@ -231,7 +232,7 @@ AttendanceDevice.belongsToMany(Department, {
   through: 'device_departments',
   foreignKey: 'deviceId',
   otherKey: 'departmentId',
-  as: 'departments'
+  as: 'departmentList'
 });
 
 Department.belongsToMany(AttendanceDevice, {
@@ -239,6 +240,11 @@ Department.belongsToMany(AttendanceDevice, {
   foreignKey: 'departmentId',
   otherKey: 'deviceId',
   as: 'attendanceDevices'
+});
+
+AttendanceDevice.belongsTo(User, {
+  foreignKey: 'createdById',
+  as: 'createdBy'
 });
 
 // Instance Methods
@@ -271,7 +277,7 @@ AttendanceDevice.getDevicesForSync = async function(tenantId = null) {
   const where = {
     isActive: true,
     autoSync: true,
-    status: { [require('sequelize').Op.ne]: 'syncing' }
+    status: { [Op.ne]: 'syncing' }
   };
 
   if (tenantId) {
@@ -307,3 +313,10 @@ AttendanceDevice.getDeviceStats = async function(tenantId = null) {
 };
 
 export default AttendanceDevice;
+
+
+
+
+
+
+

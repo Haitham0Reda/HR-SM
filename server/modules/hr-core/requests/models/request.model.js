@@ -9,7 +9,7 @@
  */
 
 import { DataTypes } from 'sequelize';
-import { mainAppDb } from '../../../config/database.js';
+import { mainAppDb } from '../../../../config/database.js';
 import User from '../../users/models/user.model.js';
 
 const Request = mainAppDb.define('Request', {
@@ -142,3 +142,10 @@ Request.associate = function(models) {
 };
 
 export default Request;
+
+
+
+
+
+
+

@@ -3,7 +3,9 @@
  * 
  * Validation and business logic for announcements
  */
-import mongoose from 'mongoose';
+import User from '../modules/hr-core/users/models/user.model.js';
+import Notification from '../modules/notifications/models/notification.model.js';
+import { Op } from 'sequelize';
 
 /**
  * Validate announcement dates
@@ -51,7 +53,7 @@ export const validateTargetAudience = (req, res, next) => {
  */
 export const setCreatedBy = (req, res, next) => {
     if (req.user && !req.body.createdBy) {
-        req.body.createdBy = req.user._id;
+        req.body.createdBy = req.user.id;
     }
     next();
 };
@@ -61,38 +63,42 @@ export const setCreatedBy = (req, res, next) => {
  */
 export const createAnnouncementNotifications = async (announcement) => {
     try {
-        const Notification = mongoose.model('Notification');
-        const User = mongoose.model('User');
-
         let recipients = [];
 
         // Determine recipients based on target audience
-        if (announcement.targetAudience === 'all') {
-            const allUsers = await User.find({ isActive: true }).select('_id');
-            recipients = allUsers.map(u => u._id);
-        } else if (announcement.targetAudience === 'department') {
-            const deptUsers = await User.find({
-                department: { $in: announcement.departments },
-                isActive: true
-            }).select('_id');
-            recipients = deptUsers.map(u => u._id);
-        } else if (announcement.targetAudience === 'specific') {
+        if (announcement.targetAudience === 'all' || announcement.target_audience === 'all') {
+            const allUsers = await User.findAll({ 
+                where: { is_active: true },
+                attributes: ['id']
+            });
+            recipients = allUsers.map(u => u.id);
+        } else if (announcement.targetAudience === 'department' || announcement.target_audience === 'department') {
+            const deptUsers = await User.findAll({
+                where: {
+                    department: { [Op.in]: announcement.departments },
+                    is_active: true
+                },
+                attributes: ['id']
+            });
+            recipients = deptUsers.map(u => u.id);
+        } else if (announcement.targetAudience === 'specific' || announcement.target_audience === 'specific') {
             recipients = announcement.employees;
         }
 
         // Create notification for each recipient
         const notifications = recipients.map(recipientId => ({
-            recipient: recipientId,
+            recipientId: recipientId,
+            tenantId: announcement.tenantId || announcement.tenant_id,
             type: 'announcement',
             title: announcement.title,
             message: announcement.content.substring(0, 200), // First 200 chars
             relatedModel: 'Announcement',
-            relatedId: announcement._id,
-            priority: announcement.priority
+            relatedId: announcement.id,
+            priority: announcement.priority || 'normal'
         }));
 
         if (notifications.length > 0) {
-            await Notification.insertMany(notifications);
+            await Notification.bulkCreate(notifications);
         }
     } catch (error) {
         console.error('Error creating announcement notifications:', error);

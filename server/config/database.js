@@ -10,8 +10,6 @@ import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import { configureSequelizeLogging } from '../utils/sequelizeLogger.js';
-import { connectionPoolMonitor } from '../monitoring/connectionPoolMonitor.js';
-import { performanceMonitor } from '../monitoring/performanceMonitor.js';
 
 // Load environment variables
 dotenv.config();
@@ -136,20 +134,31 @@ export const connectDatabases = async () => {
         console.log(`  SSL: ${mainAppDb.config.dialectOptions.ssl ? 'enabled' : 'disabled'}`);
 
         // Configure logging for both databases
-        configureSequelizeLogging(licenseServerDb, 'licenseServer');
-        configureSequelizeLogging(mainAppDb, 'mainApp');
+        try {
+            configureSequelizeLogging(licenseServerDb, 'licenseServer');
+            configureSequelizeLogging(mainAppDb, 'mainApp');
+        } catch (error) {
+            console.warn('Warning: Could not configure Sequelize logging:', error.message);
+        }
 
-        // Register pools for monitoring
-        connectionPoolMonitor.registerPool('licenseServer', licenseServerDb);
-        connectionPoolMonitor.registerPool('mainApp', mainAppDb);
+        // Register pools for monitoring (optional)
+        try {
+            const { connectionPoolMonitor } = await import('../monitoring/connectionPoolMonitor.js');
+            const { performanceMonitor } = await import('../monitoring/performanceMonitor.js');
+            
+            connectionPoolMonitor.registerPool('licenseServer', licenseServerDb);
+            connectionPoolMonitor.registerPool('mainApp', mainAppDb);
 
-        // Start monitoring if enabled
-        if (process.env.ENABLE_PERFORMANCE_MONITORING !== 'false') {
-            performanceMonitor.startMonitoring(
-                parseInt(process.env.PERFORMANCE_MONITORING_INTERVAL) || 60000
-            );
-            connectionPoolMonitor.startMonitoring();
-            console.log('✓ Performance monitoring enabled');
+            // Start monitoring if enabled
+            if (process.env.ENABLE_PERFORMANCE_MONITORING !== 'false') {
+                performanceMonitor.startMonitoring(
+                    parseInt(process.env.PERFORMANCE_MONITORING_INTERVAL) || 60000
+                );
+                connectionPoolMonitor.startMonitoring();
+                console.log('✓ Performance monitoring enabled');
+            }
+        } catch (error) {
+            console.warn('Warning: Performance monitoring not available:', error.message);
         }
 
         // Set up connection event handlers
@@ -170,31 +179,42 @@ export const connectDatabases = async () => {
  * Set up connection event handlers for monitoring
  */
 const setupConnectionHandlers = () => {
-    // License Server Database events
-    licenseServerDb.connectionManager.pool.on('acquire', () => {
-        if (process.env.LOG_LEVEL === 'debug') {
-            console.log('License Server DB: Connection acquired from pool');
-        }
-    });
+    try {
+        // License Server Database events
+        if (licenseServerDb.connectionManager?.pool?.on) {
+            licenseServerDb.connectionManager.pool.on('acquire', () => {
+                if (process.env.LOG_LEVEL === 'debug') {
+                    console.log('License Server DB: Connection acquired from pool');
+                }
+            });
 
-    licenseServerDb.connectionManager.pool.on('release', () => {
-        if (process.env.LOG_LEVEL === 'debug') {
-            console.log('License Server DB: Connection released back to pool');
+            licenseServerDb.connectionManager.pool.on('release', () => {
+                if (process.env.LOG_LEVEL === 'debug') {
+                    console.log('License Server DB: Connection released back to pool');
+                }
+            });
         }
-    });
 
-    // Main Application Database events
-    mainAppDb.connectionManager.pool.on('acquire', () => {
-        if (process.env.LOG_LEVEL === 'debug') {
-            console.log('Main App DB: Connection acquired from pool');
-        }
-    });
+        // Main Application Database events
+        if (mainAppDb.connectionManager?.pool?.on) {
+            mainAppDb.connectionManager.pool.on('acquire', () => {
+                if (process.env.LOG_LEVEL === 'debug') {
+                    console.log('Main App DB: Connection acquired from pool');
+                }
+            });
 
-    mainAppDb.connectionManager.pool.on('release', () => {
-        if (process.env.LOG_LEVEL === 'debug') {
-            console.log('Main App DB: Connection released back to pool');
+            mainAppDb.connectionManager.pool.on('release', () => {
+                if (process.env.LOG_LEVEL === 'debug') {
+                    console.log('Main App DB: Connection released back to pool');
+                }
+            });
         }
-    });
+    } catch (error) {
+        // Connection pool events not available, skip
+        if (process.env.LOG_LEVEL === 'debug') {
+            console.log('Connection pool events not available');
+        }
+    }
 };
 
 /**
@@ -205,12 +225,19 @@ const setupGracefulShutdown = () => {
         console.log(`\n${signal} received. Closing database connections...`);
         
         try {
-            // Stop monitoring
-            if (performanceMonitor.isMonitoring) {
-                performanceMonitor.stopMonitoring();
-            }
-            if (connectionPoolMonitor.isMonitoring) {
-                connectionPoolMonitor.stopMonitoring();
+            // Stop monitoring (if available)
+            try {
+                const { connectionPoolMonitor } = await import('../monitoring/connectionPoolMonitor.js');
+                const { performanceMonitor } = await import('../monitoring/performanceMonitor.js');
+                
+                if (performanceMonitor.isMonitoring) {
+                    performanceMonitor.stopMonitoring();
+                }
+                if (connectionPoolMonitor.isMonitoring) {
+                    connectionPoolMonitor.stopMonitoring();
+                }
+            } catch (error) {
+                // Monitoring not available, skip
             }
 
             await licenseServerDb.close();
@@ -295,4 +322,5 @@ export const connectDatabase = async () => {
     return await connectDatabases();
 };
 
-export default connectDatabases;
+// Default export for backward compatibility (points to mainAppDb)
+export default mainAppDb;

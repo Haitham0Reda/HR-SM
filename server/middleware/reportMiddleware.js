@@ -3,7 +3,7 @@
  * 
  * Validation and business logic for reports
  */
-import mongoose from 'mongoose';
+import Report from '../modules/reports/models/report.model.js';
 
 /**
  * Validate report fields
@@ -251,8 +251,7 @@ export const validateReportType = (req, res, next) => {
  */
 export const checkReportAccess = async (req, res, next) => {
     try {
-        const Report = mongoose.model('Report');
-        const report = await Report.findById(req.params.id);
+        const report = await Report.findByPk(req.params.id);
 
         if (!report) {
             return res.status(404).json({
@@ -262,9 +261,9 @@ export const checkReportAccess = async (req, res, next) => {
         }
 
         // Check access
-        const hasAccess = report.isPublic ||
-            report.createdBy.toString() === req.user._id.toString() ||
-            report.sharedWith.some(s => s.user.toString() === req.user._id.toString()) ||
+        const hasAccess = report.is_public ||
+            report.created_by === req.user.id ||
+            (report.shared_with && report.shared_with.some(s => s.user === req.user.id)) ||
             req.user.role === 'admin';
 
         if (!hasAccess) {
@@ -277,7 +276,7 @@ export const checkReportAccess = async (req, res, next) => {
         req.report = report;
         next();
     } catch (error) {
-
+        console.error('Check report access error:', error);
         return res.status(500).json({
             success: false,
             message: 'Error checking report access'

@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import sequelize from '../../../config/database.js';
 
 /**
@@ -279,7 +279,6 @@ DataRetentionPolicy.findActiveByDataType = async function(tenantId, dataType) {
 };
 
 DataRetentionPolicy.findDueForExecution = async function(tenantId) {
-  const { Op } = require('sequelize');
   
   return this.findAll({
     where: {
@@ -293,3 +292,7 @@ DataRetentionPolicy.findDueForExecution = async function(tenantId) {
 };
 
 export default DataRetentionPolicy;
+
+
+
+

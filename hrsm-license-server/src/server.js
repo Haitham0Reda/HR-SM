@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import winston from 'winston';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { initializeDatabase, closeDatabase } from '../config/database.js';
 
 // Import routes
 import licenseRoutes from './routes/licenseRoutes.js';
@@ -141,79 +141,6 @@ app.use(requestLogger);
 // API key usage logging
 app.use(logApiKeyUsage);
 
-// MongoDB connection with retry logic and optimized settings
-const connectDB = async (retries = 5, delay = 5000) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/hrsm-licenses';
-      
-      // Optimized connection options for license server
-      const options = {
-        // Enhanced connection pool settings for license server
-        maxPoolSize: 15, // Slightly smaller pool for license server
-        minPoolSize: 3,  // Maintain warm connections
-        maxIdleTimeMS: 30000,
-        
-        // Timeout settings optimized for license operations
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
-        connectTimeoutMS: 10000,
-        
-        // Retry settings
-        retryWrites: true,
-        retryReads: true,
-        
-        // Write concern for license operations (ensure durability)
-        writeConcern: {
-          w: 'majority',
-          journal: true // Use journal instead of deprecated j option
-        },
-        
-        // Read preference
-        readPreference: 'primaryPreferred',
-        
-        // Compression
-        compressors: ['zlib', 'snappy'],
-        
-        // Connection monitoring
-        heartbeatFrequencyMS: 10000,
-        
-        // Auto-index creation (disable in production)
-        autoIndex: process.env.NODE_ENV !== 'production'
-      };
-      
-      await mongoose.connect(mongoUri, options);
-
-      logger.info(`✅ MongoDB connected successfully to: ${mongoUri}`);
-      break;
-    } catch (error) {
-      logger.error(`❌ MongoDB connection attempt ${i + 1} failed:`, error.message);
-      
-      if (i === retries - 1) {
-        logger.error('❌ All MongoDB connection attempts failed. Exiting...');
-        process.exit(1);
-      }
-      
-      logger.info(`⏳ Retrying MongoDB connection in ${delay / 1000} seconds...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      delay *= 1.5; // Exponential backoff
-    }
-  }
-};
-
-// MongoDB event handlers
-mongoose.connection.on('error', (error) => {
-  logger.error('MongoDB connection error:', error);
-});
-
-mongoose.connection.on('disconnected', () => {
-  logger.warn('MongoDB disconnected. Attempting to reconnect...');
-});
-
-mongoose.connection.on('reconnected', () => {
-  logger.info('MongoDB reconnected successfully');
-});
-
 // Routes
 app.use('/health', healthRoutes);
 app.use('/licenses', licenseRoutes);
@@ -245,15 +172,18 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 // Graceful shutdown
-const gracefulShutdown = (signal) => {
+const gracefulShutdown = async (signal) => {
   logger.info(`${signal} received. Starting graceful shutdown...`);
   
   server.close(() => {
     logger.info('HTTP server closed');
     
-    mongoose.connection.close(false, () => {
-      logger.info('MongoDB connection closed');
+    closeDatabase().then(() => {
+      logger.info('PostgreSQL connection closed');
       process.exit(0);
+    }).catch((error) => {
+      logger.error('Error closing database:', error);
+      process.exit(1);
     });
   });
   
@@ -282,8 +212,8 @@ process.on('unhandledRejection', (reason, promise) => {
 // Start server
 const startServer = async () => {
   try {
-    // Connect to MongoDB first
-    await connectDB();
+    // Connect to PostgreSQL first
+    await initializeDatabase();
     
     // Initialize API keys
     console.log('🔐 Initializing API keys...');
@@ -294,7 +224,7 @@ const startServer = async () => {
     const server = app.listen(PORT, () => {
       logger.info(`🚀 License Server running on port ${PORT}`);
       logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      logger.info(`🔗 MongoDB: ${process.env.MONGODB_URI || 'mongodb://localhost:27017/hrsm-licenses'}`);
+      logger.info(`🔗 PostgreSQL: ${process.env.LICENSE_DB_HOST || 'localhost'}:${process.env.LICENSE_DB_PORT || '5432'}/${process.env.LICENSE_DB_NAME || 'hrsm_licenses'}`);
       logger.info(`🔐 RSA Keys: ${process.env.JWT_PRIVATE_KEY_PATH || './keys/private.pem'}`);
       logger.info(`🔑 API Keys initialized for secure access`);
     });

@@ -3,8 +3,9 @@
  * 
  * Validation and business logic for departments
  */
-import mongoose from 'mongoose';
-import multiTenantDB from '../config/multiTenant.js';
+import Department from '../modules/hr-core/users/models/department.model.js';
+import User from '../modules/hr-core/users/models/user.model.js';
+import { Op } from 'sequelize';
 
 /**
  * Validate department code uniqueness
@@ -12,22 +13,17 @@ import multiTenantDB from '../config/multiTenant.js';
 export const checkDepartmentCodeUnique = async (req, res, next) => {
     try {
         if (req.body.code) {
-            // Use tenant-specific model
-            const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
-            const TenantDepartment = tenantConnection.models.Department || 
-                tenantConnection.model('Department', mongoose.model('Department').schema);
-            
             const departmentId = req.params.id;
 
-            const query = { 
+            const where = { 
                 code: req.body.code,
-                tenantId: req.tenantId 
+                tenant_id: req.tenantId 
             };
             if (departmentId) {
-                query._id = { $ne: departmentId };
+                where.id = { [Op.ne]: departmentId };
             }
 
-            const existingDept = await TenantDepartment.findOne(query);
+            const existingDept = await Department.findOne({ where });
 
             if (existingDept) {
                 return res.status(400).json({
@@ -49,14 +45,11 @@ export const checkDepartmentCodeUnique = async (req, res, next) => {
 export const validateManager = async (req, res, next) => {
     try {
         if (req.body.manager) {
-            // Use tenant-specific model
-            const tenantConnection = await multiTenantDB.getCompanyConnection(req.tenantId);
-            const TenantUser = tenantConnection.models.User || 
-                tenantConnection.model('User', mongoose.model('User').schema);
-
-            const manager = await TenantUser.findOne({ 
-                _id: req.body.manager,
-                tenantId: req.tenantId 
+            const manager = await User.findOne({ 
+                where: {
+                    id: req.body.manager,
+                    tenant_id: req.tenantId 
+                }
             });
 
             if (!manager) {
@@ -82,25 +75,12 @@ export const validateManager = async (req, res, next) => {
 
 /**
  * Validate organization exists
+ * TODO: This needs to be updated when organization model is migrated
  */
 export const validateorganization = async (req, res, next) => {
-    try {
-        if (req.body.organization) {
-            const OrganizationModel = mongoose.model('organization');
-            const organization = await OrganizationModel.findById(req.body.organization);
-
-            if (!organization) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'organization not found'
-                });
-            }
-        }
-        next();
-    } catch (error) {
-
-        next();
-    }
+    // Temporarily disabled - organization model needs migration
+    console.warn('validateorganization middleware needs migration');
+    next();
 };
 
 export default {

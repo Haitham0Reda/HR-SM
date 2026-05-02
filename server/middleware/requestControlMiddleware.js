@@ -19,7 +19,7 @@ export const validateVacationRequest = async (req, res, next) => {
             return next(); // Not a vacation type, skip validation
         }
 
-        const user = await User.findById(employee);
+        const user = await User.findByPk(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -55,7 +55,7 @@ export const validatePermissionRequest = async (req, res, next) => {
     try {
         const { employee, permissionType } = req.body;
 
-        const user = await User.findById(employee);
+        const user = await User.findByPk(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -103,7 +103,7 @@ export const validateSickLeaveRequest = async (req, res, next) => {
             return next(); // Not a sick leave, skip validation
         }
 
-        const user = await User.findById(employee);
+        const user = await User.findByPk(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -143,7 +143,7 @@ export const validateMissionRequest = async (req, res, next) => {
             return next(); // Not a mission, skip validation
         }
 
-        const user = await User.findById(employee);
+        const user = await User.findByPk(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -179,7 +179,7 @@ export const validateForgotCheckRequest = async (req, res, next) => {
     try {
         const { employee } = req.body;
 
-        const user = await User.findById(employee);
+        const user = await User.findByPk(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -215,7 +215,7 @@ export const validateLeaveRequest = async (req, res, next) => {
     try {
         const { employee, leaveType } = req.body;
 
-        const user = await User.findById(employee);
+        const user = await User.findByPk(employee);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -260,8 +260,8 @@ export const validateLeaveRequest = async (req, res, next) => {
  */
 export const checkRequestControlStatus = async (req, res, next) => {
     try {
-        const userId = req.user._id;
-        const user = await User.findById(userId);
+        const userId = req.user.id;
+        const user = await User.findByPk(userId);
 
         if (!user) {
             return next();
@@ -293,7 +293,8 @@ export const checkRequestControlStatus = async (req, res, next) => {
  * Business logic for request control notifications
  * Extracted from requestControl.model.js to follow middleware organization pattern
  */
-import mongoose from 'mongoose';
+import Notification from '../modules/notifications/models/notification.model.js';
+import { Op } from 'sequelize';
 
 /**
  * Send notifications when requests are disabled/enabled (post-save)
@@ -301,47 +302,48 @@ import mongoose from 'mongoose';
  */
 export const sendRequestControlNotifications = async (doc, previousChangeCount) => {
     try {
-        const Notification = mongoose.model('Notification');
-        const User = mongoose.model('User');
-
         // Get the most recent change from history
-        if (doc.changeHistory.length > 0 && doc.changeHistory.length !== previousChangeCount) {
-            const latestChange = doc.changeHistory[doc.changeHistory.length - 1];
+        if (doc.change_history && doc.change_history.length > 0 && doc.change_history.length !== previousChangeCount) {
+            const latestChange = doc.change_history[doc.change_history.length - 1];
 
             // Only send notification for disable actions
             if (latestChange.action === 'disabled') {
-                // Get all active employees in the organization/organization
-                const query = {
-                    isActive: true,
-                    'employment.employmentStatus': 'active'
+                // Get all active employees in the organization
+                const where = {
+                    is_active: true,
+                    employment_status: 'active'
                 };
 
-                if (doc.organization) {
-                    query.organization = doc.organization;
+                if (doc.tenant_id) {
+                    where.tenant_id = doc.tenant_id;
                 }
 
-                const employees = await User.find(query).select('_id');
+                const employees = await User.findAll({
+                    where,
+                    attributes: ['id']
+                });
 
                 // Create notification for each employee
                 const notifications = employees.map(employee => ({
-                    recipient: employee._id,
+                    recipient_id: employee.id,
                     type: 'request-control',
                     title: latestChange.requestType === 'system-wide'
                         ? 'All Requests Disabled'
                         : `${latestChange.requestType.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Requests Disabled`,
-                    message: latestChange.message || doc.systemWide.disabledMessage,
-                    relatedModel: 'RequestControl',
-                    relatedId: doc._id
+                    message: latestChange.message || doc.system_wide?.disabled_message,
+                    related_model: 'RequestControl',
+                    related_id: doc.id,
+                    tenant_id: doc.tenant_id
                 }));
 
                 // Bulk insert notifications (limit to prevent overload)
                 if (notifications.length > 0 && notifications.length <= 1000) {
-                    await Notification.insertMany(notifications);
+                    await Notification.bulkCreate(notifications);
                 }
             }
         }
     } catch (error) {
-
+        console.error('Error sending request control notifications:', error);
     }
 };
 

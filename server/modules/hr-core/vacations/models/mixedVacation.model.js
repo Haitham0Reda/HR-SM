@@ -483,3 +483,10 @@ MixedVacation.findUpcomingPolicies = async function (tenantId, days = 30) {
 };
 
 export default MixedVacation;
+
+
+
+
+
+
+

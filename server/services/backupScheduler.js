@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import BackupService from './backupService.js';
+import BackupService from './backupService.sequelize.js';
 import winston from 'winston';
 import path from 'path';
 

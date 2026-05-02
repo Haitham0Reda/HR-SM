@@ -1,5 +1,10 @@
-// models/licenseAudit.model.js
-import mongoose from 'mongoose';
+/**
+ * License Audit Model - PostgreSQL (Sequelize)
+ * Comprehensive audit logging for license-related events
+ */
+
+import { DataTypes, Op } from 'sequelize';
+import sequelize from '../../../config/database.js';
 
 const EVENT_TYPES = [
     'VALIDATION_SUCCESS',
@@ -24,101 +29,60 @@ const EVENT_TYPES = [
 
 const SEVERITY_LEVELS = ['info', 'warning', 'error', 'critical'];
 
-const auditDetailsSchema = new mongoose.Schema({
-    reason: {
-        type: String,
-        default: null
-    },
-    limitType: {
-        type: String,
-        default: null
-    },
-    currentValue: {
-        type: Number,
-        default: null
-    },
-    limitValue: {
-        type: Number,
-        default: null
-    },
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    },
-    ipAddress: {
-        type: String,
-        default: null
-    },
-    userAgent: {
-        type: String,
-        default: null
-    },
-    previousValue: {
-        type: mongoose.Schema.Types.Mixed,
-        default: null
-    },
-    newValue: {
-        type: mongoose.Schema.Types.Mixed,
-        default: null
-    },
-    additionalInfo: {
-        type: mongoose.Schema.Types.Mixed,
-        default: {}
-    }
-}, { _id: false });
-
-const licenseAuditSchema = new mongoose.Schema({
-    tenantId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Tenant',
-        required: true,
-        index: true
-    },
-    moduleKey: {
-        type: String,
-        required: true,
-        index: true
-    },
-    eventType: {
-        type: String,
-        enum: EVENT_TYPES,
-        required: true,
-        index: true
-    },
-    details: {
-        type: auditDetailsSchema,
-        default: () => ({})
-    },
-    severity: {
-        type: String,
-        enum: SEVERITY_LEVELS,
-        default: 'info',
-        index: true
-    },
-    timestamp: {
-        type: Date,
-        default: Date.now,
-        index: true
-    }
+const LicenseAudit = sequelize.define('LicenseAudit', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  tenantId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'tenant_id'
+  },
+  moduleKey: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'module_key'
+  },
+  eventType: {
+    type: DataTypes.ENUM(...EVENT_TYPES),
+    allowNull: false,
+    field: 'event_type'
+  },
+  details: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {}
+  },
+  severity: {
+    type: DataTypes.ENUM(...SEVERITY_LEVELS),
+    defaultValue: 'info'
+  },
+  timestamp: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  }
 }, {
-    timestamps: false // Using custom timestamp field
+  tableName: 'license_audits',
+  timestamps: false,
+  underscored: true,
+  indexes: [
+    { fields: ['tenant_id', 'timestamp'] },
+    { fields: ['module_key', 'timestamp'] },
+    { fields: ['tenant_id', 'module_key', 'timestamp'] },
+    { fields: ['event_type', 'timestamp'] },
+    { fields: ['severity', 'timestamp'] },
+    { fields: ['tenant_id', 'event_type', 'timestamp'] }
+  ]
 });
-
-// Compound indexes for efficient queries
-licenseAuditSchema.index({ tenantId: 1, timestamp: -1 });
-licenseAuditSchema.index({ moduleKey: 1, timestamp: -1 });
-licenseAuditSchema.index({ tenantId: 1, moduleKey: 1, timestamp: -1 });
-licenseAuditSchema.index({ eventType: 1, timestamp: -1 });
-licenseAuditSchema.index({ severity: 1, timestamp: -1 });
-licenseAuditSchema.index({ tenantId: 1, eventType: 1, timestamp: -1 });
 
 /**
  * Static method to create an audit log entry
  * @param {Object} params - Audit log parameters
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.createLog = async function ({
+LicenseAudit.createLog = async function ({
     tenantId,
     moduleKey,
     eventType,
@@ -142,7 +106,7 @@ licenseAuditSchema.statics.createLog = async function ({
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logValidationSuccess = function (tenantId, moduleKey, details = {}) {
+LicenseAudit.logValidationSuccess = function (tenantId, moduleKey, details = {}) {
     return this.createLog({
         tenantId,
         moduleKey,
@@ -160,7 +124,7 @@ licenseAuditSchema.statics.logValidationSuccess = function (tenantId, moduleKey,
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logValidationFailure = function (tenantId, moduleKey, reason, details = {}) {
+LicenseAudit.logValidationFailure = function (tenantId, moduleKey, reason, details = {}) {
     return this.createLog({
         tenantId,
         moduleKey,
@@ -177,7 +141,7 @@ licenseAuditSchema.statics.logValidationFailure = function (tenantId, moduleKey,
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logLicenseExpired = function (tenantId, moduleKey, details = {}) {
+LicenseAudit.logLicenseExpired = function (tenantId, moduleKey, details = {}) {
     return this.createLog({
         tenantId,
         moduleKey,
@@ -197,7 +161,7 @@ licenseAuditSchema.statics.logLicenseExpired = function (tenantId, moduleKey, de
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logLimitWarning = function (
+LicenseAudit.logLimitWarning = function (
     tenantId,
     moduleKey,
     limitType,
@@ -229,7 +193,7 @@ licenseAuditSchema.statics.logLimitWarning = function (
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logLimitExceeded = function (
+LicenseAudit.logLimitExceeded = function (
     tenantId,
     moduleKey,
     limitType,
@@ -258,7 +222,7 @@ licenseAuditSchema.statics.logLimitExceeded = function (
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logModuleActivated = function (tenantId, moduleKey, details = {}) {
+LicenseAudit.logModuleActivated = function (tenantId, moduleKey, details = {}) {
     return this.createLog({
         tenantId,
         moduleKey,
@@ -275,7 +239,7 @@ licenseAuditSchema.statics.logModuleActivated = function (tenantId, moduleKey, d
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logModuleDeactivated = function (tenantId, moduleKey, details = {}) {
+LicenseAudit.logModuleDeactivated = function (tenantId, moduleKey, details = {}) {
     return this.createLog({
         tenantId,
         moduleKey,
@@ -294,7 +258,7 @@ licenseAuditSchema.statics.logModuleDeactivated = function (tenantId, moduleKey,
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logLicenseUpdated = function (
+LicenseAudit.logLicenseUpdated = function (
     tenantId,
     moduleKey,
     previousValue,
@@ -319,7 +283,7 @@ licenseAuditSchema.statics.logLicenseUpdated = function (
  * @param {Object} filters - Query filters
  * @returns {Promise<LicenseAudit[]>} Array of audit logs
  */
-licenseAuditSchema.statics.queryLogs = function ({
+LicenseAudit.queryLogs = function ({
     tenantId = null,
     moduleKey = null,
     eventType = null,
@@ -329,23 +293,25 @@ licenseAuditSchema.statics.queryLogs = function ({
     limit = 100,
     skip = 0
 }) {
-    const query = {};
+    const where = {};
 
-    if (tenantId) query.tenantId = tenantId;
-    if (moduleKey) query.moduleKey = moduleKey;
-    if (eventType) query.eventType = eventType;
-    if (severity) query.severity = severity;
+    if (tenantId) where.tenantId = tenantId;
+    if (moduleKey) where.moduleKey = moduleKey;
+    if (eventType) where.eventType = eventType;
+    if (severity) where.severity = severity;
 
     if (startDate || endDate) {
-        query.timestamp = {};
-        if (startDate) query.timestamp.$gte = new Date(startDate);
-        if (endDate) query.timestamp.$lte = new Date(endDate);
+        where.timestamp = {};
+        if (startDate) where.timestamp[Op.gte] = new Date(startDate);
+        if (endDate) where.timestamp[Op.lte] = new Date(endDate);
     }
 
-    return this.find(query)
-        .sort({ timestamp: -1 })
-        .limit(limit)
-        .skip(skip);
+    return this.findAll({
+        where,
+        order: [['timestamp', 'DESC']],
+        limit,
+        offset: skip
+    });
 };
 
 /**
@@ -355,44 +321,30 @@ licenseAuditSchema.statics.queryLogs = function ({
  * @param {Date} endDate - End date (optional)
  * @returns {Promise<Object>} Audit statistics
  */
-licenseAuditSchema.statics.getStatistics = async function (tenantId = null, startDate = null, endDate = null) {
-    const matchStage = {};
+LicenseAudit.getStatistics = async function (tenantId = null, startDate = null, endDate = null) {
+    const where = {};
 
-    if (tenantId) matchStage.tenantId = new mongoose.Types.ObjectId(tenantId);
+    if (tenantId) where.tenantId = tenantId;
 
     if (startDate || endDate) {
-        matchStage.timestamp = {};
-        if (startDate) matchStage.timestamp.$gte = new Date(startDate);
-        if (endDate) matchStage.timestamp.$lte = new Date(endDate);
+        where.timestamp = {};
+        if (startDate) where.timestamp[Op.gte] = new Date(startDate);
+        if (endDate) where.timestamp[Op.lte] = new Date(endDate);
     }
 
-    const pipeline = [
-        { $match: matchStage },
-        {
-            $group: {
-                _id: {
-                    eventType: '$eventType',
-                    severity: '$severity'
-                },
-                count: { $sum: 1 }
-            }
-        },
-        {
-            $group: {
-                _id: '$_id.eventType',
-                total: { $sum: '$count' },
-                bySeverity: {
-                    $push: {
-                        severity: '$_id.severity',
-                        count: '$count'
-                    }
-                }
-            }
-        }
-    ];
+    // Get event type statistics
+    const eventTypeStats = await this.findAll({
+        where,
+        attributes: [
+            'eventType',
+            'severity',
+            [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+        ],
+        group: ['eventType', 'severity'],
+        raw: true
+    });
 
-    const results = await this.aggregate(pipeline);
-
+    // Process results into structured format
     const statistics = {
         totalEvents: 0,
         byEventType: {},
@@ -404,17 +356,20 @@ licenseAuditSchema.statics.getStatistics = async function (tenantId = null, star
         }
     };
 
-    results.forEach(result => {
-        statistics.totalEvents += result.total;
-        statistics.byEventType[result._id] = {
-            total: result.total,
-            bySeverity: {}
-        };
+    eventTypeStats.forEach(stat => {
+        const count = parseInt(stat.count);
+        statistics.totalEvents += count;
 
-        result.bySeverity.forEach(sev => {
-            statistics.byEventType[result._id].bySeverity[sev.severity] = sev.count;
-            statistics.bySeverity[sev.severity] += sev.count;
-        });
+        if (!statistics.byEventType[stat.eventType]) {
+            statistics.byEventType[stat.eventType] = {
+                total: 0,
+                bySeverity: {}
+            };
+        }
+
+        statistics.byEventType[stat.eventType].total += count;
+        statistics.byEventType[stat.eventType].bySeverity[stat.severity] = count;
+        statistics.bySeverity[stat.severity] += count;
     });
 
     return statistics;
@@ -426,18 +381,20 @@ licenseAuditSchema.statics.getStatistics = async function (tenantId = null, star
  * @param {number} limit - Number of records to return
  * @returns {Promise<LicenseAudit[]>} Recent violations
  */
-licenseAuditSchema.statics.getRecentViolations = function (tenantId = null, limit = 50) {
-    const query = {
-        severity: { $in: ['error', 'critical'] }
+LicenseAudit.getRecentViolations = function (tenantId = null, limit = 50) {
+    const where = {
+        severity: { [Op.in]: ['error', 'critical'] }
     };
 
     if (tenantId) {
-        query.tenantId = tenantId;
+        where.tenantId = tenantId;
     }
 
-    return this.find(query)
-        .sort({ timestamp: -1 })
-        .limit(limit);
+    return this.findAll({
+        where,
+        order: [['timestamp', 'DESC']],
+        limit
+    });
 };
 
 /**
@@ -447,16 +404,18 @@ licenseAuditSchema.statics.getRecentViolations = function (tenantId = null, limi
  * @param {number} days - Number of days to look back
  * @returns {Promise<LicenseAudit[]>} Audit trail
  */
-licenseAuditSchema.statics.getModuleAuditTrail = function (tenantId, moduleKey, days = 30) {
+LicenseAudit.getModuleAuditTrail = function (tenantId, moduleKey, days = 30) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    return this.find({
-        tenantId,
-        moduleKey,
-        timestamp: { $gte: startDate }
-    })
-        .sort({ timestamp: -1 });
+    return this.findAll({
+        where: {
+            tenantId,
+            moduleKey,
+            timestamp: { [Op.gte]: startDate }
+        },
+        order: [['timestamp', 'DESC']]
+    });
 };
 
 /**
@@ -464,17 +423,19 @@ licenseAuditSchema.statics.getModuleAuditTrail = function (tenantId, moduleKey, 
  * @param {number} daysToKeep - Number of days to keep
  * @returns {Promise<Object>} Deletion result
  */
-licenseAuditSchema.statics.cleanupOldLogs = async function (daysToKeep = 365) {
+LicenseAudit.cleanupOldLogs = async function (daysToKeep = 365) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-    const result = await this.deleteMany({
-        timestamp: { $lt: cutoffDate },
-        severity: { $nin: ['critical'] } // Keep critical logs longer
+    const deletedCount = await this.destroy({
+        where: {
+            timestamp: { [Op.lt]: cutoffDate },
+            severity: { [Op.notIn]: ['critical'] } // Keep critical logs longer
+        }
     });
 
     return {
-        deletedCount: result.deletedCount,
+        deletedCount,
         cutoffDate
     };
 };
@@ -487,7 +448,7 @@ licenseAuditSchema.statics.cleanupOldLogs = async function (daysToKeep = 365) {
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logSubscriptionEvent = function (tenantId, moduleKey, eventType, details = {}) {
+LicenseAudit.logSubscriptionEvent = function (tenantId, moduleKey, eventType, details = {}) {
     const validEvents = [
         'SUBSCRIPTION_CREATED', 'SUBSCRIPTION_UPGRADED', 'SUBSCRIPTION_DOWNGRADED',
         'SUBSCRIPTION_EXPIRED', 'SUBSCRIPTION_CANCELLED'
@@ -509,9 +470,7 @@ licenseAuditSchema.statics.logSubscriptionEvent = function (tenantId, moduleKey,
         tenantId,
         moduleKey,
         eventType,
-        details: {
-            ...details
-        },
+        details,
         severity: severityMap[eventType] || 'info'
     });
 };
@@ -524,7 +483,7 @@ licenseAuditSchema.statics.logSubscriptionEvent = function (tenantId, moduleKey,
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logTrialEvent = function (tenantId, moduleKey, eventType, details = {}) {
+LicenseAudit.logTrialEvent = function (tenantId, moduleKey, eventType, details = {}) {
     const validEvents = ['TRIAL_STARTED', 'TRIAL_ENDED'];
 
     if (!validEvents.includes(eventType)) {
@@ -535,9 +494,7 @@ licenseAuditSchema.statics.logTrialEvent = function (tenantId, moduleKey, eventT
         tenantId,
         moduleKey,
         eventType,
-        details: {
-            ...details
-        },
+        details,
         severity: eventType === 'TRIAL_ENDED' ? 'warning' : 'info'
     });
 };
@@ -551,7 +508,7 @@ licenseAuditSchema.statics.logTrialEvent = function (tenantId, moduleKey, eventT
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logUsageTracked = function (tenantId, moduleKey, usageType, count, details = {}) {
+LicenseAudit.logUsageTracked = function (tenantId, moduleKey, usageType, count, details = {}) {
     return this.createLog({
         tenantId,
         moduleKey,
@@ -573,7 +530,7 @@ licenseAuditSchema.statics.logUsageTracked = function (tenantId, moduleKey, usag
  * @param {Object} details - Additional details
  * @returns {Promise<LicenseAudit>} Created audit log
  */
-licenseAuditSchema.statics.logDependencyViolation = function (tenantId, moduleKey, dependencyType, details = {}) {
+LicenseAudit.logDependencyViolation = function (tenantId, moduleKey, dependencyType, details = {}) {
     return this.createLog({
         tenantId,
         moduleKey,
@@ -586,5 +543,5 @@ licenseAuditSchema.statics.logDependencyViolation = function (tenantId, moduleKe
     });
 };
 
-export default mongoose.model('LicenseAudit', licenseAuditSchema);
+export default LicenseAudit;
 export { EVENT_TYPES, SEVERITY_LEVELS };

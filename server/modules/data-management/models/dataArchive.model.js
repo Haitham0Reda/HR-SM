@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import sequelize from '../../../config/database.js';
 
 /**
@@ -295,7 +295,6 @@ DataArchive.findByDataType = async function(tenantId, dataType) {
 };
 
 DataArchive.findDueForDeletion = async function(tenantId) {
-  const { Op } = require('sequelize');
   
   return this.findAll({
     where: {
@@ -309,3 +308,7 @@ DataArchive.findDueForDeletion = async function(tenantId) {
 };
 
 export default DataArchive;
+
+
+
+

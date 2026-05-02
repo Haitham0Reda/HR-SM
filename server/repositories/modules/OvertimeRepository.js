@@ -1,6 +1,9 @@
 import BaseRepository from '../BaseRepository.js';
 import Overtime from '../../modules/hr-core/overtime/models/overtime.model.js';
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
+import User from '../../modules/hr-core/users/models/user.model.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
+import Position from '../../modules/hr-core/users/models/position.model.js';
 
 /**
  * Repository for Overtime model operations with compensation tracking and analytics
@@ -18,40 +21,42 @@ class OvertimeRepository extends BaseRepository {
      */
     async findByEmployee(employeeId, options = {}) {
         try {
-            const filter = { employee: employeeId };
+            const where = { employee_id: employeeId };
 
             if (options.tenantId) {
-                filter.tenantId = options.tenantId;
+                where.tenant_id = options.tenantId;
             }
 
             if (options.status) {
-                filter.status = options.status;
+                where.status = options.status;
             }
 
             if (options.compensationType) {
-                filter.compensationType = options.compensationType;
+                where.compensation_type = options.compensationType;
             }
 
             if (options.compensated !== undefined) {
-                filter.compensated = options.compensated;
+                where.compensated = options.compensated;
             }
 
             if (options.dateRange) {
-                filter.date = {
-                    $gte: options.dateRange.startDate,
-                    $lte: options.dateRange.endDate
+                where.date = {
+                    [Op.gte]: options.dateRange.startDate,
+                    [Op.lte]: options.dateRange.endDate
                 };
             }
 
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'position', select: 'title' },
-                    { path: 'approvedBy rejectedBy', select: 'firstName lastName employeeId' }
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { model: Department, as: 'department', attributes: ['id', 'name', 'code'] },
+                    { model: Position, as: 'position', attributes: ['id', 'title'] },
+                    { model: User, as: 'approvedBy', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { model: User, as: 'rejectedBy', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
                 ],
-                sort: { date: -1 }
+                order: [['date', 'DESC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findByEmployee');
@@ -66,39 +71,41 @@ class OvertimeRepository extends BaseRepository {
      */
     async findByStatus(status, options = {}) {
         try {
-            const filter = { status };
+            const where = { status };
 
             if (options.tenantId) {
-                filter.tenantId = options.tenantId;
+                where.tenant_id = options.tenantId;
             }
 
             if (options.departmentId) {
-                filter.department = options.departmentId;
+                where.department_id = options.departmentId;
             }
 
             if (options.employeeId) {
-                filter.employee = options.employeeId;
+                where.employee_id = options.employeeId;
             }
 
             if (options.compensationType) {
-                filter.compensationType = options.compensationType;
+                where.compensation_type = options.compensationType;
             }
 
             if (options.dateRange) {
-                filter.date = {
-                    $gte: options.dateRange.startDate,
-                    $lte: options.dateRange.endDate
+                where.date = {
+                    [Op.gte]: options.dateRange.startDate,
+                    [Op.lte]: options.dateRange.endDate
                 };
             }
 
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy rejectedBy', select: 'firstName lastName employeeId' }
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { model: Department, as: 'department', attributes: ['id', 'name', 'code'] },
+                    { model: User, as: 'approvedBy', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { model: User, as: 'rejectedBy', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
                 ],
-                sort: { date: -1 }
+                order: [['date', 'DESC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findByStatus');
@@ -113,30 +120,32 @@ class OvertimeRepository extends BaseRepository {
      */
     async findPendingOvertime(departmentId = null, options = {}) {
         try {
-            const filter = { status: 'pending' };
+            const where = { status: 'pending' };
 
             if (departmentId) {
-                filter.department = departmentId;
+                where.department_id = departmentId;
             }
 
             if (options.tenantId) {
-                filter.tenantId = options.tenantId;
+                where.tenant_id = options.tenantId;
             }
 
-            return await this.find(filter, {
-                ...options,
-                populate: [
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
                     {
-                        path: 'employee',
-                        select: 'firstName lastName employeeId email department position',
-                        populate: [
-                            { path: 'department', select: 'name code manager' },
-                            { path: 'position', select: 'title code' }
+                        model: User,
+                        as: 'employee',
+                        attributes: ['id', 'first_name', 'last_name', 'employee_id', 'email', 'department_id', 'position_id'],
+                        include: [
+                            { model: Department, as: 'department', attributes: ['id', 'name', 'code', 'manager_id'] },
+                            { model: Position, as: 'position', attributes: ['id', 'title', 'code'] }
                         ]
                     },
-                    { path: 'department', select: 'name code' }
+                    { model: Department, as: 'department', attributes: ['id', 'name', 'code'] }
                 ],
-                sort: { createdAt: 1 }
+                order: [['created_at', 'ASC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findPendingOvertime');
@@ -151,38 +160,41 @@ class OvertimeRepository extends BaseRepository {
      */
     async findByDepartment(departmentId, options = {}) {
         try {
-            const filter = { department: departmentId };
+            const where = { department_id: departmentId };
 
             if (options.tenantId) {
-                filter.tenantId = options.tenantId;
+                where.tenant_id = options.tenantId;
             }
 
             if (options.status) {
-                filter.status = options.status;
+                where.status = options.status;
             }
 
             if (options.compensationType) {
-                filter.compensationType = options.compensationType;
+                where.compensation_type = options.compensationType;
             }
 
             if (options.dateRange) {
-                filter.date = {
-                    $gte: options.dateRange.startDate,
-                    $lte: options.dateRange.endDate
+                where.date = {
+                    [Op.gte]: options.dateRange.startDate,
+                    [Op.lte]: options.dateRange.endDate
                 };
             }
 
-            return await this.find(filter, {
-                ...options,
-                populate: [
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
                     {
-                        path: 'employee',
-                        select: 'firstName lastName employeeId position',
-                        populate: { path: 'position', select: 'title code' }
+                        model: User,
+                        as: 'employee',
+                        attributes: ['id', 'first_name', 'last_name', 'employee_id', 'position_id'],
+                        include: [{ model: Position, as: 'position', attributes: ['id', 'title', 'code'] }]
                     },
-                    { path: 'approvedBy rejectedBy', select: 'firstName lastName employeeId' }
+                    { model: User, as: 'approvedBy', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { model: User, as: 'rejectedBy', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
                 ],
-                sort: { date: -1 }
+                order: [['date', 'DESC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findByDepartment');
@@ -197,32 +209,33 @@ class OvertimeRepository extends BaseRepository {
      */
     async findByCompensationType(compensationType, options = {}) {
         try {
-            const filter = { compensationType };
+            const where = { compensation_type: compensationType };
 
             if (options.tenantId) {
-                filter.tenantId = options.tenantId;
+                where.tenant_id = options.tenantId;
             }
 
             if (options.status) {
-                filter.status = options.status;
+                where.status = options.status;
             }
 
             if (options.departmentId) {
-                filter.department = options.departmentId;
+                where.department_id = options.departmentId;
             }
 
             if (options.compensated !== undefined) {
-                filter.compensated = options.compensated;
+                where.compensated = options.compensated;
             }
 
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy', select: 'firstName lastName employeeId' }
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { model: Department, as: 'department', attributes: ['id', 'name', 'code'] },
+                    { model: User, as: 'approvedBy', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
                 ],
-                sort: { date: -1 }
+                order: [['date', 'DESC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findByCompensationType');
@@ -236,35 +249,36 @@ class OvertimeRepository extends BaseRepository {
      */
     async findUncompensatedOvertime(options = {}) {
         try {
-            const filter = {
+            const where = {
                 status: 'approved',
                 compensated: false
             };
 
             if (options.tenantId) {
-                filter.tenantId = options.tenantId;
+                where.tenant_id = options.tenantId;
             }
 
             if (options.departmentId) {
-                filter.department = options.departmentId;
+                where.department_id = options.departmentId;
             }
 
             if (options.employeeId) {
-                filter.employee = options.employeeId;
+                where.employee_id = options.employeeId;
             }
 
             if (options.compensationType) {
-                filter.compensationType = options.compensationType;
+                where.compensation_type = options.compensationType;
             }
 
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy', select: 'firstName lastName employeeId' }
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { model: Department, as: 'department', attributes: ['id', 'name', 'code'] },
+                    { model: User, as: 'approvedBy', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
                 ],
-                sort: { date: 1 }
+                order: [['date', 'ASC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findUncompensatedOvertime');
@@ -281,25 +295,27 @@ class OvertimeRepository extends BaseRepository {
      */
     async findByDateRange(employeeId, startDate, endDate, options = {}) {
         try {
-            const filter = {
-                employee: employeeId,
-                date: { $gte: startDate, $lte: endDate }
+            const where = {
+                employee_id: employeeId,
+                date: { [Op.gte]: startDate, [Op.lte]: endDate }
             };
 
             if (options.tenantId) {
-                filter.tenantId = options.tenantId;
+                where.tenant_id = options.tenantId;
             }
 
             if (options.status) {
-                filter.status = options.status;
+                where.status = options.status;
             }
 
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'approvedBy rejectedBy', select: 'firstName lastName employeeId' }
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'approvedBy', attributes: ['id', 'first_name', 'last_name', 'employee_id'] },
+                    { model: User, as: 'rejectedBy', attributes: ['id', 'first_name', 'last_name', 'employee_id'] }
                 ],
-                sort: { date: 1 }
+                order: [['date', 'ASC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findByDateRange');
@@ -319,30 +335,28 @@ class OvertimeRepository extends BaseRepository {
             const monthStart = new Date(year, month - 1, 1);
             const monthEnd = new Date(year, month, 0, 23, 59, 59);
 
-            const matchFilter = {
-                employee: new mongoose.Types.ObjectId(employeeId),
-                date: { $gte: monthStart, $lte: monthEnd }
+            const where = {
+                employee_id: employeeId,
+                date: { [Op.gte]: monthStart, [Op.lte]: monthEnd }
             };
 
             if (options.tenantId) {
-                matchFilter.tenantId = options.tenantId;
+                where.tenant_id = options.tenantId;
             }
 
-            const pipeline = [
-                { $match: matchFilter },
-                {
-                    $group: {
-                        _id: {
-                            compensationType: '$compensationType',
-                            status: '$status'
-                        },
-                        count: { $sum: 1 },
-                        totalHours: { $sum: '$duration' }
-                    }
-                }
-            ];
+            const results = await this.model.findAll({
+                where,
+                attributes: [
+                    'compensation_type',
+                    'status',
+                    [this.model.sequelize.fn('COUNT', this.model.sequelize.col('id')), 'count'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.col('duration')), 'totalHours']
+                ],
+                group: ['compensation_type', 'status'],
+                raw: true
+            });
 
-            return await this.model.aggregate(pipeline);
+            return results;
         } catch (error) {
             throw this._handleError(error, 'getMonthlyStats');
         }
@@ -356,28 +370,28 @@ class OvertimeRepository extends BaseRepository {
      */
     async getTotalUncompensatedHours(employeeId, options = {}) {
         try {
-            const matchFilter = {
-                employee: new mongoose.Types.ObjectId(employeeId),
+            const where = {
+                employee_id: employeeId,
                 status: 'approved',
                 compensated: false
             };
 
             if (options.tenantId) {
-                matchFilter.tenantId = options.tenantId;
+                where.tenant_id = options.tenantId;
             }
 
-            const pipeline = [
-                { $match: matchFilter },
-                {
-                    $group: {
-                        _id: '$compensationType',
-                        totalHours: { $sum: '$duration' },
-                        count: { $sum: 1 }
-                    }
-                }
-            ];
+            const results = await this.model.findAll({
+                where,
+                attributes: [
+                    'compensation_type',
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.col('duration')), 'totalHours'],
+                    [this.model.sequelize.fn('COUNT', this.model.sequelize.col('id')), 'count']
+                ],
+                group: ['compensation_type'],
+                raw: true
+            });
 
-            return await this.model.aggregate(pipeline);
+            return results;
         } catch (error) {
             throw this._handleError(error, 'getTotalUncompensatedHours');
         }
@@ -391,69 +405,57 @@ class OvertimeRepository extends BaseRepository {
      */
     async getOvertimeAnalytics(filters = {}, options = {}) {
         try {
-            const matchFilter = {};
+            const where = {};
 
             if (filters.tenantId) {
-                matchFilter.tenantId = filters.tenantId;
+                where.tenant_id = filters.tenantId;
             }
 
             if (filters.departmentId) {
-                matchFilter.department = new mongoose.Types.ObjectId(filters.departmentId);
+                where.department_id = filters.departmentId;
             }
 
             if (filters.dateRange) {
-                matchFilter.date = {
-                    $gte: filters.dateRange.startDate,
-                    $lte: filters.dateRange.endDate
+                where.date = {
+                    [Op.gte]: filters.dateRange.startDate,
+                    [Op.lte]: filters.dateRange.endDate
                 };
             }
 
             if (filters.employeeIds && filters.employeeIds.length > 0) {
-                matchFilter.employee = {
-                    $in: filters.employeeIds.map(id => new mongoose.Types.ObjectId(id))
-                };
+                where.employee_id = { [Op.in]: filters.employeeIds };
             }
 
-            const pipeline = [
-                { $match: matchFilter },
-                {
-                    $group: {
-                        _id: {
-                            compensationType: '$compensationType',
-                            status: '$status',
-                            month: { $month: '$date' },
-                            year: { $year: '$date' }
-                        },
-                        count: { $sum: 1 },
-                        totalHours: { $sum: '$duration' },
-                        avgHours: { $avg: '$duration' },
-                        employees: { $addToSet: '$employee' },
-                        compensatedCount: {
-                            $sum: { $cond: ['$compensated', 1, 0] }
-                        }
-                    }
-                },
-                {
-                    $sort: { '_id.year': -1, '_id.month': -1, '_id.compensationType': 1 }
-                }
-            ];
-
-            const monthlyAnalytics = await this.model.aggregate(pipeline);
+            const monthlyAnalytics = await this.model.findAll({
+                where,
+                attributes: [
+                    'compensation_type',
+                    'status',
+                    [this.model.sequelize.fn('EXTRACT', this.model.sequelize.literal('MONTH FROM date')), 'month'],
+                    [this.model.sequelize.fn('EXTRACT', this.model.sequelize.literal('YEAR FROM date')), 'year'],
+                    [this.model.sequelize.fn('COUNT', this.model.sequelize.col('id')), 'count'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.col('duration')), 'totalHours'],
+                    [this.model.sequelize.fn('AVG', this.model.sequelize.col('duration')), 'avgHours'],
+                    [this.model.sequelize.fn('COUNT', this.model.sequelize.literal('DISTINCT employee_id')), 'employeeCount'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.literal('CASE WHEN compensated THEN 1 ELSE 0 END')), 'compensatedCount']
+                ],
+                group: ['compensation_type', 'status', this.model.sequelize.literal('EXTRACT(MONTH FROM date)'), this.model.sequelize.literal('EXTRACT(YEAR FROM date)')],
+                order: [[this.model.sequelize.literal('EXTRACT(YEAR FROM date)'), 'DESC'], [this.model.sequelize.literal('EXTRACT(MONTH FROM date)'), 'DESC'], ['compensation_type', 'ASC']],
+                raw: true
+            });
 
             // Get compensation analytics
-            const compensationAnalytics = await this.model.aggregate([
-                { $match: matchFilter },
-                {
-                    $group: {
-                        _id: {
-                            compensationType: '$compensationType',
-                            compensated: '$compensated'
-                        },
-                        count: { $sum: 1 },
-                        totalHours: { $sum: '$duration' }
-                    }
-                }
-            ]);
+            const compensationAnalytics = await this.model.findAll({
+                where,
+                attributes: [
+                    'compensation_type',
+                    'compensated',
+                    [this.model.sequelize.fn('COUNT', this.model.sequelize.col('id')), 'count'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.col('duration')), 'totalHours']
+                ],
+                group: ['compensation_type', 'compensated'],
+                raw: true
+            });
 
             return {
                 monthlyAnalytics,
@@ -476,12 +478,12 @@ class OvertimeRepository extends BaseRepository {
         try {
             const updateData = {
                 status: 'approved',
-                approvedBy: approverId,
-                approvedAt: new Date()
+                approved_by_id: approverId,
+                approved_at: new Date()
             };
 
             if (notes && typeof notes === 'string') {
-                updateData.approverNotes = notes.trim();
+                updateData.approver_notes = notes.trim();
             }
 
             return await this.update(overtimeId, updateData, options);
@@ -502,9 +504,9 @@ class OvertimeRepository extends BaseRepository {
         try {
             const updateData = {
                 status: 'rejected',
-                rejectedBy: rejecterId,
-                rejectedAt: new Date(),
-                rejectionReason: reason && typeof reason === 'string' ? reason.trim() : ''
+                rejected_by_id: rejecterId,
+                rejected_at: new Date(),
+                rejection_reason: reason && typeof reason === 'string' ? reason.trim() : ''
             };
 
             return await this.update(overtimeId, updateData, options);
@@ -523,7 +525,7 @@ class OvertimeRepository extends BaseRepository {
         try {
             const updateData = {
                 compensated: true,
-                compensatedAt: new Date()
+                compensated_at: new Date()
             };
 
             return await this.update(overtimeId, updateData, options);
@@ -582,50 +584,35 @@ class OvertimeRepository extends BaseRepository {
      */
     async getEmployeeOvertimeSummary(employeeId, options = {}) {
         try {
-            const filter = { employee: employeeId };
+            const where = { employee_id: employeeId };
 
             if (options.tenantId) {
-                filter.tenantId = options.tenantId;
+                where.tenant_id = options.tenantId;
             }
 
             if (options.dateRange) {
-                filter.date = {
-                    $gte: options.dateRange.startDate,
-                    $lte: options.dateRange.endDate
+                where.date = {
+                    [Op.gte]: options.dateRange.startDate,
+                    [Op.lte]: options.dateRange.endDate
                 };
             }
 
-            const pipeline = [
-                { $match: filter },
-                {
-                    $group: {
-                        _id: null,
-                        totalRequests: { $sum: 1 },
-                        approvedRequests: {
-                            $sum: { $cond: [{ $eq: ['$status', 'approved'] }, 1, 0] }
-                        },
-                        rejectedRequests: {
-                            $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] }
-                        },
-                        pendingRequests: {
-                            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
-                        },
-                        totalHours: { $sum: '$duration' },
-                        approvedHours: {
-                            $sum: { $cond: [{ $eq: ['$status', 'approved'] }, '$duration', 0] }
-                        },
-                        compensatedHours: {
-                            $sum: { $cond: ['$compensated', '$duration', 0] }
-                        },
-                        uncompensatedHours: {
-                            $sum: { $cond: [{ $and: [{ $eq: ['$status', 'approved'] }, { $eq: ['$compensated', false] }] }, '$duration', 0] }
-                        }
-                    }
-                }
-            ];
+            const result = await this.model.findOne({
+                where,
+                attributes: [
+                    [this.model.sequelize.fn('COUNT', this.model.sequelize.col('id')), 'totalRequests'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.literal("CASE WHEN status = 'approved' THEN 1 ELSE 0 END")), 'approvedRequests'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.literal("CASE WHEN status = 'rejected' THEN 1 ELSE 0 END")), 'rejectedRequests'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.literal("CASE WHEN status = 'pending' THEN 1 ELSE 0 END")), 'pendingRequests'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.col('duration')), 'totalHours'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.literal("CASE WHEN status = 'approved' THEN duration ELSE 0 END")), 'approvedHours'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.literal("CASE WHEN compensated THEN duration ELSE 0 END")), 'compensatedHours'],
+                    [this.model.sequelize.fn('SUM', this.model.sequelize.literal("CASE WHEN status = 'approved' AND NOT compensated THEN duration ELSE 0 END")), 'uncompensatedHours']
+                ],
+                raw: true
+            });
 
-            const result = await this.model.aggregate(pipeline);
-            return result[0] || {
+            return result || {
                 totalRequests: 0,
                 approvedRequests: 0,
                 rejectedRequests: 0,

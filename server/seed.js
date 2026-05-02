@@ -1,8 +1,7 @@
 /**
- * Database Seed Script - Updated for Modular Structure
- * Populates the database with test data using new modular model imports
+ * Database Seed Script - PostgreSQL/Sequelize Version
+ * Populates the database with test data using Sequelize models
  */
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,75 +11,20 @@ const __dirname = path.dirname(__filename);
 
 // Load .env from parent directory (root)
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
-import connectDB from './config/database.js';
+import { mainAppDb } from './config/database.js';
 
 // HR Core Models
 import User from './modules/hr-core/users/models/user.model.js';
 import Department from './modules/hr-core/users/models/department.model.js';
 import Position from './modules/hr-core/users/models/position.model.js';
-import Role from './modules/hr-core/users/models/role.model.js';
-
-// Attendance Models
-import Attendance from './modules/hr-core/attendance/models/attendance.model.js';
-import ForgetCheck from './modules/hr-core/attendance/models/forgetCheck.model.js';
 
 // Holiday Models
 import Holiday from './modules/hr-core/holidays/models/holiday.model.js';
 
-// Vacation Models
-import Vacation from './modules/hr-core/vacations/models/vacation.model.js';
-import SickLeave from './modules/hr-core/vacations/models/sickLeave.model.js';
-import MixedVacation from './modules/hr-core/vacations/models/mixedVacation.model.js';
-import VacationBalance from './modules/hr-core/vacations/models/vacationBalance.model.js';
-
-// Mission Models
-import Mission from './modules/hr-core/missions/models/mission.model.js';
-
-// Request Models
-import Request from './modules/hr-core/requests/models/request.model.js';
-import Permission from './modules/hr-core/requests/models/permission.model.js';
-import RequestControl from './modules/hr-core/requests/models/requestControl.model.js';
-
-// Document Models
-import Document from './modules/documents/models/document.model.js';
-import DocumentTemplate from './modules/documents/models/documentTemplate.model.js';
-import Hardcopy from './modules/documents/models/hardcopy.model.js';
-
-// Event Models
-import Event from './modules/events/models/event.model.js';
-
-// Announcement Models
-import Announcement from './modules/announcements/models/announcement.model.js';
-
-// Notification Models
-import Notification from './modules/notifications/models/notification.model.js';
-
-// Payroll Models
-import Payroll from './modules/payroll/models/payroll.model.js';
-
-// Report Models
-import Report from './modules/reports/models/report.model.js';
-import ReportConfig from './modules/reports/models/reportConfig.model.js';
-import ReportExecution from './modules/reports/models/reportExecution.model.js';
-import ReportExport from './modules/reports/models/reportExport.model.js';
-
-// Survey Models
-import Survey from './modules/surveys/models/survey.model.js';
-import SurveyNotification from './modules/surveys/models/surveyNotification.model.js';
-
-// Dashboard Models
-import DashboardConfig from './modules/dashboard/models/dashboardConfig.model.js';
-
-// Theme Models
-import ThemeConfig from './modules/theme/models/themeConfig.model.js';
-
-// Platform Models
-// organization model removed - not needed for general HR system
-
 const seedData = async () => {
     try {
         console.log('🔌 Connecting to database...');
-        await connectDB();
+        await mainAppDb.authenticate();
         console.log('✅ Database connected');
 
         console.log('🌱 Starting database seed...\n');
@@ -90,105 +34,69 @@ const seedData = async () => {
 
         // Clear existing data
         console.log('🗑️  Clearing existing data...');
-        await User.deleteMany({});
-        await Department.deleteMany({});
-        await Position.deleteMany({});
-        await Attendance.deleteMany({});
-        await Holiday.deleteMany({});
-        await Event.deleteMany({});
-        await Report.deleteMany({});
-        await Request.deleteMany({});
-        await MixedVacation.deleteMany({});
-        await Announcement.deleteMany({});
-        await Document.deleteMany({});
-        await Vacation.deleteMany({});
-        await Mission.deleteMany({});
-        await SickLeave.deleteMany({});
-        await Notification.deleteMany({});
-        await Payroll.deleteMany({});
-        await Permission.deleteMany({});
-        await RequestControl.deleteMany({});
-        await VacationBalance.deleteMany({});
-        await ReportConfig.deleteMany({});
-        await ReportExecution.deleteMany({});
-        await ReportExport.deleteMany({});
-        await Survey.deleteMany({});
-        await SurveyNotification.deleteMany({});
-        await DocumentTemplate.deleteMany({});
-        await Role.deleteMany({});
-        await ForgetCheck.deleteMany({});
-        await Hardcopy.deleteMany({});
-        await DashboardConfig.deleteMany({});
-        await ThemeConfig.deleteMany({});
-        // organization model removed
+        await User.destroy({ where: {}, truncate: true, cascade: true });
+        await Department.destroy({ where: {}, truncate: true, cascade: true });
+        await Position.destroy({ where: {}, truncate: true, cascade: true });
+        await Holiday.destroy({ where: {}, truncate: true, cascade: true });
         console.log('✅ Existing data cleared\n');
 
         // organization/location creation removed - not needed for general HR system
-        console.log('� Sretting up company structure...');
+        console.log('🏢 Setting up company structure...');
 
         // Create Departments
         console.log('🏢 Creating departments...');
-        const departments = await Department.create([
+        const departments = await Department.bulkCreate([
             {
                 tenantId: DEFAULT_TENANT_ID,
                 name: 'Accounting',
-                arabicName: 'المحاسبة',
                 code: 'ACC',
                 description: 'Accounting and Financial Management'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 name: 'Marketing',
-                arabicName: 'التسويق',
                 code: 'MKT',
                 description: 'Marketing and Business Development'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 name: 'Human Resources',
-                arabicName: 'الموارد البشرية',
                 code: 'HR',
                 description: 'Human Resources Management'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 name: 'Operations',
-                arabicName: 'العمليات',
                 code: 'OPS',
                 description: 'Daily operations and process management'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 name: 'Information Technology',
-                arabicName: 'تكنولوجيا المعلومات',
                 code: 'IT',
                 description: 'IT systems and technology management'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 name: 'Customer Service',
-                arabicName: 'خدمة العملاء',
                 code: 'CS',
                 description: 'Customer support and service'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 name: 'Quality Assurance',
-                arabicName: 'ضمان الجودة',
                 code: 'QA',
                 description: 'Quality control and assurance'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 name: 'Research & Development',
-                arabicName: 'البحث والتطوير',
                 code: 'RD',
                 description: 'Product research and development'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 name: 'Administration',
-                arabicName: 'الإدارة',
                 code: 'ADM',
                 description: 'General administration and support'
             }
@@ -197,78 +105,69 @@ const seedData = async () => {
 
         // Create Positions
         console.log('💼 Creating positions...');
-        const positions = await Position.create([
+        const positions = await Position.bulkCreate([
             {
                 tenantId: DEFAULT_TENANT_ID,
                 title: 'Accountant',
-                arabicTitle: 'محاسب',
                 code: 'ACC-001',
-                department: departments[0]._id,
-                jobDescription: 'Financial accounting and bookkeeping'
+                departmentId: departments[0].id,
+                description: 'Financial accounting and bookkeeping'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 title: 'Marketing Manager',
-                arabicTitle: 'مدير التسويق',
                 code: 'MKT-MGR',
-                department: departments[1]._id,
-                jobDescription: 'Marketing strategy and campaign management'
+                departmentId: departments[1].id,
+                description: 'Marketing strategy and campaign management'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 title: 'HR Manager',
-                arabicTitle: 'مدير الموارد البشرية',
                 code: 'HR-MGR',
-                department: departments[2]._id,
-                jobDescription: 'Human resources management'
+                departmentId: departments[2].id,
+                description: 'Human resources management'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 title: 'Operations Manager',
-                arabicTitle: 'مدير العمليات',
                 code: 'OPS-MGR',
-                department: departments[3]._id,
-                jobDescription: 'Operations and process management'
+                departmentId: departments[3].id,
+                description: 'Operations and process management'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 title: 'IT Specialist',
-                arabicTitle: 'أخصائي تكنولوجيا المعلومات',
                 code: 'IT-SPEC',
-                department: departments[4]._id,
-                jobDescription: 'IT support and system maintenance'
+                departmentId: departments[4].id,
+                description: 'IT support and system maintenance'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 title: 'Customer Service Representative',
-                arabicTitle: 'ممثل خدمة العملاء',
                 code: 'CS-REP',
-                department: departments[5]._id,
-                jobDescription: 'Customer support and service'
+                departmentId: departments[5].id,
+                description: 'Customer support and service'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 title: 'Quality Analyst',
-                arabicTitle: 'محلل الجودة',
                 code: 'QA-ANAL',
-                department: departments[6]._id,
-                jobDescription: 'Quality control and analysis'
+                departmentId: departments[6].id,
+                description: 'Quality control and analysis'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 title: 'Research Analyst',
-                arabicTitle: 'محلل البحوث',
                 code: 'RD-ANAL',
-                department: departments[7]._id,
-                jobDescription: 'Research and development analysis'
+                departmentId: departments[7].id,
+                description: 'Research and development analysis'
             },
             {
                 tenantId: DEFAULT_TENANT_ID,
                 title: 'Administrative Assistant',
-                arabicTitle: 'مساعد إداري',
                 code: 'ADM-ASST',
-                department: departments[8]._id,
-                jobDescription: 'Administrative support and coordination'
+                departmentId: departments[8].id,
+                description: 'Administrative support and coordination'
             }
         ]);
         console.log(`✅ Created ${positions.length} positions\n`);
@@ -294,8 +193,8 @@ const seedData = async () => {
                     maritalStatus: 'married',
                     nationalId: '29001010101010'
                 },
-                department: departments[2]._id,
-                position: positions[3]._id,
+                departmentId: departments[2].id,
+                positionId: positions[3].id,
                 employment: {
                     hireDate: new Date('2020-01-01'),
                     contractType: 'full-time',
@@ -320,8 +219,8 @@ const seedData = async () => {
                     maritalStatus: 'married',
                     nationalId: '28505150101011'
                 },
-                department: departments[2]._id,
-                position: positions[3]._id,
+                departmentId: departments[2].id,
+                positionId: positions[3].id,
                 employment: {
                     hireDate: new Date('2021-03-15'),
                     contractType: 'full-time',
@@ -346,8 +245,8 @@ const seedData = async () => {
                     maritalStatus: 'married',
                     nationalId: '27808200101012'
                 },
-                department: departments[6]._id,
-                position: positions[7]._id,
+                departmentId: departments[6].id,
+                positionId: positions[7].id,
                 employment: {
                     hireDate: new Date('2019-09-01'),
                     contractType: 'full-time',
@@ -373,8 +272,8 @@ const seedData = async () => {
                     maritalStatus: 'single',
                     nationalId: '29003100101013'
                 },
-                department: departments[0]._id,
-                position: positions[0]._id,
+                departmentId: departments[0].id,
+                positionId: positions[0].id,
                 employment: {
                     hireDate: new Date('2022-01-15'),
                     contractType: 'full-time',
@@ -398,8 +297,8 @@ const seedData = async () => {
                     maritalStatus: 'single',
                     nationalId: '29207250201014'
                 },
-                department: departments[3]._id,
-                position: positions[4]._id,
+                departmentId: departments[3].id,
+                positionId: positions[4].id,
                 employment: {
                     hireDate: new Date('2022-06-01'),
                     contractType: 'full-time',
@@ -423,8 +322,8 @@ const seedData = async () => {
                     maritalStatus: 'married',
                     nationalId: '28811300301015'
                 },
-                department: departments[6]._id,
-                position: positions[7]._id,
+                departmentId: departments[6].id,
+                positionId: positions[7].id,
                 employment: {
                     hireDate: new Date('2021-09-15'),
                     contractType: 'full-time',
@@ -448,8 +347,8 @@ const seedData = async () => {
                     maritalStatus: 'single',
                     nationalId: '29502140201016'
                 },
-                department: departments[7]._id,
-                position: positions[8]._id,
+                departmentId: departments[7].id,
+                positionId: positions[8].id,
                 employment: {
                     hireDate: new Date('2023-02-01'),
                     contractType: 'contract',
@@ -473,8 +372,8 @@ const seedData = async () => {
                     maritalStatus: 'married',
                     nationalId: '28306180101017'
                 },
-                department: departments[4]._id,
-                position: positions[5]._id,
+                departmentId: departments[4].id,
+                positionId: positions[5].id,
                 employment: {
                     hireDate: new Date('2020-05-10'),
                     contractType: 'full-time',
@@ -483,17 +382,12 @@ const seedData = async () => {
             }
         ];
 
-        const users = [];
-        for (const userData of usersData) {
-            const user = new User(userData);
-            await user.save();
-            users.push(user);
-        }
+        const users = await User.bulkCreate(usersData);
         console.log(`✅ Created ${users.length} users\n`);
 
         // Create Holidays
         console.log('📅 Creating holidays...');
-        const holidays = await Holiday.create([
+        const holidays = await Holiday.bulkCreate([
             {
                 tenantId: DEFAULT_TENANT_ID,
                 officialHolidays: [
@@ -555,9 +449,18 @@ const seedData = async () => {
 
         // Update departments with managers
         console.log('👔 Assigning managers to departments...');
-        await Department.findByIdAndUpdate(departments[0]._id, { manager: users[3]._id });
-        await Department.findByIdAndUpdate(departments[2]._id, { manager: users[1]._id });
-        await Department.findByIdAndUpdate(departments[6]._id, { manager: users[2]._id });
+        await Department.update(
+            { managerId: users[3].id },
+            { where: { id: departments[0].id } }
+        );
+        await Department.update(
+            { managerId: users[1].id },
+            { where: { id: departments[2].id } }
+        );
+        await Department.update(
+            { managerId: users[2].id },
+            { where: { id: departments[6].id } }
+        );
         console.log('✅ Managers assigned\n');
 
         console.log('════════════════════════════════════════');

@@ -1,55 +1,5 @@
 import logger from '../utils/logger.js';
-import mongoose from 'mongoose';
-
-// Audit log schema for license operations
-const auditLogSchema = new mongoose.Schema({
-  operation: {
-    type: String,
-    required: true,
-    enum: ['create', 'validate', 'renew', 'revoke', 'suspend', 'reactivate', 'activate', 'usage_update']
-  },
-  licenseNumber: {
-    type: String,
-    required: true
-  },
-  tenantId: {
-    type: String,
-    required: true
-  },
-  details: {
-    type: mongoose.Schema.Types.Mixed,
-    default: {}
-  },
-  result: {
-    type: String,
-    enum: ['success', 'failure', 'warning'],
-    required: true
-  },
-  errorMessage: String,
-  metadata: {
-    userAgent: String,
-    ipAddress: String,
-    machineId: String,
-    requestId: String
-  },
-  performedBy: {
-    type: String,
-    default: 'system'
-  },
-  timestamp: {
-    type: Date,
-    default: Date.now
-  }
-}, {
-  timestamps: true
-});
-
-// Index for efficient querying
-auditLogSchema.index({ licenseNumber: 1, timestamp: -1 });
-auditLogSchema.index({ tenantId: 1, timestamp: -1 });
-auditLogSchema.index({ operation: 1, timestamp: -1 });
-
-const AuditLog = mongoose.model('AuditLog', auditLogSchema, 'license_audit_logs');
+import AuditLog from '../models/AuditLog.js';
 
 class AuditService {
   /**
@@ -66,7 +16,7 @@ class AuditService {
   async logOperation(operation, licenseNumber, tenantId, result, details = {}, metadata = {}, performedBy = 'system', errorMessage = null) {
     try {
       // Create audit log entry
-      const auditEntry = new AuditLog({
+      const auditEntry = await AuditLog.create({
         operation,
         licenseNumber,
         tenantId,
@@ -76,9 +26,6 @@ class AuditService {
         performedBy,
         errorMessage
       });
-
-      // Save to database
-      await auditEntry.save();
 
       // Also log to Winston for immediate visibility
       const logLevel = result === 'failure' ? 'error' : result === 'warning' ? 'warn' : 'info';
@@ -250,33 +197,39 @@ class AuditService {
    * Get audit logs for a specific license
    */
   async getLicenseAuditLogs(licenseNumber, limit = 100, offset = 0) {
-    return await AuditLog.find({ licenseNumber })
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .skip(offset)
-      .lean();
+    return await AuditLog.findAll({
+      where: { licenseNumber },
+      order: [['timestamp', 'DESC']],
+      limit,
+      offset,
+      raw: true
+    });
   }
 
   /**
    * Get audit logs for a tenant
    */
   async getTenantAuditLogs(tenantId, limit = 100, offset = 0) {
-    return await AuditLog.find({ tenantId })
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .skip(offset)
-      .lean();
+    return await AuditLog.findAll({
+      where: { tenantId },
+      order: [['timestamp', 'DESC']],
+      limit,
+      offset,
+      raw: true
+    });
   }
 
   /**
    * Get audit logs by operation type
    */
   async getOperationAuditLogs(operation, limit = 100, offset = 0) {
-    return await AuditLog.find({ operation })
-      .sort({ timestamp: -1 })
-      .limit(limit)
-      .skip(offset)
-      .lean();
+    return await AuditLog.findAll({
+      where: { operation },
+      order: [['timestamp', 'DESC']],
+      limit,
+      offset,
+      raw: true
+    });
   }
 
   /**
@@ -303,39 +256,44 @@ class AuditService {
    * Get audit statistics
    */
   async getAuditStatistics(startDate, endDate) {
-    const matchStage = {
-      timestamp: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      }
-    };
-
-    const stats = await AuditLog.aggregate([
-      { $match: matchStage },
-      {
-        $group: {
-          _id: {
-            operation: '$operation',
-            result: '$result'
-          },
-          count: { $sum: 1 }
-        }
+    const { Op } = await import('sequelize');
+    const { licenseServerDb } = await import('../../config/database.js');
+    
+    const stats = await licenseServerDb.query(`
+      SELECT 
+        operation,
+        result,
+        COUNT(*) as count
+      FROM license_audit_logs
+      WHERE timestamp >= :startDate AND timestamp <= :endDate
+      GROUP BY operation, result
+      ORDER BY operation, result
+    `, {
+      replacements: { 
+        startDate: new Date(startDate), 
+        endDate: new Date(endDate) 
       },
-      {
-        $group: {
-          _id: '$_id.operation',
-          results: {
-            $push: {
-              result: '$_id.result',
-              count: '$count'
-            }
-          },
-          total: { $sum: '$count' }
-        }
-      }
-    ]);
+      type: licenseServerDb.QueryTypes.SELECT
+    });
 
-    return stats;
+    // Transform to match original format
+    const grouped = {};
+    stats.forEach(row => {
+      if (!grouped[row.operation]) {
+        grouped[row.operation] = {
+          _id: row.operation,
+          results: [],
+          total: 0
+        };
+      }
+      grouped[row.operation].results.push({
+        result: row.result,
+        count: parseInt(row.count)
+      });
+      grouped[row.operation].total += parseInt(row.count);
+    });
+
+    return Object.values(grouped);
   }
 }
 

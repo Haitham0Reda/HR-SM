@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op, QueryTypes } from 'sequelize';
 import sequelize from '../../../config/database.js';
 
 /**
@@ -206,7 +206,6 @@ SecurityEvents.getUnresolvedEvents = async function(tenantId, severity = null) {
 };
 
 SecurityEvents.getEventsByType = async function(tenantId, startDate, endDate) {
-  const { Op, QueryTypes } = require('sequelize');
   
   const results = await sequelize.query(
     `SELECT 
@@ -229,3 +228,6 @@ SecurityEvents.getEventsByType = async function(tenantId, startDate, endDate) {
 };
 
 export default SecurityEvents;
+
+
+

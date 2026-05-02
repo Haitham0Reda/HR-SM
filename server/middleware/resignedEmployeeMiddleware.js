@@ -3,7 +3,8 @@
  * 
  * Validation and business logic for resigned employees
  */
-import mongoose from 'mongoose';
+import User from '../modules/hr-core/users/models/user.model.js';
+import ResignedEmployee from '../modules/hr-core/users/models/resignedEmployee.model.js';
 
 /**
  * Validate resignation dates
@@ -55,8 +56,7 @@ export const validatePenalty = (req, res, next) => {
  */
 export const checkCanModify = async (req, res, next) => {
     try {
-        const ResignedEmployee = mongoose.model('ResignedEmployee');
-        const resignedEmployee = await ResignedEmployee.findById(req.params.id);
+        const resignedEmployee = await ResignedEmployee.findByPk(req.params.id);
 
         if (!resignedEmployee) {
             return res.status(404).json({
@@ -65,7 +65,7 @@ export const checkCanModify = async (req, res, next) => {
             });
         }
 
-        if (resignedEmployee.isLocked) {
+        if (resignedEmployee.is_locked) {
             return res.status(403).json({
                 success: false,
                 message: 'Cannot modify - record is locked (24 hours have passed)'
@@ -75,10 +75,10 @@ export const checkCanModify = async (req, res, next) => {
         const oneDayAgo = new Date();
         oneDayAgo.setHours(oneDayAgo.getHours() - 24);
 
-        if (resignedEmployee.createdAt < oneDayAgo) {
+        if (resignedEmployee.created_at < oneDayAgo) {
             // Auto-lock
-            resignedEmployee.isLocked = true;
-            resignedEmployee.lockedDate = new Date();
+            resignedEmployee.is_locked = true;
+            resignedEmployee.locked_date = new Date();
             await resignedEmployee.save();
 
             return res.status(403).json({
@@ -103,10 +103,7 @@ export const checkCanModify = async (req, res, next) => {
 export const validateEmployee = async (req, res, next) => {
     try {
         if (req.body.employeeId) {
-            const User = mongoose.model('User');
-            const ResignedEmployee = mongoose.model('ResignedEmployee');
-
-            const employee = await User.findById(req.body.employeeId);
+            const employee = await User.findByPk(req.body.employeeId);
 
             if (!employee) {
                 return res.status(404).json({
@@ -116,7 +113,7 @@ export const validateEmployee = async (req, res, next) => {
             }
 
             // Check if already in resigned list
-            const existing = await ResignedEmployee.findOne({ employee: req.body.employeeId });
+            const existing = await ResignedEmployee.findOne({ where: { employee: req.body.employeeId } });
             if (existing) {
                 return res.status(400).json({
                     success: false,

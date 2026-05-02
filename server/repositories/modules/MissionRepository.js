@@ -1,644 +1,419 @@
 import BaseRepository from '../BaseRepository.js';
 import Mission from '../../modules/hr-core/missions/models/Mission.js';
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
+import User from '../../modules/hr-core/users/models/user.model.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
 
-/**
- * Repository for Mission model operations with status and analytics
- */
 class MissionRepository extends BaseRepository {
     constructor() {
         super(Mission);
     }
 
-    /**
-     * Find missions by employee
-     * @param {string} employeeId - Employee ID
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Mission records
-     */
     async findByEmployee(employeeId, options = {}) {
         try {
-            const filter = { employee: employeeId };
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
+            const where = { employeeId };
             if (options.status) {
-                filter.status = options.status;
+                where.status = options.status;
             }
-
             if (options.dateRange) {
-                filter.$or = [
+                where[Op.or] = [
                     {
-                        startDate: {
-                            $gte: options.dateRange.startDate,
-                            $lte: options.dateRange.endDate
-                        }
+                        startDate: { [Op.gte]: options.dateRange.startDate, [Op.lte]: options.dateRange.endDate }
                     },
                     {
-                        endDate: {
-                            $gte: options.dateRange.startDate,
-                            $lte: options.dateRange.endDate
-                        }
+                        endDate: { [Op.gte]: options.dateRange.startDate, [Op.lte]: options.dateRange.endDate }
                     },
                     {
-                        startDate: { $lte: options.dateRange.startDate },
-                        endDate: { $gte: options.dateRange.endDate }
+                        startDate: { [Op.lte]: options.dateRange.startDate },
+                        endDate: { [Op.gte]: options.dateRange.endDate }
                     }
                 ];
             }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy', select: 'firstName lastName employeeId' }
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee' },
+                    { model: Department, as: 'department' },
+                    { model: User, as: 'approvedBy' }
                 ],
-                sort: { startDate: -1 }
+                order: [['startDate', 'DESC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findByEmployee');
         }
     }
 
-    /**
-     * Find missions by status
-     * @param {string} status - Mission status
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Mission records
-     */
     async findByStatus(status, options = {}) {
         try {
-            const filter = { status };
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.departmentId) {
-                filter.department = options.departmentId;
-            }
-
-            if (options.employeeId) {
-                filter.employee = options.employeeId;
-            }
-
+            const where = { status };
+            if (options.departmentId) where.departmentId = options.departmentId;
+            if (options.employeeId) where.employeeId = options.employeeId;
             if (options.dateRange) {
-                filter.startDate = {
-                    $gte: options.dateRange.startDate,
-                    $lte: options.dateRange.endDate
-                };
+                where.startDate = { [Op.gte]: options.dateRange.startDate, [Op.lte]: options.dateRange.endDate };
             }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy', select: 'firstName lastName employeeId' }
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee' },
+                    { model: Department, as: 'department' },
+                    { model: User, as: 'approvedBy' }
                 ],
-                sort: { startDate: -1 }
+                order: [['startDate', 'DESC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findByStatus');
         }
     }
 
-    /**
-     * Find pending missions for approval
-     * @param {string} [departmentId] - Optional department filter
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Pending mission records
-     */
     async findPendingMissions(departmentId = null, options = {}) {
         try {
-            const filter = { status: 'pending' };
-
-            if (departmentId) {
-                filter.department = departmentId;
-            }
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId department' },
-                    { path: 'department', select: 'name code' }
+            const where = { status: 'pending' };
+            if (departmentId) where.departmentId = departmentId;
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee' },
+                    { model: Department, as: 'department' }
                 ],
-                sort: { createdAt: 1 }
+                order: [['createdAt', 'ASC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findPendingMissions');
         }
     }
 
-    /**
-     * Find active missions (currently ongoing)
-     * @param {string} [departmentId] - Optional department filter
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Active mission records
-     */
     async findActiveMissions(departmentId = null, options = {}) {
         try {
             const now = new Date();
-            const filter = {
+            const where = {
                 status: 'approved',
-                startDate: { $lte: now },
-                endDate: { $gte: now }
+                startDate: { [Op.lte]: now },
+                endDate: { [Op.gte]: now }
             };
-
-            if (departmentId) {
-                filter.department = departmentId;
-            }
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy', select: 'firstName lastName employeeId' }
+            if (departmentId) where.departmentId = departmentId;
+            return await this.findAll({
+                where,
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee' },
+                    { model: Department, as: 'department' },
+                    { model: User, as: 'approvedBy' }
                 ],
-                sort: { endDate: 1 }
+                order: [['endDate', 'ASC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findActiveMissions');
         }
     }
 
-    /**
-     * Find upcoming missions
-     * @param {number} [daysAhead=30] - Number of days to look ahead
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Upcoming mission records
-     */
     async findUpcomingMissions(daysAhead = 30, options = {}) {
         try {
             const now = new Date();
             const futureDate = new Date();
             futureDate.setDate(now.getDate() + daysAhead);
-
-            const filter = {
+            const where = {
                 status: 'approved',
-                startDate: { $gt: now, $lte: futureDate }
+                startDate: { [Op.gt]: now, [Op.lte]: futureDate }
             };
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.departmentId) {
-                filter.department = options.departmentId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy', select: 'firstName lastName employeeId' }
+            if (options.tenantId) where.tenantId = options.tenantId;
+            if (options.departmentId) where.departmentId = options.departmentId;
+            return await this.findAll({
+                where,
+                include: [
+                    { model: User, as: 'employee' },
+                    { model: Department, as: 'department' },
+                    { model: User, as: 'approvedBy' }
                 ],
-                sort: { startDate: 1 }
+                order: [['startDate', 'ASC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findUpcomingMissions');
         }
     }
 
-    /**
-     * Find missions by department
-     * @param {string} departmentId - Department ID
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Mission records
-     */
     async findByDepartment(departmentId, options = {}) {
         try {
-            const filter = { department: departmentId };
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.status) {
-                filter.status = options.status;
-            }
-
+            const where = { departmentId };
+            if (options.tenantId) where.tenantId = options.tenantId;
+            if (options.status) where.status = options.status;
             if (options.dateRange) {
-                filter.$or = [
-                    {
-                        startDate: {
-                            $gte: options.dateRange.startDate,
-                            $lte: options.dateRange.endDate
-                        }
-                    },
-                    {
-                        endDate: {
-                            $gte: options.dateRange.startDate,
-                            $lte: options.dateRange.endDate
-                        }
-                    }
+                where[Op.or] = [
+                    { startDate: { [Op.gte]: options.dateRange.startDate, [Op.lte]: options.dateRange.endDate } },
+                    { endDate: { [Op.gte]: options.dateRange.startDate, [Op.lte]: options.dateRange.endDate } }
                 ];
             }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy', select: 'firstName lastName employeeId' }
+            return await this.findAll({
+                where,
+                include: [
+                    { model: User, as: 'employee' },
+                    { model: Department, as: 'department' },
+                    { model: User, as: 'approvedBy' }
                 ],
-                sort: { startDate: -1 }
+                order: [['startDate', 'DESC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findByDepartment');
         }
     }
 
-    /**
-     * Find missions by destination
-     * @param {string} destination - Mission destination
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Mission records
-     */
     async findByDestination(destination, options = {}) {
         try {
-            const filter = {
-                destination: { $regex: destination, $options: 'i' }
+            const where = {
+                destination: { [Op.iLike]: `%${destination}%` }
             };
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.status) {
-                filter.status = options.status;
-            }
-
-            if (options.departmentId) {
-                filter.department = options.departmentId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy', select: 'firstName lastName employeeId' }
+            if (options.tenantId) where.tenantId = options.tenantId;
+            if (options.status) where.status = options.status;
+            if (options.departmentId) where.departmentId = options.departmentId;
+            return await this.findAll({
+                where,
+                include: [
+                    { model: User, as: 'employee' },
+                    { model: Department, as: 'department' },
+                    { model: User, as: 'approvedBy' }
                 ],
-                sort: { startDate: -1 }
+                order: [['startDate', 'DESC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findByDestination');
         }
     }
 
-    /**
-     * Find missions by date range
-     * @param {Date} startDate - Start date
-     * @param {Date} endDate - End date
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Mission records
-     */
     async findByDateRange(startDate, endDate, options = {}) {
         try {
-            const filter = {
-                $or: [
+            const where = {
+                [Op.or]: [
+                    { startDate: { [Op.gte]: startDate, [Op.lte]: endDate } },
+                    { endDate: { [Op.gte]: startDate, [Op.lte]: endDate } },
                     {
-                        startDate: { $gte: startDate, $lte: endDate }
-                    },
-                    {
-                        endDate: { $gte: startDate, $lte: endDate }
-                    },
-                    {
-                        startDate: { $lte: startDate },
-                        endDate: { $gte: endDate }
+                        [Op.and]: [
+                            { startDate: { [Op.lte]: startDate } },
+                            { endDate: { [Op.gte]: endDate } }
+                        ]
                     }
                 ]
             };
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.status) {
-                filter.status = options.status;
-            }
-
-            if (options.departmentId) {
-                filter.department = options.departmentId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy', select: 'firstName lastName employeeId' }
+            if (options.tenantId) where.tenantId = options.tenantId;
+            if (options.status) where.status = options.status;
+            if (options.departmentId) where.departmentId = options.departmentId;
+            return await this.findAll({
+                where,
+                include: [
+                    { model: User, as: 'employee' },
+                    { model: Department, as: 'department' },
+                    { model: User, as: 'approvedBy' }
                 ],
-                sort: { startDate: 1 }
+                order: [['startDate', 'ASC']]
             });
         } catch (error) {
             throw this._handleError(error, 'findByDateRange');
         }
     }
 
-    /**
-     * Get mission statistics for a department
-     * @param {string} departmentId - Department ID
-     * @param {number} [year] - Year for statistics
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Mission statistics
-     */
     async getMissionStats(departmentId, year = new Date().getFullYear(), options = {}) {
         try {
             const yearStart = new Date(year, 0, 1);
             const yearEnd = new Date(year, 11, 31, 23, 59, 59);
 
-            const matchFilter = {
-                department: new mongoose.Types.ObjectId(departmentId),
-                startDate: { $gte: yearStart, $lte: yearEnd }
-            };
-
-            if (options.tenantId) {
-                matchFilter.tenantId = options.tenantId;
-            }
-
-            const pipeline = [
-                { $match: matchFilter },
-                {
-                    $group: {
-                        _id: {
-                            status: '$status',
-                            month: { $month: '$startDate' }
-                        },
-                        count: { $sum: 1 },
-                        avgDuration: {
-                            $avg: {
-                                $divide: [
-                                    { $subtract: ['$endDate', '$startDate'] },
-                                    1000 * 60 * 60 * 24 // Convert to days
-                                ]
-                            }
-                        }
-                    }
+            const result = await this.model.sequelize.query(`
+                SELECT 
+                    status,
+                    EXTRACT(MONTH FROM "startDate") as month,
+                    COUNT(*) as count,
+                    AVG(EXTRACT(EPOCH FROM ("endDate" - "startDate"))/86400) as "avgDuration"
+                FROM "missions"
+                WHERE "departmentId" = :departmentId
+                    AND "startDate" >= :yearStart
+                    AND "startDate" <= :yearEnd
+                    ${options.tenantId ? `AND "tenantId" = :tenantId` : ''}
+                GROUP BY status, EXTRACT(MONTH FROM "startDate")
+                ORDER BY month ASC, status ASC
+            `, {
+                replacements: {
+                    departmentId,
+                    yearStart,
+                    yearEnd,
+                    ...(options.tenantId && { tenantId: options.tenantId })
                 },
-                {
-                    $sort: { '_id.month': 1, '_id.status': 1 }
-                }
-            ];
+                type: this.model.sequelize.QueryTypes.SELECT
+            });
 
-            return await this.model.aggregate(pipeline);
+            return result;
         } catch (error) {
             throw this._handleError(error, 'getMissionStats');
         }
     }
 
-    /**
-     * Get mission analytics for reporting
-     * @param {Object} filters - Filter criteria
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Object>} Mission analytics
-     */
     async getMissionAnalytics(filters = {}, options = {}) {
         try {
-            const matchFilter = {};
+            const conditions = [];
+            const replacements = {};
 
             if (filters.tenantId) {
-                matchFilter.tenantId = filters.tenantId;
+                conditions.push('"tenantId" = :tenantId');
+                replacements.tenantId = filters.tenantId;
             }
-
             if (filters.departmentId) {
-                matchFilter.department = new mongoose.Types.ObjectId(filters.departmentId);
+                conditions.push('"departmentId" = :departmentId');
+                replacements.departmentId = filters.departmentId;
             }
-
             if (filters.dateRange) {
-                matchFilter.startDate = {
-                    $gte: filters.dateRange.startDate,
-                    $lte: filters.dateRange.endDate
-                };
+                conditions.push('"startDate" >= :startDate AND "startDate" <= :endDate');
+                replacements.startDate = filters.dateRange.startDate;
+                replacements.endDate = filters.dateRange.endDate;
             }
-
             if (filters.employeeIds && filters.employeeIds.length > 0) {
-                matchFilter.employee = {
-                    $in: filters.employeeIds.map(id => new mongoose.Types.ObjectId(id))
-                };
+                conditions.push('"employeeId" = ANY(:employeeIds)');
+                replacements.employeeIds = filters.employeeIds;
             }
 
-            const pipeline = [
-                { $match: matchFilter },
-                {
-                    $group: {
-                        _id: {
-                            status: '$status',
-                            destination: '$destination',
-                            month: { $month: '$startDate' },
-                            year: { $year: '$startDate' }
-                        },
-                        count: { $sum: 1 },
-                        avgDuration: {
-                            $avg: {
-                                $divide: [
-                                    { $subtract: ['$endDate', '$startDate'] },
-                                    1000 * 60 * 60 * 24 // Convert to days
-                                ]
-                            }
-                        },
-                        employees: { $addToSet: '$employee' }
-                    }
-                },
-                {
-                    $sort: { '_id.year': -1, '_id.month': -1, '_id.status': 1 }
-                }
-            ];
+            const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
-            const monthlyAnalytics = await this.model.aggregate(pipeline);
+            const monthlyAnalytics = await this.model.sequelize.query(`
+                SELECT 
+                    status,
+                    destination,
+                    EXTRACT(MONTH FROM "startDate") as month,
+                    EXTRACT(YEAR FROM "startDate") as year,
+                    COUNT(*) as count,
+                    AVG(EXTRACT(EPOCH FROM ("endDate" - "startDate"))/86400) as "avgDuration",
+                    ARRAY_AGG("employeeId") as employees
+                FROM "missions"
+                ${whereClause}
+                GROUP BY status, destination, EXTRACT(MONTH FROM "startDate"), EXTRACT(YEAR FROM "startDate")
+                ORDER BY year DESC, month DESC, status ASC
+            `, {
+                replacements,
+                type: this.model.sequelize.QueryTypes.SELECT
+            });
 
-            // Get destination analytics
-            const destinationAnalytics = await this.model.aggregate([
-                { $match: matchFilter },
-                {
-                    $group: {
-                        _id: '$destination',
-                        count: { $sum: 1 },
-                        employees: { $addToSet: '$employee' },
-                        avgDuration: {
-                            $avg: {
-                                $divide: [
-                                    { $subtract: ['$endDate', '$startDate'] },
-                                    1000 * 60 * 60 * 24
-                                ]
-                            }
-                        }
-                    }
-                },
-                { $sort: { count: -1 } },
-                { $limit: 10 }
-            ]);
+            const destinationAnalytics = await this.model.sequelize.query(`
+                SELECT 
+                    destination,
+                    COUNT(*) as count,
+                    ARRAY_AGG("employeeId") as employees,
+                    AVG(EXTRACT(EPOCH FROM ("endDate" - "startDate"))/86400) as "avgDuration",
+                    MAX("startDate") as "lastMission"
+                FROM "missions"
+                ${whereClause}
+                GROUP BY destination
+                ORDER BY count DESC
+                LIMIT 10
+            `, {
+                replacements,
+                type: this.model.sequelize.QueryTypes.SELECT
+            });
 
-            return {
-                monthlyAnalytics,
-                destinationAnalytics
-            };
+            return { monthlyAnalytics, destinationAnalytics };
         } catch (error) {
             throw this._handleError(error, 'getMissionAnalytics');
         }
     }
 
-    /**
-     * Approve mission
-     * @param {string} missionId - Mission ID
-     * @param {string} approverId - Approver user ID
-     * @param {string} [notes] - Approval notes
-     * @param {Object} [options] - Update options
-     * @returns {Promise<Object>} Updated mission record
-     */
+    async getPopularDestinations(options = {}) {
+        try {
+            const conditions = [];
+            const replacements = {};
+
+            if (options.tenantId) {
+                conditions.push('"tenantId" = :tenantId');
+                replacements.tenantId = options.tenantId;
+            }
+            if (options.departmentId) {
+                conditions.push('"departmentId" = :departmentId');
+                replacements.departmentId = options.departmentId;
+            }
+            if (options.dateRange) {
+                conditions.push('"startDate" >= :startDate AND "startDate" <= :endDate');
+                replacements.startDate = options.dateRange.startDate;
+                replacements.endDate = options.dateRange.endDate;
+            }
+
+            const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+
+            const result = await this.model.sequelize.query(`
+                SELECT 
+                    destination,
+                    COUNT(*) as count,
+                    ARRAY_AGG("employeeId") as employees,
+                    MAX("startDate") as "lastMission"
+                FROM "missions"
+                ${whereClause}
+                GROUP BY destination
+                ORDER BY count DESC
+                LIMIT :limit
+            `, {
+                replacements: {
+                    ...replacements,
+                    limit: options.limit || 10
+                },
+                type: this.model.sequelize.QueryTypes.SELECT
+            });
+
+            return result;
+        } catch (error) {
+            throw this._handleError(error, 'getPopularDestinations');
+        }
+    }
+
     async approveMission(missionId, approverId, notes = '', options = {}) {
         try {
             const updateData = {
                 status: 'approved',
-                approvedBy: approverId,
+                approvedById: approverId,
                 approvedAt: new Date()
             };
-
             if (notes && typeof notes === 'string') {
                 updateData.notes = notes.trim();
             }
-
             return await this.update(missionId, updateData, options);
         } catch (error) {
             throw this._handleError(error, 'approveMission');
         }
     }
 
-    /**
-     * Reject mission
-     * @param {string} missionId - Mission ID
-     * @param {string} rejecterId - Rejector user ID
-     * @param {string} reason - Rejection reason
-     * @param {Object} [options] - Update options
-     * @returns {Promise<Object>} Updated mission record
-     */
     async rejectMission(missionId, rejecterId, reason, options = {}) {
         try {
             const updateData = {
                 status: 'rejected',
-                approvedBy: rejecterId,
+                approvedById: rejecterId,
                 approvedAt: new Date(),
                 notes: reason && typeof reason === 'string' ? reason.trim() : ''
             };
-
             return await this.update(missionId, updateData, options);
         } catch (error) {
             throw this._handleError(error, 'rejectMission');
         }
     }
 
-    /**
-     * Complete mission
-     * @param {string} missionId - Mission ID
-     * @param {Object} [options] - Update options
-     * @returns {Promise<Object>} Updated mission record
-     */
     async completeMission(missionId, options = {}) {
         try {
-            const updateData = {
-                status: 'completed'
-            };
-
-            return await this.update(missionId, updateData, options);
+            return await this.update(missionId, { status: 'completed' }, options);
         } catch (error) {
             throw this._handleError(error, 'completeMission');
         }
     }
 
-    /**
-     * Cancel mission
-     * @param {string} missionId - Mission ID
-     * @param {string} reason - Cancellation reason
-     * @param {Object} [options] - Update options
-     * @returns {Promise<Object>} Updated mission record
-     */
     async cancelMission(missionId, reason, options = {}) {
         try {
-            const updateData = {
+            return await this.update(missionId, {
                 status: 'cancelled',
                 notes: reason && typeof reason === 'string' ? reason.trim() : ''
-            };
-
-            return await this.update(missionId, updateData, options);
+            }, options);
         } catch (error) {
             throw this._handleError(error, 'cancelMission');
         }
     }
 
-    /**
-     * Calculate mission duration in days
-     * @param {Date} startDate - Mission start date
-     * @param {Date} endDate - Mission end date
-     * @returns {number} Duration in days
-     */
     calculateMissionDuration(startDate, endDate) {
         const start = new Date(startDate);
         const end = new Date(endDate);
-        
-        // Reset time to start of day for accurate comparison
         start.setHours(0, 0, 0, 0);
         end.setHours(0, 0, 0, 0);
-        
         const diffTime = end - start;
-        return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
-    }
-
-    /**
-     * Get popular destinations
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Popular destinations with counts
-     */
-    async getPopularDestinations(options = {}) {
-        try {
-            const matchFilter = {};
-
-            if (options.tenantId) {
-                matchFilter.tenantId = options.tenantId;
-            }
-
-            if (options.departmentId) {
-                matchFilter.department = new mongoose.Types.ObjectId(options.departmentId);
-            }
-
-            if (options.dateRange) {
-                matchFilter.startDate = {
-                    $gte: options.dateRange.startDate,
-                    $lte: options.dateRange.endDate
-                };
-            }
-
-            const pipeline = [
-                { $match: matchFilter },
-                {
-                    $group: {
-                        _id: '$destination',
-                        count: { $sum: 1 },
-                        employees: { $addToSet: '$employee' },
-                        lastMission: { $max: '$startDate' }
-                    }
-                },
-                { $sort: { count: -1 } },
-                { $limit: options.limit || 10 }
-            ];
-
-            return await this.model.aggregate(pipeline);
-        } catch (error) {
-            throw this._handleError(error, 'getPopularDestinations');
-        }
+        return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
     }
 }
 

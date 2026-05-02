@@ -8,7 +8,7 @@
  */
 
 import { DataTypes } from 'sequelize';
-import { mainAppDb } from '../../../config/database.js';
+import { mainAppDb } from '../../../../config/database.js';
 
 const Department = mainAppDb.define('Department', {
   // Primary Key - UUID
@@ -167,3 +167,10 @@ Department.findHierarchy = async function(tenantId, parentId = null) {
 };
 
 export default Department;
+
+
+
+
+
+
+

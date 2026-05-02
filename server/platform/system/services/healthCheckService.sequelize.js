@@ -1,4 +1,4 @@
-import { sequelize } from '../../../config/database.js';
+import { mainAppDb as sequelize } from '../../../config/database.js';
 import AppError from '../../../core/errors/AppError.js';
 import { ERROR_TYPES } from '../../../core/errors/errorTypes.js';
 

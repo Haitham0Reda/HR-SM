@@ -1,211 +1,101 @@
+import { Op, QueryTypes } from 'sequelize';
 import BaseRepository from '../BaseRepository.js';
 import Vacation from '../../modules/hr-core/vacations/models/vacation.model.js';
-import mongoose from 'mongoose';
 
-/**
- * Repository for Vacation/Leave model operations with balance tracking and analytics
- */
 class VacationRepository extends BaseRepository {
     constructor() {
         super(Vacation);
     }
 
-    /**
-     * Find vacations by employee
-     * @param {string} employeeId - Employee ID
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Vacation records
-     */
     async findByEmployee(employeeId, options = {}) {
         try {
-            const filter = { employee: employeeId };
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.status) {
-                filter.status = options.status;
-            }
-
-            if (options.vacationType) {
-                filter.vacationType = options.vacationType;
-            }
-
+            const filter = { employeeId };
+            if (options.tenantId) filter.tenantId = options.tenantId;
+            if (options.status) filter.status = options.status;
+            if (options.vacationType) filter.vacationType = options.vacationType;
             if (options.dateRange) {
-                filter.$or = [
+                filter[Op.or] = [
                     {
-                        startDate: {
-                            $gte: options.dateRange.startDate,
-                            $lte: options.dateRange.endDate
-                        }
+                        startDate: { [Op.gte]: options.dateRange.startDate, [Op.lte]: options.dateRange.endDate }
                     },
                     {
-                        endDate: {
-                            $gte: options.dateRange.startDate,
-                            $lte: options.dateRange.endDate
-                        }
+                        endDate: { [Op.gte]: options.dateRange.startDate, [Op.lte]: options.dateRange.endDate }
                     },
                     {
-                        startDate: { $lte: options.dateRange.startDate },
-                        endDate: { $gte: options.dateRange.endDate }
+                        startDate: { [Op.lte]: options.dateRange.startDate },
+                        endDate: { [Op.gte]: options.dateRange.endDate }
                     }
                 ];
             }
 
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    {
-                        path: 'employee',
-                        select: 'firstName lastName employeeId email',
-                        populate: [
-                            { path: 'department', select: 'name code manager' },
-                            { path: 'position', select: 'title code' }
-                        ]
-                    },
-                    { path: 'approvedBy rejectedBy cancelledBy', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'position', select: 'title' },
-                    { path: 'vacationBalance' }
-                ],
-                sort: { startDate: -1 }
+            return await this.findAll(filter, {
+                tenantId: options.tenantId,
+                order: [['startDate', 'DESC']],
+                limit: options.limit,
+                offset: options.offset
             });
         } catch (error) {
             throw this._handleError(error, 'findByEmployee');
         }
     }
 
-    /**
-     * Find vacations by status
-     * @param {string} status - Vacation status
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Vacation records
-     */
     async findByStatus(status, options = {}) {
         try {
             const filter = { status };
+            if (options.tenantId) filter.tenantId = options.tenantId;
+            if (options.departmentId) filter.departmentId = options.departmentId;
+            if (options.vacationType) filter.vacationType = options.vacationType;
 
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.departmentId) {
-                filter.department = options.departmentId;
-            }
-
-            if (options.vacationType) {
-                filter.vacationType = options.vacationType;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    {
-                        path: 'employee',
-                        select: 'firstName lastName employeeId email department position',
-                        populate: [
-                            { path: 'department', select: 'name code manager' },
-                            { path: 'position', select: 'title code' }
-                        ]
-                    },
-                    { path: 'department', select: 'name code' },
-                    { path: 'vacationBalance' }
-                ],
-                sort: { createdAt: 1 }
+            return await this.findAll(filter, {
+                tenantId: options.tenantId,
+                order: [['createdAt', 'ASC']],
+                limit: options.limit,
+                offset: options.offset
             });
         } catch (error) {
             throw this._handleError(error, 'findByStatus');
         }
     }
 
-    /**
-     * Find pending vacations for approval
-     * @param {string} [departmentId] - Optional department filter
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Pending vacation records
-     */
     async findPendingVacations(departmentId = null, options = {}) {
         try {
             const filter = { status: 'pending' };
+            if (departmentId) filter.departmentId = departmentId;
+            if (options.tenantId) filter.tenantId = options.tenantId;
 
-            if (departmentId) {
-                filter.department = departmentId;
-            }
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    {
-                        path: 'employee',
-                        select: 'firstName lastName employeeId email department position',
-                        populate: [
-                            { path: 'department', select: 'name code manager' },
-                            { path: 'position', select: 'title code' }
-                        ]
-                    },
-                    { path: 'department', select: 'name code' },
-                    { path: 'vacationBalance' }
-                ],
-                sort: { createdAt: 1 }
+            return await this.findAll(filter, {
+                tenantId: options.tenantId,
+                order: [['createdAt', 'ASC']],
+                limit: options.limit,
+                offset: options.offset
             });
         } catch (error) {
             throw this._handleError(error, 'findPendingVacations');
         }
     }
 
-    /**
-     * Find active vacations (currently ongoing)
-     * @param {string} [departmentId] - Optional department filter
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Active vacation records
-     */
     async findActiveVacations(departmentId = null, options = {}) {
         try {
             const now = new Date();
             const filter = {
                 status: 'approved',
-                startDate: { $lte: now },
-                endDate: { $gte: now }
+                startDate: { [Op.lte]: now },
+                endDate: { [Op.gte]: now }
             };
+            if (departmentId) filter.departmentId = departmentId;
+            if (options.tenantId) filter.tenantId = options.tenantId;
 
-            if (departmentId) {
-                filter.department = departmentId;
-            }
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    {
-                        path: 'employee',
-                        select: 'firstName lastName employeeId department position',
-                        populate: [
-                            { path: 'department', select: 'name code' },
-                            { path: 'position', select: 'title' }
-                        ]
-                    }
-                ],
-                sort: { endDate: 1 }
+            return await this.findAll(filter, {
+                tenantId: options.tenantId,
+                order: [['endDate', 'ASC']],
+                limit: options.limit,
+                offset: options.offset
             });
         } catch (error) {
             throw this._handleError(error, 'findActiveVacations');
         }
     }
 
-    /**
-     * Find upcoming vacations
-     * @param {number} [daysAhead=30] - Number of days to look ahead
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Upcoming vacation records
-     */
     async findUpcomingVacations(daysAhead = 30, options = {}) {
         try {
             const now = new Date();
@@ -214,122 +104,60 @@ class VacationRepository extends BaseRepository {
 
             const filter = {
                 status: 'approved',
-                startDate: { $gt: now, $lte: futureDate }
+                startDate: { [Op.gt]: now, [Op.lte]: futureDate }
             };
+            if (options.tenantId) filter.tenantId = options.tenantId;
+            if (options.departmentId) filter.departmentId = options.departmentId;
 
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.departmentId) {
-                filter.department = options.departmentId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    {
-                        path: 'employee',
-                        select: 'firstName lastName employeeId department position',
-                        populate: [
-                            { path: 'department', select: 'name code' },
-                            { path: 'position', select: 'title' }
-                        ]
-                    }
-                ],
-                sort: { startDate: 1 }
+            return await this.findAll(filter, {
+                tenantId: options.tenantId,
+                order: [['startDate', 'ASC']],
+                limit: options.limit,
+                offset: options.offset
             });
         } catch (error) {
             throw this._handleError(error, 'findUpcomingVacations');
         }
     }
 
-    /**
-     * Find vacations by department
-     * @param {string} departmentId - Department ID
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Vacation records
-     */
     async findByDepartment(departmentId, options = {}) {
         try {
-            const filter = { department: departmentId };
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.status) {
-                filter.status = options.status;
-            }
-
-            if (options.vacationType) {
-                filter.vacationType = options.vacationType;
-            }
-
+            const filter = { departmentId };
+            if (options.tenantId) filter.tenantId = options.tenantId;
+            if (options.status) filter.status = options.status;
+            if (options.vacationType) filter.vacationType = options.vacationType;
             if (options.dateRange) {
-                filter.$or = [
+                filter[Op.or] = [
                     {
-                        startDate: {
-                            $gte: options.dateRange.startDate,
-                            $lte: options.dateRange.endDate
-                        }
+                        startDate: { [Op.gte]: options.dateRange.startDate, [Op.lte]: options.dateRange.endDate }
                     },
                     {
-                        endDate: {
-                            $gte: options.dateRange.startDate,
-                            $lte: options.dateRange.endDate
-                        }
+                        endDate: { [Op.gte]: options.dateRange.startDate, [Op.lte]: options.dateRange.endDate }
                     }
                 ];
             }
 
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    {
-                        path: 'employee',
-                        select: 'firstName lastName employeeId email position',
-                        populate: { path: 'position', select: 'title code' }
-                    },
-                    { path: 'approvedBy rejectedBy cancelledBy', select: 'firstName lastName employeeId' },
-                    { path: 'vacationBalance' }
-                ],
-                sort: { startDate: -1 }
+            return await this.findAll(filter, {
+                tenantId: options.tenantId,
+                order: [['startDate', 'DESC']],
+                limit: options.limit,
+                offset: options.offset
             });
         } catch (error) {
             throw this._handleError(error, 'findByDepartment');
         }
     }
 
-    /**
-     * Check for overlapping vacations
-     * @param {string} employeeId - Employee ID
-     * @param {Date} startDate - Start date
-     * @param {Date} endDate - End date
-     * @param {string} [excludeVacationId] - Vacation ID to exclude from check
-     * @param {Object} [options] - Query options
-     * @returns {Promise<boolean>} True if overlapping vacation exists
-     */
     async hasOverlappingVacation(employeeId, startDate, endDate, excludeVacationId = null, options = {}) {
         try {
             const filter = {
-                employee: employeeId,
-                status: { $in: ['pending', 'approved'] },
-                $or: [
-                    {
-                        startDate: { $lte: endDate },
-                        endDate: { $gte: startDate }
-                    }
-                ]
+                employeeId,
+                status: { [Op.in]: ['pending', 'approved'] },
+                startDate: { [Op.lte]: endDate },
+                endDate: { [Op.gte]: startDate }
             };
-
-            if (excludeVacationId) {
-                filter._id = { $ne: excludeVacationId };
-            }
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
+            if (excludeVacationId) filter.id = { [Op.ne]: excludeVacationId };
+            if (options.tenantId) filter.tenantId = options.tenantId;
 
             const overlapping = await this.findOne(filter);
             return !!overlapping;
@@ -338,70 +166,52 @@ class VacationRepository extends BaseRepository {
         }
     }
 
-    /**
-     * Get vacation statistics for a department
-     * @param {string} departmentId - Department ID
-     * @param {number} [year] - Year for statistics
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Vacation statistics
-     */
     async getVacationStats(departmentId, year = new Date().getFullYear(), options = {}) {
         try {
-            const yearStart = new Date(year, 0, 1);
-            const yearEnd = new Date(year, 11, 31, 23, 59, 59);
+            const yearStart = new Date(year, 0, 1).toISOString().slice(0, 10);
+            const yearEnd = new Date(year, 11, 31).toISOString().slice(0, 10);
+            const tenantFilter = options.tenantId ? `AND tenant_id = :tenantId` : '';
 
-            const matchFilter = {
-                department: new mongoose.Types.ObjectId(departmentId),
-                startDate: { $gte: yearStart, $lte: yearEnd }
-            };
-
-            if (options.tenantId) {
-                matchFilter.tenantId = options.tenantId;
-            }
-
-            const pipeline = [
-                { $match: matchFilter },
+            return await this.model.sequelize.query(
+                `SELECT
+                   vacation_type    AS "vacationType",
+                   status,
+                   COUNT(*)         AS "count",
+                   SUM(duration)    AS "totalDays"
+                 FROM vacations
+                 WHERE department_id = :departmentId
+                   AND start_date >= :yearStart
+                   AND start_date <= :yearEnd
+                   ${tenantFilter}
+                 GROUP BY vacation_type, status`,
                 {
-                    $group: {
-                        _id: {
-                            vacationType: '$vacationType',
-                            status: '$status'
-                        },
-                        count: { $sum: 1 },
-                        totalDays: { $sum: '$duration' }
-                    }
+                    replacements: {
+                        departmentId,
+                        yearStart,
+                        yearEnd,
+                        ...(options.tenantId ? { tenantId: options.tenantId } : {})
+                    },
+                    type: QueryTypes.SELECT
                 }
-            ];
-
-            return await this.model.aggregate(pipeline);
+            );
         } catch (error) {
             throw this._handleError(error, 'getVacationStats');
         }
     }
 
-    /**
-     * Get vacation balance tracking
-     * @param {string} employeeId - Employee ID
-     * @param {number} [year] - Year for balance calculation
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Object>} Vacation balance summary
-     */
     async getVacationBalance(employeeId, year = new Date().getFullYear(), options = {}) {
         try {
-            const yearStart = new Date(year, 0, 1);
-            const yearEnd = new Date(year, 11, 31, 23, 59, 59);
+            const yearStart = new Date(year, 0, 1).toISOString().slice(0, 10);
+            const yearEnd = new Date(year, 11, 31).toISOString().slice(0, 10);
 
             const filter = {
-                employee: employeeId,
+                employeeId,
                 status: 'approved',
-                startDate: { $gte: yearStart, $lte: yearEnd }
+                startDate: { [Op.gte]: yearStart, [Op.lte]: yearEnd }
             };
+            if (options.tenantId) filter.tenantId = options.tenantId;
 
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            const vacations = await this.find(filter);
+            const vacations = await this.findAll(filter);
 
             const balance = {
                 year,
@@ -431,14 +241,6 @@ class VacationRepository extends BaseRepository {
         }
     }
 
-    /**
-     * Approve vacation
-     * @param {string} vacationId - Vacation ID
-     * @param {string} approverId - Approver user ID
-     * @param {string} [notes] - Approval notes
-     * @param {Object} [options] - Update options
-     * @returns {Promise<Object>} Updated vacation record
-     */
     async approveVacation(vacationId, approverId, notes = '', options = {}) {
         try {
             const updateData = {
@@ -446,10 +248,7 @@ class VacationRepository extends BaseRepository {
                 approvedBy: approverId,
                 approvedAt: new Date()
             };
-
-            if (notes && typeof notes === 'string') {
-                updateData.approverNotes = notes.trim();
-            }
+            if (notes && typeof notes === 'string') updateData.approverNotes = notes.trim();
 
             return await this.update(vacationId, updateData, options);
         } catch (error) {
@@ -457,14 +256,6 @@ class VacationRepository extends BaseRepository {
         }
     }
 
-    /**
-     * Reject vacation
-     * @param {string} vacationId - Vacation ID
-     * @param {string} rejecterId - Rejector user ID
-     * @param {string} reason - Rejection reason
-     * @param {Object} [options] - Update options
-     * @returns {Promise<Object>} Updated vacation record
-     */
     async rejectVacation(vacationId, rejecterId, reason, options = {}) {
         try {
             const updateData = {
@@ -480,14 +271,6 @@ class VacationRepository extends BaseRepository {
         }
     }
 
-    /**
-     * Cancel vacation
-     * @param {string} vacationId - Vacation ID
-     * @param {string} userId - User ID who is cancelling
-     * @param {string} reason - Cancellation reason
-     * @param {Object} [options] - Update options
-     * @returns {Promise<Object>} Updated vacation record
-     */
     async cancelVacation(vacationId, userId, reason, options = {}) {
         try {
             const updateData = {
@@ -503,75 +286,54 @@ class VacationRepository extends BaseRepository {
         }
     }
 
-    /**
-     * Get vacation analytics for reporting
-     * @param {Object} filters - Filter criteria
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Object>} Vacation analytics
-     */
     async getVacationAnalytics(filters = {}, options = {}) {
         try {
-            const matchFilter = {};
+            const conditions = ['1=1'];
+            const replacements = {};
 
             if (filters.tenantId) {
-                matchFilter.tenantId = filters.tenantId;
+                conditions.push('tenant_id = :tenantId');
+                replacements.tenantId = filters.tenantId;
             }
-
             if (filters.departmentId) {
-                matchFilter.department = new mongoose.Types.ObjectId(filters.departmentId);
+                conditions.push('department_id = :departmentId');
+                replacements.departmentId = filters.departmentId;
             }
-
             if (filters.dateRange) {
-                matchFilter.startDate = {
-                    $gte: filters.dateRange.startDate,
-                    $lte: filters.dateRange.endDate
-                };
+                conditions.push('start_date >= :startDate AND start_date <= :endDate');
+                replacements.startDate = filters.dateRange.startDate;
+                replacements.endDate = filters.dateRange.endDate;
             }
-
             if (filters.employeeIds && filters.employeeIds.length > 0) {
-                matchFilter.employee = {
-                    $in: filters.employeeIds.map(id => new mongoose.Types.ObjectId(id))
-                };
+                const placeholders = filters.employeeIds.map((_, i) => `:empId${i}`).join(', ');
+                conditions.push(`employee_id IN (${placeholders})`);
+                filters.employeeIds.forEach((id, i) => { replacements[`empId${i}`] = id; });
             }
 
-            const pipeline = [
-                { $match: matchFilter },
-                {
-                    $group: {
-                        _id: {
-                            vacationType: '$vacationType',
-                            status: '$status',
-                            month: { $month: '$startDate' },
-                            year: { $year: '$startDate' }
-                        },
-                        count: { $sum: 1 },
-                        totalDays: { $sum: '$duration' },
-                        avgDuration: { $avg: '$duration' },
-                        employees: { $addToSet: '$employee' }
-                    }
-                },
-                {
-                    $sort: { '_id.year': -1, '_id.month': -1, '_id.vacationType': 1 }
-                }
-            ];
-
-            return await this.model.aggregate(pipeline);
+            return await this.model.sequelize.query(
+                `SELECT
+                   vacation_type                          AS "vacationType",
+                   status,
+                   EXTRACT(MONTH FROM start_date)        AS "month",
+                   EXTRACT(YEAR FROM start_date)         AS "year",
+                   COUNT(*)                              AS "count",
+                   SUM(duration)                         AS "totalDays",
+                   AVG(duration)                         AS "avgDuration",
+                   COUNT(DISTINCT employee_id)           AS "uniqueEmployees"
+                 FROM vacations
+                 WHERE ${conditions.join(' AND ')}
+                 GROUP BY vacation_type, status, EXTRACT(MONTH FROM start_date), EXTRACT(YEAR FROM start_date)
+                 ORDER BY EXTRACT(YEAR FROM start_date) DESC, EXTRACT(MONTH FROM start_date) DESC, vacation_type ASC`,
+                { replacements, type: QueryTypes.SELECT }
+            );
         } catch (error) {
             throw this._handleError(error, 'getVacationAnalytics');
         }
     }
 
-    /**
-     * Calculate working days for vacation duration
-     * @param {Date} startDate - Start date
-     * @param {Date} endDate - End date
-     * @returns {number} Number of working days
-     */
     calculateWorkingDays(startDate, endDate) {
         const start = new Date(startDate);
         const end = new Date(endDate);
-
-        // Reset time to start of day for accurate comparison
         start.setHours(0, 0, 0, 0);
         end.setHours(0, 0, 0, 0);
 
@@ -580,10 +342,7 @@ class VacationRepository extends BaseRepository {
 
         while (current <= end) {
             const dayOfWeek = current.getDay();
-            // 0 = Sunday, 6 = Saturday (weekend)
-            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-                workingDays++;
-            }
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) workingDays++;
             current.setDate(current.getDate() + 1);
         }
 

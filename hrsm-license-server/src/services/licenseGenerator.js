@@ -2,9 +2,12 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import License from '../models/License.js';
+import License from '../models/License.js'; // Using Sequelize model
 import auditService from './auditService.js';
 import logger from '../utils/logger.js';
+
+// TODO: This service needs to be refactored to use Sequelize syntax
+// Currently using Mongoose patterns that need conversion
 
 class LicenseGenerator {
   constructor() {

@@ -103,3 +103,6 @@ TaskReport.associate = (models) => {
 };
 
 export default TaskReport;
+
+
+

@@ -4,6 +4,7 @@
  * Business logic and validation for permission requests
  * Extracted from permission.model.js to follow middleware organization pattern
  */
+import Notification from '../modules/notifications/models/notification.model.js';
 
 /**
  * Calculate duration in minutes between scheduled and requested times
@@ -28,18 +29,16 @@ export const calculatePermissionDuration = (req, res, next) => {
  */
 export const createPermissionNotification = async (permission, previousStatus) => {
     try {
-        const mongoose = await import('mongoose');
-        const Notification = mongoose.default.model('Notification');
-
         // Only create notification if status changed
         if (permission.status === previousStatus) {
             return;
         }
 
         let notificationData = {
-            recipient: permission.employee,
+            recipientId: permission.employee,
+            tenantId: permission.tenantId || permission.tenant_id,
             relatedModel: 'Permission',
-            relatedId: permission._id,
+            relatedId: permission.id,
             status: permission.status
         };
 
@@ -47,19 +46,19 @@ export const createPermissionNotification = async (permission, previousStatus) =
             case 'approved':
                 notificationData.type = 'permission';
                 notificationData.title = 'Permission Request Approved';
-                notificationData.message = `Your ${permission.permissionType} request for ${permission.date.toLocaleDateString()} has been approved.`;
+                notificationData.message = `Your ${permission.permission_type || permission.permissionType} request for ${new Date(permission.date).toLocaleDateString()} has been approved.`;
                 break;
 
             case 'rejected':
                 notificationData.type = 'permission';
                 notificationData.title = 'Permission Request Rejected';
-                notificationData.message = `Your ${permission.permissionType} request for ${permission.date.toLocaleDateString()} has been rejected. Reason: ${permission.rejection.reason}`;
+                notificationData.message = `Your ${permission.permission_type || permission.permissionType} request for ${new Date(permission.date).toLocaleDateString()} has been rejected. Reason: ${permission.rejection?.reason || ''}`;
                 break;
 
             case 'cancelled':
                 notificationData.type = 'permission';
                 notificationData.title = 'Permission Request Cancelled';
-                notificationData.message = `Your ${permission.permissionType} request for ${permission.date.toLocaleDateString()} has been cancelled.`;
+                notificationData.message = `Your ${permission.permission_type || permission.permissionType} request for ${new Date(permission.date).toLocaleDateString()} has been cancelled.`;
                 break;
         }
 
@@ -67,7 +66,7 @@ export const createPermissionNotification = async (permission, previousStatus) =
             await Notification.create(notificationData);
         }
     } catch (error) {
-
+        console.error('Error creating permission notification:', error);
     }
 };
 

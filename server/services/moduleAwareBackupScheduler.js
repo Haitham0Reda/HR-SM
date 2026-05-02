@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import ModuleAwareBackupService from './moduleAwareBackupService.js';
+import ModuleAwareBackupService from './moduleAwareBackupService.sequelize.js';
 import BackupScheduler from './backupScheduler.js';
 import winston from 'winston';
 import path from 'path';

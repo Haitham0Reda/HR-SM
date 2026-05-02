@@ -1,142 +1,90 @@
+import { Op, QueryTypes } from 'sequelize';
 import BaseRepository from '../BaseRepository.js';
 import Attendance from '../../modules/hr-core/attendance/models/attendance.model.js';
-import mongoose from 'mongoose';
+import User from '../../modules/hr-core/users/models/user.model.js';
+import Department from '../../modules/hr-core/users/models/department.model.js';
 
-/**
- * Repository for Attendance model operations with date range queries and analytics
- */
 class AttendanceRepository extends BaseRepository {
     constructor() {
         super(Attendance);
     }
 
-    /**
-     * Find attendance records by employee and date range
-     * @param {string} employeeId - Employee ID
-     * @param {Date} startDate - Start date
-     * @param {Date} endDate - End date
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Attendance records
-     */
     async findByEmployeeAndDateRange(employeeId, startDate, endDate, options = {}) {
         try {
             const filter = {
-                employee: employeeId,
-                date: { $gte: startDate, $lte: endDate }
+                employeeId,
+                date: { [Op.gte]: startDate, [Op.lte]: endDate }
             };
+            if (options.tenantId) filter.tenantId = options.tenantId;
 
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                sort: { date: 1 },
-                populate: [
-                    { path: 'leave', select: 'leaveType startDate endDate status' },
-                    { path: 'approvedBy', select: 'firstName lastName employeeId' }
-                ]
+            return await this.findAll(filter, {
+                tenantId: options.tenantId,
+                order: [['date', 'ASC']],
+                limit: options.limit,
+                offset: options.offset
             });
         } catch (error) {
             throw this._handleError(error, 'findByEmployeeAndDateRange');
         }
     }
 
-    /**
-     * Find attendance records by department and date
-     * @param {string} departmentId - Department ID
-     * @param {Date} date - Specific date
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Attendance records
-     */
     async findByDepartmentAndDate(departmentId, date, options = {}) {
         try {
-            const startOfDay = new Date(date);
-            startOfDay.setHours(0, 0, 0, 0);
+            const dateStr = new Date(date).toISOString().slice(0, 10);
+            const filter = { departmentId, date: dateStr };
+            if (options.tenantId) filter.tenantId = options.tenantId;
 
-            const endOfDay = new Date(date);
-            endOfDay.setHours(23, 59, 59, 999);
-
-            const filter = {
-                department: departmentId,
-                date: { $gte: startOfDay, $lte: endOfDay }
-            };
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' }
+            return await this.findAll(filter, {
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee', attributes: ['id', 'employeeId', 'personalInfo'] },
+                    { model: Department, as: 'department', attributes: ['id', 'name', 'code'] }
                 ],
-                sort: { 'employee.firstName': 1 }
+                order: [['employeeId', 'ASC']],
+                limit: options.limit,
+                offset: options.offset
             });
         } catch (error) {
             throw this._handleError(error, 'findByDepartmentAndDate');
         }
     }
 
-    /**
-     * Find attendance records by status
-     * @param {string} status - Attendance status
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Attendance records
-     */
     async findByStatus(status, options = {}) {
         try {
             const filter = { status };
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.departmentId) {
-                filter.department = options.departmentId;
-            }
-
+            if (options.tenantId) filter.tenantId = options.tenantId;
+            if (options.departmentId) filter.departmentId = options.departmentId;
             if (options.dateRange) {
                 filter.date = {
-                    $gte: options.dateRange.startDate,
-                    $lte: options.dateRange.endDate
+                    [Op.gte]: options.dateRange.startDate,
+                    [Op.lte]: options.dateRange.endDate
                 };
             }
 
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' }
+            return await this.findAll(filter, {
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee', attributes: ['id', 'employeeId', 'personalInfo'] },
+                    { model: Department, as: 'department', attributes: ['id', 'name', 'code'] }
                 ],
-                sort: { date: -1 }
+                order: [['date', 'DESC']],
+                limit: options.limit,
+                offset: options.offset
             });
         } catch (error) {
             throw this._handleError(error, 'findByStatus');
         }
     }
 
-    /**
-     * Get attendance metrics for an employee
-     * @param {string} employeeId - Employee ID
-     * @param {Date} startDate - Start date
-     * @param {Date} endDate - End date
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Object>} Attendance metrics
-     */
     async getEmployeeMetrics(employeeId, startDate, endDate, options = {}) {
         try {
             const filter = {
-                employee: employeeId,
-                date: { $gte: startDate, $lte: endDate }
+                employeeId,
+                date: { [Op.gte]: startDate, [Op.lte]: endDate }
             };
+            if (options.tenantId) filter.tenantId = options.tenantId;
 
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            const attendance = await this.find(filter);
+            const attendance = await this.findAll(filter);
 
             const metrics = {
                 workingDays: 0,
@@ -158,13 +106,13 @@ class AttendanceRepository extends BaseRepository {
             attendance.forEach(record => {
                 if (record.isWorkingDay) {
                     metrics.workingDays++;
-                    metrics.expectedHours += record.hours.expected;
+                    metrics.expectedHours += record.hours?.expected || 0;
                 }
 
-                metrics.actualHours += record.hours.actual;
-                metrics.workFromHomeHours += record.hours.workFromHome;
-                metrics.totalHours += record.hours.totalHours;
-                metrics.overtimeHours += record.hours.overtime;
+                metrics.actualHours += record.hours?.actual || 0;
+                metrics.workFromHomeHours += record.hours?.workFromHome || 0;
+                metrics.totalHours += record.hours?.totalHours || 0;
+                metrics.overtimeHours += record.hours?.overtime || 0;
 
                 switch (record.status) {
                     case 'on-time':
@@ -182,9 +130,7 @@ class AttendanceRepository extends BaseRepository {
                     case 'absent':
                     case 'forgot-check-in':
                     case 'forgot-check-out':
-                        if (record.isWorkingDay) {
-                            metrics.absentDays++;
-                        }
+                        if (record.isWorkingDay) metrics.absentDays++;
                         break;
                     case 'vacation':
                         metrics.vacationDays++;
@@ -209,217 +155,148 @@ class AttendanceRepository extends BaseRepository {
         }
     }
 
-    /**
-     * Get department attendance summary for a specific date
-     * @param {string} departmentId - Department ID
-     * @param {Date} date - Specific date
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Department summary
-     */
     async getDepartmentSummary(departmentId, date, options = {}) {
         try {
-            const startOfDay = new Date(date);
-            startOfDay.setHours(0, 0, 0, 0);
+            const dateStr = new Date(date).toISOString().slice(0, 10);
+            const tenantFilter = options.tenantId ? `AND tenant_id = :tenantId` : '';
 
-            const endOfDay = new Date(date);
-            endOfDay.setHours(23, 59, 59, 999);
-
-            const matchFilter = {
-                department: new mongoose.Types.ObjectId(departmentId),
-                date: { $gte: startOfDay, $lte: endOfDay }
-            };
-
-            if (options.tenantId) {
-                matchFilter.tenantId = options.tenantId;
-            }
-
-            const pipeline = [
-                { $match: matchFilter },
+            return await this.model.sequelize.query(
+                `SELECT
+                   status,
+                   COUNT(*)                                        AS "count",
+                   SUM((hours->>'totalHours')::numeric)           AS "totalHours"
+                 FROM attendances
+                 WHERE department_id = :departmentId
+                   AND date = :date
+                   ${tenantFilter}
+                 GROUP BY status`,
                 {
-                    $group: {
-                        _id: '$status',
-                        count: { $sum: 1 },
-                        totalHours: { $sum: '$hours.totalHours' }
-                    }
+                    replacements: {
+                        departmentId,
+                        date: dateStr,
+                        ...(options.tenantId ? { tenantId: options.tenantId } : {})
+                    },
+                    type: QueryTypes.SELECT
                 }
-            ];
-
-            return await this.model.aggregate(pipeline);
+            );
         } catch (error) {
             throw this._handleError(error, 'getDepartmentSummary');
         }
     }
 
-    /**
-     * Get currently present employees
-     * @param {string} [departmentId] - Optional department filter
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Currently present employees
-     */
     async getCurrentlyPresent(departmentId = null, options = {}) {
         try {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = new Date().toISOString().slice(0, 10);
+            const deptFilter = departmentId ? `AND department_id = :departmentId` : '';
+            const tenantFilter = options.tenantId ? `AND tenant_id = :tenantId` : '';
 
-            const filter = {
-                date: today,
-                'checkIn.time': { $exists: true, $ne: null },
-                'checkOut.time': { $exists: false }
-            };
-
-            if (departmentId) {
-                filter.department = departmentId;
-            }
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    {
-                        path: 'employee',
-                        select: 'firstName lastName employeeId department position',
-                        populate: [
-                            { path: 'department', select: 'name code' },
-                            { path: 'position', select: 'title' }
-                        ]
-                    }
-                ],
-                sort: { 'checkIn.time': -1 }
-            });
+            return await this.model.sequelize.query(
+                `SELECT * FROM attendances
+                 WHERE date = :today
+                   AND check_in->>'time' IS NOT NULL
+                   AND (check_out->>'time' IS NULL OR check_out->>'time' = '')
+                   ${deptFilter}
+                   ${tenantFilter}
+                 ORDER BY check_in->>'time' DESC`,
+                {
+                    replacements: {
+                        today,
+                        ...(departmentId ? { departmentId } : {}),
+                        ...(options.tenantId ? { tenantId: options.tenantId } : {})
+                    },
+                    type: QueryTypes.SELECT,
+                    model: this.model,
+                    mapToModel: true
+                }
+            );
         } catch (error) {
             throw this._handleError(error, 'getCurrentlyPresent');
         }
     }
 
-    /**
-     * Get attendance analytics for reporting
-     * @param {Object} filters - Filter criteria
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Object>} Analytics data
-     */
     async getAttendanceAnalytics(filters = {}, options = {}) {
         try {
-            const matchFilter = {};
+            const conditions = ['1=1'];
+            const replacements = {};
 
             if (filters.tenantId) {
-                matchFilter.tenantId = filters.tenantId;
+                conditions.push('tenant_id = :tenantId');
+                replacements.tenantId = filters.tenantId;
             }
-
             if (filters.departmentId) {
-                matchFilter.department = new mongoose.Types.ObjectId(filters.departmentId);
+                conditions.push('department_id = :departmentId');
+                replacements.departmentId = filters.departmentId;
             }
-
             if (filters.dateRange) {
-                matchFilter.date = {
-                    $gte: filters.dateRange.startDate,
-                    $lte: filters.dateRange.endDate
-                };
+                conditions.push('date >= :startDate AND date <= :endDate');
+                replacements.startDate = filters.dateRange.startDate;
+                replacements.endDate = filters.dateRange.endDate;
             }
-
             if (filters.employeeIds && filters.employeeIds.length > 0) {
-                matchFilter.employee = {
-                    $in: filters.employeeIds.map(id => new mongoose.Types.ObjectId(id))
-                };
+                const placeholders = filters.employeeIds.map((_, i) => `:empId${i}`).join(', ');
+                conditions.push(`employee_id IN (${placeholders})`);
+                filters.employeeIds.forEach((id, i) => { replacements[`empId${i}`] = id; });
             }
 
-            const pipeline = [
-                { $match: matchFilter },
-                {
-                    $group: {
-                        _id: {
-                            status: '$status',
-                            department: '$department',
-                            date: {
-                                $dateToString: {
-                                    format: '%Y-%m-%d',
-                                    date: '$date'
-                                }
-                            }
-                        },
-                        count: { $sum: 1 },
-                        totalActualHours: { $sum: '$hours.actual' },
-                        totalExpectedHours: { $sum: '$hours.expected' },
-                        totalOvertimeHours: { $sum: '$hours.overtime' },
-                        avgLateMinutes: { $avg: '$checkIn.lateMinutes' },
-                        avgEarlyMinutes: { $avg: '$checkOut.earlyMinutes' }
-                    }
-                },
-                {
-                    $sort: { '_id.date': 1, '_id.department': 1 }
-                }
-            ];
-
-            return await this.model.aggregate(pipeline);
+            return await this.model.sequelize.query(
+                `SELECT
+                   status,
+                   department_id                                       AS "department",
+                   TO_CHAR(date, 'YYYY-MM-DD')                       AS "date",
+                   COUNT(*)                                           AS "count",
+                   SUM((hours->>'actual')::numeric)                  AS "totalActualHours",
+                   SUM((hours->>'expected')::numeric)                AS "totalExpectedHours",
+                   SUM((hours->>'overtime')::numeric)                AS "totalOvertimeHours",
+                   AVG((check_in->>'lateMinutes')::numeric)          AS "avgLateMinutes",
+                   AVG((check_out->>'earlyMinutes')::numeric)        AS "avgEarlyMinutes"
+                 FROM attendances
+                 WHERE ${conditions.join(' AND ')}
+                 GROUP BY status, department_id, TO_CHAR(date, 'YYYY-MM-DD')
+                 ORDER BY TO_CHAR(date, 'YYYY-MM-DD') ASC, department_id ASC`,
+                { replacements, type: QueryTypes.SELECT }
+            );
         } catch (error) {
             throw this._handleError(error, 'getAttendanceAnalytics');
         }
     }
 
-    /**
-     * Find employees with attendance flags (late, early departure, missing)
-     * @param {Object} flags - Flag criteria
-     * @param {Object} [options] - Query options
-     * @returns {Promise<Array>} Flagged attendance records
-     */
     async findByFlags(flags = {}, options = {}) {
         try {
             const filter = {};
-
-            if (options.tenantId) {
-                filter.tenantId = options.tenantId;
-            }
-
-            if (options.departmentId) {
-                filter.department = options.departmentId;
-            }
-
+            if (options.tenantId) filter.tenantId = options.tenantId;
+            if (options.departmentId) filter.departmentId = options.departmentId;
             if (options.dateRange) {
                 filter.date = {
-                    $gte: options.dateRange.startDate,
-                    $lte: options.dateRange.endDate
+                    [Op.gte]: options.dateRange.startDate,
+                    [Op.lte]: options.dateRange.endDate
                 };
             }
 
-            // Build flags filter
-            if (flags.isLate) {
-                filter['flags.isLate'] = true;
+            const flagFilter = {};
+            if (flags.isLate) flagFilter.isLate = true;
+            if (flags.isEarlyDeparture) flagFilter.isEarlyDeparture = true;
+            if (flags.isMissing) flagFilter.isMissing = true;
+            if (flags.needsApproval) flagFilter.needsApproval = true;
+
+            if (Object.keys(flagFilter).length > 0) {
+                filter.flags = { [Op.contains]: flagFilter };
             }
 
-            if (flags.isEarlyDeparture) {
-                filter['flags.isEarlyDeparture'] = true;
-            }
-
-            if (flags.isMissing) {
-                filter['flags.isMissing'] = true;
-            }
-
-            if (flags.needsApproval) {
-                filter['flags.needsApproval'] = true;
-            }
-
-            return await this.find(filter, {
-                ...options,
-                populate: [
-                    { path: 'employee', select: 'firstName lastName employeeId' },
-                    { path: 'department', select: 'name code' },
-                    { path: 'approvedBy', select: 'firstName lastName' }
+            return await this.findAll(filter, {
+                tenantId: options.tenantId,
+                include: [
+                    { model: User, as: 'employee', attributes: ['id', 'employeeId', 'personalInfo'] },
+                    { model: Department, as: 'department', attributes: ['id', 'name', 'code'] }
                 ],
-                sort: { date: -1 }
+                order: [['date', 'DESC']],
+                limit: options.limit,
+                offset: options.offset
             });
         } catch (error) {
             throw this._handleError(error, 'findByFlags');
         }
     }
 
-    /**
-     * Create attendance records from approved leave
-     * @param {Object} leave - Leave object
-     * @param {Object} [options] - Creation options
-     * @returns {Promise<Array>} Created attendance records
-     */
     async createFromLeave(leave, options = {}) {
         try {
             const records = [];
@@ -427,30 +304,27 @@ class AttendanceRepository extends BaseRepository {
             const endDate = new Date(leave.endDate);
 
             for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-                const attendanceDate = new Date(date);
+                const attendanceDate = new Date(date).toISOString().slice(0, 10);
+                const employeeId = leave.employeeId || leave.employee;
 
-                // Check if record already exists
-                let attendance = await this.findOne({
-                    employee: leave.employee,
-                    date: attendanceDate
-                }, { tenantId: options.tenantId });
+                let attendance = await this.findOne(
+                    { employeeId, date: attendanceDate },
+                    { tenantId: options.tenantId }
+                );
 
                 if (!attendance) {
                     const attendanceData = {
-                        employee: leave.employee,
-                        department: leave.department,
-                        position: leave.position,
+                        employeeId,
+                        departmentId: leave.departmentId || leave.department,
+                        positionId: leave.positionId || leave.position,
                         date: attendanceDate,
-                        leave: leave._id,
+                        leaveId: leave.id || leave._id,
                         autoGenerated: true,
                         isWorkingDay: leave.leaveType !== 'mission'
                     };
 
-                    if (options.tenantId) {
-                        attendanceData.tenantId = options.tenantId;
-                    }
+                    if (options.tenantId) attendanceData.tenantId = options.tenantId;
 
-                    // Set status based on leave type
                     switch (leave.leaveType) {
                         case 'annual':
                         case 'casual':
@@ -461,13 +335,8 @@ class AttendanceRepository extends BaseRepository {
                             break;
                         case 'mission':
                             attendanceData.status = 'mission';
-                            // For missions, mark as full day worked
                             attendanceData.hours = {
-                                actual: 8,
-                                expected: 8,
-                                overtime: 0,
-                                workFromHome: 0,
-                                totalHours: 8
+                                actual: 8, expected: 8, overtime: 0, workFromHome: 0, totalHours: 8
                             };
                             break;
                         default:

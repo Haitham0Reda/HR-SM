@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import { companyLogger } from '../utils/companyLogger.js';
 
 class UserAccessAnalyticsService {

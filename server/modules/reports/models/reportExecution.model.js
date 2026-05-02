@@ -1,4 +1,4 @@
-import { DataTypes, Op } from 'sequelize';
+import { DataTypes, Op, QueryTypes } from 'sequelize';
 import sequelize from '../../../config/database.js';
 
 /**
@@ -244,7 +244,6 @@ ReportExecution.getHistory = async function(reportId, tenantId, options = {}) {
 };
 
 ReportExecution.getStatistics = async function(reportId, tenantId, days = 30) {
-  const { QueryTypes } = require('sequelize');
   const dateThreshold = new Date();
   dateThreshold.setDate(dateThreshold.getDate() - days);
   
@@ -280,3 +279,7 @@ ReportExecution.withTenant = function(tenantId) {
 };
 
 export default ReportExecution;
+
+
+
+

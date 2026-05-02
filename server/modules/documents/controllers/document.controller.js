@@ -1,7 +1,5 @@
 // Document Controller
-import DocumentService from '../services/DocumentService.js';
-
-const documentService = new DocumentService();
+import documentService from '../services/DocumentService.sequelize.js';
 
 // Helper function to get tenant ID from request
 const getTenantId = (req) => {

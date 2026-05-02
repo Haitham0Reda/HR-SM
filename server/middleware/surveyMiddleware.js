@@ -3,7 +3,7 @@
  * 
  * Validation and business logic for surveys
  */
-import mongoose from 'mongoose';
+import Survey from '../modules/surveys/models/survey.model.js';
 
 /**
  * Validate survey questions
@@ -102,8 +102,7 @@ export const validateSurveyResponse = async (req, res, next) => {
         const answers = req.body.answers || req.body.responses;
 
         if (answers && req.params.id) {
-            const Survey = mongoose.model('Survey');
-            const survey = await Survey.findById(req.params.id);
+            const survey = await Survey.findByPk(req.params.id);
 
             if (!survey) {
                 return res.status(404).json({
@@ -223,8 +222,7 @@ export const validateSurveyResponse = async (req, res, next) => {
 export const checkDuplicateResponse = async (req, res, next) => {
     try {
         if (req.params.id && req.user) {
-            const Survey = mongoose.model('Survey');
-            const survey = await Survey.findById(req.params.id);
+            const survey = await Survey.findByPk(req.params.id);
 
             if (survey) {
                 // Allow multiple submissions if enabled
@@ -232,8 +230,8 @@ export const checkDuplicateResponse = async (req, res, next) => {
                     return next();
                 }
 
-                const hasResponded = survey.responses.some(
-                    response => response.respondent && response.respondent.toString() === req.user._id.toString()
+                const hasResponded = survey.responses && survey.responses.some(
+                    response => response.respondent && response.respondent === req.user.id
                 );
 
                 if (hasResponded) {

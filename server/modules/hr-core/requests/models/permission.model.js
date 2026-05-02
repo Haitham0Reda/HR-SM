@@ -1,5 +1,5 @@
 /**
- * Permission Model
+ * Permission Request Model - PostgreSQL (Sequelize)
  * 
  * Manages employee permission requests for schedule deviations.
  * Handles late arrival, early departure, and overtime requests.
@@ -10,419 +10,367 @@
  * - Automatic attendance record adjustment on approval
  * - Email notification tracking
  * - Time duration calculation
+ * 
+ * @module models/Permission
  */
-import mongoose from 'mongoose';
 
-const permissionSchema = new mongoose.Schema({
-  // Tenant ID for multi-tenant data isolation
+import { DataTypes, Op } from 'sequelize';
+import { mainAppDb } from '../../../../config/database.js';
+
+const Permission = mainAppDb.define('Permission', {
+  // Primary Key - UUID
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    comment: 'Unique identifier for the permission request (UUID)'
+  },
+
+  // Tenant ID for multi-tenancy
   tenantId: {
-    type: String,
-    required: true,
-    index: true
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'tenant_id',
+    comment: 'Tenant/Company identifier'
   },
-  // Reference to the employee requesting permission
-  employee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
+
+  // Employee Reference
+  employeeId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'employee_id',
+    comment: 'Reference to User (employee)'
   },
-  // Type of permission request
+
+  // Permission Type
   permissionType: {
-    type: String,
-    enum: ['late-arrival', 'early-departure', 'overtime'],
-    required: true
+    type: DataTypes.ENUM('late-arrival', 'early-departure', 'overtime'),
+    allowNull: false,
+    field: 'permission_type',
+    comment: 'Type of permission request'
   },
+
   // Date for which permission is requested
   date: {
-    type: Date,
-    required: true,
-    index: true
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    comment: 'Date for which permission is requested'
   },
-  // Time-related fields
+
+  // Time-related fields - stored as JSONB
   time: {
-    // Scheduled time (e.g., normal start/end time)
-    scheduled: {
-      type: String,  // Format: "HH:MM" (e.g., "09:00")
-      required: true
-    },
-    // Requested time (e.g., late arrival time, early departure time, overtime end time)
-    requested: {
-      type: String,  // Format: "HH:MM" (e.g., "10:30")
-      required: true
-    },
-    // Duration in minutes (calculated automatically)
-    duration: {
-      type: Number,
-      min: 0
-    }
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {},
+    comment: 'Time details (scheduled, requested, duration)'
   },
+
   // Reason for the permission request
   reason: {
-    type: String,
-    required: false,
-    maxlength: 500
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    comment: 'Reason for the permission request'
   },
+
   // Request status
   status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected', 'cancelled'],
-    default: 'pending',
-    index: true
+    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'),
+    allowNull: false,
+    defaultValue: 'pending',
+    comment: 'Request status'
   },
-  // Approval information
+
+  // Approval information - stored as JSONB
   approval: {
-    // Supervisor who approved/rejected the request
-    reviewedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {
+      reviewedBy: null,
+      reviewedAt: null,
+      comments: null
     },
-    // Date and time of approval/rejection
-    reviewedAt: Date,
-    // Approver's comments or notes
-    comments: String
+    comment: 'Approval details'
   },
-  // Rejection information
+
+  // Rejection information - stored as JSONB
   rejection: {
-    // Reason for rejection
-    reason: String,
-    // Date and time of rejection
-    rejectedAt: Date
-  },
-  // Cancellation information
-  cancellation: {
-    // Who cancelled (employee or supervisor)
-    cancelledBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {
+      reason: null,
+      rejectedAt: null
     },
-    // Reason for cancellation
-    reason: String,
-    // Date and time of cancellation
-    cancelledAt: Date
+    comment: 'Rejection details'
   },
-  // Attendance record reference (populated after approval)
-  attendanceRecord: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Attendance'
+
+  // Cancellation information - stored as JSONB
+  cancellation: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {
+      cancelledBy: null,
+      reason: null,
+      cancelledAt: null
+    },
+    comment: 'Cancellation details'
   },
+
+  // Attendance record reference
+  attendanceRecordId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'attendance_record_id',
+    comment: 'Reference to Attendance record'
+  },
+
   // Flag indicating if attendance has been adjusted
   attendanceAdjusted: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'attendance_adjusted',
+    comment: 'Whether attendance has been adjusted'
   },
-  // Email notification tracking
+
+  // Email notification tracking - stored as JSONB
   notifications: {
-    submitted: {
-      sent: Boolean,
-      sentAt: Date
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {
+      submitted: { sent: false, sentAt: null },
+      approved: { sent: false, sentAt: null },
+      rejected: { sent: false, sentAt: null }
     },
-    approved: {
-      sent: Boolean,
-      sentAt: Date
-    },
-    rejected: {
-      sent: Boolean,
-      sentAt: Date
-    }
+    comment: 'Email notification tracking'
   },
-  // Supporting documents or attachments
-  attachments: [{
-    filename: String,
-    url: String,
-    uploadedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }]
+
+  // Supporting documents or attachments - stored as JSONB
+  attachments: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: [],
+    comment: 'Supporting documents or attachments'
+  }
 }, {
-  timestamps: true
+  tableName: 'permission_requests',
+  timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+
+  // Indexes for performance optimization
+  indexes: [
+    {
+      name: 'idx_permissions_tenant_id_employee_id',
+      fields: ['tenant_id', 'employee_id']
+    },
+    {
+      name: 'idx_permissions_tenant_id_status',
+      fields: ['tenant_id', 'status']
+    },
+    {
+      name: 'idx_permissions_tenant_id_employee_id_status',
+      fields: ['tenant_id', 'employee_id', 'status']
+    },
+    {
+      name: 'idx_permissions_tenant_id_employee_id_date',
+      fields: ['tenant_id', 'employee_id', 'date']
+    },
+    {
+      name: 'idx_permissions_tenant_id_date_status',
+      fields: ['tenant_id', 'date', 'status']
+    },
+    {
+      name: 'idx_permissions_tenant_id_permission_type_status',
+      fields: ['tenant_id', 'permission_type', 'status']
+    },
+    {
+      name: 'idx_permissions_tenant_id_status_created_at',
+      fields: ['tenant_id', 'status', 'created_at']
+    },
+    {
+      name: 'idx_permissions_tenant_id_attendance_adjusted_status',
+      fields: ['tenant_id', 'attendance_adjusted', 'status']
+    },
+    {
+      name: 'idx_permissions_date',
+      fields: ['date']
+    }
+  ]
 });
 
-// Virtual to check if permission is for today
-permissionSchema.virtual('isToday').get(function () {
+// Virtual properties
+Permission.prototype.isToday = function() {
   const today = new Date();
   const requestDate = new Date(this.date);
   return today.toDateString() === requestDate.toDateString();
-});
+};
 
-// Virtual to check if permission is in the past
-permissionSchema.virtual('isPast').get(function () {
+Permission.prototype.isPast = function() {
   return new Date(this.date) < new Date();
-});
+};
 
-// Virtual to check if permission is active (approved and for today/future)
-permissionSchema.virtual('isActive').get(function () {
-  return this.status === 'approved' && !this.isPast;
-});
+Permission.prototype.isActive = function() {
+  return this.status === 'approved' && !this.isPast();
+};
 
-// Note: Middleware hooks moved to permissionMiddleware.js
-// Use middleware functions in routes for better separation of concerns
-
-/**
- * Instance method to approve permission request
- * Updates status and records approval details
- * 
- * @param {ObjectId} supervisorId - ID of the supervisor approving the request
- * @param {String} comments - Optional comments from supervisor
- * @returns {Promise<Permission>} Updated permission document
- */
-permissionSchema.methods.approve = async function (supervisorId, comments = '') {
+// Instance Methods
+Permission.prototype.approve = async function(supervisorId, comments = '') {
   this.status = 'approved';
-  this.approval.reviewedBy = supervisorId;
-  this.approval.reviewedAt = new Date();
-  if (comments) this.approval.comments = comments;
+  this.approval = {
+    reviewedBy: supervisorId,
+    reviewedAt: new Date(),
+    comments: comments || null
+  };
   return await this.save();
 };
 
-/**
- * Instance method to reject permission request
- * Updates status and records rejection details
- * 
- * @param {ObjectId} supervisorId - ID of the supervisor rejecting the request
- * @param {String} reason - Reason for rejection (required)
- * @returns {Promise<Permission>} Updated permission document
- */
-permissionSchema.methods.reject = async function (supervisorId, reason) {
+Permission.prototype.reject = async function(supervisorId, reason) {
   if (!reason) {
     throw new Error('Rejection reason is required');
   }
 
   this.status = 'rejected';
-  this.approval.reviewedBy = supervisorId;
-  this.approval.reviewedAt = new Date();
-  this.rejection.reason = reason;
-  this.rejection.rejectedAt = new Date();
+  this.approval = {
+    reviewedBy: supervisorId,
+    reviewedAt: new Date(),
+    comments: null
+  };
+  this.rejection = {
+    reason,
+    rejectedAt: new Date()
+  };
   return await this.save();
 };
 
-/**
- * Instance method to cancel permission request
- * Can be cancelled by employee (if pending) or supervisor
- * 
- * @param {ObjectId} userId - ID of the user cancelling the request
- * @param {String} reason - Reason for cancellation
- * @returns {Promise<Permission>} Updated permission document
- */
-permissionSchema.methods.cancel = async function (userId, reason) {
+Permission.prototype.cancel = async function(userId, reason) {
   this.status = 'cancelled';
-  this.cancellation.cancelledBy = userId;
-  this.cancellation.reason = reason;
-  this.cancellation.cancelledAt = new Date();
+  this.cancellation = {
+    cancelledBy: userId,
+    reason,
+    cancelledAt: new Date()
+  };
   return await this.save();
 };
 
-/**
- * Instance method to link permission to attendance record after approval
- * Marks attendance as adjusted
- * 
- * @param {ObjectId} attendanceId - ID of the attendance record
- * @returns {Promise<Permission>} Updated permission document
- */
-permissionSchema.methods.linkToAttendance = async function (attendanceId) {
-  this.attendanceRecord = attendanceId;
+Permission.prototype.linkToAttendance = async function(attendanceId) {
+  this.attendanceRecordId = attendanceId;
   this.attendanceAdjusted = true;
   return await this.save();
 };
 
-/**
- * Static method to get employee's permission history
- * 
- * @param {ObjectId} employeeId - Employee's user ID
- * @param {Object} filters - Optional filters (status, permissionType, dateRange)
- * @returns {Promise<Permission[]>} List of permission requests
- */
-permissionSchema.statics.getEmployeePermissions = function (employeeId, filters = {}) {
-  const query = { employee: employeeId, ...filters };
-
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId',
-      populate: [
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title' }
-      ]
-    })
-    .populate('approval.reviewedBy', 'username employeeId personalInfo')
-    .populate('cancellation.cancelledBy', 'username employeeId personalInfo')
-    .populate('attendanceRecord')
-    .sort({ date: -1, createdAt: -1 });
+// Static Methods
+Permission.getEmployeePermissions = function(tenantId, employeeId, filters = {}) {
+  const where = { tenantId, employeeId, ...filters };
+  return this.findAll({
+    where,
+    order: [['date', 'DESC'], ['createdAt', 'DESC']]
+  });
 };
 
-/**
- * Static method to get pending permissions for supervisor review
- * 
- * @param {ObjectId} departmentId - Department ID (optional)
- * @returns {Promise<Permission[]>} List of pending permission requests
- */
-permissionSchema.statics.getPendingPermissions = function (departmentId = null) {
-  const query = { status: 'pending' };
-
-  let findQuery = this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId',
-      populate: [
-        { path: 'department', select: 'name code manager' },
-        { path: 'position', select: 'title level' }
-      ]
-    });
-
-  if (departmentId) {
-    // Filter by department after populating
-    return findQuery.then(permissions =>
-      permissions.filter(p =>
-        p.employee && p.employee.department &&
-        p.employee.department._id.toString() === departmentId.toString()
-      )
-    );
-  }
-
-  return findQuery.sort({ date: 1, createdAt: 1 }); // Oldest first
+Permission.getPendingPermissions = function(tenantId, departmentId = null) {
+  const where = { tenantId, status: 'pending' };
+  
+  // Note: Department filtering would need to be done via join with User model
+  // For now, return all pending for tenant
+  return this.findAll({
+    where,
+    order: [['date', 'ASC'], ['createdAt', 'ASC']]
+  });
 };
 
-/**
- * Static method to get permissions for a specific date
- * Useful for attendance processing
- * 
- * @param {Date} date - Date to query
- * @param {String} status - Optional status filter
- * @returns {Promise<Permission[]>} List of permissions for the date
- */
-permissionSchema.statics.getPermissionsByDate = function (date, status = 'approved') {
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  return this.find({
-    date: { $gte: startOfDay, $lte: endOfDay },
-    status
-  }).populate({
-    path: 'employee',
-    select: 'profile department position employeeId',
-    populate: [
-      { path: 'department', select: 'name code' },
-      { path: 'position', select: 'title' }
-    ]
-  }).populate('attendanceRecord');
+Permission.getPermissionsByDate = function(tenantId, date, status = 'approved') {
+  return this.findAll({
+    where: {
+      tenantId,
+      date,
+      status
+    },
+    order: [['createdAt', 'ASC']]
+  });
 };
 
-/**
- * Static method to get permission statistics for an employee
- * 
- * @param {ObjectId} employeeId - Employee's user ID
- * @param {Number} year - Year for statistics (default: current year)
- * @returns {Promise<Object>} Statistics object
- */
-permissionSchema.statics.getEmployeeStats = async function (employeeId, year = new Date().getFullYear()) {
+Permission.getEmployeeStats = async function(tenantId, employeeId, year = new Date().getFullYear()) {
   const yearStart = new Date(year, 0, 1);
-  const yearEnd = new Date(year, 11, 31, 23, 59, 59);
+  const yearEnd = new Date(year, 11, 31);
 
-  const stats = await this.aggregate([
-    {
-      $match: {
-        employee: new mongoose.Types.ObjectId(employeeId),
-        date: { $gte: yearStart, $lte: yearEnd }
+  const permissions = await this.findAll({
+    where: {
+      tenantId,
+      employeeId,
+      date: {
+        [Op.between]: [yearStart, yearEnd]
       }
     },
-    {
-      $group: {
-        _id: {
-          type: '$permissionType',
-          status: '$status'
-        },
-        count: { $sum: 1 },
-        totalDuration: { $sum: '$time.duration' }
-      }
-    },
-    {
-      $group: {
-        _id: '$_id.type',
-        statuses: {
-          $push: {
-            status: '$_id.status',
-            count: '$count',
-            totalDuration: '$totalDuration'
-          }
-        },
-        totalCount: { $sum: '$count' }
-      }
+    attributes: ['permissionType', 'status', 'time'],
+    raw: true
+  });
+
+  // Process stats in JavaScript
+  const stats = {};
+  permissions.forEach(perm => {
+    const type = perm.permissionType;
+    const status = perm.status;
+    
+    if (!stats[type]) {
+      stats[type] = { totalCount: 0, statuses: {} };
     }
-  ]);
+    
+    if (!stats[type].statuses[status]) {
+      stats[type].statuses[status] = { count: 0, totalDuration: 0 };
+    }
+    
+    stats[type].totalCount++;
+    stats[type].statuses[status].count++;
+    stats[type].statuses[status].totalDuration += perm.time?.duration || 0;
+  });
 
   return stats;
 };
 
-/**
- * Static method to get permissions by department
- * 
- * @param {ObjectId} departmentId - Department ID
- * @param {Object} filters - Optional filters (status, permissionType, dateRange)
- * @returns {Promise<Permission[]>} List of permissions for the department
- */
-permissionSchema.statics.getPermissionsByDepartment = async function (departmentId, filters = {}) {
-  const User = mongoose.model('User');
-
-  // Get all employees in the department
-  const employees = await User.find({ department: departmentId }, '_id');
-  const employeeIds = employees.map(e => e._id);
-
-  const query = {
-    employee: { $in: employeeIds },
-    ...filters
-  };
-
-  return this.find(query)
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId',
-      populate: [
-        { path: 'department', select: 'name code' },
-        { path: 'position', select: 'title' }
-      ]
-    })
-    .populate('approval.reviewedBy', 'username employeeId personalInfo')
-    .populate('attendanceRecord')
-    .sort({ date: -1, createdAt: -1 });
+Permission.getPermissionsByDepartment = async function(tenantId, departmentId, filters = {}) {
+  // This would require joining with User model
+  // For now, return basic implementation
+  const where = { tenantId, ...filters };
+  return this.findAll({
+    where,
+    order: [['date', 'DESC'], ['createdAt', 'DESC']]
+  });
 };
 
-/**
- * Static method to get all permissions requiring attendance adjustment
- * Finds approved permissions that haven't been linked to attendance records yet
- * 
- * @returns {Promise<Permission[]>} List of permissions needing attendance adjustment
- */
-permissionSchema.statics.getPendingAttendanceAdjustments = function () {
-  return this.find({
-    status: 'approved',
-    attendanceAdjusted: false
-  })
-    .populate({
-      path: 'employee',
-      select: 'profile department position employeeId',
-      populate: { path: 'department', select: 'name code' }
-    })
-    .sort({ date: 1 });
+Permission.getPendingAttendanceAdjustments = function(tenantId) {
+  return this.findAll({
+    where: {
+      tenantId,
+      status: 'approved',
+      attendanceAdjusted: false
+    },
+    order: [['date', 'ASC']]
+  });
 };
 
-// Note: Notification logic moved to permissionMiddleware.js
-// Call createPermissionNotification function after save in controllers
-
-// Compound indexes for tenant isolation and performance
-permissionSchema.index({ tenantId: 1, employee: 1, status: 1 });
-permissionSchema.index({ tenantId: 1, employee: 1, date: 1 });
-permissionSchema.index({ tenantId: 1, date: 1, status: 1 });
-permissionSchema.index({ tenantId: 1, permissionType: 1, status: 1 });
-permissionSchema.index({ tenantId: 1, status: 1, createdAt: 1 });
-permissionSchema.index({ tenantId: 1, attendanceAdjusted: 1, status: 1 });
-permissionSchema.index({ tenantId: 1, 'approval.reviewedBy': 1 });
-
-// Add withTenant static method for tenant-aware queries
-permissionSchema.statics.withTenant = function (tenantId) {
-  return this.find({ tenantId });
+Permission.withTenant = function(tenantId) {
+  return this.findAll({ where: { tenantId } });
 };
 
-export default mongoose.model('Permission', permissionSchema);
+Permission.findByDateRange = async function(tenantId, startDate, endDate, filters = {}) {
+  return this.findAll({
+    where: {
+      tenantId,
+      date: {
+        [Op.between]: [startDate, endDate]
+      },
+      ...filters
+    },
+    order: [['date', 'ASC']]
+  });
+};
+
+export default Permission;
+
+
+
+
+
+
+

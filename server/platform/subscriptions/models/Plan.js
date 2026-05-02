@@ -1,212 +1,152 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import { mainAppDb } from '../../../config/database.js';
 
 /**
- * Subscription Plan Schema
+ * Subscription Plan Model (Sequelize)
  * Defines pricing tiers and included modules
  */
-const planSchema = new mongoose.Schema({
+const Plan = mainAppDb.define('Plan', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   name: {
-    type: String,
-    required: [true, 'Plan name is required'],
-    unique: true,
-    trim: true
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    unique: true
   },
   displayName: {
-    type: String,
-    required: [true, 'Display name is required'],
-    trim: true
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'display_name'
   },
   description: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true
   },
   tier: {
-    type: String,
-    enum: {
-      values: ['free', 'basic', 'professional', 'enterprise'],
-      message: '{VALUE} is not a valid tier'
-    },
-    required: [true, 'Tier is required'],
-    index: true
+    type: DataTypes.ENUM('free', 'basic', 'professional', 'enterprise'),
+    allowNull: false
   },
   pricing: {
-    monthly: {
-      type: Number,
-      required: [true, 'Monthly price is required'],
-      min: [0, 'Price cannot be negative']
-    },
-    yearly: {
-      type: Number,
-      required: [true, 'Yearly price is required'],
-      min: [0, 'Price cannot be negative']
-    },
-    currency: {
-      type: String,
-      default: 'USD',
-      uppercase: true
-    },
-    trialDays: {
-      type: Number,
-      default: 14,
-      min: [0, 'Trial days cannot be negative']
+    type: DataTypes.JSONB,
+    defaultValue: {
+      monthly: 0,
+      yearly: 0,
+      currency: 'USD',
+      trialDays: 14
     }
   },
-  includedModules: [{
-    moduleId: {
-      type: String,
-      required: true
-    },
-    included: {
-      type: Boolean,
-      default: true
-    },
-    addOnPrice: {
-      type: Number,
-      default: 0,
-      min: [0, 'Add-on price cannot be negative']
-    }
-  }],
+  includedModules: {
+    type: DataTypes.JSONB,
+    defaultValue: [],
+    field: 'included_modules'
+  },
   limits: {
-    maxUsers: {
-      type: Number,
-      required: true,
-      min: [1, 'Max users must be at least 1']
-    },
-    maxStorage: {
-      type: Number,
-      required: true,
-      min: [0, 'Max storage cannot be negative']
-    },
-    apiCallsPerMonth: {
-      type: Number,
-      required: true,
-      min: [0, 'API calls limit cannot be negative']
-    },
-    maxDepartments: {
-      type: Number,
-      default: null // null means unlimited
-    },
-    maxCustomFields: {
-      type: Number,
-      default: null
+    type: DataTypes.JSONB,
+    defaultValue: {
+      maxUsers: 1,
+      maxStorage: 0,
+      apiCallsPerMonth: 0
     }
   },
-  features: [{
-    type: String,
-    trim: true
-  }],
+  features: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
   isActive: {
-    type: Boolean,
-    default: true,
-    index: true
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    field: 'is_active'
   },
   isPublic: {
-    type: Boolean,
-    default: true
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    field: 'is_public'
   },
   sortOrder: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    field: 'sort_order'
   },
   metadata: {
-    type: mongoose.Schema.Types.Mixed,
-    default: {}
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-    immutable: true
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+    type: DataTypes.JSONB,
+    defaultValue: {}
   }
 }, {
+  tableName: 'plans',
   timestamps: true,
-  collection: 'plans'
+  underscored: true,
+  indexes: [
+    { fields: ['name'], unique: true },
+    { fields: ['tier', 'is_active'] },
+    { fields: ['is_active', 'is_public'] },
+    { fields: ['sort_order'] }
+  ]
 });
 
-// Indexes for performance
-planSchema.index({ tier: 1, isActive: 1 });
-planSchema.index({ isActive: 1, isPublic: 1 });
-
-/**
- * Method to check if module is included in plan
- * @param {string} moduleId - Module ID to check
- * @returns {boolean} True if module is included
- */
-planSchema.methods.includesModule = function(moduleId) {
-  const module = this.includedModules.find(m => m.moduleId === moduleId);
+// Instance methods
+Plan.prototype.includesModule = function(moduleId) {
+  const modules = this.includedModules || [];
+  const module = modules.find(m => m.moduleId === moduleId);
   return module && module.included;
 };
 
-/**
- * Method to get module add-on price
- * @param {string} moduleId - Module ID
- * @returns {number} Add-on price (0 if included)
- */
-planSchema.methods.getModulePrice = function(moduleId) {
-  const module = this.includedModules.find(m => m.moduleId === moduleId);
-  if (!module) {
-    return null; // Module not available for this plan
-  }
+Plan.prototype.getModulePrice = function(moduleId) {
+  const modules = this.includedModules || [];
+  const module = modules.find(m => m.moduleId === moduleId);
+  if (!module) return null;
   return module.included ? 0 : module.addOnPrice;
 };
 
-/**
- * Method to get all included module IDs
- * @returns {Array<string>} Array of module IDs
- */
-planSchema.methods.getIncludedModuleIds = function() {
-  return this.includedModules
-    .filter(m => m.included)
-    .map(m => m.moduleId);
+Plan.prototype.getIncludedModuleIds = function() {
+  const modules = this.includedModules || [];
+  return modules.filter(m => m.included).map(m => m.moduleId);
 };
 
-/**
- * Method to calculate yearly savings
- * @returns {number} Savings amount
- */
-planSchema.methods.getYearlySavings = function() {
-  const monthlyTotal = this.pricing.monthly * 12;
-  return monthlyTotal - this.pricing.yearly;
+Plan.prototype.getYearlySavings = function() {
+  const pricing = this.pricing || {};
+  const monthlyTotal = (pricing.monthly || 0) * 12;
+  return monthlyTotal - (pricing.yearly || 0);
 };
 
-/**
- * Method to calculate yearly savings percentage
- * @returns {number} Savings percentage
- */
-planSchema.methods.getYearlySavingsPercentage = function() {
-  const monthlyTotal = this.pricing.monthly * 12;
+Plan.prototype.getYearlySavingsPercentage = function() {
+  const pricing = this.pricing || {};
+  const monthlyTotal = (pricing.monthly || 0) * 12;
   if (monthlyTotal === 0) return 0;
-  return ((monthlyTotal - this.pricing.yearly) / monthlyTotal) * 100;
+  return ((monthlyTotal - (pricing.yearly || 0)) / monthlyTotal) * 100;
 };
 
-/**
- * Static method to find active plans
- * @returns {Promise<Array>} Array of active plans
- */
-planSchema.statics.findActive = function() {
-  return this.find({ isActive: true }).sort({ sortOrder: 1, tier: 1 });
+// Static methods
+Plan.findActive = function() {
+  return this.findAll({
+    where: { is_active: true },
+    order: [['sort_order', 'ASC'], ['tier', 'ASC']]
+  });
 };
 
-/**
- * Static method to find public plans
- * @returns {Promise<Array>} Array of public plans
- */
-planSchema.statics.findPublic = function() {
-  return this.find({ isActive: true, isPublic: true }).sort({ sortOrder: 1 });
+Plan.findPublic = function() {
+  return this.findAll({
+    where: { is_active: true, is_public: true },
+    order: [['sort_order', 'ASC']]
+  });
 };
 
-/**
- * Static method to find plan by tier
- * @param {string} tier - Plan tier
- * @returns {Promise<Object>} Plan object
- */
-planSchema.statics.findByTier = function(tier) {
-  return this.findOne({ tier, isActive: true });
+Plan.findByTier = function(tier) {
+  return this.findOne({
+    where: { tier, is_active: true }
+  });
 };
 
-const Plan = mongoose.model('Plan', planSchema);
+// Define associations
+Plan.associate = (models) => {
+  if (models.Tenant) {
+    Plan.hasMany(models.Tenant, {
+      foreignKey: 'plan_id',
+      as: 'tenants'
+    });
+  }
+};
 
 export default Plan;

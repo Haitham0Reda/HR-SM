@@ -1,21 +1,34 @@
 /**
- * Platform Company Management Service
+ * Platform Company Management Service (Sequelize)
  * 
- * Business logic for managing multi-tenant companies
+ * Business logic for managing multi-tenant companies in a single-database architecture
  */
 
-import multiTenantDB from '../../../config/multiTenant.js';
-import { getModelForConnection } from '../../../config/sharedModels.js';
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
+import Company from '../../models/Company.js';
+import User from '../../../modules/hr-core/users/models/user.model.js';
+import Department from '../../../modules/hr-core/users/models/department.model.js';
+import Position from '../../../modules/hr-core/users/models/position.model.js';
+import Attendance from '../../../modules/hr-core/attendance/models/attendance.model.js';
+import Request from '../../../modules/hr-core/requests/models/request.model.js';
+import Holiday from '../../../modules/hr-core/holidays/models/holiday.model.js';
+import Mission from '../../../modules/hr-core/missions/models/mission.model.js';
+import Vacation from '../../../modules/hr-core/vacations/models/vacation.model.js';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 class CompanyService {
     /**
      * Get comprehensive company statistics
      */
-    async getCompanyAnalytics(companyName) {
+    async getCompanyAnalytics(companySlug) {
         try {
-            const connection = await multiTenantDB.getCompanyConnection(companyName);
+            const company = await Company.findOne({ where: { slug: companySlug } });
+            if (!company) {
+                throw new Error(`Company not found: ${companySlug}`);
+            }
+
+            const tenantId = company.slug;
             
             const analytics = {
                 overview: {},
@@ -26,19 +39,19 @@ class CompanyService {
             };
 
             // Overview statistics
-            analytics.overview = await this.getOverviewStats(connection);
+            analytics.overview = await this.getOverviewStats(tenantId);
             
             // User analytics
-            analytics.userAnalytics = await this.getUserAnalytics(connection);
+            analytics.userAnalytics = await this.getUserAnalytics(tenantId);
             
             // Module usage
-            analytics.moduleUsage = await this.getModuleUsage(connection);
+            analytics.moduleUsage = await this.getModuleUsage(company);
             
             // Data distribution
-            analytics.dataDistribution = await this.getDataDistribution(connection);
+            analytics.dataDistribution = await this.getDataDistribution(tenantId);
             
-            // Activity metrics (if available)
-            analytics.activityMetrics = await this.getActivityMetrics(connection);
+            // Activity metrics
+            analytics.activityMetrics = await this.getActivityMetrics(tenantId);
 
             return analytics;
         } catch (error) {
@@ -63,53 +76,56 @@ class CompanyService {
                 createSampleData = false
             } = companyData;
 
-            // Create company database
-            const connection = await multiTenantDB.createCompanyDatabase(name, {
-                adminEmail,
-                phone,
-                address,
-                industry,
-                modules,
-                settings
-            });
+            // Generate slug from company name
+            const slug = this.sanitizeCompanyName(name);
+            const databaseName = `hrsm_${slug}`;
+            const emailDomain = adminEmail.split('@')[1];
 
-            const sanitizedName = multiTenantDB.sanitizeCompanyName(name);
-
-            // Create company metadata
-            await this.createCompanyMetadata(connection, {
+            // Create company record
+            const company = await Company.create({
                 name,
-                sanitizedName,
-                industry,
-                adminEmail,
+                slug,
+                database_name: databaseName,
+                admin_email: adminEmail,
+                email_domain: emailDomain,
                 phone,
                 address,
-                modules,
-                settings
+                status: 'active',
+                modules: this.buildModulesConfig(modules),
+                settings: {
+                    timezone: settings.timezone || 'UTC',
+                    currency: settings.currency || 'USD',
+                    language: settings.language || 'en',
+                    workingHours: settings.workingHours || { start: '09:00', end: '17:00' },
+                    weekendDays: settings.weekendDays || [5, 6] // Friday, Saturday
+                }
             });
 
-            // Create initial structure
-            const initialData = await this.createInitialStructure(connection, sanitizedName, industry);
+            // Create initial structure (departments and positions)
+            const initialData = await this.createInitialStructure(slug, industry);
 
             // Create admin user
-            const adminUser = await this.createAdminUser(connection, {
+            const adminUser = await this.createAdminUser({
                 email: adminEmail,
                 password: adminPassword,
-                tenantId: sanitizedName,
-                department: initialData.departments[0]?._id,
-                position: initialData.positions[0]?._id
+                tenantId: slug,
+                department_id: initialData.departments[0]?.id,
+                position_id: initialData.positions[0]?.id
             });
 
             // Create sample data if requested
             if (createSampleData) {
-                await this.createSampleData(connection, sanitizedName, initialData);
+                await this.createSampleData(slug, initialData);
             }
 
             return {
                 company: {
-                    name,
-                    sanitizedName,
-                    database: `hrsm_${sanitizedName}`,
+                    id: company.id,
+                    name: company.name,
+                    slug: company.slug,
+                    database: company.database_name,
                     adminUser: {
+                        id: adminUser.id,
                         email: adminUser.email,
                         password: adminPassword,
                         role: adminUser.role
@@ -126,30 +142,75 @@ class CompanyService {
     /**
      * Backup company data
      */
-    async backupCompany(companyName) {
+    async backupCompany(companySlug) {
         try {
-            // This would integrate with the backup system
-            const backupPath = multiTenantDB.getCompanyBackupPath(companyName);
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const backupFileName = `platform_backup_${companyName}_${timestamp}.json`;
-
-            // Get all company data
-            const connection = await multiTenantDB.getCompanyConnection(companyName);
-            const collections = await connection.db.listCollections().toArray();
-            
-            const backupData = {
-                company: companyName,
-                timestamp: new Date().toISOString(),
-                collections: {}
-            };
-
-            for (const collection of collections) {
-                const data = await connection.collection(collection.name).find({}).toArray();
-                backupData.collections[collection.name] = data;
+            const company = await Company.findOne({ where: { slug: companySlug } });
+            if (!company) {
+                throw new Error(`Company not found: ${companySlug}`);
             }
 
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const backupFileName = `platform_backup_${companySlug}_${timestamp}.json`;
+
+            // Get all company data by tenant_id
+            const tenantId = company.slug;
+            
+            const backupData = {
+                company: companySlug,
+                timestamp: new Date().toISOString(),
+                companyMetadata: company.toJSON(),
+                data: {}
+            };
+
+            // Backup users
+            backupData.data.users = await User.findAll({
+                where: { tenant_id: tenantId },
+                raw: true
+            });
+
+            // Backup departments
+            backupData.data.departments = await Department.findAll({
+                where: { tenant_id: tenantId },
+                raw: true
+            });
+
+            // Backup positions
+            backupData.data.positions = await Position.findAll({
+                where: { tenant_id: tenantId },
+                raw: true
+            });
+
+            // Backup attendance
+            backupData.data.attendance = await Attendance.findAll({
+                where: { tenant_id: tenantId },
+                raw: true
+            });
+
+            // Backup requests
+            backupData.data.requests = await Request.findAll({
+                where: { tenant_id: tenantId },
+                raw: true
+            });
+
+            // Backup holidays
+            backupData.data.holidays = await Holiday.findAll({
+                where: { tenant_id: tenantId },
+                raw: true
+            });
+
+            // Backup missions
+            backupData.data.missions = await Mission.findAll({
+                where: { tenant_id: tenantId },
+                raw: true
+            });
+
+            // Backup vacations
+            backupData.data.vacations = await Vacation.findAll({
+                where: { tenant_id: tenantId },
+                raw: true
+            });
+
             return {
-                backupPath,
                 backupFileName,
                 backupData,
                 size: JSON.stringify(backupData).length
@@ -163,21 +224,24 @@ class CompanyService {
     /**
      * Clone company structure to create a new company
      */
-    async cloneCompany(sourceCompanyName, newCompanyData) {
+    async cloneCompany(sourceCompanySlug, newCompanyData) {
         try {
-            const sourceConnection = await multiTenantDB.getCompanyConnection(sourceCompanyName);
+            const sourceCompany = await Company.findOne({ where: { slug: sourceCompanySlug } });
+            if (!sourceCompany) {
+                throw new Error(`Source company not found: ${sourceCompanySlug}`);
+            }
             
             // Get source company structure
-            const sourceStructure = await this.getCompanyStructure(sourceConnection);
+            const sourceStructure = await this.getCompanyStructure(sourceCompany.slug);
             
             // Create new company with cloned structure
             const newCompany = await this.createCompleteCompany({
                 ...newCompanyData,
-                modules: sourceStructure.modules
+                modules: sourceCompany.getEnabledModules()
             });
 
             // Clone departments and positions
-            await this.cloneStructuralData(sourceConnection, newCompany.company.sanitizedName, sourceStructure);
+            await this.cloneStructuralData(sourceCompany.slug, newCompany.company.slug, sourceStructure);
 
             return newCompany;
 
@@ -188,42 +252,118 @@ class CompanyService {
 
     // Private helper methods
 
-    async getOverviewStats(connection) {
-        const stats = {};
-        const collections = ['users', 'departments', 'positions', 'attendance', 'holidays', 'vacations', 'missions', 'requests', 'documents', 'events', 'announcements', 'notifications', 'payroll', 'reports', 'surveys'];
+    sanitizeCompanyName(name) {
+        return name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .substring(0, 50);
+    }
 
-        for (const collectionName of collections) {
-            try {
-                stats[collectionName] = await connection.collection(collectionName).countDocuments();
-            } catch (error) {
-                stats[collectionName] = 0;
-            }
+    buildModulesConfig(modulesList) {
+        const config = {};
+        for (const moduleKey of modulesList) {
+            config[moduleKey] = {
+                enabled: true,
+                tier: 'starter',
+                limits: {
+                    employees: null,
+                    devices: null,
+                    storage: null,
+                    apiCalls: null
+                },
+                enabledAt: new Date(),
+                disabledAt: null
+            };
+        }
+        return config;
+    }
+
+    async getOverviewStats(tenantId) {
+        const stats = {};
+
+        try {
+            stats.users = await User.count({ where: { tenant_id: tenantId } });
+        } catch (error) {
+            stats.users = 0;
+        }
+
+        try {
+            stats.departments = await Department.count({ where: { tenant_id: tenantId } });
+        } catch (error) {
+            stats.departments = 0;
+        }
+
+        try {
+            stats.positions = await Position.count({ where: { tenant_id: tenantId } });
+        } catch (error) {
+            stats.positions = 0;
+        }
+
+        try {
+            stats.attendance = await Attendance.count({ where: { tenant_id: tenantId } });
+        } catch (error) {
+            stats.attendance = 0;
+        }
+
+        try {
+            stats.holidays = await Holiday.count({ where: { tenant_id: tenantId } });
+        } catch (error) {
+            stats.holidays = 0;
+        }
+
+        try {
+            stats.vacations = await Vacation.count({ where: { tenant_id: tenantId } });
+        } catch (error) {
+            stats.vacations = 0;
+        }
+
+        try {
+            stats.missions = await Mission.count({ where: { tenant_id: tenantId } });
+        } catch (error) {
+            stats.missions = 0;
+        }
+
+        try {
+            stats.requests = await Request.count({ where: { tenant_id: tenantId } });
+        } catch (error) {
+            stats.requests = 0;
         }
 
         return stats;
     }
 
-    async getUserAnalytics(connection) {
+    async getUserAnalytics(tenantId) {
         try {
-            const userStats = await connection.collection('users').aggregate([
-                {
-                    $group: {
-                        _id: '$role',
-                        count: { $sum: 1 }
-                    }
-                }
-            ]).toArray();
-
-            const activeUsers = await connection.collection('users').countDocuments({
-                'employment.employmentStatus': 'active'
+            // Get user counts by role
+            const users = await User.findAll({
+                where: { tenant_id: tenantId },
+                attributes: ['role'],
+                raw: true
             });
 
-            const inactiveUsers = await connection.collection('users').countDocuments({
-                'employment.employmentStatus': { $ne: 'active' }
+            const byRole = users.reduce((acc, user) => {
+                const role = user.role || 'unknown';
+                acc[role] = (acc[role] || 0) + 1;
+                return acc;
+            }, {});
+
+            const activeUsers = await User.count({
+                where: {
+                    tenant_id: tenantId,
+                    'employment.employment_status': 'active'
+                }
+            });
+
+            const inactiveUsers = await User.count({
+                where: {
+                    tenant_id: tenantId,
+                    'employment.employment_status': { [Op.ne]: 'active' }
+                }
             });
 
             return {
-                byRole: userStats,
+                byRole: Object.entries(byRole).map(([role, count]) => ({ _id: role, count })),
                 activeUsers,
                 inactiveUsers,
                 totalUsers: activeUsers + inactiveUsers
@@ -233,17 +373,18 @@ class CompanyService {
         }
     }
 
-    async getModuleUsage(connection) {
+    async getModuleUsage(company) {
         try {
-            // Get company metadata to see enabled modules
-            const companyInfo = await connection.collection('companies').findOne();
-            const enabledModules = companyInfo?.modules || [];
-
+            const enabledModules = company.getEnabledModules();
             const moduleUsage = {};
+            
             for (const module of enabledModules) {
+                const moduleConfig = company.getModuleConfig(module);
                 moduleUsage[module] = {
                     enabled: true,
-                    lastUsed: new Date() // This would be tracked in real usage
+                    tier: moduleConfig.tier,
+                    limits: moduleConfig.limits,
+                    enabledAt: moduleConfig.enabledAt
                 };
             }
 
@@ -253,15 +394,18 @@ class CompanyService {
         }
     }
 
-    async getDataDistribution(connection) {
+    async getDataDistribution(tenantId) {
         try {
-            const collections = await connection.db.listCollections().toArray();
             const distribution = {};
 
-            for (const collection of collections) {
-                const count = await connection.collection(collection.name).countDocuments();
-                distribution[collection.name] = count;
-            }
+            distribution.users = await User.count({ where: { tenant_id: tenantId } });
+            distribution.departments = await Department.count({ where: { tenant_id: tenantId } });
+            distribution.positions = await Position.count({ where: { tenant_id: tenantId } });
+            distribution.attendance = await Attendance.count({ where: { tenant_id: tenantId } });
+            distribution.requests = await Request.count({ where: { tenant_id: tenantId } });
+            distribution.holidays = await Holiday.count({ where: { tenant_id: tenantId } });
+            distribution.missions = await Mission.count({ where: { tenant_id: tenantId } });
+            distribution.vacations = await Vacation.count({ where: { tenant_id: tenantId } });
 
             return distribution;
         } catch (error) {
@@ -269,12 +413,16 @@ class CompanyService {
         }
     }
 
-    async getActivityMetrics(connection) {
+    async getActivityMetrics(tenantId) {
         try {
-            // This would track actual user activity
-            const recentUsers = await connection.collection('users').find({
-                lastLogin: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-            }).count();
+            const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            
+            const recentUsers = await User.count({
+                where: {
+                    tenant_id: tenantId,
+                    last_login: { [Op.gte]: oneWeekAgo }
+                }
+            });
 
             return {
                 recentActiveUsers: recentUsers,
@@ -285,93 +433,49 @@ class CompanyService {
         }
     }
 
-    async createCompanyMetadata(connection, companyData) {
-        const companySchema = new mongoose.Schema({
-            name: { type: String, required: true },
-            sanitizedName: { type: String, required: true, unique: true },
-            industry: { type: String },
-            adminEmail: { type: String },
-            phone: { type: String },
-            address: { type: String },
-            modules: [{ type: String }],
-            settings: {
-                timezone: { type: String },
-                currency: { type: String },
-                language: { type: String },
-                workingHours: {
-                    start: { type: String },
-                    end: { type: String }
-                },
-                weekendDays: [{ type: Number }]
-            },
-            createdAt: { type: Date, default: Date.now },
-            isActive: { type: Boolean, default: true }
-        });
-
-        const CompanyModel = connection.model('Company', companySchema);
-        return await CompanyModel.create(companyData);
-    }
-
-    async createInitialStructure(connection, tenantId, industry) {
+    async createInitialStructure(tenantId, industry) {
         // Industry-specific departments
         const departmentTemplates = {
             Technology: [
-                { name: 'Engineering', code: 'ENG', arabicName: 'الهندسة' },
-                { name: 'Human Resources', code: 'HR', arabicName: 'الموارد البشرية' },
-                { name: 'Administration', code: 'ADMIN', arabicName: 'الإدارة' }
+                { name: 'Engineering', code: 'ENG', arabic_name: 'الهندسة' },
+                { name: 'Human Resources', code: 'HR', arabic_name: 'الموارد البشرية' },
+                { name: 'Administration', code: 'ADMIN', arabic_name: 'الإدارة' }
             ],
             Healthcare: [
-                { name: 'Medical Staff', code: 'MED', arabicName: 'الطاقم الطبي' },
-                { name: 'Administration', code: 'ADMIN', arabicName: 'الإدارة' },
-                { name: 'Human Resources', code: 'HR', arabicName: 'الموارد البشرية' }
+                { name: 'Medical Staff', code: 'MED', arabic_name: 'الطاقم الطبي' },
+                { name: 'Administration', code: 'ADMIN', arabic_name: 'الإدارة' },
+                { name: 'Human Resources', code: 'HR', arabic_name: 'الموارد البشرية' }
             ],
             default: [
-                { name: 'Administration', code: 'ADMIN', arabicName: 'الإدارة' },
-                { name: 'Human Resources', code: 'HR', arabicName: 'الموارد البشرية' }
+                { name: 'Administration', code: 'ADMIN', arabic_name: 'الإدارة' },
+                { name: 'Human Resources', code: 'HR', arabic_name: 'الموارد البشرية' }
             ]
         };
 
         const departments = departmentTemplates[industry] || departmentTemplates.default;
 
         // Create departments
-        const DepartmentModel = connection.model('Department', new mongoose.Schema({
-            tenantId: String,
-            name: String,
-            code: String,
-            arabicName: String,
-            createdAt: { type: Date, default: Date.now }
-        }));
-
         const createdDepartments = [];
         for (const dept of departments) {
-            const department = await DepartmentModel.create({
-                tenantId,
+            const department = await Department.create({
+                tenant_id: tenantId,
                 ...dept
             });
             createdDepartments.push(department);
         }
 
         // Create positions
-        const PositionModel = connection.model('Position', new mongoose.Schema({
-            tenantId: String,
-            title: String,
-            code: String,
-            arabicTitle: String,
-            department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
-            createdAt: { type: Date, default: Date.now }
-        }));
-
         const createdPositions = [];
         const positions = [
-            { title: 'Administrator', code: 'ADMIN', arabicTitle: 'مدير' },
-            { title: 'Manager', code: 'MGR', arabicTitle: 'مدير' },
-            { title: 'Employee', code: 'EMP', arabicTitle: 'موظف' }
+            { title: 'Administrator', code: 'ADMIN', arabic_title: 'مدير' },
+            { title: 'Manager', code: 'MGR', arabic_title: 'مدير' },
+            { title: 'Employee', code: 'EMP', arabic_title: 'موظف' }
         ];
 
         for (const pos of positions) {
-            const position = await PositionModel.create({
-                tenantId,
-                department: createdDepartments[0]._id,
+            const position = await Position.create({
+                tenant_id: tenantId,
+                department_id: createdDepartments[0].id,
                 ...pos
             });
             createdPositions.push(position);
@@ -383,97 +487,75 @@ class CompanyService {
         };
     }
 
-    async createAdminUser(connection, userData) {
-        const userSchema = new mongoose.Schema({
-            tenantId: String,
-            employeeId: String,
-            username: String,
-            email: String,
-            password: String,
-            role: String,
-            personalInfo: {
-                firstName: String,
-                lastName: String,
-                arabicName: String
-            },
-            department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
-            position: { type: mongoose.Schema.Types.ObjectId, ref: 'Position' },
-            employment: {
-                hireDate: { type: Date, default: Date.now },
-                contractType: String,
-                employmentStatus: String
-            },
-            createdAt: { type: Date, default: Date.now }
-        });
+    async createAdminUser(userData) {
+        const hashedPassword = await bcrypt.hash(userData.password, 12);
 
-        // Add password hashing middleware
-        userSchema.pre('save', async function(next) {
-            if (!this.isModified('password')) return next();
-            const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
-            this.password = await bcrypt.hash(this.password, saltRounds);
-            next();
-        });
-
-        const UserModel = connection.model('User', userSchema);
-
-        return await UserModel.create({
-            tenantId: userData.tenantId,
-            employeeId: `${userData.tenantId.toUpperCase()}-0001`,
+        return await User.create({
+            tenant_id: userData.tenantId,
+            employee_id: `${userData.tenantId.toUpperCase()}-0001`,
             username: 'admin',
             email: userData.email,
-            password: userData.password,
+            password: hashedPassword,
             role: 'admin',
-            personalInfo: {
-                firstName: 'System',
-                lastName: 'Administrator',
-                arabicName: 'مسؤول النظام'
+            personal_info: {
+                first_name: 'System',
+                last_name: 'Administrator',
+                arabic_name: 'مسؤول النظام'
             },
-            department: userData.department,
-            position: userData.position,
+            department_id: userData.department_id,
+            position_id: userData.position_id,
             employment: {
-                hireDate: new Date(),
-                contractType: 'full-time',
-                employmentStatus: 'active'
+                hire_date: new Date(),
+                contract_type: 'full-time',
+                employment_status: 'active'
             }
         });
     }
 
-    async createSampleData(connection, tenantId, initialData) {
+    async createSampleData(tenantId, initialData) {
         // This would create sample employees, departments, etc.
         // Implementation would depend on specific requirements
         console.log(`Creating sample data for ${tenantId}`);
     }
 
-    async getCompanyStructure(connection) {
-        const companyInfo = await connection.collection('companies').findOne();
-        const departments = await connection.collection('departments').find({}).toArray();
-        const positions = await connection.collection('positions').find({}).toArray();
+    async getCompanyStructure(tenantId) {
+        const company = await Company.findOne({ where: { slug: tenantId } });
+        const departments = await Department.findAll({
+            where: { tenant_id: tenantId },
+            raw: true
+        });
+        const positions = await Position.findAll({
+            where: { tenant_id: tenantId },
+            raw: true
+        });
 
         return {
-            modules: companyInfo?.modules || [],
+            modules: company ? company.getEnabledModules() : [],
             departments,
             positions,
-            settings: companyInfo?.settings || {}
+            settings: company ? company.settings : {}
         };
     }
 
-    async cloneStructuralData(sourceConnection, targetTenantId, sourceStructure) {
-        const targetConnection = await multiTenantDB.getCompanyConnection(targetTenantId);
-
+    async cloneStructuralData(sourceTenantId, targetTenantId, sourceStructure) {
         // Clone departments
         for (const dept of sourceStructure.departments) {
             const newDept = { ...dept };
-            delete newDept._id;
-            newDept.tenantId = targetTenantId;
-            await targetConnection.collection('departments').insertOne(newDept);
+            delete newDept.id;
+            delete newDept.created_at;
+            delete newDept.updated_at;
+            newDept.tenant_id = targetTenantId;
+            await Department.create(newDept);
         }
 
         // Clone positions
         for (const pos of sourceStructure.positions) {
             const newPos = { ...pos };
-            delete newPos._id;
-            newPos.tenantId = targetTenantId;
-            await targetConnection.collection('positions').insertOne(newPos);
+            delete newPos.id;
+            delete newPos.created_at;
+            delete newPos.updated_at;
+            newPos.tenant_id = targetTenantId;
+            await Position.create(newPos);
         }
     }
 }

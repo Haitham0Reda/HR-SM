@@ -1,64 +1,44 @@
 /**
- * Tenant Model Registry Utility
- * 
- * Handles safe registration of models on tenant database connections
- * Prevents duplicate registration errors and provides consistent error handling
+ * Tenant Model Registry — COMPATIBILITY SHIM
+ *
+ * The original mongoose-era pattern handed every tenant its own MongoDB
+ * connection and registered fresh schemas on each. Under the Sequelize
+ * single-DB-with-`tenant_id` model that no longer applies — but a number of
+ * controllers (payroll, salary, vacation, sickLeave, mixedVacation, user,
+ * userPhoto, dashboard) still call `registerHRModels(tenantConnection)`.
+ *
+ * Until those callers are individually refactored to import the Sequelize
+ * models directly and pass `tenantId` in their `where` clauses, this module
+ * provides a backwards-compatible facade: ignore the `connection` argument,
+ * return the singleton Sequelize models. The models themselves enforce tenant
+ * isolation via the `tenantId` column on every row.
+ *
+ * TODO (T012b): refactor each calling controller to use direct imports + a
+ * `where: { tenantId, ... }` filter, then delete this shim.
  */
+
+import User from '../modules/hr-core/users/models/user.model.js';
+import Department from '../modules/hr-core/users/models/department.model.js';
+import Position from '../modules/hr-core/users/models/position.model.js';
+import Announcement from '../modules/announcements/models/announcement.model.js';
+
+const HR_MODELS = { User, Department, Position, Announcement };
 
 /**
- * Safely register a model on a tenant connection
- * @param {mongoose.Connection} connection - Tenant database connection
- * @param {string} modelName - Name of the model
- * @param {mongoose.Schema} schema - Mongoose schema
- * @returns {mongoose.Model} - Registered model
+ * Compatibility: returns the named Sequelize model. The `connection` and
+ * `schema` arguments are ignored.
  */
-export const registerTenantModel = (connection, modelName, schema) => {
-    try {
-        // Check if model is already registered
-        if (connection.models[modelName]) {
-            return connection.models[modelName];
-        }
-
-        // Register new model
-        return connection.model(modelName, schema);
-    } catch (error) {
-        console.error(`Error registering model ${modelName}:`, error.message);
-        throw new Error(`Failed to register model ${modelName}: ${error.message}`);
+export const registerTenantModel = (_connection, modelName, _schema) => {
+    if (!HR_MODELS[modelName]) {
+        throw new Error(`registerTenantModel: unknown model '${modelName}'. Add it to HR_MODELS in tenantModelRegistry.js or refactor the caller.`);
     }
+    return HR_MODELS[modelName];
 };
 
 /**
- * Register all HR core models on a tenant connection
- * @param {mongoose.Connection} connection - Tenant database connection
- * @returns {Object} - Object containing all registered models
+ * Compatibility: returns the canonical HR Sequelize models. The
+ * `connection` argument is ignored.
  */
-export const registerHRModels = async (connection) => {
-    try {
-        // Import models
-        const { default: User } = await import('../modules/hr-core/users/models/user.model.js');
-        const { default: Department } = await import('../modules/hr-core/users/models/department.model.js');
-        const { default: Position } = await import('../modules/hr-core/users/models/position.model.js');
-        const { default: Announcement } = await import('../modules/announcements/models/announcement.model.js');
+export const registerHRModels = async (_connection) => ({ ...HR_MODELS });
 
-        // Register models safely
-        const TenantUser = registerTenantModel(connection, 'User', User.schema);
-        const TenantDepartment = registerTenantModel(connection, 'Department', Department.schema);
-        const TenantPosition = registerTenantModel(connection, 'Position', Position.schema);
-        const TenantAnnouncement = registerTenantModel(connection, 'Announcement', Announcement.schema);
-
-        return {
-            User: TenantUser,
-            Department: TenantDepartment,
-            Position: TenantPosition,
-            Announcement: TenantAnnouncement
-        };
-    } catch (error) {
-        console.error('Error registering HR models:', error.message);
-        throw new Error(`Failed to register HR models: ${error.message}`);
-    }
-};
-
-export default {
-    registerTenantModel,
-    registerHRModels
-};
+export default { registerTenantModel, registerHRModels };
