@@ -4,8 +4,24 @@
 /node_modules
 /.pnp
 .pnp.js
+
+# Environment files - NEVER commit these
 .env
+.env.*
+!.env.example
+!.env.production.example
+!.env.test
 .env.mongodb-rollback
+
+# Private keys and certificates - NEVER commit these
+keys/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
 
 # testing
 /coverage
