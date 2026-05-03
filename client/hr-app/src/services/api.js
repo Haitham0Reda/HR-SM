@@ -113,12 +113,28 @@ api.interceptors.request.use(
         // Reduced logging for performance
         // logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
 
-        // Add Tenant JWT authentication token if available
-        const tenantToken = localStorage.getItem('tenant_token') || localStorage.getItem('token');
+        // Add Tenant JWT authentication token if available.
+        // Source of truth is the Redux store (rehydrated from redux-persist).
+        // We require() the store lazily here to avoid a circular import at module
+        // load: store/index.js imports notificationSlice which transitively
+        // imports this file. By the time the first request fires, the module
+        // graph is fully resolved.
+        //
+        // CRITICAL: Do NOT read from localStorage directly. redux-persist manages
+        // the persist:root key; any manual localStorage reads create a second
+        // source of truth that can drift in multi-tenant scenarios.
+        let tenantToken = null;
+        try {
+            const { store } = require('../store');
+            tenantToken = store.getState().auth?.tenantToken;
+        } catch (_) {
+            // Store not ready yet (very early bootstrap) — leave header unset.
+            // RTK Query baseApi handles its own headers separately.
+        }
         if (tenantToken) {
             config.headers.Authorization = `Bearer ${tenantToken}`;
         }
-        
+
         return config;
     },
     (error) => {
@@ -147,7 +163,7 @@ api.interceptors.response.use(
         // Extract data from response for cleaner usage
         return response.data !== undefined ? response.data : response;
     },
-    (error) => {
+    async (error) => {
         // Handle circuit breaker errors
         if (error.circuitBreaker) {
             return Promise.reject(error);
@@ -173,15 +189,30 @@ api.interceptors.response.use(
                 );
             }
 
-            // Handle 401 Unauthorized - log but don't automatically redirect
-            // Let the AuthContext handle the redirect logic
+            // Handle 401 Unauthorized - attempt token refresh before giving up
             if (status === 401) {
                 logger.warn('Unauthorized access detected', {
                     url: error.config?.url,
                     method: error.config?.method
                 });
-                // Don't automatically clear storage or redirect
-                // Let the calling component handle this
+                
+                // Attempt token refresh if this wasn't already a refresh request
+                if (!error.config?.url?.includes('/auth/refresh')) {
+                    try {
+                        const { store } = require('../store');
+                        const { refreshToken } = require('../store/slices/authSlice');
+                        
+                        // Dispatch refresh token action
+                        const result = await store.dispatch(refreshToken()).unwrap();
+                        
+                        // Retry the original request with new token
+                        error.config.headers.Authorization = `Bearer ${result.tenantToken}`;
+                        return api.request(error.config);
+                    } catch (refreshError) {
+                        // Refresh failed - let the calling component handle redirect
+                        logger.error('Token refresh failed', { error: refreshError });
+                    }
+                }
             }
 
             // Return error with full context

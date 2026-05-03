@@ -15,16 +15,15 @@ import {
     getSalaryHistory
 } from '../controllers/salary.controller.js';
 import { protect, hrOrAdmin, checkRole } from '../../../middleware/index.js';
-import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../../../platform/system/models/license.model.js';
+import { moduleGuard } from '../../../middleware/moduleGuard.js';
 
 const router = express.Router();
 
 // Apply authentication to all payroll routes first
 router.use(protect);
 
-// Apply license validation after authentication (so tenant ID is available)
-router.use(requireModuleLicense(MODULES.PAYROLL));
+// Apply module guard after authentication (checks license features)
+router.use(moduleGuard('payroll'));
 
 // Role-based middleware for salary access
 const salaryViewAccess = checkRole(['hr', 'finance', 'finance-manager', 'admin']);

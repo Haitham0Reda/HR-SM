@@ -13,16 +13,13 @@ import {
     hrOrAdmin,
     canViewReports
 } from '../../../middleware/index.js';
-import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../../../platform/system/models/license.model.js';
+import { moduleGuard } from '../../../middleware/moduleGuard.js';
 
 const router = express.Router();
 
-// Apply authentication to all routes first
+// Apply authentication and module guard to all routes
 router.use(protect);
-
-// Apply license validation to all analytics routes (after authentication)
-router.use(requireModuleLicense(MODULES.REPORTING));
+router.use(moduleGuard('reporting'));
 
 // Apply common middleware to all routes
 router.use(hrOrAdmin, canViewReports);

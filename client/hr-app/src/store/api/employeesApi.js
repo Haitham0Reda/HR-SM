@@ -18,13 +18,17 @@ export const employeesApi = baseApi.injectEndpoints({
         url: '/users',
         params,
       }),
-      providesTags: (result) =>
-        result
+      providesTags: (result) => {
+        // Handle both direct array and { data: array } response shapes.
+        // Legacy axios extracts .data in interceptor; RTK Query does not.
+        const items = Array.isArray(result) ? result : result?.data;
+        return items
           ? [
-              ...result.data.map(({ id }) => ({ type: 'Employees', id })),
+              ...items.map(({ id }) => ({ type: 'Employees', id })),
               { type: 'Employees', id: 'LIST' },
             ]
-          : [{ type: 'Employees', id: 'LIST' }],
+          : [{ type: 'Employees', id: 'LIST' }];
+      },
     }),
 
     // Get single employee by ID

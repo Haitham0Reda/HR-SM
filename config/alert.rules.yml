@@ -1,0 +1,55 @@
+groups:
+  - name: hrms_api_alerts
+    interval: 30s
+    rules:
+      # Alert when p95 latency exceeds 0.5s for any route over 5 minutes
+      - alert: HighAPILatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (route, le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API latency detected on route {{ $labels.route }}"
+          description: "The p95 latency for route {{ $labels.route }} is {{ $value }}s, which exceeds the 0.5s threshold for the last 5 minutes."
+
+      # Alert when error rate is high
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{status_code=~"5.."}[5m])) by (route)
+          /
+          sum(rate(http_request_duration_seconds_count[5m])) by (route)
+          > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "High error rate on route {{ $labels.route }}"
+          description: "Error rate for route {{ $labels.route }} is {{ $value | humanizePercentage }}, exceeding 5% threshold."
+
+      # Alert when license validation errors spike
+      - alert: LicenseValidationErrors
+        expr: |
+          rate(license_validation_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: licensing
+        annotations:
+          summary: "License validation errors detected"
+          description: "License validation error rate is {{ $value }} errors/sec for error type {{ $labels.error_type }}."
+
+      # Alert when API server is down
+      - alert: APIServerDown
+        expr: up{job="hrms-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "HRMS API server is down"
+          description: "The HRMS API server has been unreachable for more than 1 minute."

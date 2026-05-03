@@ -3,7 +3,7 @@
  * 
  * Abstract base repository class providing common CRUD operations
  * and advanced query capabilities for Sequelize models.
- * Enforces multi-tenancy with automatic tenant_id filtering.
+ * Enforces multi-tenancy with automatic company_id filtering.
  * 
  * @abstract
  */
@@ -14,36 +14,43 @@ import QueryBuilder from './QueryBuilder.js';
 class BaseRepository {
   /**
    * @param {Sequelize.Model} model - Sequelize model instance
+   * @param {string} tenantId - Tenant ID for multi-tenant operations
    */
-  constructor(model) {
-    if (this.constructor === BaseRepository) {
-      throw new Error('BaseRepository is abstract and cannot be instantiated directly');
-    }
-    
+  constructor(model, tenantId) {
     if (!model || !model.sequelize) {
       throw new Error('Valid Sequelize model is required');
     }
     
     this.model = model;
     this.modelName = model.name;
+    this.tenantId = tenantId;
+    
+    this.assertTenantId();
   }
 
   /**
-   * Create a new record with automatic tenant_id injection
+   * Assert that tenantId is present and valid
+   * @throws {Error} If tenantId is null, undefined, or empty string
+   */
+  assertTenantId() {
+    if (!this.tenantId || this.tenantId.trim() === '') {
+      throw new Error('tenantId is required for all repository operations');
+    }
+  }
+
+  /**
+   * Create a new record with automatic company_id injection
    * @param {Object} data - Record data
    * @param {Object} [options] - Additional options
-   * @param {string} [options.tenantId] - Tenant ID for multi-tenant operations
    * @param {Object} [options.transaction] - Sequelize transaction
    * @returns {Promise<Object>} Created record
    */
   async create(data, options = {}) {
     try {
-      const { tenantId, transaction } = options;
+      const { transaction } = options;
       
-      // Add tenant context if provided
-      if (tenantId) {
-        data.tenantId = tenantId;
-      }
+      // Inject tenant context
+      data.company_id = this.tenantId;
       
       const createOptions = transaction ? { transaction } : {};
       const record = await this.model.create(data, createOptions);
@@ -55,24 +62,21 @@ class BaseRepository {
   }
 
   /**
-   * Find record by ID with tenant filtering
+   * Find record by ID with company_id filtering
    * @param {string|UUID} id - Record ID
    * @param {Object} [options] - Query options
-   * @param {string} [options.tenantId] - Tenant ID (required for multi-tenant models)
    * @param {Array|string} [options.attributes] - Fields to include/exclude
    * @param {Array} [options.include] - Associations to include
    * @returns {Promise<Object|null>} Found record or null
    */
   async findById(id, options = {}) {
     try {
-      const { tenantId, attributes, include } = options;
+      const { attributes, include } = options;
       
-      const where = { id };
-      
-      // Enforce tenant isolation
-      if (tenantId) {
-        where.tenantId = tenantId;
-      }
+      const where = { 
+        id,
+        company_id: this.tenantId
+      };
       
       const findOptions = { where };
       
@@ -91,10 +95,9 @@ class BaseRepository {
   }
 
   /**
-   * Find single record by filter with tenant filtering
+   * Find single record by filter with company_id filtering
    * @param {Object} filter - Query filter
    * @param {Object} [options] - Query options
-   * @param {string} [options.tenantId] - Tenant ID (required for multi-tenant models)
    * @param {Array|string} [options.attributes] - Fields to select
    * @param {Array} [options.include] - Associations to include
    * @param {Object} [options.order] - Order criteria
@@ -102,14 +105,12 @@ class BaseRepository {
    */
   async findOne(filter = {}, options = {}) {
     try {
-      const { tenantId, attributes, include, order } = options;
+      const { attributes, include, order } = options;
       
-      const where = { ...filter };
-      
-      // Enforce tenant isolation
-      if (tenantId) {
-        where.tenantId = tenantId;
-      }
+      const where = { 
+        ...filter,
+        company_id: this.tenantId
+      };
       
       const findOptions = { where };
       
@@ -132,10 +133,9 @@ class BaseRepository {
   }
 
   /**
-   * Find multiple records with tenant filtering
+   * Find multiple records with company_id filtering
    * @param {Object} filter - Query filter
    * @param {Object} [options] - Query options
-   * @param {string} [options.tenantId] - Tenant ID (required for multi-tenant models)
    * @param {Array|string} [options.attributes] - Fields to select
    * @param {Array} [options.include] - Associations to include
    * @param {Object} [options.order] - Sort criteria
@@ -145,14 +145,12 @@ class BaseRepository {
    */
   async findAll(filter = {}, options = {}) {
     try {
-      const { tenantId, attributes, include, order, limit, offset } = options;
+      const { attributes, include, order, limit, offset } = options;
       
-      const where = { ...filter };
-      
-      // Enforce tenant isolation
-      if (tenantId) {
-        where.tenantId = tenantId;
-      }
+      const where = { 
+        ...filter,
+        company_id: this.tenantId
+      };
       
       const findOptions = { where };
       
@@ -183,25 +181,22 @@ class BaseRepository {
   }
 
   /**
-   * Update record by ID with tenant filtering
+   * Update record by ID with company_id filtering
    * @param {string|UUID} id - Record ID
    * @param {Object} data - Update data
    * @param {Object} [options] - Update options
-   * @param {string} [options.tenantId] - Tenant ID (required for multi-tenant models)
    * @param {Object} [options.transaction] - Sequelize transaction
    * @param {boolean} [options.returning=true] - Return updated record
    * @returns {Promise<Object|null>} Updated record or null
    */
   async update(id, data, options = {}) {
     try {
-      const { tenantId, transaction, returning = true } = options;
+      const { transaction, returning = true } = options;
       
-      const where = { id };
-      
-      // Enforce tenant isolation
-      if (tenantId) {
-        where.tenantId = tenantId;
-      }
+      const where = { 
+        id,
+        company_id: this.tenantId
+      };
       
       const updateOptions = {
         where,
@@ -218,30 +213,27 @@ class BaseRepository {
         return updatedRecords[0];
       }
       
-      return affectedCount > 0 ? await this.findById(id, { tenantId }) : null;
+      return affectedCount > 0 ? await this.findById(id) : null;
     } catch (error) {
       throw this._handleError(error, 'update');
     }
   }
 
   /**
-   * Delete record by ID with tenant filtering (hard delete)
+   * Delete record by ID with company_id filtering (hard delete)
    * @param {string|UUID} id - Record ID
    * @param {Object} [options] - Delete options
-   * @param {string} [options.tenantId] - Tenant ID (required for multi-tenant models)
    * @param {Object} [options.transaction] - Sequelize transaction
    * @returns {Promise<boolean>} True if deleted, false if not found
    */
   async delete(id, options = {}) {
     try {
-      const { tenantId, transaction } = options;
+      const { transaction } = options;
       
-      const where = { id };
-      
-      // Enforce tenant isolation
-      if (tenantId) {
-        where.tenantId = tenantId;
-      }
+      const where = { 
+        id,
+        company_id: this.tenantId
+      };
       
       const deleteOptions = { where };
       
@@ -260,14 +252,13 @@ class BaseRepository {
    * Soft delete record by setting deletedAt timestamp
    * @param {string|UUID} id - Record ID
    * @param {Object} [options] - Delete options
-   * @param {string} [options.tenantId] - Tenant ID (required for multi-tenant models)
    * @param {Object} [options.transaction] - Sequelize transaction
    * @param {string} [options.deletedBy] - User ID who performed deletion
    * @returns {Promise<Object|null>} Updated record or null
    */
   async softDelete(id, options = {}) {
     try {
-      const { tenantId, transaction, deletedBy } = options;
+      const { transaction, deletedBy } = options;
       
       const updateData = {
         deletedAt: new Date()
@@ -277,29 +268,24 @@ class BaseRepository {
         updateData.deletedBy = deletedBy;
       }
       
-      return await this.update(id, updateData, { tenantId, transaction });
+      return await this.update(id, updateData, { transaction });
     } catch (error) {
       throw this._handleError(error, 'softDelete');
     }
   }
 
   /**
-   * Count records matching filter with tenant filtering
+   * Count records matching filter with company_id filtering
    * @param {Object} filter - Query filter
    * @param {Object} [options] - Count options
-   * @param {string} [options.tenantId] - Tenant ID (required for multi-tenant models)
    * @returns {Promise<number>} Record count
    */
   async count(filter = {}, options = {}) {
     try {
-      const { tenantId } = options;
-      
-      const where = { ...filter };
-      
-      // Enforce tenant isolation
-      if (tenantId) {
-        where.tenantId = tenantId;
-      }
+      const where = { 
+        ...filter,
+        company_id: this.tenantId
+      };
       
       return await this.model.count({ where });
     } catch (error) {
@@ -308,22 +294,17 @@ class BaseRepository {
   }
 
   /**
-   * Check if record exists with tenant filtering
+   * Check if record exists with company_id filtering
    * @param {Object} filter - Query filter
    * @param {Object} [options] - Options
-   * @param {string} [options.tenantId] - Tenant ID (required for multi-tenant models)
    * @returns {Promise<boolean>} True if exists, false otherwise
    */
   async exists(filter = {}, options = {}) {
     try {
-      const { tenantId } = options;
-      
-      const where = { ...filter };
-      
-      // Enforce tenant isolation
-      if (tenantId) {
-        where.tenantId = tenantId;
-      }
+      const where = { 
+        ...filter,
+        company_id: this.tenantId
+      };
       
       const count = await this.model.count({ where, limit: 1 });
       return count > 0;
@@ -333,7 +314,7 @@ class BaseRepository {
   }
 
   /**
-   * Paginate records with tenant filtering
+   * Paginate records with company_id filtering
    * @param {Object} filter - Query filter
    * @param {Object} options - Pagination options
    * @param {number} [options.page=1] - Page number (1-based)
@@ -341,7 +322,6 @@ class BaseRepository {
    * @param {Object} [options.order] - Sort criteria
    * @param {Array|string} [options.attributes] - Fields to select
    * @param {Array} [options.include] - Associations to include
-   * @param {string} [options.tenantId] - Tenant ID (required for multi-tenant models)
    * @returns {Promise<Object>} Paginated result with data, total, page, limit, totalPages
    */
   async paginate(filter = {}, options = {}) {
@@ -351,16 +331,13 @@ class BaseRepository {
         limit = 10,
         order,
         attributes,
-        include,
-        tenantId
+        include
       } = options;
       
-      const where = { ...filter };
-      
-      // Enforce tenant isolation
-      if (tenantId) {
-        where.tenantId = tenantId;
-      }
+      const where = { 
+        ...filter,
+        company_id: this.tenantId
+      };
       
       const offset = (page - 1) * limit;
       
@@ -444,6 +421,16 @@ class BaseRepository {
     enhancedError.stack = error.stack;
     
     return enhancedError;
+  }
+
+  /**
+   * Static factory to create a tenant-scoped repository instance
+   * @param {Sequelize.Model} model - Sequelize model instance
+   * @param {string} tenantId - Tenant ID for multi-tenant operations
+   * @returns {BaseRepository} Repository instance
+   */
+  static withTenant(model, tenantId) {
+    return new BaseRepository(model, tenantId);
   }
 }
 

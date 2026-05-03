@@ -9,16 +9,13 @@ import {
     markAllAsRead
 } from '../controllers/notification.controller.js';
 import { protect, hrOrAdmin } from '../../../middleware/index.js';
-import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../../../platform/system/models/license.model.js';
+import { moduleGuard } from '../../../middleware/moduleGuard.js';
 
 const router = express.Router();
 
-// Apply authentication to all routes first
+// Apply authentication and module guard to all routes
 router.use(protect);
-
-// Apply license validation to all notification routes (after authentication)
-router.use(requireModuleLicense(MODULES.COMMUNICATION));
+router.use(moduleGuard('communication'));
 
 // Get all notifications - Protected (users see their own)
 router.get('/', getAllNotifications);

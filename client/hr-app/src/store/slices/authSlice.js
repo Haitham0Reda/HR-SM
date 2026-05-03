@@ -9,11 +9,13 @@ const ROLE_HIERARCHY = {
   'employee': 1
 };
 
-// Initial state
+// Initial state — token/tenantId persistence is managed by redux-persist.
+// DO NOT read or write localStorage directly here; that re-introduces the
+// dual-storage drift this slice was created to remove.
 const initialState = {
   user: null,
-  tenantToken: localStorage.getItem('tenant_token'),
-  tenantId: localStorage.getItem('tenant_id'),
+  tenantToken: null,
+  tenantId: null,
   loading: false,
   error: null,
   isAuthenticated: false,
@@ -34,12 +36,8 @@ export const loginUser = createAsyncThunk(
       // API interceptor already extracts response.data, so response is the actual data
       const { user, token } = response.data;
 
-      // Store tokens in localStorage
-      localStorage.setItem('tenant_token', token);
-      localStorage.setItem('tenant_id', user?.tenantId || tenantId);
-      
-      // Remove old token if exists
-      localStorage.removeItem('token');
+      // No localStorage writes here — redux-persist will persist auth state on the
+      // next tick. Single source of truth: Redux.
 
       return {
         user,
@@ -71,14 +69,31 @@ export const loadUserProfile = createAsyncThunk(
     } catch (error) {
       console.error('Failed to load user profile:', error);
       
-      // Clear auth state for authentication errors
-      if (error.status === 401 || error.status === 404 || error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-        localStorage.removeItem('tenant_token');
-        localStorage.removeItem('tenant_id');
-        localStorage.removeItem('token');
-      }
-      
+      // Auth errors are handled by the rejected reducer below, which clears
+      // Redux state. redux-persist propagates the cleared state to storage.
       return rejectWithValue(error.message || 'Failed to load user profile');
+    }
+  }
+);
+
+export const refreshToken = createAsyncThunk(
+  'auth/refreshToken',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { auth } = getState();
+      
+      if (!auth.tenantToken) {
+        throw new Error('No token to refresh');
+      }
+
+      const response = await api.post('/auth/refresh');
+      const { token } = response.data;
+
+      return {
+        tenantToken: token
+      };
+    } catch (error) {
+      return rejectWithValue(error.message || 'Token refresh failed');
     }
   }
 );
@@ -90,12 +105,10 @@ export const logoutUser = createAsyncThunk(
       await api.post('/auth/logout');
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      // Always clear local storage
-      localStorage.removeItem('tenant_token');
-      localStorage.removeItem('tenant_id');
-      localStorage.removeItem('token');
     }
+    // No localStorage cleanup — the fulfilled reducer clears Redux state
+    // and redux-persist will sync the empty state to storage. Legacy 'token'
+    // key (if any) is migrated away by the cleanup-once selector below.
     return null;
   }
 );
@@ -117,15 +130,26 @@ const authSlice = createSlice({
       state.tenantId = null;
       state.isAuthenticated = false;
       state.error = null;
+      // redux-persist syncs the cleared slice automatically
+    },
+    // Kept for backward-compat with ReduxAuthProvider's init effect, but is
+    // now a no-op: redux-persist already restored state before the app mounts.
+    setTokensFromStorage: (state) => {
+      // Migrate any legacy 'token' / 'tenant_token' keys away from the dual
+      // storage era. After migration, persistence is solely redux-persist.
+      const legacyTenantToken = localStorage.getItem('tenant_token');
+      const legacyToken = localStorage.getItem('token');
+      const legacyTenantId = localStorage.getItem('tenant_id');
+      if (!state.tenantToken && (legacyTenantToken || legacyToken)) {
+        state.tenantToken = legacyTenantToken || legacyToken;
+      }
+      if (!state.tenantId && legacyTenantId) {
+        state.tenantId = legacyTenantId;
+      }
+      // Clean up legacy keys so they don't drift further.
       localStorage.removeItem('tenant_token');
       localStorage.removeItem('tenant_id');
       localStorage.removeItem('token');
-    },
-    setTokensFromStorage: (state) => {
-      const token = localStorage.getItem('tenant_token');
-      const tenantId = localStorage.getItem('tenant_id');
-      state.tenantToken = token;
-      state.tenantId = tenantId;
     }
   },
   extraReducers: (builder) => {
@@ -168,6 +192,24 @@ const authSlice = createSlice({
           state.tenantId = null;
           state.isAuthenticated = false;
         }
+      })
+      // Refresh token cases
+      .addCase(refreshToken.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(refreshToken.fulfilled, (state, action) => {
+        state.loading = false;
+        state.tenantToken = action.payload.tenantToken;
+        state.error = null;
+      })
+      .addCase(refreshToken.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        // Clear auth state on refresh failure
+        state.user = null;
+        state.tenantToken = null;
+        state.tenantId = null;
+        state.isAuthenticated = false;
       })
       // Logout cases
       .addCase(logoutUser.fulfilled, (state) => {

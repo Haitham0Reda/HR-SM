@@ -17,13 +17,17 @@ export const attendanceApi = baseApi.injectEndpoints({
         url: '/attendance',
         params,
       }),
-      providesTags: (result) =>
-        result
+      providesTags: (result) => {
+        // Handle both direct array and { data: array } response shapes.
+        // Legacy axios extracts .data in interceptor; RTK Query does not.
+        const items = Array.isArray(result) ? result : result?.data;
+        return items
           ? [
-              ...result.data.map(({ id }) => ({ type: 'Attendance', id })),
+              ...items.map(({ id }) => ({ type: 'Attendance', id })),
               { type: 'Attendance', id: 'LIST' },
             ]
-          : [{ type: 'Attendance', id: 'LIST' }],
+          : [{ type: 'Attendance', id: 'LIST' }];
+      },
     }),
 
     // Get single attendance record by ID

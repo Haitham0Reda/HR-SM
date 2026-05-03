@@ -15,13 +15,13 @@ import {
     validateTargetAudience,
     setCreatedBy
 } from '../../../middleware/index.js';
-import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../../../platform/system/models/license.model.js';
+import { moduleGuard } from '../../../middleware/moduleGuard.js';
 
 const router = express.Router();
 
-// Apply authentication to all routes first
+// Apply authentication and module guard to all routes
 router.use(protect);
+router.use(moduleGuard('communication'));
 
 // Apply license validation to all announcement routes (after authentication)
 router.use(requireModuleLicense(MODULES.COMMUNICATION));

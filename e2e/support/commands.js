@@ -2,6 +2,95 @@
  * Custom Cypress commands for HR-SM E2E testing
  */
 
+// ============================================================================
+// NEW CUSTOM COMMANDS FOR TASK 14
+// ============================================================================
+
+/**
+ * Login as a specific role using API authentication
+ * @param {string} role - One of: 'admin', 'hr_manager', 'manager', 'employee'
+ */
+Cypress.Commands.add('loginAs', (role) => {
+    cy.fixture('users').then((users) => {
+        const user = users[role];
+        if (!user) {
+            throw new Error(`User role '${role}' not found in users fixture`);
+        }
+
+        const apiUrl = Cypress.env('API_URL') || Cypress.env('apiUrl') || 'http://localhost:5000';
+        
+        cy.request({
+            method: 'POST',
+            url: `${apiUrl}/api/v1/auth/login`,
+            body: {
+                email: user.email,
+                password: user.password,
+                tenantId: user.tenantId
+            },
+            failOnStatusCode: false
+        }).then((response) => {
+            expect(response.status).to.eq(200);
+            
+            // Store auth token in localStorage
+            if (response.body.token) {
+                window.localStorage.setItem('authToken', response.body.token);
+            }
+            
+            // Store auth token in cookie if provided
+            if (response.body.token) {
+                cy.setCookie('authToken', response.body.token);
+            }
+            
+            // Store user info in localStorage
+            if (response.body.user) {
+                window.localStorage.setItem('user', JSON.stringify(response.body.user));
+            }
+            
+            cy.log(`Logged in as ${role}: ${user.email}`);
+        });
+    });
+});
+
+/**
+ * Seed a tenant with baseline test data
+ * @param {string} tenantId - The tenant ID to seed
+ */
+Cypress.Commands.add('seedTenant', (tenantId) => {
+    const apiUrl = Cypress.env('API_URL') || Cypress.env('apiUrl') || 'http://localhost:5000';
+    
+    cy.request({
+        method: 'POST',
+        url: `${apiUrl}/api/v1/test/seed`,
+        body: { tenantId },
+        failOnStatusCode: false
+    }).then((response) => {
+        expect(response.status).to.eq(200);
+        cy.log(`Seeded tenant: ${tenantId}`);
+    });
+});
+
+/**
+ * Cleanup a tenant's test data
+ * @param {string} tenantId - The tenant ID to cleanup
+ */
+Cypress.Commands.add('cleanupTenant', (tenantId) => {
+    const apiUrl = Cypress.env('API_URL') || Cypress.env('apiUrl') || 'http://localhost:5000';
+    
+    cy.request({
+        method: 'DELETE',
+        url: `${apiUrl}/api/v1/test/cleanup`,
+        body: { tenantId },
+        failOnStatusCode: false
+    }).then((response) => {
+        expect(response.status).to.eq(200);
+        cy.log(`Cleaned up tenant: ${tenantId}`);
+    });
+});
+
+// ============================================================================
+// EXISTING AUTHENTICATION COMMANDS
+// ============================================================================
+
 // Authentication commands
 Cypress.Commands.add('loginAsTenantUser', (userType = 'employee', tenantDomain = 'testcompany') => {
     cy.fixture('users').then((users) => {
@@ -341,5 +430,48 @@ Cypress.Commands.add('endPerformanceMark', (markName, threshold = 5000) => {
         expect(measure.duration).to.be.lessThan(threshold);
 
         cy.task('log', `Performance: ${markName} took ${measure.duration.toFixed(2)}ms`);
+    });
+});
+
+// ============================================================================
+// AUTH E2E TEST COMMANDS (Task 15)
+// ============================================================================
+
+/**
+ * Login as admin user
+ */
+Cypress.Commands.add('loginAsAdmin', () => {
+    cy.fixture('users').then((users) => {
+        const admin = users.admin;
+        cy.visit('/login');
+        cy.get('[data-cy=email-input]').type(admin.email);
+        cy.get('[data-cy=password-input]').type(admin.password);
+        cy.get('[data-cy=login-button]').click();
+        cy.url().should('include', '/dashboard');
+    });
+});
+
+/**
+ * Login as employee user
+ */
+Cypress.Commands.add('loginAsEmployee', () => {
+    cy.fixture('users').then((users) => {
+        const employee = users.employee;
+        cy.visit('/login');
+        cy.get('[data-cy=email-input]').type(employee.email);
+        cy.get('[data-cy=password-input]').type(employee.password);
+        cy.get('[data-cy=login-button]').click();
+        cy.url().should('include', '/dashboard');
+    });
+});
+
+/**
+ * Clear all storage (localStorage, sessionStorage, cookies)
+ */
+Cypress.Commands.add('clearAllStorage', () => {
+    cy.clearLocalStorage();
+    cy.clearCookies();
+    cy.window().then((win) => {
+        win.sessionStorage.clear();
     });
 });

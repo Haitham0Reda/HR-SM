@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # License Server - Standalone Microservice
+  license-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hrsm-license-server
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - LICENSE_DATABASE_URL=postgresql://license_user:license_password@postgres:5432/hrsm_licenses
+      - ALLOWED_ORIGINS=http://localhost:5000,http://localhost:3001
+      - LOG_LEVEL=info
+      - PG_MAX_POOL_SIZE=10
+      - PG_MIN_POOL_SIZE=2
+    volumes:
+      # Mount RSA keys (read-only)
+      - ./keys:/app/keys:ro
+      # Mount logs directory
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - license-network
+
+  # PostgreSQL Database - Dedicated for License Server
+  postgres:
+    image: postgres:15-alpine
+    container_name: hrsm-license-db
+    environment:
+      - POSTGRES_DB=hrsm_licenses
+      - POSTGRES_USER=license_user
+      - POSTGRES_PASSWORD=license_password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - license-db-data:/var/lib/postgresql/data
+      # Optional: Custom initialization scripts
+      # - ./init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"  # Exposed on 5433 to avoid conflict with main app DB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U license_user -d hrsm_licenses"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - license-network
+
+volumes:
+  license-db-data:
+    driver: local
+
+networks:
+  license-network:
+    driver: bridge

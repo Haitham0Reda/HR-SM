@@ -189,12 +189,14 @@ if (process.env.NODE_ENV === 'development') {
 app.use(tenantContext);
 
 // License validation middleware (applies to tenant routes, skips platform routes)
+// Validates licenses with standalone license server microservice
+// Includes Redis caching (5 min TTL) and circuit breaker pattern
 try {
-    const { validateLicense } = await import('./middleware/licenseValidation.middleware.js');
+    const { validateLicense } = await import('./middleware/licenseServerValidation.middleware.js');
     app.use('/api/v1', validateLicense);
-    console.log('✓ Enhanced license validation middleware loaded');
+    console.log('✓ License server validation middleware loaded (with Redis cache & circuit breaker)');
 } catch (error) {
-    console.warn('⚠️  Enhanced license validation middleware not available:', error.message);
+    console.warn('⚠️  License server validation middleware not available:', error.message);
 }
 
 // Company logging middleware (basic setup)
@@ -230,6 +232,73 @@ try {
     console.warn('⚠️  Enhanced audit logging middleware not available:', error.message);
 }
 
+// Request duration tracking middleware
+try {
+    const { httpRequestDuration } = await import('./metrics/index.js');
+    
+    app.use((req, res, next) => {
+        const start = Date.now();
+        
+        res.on('finish', () => {
+            const duration = (Date.now() - start) / 1000; // Convert to seconds
+            const route = req.route ? req.route.path : req.path;
+            
+            httpRequestDuration
+                .labels(req.method, route, res.statusCode.toString())
+                .observe(duration);
+        });
+        
+        next();
+    });
+    
+    console.log('✓ Request duration tracking middleware loaded');
+} catch (error) {
+    console.warn('⚠️  Request duration tracking middleware not available:', error.message);
+}
+
+// Metrics endpoint (protected with bearer token)
+app.get('/metrics', async (req, res) => {
+    try {
+        // Check for bearer token
+        const authHeader = req.headers.authorization;
+        const expectedToken = process.env.METRICS_TOKEN;
+        
+        if (!expectedToken) {
+            return res.status(503).json({
+                success: false,
+                message: 'Metrics endpoint not configured'
+            });
+        }
+        
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Missing or invalid authorization header'
+            });
+        }
+        
+        const token = authHeader.substring(7);
+        
+        if (token !== expectedToken) {
+            return res.status(403).json({
+                success: false,
+                message: 'Invalid metrics token'
+            });
+        }
+        
+        // Return metrics in Prometheus format
+        const { register } = await import('./metrics/index.js');
+        res.set('Content-Type', register.contentType);
+        res.end(await register.metrics());
+    } catch (error) {
+        console.error('Error generating metrics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate metrics'
+        });
+    }
+});
+
 // Health check
 app.get('/health', (req, res) => {
     res.json({
@@ -238,6 +307,17 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+
+// Test-only routes (only available when NODE_ENV=test)
+if (process.env.NODE_ENV === 'test') {
+    try {
+        const testRoutes = await import('./routes/testRoutes.js');
+        app.use('/api/v1/test', testRoutes.default);
+        console.log('✓ Test routes loaded (/api/v1/test/*) - TEST ENVIRONMENT ONLY');
+    } catch (error) {
+        console.warn('⚠️  Test routes not available:', error.message);
+    }
+}
 
 // Initialize module system
 export const initializeModuleSystem = async (options = {}) => {

@@ -1,4 +1,40 @@
 {
+  "admin": {
+    "email": "admin@testcompany.com",
+    "password": "TestAdmin123!",
+    "name": "Test Admin",
+    "role": "admin",
+    "tenantId": "507f1f77bcf86cd799439010",
+    "expectedDashboardPath": "/dashboard",
+    "permissions": ["all"]
+  },
+  "hr_manager": {
+    "email": "hr@testcompany.com",
+    "password": "HRManager123!",
+    "name": "HR Manager",
+    "role": "hr_manager",
+    "tenantId": "507f1f77bcf86cd799439010",
+    "expectedDashboardPath": "/hr/dashboard",
+    "permissions": ["hr_management", "employee_management", "reports"]
+  },
+  "manager": {
+    "email": "manager@testcompany.com",
+    "password": "Manager123!",
+    "name": "Test Manager",
+    "role": "manager",
+    "tenantId": "507f1f77bcf86cd799439010",
+    "expectedDashboardPath": "/manager/dashboard",
+    "permissions": ["team_management", "approval", "reports"]
+  },
+  "employee": {
+    "email": "employee@testcompany.com",
+    "password": "Employee123!",
+    "name": "Test Employee",
+    "role": "employee",
+    "tenantId": "507f1f77bcf86cd799439010",
+    "expectedDashboardPath": "/employee/dashboard",
+    "permissions": ["profile_view", "attendance", "leave_request"]
+  },
   "tenantAdmin": {
     "email": "admin@testcompany.com",
     "password": "TestAdmin123!",
@@ -12,20 +48,6 @@
     "name": "HR Manager",
     "role": "hr",
     "permissions": ["hr_management", "employee_management", "reports"]
-  },
-  "employee": {
-    "email": "employee@testcompany.com",
-    "password": "Employee123!",
-    "name": "Test Employee",
-    "role": "employee",
-    "permissions": ["profile_view", "attendance", "leave_request"]
-  },
-  "manager": {
-    "email": "manager@testcompany.com",
-    "password": "Manager123!",
-    "name": "Test Manager",
-    "role": "manager",
-    "permissions": ["team_management", "approval", "reports"]
   },
   "platformAdmin": {
     "email": "platform@hrms.com",

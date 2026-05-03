@@ -1,445 +1,415 @@
-import axios from 'axios';
-import crypto from 'crypto';
-import os from 'os';
-import logger from '../utils/logger.js';
-
 /**
  * License Server Validation Middleware
- * Integrates with separate license server microservice at http://localhost:4000
- * Handles machine ID generation, periodic validation, and graceful offline handling
+ * Validates licenses by calling the standalone license server microservice
+ * with Redis caching and circuit breaker pattern
  */
 
-// Configuration
-const LICENSE_SERVER_URL = process.env.LICENSE_SERVER_URL || 'http://localhost:4000';
-const VALIDATION_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
-const OFFLINE_GRACE_PERIOD = 60 * 60 * 1000; // 1 hour
-const MAX_RETRY_ATTEMPTS = 3;
-const RETRY_DELAY = 1000; // 1 second
+import axios from 'axios';
+import redisService from '../core/services/redis.service.js';
+import logger from '../utils/logger.js';
 
-// In-memory cache for validation results
-const validationCache = new Map();
-const machineIdCache = new Map();
-
-/**
- * Generate machine ID for hardware fingerprinting
- * Uses system information to create a unique identifier
- * @returns {string} Machine ID hash
- */
-function generateMachineId() {
-  try {
-    // Check cache first
-    if (machineIdCache.has('machineId')) {
-      return machineIdCache.get('machineId');
-    }
-
-    // Collect system information
-    const systemInfo = {
-      hostname: os.hostname(),
-      platform: os.platform(),
-      arch: os.arch(),
-      cpus: os.cpus().length,
-      totalmem: os.totalmem(),
-      networkInterfaces: Object.keys(os.networkInterfaces()).sort().join(',')
-    };
-
-    // Create hash from system info
-    const machineId = crypto
-      .createHash('sha256')
-      .update(JSON.stringify(systemInfo))
-      .digest('hex')
-      .substring(0, 32);
-
-    // Cache the machine ID
-    machineIdCache.set('machineId', machineId);
+// Circuit breaker state
+const circuitBreaker = {
+  failures: 0,
+  lastFailureTime: null,
+  isOpen: false,
+  threshold: 5,
+  timeout: 60000, // 60 seconds
+  
+  recordFailure() {
+    this.failures++;
+    this.lastFailureTime = Date.now();
     
-    logger.debug('Generated machine ID', { 
-      machineId: machineId.substring(0, 8) + '...',
-      hostname: systemInfo.hostname 
-    });
-
-    return machineId;
-  } catch (error) {
-    logger.error('Failed to generate machine ID', { error: error.message });
-    // Fallback to a static ID based on hostname
-    return crypto.createHash('sha256').update(os.hostname()).digest('hex').substring(0, 32);
-  }
-}
-
-/**
- * Call license server validation endpoint with retry logic
- * @param {string} licenseToken - JWT license token
- * @param {string} machineId - Machine identifier
- * @param {number} attempt - Current attempt number
- * @returns {Promise<Object>} Validation result
- */
-async function callLicenseServer(licenseToken, machineId, attempt = 1) {
-  try {
-    // Get API key from environment
-    const apiKey = process.env.LICENSE_SERVER_API_KEY;
+    if (this.failures >= this.threshold) {
+      this.isOpen = true;
+      logger.warn('Circuit breaker opened - license server unreachable', {
+        failures: this.failures,
+        threshold: this.threshold
+      });
+    }
+  },
+  
+  recordSuccess() {
+    this.failures = 0;
+    this.isOpen = false;
+    this.lastFailureTime = null;
+  },
+  
+  shouldAttemptCall() {
+    if (!this.isOpen) {
+      return true;
+    }
     
-    const headers = {
-      'Content-Type': 'application/json',
-      'User-Agent': 'HR-SM-Backend/1.0'
-    };
-
-    // Add API key authentication if available
-    if (apiKey) {
-      headers['X-API-Key'] = apiKey;
-    } else {
-      logger.warn('LICENSE_SERVER_API_KEY not configured, license validation may fail');
+    // Check if timeout has elapsed
+    const timeSinceLastFailure = Date.now() - this.lastFailureTime;
+    if (timeSinceLastFailure >= this.timeout) {
+      logger.info('Circuit breaker attempting to close - timeout elapsed');
+      this.isOpen = false;
+      this.failures = 0;
+      return true;
     }
-
-    const response = await axios.post(`${LICENSE_SERVER_URL}/licenses/validate`, {
-      token: licenseToken,
-      machineId: machineId
-    }, {
-      timeout: 5000, // 5 second timeout
-      headers
-    });
-
+    
+    return false;
+  },
+  
+  getStatus() {
     return {
-      success: true,
-      data: response.data,
-      timestamp: Date.now()
-    };
-  } catch (error) {
-    logger.warn(`License server call failed (attempt ${attempt})`, {
-      error: error.message,
-      code: error.code,
-      status: error.response?.status,
-      attempt,
-      hasApiKey: !!process.env.LICENSE_SERVER_API_KEY
-    });
-
-    // Retry logic
-    if (attempt < MAX_RETRY_ATTEMPTS && shouldRetry(error)) {
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * attempt));
-      return callLicenseServer(licenseToken, machineId, attempt + 1);
-    }
-
-    return {
-      success: false,
-      error: error.message,
-      code: error.code,
-      status: error.response?.status,
-      timestamp: Date.now()
+      isOpen: this.isOpen,
+      failures: this.failures,
+      lastFailureTime: this.lastFailureTime,
+      threshold: this.threshold,
+      timeout: this.timeout
     };
   }
-}
+};
 
 /**
- * Determine if error should trigger a retry
- * @param {Error} error - The error object
- * @returns {boolean} Whether to retry
+ * Get license key for tenant from database
+ * @param {string} tenantId - Tenant ID
+ * @returns {Promise<string|null>} License key or null
  */
-function shouldRetry(error) {
-  // Retry on network errors, timeouts, and 5xx server errors
-  return (
-    error.code === 'ECONNREFUSED' ||
-    error.code === 'ETIMEDOUT' ||
-    error.code === 'ENOTFOUND' ||
-    (error.response && error.response.status >= 500)
-  );
-}
-
-/**
- * Get cached validation result if still valid
- * @param {string} cacheKey - Cache key
- * @returns {Object|null} Cached result or null
- */
-function getCachedValidation(cacheKey) {
-  const cached = validationCache.get(cacheKey);
-  if (!cached) return null;
-
-  const age = Date.now() - cached.timestamp;
-  if (age > VALIDATION_CACHE_TTL) {
-    validationCache.delete(cacheKey);
+async function getLicenseKeyForTenant(tenantId) {
+  try {
+    // Import dynamically to avoid circular dependencies
+    const { platformDb } = await import('../config/database.js');
+    
+    const [results] = await platformDb.query(
+      'SELECT license_key FROM companies WHERE id = ? LIMIT 1',
+      [tenantId]
+    );
+    
+    if (results && results.length > 0 && results[0].license_key) {
+      return results[0].license_key;
+    }
+    
+    return null;
+  } catch (error) {
+    logger.error('Failed to get license key for tenant', {
+      tenantId,
+      error: error.message
+    });
     return null;
   }
-
-  return cached;
 }
 
 /**
- * Cache validation result
- * @param {string} cacheKey - Cache key
- * @param {Object} result - Validation result
+ * Validate license with the license server
+ * @param {string} licenseKey - License key to validate
+ * @returns {Promise<Object>} Validation result
  */
-function cacheValidation(cacheKey, result) {
-  validationCache.set(cacheKey, {
-    ...result,
-    timestamp: Date.now()
-  });
-
-  // Clean up old cache entries periodically
-  if (validationCache.size > 1000) {
-    const now = Date.now();
-    for (const [key, value] of validationCache.entries()) {
-      if (now - value.timestamp > VALIDATION_CACHE_TTL) {
-        validationCache.delete(key);
+async function validateWithLicenseServer(licenseKey) {
+  const licenseServerUrl = process.env.LICENSE_SERVER_URL || 'http://localhost:4000';
+  const timeout = parseInt(process.env.LICENSE_SERVER_TIMEOUT) || 5000;
+  
+  try {
+    const response = await axios.get(
+      `${licenseServerUrl}/licenses/${encodeURIComponent(licenseKey)}/validate`,
+      {
+        timeout,
+        headers: {
+          'Content-Type': 'application/json'
+        }
       }
+    );
+    
+    return response.data;
+  } catch (error) {
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT' || error.code === 'ENOTFOUND') {
+      throw new Error('LICENSE_SERVER_UNREACHABLE');
     }
+    
+    if (error.response) {
+      // Server responded with error status
+      return error.response.data;
+    }
+    
+    throw error;
   }
 }
 
 /**
- * Check if tenant can operate in offline mode
- * @param {string} tenantId - Tenant identifier
- * @returns {boolean} Whether offline operation is allowed
- */
-function canOperateOffline(tenantId) {
-  const cacheKey = `offline_${tenantId}`;
-  const lastValidation = validationCache.get(cacheKey);
-  
-  if (!lastValidation) return false;
-  
-  const timeSinceLastValidation = Date.now() - lastValidation.timestamp;
-  return timeSinceLastValidation < OFFLINE_GRACE_PERIOD;
-}
-
-/**
- * Main license validation middleware
- * Validates license with separate license server
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next function
+ * License validation middleware
+ * Validates tenant licenses by calling the standalone license server
+ * with Redis caching and circuit breaker pattern
  */
 export const validateLicense = async (req, res, next) => {
   try {
-    // Skip validation for platform admin routes
-    if (req.path.startsWith('/api/platform/')) {
+    // Skip license validation for certain paths
+    const skipPaths = [
+      '/health',
+      '/metrics',
+      '/auth/login',
+      '/auth/logout',
+      '/auth/refresh',
+      '/test'
+    ];
+    
+    if (skipPaths.some(path => req.path.includes(path))) {
       return next();
     }
-
-    // Extract tenant information
-    const tenantId = req.tenantId || 
-                    req.tenant?.id || 
-                    req.tenant?._id?.toString() || 
-                    req.user?.tenant?.toString() ||
-                    req.headers['x-tenant-id'];
-
+    
+    // Get tenant ID from request
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] || req.query.tenantId;
+    
     if (!tenantId) {
-      logger.warn('License validation skipped: No tenant ID found', {
-        path: req.path,
-        method: req.method
-      });
-      return next(); // Allow request to continue for now
+      // No tenant ID - skip validation (might be platform admin route)
+      return next();
     }
-
-    // Get tenant's license token (this will be populated by task 3.2)
-    const licenseToken = req.tenant?.license?.licenseKey || 
-                        req.headers['x-license-token'];
-
-    if (!licenseToken) {
-      logger.warn('No license token found for tenant', { tenantId });
+    
+    // Check Redis cache first (TTL: 5 minutes)
+    const cacheKey = `license:${tenantId}`;
+    const cachedValidation = await redisService.get(cacheKey);
+    
+    if (cachedValidation) {
+      logger.debug('License validation cache hit', {
+        tenantId,
+        cacheKey
+      });
       
-      // Check if tenant can operate in offline mode
-      if (canOperateOffline(tenantId)) {
-        logger.info('Allowing offline operation for tenant', { tenantId });
-        return next();
+      // Check if cached license is valid
+      if (!cachedValidation.valid) {
+        return res.status(402).json({
+          success: false,
+          error: 'License invalid or expired',
+          code: 'LICENSE_INVALID',
+          reason: cachedValidation.reason || 'License validation failed',
+          expiresAt: cachedValidation.expiresAt
+        });
       }
-
-      return res.status(403).json({
-        success: false,
-        error: 'LICENSE_REQUIRED',
-        message: 'Valid license required to access this service',
-        tenantId
-      });
+      
+      // Attach license features to request
+      req.licenseFeatures = cachedValidation.features || [];
+      req.licenseValidation = {
+        ...cachedValidation,
+        cached: true
+      };
+      
+      return next();
     }
-
-    // Generate machine ID
-    const machineId = generateMachineId();
-    const cacheKey = `${tenantId}_${machineId}`;
-
-    // Check cache first
-    const cachedResult = getCachedValidation(cacheKey);
-    if (cachedResult) {
-      if (cachedResult.success && cachedResult.data?.valid) {
-        // Attach license info to request
-        req.licenseInfo = {
-          valid: true,
-          features: cachedResult.data.features || [],
-          expiresAt: cachedResult.data.expiresAt,
-          licenseType: cachedResult.data.licenseType,
-          cached: true
-        };
-        return next();
-      } else if (!cachedResult.success) {
-        // Check if we can operate offline
-        if (canOperateOffline(tenantId)) {
-          logger.info('License server unavailable, allowing offline operation', { tenantId });
-          return next();
-        }
-      }
-    }
-
-    // Call license server
-    const validationResult = await callLicenseServer(licenseToken, machineId);
-
-    // Cache the result
-    cacheValidation(cacheKey, validationResult);
-
-    if (!validationResult.success) {
-      // License server is unavailable
-      logger.error('License server validation failed', {
-        tenantId,
-        error: validationResult.error,
-        status: validationResult.status
-      });
-
-      // Check if we can operate in offline mode
-      if (canOperateOffline(tenantId)) {
-        logger.info('License server unavailable, allowing offline operation', { tenantId });
-        return next();
-      }
-
-      return res.status(503).json({
-        success: false,
-        error: 'LICENSE_SERVER_UNAVAILABLE',
-        message: 'License validation service is temporarily unavailable',
-        details: validationResult.error
-      });
-    }
-
-    const { data: validationData } = validationResult;
-
-    if (!validationData.valid) {
-      logger.warn('License validation failed', {
-        tenantId,
-        error: validationData.error,
-        reason: validationData.reason
-      });
-
-      return res.status(403).json({
-        success: false,
-        error: validationData.error || 'LICENSE_INVALID',
-        message: validationData.reason || 'License validation failed',
-        tenantId
-      });
-    }
-
-    // License is valid - cache for offline operation
-    cacheValidation(`offline_${tenantId}`, validationResult);
-
-    // Attach license info to request for downstream middleware
-    req.licenseInfo = {
-      valid: true,
-      features: validationData.features || [],
-      expiresAt: validationData.expiresAt,
-      licenseType: validationData.licenseType,
-      maxUsers: validationData.maxUsers,
-      maxStorage: validationData.maxStorage,
-      maxAPI: validationData.maxAPI,
-      cached: false
-    };
-
-    logger.debug('License validation successful', {
+    
+    // Cache miss - need to validate with license server
+    logger.debug('License validation cache miss', {
       tenantId,
-      licenseType: validationData.licenseType,
-      features: validationData.features
+      cacheKey
     });
-
-    next();
-
+    
+    // Check circuit breaker
+    if (!circuitBreaker.shouldAttemptCall()) {
+      logger.warn('Circuit breaker open - failing open', {
+        tenantId,
+        circuitBreakerStatus: circuitBreaker.getStatus()
+      });
+      
+      // Fail-open: allow request to continue without feature enforcement
+      req.licenseFeatures = [];
+      req.licenseValidation = {
+        valid: true,
+        failedOpen: true,
+        reason: 'License server unreachable - circuit breaker open'
+      };
+      
+      return next();
+    }
+    
+    // Get license key for tenant
+    const licenseKey = await getLicenseKeyForTenant(tenantId);
+    
+    if (!licenseKey) {
+      logger.warn('No license key found for tenant', { tenantId });
+      
+      return res.status(402).json({
+        success: false,
+        error: 'License invalid or expired',
+        code: 'LICENSE_INVALID',
+        reason: 'No license key configured for tenant'
+      });
+    }
+    
+    // Call license server
+    try {
+      const validation = await validateWithLicenseServer(licenseKey);
+      
+      // Record success in circuit breaker
+      circuitBreaker.recordSuccess();
+      
+      // Cache the validation result (TTL: 5 minutes = 300 seconds)
+      await redisService.set(cacheKey, validation, 300);
+      
+      logger.info('License validated with license server', {
+        tenantId,
+        valid: validation.valid,
+        features: validation.features?.length || 0
+      });
+      
+      // Check if license is valid
+      if (!validation.valid) {
+        return res.status(402).json({
+          success: false,
+          error: 'License invalid or expired',
+          code: 'LICENSE_INVALID',
+          reason: validation.reason || 'License validation failed',
+          expiresAt: validation.expiresAt
+        });
+      }
+      
+      // Attach license features to request
+      req.licenseFeatures = validation.features || [];
+      req.licenseValidation = {
+        ...validation,
+        cached: false
+      };
+      
+      return next();
+      
+    } catch (error) {
+      if (error.message === 'LICENSE_SERVER_UNREACHABLE') {
+        // Record failure in circuit breaker
+        circuitBreaker.recordFailure();
+        
+        logger.warn('License server unreachable - failing open', {
+          tenantId,
+          error: error.message,
+          circuitBreakerStatus: circuitBreaker.getStatus()
+        });
+        
+        // Fail-open: allow request to continue without feature enforcement
+        req.licenseFeatures = [];
+        req.licenseValidation = {
+          valid: true,
+          failedOpen: true,
+          reason: 'License server unreachable'
+        };
+        
+        return next();
+      }
+      
+      // Other errors - log and fail-open
+      logger.error('License validation error - failing open', {
+        tenantId,
+        error: error.message,
+        stack: error.stack
+      });
+      
+      req.licenseFeatures = [];
+      req.licenseValidation = {
+        valid: true,
+        failedOpen: true,
+        reason: 'License validation error'
+      };
+      
+      return next();
+    }
+    
   } catch (error) {
-    logger.error('License validation middleware error', {
+    // Unexpected error - log and fail-open
+    logger.error('License middleware unexpected error - failing open', {
       error: error.message,
       stack: error.stack,
       path: req.path
     });
-
-    // In case of unexpected errors, check offline operation
-    const tenantId = req.tenantId || req.tenant?.id;
-    if (tenantId && canOperateOffline(tenantId)) {
-      logger.info('Unexpected error, allowing offline operation', { tenantId });
-      return next();
-    }
-
-    return res.status(500).json({
-      success: false,
-      error: 'LICENSE_VALIDATION_ERROR',
-      message: 'An error occurred during license validation'
-    });
+    
+    req.licenseFeatures = [];
+    req.licenseValidation = {
+      valid: true,
+      failedOpen: true,
+      reason: 'Unexpected error'
+    };
+    
+    return next();
   }
 };
 
 /**
- * Middleware to check if specific feature is licensed
- * @param {string} featureName - Name of the feature to check
- * @returns {Function} Express middleware function
+ * Require specific feature to be licensed
+ * Use this middleware after validateLicense to enforce feature access
  */
 export const requireFeature = (featureName) => {
   return (req, res, next) => {
-    const licenseInfo = req.licenseInfo;
-
-    if (!licenseInfo || !licenseInfo.valid) {
+    // If license validation failed open, allow access
+    if (req.licenseValidation?.failedOpen) {
+      logger.debug('Feature check skipped - license validation failed open', {
+        feature: featureName
+      });
+      return next();
+    }
+    
+    // Check if feature is in licensed features
+    const hasFeature = req.licenseFeatures?.includes(featureName);
+    
+    if (!hasFeature) {
+      logger.warn('Feature not licensed', {
+        feature: featureName,
+        tenantId: req.user?.tenantId,
+        licensedFeatures: req.licenseFeatures
+      });
+      
       return res.status(403).json({
         success: false,
-        error: 'LICENSE_REQUIRED',
-        message: 'Valid license required for this feature',
+        error: `Feature '${featureName}' is not licensed`,
+        code: 'FEATURE_NOT_LICENSED',
         feature: featureName
       });
     }
-
-    if (!licenseInfo.features.includes(featureName)) {
-      return res.status(403).json({
-        success: false,
-        error: 'FEATURE_NOT_LICENSED',
-        message: `Feature '${featureName}' is not included in your license`,
-        feature: featureName,
-        licensedFeatures: licenseInfo.features
-      });
-    }
-
+    
     next();
   };
 };
 
 /**
- * Get validation cache statistics
- * @returns {Object} Cache statistics
+ * Require any of the specified features to be licensed
  */
-export function getValidationStats() {
-  const now = Date.now();
-  let validEntries = 0;
-  let expiredEntries = 0;
-  let offlineEntries = 0;
-
-  for (const [key, value] of validationCache.entries()) {
-    const age = now - value.timestamp;
-    if (key.startsWith('offline_')) {
-      offlineEntries++;
-    } else if (age > VALIDATION_CACHE_TTL) {
-      expiredEntries++;
-    } else {
-      validEntries++;
+export const requireAnyFeature = (featureNames) => {
+  return (req, res, next) => {
+    // If license validation failed open, allow access
+    if (req.licenseValidation?.failedOpen) {
+      return next();
     }
-  }
-
-  return {
-    totalEntries: validationCache.size,
-    validEntries,
-    expiredEntries,
-    offlineEntries,
-    cacheTTL: VALIDATION_CACHE_TTL,
-    offlineGracePeriod: OFFLINE_GRACE_PERIOD,
-    licenseServerUrl: LICENSE_SERVER_URL
+    
+    // Check if any feature is in licensed features
+    const hasAnyFeature = featureNames.some(feature => 
+      req.licenseFeatures?.includes(feature)
+    );
+    
+    if (!hasAnyFeature) {
+      logger.warn('None of required features are licensed', {
+        requiredFeatures: featureNames,
+        tenantId: req.user?.tenantId,
+        licensedFeatures: req.licenseFeatures
+      });
+      
+      return res.status(403).json({
+        success: false,
+        error: `None of the required features are licensed: ${featureNames.join(', ')}`,
+        code: 'FEATURES_NOT_LICENSED',
+        requiredFeatures: featureNames
+      });
+    }
+    
+    next();
   };
-}
+};
 
 /**
- * Clear validation cache (useful for testing)
+ * Get circuit breaker status (for monitoring/debugging)
  */
-export function clearValidationCache() {
-  const size = validationCache.size;
-  validationCache.clear();
-  machineIdCache.clear();
-  logger.debug('License validation cache cleared', { entriesCleared: size });
-}
+export const getCircuitBreakerStatus = () => {
+  return circuitBreaker.getStatus();
+};
+
+/**
+ * Reset circuit breaker (for testing/admin purposes)
+ */
+export const resetCircuitBreaker = () => {
+  circuitBreaker.failures = 0;
+  circuitBreaker.lastFailureTime = null;
+  circuitBreaker.isOpen = false;
+  logger.info('Circuit breaker manually reset');
+};
 
 export default {
   validateLicense,
   requireFeature,
-  getValidationStats,
-  clearValidationCache
+  requireAnyFeature,
+  getCircuitBreakerStatus,
+  resetCircuitBreaker
 };

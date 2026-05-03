@@ -1,7 +1,15 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import { combineReducers } from '@reduxjs/toolkit';
 
 // Import slices
 import platformAuthSlice from './slices/platformAuthSlice';
@@ -42,14 +50,12 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        // Ignore all redux-persist actions to prevent non-serializable warnings.
+        // redux-persist dispatches: FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER.
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }).concat(baseApi.middleware), // Add RTK Query middleware
   devTools: process.env.NODE_ENV !== 'production',
 });
 
 export const persistor = persistStore(store);
-
-// Export types for TypeScript (if needed)
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;

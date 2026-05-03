@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
 import { protect } from '../../../middleware/authMiddleware.js';
-import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
+import { moduleGuard } from '../../../middleware/moduleGuard.js';
 import { validateRequest } from '../../../core/middleware/validation.js';
 import { requireRole } from '../../../shared/middleware/auth.js';
 import { sendSuccess, sendError } from '../../../core/utils/response.js';
@@ -21,13 +21,14 @@ import {
     validateContractDates 
 } from '../middleware/insuranceProviderValidation.js';
 import { insuranceUpload } from '../config/multer.config.js';
-import { MODULES, ROLES } from '../../../shared/constants/modules.js';
+import { ROLES } from '../../../shared/constants/modules.js';
 import { 
     requireFeature, 
     requireFeatures, 
     attachModuleConfig, 
     requireModuleAvailable 
 } from '../middleware/featureGuard.js';
+import { tenantContext } from '../../../shared/middleware/tenantContext.js';
 import { 
     requireActiveTenant, 
     logTenantAccess 
@@ -42,15 +43,8 @@ router.use(protect);
 // Apply tenant context middleware - REQUIRED for feature guards
 router.use(tenantContext);
 
-// Apply license validation for life insurance module
-// router.use(requireModuleLicense(MODULES.LIFE_INSURANCE)); // Keep disabled for now
-
-// Check tenant status and log tenant access for audit
-// router.use(requireActiveTenant()); // Keep disabled for now
-// router.use(logTenantAccess()); // Keep disabled for now
-
-// Check if module is available for tenant
-// router.use(requireModuleAvailable()); // Keep disabled for now
+// Apply module guard for life insurance module
+router.use(moduleGuard('life_insurance'));
 
 // Attach module configuration to all requests - ENABLE THIS
 router.use(attachModuleConfig());

@@ -29,14 +29,22 @@ module.exports = defineConfig({
         env: {
             // Backend API URL
             apiUrl: 'http://localhost:5000',
+            API_URL: 'http://localhost:5000',
+            // HR App URL
+            hrAppUrl: 'http://localhost:3000',
+            HR_APP_URL: 'http://localhost:3000',
             // Platform Admin URL
             platformUrl: 'http://localhost:3001',
+            PLATFORM_APP_URL: 'http://localhost:3001',
             // License Server URL
             licenseServerUrl: 'http://localhost:4000',
+            LICENSE_SERVER_URL: 'http://localhost:4000',
             // Test database
             testDatabase: 'hr-sm-e2e-test',
+            TEST_DATABASE: 'hr-sm-e2e-test',
             // Test environment flag
             isTestEnvironment: true,
+            IS_TEST_ENVIRONMENT: true,
             // Cypress test environment flag
             CYPRESS_ENV: 'test'
         },

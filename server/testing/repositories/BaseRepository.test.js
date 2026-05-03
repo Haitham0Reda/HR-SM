@@ -1,537 +1,607 @@
-import mongoose from 'mongoose';
+/**
+ * BaseRepository Unit Tests
+ * 
+ * Tests for tenant scoping enforcement in BaseRepository
+ */
+
+import { jest } from '@jest/globals';
 import BaseRepository from '../../repositories/BaseRepository.js';
-import QueryBuilder from '../../repositories/QueryBuilder.js';
 
-// Test model schema
-const testSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true
-    },
-    email: {
-        type: String,
-        required: true
-    },
-    age: {
-        type: Number,
-        default: 0
-    },
-    status: {
-        type: String,
-        enum: ['active', 'inactive'],
-        default: 'active'
-    },
-    tenantId: {
-        type: String,
-        required: true
-    },
-    isDeleted: {
-        type: Boolean,
-        default: false
-    },
-    deletedAt: Date,
-    deletedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }
-}, {
-    timestamps: true
-});
+describe('BaseRepository - Tenant Scoping', () => {
+  let mockModel;
+  let mockSequelize;
+  let repository;
+  const TENANT_ID = 'tenant-123';
+  const RECORD_ID = 'record-456';
 
-const TestModel = mongoose.model('TestModel', testSchema);
+  beforeEach(() => {
+    // Mock Sequelize instance
+    mockSequelize = {
+      transaction: jest.fn()
+    };
 
-// Concrete repository implementation for testing
-class TestRepository extends BaseRepository {
-    constructor() {
-        super(TestModel);
-    }
-}
+    // Mock Sequelize model
+    mockModel = {
+      name: 'TestModel',
+      sequelize: mockSequelize,
+      create: jest.fn(),
+      findOne: jest.fn(),
+      findAll: jest.fn(),
+      update: jest.fn(),
+      destroy: jest.fn(),
+      count: jest.fn()
+    };
 
-describe('BaseRepository', () => {
-    let repository;
-    let testTenantId;
+    // Create repository instance
+    repository = new BaseRepository(mockModel, TENANT_ID);
+  });
 
-    beforeEach(() => {
-        repository = new TestRepository();
-        testTenantId = 'test-tenant-123';
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('Constructor and Tenant Validation', () => {
+    it('should require a valid Sequelize model', () => {
+      expect(() => new BaseRepository(null, TENANT_ID)).toThrow('Valid Sequelize model is required');
+      expect(() => new BaseRepository({}, TENANT_ID)).toThrow('Valid Sequelize model is required');
     });
 
-    afterEach(async () => {
-        await TestModel.deleteMany({});
+    it('should throw error when tenantId is null', () => {
+      expect(() => new BaseRepository(mockModel, null)).toThrow('tenantId is required for all repository operations');
     });
 
-    describe('Constructor', () => {
-        test('should throw error when instantiated directly', () => {
-            expect(() => new BaseRepository(TestModel)).toThrow(
-                'BaseRepository is abstract and cannot be instantiated directly'
-            );
-        });
-
-        test('should throw error when model is not provided', () => {
-            expect(() => new TestRepository(null)).toThrow(
-                'Valid Mongoose model is required'
-            );
-        });
-
-        test('should initialize with valid model', () => {
-            expect(repository.model).toBe(TestModel);
-            expect(repository.modelName).toBe('TestModel');
-        });
+    it('should throw error when tenantId is undefined', () => {
+      expect(() => new BaseRepository(mockModel, undefined)).toThrow('tenantId is required for all repository operations');
     });
 
-    describe('create', () => {
-        test('should create a new document', async () => {
-            const data = {
-                name: 'John Doe',
-                email: 'john@example.com',
-                age: 30,
-                tenantId: testTenantId
-            };
-
-            const result = await repository.create(data);
-
-            expect(result).toBeDefined();
-            expect(result.name).toBe(data.name);
-            expect(result.email).toBe(data.email);
-            expect(result.age).toBe(data.age);
-            expect(result.tenantId).toBe(testTenantId);
-            expect(result._id).toBeDefined();
-            expect(result.createdAt).toBeDefined();
-        });
-
-        test('should add tenantId from options', async () => {
-            const data = {
-                name: 'Jane Doe',
-                email: 'jane@example.com'
-            };
-
-            const result = await repository.create(data, { tenantId: testTenantId });
-
-            expect(result.tenantId).toBe(testTenantId);
-        });
-
-        test('should handle validation errors', async () => {
-            const data = {
-                email: 'invalid@example.com'
-                // Missing required name field
-            };
-
-            await expect(repository.create(data)).rejects.toThrow();
-        });
+    it('should throw error when tenantId is empty string', () => {
+      expect(() => new BaseRepository(mockModel, '')).toThrow('tenantId is required for all repository operations');
     });
 
-    describe('findById', () => {
-        let testDocument;
-
-        beforeEach(async () => {
-            testDocument = await TestModel.create({
-                name: 'Test User',
-                email: 'test@example.com',
-                tenantId: testTenantId
-            });
-        });
-
-        test('should find document by valid ID', async () => {
-            const result = await repository.findById(testDocument._id.toString());
-
-            expect(result).toBeDefined();
-            expect(result._id.toString()).toBe(testDocument._id.toString());
-            expect(result.name).toBe(testDocument.name);
-        });
-
-        test('should return null for invalid ID', async () => {
-            const result = await repository.findById('invalid-id');
-            expect(result).toBeNull();
-        });
-
-        test('should return null for non-existent ID', async () => {
-            const nonExistentId = new mongoose.Types.ObjectId();
-            const result = await repository.findById(nonExistentId.toString());
-            expect(result).toBeNull();
-        });
-
-        test('should apply select option', async () => {
-            const result = await repository.findById(testDocument._id.toString(), {
-                select: 'name email'
-            });
-
-            expect(result.name).toBeDefined();
-            expect(result.email).toBeDefined();
-            expect(result.age).toBeUndefined();
-        });
-
-        test('should filter by tenantId when provided', async () => {
-            const result = await repository.findById(testDocument._id.toString(), {
-                tenantId: 'different-tenant'
-            });
-
-            expect(result).toBeNull();
-        });
+    it('should throw error when tenantId is whitespace only', () => {
+      expect(() => new BaseRepository(mockModel, '   ')).toThrow('tenantId is required for all repository operations');
     });
 
-    describe('findOne', () => {
-        let testDocument;
-
-        beforeEach(async () => {
-            testDocument = await TestModel.create({
-                name: 'Test User',
-                email: 'test@example.com',
-                age: 25,
-                tenantId: testTenantId
-            });
-        });
-
-        test('should find document by filter', async () => {
-            const result = await repository.findOne({ email: 'test@example.com' });
-
-            expect(result).toBeDefined();
-            expect(result.email).toBe('test@example.com');
-        });
-
-        test('should return null when no match found', async () => {
-            const result = await repository.findOne({ email: 'nonexistent@example.com' });
-            expect(result).toBeNull();
-        });
-
-        test('should apply tenantId filter', async () => {
-            const result = await repository.findOne(
-                { email: 'test@example.com' },
-                { tenantId: 'different-tenant' }
-            );
-
-            expect(result).toBeNull();
-        });
+    it('should accept valid tenantId', () => {
+      expect(() => new BaseRepository(mockModel, TENANT_ID)).not.toThrow();
+      expect(repository.tenantId).toBe(TENANT_ID);
     });
 
-    describe('find', () => {
-        beforeEach(async () => {
-            await TestModel.create([
-                { name: 'User 1', email: 'user1@example.com', age: 25, tenantId: testTenantId },
-                { name: 'User 2', email: 'user2@example.com', age: 30, tenantId: testTenantId },
-                { name: 'User 3', email: 'user3@example.com', age: 35, tenantId: 'other-tenant' }
-            ]);
-        });
+    it('should store model and modelName', () => {
+      expect(repository.model).toBe(mockModel);
+      expect(repository.modelName).toBe('TestModel');
+    });
+  });
 
-        test('should find all documents matching filter', async () => {
-            const results = await repository.find({ tenantId: testTenantId });
-
-            expect(results).toHaveLength(2);
-            expect(results.every(doc => doc.tenantId === testTenantId)).toBe(true);
-        });
-
-        test('should apply sort option', async () => {
-            const results = await repository.find(
-                { tenantId: testTenantId },
-                { sort: { age: -1 } }
-            );
-
-            expect(results).toHaveLength(2);
-            expect(results[0].age).toBe(30);
-            expect(results[1].age).toBe(25);
-        });
-
-        test('should apply limit option', async () => {
-            const results = await repository.find(
-                { tenantId: testTenantId },
-                { limit: 1 }
-            );
-
-            expect(results).toHaveLength(1);
-        });
-
-        test('should apply skip option', async () => {
-            const results = await repository.find(
-                { tenantId: testTenantId },
-                { skip: 1, sort: { age: 1 } }
-            );
-
-            expect(results).toHaveLength(1);
-            expect(results[0].age).toBe(30);
-        });
+  describe('Static Factory Method - withTenant', () => {
+    it('should create repository instance with tenant', () => {
+      const repo = BaseRepository.withTenant(mockModel, TENANT_ID);
+      expect(repo).toBeInstanceOf(BaseRepository);
+      expect(repo.tenantId).toBe(TENANT_ID);
+      expect(repo.model).toBe(mockModel);
     });
 
-    describe('update', () => {
-        let testDocument;
+    it('should throw error when tenantId is missing', () => {
+      expect(() => BaseRepository.withTenant(mockModel, null)).toThrow('tenantId is required for all repository operations');
+    });
+  });
 
-        beforeEach(async () => {
-            testDocument = await TestModel.create({
-                name: 'Original Name',
-                email: 'original@example.com',
-                age: 25,
-                tenantId: testTenantId
-            });
-        });
+  describe('create() - Tenant Injection', () => {
+    it('should inject company_id into data payload', async () => {
+      const data = { name: 'Test', value: 123 };
+      const expectedData = { name: 'Test', value: 123, company_id: TENANT_ID };
+      
+      mockModel.create.mockResolvedValue(expectedData);
 
-        test('should update document by ID', async () => {
-            const updateData = { name: 'Updated Name', age: 30 };
-            const result = await repository.update(testDocument._id.toString(), updateData);
+      await repository.create(data);
 
-            expect(result).toBeDefined();
-            expect(result.name).toBe('Updated Name');
-            expect(result.age).toBe(30);
-            expect(result.email).toBe('original@example.com'); // Unchanged
-            expect(result.updatedAt).toBeDefined();
-        });
-
-        test('should return null for invalid ID', async () => {
-            const result = await repository.update('invalid-id', { name: 'Updated' });
-            expect(result).toBeNull();
-        });
-
-        test('should return null for non-existent ID', async () => {
-            const nonExistentId = new mongoose.Types.ObjectId();
-            const result = await repository.update(nonExistentId.toString(), { name: 'Updated' });
-            expect(result).toBeNull();
-        });
-
-        test('should filter by tenantId when provided', async () => {
-            const result = await repository.update(
-                testDocument._id.toString(),
-                { name: 'Updated' },
-                { tenantId: 'different-tenant' }
-            );
-
-            expect(result).toBeNull();
-        });
+      expect(mockModel.create).toHaveBeenCalledWith(
+        expectedData,
+        {}
+      );
     });
 
-    describe('delete', () => {
-        let testDocument;
+    it('should inject company_id even if data already has it', async () => {
+      const data = { name: 'Test', company_id: 'wrong-tenant' };
+      const expectedData = { name: 'Test', company_id: TENANT_ID };
+      
+      mockModel.create.mockResolvedValue(expectedData);
 
-        beforeEach(async () => {
-            testDocument = await TestModel.create({
-                name: 'To Delete',
-                email: 'delete@example.com',
-                tenantId: testTenantId
-            });
-        });
+      await repository.create(data);
 
-        test('should delete document by ID', async () => {
-            const result = await repository.delete(testDocument._id.toString());
-
-            expect(result).toBe(true);
-
-            const found = await TestModel.findById(testDocument._id);
-            expect(found).toBeNull();
-        });
-
-        test('should return false for invalid ID', async () => {
-            const result = await repository.delete('invalid-id');
-            expect(result).toBe(false);
-        });
-
-        test('should return false for non-existent ID', async () => {
-            const nonExistentId = new mongoose.Types.ObjectId();
-            const result = await repository.delete(nonExistentId.toString());
-            expect(result).toBe(false);
-        });
-
-        test('should filter by tenantId when provided', async () => {
-            const result = await repository.delete(
-                testDocument._id.toString(),
-                { tenantId: 'different-tenant' }
-            );
-
-            expect(result).toBe(false);
-
-            // Document should still exist
-            const found = await TestModel.findById(testDocument._id);
-            expect(found).toBeDefined();
-        });
+      expect(mockModel.create).toHaveBeenCalledWith(
+        expectedData,
+        {}
+      );
     });
 
-    describe('softDelete', () => {
-        let testDocument;
+    it('should include transaction in options when provided', async () => {
+      const data = { name: 'Test' };
+      const transaction = { id: 'tx-1' };
+      
+      mockModel.create.mockResolvedValue({ ...data, company_id: TENANT_ID });
 
-        beforeEach(async () => {
-            testDocument = await TestModel.create({
-                name: 'To Soft Delete',
-                email: 'softdelete@example.com',
-                tenantId: testTenantId
-            });
-        });
+      await repository.create(data, { transaction });
 
-        test('should soft delete document by ID', async () => {
-            const deletedBy = new mongoose.Types.ObjectId();
-            const result = await repository.softDelete(testDocument._id.toString(), {
-                deletedBy: deletedBy.toString()
-            });
+      expect(mockModel.create).toHaveBeenCalledWith(
+        { ...data, company_id: TENANT_ID },
+        { transaction }
+      );
+    });
+  });
 
-            expect(result).toBeDefined();
-            expect(result.isDeleted).toBe(true);
-            expect(result.deletedAt).toBeDefined();
-            expect(result.deletedBy.toString()).toBe(deletedBy.toString());
+  describe('findById() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      mockModel.findOne.mockResolvedValue({ id: RECORD_ID, company_id: TENANT_ID });
 
-            // Document should still exist in database
-            const found = await TestModel.findById(testDocument._id);
-            expect(found).toBeDefined();
-            expect(found.isDeleted).toBe(true);
-        });
+      await repository.findById(RECORD_ID);
 
-        test('should return null for invalid ID', async () => {
-            const result = await repository.softDelete('invalid-id');
-            expect(result).toBeNull();
-        });
+      expect(mockModel.findOne).toHaveBeenCalledWith({
+        where: {
+          id: RECORD_ID,
+          company_id: TENANT_ID
+        }
+      });
     });
 
-    describe('count', () => {
-        beforeEach(async () => {
-            await TestModel.create([
-                { name: 'User 1', email: 'user1@example.com', tenantId: testTenantId },
-                { name: 'User 2', email: 'user2@example.com', tenantId: testTenantId },
-                { name: 'User 3', email: 'user3@example.com', tenantId: 'other-tenant' }
-            ]);
-        });
+    it('should include attributes when provided', async () => {
+      mockModel.findOne.mockResolvedValue({ id: RECORD_ID });
 
-        test('should count all documents', async () => {
-            const count = await repository.count();
-            expect(count).toBe(3);
-        });
+      await repository.findById(RECORD_ID, { attributes: ['id', 'name'] });
 
-        test('should count documents matching filter', async () => {
-            const count = await repository.count({ tenantId: testTenantId });
-            expect(count).toBe(2);
-        });
-
-        test('should apply tenantId filter from options', async () => {
-            const count = await repository.count({}, { tenantId: testTenantId });
-            expect(count).toBe(2);
-        });
+      expect(mockModel.findOne).toHaveBeenCalledWith({
+        where: {
+          id: RECORD_ID,
+          company_id: TENANT_ID
+        },
+        attributes: ['id', 'name']
+      });
     });
 
-    describe('exists', () => {
-        beforeEach(async () => {
-            await TestModel.create({
-                name: 'Existing User',
-                email: 'existing@example.com',
-                tenantId: testTenantId
-            });
-        });
+    it('should include associations when provided', async () => {
+      const include = [{ model: 'RelatedModel' }];
+      mockModel.findOne.mockResolvedValue({ id: RECORD_ID });
 
-        test('should return true when document exists', async () => {
-            const exists = await repository.exists({ email: 'existing@example.com' });
-            expect(exists).toBe(true);
-        });
+      await repository.findById(RECORD_ID, { include });
 
-        test('should return false when document does not exist', async () => {
-            const exists = await repository.exists({ email: 'nonexistent@example.com' });
-            expect(exists).toBe(false);
-        });
+      expect(mockModel.findOne).toHaveBeenCalledWith({
+        where: {
+          id: RECORD_ID,
+          company_id: TENANT_ID
+        },
+        include
+      });
+    });
+  });
+
+  describe('findOne() - Tenant Filtering', () => {
+    it('should merge company_id into WHERE clause', async () => {
+      const filter = { status: 'active' };
+      mockModel.findOne.mockResolvedValue({ status: 'active', company_id: TENANT_ID });
+
+      await repository.findOne(filter);
+
+      expect(mockModel.findOne).toHaveBeenCalledWith({
+        where: {
+          status: 'active',
+          company_id: TENANT_ID
+        }
+      });
     });
 
-    describe('paginate', () => {
-        beforeEach(async () => {
-            const users = Array.from({ length: 25 }, (_, i) => ({
-                name: `User ${i + 1}`,
-                email: `user${i + 1}@example.com`,
-                age: 20 + i,
-                tenantId: testTenantId
-            }));
-            await TestModel.create(users);
-        });
+    it('should override company_id if provided in filter', async () => {
+      const filter = { status: 'active', company_id: 'wrong-tenant' };
+      mockModel.findOne.mockResolvedValue({ status: 'active', company_id: TENANT_ID });
 
-        test('should paginate documents with default options', async () => {
-            const result = await repository.paginate({ tenantId: testTenantId });
+      await repository.findOne(filter);
 
-            expect(result.data).toHaveLength(10); // Default limit
-            expect(result.total).toBe(25);
-            expect(result.page).toBe(1);
-            expect(result.limit).toBe(10);
-            expect(result.totalPages).toBe(3);
-        });
-
-        test('should paginate with custom page and limit', async () => {
-            const result = await repository.paginate(
-                { tenantId: testTenantId },
-                { page: 2, limit: 5 }
-            );
-
-            expect(result.data).toHaveLength(5);
-            expect(result.total).toBe(25);
-            expect(result.page).toBe(2);
-            expect(result.limit).toBe(5);
-            expect(result.totalPages).toBe(5);
-        });
-
-        test('should apply sort in pagination', async () => {
-            const result = await repository.paginate(
-                { tenantId: testTenantId },
-                { page: 1, limit: 5, sort: { age: -1 } }
-            );
-
-            expect(result.data[0].age).toBe(44); // Highest age first
-            expect(result.data[4].age).toBe(40);
-        });
+      expect(mockModel.findOne).toHaveBeenCalledWith({
+        where: {
+          status: 'active',
+          company_id: TENANT_ID
+        }
+      });
     });
 
-    describe('withTransaction', () => {
-        test('should execute operations within transaction', async () => {
-            const result = await repository.withTransaction(async (session) => {
-                const doc1 = await repository.create({
-                    name: 'Transaction User 1',
-                    email: 'tx1@example.com',
-                    tenantId: testTenantId
-                }, { session });
+    it('should include order when provided', async () => {
+      const filter = { status: 'active' };
+      const order = [['createdAt', 'DESC']];
+      mockModel.findOne.mockResolvedValue({});
 
-                const doc2 = await repository.create({
-                    name: 'Transaction User 2',
-                    email: 'tx2@example.com',
-                    tenantId: testTenantId
-                }, { session });
+      await repository.findOne(filter, { order });
 
-                return { doc1, doc2 };
-            });
+      expect(mockModel.findOne).toHaveBeenCalledWith({
+        where: {
+          status: 'active',
+          company_id: TENANT_ID
+        },
+        order
+      });
+    });
+  });
 
-            expect(result.doc1).toBeDefined();
-            expect(result.doc2).toBeDefined();
+  describe('findAll() - Tenant Filtering', () => {
+    it('should merge company_id into WHERE clause', async () => {
+      const filter = { status: 'active' };
+      mockModel.findAll.mockResolvedValue([]);
 
-            // Verify documents were created
-            const count = await repository.count({ tenantId: testTenantId });
-            expect(count).toBe(2);
-        });
+      await repository.findAll(filter);
 
-        test('should rollback transaction on error', async () => {
-            await expect(repository.withTransaction(async (session) => {
-                await repository.create({
-                    name: 'Transaction User 1',
-                    email: 'tx1@example.com',
-                    tenantId: testTenantId
-                }, { session });
-
-                // This should cause an error (missing required field)
-                await repository.create({
-                    email: 'tx2@example.com',
-                    tenantId: testTenantId
-                }, { session });
-            })).rejects.toThrow();
-
-            // Verify no documents were created due to rollback
-            const count = await repository.count({ tenantId: testTenantId });
-            expect(count).toBe(0);
-        });
+      expect(mockModel.findAll).toHaveBeenCalledWith({
+        where: {
+          status: 'active',
+          company_id: TENANT_ID
+        }
+      });
     });
 
-    describe('query', () => {
-        test('should return QueryBuilder instance', () => {
-            const queryBuilder = repository.query();
-            expect(queryBuilder).toBeInstanceOf(QueryBuilder);
-            expect(queryBuilder.model).toBe(TestModel);
-        });
+    it('should work with empty filter', async () => {
+      mockModel.findAll.mockResolvedValue([]);
+
+      await repository.findAll();
+
+      expect(mockModel.findAll).toHaveBeenCalledWith({
+        where: {
+          company_id: TENANT_ID
+        }
+      });
     });
 
-    describe('Error Handling', () => {
-        test('should enhance errors with context', async () => {
-            try {
-                await repository.create({
-                    // Missing required fields to trigger validation error
-                    tenantId: testTenantId
-                });
-            } catch (error) {
-                expect(error.message).toContain('Repository error in TestModel.create');
-                expect(error.operation).toBe('create');
-                expect(error.model).toBe('TestModel');
-                expect(error.originalError).toBeDefined();
-            }
-        });
+    it('should include limit and offset when provided', async () => {
+      mockModel.findAll.mockResolvedValue([]);
+
+      await repository.findAll({}, { limit: 10, offset: 20 });
+
+      expect(mockModel.findAll).toHaveBeenCalledWith({
+        where: {
+          company_id: TENANT_ID
+        },
+        limit: 10,
+        offset: 20
+      });
     });
+
+    it('should include order when provided', async () => {
+      const order = [['name', 'ASC']];
+      mockModel.findAll.mockResolvedValue([]);
+
+      await repository.findAll({}, { order });
+
+      expect(mockModel.findAll).toHaveBeenCalledWith({
+        where: {
+          company_id: TENANT_ID
+        },
+        order
+      });
+    });
+
+    it('should include attributes when provided', async () => {
+      mockModel.findAll.mockResolvedValue([]);
+
+      await repository.findAll({}, { attributes: ['id', 'name'] });
+
+      expect(mockModel.findAll).toHaveBeenCalledWith({
+        where: {
+          company_id: TENANT_ID
+        },
+        attributes: ['id', 'name']
+      });
+    });
+  });
+
+  describe('update() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      const data = { name: 'Updated' };
+      mockModel.update.mockResolvedValue([1, [{ id: RECORD_ID, name: 'Updated' }]]);
+
+      await repository.update(RECORD_ID, data);
+
+      expect(mockModel.update).toHaveBeenCalledWith(
+        data,
+        {
+          where: {
+            id: RECORD_ID,
+            company_id: TENANT_ID
+          },
+          returning: true
+        }
+      );
+    });
+
+    it('should include transaction when provided', async () => {
+      const data = { name: 'Updated' };
+      const transaction = { id: 'tx-1' };
+      mockModel.update.mockResolvedValue([1, [{ id: RECORD_ID }]]);
+
+      await repository.update(RECORD_ID, data, { transaction });
+
+      expect(mockModel.update).toHaveBeenCalledWith(
+        data,
+        {
+          where: {
+            id: RECORD_ID,
+            company_id: TENANT_ID
+          },
+          returning: true,
+          transaction
+        }
+      );
+    });
+
+    it('should not override company_id in data payload', async () => {
+      const data = { name: 'Updated', company_id: 'wrong-tenant' };
+      mockModel.update.mockResolvedValue([1, [{ id: RECORD_ID }]]);
+
+      await repository.update(RECORD_ID, data);
+
+      // The WHERE clause should still use the repository's tenantId
+      expect(mockModel.update).toHaveBeenCalledWith(
+        data,
+        {
+          where: {
+            id: RECORD_ID,
+            company_id: TENANT_ID
+          },
+          returning: true
+        }
+      );
+    });
+  });
+
+  describe('delete() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      mockModel.destroy.mockResolvedValue(1);
+
+      await repository.delete(RECORD_ID);
+
+      expect(mockModel.destroy).toHaveBeenCalledWith({
+        where: {
+          id: RECORD_ID,
+          company_id: TENANT_ID
+        }
+      });
+    });
+
+    it('should include transaction when provided', async () => {
+      const transaction = { id: 'tx-1' };
+      mockModel.destroy.mockResolvedValue(1);
+
+      await repository.delete(RECORD_ID, { transaction });
+
+      expect(mockModel.destroy).toHaveBeenCalledWith({
+        where: {
+          id: RECORD_ID,
+          company_id: TENANT_ID
+        },
+        transaction
+      });
+    });
+
+    it('should return true when record is deleted', async () => {
+      mockModel.destroy.mockResolvedValue(1);
+
+      const result = await repository.delete(RECORD_ID);
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when record is not found', async () => {
+      mockModel.destroy.mockResolvedValue(0);
+
+      const result = await repository.delete(RECORD_ID);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('softDelete() - Tenant Filtering', () => {
+    it('should use update with company_id filtering', async () => {
+      mockModel.update.mockResolvedValue([1, [{ id: RECORD_ID, deletedAt: new Date() }]]);
+
+      await repository.softDelete(RECORD_ID);
+
+      const callArgs = mockModel.update.mock.calls[0];
+      expect(callArgs[0]).toHaveProperty('deletedAt');
+      expect(callArgs[1].where).toEqual({
+        id: RECORD_ID,
+        company_id: TENANT_ID
+      });
+    });
+
+    it('should include deletedBy when provided', async () => {
+      const deletedBy = 'user-789';
+      mockModel.update.mockResolvedValue([1, [{ id: RECORD_ID }]]);
+
+      await repository.softDelete(RECORD_ID, { deletedBy });
+
+      const callArgs = mockModel.update.mock.calls[0];
+      expect(callArgs[0]).toHaveProperty('deletedBy', deletedBy);
+    });
+  });
+
+  describe('count() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      const filter = { status: 'active' };
+      mockModel.count.mockResolvedValue(5);
+
+      await repository.count(filter);
+
+      expect(mockModel.count).toHaveBeenCalledWith({
+        where: {
+          status: 'active',
+          company_id: TENANT_ID
+        }
+      });
+    });
+
+    it('should work with empty filter', async () => {
+      mockModel.count.mockResolvedValue(10);
+
+      await repository.count();
+
+      expect(mockModel.count).toHaveBeenCalledWith({
+        where: {
+          company_id: TENANT_ID
+        }
+      });
+    });
+  });
+
+  describe('exists() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      const filter = { email: 'test@example.com' };
+      mockModel.count.mockResolvedValue(1);
+
+      await repository.exists(filter);
+
+      expect(mockModel.count).toHaveBeenCalledWith({
+        where: {
+          email: 'test@example.com',
+          company_id: TENANT_ID
+        },
+        limit: 1
+      });
+    });
+
+    it('should return true when record exists', async () => {
+      mockModel.count.mockResolvedValue(1);
+
+      const result = await repository.exists({ id: RECORD_ID });
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when record does not exist', async () => {
+      mockModel.count.mockResolvedValue(0);
+
+      const result = await repository.exists({ id: RECORD_ID });
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('paginate() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      const filter = { status: 'active' };
+      mockModel.findAll.mockResolvedValue([]);
+      mockModel.count.mockResolvedValue(0);
+
+      await repository.paginate(filter, { page: 1, limit: 10 });
+
+      expect(mockModel.findAll).toHaveBeenCalledWith({
+        where: {
+          status: 'active',
+          company_id: TENANT_ID
+        },
+        limit: 10,
+        offset: 0
+      });
+
+      expect(mockModel.count).toHaveBeenCalledWith({
+        where: {
+          status: 'active',
+          company_id: TENANT_ID
+        }
+      });
+    });
+
+    it('should calculate offset correctly', async () => {
+      mockModel.findAll.mockResolvedValue([]);
+      mockModel.count.mockResolvedValue(0);
+
+      await repository.paginate({}, { page: 3, limit: 20 });
+
+      expect(mockModel.findAll).toHaveBeenCalledWith({
+        where: {
+          company_id: TENANT_ID
+        },
+        limit: 20,
+        offset: 40
+      });
+    });
+
+    it('should return paginated result with metadata', async () => {
+      const records = [{ id: '1' }, { id: '2' }];
+      mockModel.findAll.mockResolvedValue(records);
+      mockModel.count.mockResolvedValue(25);
+
+      const result = await repository.paginate({}, { page: 2, limit: 10 });
+
+      expect(result).toEqual({
+        data: records,
+        total: 25,
+        page: 2,
+        limit: 10,
+        totalPages: 3
+      });
+    });
+  });
+
+  describe('Cross-Tenant Isolation', () => {
+    it('should prevent access to records from different tenant', async () => {
+      const tenant1Repo = new BaseRepository(mockModel, 'tenant-1');
+      const tenant2Repo = new BaseRepository(mockModel, 'tenant-2');
+
+      mockModel.findOne.mockResolvedValue(null);
+
+      await tenant1Repo.findById(RECORD_ID);
+      await tenant2Repo.findById(RECORD_ID);
+
+      expect(mockModel.findOne).toHaveBeenNthCalledWith(1, {
+        where: { id: RECORD_ID, company_id: 'tenant-1' }
+      });
+
+      expect(mockModel.findOne).toHaveBeenNthCalledWith(2, {
+        where: { id: RECORD_ID, company_id: 'tenant-2' }
+      });
+    });
+
+    it('should enforce tenant isolation in all query methods', async () => {
+      const tenant1Repo = new BaseRepository(mockModel, 'tenant-1');
+      
+      mockModel.findAll.mockResolvedValue([]);
+      mockModel.count.mockResolvedValue(0);
+
+      await tenant1Repo.findAll({ status: 'active' });
+      await tenant1Repo.count({ status: 'active' });
+      await tenant1Repo.exists({ email: 'test@example.com' });
+
+      // All calls should include tenant-1
+      expect(mockModel.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ company_id: 'tenant-1' })
+        })
+      );
+
+      expect(mockModel.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ company_id: 'tenant-1' })
+        })
+      );
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should wrap errors with context', async () => {
+      const dbError = new Error('Database connection failed');
+      mockModel.findAll.mockRejectedValue(dbError);
+
+      await expect(repository.findAll()).rejects.toThrow(
+        'Repository error in TestModel.findAll: Database connection failed'
+      );
+    });
+
+    it('should preserve original error information', async () => {
+      const dbError = new Error('Constraint violation');
+      mockModel.create.mockRejectedValue(dbError);
+
+      try {
+        await repository.create({ name: 'Test' });
+      } catch (error) {
+        expect(error.originalError).toBe(dbError);
+        expect(error.operation).toBe('create');
+        expect(error.model).toBe('TestModel');
+      }
+    });
+  });
 });

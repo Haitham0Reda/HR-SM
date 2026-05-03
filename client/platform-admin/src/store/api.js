@@ -22,13 +22,19 @@ const ls = new SecureLS({ encodingType: 'aes' });
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.REACT_APP_API_URL || 'http://localhost:5000/api/platform',
   timeout: 30000,
-  prepareHeaders: (headers) => {
-    // Get platform token from secure storage
-    const token = ls.get('platformToken');
+  prepareHeaders: (headers, { getState }) => {
+    // Get platform token from Redux store (single source of truth).
+    // Platform-admin uses SecureLS for persistence, but the Redux state
+    // is the canonical source during runtime. This ensures consistency
+    // with the hr-app pattern and avoids drift between storage and state.
+    const token = getState().platformAuth?.token;
     
-    // If we have a token, add it to headers
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
+    // Fallback to SecureLS only if Redux state is not yet hydrated.
+    // This handles the brief window between app mount and persist rehydration.
+    const fallbackToken = token || ls.get('platformToken');
+    
+    if (fallbackToken) {
+      headers.set('Authorization', `Bearer ${fallbackToken}`);
     }
     
     // Ensure content type is set

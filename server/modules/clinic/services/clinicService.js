@@ -1,329 +1,130 @@
+import ClinicRepository from '../../../repositories/ClinicRepository.js';
 import { Op } from 'sequelize';
-import MedicalProfile from '../models/MedicalProfile.js';
 
 /**
- * Clinic Service
- * 
- * Handles medical profile operations including:
- * - Creating and updating medical profiles
- * - Managing allergies and chronic conditions
- * - Managing emergency contacts
- * - Managing insurance information
- * 
- * CRITICAL: All operations are tenant-scoped
+ * Clinic Service - Business logic layer for clinic operations
+ * Uses ClinicRepository for data access
  */
-
 class ClinicService {
-  /**
-   * Create a new medical profile
-   * @param {Object} profileData - Medical profile data
-   * @param {string} profileData.tenantId - Tenant identifier
-   * @param {string} profileData.userId - User identifier
-   * @returns {Promise<Object>} Created medical profile
-   */
-  async createMedicalProfile(profileData) {
-    try {
-      // Check if profile already exists for this user
-      const existingProfile = await MedicalProfile.findOne({
-        where: {
-          tenantId: profileData.tenantId,
-          userId: profileData.userId
-        }
-      });
-      
-      if (existingProfile) {
-        throw new Error('Medical profile already exists for this user');
-      }
-      
-      const profile = await MedicalProfile.create(profileData);
-      
-      return profile;
-    } catch (error) {
-      throw new Error(`Failed to create medical profile: ${error.message}`);
-    }
+  constructor() {
+    this.clinicRepository = new ClinicRepository();
   }
-  
+
   /**
-   * Get medical profile by user ID
-   * @param {string} userId - User identifier
-   * @param {string} tenantId - Tenant identifier
-   * @returns {Promise<Object>} Medical profile
+   * Get all clinic appointments
    */
-  async getMedicalProfileByUser(userId, tenantId) {
-    try {
-      const profile = await MedicalProfile.findByUserAndTenant(userId, tenantId);
-      
-      if (!profile) {
-        throw new Error('Medical profile not found');
-      }
-      
-      return profile;
-    } catch (error) {
-      throw new Error(`Failed to get medical profile: ${error.message}`);
+  async getAllAppointments(tenantId, options = {}) {
+    const filter = { tenantId };
+    
+    if (options.filter) {
+      Object.assign(filter, options.filter);
     }
+    
+    const queryOptions = {
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'doctor', attributes: ['firstName', 'lastName', 'specialization'] },
+        { association: 'department', attributes: ['name', 'code'] }
+      ],
+      order: [['appointmentDate', 'DESC']],
+      ...options
+    };
+
+    return await this.clinicRepository.findAll(filter, queryOptions);
   }
-  
+
   /**
-   * Get medical profile by ID
-   * @param {string} profileId - Profile identifier
-   * @param {string} tenantId - Tenant identifier
-   * @returns {Promise<Object>} Medical profile
+   * Create clinic appointment
    */
-  async getMedicalProfileById(profileId, tenantId) {
-    try {
-      const profile = await MedicalProfile.findOne({
-        where: {
-          id: profileId,
-          tenantId
-        },
-        include: [{
-          model: User,
-          as: 'user',
-          attributes: ['firstName', 'lastName', 'email']
-        }]
-      });
-      
-      if (!profile) {
-        throw new Error('Medical profile not found');
-      }
-      
-      return profile;
-    } catch (error) {
-      throw new Error(`Failed to get medical profile: ${error.message}`);
-    }
+  async createAppointment(appointmentData, tenantId) {
+    const dataToCreate = {
+      ...appointmentData,
+      tenantId
+    };
+
+    const appointment = await this.clinicRepository.create(dataToCreate);
+    
+    // Return populated appointment
+    return await this.clinicRepository.findById(appointment.id, {
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'doctor', attributes: ['firstName', 'lastName', 'specialization'] },
+        { association: 'department', attributes: ['name', 'code'] }
+      ]
+    });
   }
-  
+
   /**
-   * Get all medical profiles for a tenant
-   * @param {string} tenantId - Tenant identifier
-   * @param {Object} options - Query options (page, limit, sort)
-   * @returns {Promise<Array>} Medical profiles
+   * Get appointment by ID
    */
-  async getAllMedicalProfiles(tenantId, options = {}) {
-    try {
-      return await MedicalProfile.findByTenant(tenantId, options);
-    } catch (error) {
-      throw new Error(`Failed to get medical profiles: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Update medical profile
-   * @param {string} profileId - Profile identifier
-   * @param {string} tenantId - Tenant identifier
-   * @param {Object} updateData - Update data
-   * @param {string} updatedBy - User ID of updater
-   * @returns {Promise<Object>} Updated medical profile
-   */
-  async updateMedicalProfile(profileId, tenantId, updateData, updatedBy) {
-    try {
-      const profile = await MedicalProfile.findOne({
-        where: {
-          id: profileId,
-          tenantId
-        }
-      });
-      
-      if (!profile) {
-        throw new Error('Medical profile not found');
+  async getAppointmentById(id, tenantId) {
+    const appointment = await this.clinicRepository.findOne(
+      { id, tenantId },
+      {
+        include: [
+          { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+          { association: 'doctor', attributes: ['firstName', 'lastName', 'specialization'] },
+          { association: 'department', attributes: ['name', 'code'] }
+        ]
       }
-      
-      // Update fields
-      Object.keys(updateData).forEach(key => {
-        if (key !== 'tenantId' && key !== 'userId') {
-          profile[key] = updateData[key];
-        }
-      });
-      
-      profile.updatedBy = updatedBy;
-      await profile.save();
-      
-      return profile;
-    } catch (error) {
-      throw new Error(`Failed to update medical profile: ${error.message}`);
+    );
+
+    if (!appointment) {
+      throw new Error('Appointment not found');
     }
+
+    return appointment;
   }
-  
+
   /**
-   * Delete medical profile
-   * @param {string} profileId - Profile identifier
-   * @param {string} tenantId - Tenant identifier
-   * @returns {Promise<Object>} Deletion result
+   * Update appointment
    */
-  async deleteMedicalProfile(profileId, tenantId) {
-    try {
-      const profile = await MedicalProfile.findOne({
-        where: {
-          id: profileId,
-          tenantId
-        }
-      });
-      
-      if (!profile) {
-        throw new Error('Medical profile not found');
-      }
-      
-      await profile.destroy();
-      
-      return { success: true, message: 'Medical profile deleted successfully' };
-    } catch (error) {
-      throw new Error(`Failed to delete medical profile: ${error.message}`);
+  async updateAppointment(id, updateData, tenantId) {
+    const appointment = await this.clinicRepository.findOne({ id, tenantId });
+    
+    if (!appointment) {
+      throw new Error('Appointment not found');
     }
+
+    const updatedAppointment = await this.clinicRepository.update(id, updateData);
+    
+    // Return populated appointment
+    return await this.clinicRepository.findById(id, {
+      include: [
+        { association: 'employee', attributes: ['firstName', 'lastName', 'email', 'employeeId'] },
+        { association: 'doctor', attributes: ['firstName', 'lastName', 'specialization'] },
+        { association: 'department', attributes: ['name', 'code'] }
+      ]
+    });
   }
-  
+
   /**
-   * Add allergy to medical profile
-   * @param {string} profileId - Profile identifier
-   * @param {string} tenantId - Tenant identifier
-   * @param {Object} allergyData - Allergy data
-   * @returns {Promise<Object>} Updated medical profile
+   * Delete appointment
    */
-  async addAllergy(profileId, tenantId, allergyData) {
-    try {
-      const profile = await MedicalProfile.findOne({
-        where: {
-          id: profileId,
-          tenantId
-        }
-      });
-      
-      if (!profile) {
-        throw new Error('Medical profile not found');
-      }
-      
-      const allergies = profile.allergies || [];
-      allergies.push(allergyData);
-      profile.allergies = allergies;
-      await profile.save();
-      
-      return profile;
-    } catch (error) {
-      throw new Error(`Failed to add allergy: ${error.message}`);
+  async deleteAppointment(id, tenantId) {
+    const appointment = await this.clinicRepository.findOne({ id, tenantId });
+    
+    if (!appointment) {
+      throw new Error('Appointment not found');
     }
+
+    await this.clinicRepository.delete(id);
+    return { message: 'Appointment deleted' };
   }
-  
+
   /**
-   * Add chronic condition to medical profile
-   * @param {string} profileId - Profile identifier
-   * @param {string} tenantId - Tenant identifier
-   * @param {Object} conditionData - Condition data
-   * @returns {Promise<Object>} Updated medical profile
+   * Get appointments by employee
    */
-  async addChronicCondition(profileId, tenantId, conditionData) {
-    try {
-      const profile = await MedicalProfile.findOne({
-        where: {
-          id: profileId,
-          tenantId
-        }
-      });
-      
-      if (!profile) {
-        throw new Error('Medical profile not found');
-      }
-      
-      const conditions = profile.chronicConditions || [];
-      conditions.push(conditionData);
-      profile.chronicConditions = conditions;
-      await profile.save();
-      
-      return profile;
-    } catch (error) {
-      throw new Error(`Failed to add chronic condition: ${error.message}`);
-    }
+  async getAppointmentsByEmployee(employeeId, tenantId, options = {}) {
+    return await this.clinicRepository.findByEmployee(employeeId, tenantId, options);
   }
-  
+
   /**
-   * Add emergency contact to medical profile
-   * @param {string} profileId - Profile identifier
-   * @param {string} tenantId - Tenant identifier
-   * @param {Object} contactData - Emergency contact data
-   * @returns {Promise<Object>} Updated medical profile
+   * Get appointments by date
    */
-  async addEmergencyContact(profileId, tenantId, contactData) {
-    try {
-      const profile = await MedicalProfile.findOne({
-        where: {
-          id: profileId,
-          tenantId
-        }
-      });
-      
-      if (!profile) {
-        throw new Error('Medical profile not found');
-      }
-      
-      // If this is marked as primary, unmark other primary contacts
-      const contacts = profile.emergencyContacts || [];
-      if (contactData.isPrimary) {
-        contacts.forEach(contact => {
-          contact.isPrimary = false;
-        });
-      }
-      
-      contacts.push(contactData);
-      profile.emergencyContacts = contacts;
-      await profile.save();
-      
-      return profile;
-    } catch (error) {
-      throw new Error(`Failed to add emergency contact: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Update insurance information
-   * @param {string} profileId - Profile identifier
-   * @param {string} tenantId - Tenant identifier
-   * @param {Object} insuranceData - Insurance data
-   * @returns {Promise<Object>} Updated medical profile
-   */
-  async updateInsurance(profileId, tenantId, insuranceData) {
-    try {
-      const profile = await MedicalProfile.findOne({
-        where: {
-          id: profileId,
-          tenantId
-        }
-      });
-      
-      if (!profile) {
-        throw new Error('Medical profile not found');
-      }
-      
-      profile.insurance = insuranceData;
-      await profile.save();
-      
-      return profile;
-    } catch (error) {
-      throw new Error(`Failed to update insurance: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Get profiles with critical allergies
-   * @param {string} tenantId - Tenant identifier
-   * @returns {Promise<Array>} Profiles with critical allergies
-   */
-  async getProfilesWithCriticalAllergies(tenantId) {
-    try {
-      const profiles = await MedicalProfile.findAll({
-        where: {
-          tenantId,
-          'allergies.severity': { [Op.in]: ['severe', 'life-threatening'] }
-        },
-        include: [{
-          model: User,
-          as: 'user',
-          attributes: ['firstName', 'lastName', 'email']
-        }]
-      });
-      
-      return profiles;
-    } catch (error) {
-      throw new Error(`Failed to get profiles with critical allergies: ${error.message}`);
-    }
+  async getAppointmentsByDate(date, tenantId, options = {}) {
+    return await this.clinicRepository.findByDate(date, tenantId, options);
   }
 }
 
-export default new ClinicService();
+export default ClinicService;

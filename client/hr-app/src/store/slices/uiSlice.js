@@ -26,8 +26,15 @@ const initialState = {
   // Modal states
   modals: {},
   
-  // Theme preferences
-  themeMode: localStorage.getItem('themeMode') || 'light',
+  // Theme preferences — read from localStorage once at init, then persist
+  // via redux-persist. DO NOT write to localStorage in reducers (breaks purity).
+  themeMode: (() => {
+    try {
+      return localStorage.getItem('themeMode') || 'light';
+    } catch {
+      return 'light';
+    }
+  })(),
   
   // Page title
   pageTitle: 'Dashboard',
@@ -98,14 +105,13 @@ const uiSlice = createSlice({
       delete state.modals[modalId];
     },
     
-    // Theme actions
+    // Theme actions — DO NOT write to localStorage in reducers (breaks purity).
+    // redux-persist will sync state to storage automatically.
     setThemeMode: (state, action) => {
       state.themeMode = action.payload;
-      localStorage.setItem('themeMode', action.payload);
     },
     toggleThemeMode: (state) => {
       state.themeMode = state.themeMode === 'light' ? 'dark' : 'light';
-      localStorage.setItem('themeMode', state.themeMode);
     },
     
     // Page title action

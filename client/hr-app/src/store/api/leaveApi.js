@@ -20,13 +20,17 @@ export const leaveApi = baseApi.injectEndpoints({
           _t: Date.now(), // Cache busting
         },
       }),
-      providesTags: (result) =>
-        result
+      providesTags: (result) => {
+        // Handle both direct array and { data: array } response shapes.
+        // Legacy axios extracts .data in interceptor; RTK Query does not.
+        const items = Array.isArray(result) ? result : result?.data;
+        return items
           ? [
-              ...result.data.map(({ id }) => ({ type: 'Leave', id })),
+              ...items.map(({ id }) => ({ type: 'Leave', id })),
               { type: 'Leave', id: 'LIST' },
             ]
-          : [{ type: 'Leave', id: 'LIST' }],
+          : [{ type: 'Leave', id: 'LIST' }];
+      },
     }),
 
     // Get single leave request by ID

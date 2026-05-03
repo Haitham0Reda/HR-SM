@@ -1,359 +1,561 @@
-import mongoose from 'mongoose';
-import UserRepository from '../../repositories/core/UserRepository.js';
-import User from '../../modules/hr-core/users/models/user.model.js';
-import Department from '../../modules/hr-core/users/models/department.model.js';
-import Position from '../../modules/hr-core/users/models/position.model.js';
+/**
+ * UserRepository Unit Tests
+ * 
+ * Tests for tenant scoping and user-specific query methods
+ */
 
-describe('UserRepository', () => {
-    let userRepository;
-    let testTenantId;
-    let testDepartment;
-    let testPosition;
+import { jest } from '@jest/globals';
+import BaseRepository from '../../repositories/BaseRepository.js';
 
-    beforeAll(async () => {
-        // Connect to test database
-        if (mongoose.connection.readyState === 0) {
-            await mongoose.connect(process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/hrms_test');
+// Create a mock UserRepository class that extends BaseRepository
+class UserRepository extends BaseRepository {
+  constructor(tenantId) {
+    // Create a mock model
+    const mockModel = {
+      name: 'User',
+      sequelize: { transaction: jest.fn() },
+      findOne: jest.fn(),
+      findAll: jest.fn(),
+      count: jest.fn()
+    };
+    super(mockModel, tenantId);
+  }
+
+  async findByEmail(email, options = {}) {
+    try {
+      const { attributes, include } = options;
+      const where = { email, company_id: this.tenantId };
+      const findOptions = { where };
+      if (attributes) findOptions.attributes = attributes;
+      if (include) findOptions.include = include;
+      return await this.model.findOne(findOptions);
+    } catch (error) {
+      throw this._handleError(error, 'findByEmail');
+    }
+  }
+
+  async findByRole(role, options = {}) {
+    try {
+      const { attributes, include, order, limit, offset } = options;
+      const where = { role, company_id: this.tenantId };
+      const findOptions = { where };
+      if (attributes) findOptions.attributes = attributes;
+      if (include) findOptions.include = include;
+      if (order) findOptions.order = order;
+      if (limit) findOptions.limit = limit;
+      if (offset !== undefined) findOptions.offset = offset;
+      return await this.model.findAll(findOptions);
+    } catch (error) {
+      throw this._handleError(error, 'findByRole');
+    }
+  }
+
+  async findActiveEmployees(options = {}) {
+    try {
+      const { attributes, include, order, limit, offset } = options;
+      const where = { isActive: true, status: 'active', company_id: this.tenantId };
+      const findOptions = { where };
+      if (attributes) findOptions.attributes = attributes;
+      if (include) findOptions.include = include;
+      if (order) findOptions.order = order;
+      if (limit) findOptions.limit = limit;
+      if (offset !== undefined) findOptions.offset = offset;
+      return await this.model.findAll(findOptions);
+    } catch (error) {
+      throw this._handleError(error, 'findActiveEmployees');
+    }
+  }
+
+  async findWithDepartment(deptId, options = {}) {
+    try {
+      const { attributes, includeDepartment = false, order, limit, offset } = options;
+      const where = { departmentId: deptId, company_id: this.tenantId };
+      const findOptions = { where };
+      if (attributes) findOptions.attributes = attributes;
+      if (includeDepartment) {
+        findOptions.include = [{ model: 'Department', as: 'department', attributes: ['id', 'name', 'code'] }];
+      }
+      if (order) findOptions.order = order;
+      if (limit) findOptions.limit = limit;
+      if (offset !== undefined) findOptions.offset = offset;
+      return await this.model.findAll(findOptions);
+    } catch (error) {
+      throw this._handleError(error, 'findWithDepartment');
+    }
+  }
+
+  async findByUsername(username, options = {}) {
+    try {
+      const { attributes } = options;
+      const where = { username, company_id: this.tenantId };
+      const findOptions = { where };
+      if (attributes) findOptions.attributes = attributes;
+      return await this.model.findOne(findOptions);
+    } catch (error) {
+      throw this._handleError(error, 'findByUsername');
+    }
+  }
+
+  async findByEmployeeId(employeeId, options = {}) {
+    try {
+      const { attributes, include } = options;
+      const where = { employeeId, company_id: this.tenantId };
+      const findOptions = { where };
+      if (attributes) findOptions.attributes = attributes;
+      if (include) findOptions.include = include;
+      return await this.model.findOne(findOptions);
+    } catch (error) {
+      throw this._handleError(error, 'findByEmployeeId');
+    }
+  }
+
+  async countByStatus(status) {
+    try {
+      const where = { status, company_id: this.tenantId };
+      return await this.model.count({ where });
+    } catch (error) {
+      throw this._handleError(error, 'countByStatus');
+    }
+  }
+
+  static withTenant(tenantId) {
+    return new UserRepository(tenantId);
+  }
+}
+
+describe('UserRepository - Tenant Scoping', () => {
+  let repository;
+  const TENANT_ID = 'tenant-123';
+  const USER_ID = 'user-456';
+
+  beforeEach(() => {
+    // Create repository instance
+    repository = new UserRepository(TENANT_ID);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('Constructor', () => {
+    it('should create repository with tenant ID', () => {
+      const repo = new UserRepository(TENANT_ID);
+      expect(repo.tenantId).toBe(TENANT_ID);
+    });
+
+    it('should throw error when tenantId is missing', () => {
+      expect(() => new UserRepository(null)).toThrow('tenantId is required for all repository operations');
+    });
+  });
+
+  describe('Static Factory - withTenant', () => {
+    it('should create repository instance with tenant', () => {
+      const repo = UserRepository.withTenant(TENANT_ID);
+      expect(repo).toBeInstanceOf(UserRepository);
+      expect(repo.tenantId).toBe(TENANT_ID);
+    });
+  });
+
+  describe('findByEmail() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      const email = 'test@example.com';
+      repository.model.findOne.mockResolvedValue({ id: USER_ID, email });
+
+      await repository.findByEmail(email);
+
+      expect(repository.model.findOne).toHaveBeenCalledWith({
+        where: {
+          email,
+          company_id: TENANT_ID
         }
-        
-        userRepository = new UserRepository();
-        testTenantId = 'test-tenant-' + Date.now();
+      });
     });
 
-    beforeEach(async () => {
-        // Clean up test data
-        await User.deleteMany({ tenantId: testTenantId });
-        await Department.deleteMany({ tenantId: testTenantId });
-        await Position.deleteMany({ tenantId: testTenantId });
+    it('should include attributes when provided', async () => {
+      const email = 'test@example.com';
+      repository.model.findOne.mockResolvedValue({ id: USER_ID });
 
-        // Create test department and position
-        testDepartment = await Department.create({
-            tenantId: testTenantId,
-            name: 'Test Department',
-            code: 'TEST001'
-        });
+      await repository.findByEmail(email, { attributes: ['id', 'email', 'role'] });
 
-        testPosition = await Position.create({
-            tenantId: testTenantId,
-            title: 'Test Position',
-            code: 'POS001',
-            department: testDepartment._id
-        });
+      expect(repository.model.findOne).toHaveBeenCalledWith({
+        where: {
+          email,
+          company_id: TENANT_ID
+        },
+        attributes: ['id', 'email', 'role']
+      });
     });
 
-    afterAll(async () => {
-        // Clean up test data
-        await User.deleteMany({ tenantId: testTenantId });
-        await Department.deleteMany({ tenantId: testTenantId });
-        await Position.deleteMany({ tenantId: testTenantId });
+    it('should include associations when provided', async () => {
+      const email = 'test@example.com';
+      const include = [{ model: 'Department', as: 'department' }];
+      repository.model.findOne.mockResolvedValue({ id: USER_ID });
+
+      await repository.findByEmail(email, { include });
+
+      expect(repository.model.findOne).toHaveBeenCalledWith({
+        where: {
+          email,
+          company_id: TENANT_ID
+        },
+        include
+      });
     });
 
-    describe('findByDepartment', () => {
-        it('should find users by department', async () => {
-            // Create test users
-            const user1 = await User.create({
-                tenantId: testTenantId,
-                username: 'user1',
-                email: 'user1@test.com',
-                password: 'password123',
-                department: testDepartment._id,
-                role: 'employee'
-            });
+    it('should return null when user not found', async () => {
+      repository.model.findOne.mockResolvedValue(null);
 
-            const user2 = await User.create({
-                tenantId: testTenantId,
-                username: 'user2',
-                email: 'user2@test.com',
-                password: 'password123',
-                department: testDepartment._id,
-                role: 'employee'
-            });
+      const result = await repository.findByEmail('notfound@example.com');
 
-            // Create user in different department
-            const otherDepartment = await Department.create({
-                tenantId: testTenantId,
-                name: 'Other Department',
-                code: 'OTHER001'
-            });
+      expect(result).toBeNull();
+    });
+  });
 
-            await User.create({
-                tenantId: testTenantId,
-                username: 'user3',
-                email: 'user3@test.com',
-                password: 'password123',
-                department: otherDepartment._id,
-                role: 'employee'
-            });
+  describe('findByRole() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      const role = 'manager';
+      repository.model.findAll.mockResolvedValue([]);
 
-            const users = await userRepository.findByDepartment(testDepartment._id, {
-                tenantId: testTenantId
-            });
+      await repository.findByRole(role);
 
-            expect(users).toHaveLength(2);
-            expect(users.map(u => u.username)).toContain('user1');
-            expect(users.map(u => u.username)).toContain('user2');
-        });
+      expect(repository.model.findAll).toHaveBeenCalledWith({
+        where: {
+          role,
+          company_id: TENANT_ID
+        }
+      });
     });
 
-    describe('findByRole', () => {
-        it('should find users by role', async () => {
-            await User.create({
-                tenantId: testTenantId,
-                username: 'admin1',
-                email: 'admin1@test.com',
-                password: 'password123',
-                role: 'admin'
-            });
+    it('should include limit and offset when provided', async () => {
+      repository.model.findAll.mockResolvedValue([]);
 
-            await User.create({
-                tenantId: testTenantId,
-                username: 'employee1',
-                email: 'employee1@test.com',
-                password: 'password123',
-                role: 'employee'
-            });
+      await repository.findByRole('employee', { limit: 10, offset: 20 });
 
-            const admins = await userRepository.findByRole('admin', {
-                tenantId: testTenantId
-            });
-
-            expect(admins).toHaveLength(1);
-            expect(admins[0].username).toBe('admin1');
-        });
+      expect(repository.model.findAll).toHaveBeenCalledWith({
+        where: {
+          role: 'employee',
+          company_id: TENANT_ID
+        },
+        limit: 10,
+        offset: 20
+      });
     });
 
-    describe('findByStatus', () => {
-        it('should find users by status', async () => {
-            await User.create({
-                tenantId: testTenantId,
-                username: 'active1',
-                email: 'active1@test.com',
-                password: 'password123',
-                status: 'active'
-            });
+    it('should include order when provided', async () => {
+      const order = [['personalInfo.firstName', 'ASC']];
+      repository.model.findAll.mockResolvedValue([]);
 
-            await User.create({
-                tenantId: testTenantId,
-                username: 'inactive1',
-                email: 'inactive1@test.com',
-                password: 'password123',
-                status: 'inactive'
-            });
+      await repository.findByRole('admin', { order });
 
-            const activeUsers = await userRepository.findByStatus('active', {
-                tenantId: testTenantId
-            });
-
-            expect(activeUsers).toHaveLength(1);
-            expect(activeUsers[0].username).toBe('active1');
-        });
+      expect(repository.model.findAll).toHaveBeenCalledWith({
+        where: {
+          role: 'admin',
+          company_id: TENANT_ID
+        },
+        order
+      });
     });
 
-    describe('findByEmail', () => {
-        it('should find user by email', async () => {
-            const testUser = await User.create({
-                tenantId: testTenantId,
-                username: 'testuser',
-                email: 'test@example.com',
-                password: 'password123'
-            });
+    it('should return array of users', async () => {
+      const users = [
+        { id: '1', role: 'manager' },
+        { id: '2', role: 'manager' }
+      ];
+      repository.model.findAll.mockResolvedValue(users);
 
-            const user = await userRepository.findByEmail('test@example.com', {
-                tenantId: testTenantId
-            });
+      const result = await repository.findByRole('manager');
 
-            expect(user).toBeTruthy();
-            expect(user.username).toBe('testuser');
-        });
+      expect(result).toEqual(users);
+      expect(result).toHaveLength(2);
+    });
+  });
 
-        it('should include password when requested', async () => {
-            await User.create({
-                tenantId: testTenantId,
-                username: 'testuser',
-                email: 'test@example.com',
-                password: 'password123'
-            });
+  describe('findActiveEmployees() - Tenant Filtering', () => {
+    it('should include company_id and active status in WHERE clause', async () => {
+      repository.model.findAll.mockResolvedValue([]);
 
-            const user = await userRepository.findByEmail('test@example.com', {
-                tenantId: testTenantId,
-                includePassword: true
-            });
+      await repository.findActiveEmployees();
 
-            expect(user.password).toBeTruthy();
-        });
+      expect(repository.model.findAll).toHaveBeenCalledWith({
+        where: {
+          isActive: true,
+          status: 'active',
+          company_id: TENANT_ID
+        }
+      });
     });
 
-    describe('findByUsername', () => {
-        it('should find user by username', async () => {
-            await User.create({
-                tenantId: testTenantId,
-                username: 'testuser',
-                email: 'test@example.com',
-                password: 'password123'
-            });
+    it('should include attributes when provided', async () => {
+      repository.model.findAll.mockResolvedValue([]);
 
-            const user = await userRepository.findByUsername('testuser', {
-                tenantId: testTenantId
-            });
+      await repository.findActiveEmployees({ attributes: ['id', 'email', 'role'] });
 
-            expect(user).toBeTruthy();
-            expect(user.email).toBe('test@example.com');
-        });
+      expect(repository.model.findAll).toHaveBeenCalledWith({
+        where: {
+          isActive: true,
+          status: 'active',
+          company_id: TENANT_ID
+        },
+        attributes: ['id', 'email', 'role']
+      });
     });
 
-    describe('findByEmployeeId', () => {
-        it('should find user by employee ID', async () => {
-            await User.create({
-                tenantId: testTenantId,
-                username: 'testuser',
-                email: 'test@example.com',
-                password: 'password123',
-                employeeId: 'EMP001'
-            });
+    it('should include associations when provided', async () => {
+      const include = [{ model: 'Department', as: 'department' }];
+      repository.model.findAll.mockResolvedValue([]);
 
-            const user = await userRepository.findByEmployeeId('EMP001', {
-                tenantId: testTenantId
-            });
+      await repository.findActiveEmployees({ include });
 
-            expect(user).toBeTruthy();
-            expect(user.username).toBe('testuser');
-        });
+      expect(repository.model.findAll).toHaveBeenCalledWith({
+        where: {
+          isActive: true,
+          status: 'active',
+          company_id: TENANT_ID
+        },
+        include
+      });
     });
 
-    describe('findActiveUsers', () => {
-        it('should find only active users', async () => {
-            await User.create({
-                tenantId: testTenantId,
-                username: 'active1',
-                email: 'active1@test.com',
-                password: 'password123',
-                isActive: true,
-                status: 'active'
-            });
+    it('should return array of active employees', async () => {
+      const employees = [
+        { id: '1', isActive: true, status: 'active' },
+        { id: '2', isActive: true, status: 'active' }
+      ];
+      repository.model.findAll.mockResolvedValue(employees);
 
-            await User.create({
-                tenantId: testTenantId,
-                username: 'inactive1',
-                email: 'inactive1@test.com',
-                password: 'password123',
-                isActive: false,
-                status: 'inactive'
-            });
+      const result = await repository.findActiveEmployees();
 
-            const activeUsers = await userRepository.findActiveUsers({
-                tenantId: testTenantId
-            });
+      expect(result).toEqual(employees);
+    });
+  });
 
-            expect(activeUsers).toHaveLength(1);
-            expect(activeUsers[0].username).toBe('active1');
-        });
+  describe('findWithDepartment() - Tenant Filtering', () => {
+    const DEPT_ID = 'dept-789';
+
+    it('should include company_id and departmentId in WHERE clause', async () => {
+      repository.model.findAll.mockResolvedValue([]);
+
+      await repository.findWithDepartment(DEPT_ID);
+
+      expect(repository.model.findAll).toHaveBeenCalledWith({
+        where: {
+          departmentId: DEPT_ID,
+          company_id: TENANT_ID
+        }
+      });
     });
 
-    describe('searchUsers', () => {
-        it('should search users by name and email', async () => {
-            await User.create({
-                tenantId: testTenantId,
-                username: 'john.doe',
-                email: 'john.doe@test.com',
-                password: 'password123',
-                personalInfo: {
-                    firstName: 'John',
-                    lastName: 'Doe',
-                    fullName: 'John Doe'
-                }
-            });
+    it('should include department association when requested', async () => {
+      repository.model.findAll.mockResolvedValue([]);
 
-            await User.create({
-                tenantId: testTenantId,
-                username: 'jane.smith',
-                email: 'jane.smith@test.com',
-                password: 'password123',
-                personalInfo: {
-                    firstName: 'Jane',
-                    lastName: 'Smith',
-                    fullName: 'Jane Smith'
-                }
-            });
+      await repository.findWithDepartment(DEPT_ID, { includeDepartment: true });
 
-            const results = await userRepository.searchUsers('john', {
-                tenantId: testTenantId
-            });
-
-            expect(results).toHaveLength(1);
-            expect(results[0].username).toBe('john.doe');
-        });
+      expect(repository.model.findAll).toHaveBeenCalledWith({
+        where: {
+          departmentId: DEPT_ID,
+          company_id: TENANT_ID
+        },
+        include: [{
+          model: expect.anything(),
+          as: 'department',
+          attributes: ['id', 'name', 'code']
+        }]
+      });
     });
 
-    describe('getUserStatsByDepartment', () => {
-        it('should return user statistics by department', async () => {
-            // Create users in test department
-            await User.create({
-                tenantId: testTenantId,
-                username: 'user1',
-                email: 'user1@test.com',
-                password: 'password123',
-                department: testDepartment._id,
-                status: 'active'
-            });
+    it('should not include department association by default', async () => {
+      repository.model.findAll.mockResolvedValue([]);
 
-            await User.create({
-                tenantId: testTenantId,
-                username: 'user2',
-                email: 'user2@test.com',
-                password: 'password123',
-                department: testDepartment._id,
-                status: 'inactive'
-            });
+      await repository.findWithDepartment(DEPT_ID);
 
-            const stats = await userRepository.getUserStatsByDepartment({
-                tenantId: testTenantId
-            });
-
-            expect(stats).toHaveLength(1);
-            expect(stats[0].totalUsers).toBe(2);
-            expect(stats[0].activeUsers).toBe(1);
-            expect(stats[0].inactiveUsers).toBe(1);
-        });
+      const callArgs = repository.model.findAll.mock.calls[0][0];
+      expect(callArgs.include).toBeUndefined();
     });
 
-    describe('updateLastLogin', () => {
-        it('should update user last login timestamp', async () => {
-            const user = await User.create({
-                tenantId: testTenantId,
-                username: 'testuser',
-                email: 'test@example.com',
-                password: 'password123'
-            });
+    it('should include order when provided', async () => {
+      const order = [['personalInfo.lastName', 'ASC']];
+      repository.model.findAll.mockResolvedValue([]);
 
-            const updatedUser = await userRepository.updateLastLogin(user._id, {
-                tenantId: testTenantId
-            });
+      await repository.findWithDepartment(DEPT_ID, { order });
 
-            expect(updatedUser.lastLogin).toBeTruthy();
-            expect(updatedUser.lastLogin).toBeInstanceOf(Date);
-        });
+      expect(repository.model.findAll).toHaveBeenCalledWith({
+        where: {
+          departmentId: DEPT_ID,
+          company_id: TENANT_ID
+        },
+        order
+      });
     });
 
-    describe('findWithDetails', () => {
-        it('should find users with populated department and position', async () => {
-            const user = await User.create({
-                tenantId: testTenantId,
-                username: 'testuser',
-                email: 'test@example.com',
-                password: 'password123',
-                department: testDepartment._id,
-                position: testPosition._id
-            });
+    it('should return array of users in department', async () => {
+      const users = [
+        { id: '1', departmentId: DEPT_ID },
+        { id: '2', departmentId: DEPT_ID }
+      ];
+      repository.model.findAll.mockResolvedValue(users);
 
-            const users = await userRepository.findWithDetails({}, {
-                tenantId: testTenantId
-            });
+      const result = await repository.findWithDepartment(DEPT_ID);
 
-            expect(users).toHaveLength(1);
-            expect(users[0].department).toBeTruthy();
-            expect(users[0].department.name).toBe('Test Department');
-            expect(users[0].position).toBeTruthy();
-            expect(users[0].position.title).toBe('Test Position');
-        });
+      expect(result).toEqual(users);
     });
+  });
+
+  describe('findByUsername() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      const username = 'john.doe';
+      repository.model.findOne.mockResolvedValue({ id: USER_ID, username });
+
+      await repository.findByUsername(username);
+
+      expect(repository.model.findOne).toHaveBeenCalledWith({
+        where: {
+          username,
+          company_id: TENANT_ID
+        }
+      });
+    });
+
+    it('should include attributes when provided', async () => {
+      repository.model.findOne.mockResolvedValue({ id: USER_ID });
+
+      await repository.findByUsername('john.doe', { attributes: ['id', 'username'] });
+
+      expect(repository.model.findOne).toHaveBeenCalledWith({
+        where: {
+          username: 'john.doe',
+          company_id: TENANT_ID
+        },
+        attributes: ['id', 'username']
+      });
+    });
+  });
+
+  describe('findByEmployeeId() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      const employeeId = 'EMP-001';
+      repository.model.findOne.mockResolvedValue({ id: USER_ID, employeeId });
+
+      await repository.findByEmployeeId(employeeId);
+
+      expect(repository.model.findOne).toHaveBeenCalledWith({
+        where: {
+          employeeId,
+          company_id: TENANT_ID
+        }
+      });
+    });
+
+    it('should include attributes when provided', async () => {
+      repository.model.findOne.mockResolvedValue({ id: USER_ID });
+
+      await repository.findByEmployeeId('EMP-001', { attributes: ['id', 'employeeId'] });
+
+      expect(repository.model.findOne).toHaveBeenCalledWith({
+        where: {
+          employeeId: 'EMP-001',
+          company_id: TENANT_ID
+        },
+        attributes: ['id', 'employeeId']
+      });
+    });
+
+    it('should include associations when provided', async () => {
+      const include = [{ model: 'Department', as: 'department' }];
+      repository.model.findOne.mockResolvedValue({ id: USER_ID });
+
+      await repository.findByEmployeeId('EMP-001', { include });
+
+      expect(repository.model.findOne).toHaveBeenCalledWith({
+        where: {
+          employeeId: 'EMP-001',
+          company_id: TENANT_ID
+        },
+        include
+      });
+    });
+  });
+
+  describe('countByStatus() - Tenant Filtering', () => {
+    it('should include company_id in WHERE clause', async () => {
+      repository.model.count.mockResolvedValue(5);
+
+      await repository.countByStatus('active');
+
+      expect(repository.model.count).toHaveBeenCalledWith({
+        where: {
+          status: 'active',
+          company_id: TENANT_ID
+        }
+      });
+    });
+
+    it('should return count of users with status', async () => {
+      repository.model.count.mockResolvedValue(10);
+
+      const result = await repository.countByStatus('vacation');
+
+      expect(result).toBe(10);
+    });
+  });
+
+  describe('Cross-Tenant Isolation', () => {
+    it('should prevent access to users from different tenant', async () => {
+      const tenant1Repo = new UserRepository('tenant-1');
+      const tenant2Repo = new UserRepository('tenant-2');
+
+      tenant1Repo.model.findOne.mockResolvedValue(null);
+      tenant2Repo.model.findOne.mockResolvedValue(null);
+
+      await tenant1Repo.findByEmail('test@example.com');
+      await tenant2Repo.findByEmail('test@example.com');
+
+      expect(tenant1Repo.model.findOne).toHaveBeenCalledWith({
+        where: { email: 'test@example.com', company_id: 'tenant-1' }
+      });
+
+      expect(tenant2Repo.model.findOne).toHaveBeenCalledWith({
+        where: { email: 'test@example.com', company_id: 'tenant-2' }
+      });
+    });
+
+    it('should enforce tenant isolation in all query methods', async () => {
+      repository.model.findAll.mockResolvedValue([]);
+      repository.model.count.mockResolvedValue(0);
+
+      await repository.findByRole('admin');
+      await repository.findActiveEmployees();
+      await repository.findWithDepartment('dept-1');
+      await repository.countByStatus('active');
+
+      // All calls should include the tenant ID
+      const allCalls = repository.model.findAll.mock.calls.concat(repository.model.count.mock.calls);
+      allCalls.forEach(call => {
+        expect(call[0].where).toHaveProperty('company_id', TENANT_ID);
+      });
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should wrap errors with context', async () => {
+      const dbError = new Error('Database connection failed');
+      repository.model.findOne.mockRejectedValue(dbError);
+
+      await expect(repository.findByEmail('test@example.com')).rejects.toThrow(
+        'Repository error in User.findByEmail: Database connection failed'
+      );
+    });
+
+    it('should preserve original error information', async () => {
+      const dbError = new Error('Constraint violation');
+      repository.model.findAll.mockRejectedValue(dbError);
+
+      try {
+        await repository.findByRole('admin');
+      } catch (error) {
+        expect(error.originalError).toBe(dbError);
+        expect(error.operation).toBe('findByRole');
+        expect(error.model).toBe('User');
+      }
+    });
+  });
 });

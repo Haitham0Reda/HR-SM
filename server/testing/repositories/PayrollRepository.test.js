@@ -1,254 +1,130 @@
-import mongoose from 'mongoose';
-import PayrollRepository from '../../repositories/modules/PayrollRepository.js';
-import Payroll from '../../modules/payroll/models/payroll.model.js';
-import User from '../../modules/hr-core/users/models/user.model.js';
+const PayrollRepository = require('../../repositories/PayrollRepository');
+const { Payroll, sequelize } = require('../../models');
 
 describe('PayrollRepository', () => {
-    let payrollRepository;
-    let testTenantId;
-    let testUser;
+  let repository;
+  const companyId = 1;
 
-    beforeAll(async () => {
-        if (mongoose.connection.readyState === 0) {
-            await mongoose.connect(process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/hrms_test');
+  beforeEach(() => {
+    repository = new PayrollRepository(companyId);
+    jest.clearAllMocks();
+  });
+
+  describe('findByMonth', () => {
+    it('should find payroll records for a specific month', async () => {
+      const month = 5;
+      const year = 2024;
+      const mockPayrolls = [
+        { id: 1, month, year, company_id: companyId },
+        { id: 2, month, year, company_id: companyId }
+      ];
+
+      jest.spyOn(Payroll, 'findAll').mockResolvedValue(mockPayrolls);
+
+      const result = await repository.findByMonth(month, year);
+
+      expect(Payroll.findAll).toHaveBeenCalledWith({
+        where: {
+          company_id: companyId,
+          month,
+          year
+        },
+        order: [['employee_id', 'ASC']]
+      });
+      expect(result).toEqual(mockPayrolls);
+    });
+  });
+
+  describe('findByEmployee', () => {
+    it('should find payroll records for an employee', async () => {
+      const employeeId = 10;
+      const mockPayrolls = [
+        { id: 1, employee_id: employeeId, company_id: companyId },
+        { id: 2, employee_id: employeeId, company_id: companyId }
+      ];
+
+      jest.spyOn(Payroll, 'findAll').mockResolvedValue(mockPayrolls);
+
+      const result = await repository.findByEmployee(employeeId);
+
+      expect(Payroll.findAll).toHaveBeenCalledWith({
+        where: {
+          company_id: companyId,
+          employee_id: employeeId
+        },
+        order: [['year', 'DESC'], ['month', 'DESC']]
+      });
+      expect(result).toEqual(mockPayrolls);
+    });
+  });
+
+  describe('processPayroll', () => {
+    it('should process payroll for multiple employees with transaction', async () => {
+      const employeeIds = [1, 2, 3];
+      const month = 5;
+      const year = 2024;
+      const mockTransaction = { id: 'mock-transaction' };
+      const mockPayrolls = employeeIds.map(id => ({ id, employee_id: id }));
+
+      jest.spyOn(Payroll, 'bulkCreate').mockResolvedValue(mockPayrolls);
+
+      const result = await repository.processPayroll(employeeIds, month, year, mockTransaction);
+
+      expect(Payroll.bulkCreate).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            company_id: companyId,
+            employee_id: 1,
+            month,
+            year,
+            status: 'processed',
+            processed_at: expect.any(Date)
+          })
+        ]),
+        { transaction: mockTransaction }
+      );
+      expect(result).toEqual(mockPayrolls);
+    });
+
+    it('should throw error if transaction is not provided', async () => {
+      await expect(
+        repository.processPayroll([1, 2], 5, 2024, null)
+      ).rejects.toThrow('Transaction is required for payroll processing');
+    });
+  });
+
+  describe('lockPeriod', () => {
+    it('should lock payroll period with transaction', async () => {
+      const month = 5;
+      const year = 2024;
+      const mockTransaction = { id: 'mock-transaction' };
+
+      jest.spyOn(Payroll, 'update').mockResolvedValue([3]);
+
+      const result = await repository.lockPeriod(month, year, mockTransaction);
+
+      expect(Payroll.update).toHaveBeenCalledWith(
+        {
+          is_locked: true,
+          locked_at: expect.any(Date)
+        },
+        {
+          where: {
+            company_id: companyId,
+            month,
+            year,
+            is_locked: false
+          },
+          transaction: mockTransaction
         }
-        
-        payrollRepository = new PayrollRepository();
-        testTenantId = 'test-tenant-' + Date.now();
+      );
+      expect(result).toBe(3);
     });
 
-    beforeEach(async () => {
-        await Payroll.deleteMany({});
-        await User.deleteMany({ tenantId: testTenantId });
-
-        testUser = await User.create({
-            tenantId: testTenantId,
-            email: 'test@example.com',
-            password: 'password123',
-            firstName: 'Test',
-            lastName: 'User'
-        });
+    it('should throw error if transaction is not provided', async () => {
+      await expect(
+        repository.lockPeriod(5, 2024, null)
+      ).rejects.toThrow('Transaction is required for locking payroll period');
     });
-
-    afterAll(async () => {
-        await Payroll.deleteMany({});
-        await User.deleteMany({ tenantId: testTenantId });
-    });
-
-    describe('findByEmployee', () => {
-        it('should find payroll records by employee', async () => {
-            await Payroll.create({
-                employee: testUser._id,
-                period: '2025-01',
-                deductions: [
-                    { type: 'tax', amount: 100 }
-                ],
-                totalDeductions: 100
-            });
-
-            await Payroll.create({
-                employee: testUser._id,
-                period: '2025-02',
-                deductions: [
-                    { type: 'insurance', amount: 50 }
-                ],
-                totalDeductions: 50
-            });
-
-            const records = await payrollRepository.findByEmployee(testUser._id);
-
-            expect(records).toHaveLength(2);
-            expect(records[0].period).toBe('2025-02'); // Should be sorted by period desc
-        });
-    });
-
-    describe('findByPeriod', () => {
-        it('should find payroll records by period', async () => {
-            await Payroll.create({
-                employee: testUser._id,
-                period: '2025-01',
-                deductions: [{ type: 'tax', amount: 100 }],
-                totalDeductions: 100
-            });
-
-            const records = await payrollRepository.findByPeriod('2025-01');
-
-            expect(records).toHaveLength(1);
-            expect(records[0].period).toBe('2025-01');
-        });
-    });
-
-    describe('findByEmployeeAndPeriod', () => {
-        it('should find specific payroll record by employee and period', async () => {
-            await Payroll.create({
-                employee: testUser._id,
-                period: '2025-01',
-                deductions: [{ type: 'tax', amount: 100 }],
-                totalDeductions: 100
-            });
-
-            const record = await payrollRepository.findByEmployeeAndPeriod(
-                testUser._id,
-                '2025-01'
-            );
-
-            expect(record).toBeTruthy();
-            expect(record.period).toBe('2025-01');
-            expect(record.totalDeductions).toBe(100);
-        });
-    });
-
-    describe('calculateTotalDeductions', () => {
-        it('should calculate total deductions correctly', () => {
-            const deductions = [
-                { type: 'tax', amount: 100 },
-                { type: 'insurance', amount: 50 },
-                { type: 'loan', amount: 25 }
-            ];
-
-            const total = payrollRepository.calculateTotalDeductions(deductions);
-
-            expect(total).toBe(175);
-        });
-
-        it('should handle empty deductions array', () => {
-            const total = payrollRepository.calculateTotalDeductions([]);
-            expect(total).toBe(0);
-        });
-
-        it('should handle null deductions', () => {
-            const total = payrollRepository.calculateTotalDeductions(null);
-            expect(total).toBe(0);
-        });
-    });
-
-    describe('createOrUpdatePayroll', () => {
-        it('should create new payroll record', async () => {
-            const payrollData = {
-                employee: testUser._id,
-                period: '2025-01',
-                deductions: [
-                    { type: 'tax', amount: 100 },
-                    { type: 'insurance', amount: 50 }
-                ]
-            };
-
-            const record = await payrollRepository.createOrUpdatePayroll(payrollData);
-
-            expect(record).toBeTruthy();
-            expect(record.totalDeductions).toBe(150);
-        });
-
-        it('should update existing payroll record', async () => {
-            // Create initial record
-            await Payroll.create({
-                employee: testUser._id,
-                period: '2025-01',
-                deductions: [{ type: 'tax', amount: 100 }],
-                totalDeductions: 100
-            });
-
-            const payrollData = {
-                employee: testUser._id,
-                period: '2025-01',
-                deductions: [
-                    { type: 'tax', amount: 150 },
-                    { type: 'insurance', amount: 50 }
-                ]
-            };
-
-            const record = await payrollRepository.createOrUpdatePayroll(payrollData);
-
-            expect(record.totalDeductions).toBe(200);
-        });
-    });
-
-    describe('addDeduction', () => {
-        it('should add deduction to existing payroll', async () => {
-            const payroll = await Payroll.create({
-                employee: testUser._id,
-                period: '2025-01',
-                deductions: [{ type: 'tax', amount: 100 }],
-                totalDeductions: 100
-            });
-
-            const newDeduction = { type: 'insurance', amount: 50 };
-            const updatedRecord = await payrollRepository.addDeduction(
-                payroll._id,
-                newDeduction
-            );
-
-            expect(updatedRecord.deductions).toHaveLength(2);
-            expect(updatedRecord.totalDeductions).toBe(150);
-        });
-    });
-
-    describe('removeDeduction', () => {
-        it('should remove deduction from payroll', async () => {
-            const payroll = await Payroll.create({
-                employee: testUser._id,
-                period: '2025-01',
-                deductions: [
-                    { type: 'tax', amount: 100 },
-                    { type: 'insurance', amount: 50 }
-                ],
-                totalDeductions: 150
-            });
-
-            const updatedRecord = await payrollRepository.removeDeduction(
-                payroll._id,
-                0 // Remove first deduction
-            );
-
-            expect(updatedRecord.deductions).toHaveLength(1);
-            expect(updatedRecord.deductions[0].type).toBe('insurance');
-            expect(updatedRecord.totalDeductions).toBe(50);
-        });
-    });
-
-    describe('findByDeductionType', () => {
-        it('should find payroll records by deduction type', async () => {
-            await Payroll.create({
-                employee: testUser._id,
-                period: '2025-01',
-                deductions: [{ type: 'tax', amount: 100 }],
-                totalDeductions: 100
-            });
-
-            await Payroll.create({
-                employee: testUser._id,
-                period: '2025-02',
-                deductions: [{ type: 'insurance', amount: 50 }],
-                totalDeductions: 50
-            });
-
-            const records = await payrollRepository.findByDeductionType('tax');
-
-            expect(records).toHaveLength(1);
-            expect(records[0].period).toBe('2025-01');
-        });
-    });
-
-    describe('getEmployeePayrollHistory', () => {
-        it('should get employee payroll history', async () => {
-            await Payroll.create({
-                employee: testUser._id,
-                period: '2025-01',
-                deductions: [{ type: 'tax', amount: 100 }],
-                totalDeductions: 100
-            });
-
-            await Payroll.create({
-                employee: testUser._id,
-                period: '2025-02',
-                deductions: [{ type: 'tax', amount: 120 }],
-                totalDeductions: 120
-            });
-
-            const history = await payrollRepository.getEmployeePayrollHistory(testUser._id);
-
-            expect(history).toHaveLength(2);
-            expect(history[0].period).toBe('2025-02'); // Should be sorted desc
-        });
-    });
+  });
 });

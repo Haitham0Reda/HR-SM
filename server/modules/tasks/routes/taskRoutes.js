@@ -3,8 +3,8 @@ import { body, param, query } from 'express-validator';
 import { handleValidationErrors } from '../../../middleware/validation.middleware.js';
 import { protect } from '../../../middleware/authMiddleware.js';
 import { requireRole } from '../../../shared/middleware/auth.js';
-import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
-import { MODULES, ROLES } from '../../../shared/constants/modules.js';
+import { moduleGuard } from '../../../middleware/moduleGuard.js';
+import { ROLES } from '../../../shared/constants/modules.js';
 import {
     createTask,
     getTasks,
@@ -20,9 +20,9 @@ import {
 
 const router = express.Router();
 
-// Apply authentication and module license validation to all routes
+// Apply authentication and module guard to all routes
 router.use(protect);
-router.use(requireModuleLicense(MODULES.TASKS));
+router.use(moduleGuard('tasks'));
 
 // Validation rules
 const validateTaskCreate = [

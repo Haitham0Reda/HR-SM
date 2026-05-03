@@ -1,295 +1,344 @@
 /**
  * License Server Validation Middleware Tests
- * Tests the integration with the separate license server
+ * Tests for the license validation middleware with Redis caching and circuit breaker
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach, jest } from '@jest/globals';
-import { validateLicense, requireFeature, getValidationStats, clearValidationCache } from '../../middleware/licenseServerValidation.middleware.js';
+import { jest } from '@jest/globals';
+
+// Mock dependencies
+const mockRedisService = {
+  get: jest.fn(),
+  set: jest.fn()
+};
+
+const mockAxios = {
+  get: jest.fn()
+};
+
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
+};
+
+const mockPlatformDb = {
+  query: jest.fn()
+};
+
+// Mock modules before importing middleware
+jest.unstable_mockModule('../core/services/redis.service.js', () => ({
+  default: mockRedisService
+}));
+
+jest.unstable_mockModule('axios', () => ({
+  default: mockAxios
+}));
+
+jest.unstable_mockModule('../utils/logger.js', () => ({
+  default: mockLogger
+}));
+
+jest.unstable_mockModule('../config/database.js', () => ({
+  platformDb: mockPlatformDb
+}));
+
+// Import middleware after mocking
+const { validateLicense, requireFeature, getCircuitBreakerStatus, resetCircuitBreaker } = 
+  await import('../middleware/licenseServerValidation.middleware.js');
 
 describe('License Server Validation Middleware', () => {
   let req, res, next;
-  let axios;
-
-  beforeAll(async () => {
-    // Dynamically import and mock axios
-    const axiosModule = await import('axios');
-    axios = axiosModule.default;
-    axios.post = jest.fn();
-  });
 
   beforeEach(() => {
+    // Reset mocks
+    jest.clearAllMocks();
+    
+    // Reset circuit breaker
+    resetCircuitBreaker();
+    
+    // Setup request/response/next
     req = {
-      path: '/api/v1/test',
-      tenantId: 'test-tenant-123',
-      tenant: {
-        id: 'test-tenant-123',
-        license: {
-          licenseKey: 'test-license-token'
-        }
-      },
-      headers: {}
+      path: '/api/v1/employees',
+      user: { tenantId: 'tenant-123' },
+      headers: {},
+      query: {}
     };
-
+    
     res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn()
     };
-
+    
     next = jest.fn();
-
-    // Clear cache before each test
-    clearValidationCache();
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  describe('validateLicense middleware', () => {
-    it('should skip validation for platform routes', async () => {
-      req.path = '/api/platform/test';
-
+  describe('validateLicense', () => {
+    test('should skip validation for health check paths', async () => {
+      req.path = '/health';
+      
       await validateLicense(req, res, next);
-
+      
       expect(next).toHaveBeenCalled();
-      expect(axios.post).not.toHaveBeenCalled();
+      expect(mockRedisService.get).not.toHaveBeenCalled();
     });
 
-    it('should allow request to continue when no tenant ID is found', async () => {
-      req.tenantId = null;
-      req.tenant = null;
-
+    test('should skip validation when no tenant ID', async () => {
+      req.user = null;
+      
       await validateLicense(req, res, next);
-
+      
       expect(next).toHaveBeenCalled();
-      expect(axios.post).not.toHaveBeenCalled();
+      expect(mockRedisService.get).not.toHaveBeenCalled();
     });
 
-    it('should return 403 when no license token is found', async () => {
-      req.tenant.license.licenseKey = null;
-
+    test('should use cached validation result when available', async () => {
+      const cachedValidation = {
+        valid: true,
+        features: ['payroll', 'attendance'],
+        tenantId: 'tenant-123',
+        expiresAt: '2026-12-31T23:59:59Z'
+      };
+      
+      mockRedisService.get.mockResolvedValue(cachedValidation);
+      
       await validateLicense(req, res, next);
+      
+      expect(mockRedisService.get).toHaveBeenCalledWith('license:tenant-123');
+      expect(req.licenseFeatures).toEqual(['payroll', 'attendance']);
+      expect(req.licenseValidation.cached).toBe(true);
+      expect(next).toHaveBeenCalled();
+      expect(mockAxios.get).not.toHaveBeenCalled();
+    });
 
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'LICENSE_REQUIRED',
-        message: 'Valid license required to access this service',
-        tenantId: 'test-tenant-123'
-      });
+    test('should return 402 when cached license is invalid', async () => {
+      const cachedValidation = {
+        valid: false,
+        reason: 'License has expired',
+        expiresAt: '2025-01-01T00:00:00Z'
+      };
+      
+      mockRedisService.get.mockResolvedValue(cachedValidation);
+      
+      await validateLicense(req, res, next);
+      
+      expect(res.status).toHaveBeenCalledWith(402);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          code: 'LICENSE_INVALID',
+          error: 'License invalid or expired'
+        })
+      );
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should validate license with license server successfully', async () => {
-      const mockResponse = {
+    test('should call license server on cache miss', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+      mockPlatformDb.query.mockResolvedValue([[{ license_key: 'test-license-key' }]]);
+      
+      const serverResponse = {
         data: {
+          success: true,
           valid: true,
-          features: ['hr-core', 'tasks'],
-          expiresAt: '2024-12-31T23:59:59Z',
-          licenseType: 'professional',
-          maxUsers: 100,
-          maxStorage: 10240,
-          maxAPI: 100000
+          features: ['payroll', 'attendance', 'leave'],
+          tenantId: 'tenant-123',
+          expiresAt: '2026-12-31T23:59:59Z'
         }
       };
-
-      axios.post.mockResolvedValue(mockResponse);
-
+      
+      mockAxios.get.mockResolvedValue(serverResponse);
+      
       await validateLicense(req, res, next);
-
-      expect(axios.post).toHaveBeenCalledWith(
-        'http://localhost:4000/licenses/validate',
-        expect.objectContaining({
-          token: 'test-license-token',
-          machineId: expect.any(String)
-        }),
-        expect.objectContaining({
-          timeout: 5000,
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-            'User-Agent': 'HR-SM-Backend/1.0'
-          })
-        })
+      
+      expect(mockPlatformDb.query).toHaveBeenCalled();
+      expect(mockAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/licenses/test-license-key/validate'),
+        expect.any(Object)
       );
-
-      expect(req.licenseInfo).toEqual({
-        valid: true,
-        features: ['hr-core', 'tasks'],
-        expiresAt: '2024-12-31T23:59:59Z',
-        licenseType: 'professional',
-        maxUsers: 100,
-        maxStorage: 10240,
-        maxAPI: 100000,
-        cached: false
-      });
-
+      expect(mockRedisService.set).toHaveBeenCalledWith(
+        'license:tenant-123',
+        serverResponse.data,
+        300
+      );
+      expect(req.licenseFeatures).toEqual(['payroll', 'attendance', 'leave']);
       expect(next).toHaveBeenCalled();
     });
 
-    it('should return 403 when license is invalid', async () => {
-      const mockResponse = {
+    test('should return 402 when license server returns invalid', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+      mockPlatformDb.query.mockResolvedValue([[{ license_key: 'test-license-key' }]]);
+      
+      const serverResponse = {
         data: {
+          success: true,
           valid: false,
-          error: 'LICENSE_EXPIRED',
           reason: 'License has expired'
         }
       };
-
-      axios.post.mockResolvedValue(mockResponse);
-
+      
+      mockAxios.get.mockResolvedValue(serverResponse);
+      
       await validateLicense(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'LICENSE_EXPIRED',
-        message: 'License has expired',
-        tenantId: 'test-tenant-123'
-      });
+      
+      expect(res.status).toHaveBeenCalledWith(402);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          code: 'LICENSE_INVALID'
+        })
+      );
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should return 503 when license server is unavailable', async () => {
-      axios.post.mockRejectedValue(new Error('ECONNREFUSED'));
-
+    test('should fail-open when license server is unreachable', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+      mockPlatformDb.query.mockResolvedValue([[{ license_key: 'test-license-key' }]]);
+      
+      const error = new Error('connect ECONNREFUSED');
+      error.code = 'ECONNREFUSED';
+      mockAxios.get.mockRejectedValue(error);
+      
       await validateLicense(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(503);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'LICENSE_SERVER_UNAVAILABLE',
-        message: 'License validation service is temporarily unavailable',
-        details: 'ECONNREFUSED'
-      });
-      expect(next).not.toHaveBeenCalled();
-    });
-
-    it('should use cached validation result', async () => {
-      const mockResponse = {
-        data: {
-          valid: true,
-          features: ['hr-core'],
-          expiresAt: '2024-12-31T23:59:59Z',
-          licenseType: 'basic'
-        }
-      };
-
-      axios.post.mockResolvedValue(mockResponse);
-
-      // First call
-      await validateLicense(req, res, next);
-      expect(axios.post).toHaveBeenCalledTimes(1);
-
-      // Reset mocks
-      jest.clearAllMocks();
-
-      // Second call should use cache
-      await validateLicense(req, res, next);
-      expect(axios.post).not.toHaveBeenCalled();
-      expect(req.licenseInfo.cached).toBe(true);
-      expect(next).toHaveBeenCalled();
-    });
-  });
-
-  describe('requireFeature middleware', () => {
-    beforeEach(() => {
-      req.licenseInfo = {
-        valid: true,
-        features: ['hr-core', 'tasks', 'reports']
-      };
-    });
-
-    it('should allow access when feature is licensed', () => {
-      const middleware = requireFeature('tasks');
-
-      middleware(req, res, next);
-
+      
+      expect(req.licenseFeatures).toEqual([]);
+      expect(req.licenseValidation.failedOpen).toBe(true);
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
     });
 
-    it('should deny access when feature is not licensed', () => {
-      const middleware = requireFeature('life-insurance');
-
-      middleware(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'FEATURE_NOT_LICENSED',
-        message: "Feature 'life-insurance' is not included in your license",
-        feature: 'life-insurance',
-        licensedFeatures: ['hr-core', 'tasks', 'reports']
-      });
-      expect(next).not.toHaveBeenCalled();
-    });
-
-    it('should deny access when optional feature is not licensed (optional param not supported)', () => {
-      const middleware = requireFeature('life-insurance');
-
-      middleware(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(next).not.toHaveBeenCalled();
-    });
-
-    it('should deny access when no valid license', () => {
-      req.licenseInfo = null;
-      const middleware = requireFeature('tasks');
-
-      middleware(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'LICENSE_REQUIRED',
-        message: 'Valid license required for this feature',
-        feature: 'tasks'
-      });
+    test('should return 402 when no license key found for tenant', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+      mockPlatformDb.query.mockResolvedValue([[]]);
+      
+      await validateLicense(req, res, next);
+      
+      expect(res.status).toHaveBeenCalledWith(402);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          code: 'LICENSE_INVALID',
+          reason: 'No license key configured for tenant'
+        })
+      );
       expect(next).not.toHaveBeenCalled();
     });
   });
 
-  describe('getValidationStats', () => {
-    it('should return validation statistics', () => {
-      const stats = getValidationStats();
-
-      expect(stats).toEqual({
-        totalEntries: 0,
-        validEntries: 0,
-        expiredEntries: 0,
-        offlineEntries: 0,
-        cacheTTL: 15 * 60 * 1000,
-        offlineGracePeriod: 60 * 60 * 1000,
-        licenseServerUrl: 'http://localhost:4000'
-      });
+  describe('Circuit Breaker', () => {
+    test('should open circuit breaker after 5 consecutive failures', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+      mockPlatformDb.query.mockResolvedValue([[{ license_key: 'test-license-key' }]]);
+      
+      const error = new Error('connect ECONNREFUSED');
+      error.code = 'ECONNREFUSED';
+      mockAxios.get.mockRejectedValue(error);
+      
+      // Trigger 5 failures
+      for (let i = 0; i < 5; i++) {
+        await validateLicense(req, res, next);
+      }
+      
+      const status = getCircuitBreakerStatus();
+      expect(status.isOpen).toBe(true);
+      expect(status.failures).toBe(5);
     });
-  });
 
-  describe('machine ID generation', () => {
-    it('should generate consistent machine ID', async () => {
-      const mockResponse = {
+    test('should skip license server calls when circuit breaker is open', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+      mockPlatformDb.query.mockResolvedValue([[{ license_key: 'test-license-key' }]]);
+      
+      const error = new Error('connect ECONNREFUSED');
+      error.code = 'ECONNREFUSED';
+      mockAxios.get.mockRejectedValue(error);
+      
+      // Open circuit breaker
+      for (let i = 0; i < 5; i++) {
+        await validateLicense(req, res, next);
+      }
+      
+      jest.clearAllMocks();
+      
+      // Next call should skip license server
+      await validateLicense(req, res, next);
+      
+      expect(mockAxios.get).not.toHaveBeenCalled();
+      expect(req.licenseValidation.failedOpen).toBe(true);
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('should reset circuit breaker on successful call', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+      mockPlatformDb.query.mockResolvedValue([[{ license_key: 'test-license-key' }]]);
+      
+      // First fail to increment counter
+      const error = new Error('connect ECONNREFUSED');
+      error.code = 'ECONNREFUSED';
+      mockAxios.get.mockRejectedValueOnce(error);
+      
+      await validateLicense(req, res, next);
+      
+      let status = getCircuitBreakerStatus();
+      expect(status.failures).toBe(1);
+      
+      // Then succeed
+      const serverResponse = {
         data: {
+          success: true,
           valid: true,
-          features: ['hr-core']
+          features: ['payroll'],
+          tenantId: 'tenant-123'
         }
       };
-
-      axios.post.mockResolvedValue(mockResponse);
-
-      // Call twice
+      mockAxios.get.mockResolvedValue(serverResponse);
+      
       await validateLicense(req, res, next);
-      const firstCall = axios.post.mock.calls[0];
+      
+      status = getCircuitBreakerStatus();
+      expect(status.failures).toBe(0);
+      expect(status.isOpen).toBe(false);
+    });
+  });
 
-      jest.clearAllMocks();
-      clearValidationCache();
+  describe('requireFeature', () => {
+    test('should allow access when feature is licensed', () => {
+      req.licenseFeatures = ['payroll', 'attendance'];
+      req.licenseValidation = { valid: true };
+      
+      const middleware = requireFeature('payroll');
+      middleware(req, res, next);
+      
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+    });
 
-      await validateLicense(req, res, next);
-      const secondCall = axios.post.mock.calls[0];
+    test('should deny access when feature is not licensed', () => {
+      req.licenseFeatures = ['attendance'];
+      req.licenseValidation = { valid: true };
+      
+      const middleware = requireFeature('payroll');
+      middleware(req, res, next);
+      
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          code: 'FEATURE_NOT_LICENSED',
+          feature: 'payroll'
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
 
-      // Machine ID should be the same
-      expect(firstCall[1].machineId).toBe(secondCall[1].machineId);
-      expect(firstCall[1].machineId).toMatch(/^[a-f0-9]{32}$/);
+    test('should allow access when license validation failed open', () => {
+      req.licenseFeatures = [];
+      req.licenseValidation = { failedOpen: true };
+      
+      const middleware = requireFeature('payroll');
+      middleware(req, res, next);
+      
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
   });
 });

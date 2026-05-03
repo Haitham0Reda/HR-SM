@@ -93,10 +93,10 @@ export const mainAppDb = new Sequelize(process.env.MAIN_DATABASE_URL, {
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
-        max: parseInt(process.env.PG_MAX_POOL_SIZE) || 20,
-        min: parseInt(process.env.PG_MIN_POOL_SIZE) || 5,
-        acquire: parseInt(process.env.PG_CONNECTION_TIMEOUT) || 30000,
-        idle: parseInt(process.env.PG_IDLE_TIMEOUT) || 10000
+        max: 20,
+        min: 2,
+        acquire: 30000,
+        idle: 10000
     },
     timezone: '+00:00', // UTC
     dialectOptions: {

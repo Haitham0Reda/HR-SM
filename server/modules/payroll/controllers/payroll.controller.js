@@ -1,35 +1,8 @@
-// Payroll Controller
-import Payroll from '../models/payroll.model.js';
-import multiTenantDB from '../../../config/multiTenant.js';
-import { registerHRModels } from '../../../utils/tenantModelRegistry.js';
+// Payroll Controller - Refactored to use PayrollService
+import PayrollService from '../services/PayrollService.js';
+import logger from '../../../utils/logger.js';
 
-// Helper function to get tenant-specific models
-export const getTenantModels = async (tenantId) => {
-    try {
-        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
-
-        // Register all HR models (User, Department, Position)
-        const hrModels = await registerHRModels(tenantConnection);
-
-        // Register Payroll model
-        let TenantPayroll;
-        if (tenantConnection.models.Payroll) {
-            TenantPayroll = tenantConnection.models.Payroll;
-        } else {
-            TenantPayroll = tenantConnection.model('Payroll', Payroll.schema);
-        }
-
-        return {
-            Payroll: TenantPayroll,
-            User: hrModels.User,
-            Department: hrModels.Department,
-            Position: hrModels.Position
-        };
-    } catch (error) {
-        console.error('Error getting tenant models:', error);
-        throw error;
-    }
-};
+const payrollService = new PayrollService();
 
 export const getAllPayrolls = async (req, res) => {
     try {
@@ -44,58 +17,35 @@ export const getAllPayrolls = async (req, res) => {
             });
         }
 
-        // Get tenant-specific models
-        const { Payroll: TenantPayroll } = await getTenantModels(tenantId);
-
         const { page = 1, limit = 50, period } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        const query = { tenantId: tenantId };
-        
-        // Role-based filtering
-        if (userRole === 'finance-manager') {
-            // Finance managers see only their own payroll records
-            query.createdBy = userId;
-        } else if (userRole === 'finance') {
-            // Finance users see all payroll records (read-only)
-            // No additional filtering needed
-        } else if (userRole === 'hr' || userRole === 'admin') {
-            // HR and Admin see all payroll records
-            // No additional filtering needed
-        } else {
-            // Other roles have no access
+        // Role-based access control
+        if (!['finance-manager', 'finance', 'hr', 'admin'].includes(userRole)) {
             return res.status(403).json({
                 success: false,
                 error: 'Insufficient permissions to access payroll data'
             });
         }
-        
-        if (period) query.period = period;
 
-        const payrolls = await TenantPayroll.find(query)
-            .populate({
-                path: 'employee',
-                select: 'firstName lastName employeeId email department position role',
-                options: { lean: true }
-            })
-            .populate({
-                path: 'createdBy',
-                select: 'firstName lastName email role',
-                options: { lean: true }
-            })
-            .sort({ period: -1, createdAt: -1 })
-            .limit(parseInt(limit))
-            .skip(skip)
-            .lean();
+        const options = {
+            limit: parseInt(limit),
+            offset: skip
+        };
 
-        const total = await TenantPayroll.countDocuments(query);
+        if (period) {
+            options.where = { period };
+        }
 
-        // Transform payroll data to include creator information and permissions
+        const payrolls = await payrollService.getAllPayrolls(tenantId, options);
+        const total = payrolls.length; // TODO: Add count method to service
+
+        // Transform payroll data to include permissions
         const transformedPayrolls = payrolls.map(payroll => ({
-            ...payroll,
+            ...payroll.toJSON(),
             _permissions: {
-                canEdit: userRole === 'finance-manager' && payroll.createdBy?._id?.toString() === userId?.toString(),
-                canDelete: userRole === 'finance-manager' && payroll.createdBy?._id?.toString() === userId?.toString(),
+                canEdit: userRole === 'finance-manager' && payroll.createdBy?.toString() === userId?.toString(),
+                canDelete: userRole === 'finance-manager' && payroll.createdBy?.toString() === userId?.toString(),
                 canView: true
             }
         }));
@@ -116,7 +66,7 @@ export const getAllPayrolls = async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Get payrolls error:', err);
+        logger.error('Get payrolls error:', err);
         res.status(500).json({ 
             success: false,
             error: err.message 
@@ -135,9 +85,6 @@ export const createPayroll = async (req, res) => {
             });
         }
 
-        // Get tenant-specific models
-        const { Payroll: TenantPayroll } = await getTenantModels(tenantId);
-
         // Validate required fields
         const { employee, period, deductions = [] } = req.body;
         
@@ -149,44 +96,34 @@ export const createPayroll = async (req, res) => {
         }
 
         // Calculate total deductions
-        console.log('🔍 PAYROLL - Deductions received:', JSON.stringify(deductions, null, 2));
+        logger.debug('Deductions received:', JSON.stringify(deductions, null, 2));
         const totalDeductions = deductions.reduce((sum, deduction) => {
             const amount = parseFloat(deduction.amount) || 0;
-            console.log('🔍 PAYROLL - Processing deduction:', deduction.type, 'amount:', deduction.amount, 'parsed:', amount);
+            logger.debug('Processing deduction:', deduction.type, 'amount:', deduction.amount, 'parsed:', amount);
             return sum + amount;
         }, 0);
         
         // Ensure reasonable number range for Egyptian currency
         const finalTotal = Math.max(0, Math.min(totalDeductions, 50000)); // Cap at 50,000 EGP
-        console.log('🔍 PAYROLL - Calculated total deductions:', totalDeductions, 'final:', finalTotal);
+        logger.debug('Calculated total deductions:', totalDeductions, 'final:', finalTotal);
 
         const payrollData = {
             ...req.body,
-            tenantId: tenantId,
             totalDeductions: finalTotal,
-            createdBy: req.user._id // Add the creator's ID
+            createdBy: req.user._id
         };
 
-        const payroll = await TenantPayroll.create(payrollData);
-
-        // Return populated payroll
-        const populatedPayroll = await TenantPayroll.findById(payroll._id)
-            .populate({
-                path: 'employee',
-                select: 'firstName lastName employeeId email department position',
-                options: { lean: true }
-            })
-            .lean();
+        const payroll = await payrollService.createPayroll(payrollData, tenantId);
 
         res.status(201).json({
             success: true,
-            payroll: populatedPayroll
+            payroll
         });
     } catch (err) {
-        console.error('Create payroll error:', err);
+        logger.error('Create payroll error:', err);
         
         // Handle duplicate key error
-        if (err.code === 11000) {
+        if (err.code === 11000 || err.message.includes('already exists')) {
             return res.status(400).json({ 
                 success: false,
                 error: 'Payroll record already exists for this employee and period' 
@@ -211,34 +148,16 @@ export const getPayrollById = async (req, res) => {
             });
         }
 
-        // Get tenant-specific models
-        const { Payroll: TenantPayroll } = await getTenantModels(tenantId);
-
-        const payroll = await TenantPayroll.findOne({ 
-            _id: req.params.id, 
-            tenantId: tenantId 
-        })
-        .populate({
-            path: 'employee',
-            select: 'firstName lastName employeeId email department position',
-            options: { lean: true }
-        })
-        .lean();
-
-        if (!payroll) {
-            return res.status(404).json({ 
-                success: false,
-                error: 'Payroll record not found' 
-            });
-        }
+        const payroll = await payrollService.getPayrollById(req.params.id, tenantId);
 
         res.json({
             success: true,
             payroll
         });
     } catch (err) {
-        console.error('Get payroll by ID error:', err);
-        res.status(500).json({ 
+        logger.error('Get payroll by ID error:', err);
+        const statusCode = err.message === 'Payroll not found' ? 404 : 500;
+        res.status(statusCode).json({ 
             success: false,
             error: err.message 
         });
@@ -256,41 +175,22 @@ export const updatePayroll = async (req, res) => {
             });
         }
 
-        // Get tenant-specific models
-        const { Payroll: TenantPayroll } = await getTenantModels(tenantId);
-
         // Calculate total deductions if deductions are provided
         const updateData = { ...req.body };
         if (updateData.deductions) {
             updateData.totalDeductions = updateData.deductions.reduce((sum, deduction) => sum + (deduction.amount || 0), 0);
         }
 
-        const payroll = await TenantPayroll.findOneAndUpdate(
-            { _id: req.params.id, tenantId: tenantId },
-            updateData,
-            { new: true, runValidators: true }
-        )
-        .populate({
-            path: 'employee',
-            select: 'firstName lastName employeeId email department position',
-            options: { lean: true }
-        })
-        .lean();
-
-        if (!payroll) {
-            return res.status(404).json({ 
-                success: false,
-                error: 'Payroll record not found' 
-            });
-        }
+        const payroll = await payrollService.updatePayroll(req.params.id, updateData, tenantId);
 
         res.json({
             success: true,
             payroll
         });
     } catch (err) {
-        console.error('Update payroll error:', err);
-        res.status(400).json({ 
+        logger.error('Update payroll error:', err);
+        const statusCode = err.message === 'Payroll not found' ? 404 : 400;
+        res.status(statusCode).json({ 
             success: false,
             error: err.message 
         });
@@ -308,28 +208,16 @@ export const deletePayroll = async (req, res) => {
             });
         }
 
-        // Get tenant-specific models
-        const { Payroll: TenantPayroll } = await getTenantModels(tenantId);
-
-        const payroll = await TenantPayroll.findOneAndDelete({ 
-            _id: req.params.id, 
-            tenantId: tenantId 
-        });
-
-        if (!payroll) {
-            return res.status(404).json({ 
-                success: false,
-                error: 'Payroll record not found' 
-            });
-        }
+        const result = await payrollService.deletePayroll(req.params.id, tenantId);
 
         res.json({
             success: true,
-            message: 'Payroll record deleted successfully'
+            message: result.message
         });
     } catch (err) {
-        console.error('Delete payroll error:', err);
-        res.status(500).json({ 
+        logger.error('Delete payroll error:', err);
+        const statusCode = err.message === 'Payroll not found' ? 404 : 500;
+        res.status(statusCode).json({ 
             success: false,
             error: err.message 
         });

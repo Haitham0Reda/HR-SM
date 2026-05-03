@@ -10,15 +10,15 @@ import {
 } from '../controllers/document.controller.js';
 import { protect } from '../../../middleware/authMiddleware.js';
 import { requireRole } from '../../../shared/middleware/auth.js';
-import { requireModuleLicense } from '../../../middleware/licenseValidation.middleware.js';
-import { MODULES, ROLES } from '../../../shared/constants/modules.js';
+import { moduleGuard } from '../../../middleware/moduleGuard.js';
+import { ROLES } from '../../../shared/constants/modules.js';
 import { documentUpload } from '../config/multer.config.js';
 
 const router = express.Router();
 
-// All routes require authentication and documents module license
+// All routes require authentication and documents module guard
 router.use(protect);
-router.use(requireModuleLicense(MODULES.DOCUMENTS));
+router.use(moduleGuard('documents'));
 
 // Get all documents - All authenticated users (filtered by role in controller)
 router.get('/', getAllDocuments);
