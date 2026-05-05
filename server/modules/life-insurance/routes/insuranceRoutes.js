@@ -213,15 +213,11 @@ router.route('/employees/:id')
         [
             param('id')
                 .custom(async (value) => {
-                    // Allow either MongoDB ObjectId or employeeId string
-                    const mongoose = await import('mongoose');
-                    if (mongoose.default.Types.ObjectId.isValid(value)) {
-                        return true; // Valid ObjectId
-                    }
+                    // Accept any non-empty string ID (UUID or legacy formats)
                     if (typeof value === 'string' && value.length > 0) {
-                        return true; // Valid string employeeId
+                        return true;
                     }
-                    return Promise.reject('Valid employee ID is required (either MongoDB ObjectId or employeeId string)');
+                    return Promise.reject('Valid employee ID is required');
                 })
         ],
         validateRequest,
@@ -235,15 +231,11 @@ router.route('/policies')
         [
             body('employeeId')
                 .custom(async (value) => {
-                    // Allow either MongoDB ObjectId or employeeId string
-                    const mongoose = await import('mongoose');
-                    if (mongoose.default.Types.ObjectId.isValid(value)) {
-                        return true; // Valid ObjectId
-                    }
+                    // Accept any non-empty string ID (UUID or legacy formats)
                     if (typeof value === 'string' && value.length > 0) {
-                        return true; // Valid string employeeId
+                        return true;
                     }
-                    return Promise.reject('Valid employee ID is required (either MongoDB ObjectId or employeeId string)');
+                    return Promise.reject('Valid employee ID is required');
                 }),
             body('policyType')
                 .isIn(['CAT_A', 'CAT_B', 'CAT_C'])
