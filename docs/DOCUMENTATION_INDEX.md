@@ -1,15 +1,8 @@
-# 📚 Complete Documentation Index (Legacy)
+# HR-SM Platform Documentation Index
 
-**⚠️ NOTICE: Documentation has been restructured!**
+**✅ PostgreSQL-Based Multi-Tenant SaaS Platform**
 
-This is the legacy documentation index. For the most up-to-date and comprehensive documentation structure, please refer to:
-
-- **[README.md](README.md)** - Main documentation entry point
-- **[COMPLETE_DOCUMENTATION_INDEX.md](COMPLETE_DOCUMENTATION_INDEX.md)** - New comprehensive index
-
-## Quick Reference Guide (Legacy)
-
-This is the original index of documentation files with descriptions and recommended reading order.
+The platform is built on PostgreSQL with complete multi-tenant data isolation. Historical migration documentation has been archived to `docs/archive/` for reference purposes.
 
 ---
 
