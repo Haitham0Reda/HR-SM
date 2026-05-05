@@ -9,7 +9,6 @@ import {
     loginUser,
     getUserProfile,
     updateUserProfile,
-    getUserPlainPassword,
     updateVacationBalance,
     bulkUpdateVacationBalances,
     bulkCreateUsers,
@@ -107,9 +106,6 @@ router.post('/',
 
 // Get user by ID - Protected
 router.get('/:id', protect, getUserById);
-
-// Get user plain password - Admin only (for credential generation)
-router.get('/:id/plain-password', protect, admin, getUserPlainPassword);
 
 // Update vacation balance - Admin/HR only
 router.put('/:id/vacation-balance', protect, admin, updateVacationBalance);

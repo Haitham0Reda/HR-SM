@@ -939,62 +939,6 @@ export const uploadProfilePicture = async (req, res) => {
     }
 };
 
-// Get user plain password (for credential generation - Admin only)
-export const getUserPlainPassword = async (req, res) => {
-    try {
-        // Get tenant ID from request
-        const tenantId = req.tenantId || req.user?.tenantId;
-        
-        if (!tenantId) {
-            console.log('❌ No tenant ID available for plain password request');
-            return res.status(400).json({ error: 'Tenant ID required' });
-        }
-
-        // Use tenant-specific database connection
-        const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
-        const tenantConnection = await multiTenantDB.getCompanyConnection(tenantId);
-        
-        // Register models on tenant connection using utility
-        let models;
-        try {
-            const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
-            models = await registerHRModels(tenantConnection);
-        } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
-            return res.status(500).json({
-                success: false,
-                message: 'Database model registration error',
-                error: modelError.message
-            });
-        }
-        
-        // Build query with tenant filtering
-        const query = { _id: req.params.id, tenantId };
-        
-        console.log('🔑 Fetching plain password with query:', query);
-        console.log('🏢 Using tenant connection for:', tenantId);
-        
-        const user = await models.User.findOne(query).select('+plainPassword');
-        if (!user) {
-            console.log(`❌ User not found for plain password with ID ${req.params.id} for tenant ${tenantId}`);
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        if (!user.plainPassword) {
-            console.log(`⚠️ Plain password not available for user ${user.email}`);
-            return res.status(404).json({
-                error: 'Plain password not available. Password was set before this feature was implemented.'
-            });
-        }
-
-        console.log(`✓ Retrieved plain password for user ${user.email} for tenant ${tenantId}`);
-        res.json({ plainPassword: user.plainPassword });
-    } catch (err) {
-        console.error('❌ Error fetching plain password:', err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
 
 // Update vacation balance for a user
 export const updateVacationBalance = async (req, res) => {

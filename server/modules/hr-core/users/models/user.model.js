@@ -49,17 +49,11 @@ const User = mainAppDb.define('User', {
     },
     comment: 'User email address'
   },
-  password: {
-    type: DataTypes.STRING(512),
-    allowNull: false,
-    comment: 'Hashed password'
-  },
-  plainPassword: {
-    type: DataTypes.STRING(512),
-    allowNull: true,
-    field: 'plain_password',
-    comment: 'Temporary storage for plain password before hashing (not returned in queries)'
-  },
+   password: {
+     type: DataTypes.STRING(512),
+     allowNull: false,
+     comment: 'Hashed password'
+   },
 
   // Role and Permissions
   role: {
@@ -223,7 +217,7 @@ const User = mainAppDb.define('User', {
 
   // Default scope to exclude sensitive fields
   defaultScope: {
-    attributes: { exclude: ['password', 'plain_password', 'reset_password_token'] }
+    attributes: { exclude: ['password', 'reset_password_token'] }
   },
 
   // Named scopes
@@ -262,7 +256,6 @@ Department.hasMany(User, {
 User.beforeCreate(async (user) => {
   // Hash password if provided
   if (user.password) {
-    user.plainPassword = user.password;
     user.password = await bcrypt.hash(user.password, 12);
   }
 });
@@ -270,7 +263,6 @@ User.beforeCreate(async (user) => {
 User.beforeUpdate(async (user) => {
   // Hash password if modified
   if (user.changed('password')) {
-    user.plainPassword = user.password;
     user.password = await bcrypt.hash(user.password, 12);
   }
 });
