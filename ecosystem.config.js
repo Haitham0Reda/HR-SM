@@ -11,30 +11,32 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 5000,
-        MONGODB_URI: 'mongodb+srv://devhaithammoreda_db_user:Jj9BcW2KPu4qLLWr@cluster.uwhj601.mongodb.net/hrms?retryWrites=true&w=majority',
-        REDIS_URL: 'redis://localhost:6379',
-        REDIS_PASSWORD: '',
-        REDIS_DB: 0,
+        // PostgreSQL database URLs (set in .env.production or deployment environment)
+        LICENSE_DATABASE_URL: process.env.LICENSE_DATABASE_URL || 'postgresql://postgres:YOUR_PASSWORD@localhost:5432/hrsm-licenses',
+        MAIN_DATABASE_URL: process.env.MAIN_DATABASE_URL || 'postgresql://postgres:YOUR_PASSWORD@localhost:5432/hrsm_platform',
+        REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+        REDIS_PASSWORD: process.env.REDIS_PASSWORD || '',
+        REDIS_DB: process.env.REDIS_DB || 0,
         
         // License server integration
-        LICENSE_SERVER_URL: 'http://localhost:4000',
-        LICENSE_SERVER_API_KEY: 'your-secure-license-api-key-here',
+        LICENSE_SERVER_URL: process.env.LICENSE_SERVER_URL || 'http://localhost:4000',
+        LICENSE_SERVER_API_KEY: process.env.LICENSE_SERVER_API_KEY || 'change-this-in-production',
         
         // Session configuration
-        SESSION_SECRET: 'your-super-secure-session-secret-change-in-production',
-        SESSION_STORE: 'redis',
+        SESSION_SECRET: process.env.SESSION_SECRET || 'change-this-in-production',
+        SESSION_STORE: process.env.SESSION_STORE || 'redis',
         
         // Security settings
-        CORS_ORIGIN: 'https://your-domain.com,https://admin.your-domain.com',
-        RATE_LIMIT_WINDOW: '900000', // 15 minutes
-        RATE_LIMIT_MAX_REQUESTS: '1000',
+        CORS_ORIGIN: process.env.CORS_ORIGIN || 'https://your-domain.com,https://admin.your-domain.com',
+        RATE_LIMIT_WINDOW: process.env.RATE_LIMIT_WINDOW || '900000', // 15 minutes
+        RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || '1000',
         
         // Email configuration
-        SMTP_HOST: 'smtp.gmail.com',
-        SMTP_PORT: '587',
-        SMTP_USER: 'your-email@gmail.com',
-        SMTP_PASS: 'your-app-password',
-        SMTP_FROM: 'HR System <noreply@your-domain.com>',
+        SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
+        SMTP_PORT: process.env.SMTP_PORT || '587',
+        SMTP_USER: process.env.SMTP_USER || 'your-email@gmail.com',
+        SMTP_PASS: process.env.SMTP_PASS || 'your-app-password',
+        SMTP_FROM: process.env.SMTP_FROM || 'HR System <noreply@your-domain.com>',
         
         // File upload settings
         MAX_FILE_SIZE: '10485760', // 10MB
@@ -46,35 +48,37 @@ module.exports = {
         LOG_LEVEL: 'info',
         
         // Backup settings
-        BACKUP_ENABLED: 'true',
-        BACKUP_SCHEDULE: '0 2 * * *', // Daily at 2 AM
-        AWS_ACCESS_KEY_ID: 'your-aws-access-key',
-        AWS_SECRET_ACCESS_KEY: 'your-aws-secret-key',
-        AWS_REGION: 'us-east-1',
-        AWS_S3_BUCKET: 'hrms-backups-production'
+        BACKUP_ENABLED: process.env.BACKUP_ENABLED || 'true',
+        BACKUP_SCHEDULE: process.env.BACKUP_SCHEDULE || '0 2 * * *', // Daily at 2 AM
+        AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || 'your-aws-access-key',
+        AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY || 'your-aws-secret-key',
+        AWS_REGION: process.env.AWS_REGION || 'us-east-1',
+        AWS_S3_BUCKET: process.env.AWS_S3_BUCKET || 'hrms-backups-production'
       },
       
       // Development environment
       env_development: {
         NODE_ENV: 'development',
         PORT: 5000,
-        MONGODB_URI: 'mongodb+srv://devhaithammoreda_db_user:Jj9BcW2KPu4qLLWr@cluster.uwhj601.mongodb.net/hrms_dev?retryWrites=true&w=majority',
-        REDIS_URL: 'redis://localhost:6379',
-        REDIS_PASSWORD: '',
-        REDIS_DB: 1,
+        // PostgreSQL database URLs (set in .env or deployment environment)
+        LICENSE_DATABASE_URL: process.env.LICENSE_DATABASE_URL || 'postgresql://postgres:YOUR_PASSWORD@localhost:5432/hrsm_licenses',
+        MAIN_DATABASE_URL: process.env.MAIN_DATABASE_URL || 'postgresql://postgres:YOUR_PASSWORD@localhost:5432/hrsm_platform',
+        REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+        REDIS_PASSWORD: process.env.REDIS_PASSWORD || '',
+        REDIS_DB: process.env.REDIS_DB || 1,
         
         // License server integration
-        LICENSE_SERVER_URL: 'http://localhost:4000',
-        LICENSE_SERVER_API_KEY: 'dev-license-api-key-change-in-production',
+        LICENSE_SERVER_URL: process.env.LICENSE_SERVER_URL || 'http://localhost:4000',
+        LICENSE_SERVER_API_KEY: process.env.LICENSE_SERVER_API_KEY || 'dev-license-api-key-change-in-production',
         
         // Session configuration
-        SESSION_SECRET: 'dev-session-secret-change-in-production',
-        SESSION_STORE: 'redis',
+        SESSION_SECRET: process.env.SESSION_SECRET || 'dev-session-secret-change-in-production',
+        SESSION_STORE: process.env.SESSION_STORE || 'redis',
         
         // Security settings
-        CORS_ORIGIN: 'http://localhost:3000,http://localhost:3001',
-        RATE_LIMIT_WINDOW: '900000',
-        RATE_LIMIT_MAX_REQUESTS: '10000',
+        CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001',
+        RATE_LIMIT_WINDOW: process.env.RATE_LIMIT_WINDOW || '900000',
+        RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || '10000',
         
         // Monitoring
         PROMETHEUS_ENABLED: 'true',
