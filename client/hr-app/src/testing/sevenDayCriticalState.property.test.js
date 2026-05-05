@@ -31,12 +31,12 @@ jest.mock('../services/survey.service', () => ({
     getMySurveys: jest.fn()
 }));
 
-// Mock AuthContext
-jest.mock('../contexts/AuthContext', () => {
+// Mock Redux Auth Provider
+jest.mock('../store/providers/ReduxAuthProvider', () => {
     const React = require('react');
     return {
         useAuth: jest.fn(),
-        AuthProvider: ({ children }) => <div>{children}</div>
+        ReduxAuthProvider: ({ children }) => <div>{children}</div>
     };
 });
 
@@ -217,7 +217,7 @@ describe('7-Day Critical State - Property-Based Tests', () => {
                     });
 
                     // Setup useAuth mock
-                    const { useAuth } = require('../context/AuthContext');
+                    const { useAuth } = require('../store/providers/ReduxAuthProvider');
                     useAuth.mockReturnValue({
                         isAuthenticated: true,
                         user: {
@@ -353,7 +353,7 @@ describe('7-Day Critical State - Property-Based Tests', () => {
                     });
 
                     // Setup useAuth mock
-                    const { useAuth } = require('../context/AuthContext');
+                    const { useAuth } = require('../store/providers/ReduxAuthProvider');
                     useAuth.mockReturnValue({
                         isAuthenticated: true,
                         user: {
@@ -459,7 +459,7 @@ describe('7-Day Critical State - Property-Based Tests', () => {
                     });
 
                     // Setup useAuth mock
-                    const { useAuth } = require('../context/AuthContext');
+                    const { useAuth } = require('../store/providers/ReduxAuthProvider');
                     useAuth.mockReturnValue({
                         isAuthenticated: true,
                         user: {
@@ -554,7 +554,7 @@ describe('7-Day Critical State - Property-Based Tests', () => {
                     });
 
                     // Setup useAuth mock
-                    const { useAuth } = require('../context/AuthContext');
+                    const { useAuth } = require('../store/providers/ReduxAuthProvider');
                     useAuth.mockReturnValue({
                         isAuthenticated: true,
                         user: {
@@ -599,3 +599,4 @@ describe('7-Day Critical State - Property-Based Tests', () => {
         );
     });
 });
+

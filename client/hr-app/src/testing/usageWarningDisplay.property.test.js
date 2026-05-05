@@ -31,12 +31,12 @@ jest.mock('../services/survey.service', () => ({
     getMySurveys: jest.fn()
 }));
 
-// Mock AuthContext
-jest.mock('../context/AuthContext', () => {
+// Mock Redux Auth Provider
+jest.mock('../store/providers/ReduxAuthProvider', () => {
     const React = require('react');
     return {
         useAuth: jest.fn(),
-        AuthProvider: ({ children }) => <div>{children}</div>
+        ReduxAuthProvider: ({ children }) => <div>{children}</div>
     };
 });
 
@@ -146,7 +146,7 @@ describe('Usage Warning Display - Property-Based Tests', () => {
                     });
 
                     // Setup useAuth mock
-                    const { useAuth } = require('../context/AuthContext');
+                    const { useAuth } = require('../store/providers/ReduxAuthProvider');
                     useAuth.mockReturnValue({
                         isAuthenticated: true,
                         user: {
@@ -286,7 +286,7 @@ describe('Usage Warning Display - Property-Based Tests', () => {
                     });
 
                     // Setup useAuth mock
-                    const { useAuth } = require('../context/AuthContext');
+                    const { useAuth } = require('../store/providers/ReduxAuthProvider');
                     useAuth.mockReturnValue({
                         isAuthenticated: true,
                         user: {
@@ -388,7 +388,7 @@ describe('Usage Warning Display - Property-Based Tests', () => {
                     });
 
                     // Setup useAuth mock
-                    const { useAuth } = require('../context/AuthContext');
+                    const { useAuth } = require('../store/providers/ReduxAuthProvider');
                     useAuth.mockReturnValue({
                         isAuthenticated: true,
                         user: {
@@ -510,7 +510,7 @@ describe('Usage Warning Display - Property-Based Tests', () => {
                     });
 
                     // Setup useAuth mock
-                    const { useAuth } = require('../context/AuthContext');
+                    const { useAuth } = require('../store/providers/ReduxAuthProvider');
                     useAuth.mockReturnValue({
                         isAuthenticated: true,
                         user: {
@@ -581,3 +581,4 @@ describe('Usage Warning Display - Property-Based Tests', () => {
         );
     });
 });
+

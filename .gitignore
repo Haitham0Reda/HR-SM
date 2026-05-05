@@ -10,7 +10,8 @@
 .env.*
 !.env.example
 !.env.production.example
-!.env.test
+# DO NOT track .env.test - use .env.test.example instead
+.env.test
 .env.mongodb-rollback
 
 # Private keys and certificates - NEVER commit these

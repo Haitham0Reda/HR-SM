@@ -4,6 +4,14 @@ import { useAuth } from '../../store/providers/ReduxAuthProvider';
 import announcementService from '../../services/announcement.service';
 import axios from 'axios';
 
+/**
+ * DEBUG COMPONENT - Raw Axios Usage Acceptable
+ * 
+ * This component intentionally uses raw axios calls for debugging purposes.
+ * It bypasses RTK Query to test direct API communication and diagnose issues.
+ * 
+ * DO NOT use this pattern in production components - use RTK Query hooks instead.
+ */
 const ComprehensiveAnnouncementDebug = () => {
     const [results, setResults] = useState({});
     const [loading, setLoading] = useState(false);

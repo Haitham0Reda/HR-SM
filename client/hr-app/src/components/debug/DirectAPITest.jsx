@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import { Box, Button, Typography, Alert, Card, CardContent } from '@mui/material';
 import axios from 'axios';
 
+/**
+ * DEBUG COMPONENT - Raw Axios Usage Acceptable
+ * 
+ * This component intentionally uses raw axios calls for debugging purposes.
+ * It bypasses RTK Query to test direct API communication and diagnose issues.
+ * 
+ * DO NOT use this pattern in production components - use RTK Query hooks instead.
+ */
 const DirectAPITest = () => {
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);

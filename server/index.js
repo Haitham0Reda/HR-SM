@@ -18,6 +18,13 @@ import initializeSystemCollections from './utils/initializeSystemCollections.js'
 // Load environment variables
 dotenv.config();
 
+// License validation warning for non-development environments
+if (process.env.NODE_ENV !== 'development' && process.env.LICENSE_VALIDATION_ENABLED === 'false') {
+    console.warn('⚠️  WARNING: License validation is disabled in a non-development environment!');
+    console.warn('   This may cause security and compliance issues in production.');
+    console.warn('   Set LICENSE_VALIDATION_ENABLED=true for production use.');
+}
+
 const PORT = process.env.PORT || 5000;
 
 // Initialize backup system

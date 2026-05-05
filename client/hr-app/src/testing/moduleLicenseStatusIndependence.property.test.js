@@ -17,8 +17,8 @@ import fc from 'fast-check';
 // Mock axios
 jest.mock('axios');
 
-// Mock AuthContext
-jest.mock('../context/AuthContext', () => ({
+// Mock Redux Auth Provider
+jest.mock('../store/providers/ReduxAuthProvider', () => ({
     useAuth: () => ({
         isAuthenticated: true,
         user: {
