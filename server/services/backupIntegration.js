@@ -258,9 +258,8 @@ class BackupIntegration {
     validateConfiguration() {
         const issues = [];
 
-        // Check required environment variables
+        // Check required environment variables for backup system
         const requiredEnvVars = [
-            'MONGODB_URI',
             'BACKUP_ENCRYPTION_KEY'
         ];
 
@@ -289,17 +288,6 @@ class BackupIntegration {
             }
         } catch (error) {
             issues.push(`Failed to check backup directory: ${error.message}`);
-        }
-
-        // Check MongoDB connection
-        if (!process.env.MONGODB_URI) {
-            issues.push('MongoDB URI not configured');
-        }
-
-        // Check license server database
-        const licenseDbUri = process.env.LICENSE_DB_URI || process.env.MONGODB_URI;
-        if (!licenseDbUri) {
-            issues.push('License database URI not configured');
         }
 
         return {
