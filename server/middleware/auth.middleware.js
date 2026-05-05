@@ -36,7 +36,14 @@ export async function authenticateJWT(req, res, next) {
         }
 
         // Verify JWT token - use TENANT_JWT_SECRET for tenant tokens
-        const jwtSecret = process.env.TENANT_JWT_SECRET || process.env.JWT_SECRET || 'your-secret-key';
+        const jwtSecret = process.env.TENANT_JWT_SECRET || process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            return res.status(500).json({
+                success: false,
+                error: 'Server configuration error: JWT secret not configured',
+                correlationId: req.correlationId
+            });
+        }
         const decoded = jwt.verify(token, jwtSecret);
 
         // Extract user information
@@ -140,7 +147,11 @@ export function optionalAuth(req, res, next) {
 
     // Try to authenticate, but don't fail if token is invalid
     try {
-        const jwtSecret = process.env.TENANT_JWT_SECRET || process.env.JWT_SECRET || 'your-secret-key';
+        const jwtSecret = process.env.TENANT_JWT_SECRET || process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            // If no secret configured, skip authentication (should be configured in production)
+            return next();
+        }
         const decoded = jwt.verify(token, jwtSecret);
 
         req.user = {
