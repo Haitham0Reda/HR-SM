@@ -70,7 +70,6 @@ export const getAllForgetChecks = async (req, res) => {
 
 export const createForgetCheck = async (req, res) => {
     try {
-        console.log('🔍 CREATE FORGET CHECK - START');
         console.log('Request body:', JSON.stringify(req.body, null, 2));
         console.log('Authenticated user:', JSON.stringify(req.user, null, 2));
         console.log('Tenant ID:', req.tenantId);
@@ -79,18 +78,14 @@ export const createForgetCheck = async (req, res) => {
         let employeeId = req.body.employee || req.body.user || req.user.id;
         
         if (!employeeId) {
-            console.log('❌ No employee ID found');
             return res.status(400).json({ 
                 error: 'Employee ID is required',
                 details: 'No employee ID provided in request or user context'
             });
         }
 
-        console.log('🔍 Using employee ID:', employeeId);
 
         // Get employee details
-        console.log('🔍 Looking up employee in database...');
-        console.log('🔍 Search criteria:', { id: employeeId, tenantId: req.tenantId });
         
         const employee = await User.findOne({ 
             where: {
@@ -104,17 +99,6 @@ export const createForgetCheck = async (req, res) => {
         });
 
         if (!employee) {
-            console.log('❌ Employee not found in database:', employeeId);
-            console.log('🔍 Available user fields:', Object.keys(req.user || {}));
-            console.log('🔍 User ID variations:', {
-                'req.user.id': req.user?.id,
-                'req.user.userId': req.user?.userId,
-                'req.body.employee': req.body.employee
-            });
-            console.log('🔍 Tenant context:', {
-                'req.tenantId': req.tenantId,
-                'user.tenantId': req.user?.tenantId
-            });
             
             return res.status(404).json({ 
                 error: 'Employee not found',
@@ -128,7 +112,6 @@ export const createForgetCheck = async (req, res) => {
             });
         }
 
-        console.log('✅ Found employee:', employee.username, employee.email);
 
         // Prepare the forget check data
         const forgetCheckData = {
@@ -142,16 +125,14 @@ export const createForgetCheck = async (req, res) => {
             tenantId: req.tenantId
         };
 
-        console.log('🔍 Creating forget check with data:', JSON.stringify(forgetCheckData, null, 2));
 
         const savedForgetCheck = await ForgetCheck.create(forgetCheckData);
 
-        console.log('✅ Forget check created successfully:', savedForgetCheck.id);
 
         res.status(201).json(savedForgetCheck);
     } catch (err) {
-        console.error('❌ Error creating forget check:', err);
-        console.error('❌ Error stack:', err.stack);
+        console.error('Error:  Error creating forget check:', err);
+        console.error('Error:  Error stack:', err.stack);
         
         // Don't let errors become 404s - return proper error codes
         if (err.name === 'SequelizeValidationError') {

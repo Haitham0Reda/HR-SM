@@ -1,5 +1,5 @@
 import express from 'express';
-import * as platformAuthController from '../controllers/platformAuthController.js';
+import * as platformAuthController from '../controllers/platformAuth.controller.js';
 import { authenticatePlatformUser } from '../../middleware/platformAuth.js';
 
 const router = express.Router();

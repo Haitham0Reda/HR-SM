@@ -13,7 +13,7 @@ export default {
     '^.+\.js$': ['babel-jest', { rootMode: 'upward' }]
   },
   transformIgnorePatterns: [
-    'node_modules/(?!uuid)/'
+    'node_modules/(?!uuid/|@standard-schema/utils/)'
   ],
   cache: true,
   cacheDirectory: '<rootDir>/.jest-cache',

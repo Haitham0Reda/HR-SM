@@ -13,7 +13,7 @@ import {
     receivePushedLogs,
     importCSV
 } from '../controllers/attendanceDevice.controller.js';
-import { protect, checkRole } from '../middleware/index.js';
+import { protect, checkRole } from '../../../../middleware/index.js';
 
 const router = express.Router();
 

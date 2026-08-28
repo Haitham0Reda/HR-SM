@@ -1,6 +1,7 @@
 /**
  * Central route exports
  * This file exports all routes from their module locations
+ * Used for backward compatibility with legacy route mounting in app.js
  */
 
 // Import platform system routes
@@ -25,83 +26,107 @@ export const permissionRoutes = permissionRoutesImport;
 export const permissionAuditRoutes = permissionAuditRoutesImport;
 export const securityAuditRoutes = securityAuditRoutesImport;
 export const securitySettingsRoutes = securitySettingsRoutesImport;
+export const subscriptionRoutes = subscriptionRoutesImport;
 
-// Create placeholder routes for legacy routes that don't exist yet
-import express from 'express';
-
-const createPlaceholderRouter = (routeName) => {
-    const router = express.Router();
-    router.get('*', (req, res) => {
-        res.status(404).json({
-            success: false,
-            message: `${routeName} routes are not yet implemented`,
-            code: 'ROUTE_NOT_IMPLEMENTED'
-        });
-    });
-    return router;
-};
-
-// Import real routes
+// Import real routes from module locations
 import notificationRoutesImport from './notificationRoutes.js';
 import dashboardRoutesImport from './dashboardRoutes.js';
+import eventRoutesImport from './events.routes.js';
+import featureFlagRoutesImport from './featureFlags.routes.js';
 
-// Export real routes
 export const notificationRoutes = notificationRoutesImport;
 export const dashboardRoutes = dashboardRoutesImport;
+export const eventRoutes = eventRoutesImport;
+export const featureFlagRoutes = featureFlagRoutesImport;
 
-// Import real payroll routes
+// Import module route modules (bound from their module locations)
 import payrollRoutesImport from '../modules/payroll/routes/payroll.routes.js';
-
-// Import real document routes
 import documentRoutesImport from '../modules/documents/routes/document.routes.js';
 import documentTemplateRoutesImport from '../modules/documents/routes/documentTemplate.routes.js';
-
-// Legacy routes that don't exist yet - use placeholder routers
-// Import real feature flag routes
-import featureFlagRoutesImport from './featureFlags.routes.js';
-export const featureFlagRoutes = featureFlagRoutesImport;
-export const documentRoutes = documentRoutesImport;
-export const documentTemplateRoutes = documentTemplateRoutesImport;
-// Import real event routes
-import eventRoutesImport from './events.routes.js';
-export const eventRoutes = eventRoutesImport;
-export const payrollRoutes = payrollRoutesImport; // Use real payroll routes
-export const reportRoutes = createPlaceholderRouter('Report');
-// Import real survey routes from the surveys module
+import hardcopyRoutesImport from '../modules/documents/routes/hardcopy.routes.js';
 import surveyRoutesImport from '../modules/surveys/routes/survey.routes.js';
-export const surveyRoutes = surveyRoutesImport;
-// Import theme routes from the theme module
 import themeRoutesImport from '../modules/theme/routes/theme.routes.js';
-export const themeRoutes = themeRoutesImport;
-
-// Import real department, position, and resigned employee routes
+import analyticsRoutesImport from '../modules/analytics/routes/analytics.routes.js';
+import announcementRoutesImport from '../modules/announcements/routes/announcement.routes.js';
+import authRoutesImport from '../modules/hr-core/routes/authRoutes.js';
+import holidayRoutesImport from '../modules/hr-core/holidays/routes/holiday.routes.js';
+import missionRoutesImport from '../modules/hr-core/missions/routes.js';
+import mixedVacationRoutesImport from '../modules/hr-core/vacations/routes/mixedVacation.routes.js';
+import forgetCheckRoutesImport from '../modules/hr-core/attendance/routes/forgetCheck.routes.js';
+import permissionRequestRoutesImport from '../modules/hr-core/requests/routes/permissionRequest.routes.js';
+import requestRoutesImport from '../modules/hr-core/requests/routes.js';
+import backupRoutesImport from '../modules/hr-core/backup/routes/backup.routes.js';
+import backupExecutionRoutesImport from '../modules/hr-core/backup/routes/backupExecution.routes.js';
+import userRoutesImport from '../modules/hr-core/users/routes.js';
+import attendanceRoutesImport from '../modules/hr-core/attendance/routes.js';
+import overtimeRoutesImport from '../modules/hr-core/overtime/routes.js';
+import reportRoutesImport from '../modules/reports/routes/report.routes.js';
 import departmentRoutesImport from '../modules/hr-core/users/routes/department.routes.js';
 import positionRoutesImport from '../modules/hr-core/users/routes/position.routes.js';
 import resignedEmployeeRoutesImport from '../modules/hr-core/users/routes/resignedEmployee.routes.js';
 
-// Import real analytics routes
-import analyticsRoutesImport from '../modules/analytics/routes/analytics.routes.js';
-export const analyticsRoutes = analyticsRoutesImport;
-
-// Import real announcement routes
-import announcementRoutesImport from '../modules/announcements/routes/announcement.routes.js';
-export const announcementRoutes = announcementRoutesImport;
-// Import hardcopy routes
-import hardcopyRoutesImport from '../modules/documents/routes/hardcopy.routes.js';
+// Export all bound routes
+export const payrollRoutes = payrollRoutesImport;
+export const documentRoutes = documentRoutesImport;
+export const documentTemplateRoutes = documentTemplateRoutesImport;
 export const hardcopyRoutes = hardcopyRoutesImport;
-export const holidayRoutes = createPlaceholderRouter('Holiday');
-export const missionRoutes = createPlaceholderRouter('Mission');
-export const mixedVacationRoutes = createPlaceholderRouter('Mixed Vacation');
-export const forgetCheckRoutes = createPlaceholderRouter('Forget Check');
-export const permissionRequestRoutes = createPlaceholderRouter('Permission Request');
-export const positionRoutes = positionRoutesImport;
-export const requestRoutes = createPlaceholderRouter('Request');
-export const resignedEmployeeRoutes = resignedEmployeeRoutesImport;
-export const backupRoutes = createPlaceholderRouter('Backup');
-export const backupExecutionRoutes = createPlaceholderRouter('Backup Execution');
-export const departmentRoutes = departmentRoutesImport;
-// Import real auth routes
-import authRoutesImport from '../modules/hr-core/routes/authRoutes.js';
+export const surveyRoutes = surveyRoutesImport;
+export const themeRoutes = themeRoutesImport;
+export const analyticsRoutes = analyticsRoutesImport;
+export const announcementRoutes = announcementRoutesImport;
 export const authRoutes = authRoutesImport;
-export const userRoutes = createPlaceholderRouter('User');
-export const attendanceRoutes = createPlaceholderRouter('Attendance');
+export const holidayRoutes = holidayRoutesImport;
+export const missionRoutes = missionRoutesImport;
+export const mixedVacationRoutes = mixedVacationRoutesImport;
+export const forgetCheckRoutes = forgetCheckRoutesImport;
+export const permissionRequestRoutes = permissionRequestRoutesImport;
+export const requestRoutes = requestRoutesImport;
+export const backupRoutes = backupRoutesImport;
+export const backupExecutionRoutes = backupExecutionRoutesImport;
+export const userRoutes = userRoutesImport;
+export const attendanceRoutes = attendanceRoutesImport;
+export const overtimeRoutes = overtimeRoutesImport;
+export const reportRoutes = reportRoutesImport;
+export const departmentRoutes = departmentRoutesImport;
+export const positionRoutes = positionRoutesImport;
+export const resignedEmployeeRoutes = resignedEmployeeRoutesImport;
+
+export default {
+    licenseRoutes,
+    licenseAuditRoutes,
+    metricsRoutes,
+    pricingRoutes,
+    permissionRoutes,
+    permissionAuditRoutes,
+    securityAuditRoutes,
+    securitySettingsRoutes,
+    subscriptionRoutes,
+    notificationRoutes,
+    dashboardRoutes,
+    payrollRoutes,
+    documentRoutes,
+    documentTemplateRoutes,
+    hardcopyRoutes,
+    eventRoutes,
+    featureFlagRoutes,
+    surveyRoutes,
+    themeRoutes,
+    analyticsRoutes,
+    announcementRoutes,
+    authRoutes,
+    holidayRoutes,
+    missionRoutes,
+    mixedVacationRoutes,
+    forgetCheckRoutes,
+    permissionRequestRoutes,
+    requestRoutes,
+    backupRoutes,
+    backupExecutionRoutes,
+    userRoutes,
+    attendanceRoutes,
+    overtimeRoutes,
+    reportRoutes,
+    departmentRoutes,
+    positionRoutes,
+    resignedEmployeeRoutes
+};

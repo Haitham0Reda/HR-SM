@@ -16,7 +16,7 @@ import {
     addHolidaysFromSuggestions,
     checkWorkingDayAlt
 } from '../controllers/holiday.controller.js';
-import { requireAuth } from '../../../shared/middleware/auth.js';
+import { requireAuth } from '../../../../shared/middleware/auth.js';
 
 const router = express.Router();
 

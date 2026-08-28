@@ -9,17 +9,8 @@ export const getAllAnnouncements = async (req, res) => {
         // Get tenantId from multiple possible sources
         const tenantId = req.user?.tenantId || req.tenantId || req.tenant?.tenantId;
 
-        console.log('🏢 getAllAnnouncements - Tenant ID sources:', {
-            userTenantId: req.user?.tenantId,
-            reqTenantId: req.tenantId,
-            tenantTenantId: req.tenant?.tenantId,
-            finalTenantId: tenantId,
-            userRole: req.user?.role,
-            userId: req.user?.id
-        });
 
         if (!tenantId) {
-            console.log('❌ No tenant ID found in request');
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
@@ -54,17 +45,8 @@ export const getActiveAnnouncements = async (req, res) => {
         // Get tenantId from multiple possible sources
         const tenantId = req.user?.tenantId || req.tenantId || req.tenant?.tenantId;
 
-        console.log('🏢 getActiveAnnouncements - Tenant ID sources:', {
-            userTenantId: req.user?.tenantId,
-            reqTenantId: req.tenantId,
-            tenantTenantId: req.tenant?.tenantId,
-            finalTenantId: tenantId,
-            userRole: req.user?.role,
-            userId: req.user?.id
-        });
 
         if (!tenantId) {
-            console.log('❌ No tenant ID found in request');
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
@@ -99,22 +81,8 @@ export const createAnnouncement = async (req, res) => {
         // Get tenantId from multiple possible sources
         const tenantId = req.user?.tenantId || req.tenantId || req.tenant?.tenantId;
 
-        console.log('🏢 createAnnouncement - Tenant ID sources:', {
-            userTenantId: req.user?.tenantId,
-            reqTenantId: req.tenantId,
-            tenantTenantId: req.tenant?.tenantId,
-            finalTenantId: tenantId,
-            userRole: req.user?.role,
-            userId: req.user?.id,
-            announcementData: {
-                title: req.body.title,
-                targetAudience: req.body.targetAudience,
-                isActive: req.body.isActive
-            }
-        });
 
         if (!tenantId) {
-            console.log('❌ No tenant ID found in request');
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 

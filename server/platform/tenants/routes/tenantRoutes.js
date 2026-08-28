@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticatePlatformUser } from '../../middleware/platformAuth.js';
 import { validatePlatformPermission } from '../../middleware/platformPermissions.js';
-import * as tenantController from '../controllers/tenantController.js';
+import * as tenantController from '../controllers/tenant.controller.js';
 
 const router = express.Router();
 

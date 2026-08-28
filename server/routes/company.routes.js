@@ -41,7 +41,7 @@ router.get('/:tenantId', requireAuth, async (req, res) => {
             data: company
         });
     } catch (error) {
-        console.error('❌ Error getting company:', error);
+        console.error('Error:  Error getting company:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -80,7 +80,7 @@ router.get('/:tenantId/email-domain', requireAuth, async (req, res) => {
             data: { emailDomain }
         });
     } catch (error) {
-        console.error('❌ Error getting company email domain:', error);
+        console.error('Error:  Error getting company email domain:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -130,7 +130,7 @@ router.put('/:tenantId/email-domain', requireAuth, requireRole('Admin'), async (
             message: `Email domain updated to ${emailDomain}`
         });
     } catch (error) {
-        console.error('❌ Error updating company email domain:', error);
+        console.error('Error:  Error updating company email domain:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -158,7 +158,7 @@ router.get('/', requireAuth, requireRole('SuperAdmin'), async (req, res) => {
             pagination: result.pagination
         });
     } catch (error) {
-        console.error('❌ Error getting companies:', error);
+        console.error('Error:  Error getting companies:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -199,7 +199,7 @@ router.post('/', requireAuth, requireRole('SuperAdmin'), async (req, res) => {
             message: 'Company created successfully'
         });
     } catch (error) {
-        console.error('❌ Error creating company:', error);
+        console.error('Error:  Error creating company:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -244,7 +244,7 @@ router.put('/:tenantId', requireAuth, requireRole('Admin'), async (req, res) => 
             message: 'Company updated successfully'
         });
     } catch (error) {
-        console.error('❌ Error updating company:', error);
+        console.error('Error:  Error updating company:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error',

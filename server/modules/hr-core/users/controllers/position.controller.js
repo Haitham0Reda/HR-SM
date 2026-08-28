@@ -23,7 +23,7 @@ export const getAllPositions = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -38,7 +38,7 @@ export const getAllPositions = async (req, res) => {
             data: positions
         });
     } catch (err) {
-        console.error('❌ Error fetching positions:', err);
+        console.error('Error:  Error fetching positions:', err);
         res.status(500).json({ 
             success: false,
             message: 'Internal server error',
@@ -69,7 +69,7 @@ export const createPosition = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -87,7 +87,7 @@ export const createPosition = async (req, res) => {
             data: position
         });
     } catch (err) {
-        console.error('❌ Error creating position:', err);
+        console.error('Error:  Error creating position:', err);
         res.status(400).json({ 
             success: false,
             message: err.message || 'Failed to create position'
@@ -117,7 +117,7 @@ export const getPositionById = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -142,7 +142,7 @@ export const getPositionById = async (req, res) => {
             data: position
         });
     } catch (err) {
-        console.error('❌ Error fetching position:', err);
+        console.error('Error:  Error fetching position:', err);
         res.status(500).json({ 
             success: false,
             message: 'Internal server error',
@@ -173,7 +173,7 @@ export const updatePosition = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -199,7 +199,7 @@ export const updatePosition = async (req, res) => {
             data: position
         });
     } catch (err) {
-        console.error('❌ Error updating position:', err);
+        console.error('Error:  Error updating position:', err);
         res.status(400).json({ 
             success: false,
             message: err.message || 'Failed to update position'
@@ -229,7 +229,7 @@ export const deletePosition = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -254,7 +254,7 @@ export const deletePosition = async (req, res) => {
             message: 'Position deleted successfully'
         });
     } catch (err) {
-        console.error('❌ Error deleting position:', err);
+        console.error('Error:  Error deleting position:', err);
         res.status(500).json({ 
             success: false,
             message: 'Internal server error',

@@ -161,28 +161,22 @@ export const getPolicyById = async (req, res) => {
  */
 export const createPolicy = async (req, res) => {
     try {
-        console.log('🔍 Create mixed vacation policy - Request body:', JSON.stringify(req.body, null, 2));
-        console.log('🔍 User:', req.user);
-        console.log('🔍 TenantId from req:', req.tenantId);
         
         // Get tenantId from user context (set by auth middleware)
         const tenantId = req.tenantId || req.user?.tenantId;
 
         if (!tenantId) {
-            console.log('❌ No tenantId found');
             return res.status(400).json({
                 success: false,
                 message: 'Tenant ID is required'
             });
         }
 
-        console.log('🔍 Using tenantId:', tenantId);
 
         // Validate required fields
         const { name, startDate, endDate, totalDays } = req.body;
         
         if (!name || !startDate || !endDate || !totalDays) {
-            console.log('❌ Missing required fields:', { name: !!name, startDate: !!startDate, endDate: !!endDate, totalDays: !!totalDays });
             return res.status(400).json({
                 success: false,
                 message: 'Missing required fields: name, startDate, endDate, totalDays'
@@ -192,11 +186,6 @@ export const createPolicy = async (req, res) => {
         // Get tenant-specific models
         const { MixedVacation: TenantMixedVacation } = await getTenantModels(tenantId);
 
-        console.log('🔍 Creating policy with data:', {
-            ...req.body,
-            tenantId: tenantId,
-            createdBy: req.user._id
-        });
 
         const policyData = {
             ...req.body,
@@ -211,16 +200,13 @@ export const createPolicy = async (req, res) => {
 
         const policy = new TenantMixedVacation(policyData);
 
-        console.log('🔍 Policy created, now saving...');
 
         await policy.save();
-        console.log('✅ Policy saved to database');
 
         // Try to populate createdBy
         try {
             await policy.populate('createdBy', 'username email');
         } catch (populateError) {
-            console.log('⚠️ Could not populate createdBy:', populateError.message);
         }
 
         res.status(201).json({
@@ -730,38 +716,22 @@ export const cancelPolicy = async (req, res) => {
  */
 export const activatePolicy = async (req, res) => {
     try {
-        console.log('🔍 ACTIVATE - Policy ID:', req.params.id);
         
         // Policy is already validated and available from middleware
         const policy = req.policy;
         
-        console.log('🔍 ACTIVATE - Policy before update:', {
-            id: policy._id,
-            name: policy.name,
-            status: policy.status,
-            tenantId: policy.tenantId
-        });
 
         if (policy.status !== 'draft') {
-            console.log('❌ ACTIVATE - Policy is not draft, current status:', policy.status);
             return res.status(400).json({ 
                 success: false,
                 error: `Only draft policies can be activated. Current status: ${policy.status}` 
             });
         }
 
-        console.log('🔍 ACTIVATE - Setting status to active...');
         policy.status = 'active';
         
-        console.log('🔍 ACTIVATE - Saving policy...');
         const savedPolicy = await policy.save();
         
-        console.log('✅ ACTIVATE - Policy saved successfully:', {
-            id: savedPolicy._id,
-            name: savedPolicy.name,
-            status: savedPolicy.status,
-            tenantId: savedPolicy.tenantId
-        });
 
         res.json({
             success: true,
@@ -769,7 +739,7 @@ export const activatePolicy = async (req, res) => {
             policy: savedPolicy
         });
     } catch (err) {
-        console.error('❌ ACTIVATE - Error:', err);
+        console.error('Error:  ACTIVATE - Error:', err);
         res.status(500).json({ 
             success: false,
             error: err.message 

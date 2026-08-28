@@ -35,7 +35,7 @@ export const bulkDownloadPhotos = async (req, res) => {
                 try {
                     userIds = JSON.parse(userIds);
                 } catch (e) {
-                    console.error('❌ Invalid userIds format:', e.message);
+                    console.error('Error:  Invalid userIds format:', e.message);
                     return res.status(400).json({ message: 'Invalid userIds format' });
                 }
             }
@@ -49,9 +49,8 @@ export const bulkDownloadPhotos = async (req, res) => {
                     const decoded = jwt.default.verify(token, jwtSecret);
                     req.user = decoded;
                     req.tenantId = decoded.tenantId; // Set tenantId from token
-                    console.log('✓ Token verified for user:', decoded.userId, 'tenant:', decoded.tenantId);
                 } catch (error) {
-                    console.error('❌ Token verification failed:', error.message);
+                    console.error('Error:  Token verification failed:', error.message);
                     return res.status(401).json({ message: 'Invalid or expired token' });
                 }
             } else {
@@ -66,7 +65,6 @@ export const bulkDownloadPhotos = async (req, res) => {
         const tenantId = req.tenantId || req.user?.tenantId;
         
         if (!tenantId) {
-            console.log('❌ No tenant ID available for photo download');
             return res.status(400).json({ error: 'Tenant ID required' });
         }
 
@@ -80,7 +78,7 @@ export const bulkDownloadPhotos = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -88,28 +86,23 @@ export const bulkDownloadPhotos = async (req, res) => {
             });
         }
 
-        console.log('🏢 Using tenant connection for photo download:', tenantId);
 
         // Get users from tenant-specific database
         let users;
         if (userIds && userIds.length > 0) {
             users = await models.User.find({ _id: { $in: userIds }, tenantId });
-            console.log(`📋 Found ${users.length} users from ${userIds.length} requested IDs`);
         } else {
             users = await models.User.find({ tenantId });
-            console.log(`📋 Found ${users.length} total users for tenant`);
         }
 
         // Filter users with photos and log what we find
         const usersWithPhotos = users.filter(user => {
             const hasPhoto = user.personalInfo?.profilePicture || user.profilePicture;
             if (hasPhoto) {
-                console.log(`📸 User ${user.email} has photo: ${hasPhoto.substring(0, 50)}...`);
             }
             return hasPhoto;
         });
 
-        console.log(`📊 Found ${usersWithPhotos.length} users with photos out of ${users.length} total users`);
 
         if (usersWithPhotos.length === 0) {
             return res.status(404).json({ 
@@ -135,7 +128,7 @@ export const bulkDownloadPhotos = async (req, res) => {
 
         // Handle archive errors
         archive.on('error', (err) => {
-            console.error('❌ Archive creation error:', err.message);
+            console.error('Error:  Archive creation error:', err.message);
             if (!res.headersSent) {
                 res.status(500).json({ 
                     message: 'Archive creation error',
@@ -155,11 +148,10 @@ export const bulkDownloadPhotos = async (req, res) => {
                 
                 // Handle base64 encoded images
                 if (photoData.startsWith('data:image')) {
-                    console.log(`🖼️ Processing base64 image for ${user.email}`);
                     // Extract base64 data and mime type
                     const matches = photoData.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
                     if (!matches) {
-                        console.error(`❌ Invalid base64 format for ${user.email}`);
+                        console.error(`Error:  Invalid base64 format for ${user.email}`);
                         errors.push(`${user.username}: Invalid base64 format`);
                         continue;
                     }
@@ -187,7 +179,6 @@ export const bulkDownloadPhotos = async (req, res) => {
                 let fullPath;
                 if (photoData.startsWith('http')) {
                     // Skip external URLs for now
-                    console.log(`⚠️ Skipping external URL for ${user.email}: ${photoData}`);
                     errors.push(`${user.username}: External URL not supported`);
                     continue;
                 }
@@ -208,13 +199,12 @@ export const bulkDownloadPhotos = async (req, res) => {
                 fullPath = possiblePaths.find(p => fs.existsSync(p));
                 
                 if (!fullPath) {
-                    console.error(`❌ Photo file not found for ${user.email}. Tried paths:`);
+                    console.error(`Error:  Photo file not found for ${user.email}. Tried paths:`);
                     possiblePaths.forEach(p => console.log(`  - ${p}`));
                     errors.push(`${user.username}: File not found`);
                     continue;
                 }
 
-                console.log(`✓ Found photo file for ${user.email}: ${fullPath}`);
 
                 // Get file extension
                 const extension = path.extname(photoData) || '.jpg';
@@ -230,28 +220,25 @@ export const bulkDownloadPhotos = async (req, res) => {
                 addedCount++;
 
             } catch (error) {
-                console.error(`❌ Error processing photo for ${user.email}:`, error.message);
+                console.error(`Error:  Error processing photo for ${user.email}:`, error.message);
                 errors.push(`${user.username}: ${error.message}`);
             }
         }
 
         if (errors.length > 0) {
-            console.log(`⚠️ Encountered ${errors.length} errors:`, errors);
         }
 
         if (addedCount === 0) {
-            console.log('❌ No photos were successfully added to archive');
             // Archive already piped, just finalize with empty content
             archive.append('No photos found', { name: 'README.txt' });
         } else {
-            console.log(`✅ Successfully added ${addedCount} photos to archive`);
         }
 
         // Finalize archive
         await archive.finalize();
 
     } catch (error) {
-        console.error('❌ Bulk photo download failed:', error.message);
+        console.error('Error:  Bulk photo download failed:', error.message);
         if (!res.headersSent) {
             res.status(500).json({ 
                 message: 'Failed to create photo archive',

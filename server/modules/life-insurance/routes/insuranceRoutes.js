@@ -5,13 +5,13 @@ import { moduleGuard } from '../../../middleware/moduleGuard.js';
 import { validateRequest } from '../../../core/middleware/validation.js';
 import { requireRole } from '../../../shared/middleware/auth.js';
 import { sendSuccess, sendError } from '../../../core/utils/response.js';
-import insuranceController from '../controllers/insuranceController.js';
-import familyMemberController from '../controllers/familyMemberController.js';
-import claimController from '../controllers/claimController.js';
-import reportController from '../controllers/reportController.js';
-import employeeController from '../controllers/employeeController.js';
-import configController from '../controllers/configController.js';
-import * as insuranceProviderController from '../controllers/insuranceProviderController.js';
+import insuranceController from '../controllers/insurance.controller.js';
+import familyMemberController from '../controllers/familyMember.controller.js';
+import claimController from '../controllers/claim.controller.js';
+import reportController from '../controllers/report.controller.js';
+import employeeController from '../controllers/employee.controller.js';
+import configController from '../controllers/config.controller.js';
+import * as insuranceProviderController from '../controllers/insuranceProvider.controller.js';
 import { 
     validateCreateProvider, 
     validateUpdateProvider, 

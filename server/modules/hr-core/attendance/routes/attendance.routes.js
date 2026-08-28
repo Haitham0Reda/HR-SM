@@ -12,7 +12,7 @@ import {
 } from '../controllers/attendance.controller.js';
 import { protect, checkActive, checkRole } from '../../../../middleware/index.js';
 import { requireModuleLicense } from '../../../../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../../../../models/license.model.js';
+import { MODULES } from '../../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 

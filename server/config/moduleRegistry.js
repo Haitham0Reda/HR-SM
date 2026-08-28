@@ -16,11 +16,13 @@ export const moduleRegistry = {
             missions: () => import('../modules/hr-core/missions/routes.js'),
             overtime: () => import('../modules/hr-core/overtime/routes.js'),
             requests: () => import('../modules/hr-core/requests/routes.js'),
+            'permission-requests': () => import('../modules/hr-core/requests/routes/permissionRequest.routes.js'),
             vacations: () => import('../modules/hr-core/vacations/routes.js'),
+            'mixed-vacations': () => import('../modules/hr-core/vacations/routes/mixedVacation.routes.js'),
             'sick-leaves': () => import('../modules/hr-core/vacations/routes/sickLeave.routes.js'),
             'forget-checks': () => import('../modules/hr-core/attendance/routes/forgetCheck.routes.js'),
             'resigned-employees': () => import('../modules/hr-core/users/routes/resignedEmployee.routes.js'),
-            'backups': () => import('../modules/hr-core/routes/backup.routes.js'),
+            'backups': () => import('../modules/hr-core/backup/routes/backup.routes.js'),
             dashboard: () => import('../modules/dashboard/routes/dashboard.routes.js')
         },
         basePath: '/api/v1'
@@ -85,19 +87,6 @@ export const loadModuleRoutes = async (app, moduleName) => {
 
             const routePath = `${module.basePath}/${routeName}`;
             app.use(routePath, router);
-
-            console.log(`✓ Loaded route: ${routePath}`);
-            
-            // Debug: Log the actual routes in the router
-            if (routeName === 'users') {
-                console.log('🔍 User routes loaded:');
-                router.stack?.forEach(layer => {
-                    if (layer.route) {
-                        const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
-                        console.log(`   ${methods} ${routePath}${layer.route.path}`);
-                    }
-                });
-            }
         }
     } catch (error) {
         console.error(`Error loading module ${moduleName}:`, error);

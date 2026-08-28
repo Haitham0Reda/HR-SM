@@ -1,5 +1,5 @@
 import express from 'express';
-import ModuleController from '../controllers/ModuleController.js';
+import ModuleController from '../controllers/Module.controller.js';
 import { authenticatePlatformUser } from '../middleware/platformAuth.js';
 import { validatePlatformPermission } from '../middleware/platformPermissions.js';
 

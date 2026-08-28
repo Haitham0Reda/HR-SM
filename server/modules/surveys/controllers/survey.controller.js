@@ -17,19 +17,9 @@ export const getAllSurveys = async (req, res) => {
         const tenantId = req.user?.tenantId || req.tenantId;
 
         if (!tenantId) {
-            console.log('❌ getAllSurveys: Missing tenant ID', { 
-                userTenantId: req.user?.tenantId, 
-                reqTenantId: req.tenantId,
-                userId: req.user?._id 
-            });
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
-        console.log('✅ getAllSurveys: Processing request', { 
-            tenantId, 
-            userId: req.user?._id,
-            userRole: req.user?.role 
-        });
 
         const { status, surveyType, page = 1, limit = 50 } = req.query;
 
@@ -44,11 +34,6 @@ export const getAllSurveys = async (req, res) => {
         const surveys = await surveyService.getAllSurveys(tenantId, options);
         const total = surveys.length; // This would need to be implemented properly with count
 
-        console.log('✅ getAllSurveys: Found surveys', { 
-            tenantId, 
-            count: surveys.length,
-            surveyIds: surveys.map(s => s._id)
-        });
 
         res.status(200).json({
             success: true,
@@ -61,7 +46,7 @@ export const getAllSurveys = async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('❌ getAllSurveys: Error', { 
+        console.error('Error:  getAllSurveys: Error', { 
             tenantId: req.user?.tenantId || req.tenantId,
             error: err.message,
             stack: err.stack
@@ -80,7 +65,6 @@ export const getEmployeeSurveys = async (req, res) => {
     try {
         // Check if user is authenticated
         if (!req.user) {
-            console.log('❌ getEmployeeSurveys: User not authenticated');
             return res.status(401).json({ 
                 success: false,
                 error: 'Authentication required' 
@@ -90,23 +74,12 @@ export const getEmployeeSurveys = async (req, res) => {
         const tenantId = req.user?.tenantId || req.tenantId;
 
         if (!tenantId) {
-            console.log('❌ getEmployeeSurveys: Missing tenant ID', { 
-                userTenantId: req.user?.tenantId, 
-                reqTenantId: req.tenantId,
-                userId: req.user?._id 
-            });
             return res.status(400).json({ 
                 success: false,
                 error: 'Tenant ID is required' 
             });
         }
 
-        console.log('✅ getEmployeeSurveys: Processing request', { 
-            tenantId, 
-            userId: req.user?._id,
-            userRole: req.user?.role,
-            userDepartment: req.user?.department
-        });
 
         try {
             // Use the service which returns surveys with completion status already mapped
@@ -117,14 +90,13 @@ export const getEmployeeSurveys = async (req, res) => {
                 tenantId
             );
 
-            console.log(`✅ getEmployeeSurveys: Found ${surveys.length} surveys for user: ${req.user.username} (${req.user._id}) in tenant: ${tenantId}`);
 
             res.status(200).json({
                 success: true,
                 surveys
             });
         } catch (serviceError) {
-            console.error('❌ getEmployeeSurveys: Service error', {
+            console.error('Error:  getEmployeeSurveys: Service error', {
                 tenantId,
                 userId: req.user?._id,
                 error: serviceError.message,
@@ -134,7 +106,7 @@ export const getEmployeeSurveys = async (req, res) => {
             throw serviceError;
         }
     } catch (err) {
-        console.error('❌ getEmployeeSurveys: Error', { 
+        console.error('Error:  getEmployeeSurveys: Error', { 
             tenantId: req.user?.tenantId || req.tenantId,
             userId: req.user?._id,
             error: err.message,
@@ -154,7 +126,6 @@ export const createSurvey = async (req, res) => {
     try {
         // Check if user is authenticated
         if (!req.user) {
-            console.log('❌ createSurvey: User not authenticated');
             return res.status(401).json({ 
                 success: false,
                 error: 'Authentication required' 
@@ -164,19 +135,9 @@ export const createSurvey = async (req, res) => {
         const tenantId = req.user?.tenantId || req.tenantId;
 
         if (!tenantId) {
-            console.log('❌ createSurvey: Missing tenant ID', { 
-                userTenantId: req.user?.tenantId, 
-                reqTenantId: req.tenantId,
-                userId: req.user?._id 
-            });
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
-        console.log('✅ createSurvey: Processing request', { 
-            tenantId, 
-            userId: req.user._id,
-            surveyTitle: req.body.title
-        });
 
         // Validate required fields
         if (!req.body.title || !req.body.title.trim()) {
@@ -197,13 +158,6 @@ export const createSurvey = async (req, res) => {
             tenantId
         );
 
-        console.log('✅ createSurvey: Survey created successfully', { 
-            tenantId,
-            surveyId: survey._id,
-            title: survey.title,
-            createdBy: req.user._id,
-            database: `hrsm_${tenantId}`
-        });
 
         res.status(201).json({
             success: true,
@@ -211,7 +165,7 @@ export const createSurvey = async (req, res) => {
             survey
         });
     } catch (err) {
-        console.error('❌ createSurvey: Error', { 
+        console.error('Error:  createSurvey: Error', { 
             tenantId: req.user?.tenantId || req.tenantId,
             userId: req.user?._id,
             error: err.message,
@@ -245,21 +199,9 @@ export const getSurveyById = async (req, res) => {
         const tenantId = req.user?.tenantId || req.tenantId;
 
         if (!tenantId) {
-            console.log('❌ getSurveyById: Missing tenant ID', { 
-                userTenantId: req.user?.tenantId, 
-                reqTenantId: req.tenantId,
-                userId: req.user?._id,
-                surveyId: req.params.id
-            });
             return res.status(400).json({ error: 'Tenant ID is required' });
         }
 
-        console.log('✅ getSurveyById: Processing request', { 
-            tenantId, 
-            userId: req.user?._id,
-            surveyId: req.params.id,
-            userRole: req.user?.role
-        });
 
         const survey = await Survey.findOne({ _id: req.params.id, tenantId })
             .populate('createdBy', 'username email')
@@ -267,22 +209,9 @@ export const getSurveyById = async (req, res) => {
             .populate('responses.respondent', 'username email profile');
 
         if (!survey) {
-            console.log('❌ getSurveyById: Survey not found', { 
-                tenantId,
-                surveyId: req.params.id,
-                userId: req.user?._id
-            });
             return res.status(404).json({ error: 'Survey not found' });
         }
 
-        console.log('✅ getSurveyById: Survey found', { 
-            tenantId,
-            surveyId: survey._id,
-            title: survey.title,
-            userId: req.user?._id,
-            userRole: req.user?.role,
-            totalResponses: survey.responses?.length || 0
-        });
 
         // Non-admin users don't see other users' responses
         if (!['hr', 'admin'].includes(req.user?.role)) {
@@ -291,12 +220,6 @@ export const getSurveyById = async (req, res) => {
             surveyData.myResponse = survey.getUserResponse(req.user._id);
             delete surveyData.responses;
             
-            console.log('✅ getSurveyById: Returning employee view', { 
-                tenantId,
-                surveyId: survey._id,
-                userId: req.user._id,
-                hasMyResponse: !!surveyData.myResponse
-            });
             
             return res.status(200).json({
                 success: true,
@@ -316,20 +239,13 @@ export const getSurveyById = async (req, res) => {
             return r;
         });
 
-        console.log('✅ getSurveyById: Returning admin view', { 
-            tenantId,
-            surveyId: survey._id,
-            userId: req.user._id,
-            totalResponses: surveyData.responses.length,
-            anonymousResponses: surveyData.responses.filter(r => r.isAnonymous).length
-        });
 
         res.status(200).json({
             success: true,
             survey: surveyData
         });
     } catch (err) {
-        console.error('❌ getSurveyById: Error', { 
+        console.error('Error:  getSurveyById: Error', { 
             tenantId: req.user?.tenantId || req.tenantId,
             userId: req.user?._id,
             surveyId: req.params.id,

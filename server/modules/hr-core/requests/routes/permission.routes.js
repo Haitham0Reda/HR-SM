@@ -16,7 +16,7 @@ import {
     canManagePermissions,
     canManageRoles,
     canViewAudit
-} from '../middleware/index.js';
+} from '../../../../middleware/index.js';
 
 const router = express.Router();
 

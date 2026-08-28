@@ -21,19 +21,10 @@ import { initializeSessionMiddleware } from './middleware/redisSession.middlewar
 
 // Import remaining legacy routes (not yet moved to modules)
 import {
-    documentRoutes,
-    documentTemplateRoutes,
-    hardcopyRoutes,
     eventRoutes,
-    notificationRoutes,
-    payrollRoutes,
-    reportRoutes,
     securityAuditRoutes,
     securitySettingsRoutes,
     surveyRoutes,
-    analyticsRoutes,
-    announcementRoutes,
-    dashboardRoutes,
     themeRoutes,
     permissionRoutes,
     permissionAuditRoutes,
@@ -121,9 +112,8 @@ app.use(compression());
 // Initialize Redis session middleware
 try {
     initializeSessionMiddleware(app);
-    console.log('✓ Redis session middleware initialized');
 } catch (error) {
-    console.warn('⚠️  Redis session middleware initialization failed:', error.message);
+    console.warn('Redis session middleware initialization failed:', error.message);
 }
 
 // Cache headers removed - using PostgreSQL instead of MongoDB
@@ -140,8 +130,7 @@ app.get('/uploads/profile-pictures/*', (req, res, next) => {
     res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
 
     // Log the request for debugging
-    console.log(`Profile picture request: ${req.path}, Origin: ${req.headers.origin || 'none'}`);
-
+    
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
         res.status(200).end();
@@ -194,9 +183,8 @@ app.use(tenantContext);
 try {
     const { validateLicense } = await import('./middleware/licenseServerValidation.middleware.js');
     app.use('/api/v1', validateLicense);
-    console.log('✓ License server validation middleware loaded (with Redis cache & circuit breaker)');
 } catch (error) {
-    console.warn('⚠️  License server validation middleware not available:', error.message);
+    console.warn('License server validation middleware not available:', error.message);
 }
 
 // Company logging middleware (basic setup)
@@ -207,10 +195,8 @@ try {
 
     // Apply user activity tracking to all API routes (it will check for authentication internally)
     app.use('/api', trackUserActivity);
-
-    console.log('✓ Company logging middleware loaded');
 } catch (error) {
-    console.warn('⚠️  Company logging middleware not available:', error.message);
+    console.warn('Company logging middleware not available:', error.message);
 }
 
 // Enhanced audit logging middleware
@@ -227,10 +213,9 @@ try {
         includeResponseBody: false
     }));
 
-    console.log('✓ Enhanced audit logging middleware loaded');
-} catch (error) {
-    console.warn('⚠️  Enhanced audit logging middleware not available:', error.message);
-}
+    } catch (error) {
+        console.warn('Enhanced audit logging middleware not available:', error.message);
+    }
 
 // Request duration tracking middleware
 try {
@@ -250,10 +235,8 @@ try {
         
         next();
     });
-    
-    console.log('✓ Request duration tracking middleware loaded');
 } catch (error) {
-    console.warn('⚠️  Request duration tracking middleware not available:', error.message);
+    console.warn('Request duration tracking middleware not available:', error.message);
 }
 
 // Metrics endpoint (protected with bearer token)
@@ -313,36 +296,23 @@ if (process.env.NODE_ENV === 'test') {
     try {
         const testRoutes = await import('./routes/testRoutes.js');
         app.use('/api/v1/test', testRoutes.default);
-        console.log('✓ Test routes loaded (/api/v1/test/*) - TEST ENVIRONMENT ONLY');
     } catch (error) {
-        console.warn('⚠️  Test routes not available:', error.message);
+        console.warn('Test routes not available:', error.message);
     }
 }
 
 // Initialize module system
 export const initializeModuleSystem = async (options = {}) => {
-    console.log('🔧 Initializing module system...');
-
     try {
-        // Initialize the module registry, loader, and feature flags
         await moduleInitializer.initialize(app, options);
-
-        console.log('✓ Module system initialized');
-
-        // Log module statistics
-        const stats = moduleInitializer.getStats();
-        console.log(`✓ Registered ${stats.registry.totalModules} modules`);
-        console.log(`✓ Modules: ${stats.registry.modules.join(', ')}`);
     } catch (error) {
-        console.error('✗ Failed to initialize module system:', error);
+        console.error('Failed to initialize module system:', error);
         throw error;
     }
 };
 
 // Initialize routes
 export const initializeRoutes = async () => {
-    console.log('🔧 Initializing routes...');
-
     // ========================================
     // PLATFORM LAYER ROUTES (/api/platform/*)
     // ========================================
@@ -350,33 +320,25 @@ export const initializeRoutes = async () => {
     // These routes are for system administrators managing tenants, subscriptions, and modules
 
     try {
-        // Platform authentication
         const platformAuthRoutes = await import('./platform/auth/routes/platformAuthRoutes.js');
         app.use('/api/platform/auth', platformAuthRoutes.default);
 
-        // Tenant management
         const tenantRoutes = await import('./platform/tenants/routes/tenantRoutes.js');
         app.use('/api/platform/tenants', tenantRoutes.default);
 
-        // Subscription management
         const subscriptionRoutes = await import('./platform/subscriptions/routes/subscriptionRoutes.js');
         app.use('/api/platform/subscriptions', subscriptionRoutes.default);
 
-        // Module management
         const moduleRoutes = await import('./platform/modules/routes/moduleRoutes.js');
         app.use('/api/platform/modules', moduleRoutes.default);
 
-        // System health and metrics
         const systemRoutes = await import('./platform/system/routes/systemRoutes.js');
         app.use('/api/platform/system', systemRoutes.default);
 
-        // Company management (multi-tenant)
         const companyRoutes = await import('./platform/companies/routes/companyRoutes.js');
         app.use('/api/platform/companies', companyRoutes.default);
-
-        console.log('✓ Platform routes loaded (/api/platform/*)');
     } catch (error) {
-        console.warn('⚠️  Platform routes not available:', error.message);
+        console.warn('Platform routes not available:', error.message);
     }
 
     // ========================================
@@ -386,9 +348,7 @@ export const initializeRoutes = async () => {
 
     // NEW MODULAR SYSTEM ROUTES
     // Load core HR module (always enabled)
-    console.log('🔧 Loading core HR routes...');
     await loadCoreRoutes(app);
-    console.log('✓ Core HR routes loaded');
 
     // Load optional modules conditionally (checked by moduleGuard middleware)
     // Note: These modules are loaded globally but access is controlled by middleware
@@ -402,92 +362,19 @@ export const initializeRoutes = async () => {
     // The module routes include both availability and license checks
     await loadModuleRoutes(app, MODULES.LIFE_INSURANCE);
 
-    // Ensure missions route is loaded (temporary fix until module registry is fully working)
-    try {
-        const missionRoutes = await import('./modules/hr-core/missions/routes.js');
-        app.use('/api/v1/missions', missionRoutes.default);
-        console.log('✓ Missions route loaded at /api/v1/missions');
-    } catch (error) {
-        console.error('❌ Failed to load missions route:', error);
-    }
+    // All module routes are now loaded via the module registry above.
+    // Temporary manual override blocks have been removed.
 
-    // Ensure sick-leaves route is loaded (temporary fix until module registry is fully working)
-    try {
-        const sickLeaveRoutes = await import('./modules/hr-core/vacations/routes/sickLeave.routes.js');
-        app.use('/api/v1/sick-leaves', sickLeaveRoutes.default);
-        console.log('✓ Sick-leaves route loaded at /api/v1/sick-leaves');
-    } catch (error) {
-        console.error('❌ Failed to load sick-leaves route:', error);
-    }
+    console.log('Modular routes loaded');
 
-    // Ensure permission-requests route is loaded (temporary fix until module registry is fully working)
-    try {
-        const permissionRequestRoutes = await import('./modules/hr-core/requests/routes/permissionRequest.routes.js');
-        app.use('/api/v1/permission-requests', permissionRequestRoutes.default);
-        console.log('✓ Permission-requests route loaded at /api/v1/permission-requests');
-    } catch (error) {
-        console.error('❌ Failed to load permission-requests route:', error);
-    }
+    // Legacy routes that are NOT covered by the module registry
+    // (routes already loaded via module registry are intentionally not re-mounted)
 
-    // Ensure mixed-vacations route is loaded (temporary fix until module registry is fully working)
-    try {
-        const mixedVacationRoutes = await import('./modules/hr-core/vacations/routes/mixedVacation.routes.js');
-        app.use('/api/v1/mixed-vacations', mixedVacationRoutes.default);
-        console.log('✓ Mixed-vacations route loaded at /api/v1/mixed-vacations');
-    } catch (error) {
-        console.error('❌ Failed to load mixed-vacations route:', error);
-    }
-
-    console.log('✓ Modular routes loaded');
-
-    // EXISTING LEGACY ROUTES (Tenant-scoped)
-    // These routes maintain backward compatibility
-    // TODO: Gradually migrate these to the modular system
-
-    // Dashboard & Analytics (legacy - not yet moved to modular system)
-    app.use('/api/v1/dashboard', dashboardRoutes);
-    app.use('/api/v1/analytics', analyticsRoutes);
-
-    // Documents (legacy - not yet moved)
-    app.use('/api/v1/documents', documentRoutes);
-    app.use('/api/v1/document-templates', documentTemplateRoutes);
-    app.use('/api/v1/hardcopies', hardcopyRoutes);
-
-    // Payroll (legacy - not yet moved)
-    app.use('/api/v1/payroll', payrollRoutes);
-
-    // Communication (legacy - not yet moved)
-    app.use('/api/v1/announcements', announcementRoutes);
-    // NOTE: notifications are now handled by the COMMUNICATION module
+    // Communication (not in module registry)
     app.use('/api/v1/surveys', surveyRoutes);
 
-    // Events (legacy - not yet moved)
+    // Events (legacy - not yet moved to modular system)
     app.use('/api/v1/events', eventRoutes);
-
-    // Reports (legacy - not yet moved)
-    app.use('/api/v1/reports', reportRoutes);
-
-    // Task Reports (new implementation)
-    try {
-        const taskReportsRoutes = await import('./routes/taskReports.routes.js');
-        app.use('/api/v1/task-reports', taskReportsRoutes.default);
-        console.log('✓ Task reports routes loaded (/api/v1/task-reports/*)');
-    } catch (error) {
-        console.warn('⚠️  Task reports routes not available:', error.message);
-    }
-
-    // Holidays (new implementation) - DISABLED: Using hr-core module routes instead
-    // The holidays routes are loaded via moduleRegistry from server/modules/hr-core/holidays/routes.js
-    // try {
-    //     const holidaysRoutes = await import('./routes/holidays.routes.js');
-    //     app.use('/api/v1/holidays', holidaysRoutes.default);
-    //     console.log('✓ Holidays routes loaded (/api/v1/holidays/*)');
-    // } catch (error) {
-    //     console.warn('⚠️  Holidays routes not available:', error.message);
-    // }
-
-    // Security & Permissions (legacy - not yet moved)
-    app.use('/api/v1/permissions', permissionRoutes);
     app.use('/api/v1/permission-audits', permissionAuditRoutes);
     app.use('/api/v1/security-audits', securityAuditRoutes);
     app.use('/api/v1/security-settings', securitySettingsRoutes);
@@ -502,66 +389,54 @@ export const initializeRoutes = async () => {
     try {
         const systemSettingsRoutes = await import('./routes/systemSettings.routes.js');
         app.use('/api/v1/system-settings', systemSettingsRoutes.default);
-        console.log('✓ System settings routes loaded (/api/v1/system-settings/*)');
     } catch (error) {
-        console.warn('⚠️  System settings routes not available:', error.message);
+        console.warn('System settings routes not available:', error.message);
     }
 
-    // HR Auth routes
-    const hrAuthRoutes = await import('./modules/hr-core/routes/authRoutes.js');
-    app.use('/api/v1/auth', hrAuthRoutes.default);
-
-    // Tenant configuration routes
-    const tenantRoutes = await import('./modules/hr-core/routes/tenantRoutes.js');
-    app.use('/api/v1/tenant', tenantRoutes.default);
+    // HR Auth & Tenant routes are loaded via the module registry above.
+    // Removed duplicate manual mounting that caused conflict with registry.
 
     // Company logs routes (user activity tracking) - moved to platform namespace
     try {
         const companyLogsRoutes = await import('./routes/companyLogs.js');
         app.use('/api/v1/platform/company-logs', companyLogsRoutes.default);
-        console.log('✓ Company logs routes loaded (/api/v1/platform/company-logs/*)');
     } catch (error) {
-        console.warn('⚠️  Company logs routes not available:', error.message);
+        console.warn('Company logs routes not available:', error.message);
     }
 
     // Company module routes (for HR applications to check module access)
     try {
         const companyModuleRoutes = await import('./routes/companyModuleRoutes.js');
         app.use('/api/v1/company', companyModuleRoutes.default);
-        console.log('✓ Company module routes loaded (/api/v1/company/*)');
     } catch (error) {
-        console.warn('⚠️  Company module routes not available:', error.message);
+        console.warn('Company module routes not available:', error.message);
     }
 
     // Company routes (for email domain and company settings)
     try {
         const companyRoutes = await import('./routes/company.routes.js');
         app.use('/api/v1/companies', companyRoutes.default);
-        console.log('✓ Company routes loaded (/api/v1/companies/*)');
     } catch (error) {
-        console.warn('⚠️  Company routes not available:', error.message);
+        console.warn('Company routes not available:', error.message);
     }
 
     // Module availability routes (for checking module availability)
     try {
         const moduleAvailabilityRoutes = await import('./routes/moduleAvailability.routes.js');
         app.use('/api/v1/modules', moduleAvailabilityRoutes.default);
-        console.log('✓ Module availability routes loaded (/api/v1/modules/*)');
     } catch (error) {
-        console.warn('⚠️  Module availability routes not available:', error.message);
+        console.warn('Module availability routes not available:', error.message);
     }
 
     // Logging module configuration routes
     try {
         const moduleConfigurationRoutes = await import('./routes/moduleConfiguration.routes.js');
         app.use('/api/v1/logging/module', moduleConfigurationRoutes.default);
-        console.log('✓ Logging module configuration routes loaded (/api/v1/logging/module/*)');
     } catch (error) {
-        console.warn('⚠️  Logging module configuration routes not available:', error.message);
+        console.warn('Logging module configuration routes not available:', error.message);
     }
 
-    // Log ingestion routes - REMOVED DUPLICATE (already mounted at line 415)
-    // The logs routes are already mounted at /api/v1/logs above
+    // Log ingestion routes already mounted at /api/v1/logs above
 
     // License Management (legacy - not yet moved)
     app.use('/api/v1/licenses', licenseRoutes);
@@ -580,33 +455,28 @@ export const initializeRoutes = async () => {
     try {
         const realtimeMonitoringRoutes = await import('./routes/realtimeMonitoring.routes.js');
         app.use('/api/v1/monitoring/realtime', realtimeMonitoringRoutes.default);
-        console.log('✓ Real-time monitoring routes loaded (/api/v1/monitoring/realtime/*)');
     } catch (error) {
-        console.warn('⚠️  Real-time monitoring routes not available:', error.message);
+        console.warn('Real-time monitoring routes not available:', error.message);
     }
 
     // Enhanced audit logs routes
     try {
         const auditLogsRoutes = await import('./routes/auditLogs.routes.js');
         app.use('/api/v1/audit-logs', auditLogsRoutes.default);
-        console.log('✓ Enhanced audit logs routes loaded (/api/v1/audit-logs/*)');
     } catch (error) {
-        console.warn('⚠️  Enhanced audit logs routes not available:', error.message);
+        console.warn('Enhanced audit logs routes not available:', error.message);
     }
 
     // Cache management routes
     try {
         const cacheManagementRoutes = await import('./routes/cacheManagement.routes.js');
         app.use('/api/v1/cache', cacheManagementRoutes.default);
-        console.log('✓ Cache management routes loaded (/api/v1/cache/*)');
     } catch (error) {
-        console.warn('⚠️  Cache management routes not available:', error.message);
+        console.warn('Cache management routes not available:', error.message);
     }
 
-    // Development auto-login removed for security
-
-    console.log('✓ Tenant routes loaded (/api/v1/*)');
-    console.log('✓ All routes initialized');
+    // Tenant routes loaded (/api/v1/*)
+    // All routes initialized
 
     // Validate route namespaces (development mode only)
     if (process.env.NODE_ENV === 'development') {

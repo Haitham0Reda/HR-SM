@@ -90,3 +90,4 @@ wait-*.js
 *_STATUS.md
 *_VERIFICATION.md
 *_SOLUTION.md
+/dist

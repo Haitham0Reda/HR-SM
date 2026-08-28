@@ -92,16 +92,11 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         // Add more detailed logging for debugging
-        console.log('📥 Logs endpoint called (bypassing validation)');
-        console.log('📥 Content-Type:', req.get('Content-Type'));
-        console.log('📥 Body type:', typeof req.body);
-        console.log('📥 Body keys:', req.body ? Object.keys(req.body) : 'no body');
         
         const { logs, batchId, timestamp } = req.body || {};
         
         // Validate required fields
         if (!logs || !Array.isArray(logs)) {
-            console.log('❌ Invalid logs format:', { logs: typeof logs, isArray: Array.isArray(logs) });
             return res.status(400).json({
                 success: false,
                 error: 'Invalid logs format - logs must be an array'

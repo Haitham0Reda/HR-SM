@@ -136,12 +136,6 @@ export const getLicenseDetails = async (req, res) => {
         const { tenantId } = req.params;
 
         // Debug logging
-        console.log('🔍 License request debug:', {
-            requestedTenantId: tenantId,
-            userTenantId: req.user?.tenantId,
-            userRole: req.user?.role,
-            userId: req.user?.id
-        });
 
         // Security check: Users can only access their own tenant's license data
         // Admin, HR, and Manager roles can view license information
@@ -149,11 +143,6 @@ export const getLicenseDetails = async (req, res) => {
 
         // Check if user's tenantId matches the requested tenantId
         if (req.user.tenantId !== tenantId) {
-            console.log('❌ License access denied - tenant mismatch:', {
-                userTenantId: req.user.tenantId,
-                requestedTenantId: tenantId,
-                userRole: req.user.role
-            });
             return res.status(403).json({
                 error: 'INSUFFICIENT_PERMISSIONS',
                 message: 'You can only access license information for your own tenant'
@@ -163,12 +152,6 @@ export const getLicenseDetails = async (req, res) => {
         // Check if user has the required role (case-insensitive)
         const userRole = (req.user.role || '').toLowerCase();
         if (!allowedRoles.includes(userRole)) {
-            console.log('❌ License access denied - insufficient role:', {
-                userTenantId: req.user.tenantId,
-                requestedTenantId: tenantId,
-                userRole: req.user.role,
-                allowedRoles: allowedRoles
-            });
             return res.status(403).json({
                 error: 'INSUFFICIENT_PERMISSIONS',
                 message: 'You need Admin, HR, or Manager role to access license information'
@@ -250,11 +233,6 @@ export const getUsageMetrics = async (req, res) => {
 
         // Check if user's tenantId matches the requested tenantId
         if (req.user.tenantId !== tenantId) {
-            console.log('❌ Usage access denied - tenant mismatch:', {
-                userTenantId: req.user.tenantId,
-                requestedTenantId: tenantId,
-                userRole: req.user.role
-            });
             return res.status(403).json({
                 error: 'INSUFFICIENT_PERMISSIONS',
                 message: 'You can only access usage information for your own tenant'
@@ -264,12 +242,6 @@ export const getUsageMetrics = async (req, res) => {
         // Check if user has the required role (case-insensitive)
         const userRole = (req.user.role || '').toLowerCase();
         if (!allowedRoles.includes(userRole)) {
-            console.log('❌ Usage access denied - insufficient role:', {
-                userTenantId: req.user.tenantId,
-                requestedTenantId: tenantId,
-                userRole: req.user.role,
-                allowedRoles: allowedRoles
-            });
             return res.status(403).json({
                 error: 'INSUFFICIENT_PERMISSIONS',
                 message: 'You need Admin, HR, or Manager role to access usage information'

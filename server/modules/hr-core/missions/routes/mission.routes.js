@@ -8,10 +8,10 @@ import {
     approveMission,
     rejectMission
 } from '../controllers/mission.controller.js';
-import { protect, checkActive } from '../middleware/index.js';
+import { protect, checkActive } from '../../../../middleware/index.js';
 import upload from '../../../../config/multer.config.js';
 import { requireModuleLicense } from '../../../../middleware/licenseValidation.middleware.js';
-import { MODULES } from '../../../../models/license.model.js';
+import { MODULES } from '../../../../platform/system/models/license.model.js';
 
 const router = express.Router();
 

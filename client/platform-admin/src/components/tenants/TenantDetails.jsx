@@ -62,6 +62,20 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
 
   const { api } = useApi();
 
+  const loadTenantLicense = useCallback(async () => {
+    if (!tenant?.tenantId) return;
+    
+    try {
+      const response = await api.license.getTenantLicense(tenant.tenantId);
+      if (response.success) {
+        setTenantLicense(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load tenant license:', error);
+      // Don't show error to user as license might not exist yet
+    }
+  }, [tenant?.tenantId, api.license]);
+
   useEffect(() => {
     if (tenant) {
       setFormData({
@@ -79,20 +93,6 @@ const TenantDetails = ({ open, onClose, tenant, onSuccess, mode = 'view' }) => {
       loadTenantLicense();
     }
   }, [tenant, loadTenantLicense]);
-
-  const loadTenantLicense = useCallback(async () => {
-    if (!tenant?.tenantId) return;
-    
-    try {
-      const response = await api.license.getTenantLicense(tenant.tenantId);
-      if (response.success) {
-        setTenantLicense(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to load tenant license:', error);
-      // Don't show error to user as license might not exist yet
-    }
-  }, [tenant?.tenantId, api.license]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

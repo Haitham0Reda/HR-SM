@@ -6,8 +6,8 @@ import {
     updateRequest,
     deleteRequest
 } from '../controllers/request.controller.js';
-import { protect, checkActive } from '../middleware/index.js';
-import { calculatePermissionDuration } from '../middleware/index.js';
+import { protect, checkActive } from '../../../../middleware/index.js';
+import { calculatePermissionDuration } from '../../../../middleware/index.js';
 
 const router = express.Router();
 

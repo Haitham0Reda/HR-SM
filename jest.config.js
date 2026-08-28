@@ -49,7 +49,7 @@ export default {
     '^.+\.js$': ['babel-jest', { rootMode: 'upward' }]
   },
   transformIgnorePatterns: [
-    'node_modules/(?!uuid)/'
+    'node_modules/(?!uuid/|@standard-schema/utils/)'
   ],
 
   // Memory and performance optimizations

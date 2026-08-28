@@ -5,7 +5,7 @@
  */
 
 import companyRoutes from './routes/companyRoutes.js';
-import companyController from './controllers/companyController.js';
+import companyController from './controllers/company.controller.js';
 import companyService from './services/companyService.js';
 
 export {

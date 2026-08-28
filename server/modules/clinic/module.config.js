@@ -288,8 +288,6 @@ export default {
       throw new Error('Clinic module requires HR-Core to be enabled');
     }
     
-    console.log(`[Clinic Module] ✅ HR-Core dependency satisfied`);
-    console.log(`[Clinic Module] 🚨 REMINDER: Clinic can only REQUEST changes via HR-Core, never directly modify data`);
     
     return {
       success: true,

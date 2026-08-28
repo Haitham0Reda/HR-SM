@@ -41,18 +41,11 @@ const PlatformDashboard = () => {
   
   // Redux selectors
   const { tenants, loading: tenantsLoading, error: tenantsError } = useAppSelector(state => state.tenantManagement);
-  const { systemHealth, systemStats, loading: systemLoading, error: systemError } = useAppSelector(state => state.systemSettings);
+  const { systemHealth, loading: systemLoading, error: systemError } = useAppSelector(state => state.systemSettings);
   
   // Combined loading and error states
   const loading = tenantsLoading || systemLoading;
   const error = tenantsError?.message || systemError?.message;
-
-  useEffect(() => {
-    loadDashboardData();
-    // Refresh dashboard data every 2 minutes
-    const interval = setInterval(loadDashboardData, 120000);
-    return () => clearInterval(interval);
-  }, [dispatch]);
 
   const loadDashboardData = async () => {
     try {

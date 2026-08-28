@@ -17,7 +17,6 @@ router.get('/modules-and-models',
   // validatePlatformPermission('view_modules'),
   async (req, res) => {
     try {
-      console.log('📋 Getting available modules and models...');
       
       // Simple fallback data in case of issues
       const fallbackData = {
@@ -50,7 +49,6 @@ router.get('/modules-and-models',
         const moduleService = ModuleManagementService;
         const availableModules = moduleService.getAvailableModules();
         
-        console.log('✓ Available modules loaded:', Object.keys(availableModules).length);
         
         // Get all tier limits
         const tierLimits = {
@@ -59,7 +57,6 @@ router.get('/modules-and-models',
           enterprise: moduleService.getTierLimits('enterprise')
         };
         
-        console.log('✓ Tier limits loaded');
         
         // Group modules by category
         const moduleCategories = {};
@@ -73,7 +70,6 @@ router.get('/modules-and-models',
           });
         });
 
-        console.log('✓ Module categories grouped:', Object.keys(moduleCategories));
 
         const responseData = {
           success: true,
@@ -85,16 +81,15 @@ router.get('/modules-and-models',
           }
         };
 
-        console.log('✓ Sending response with', responseData.data.totalModules, 'modules');
         res.json(responseData);
         
       } catch (moduleError) {
-        console.warn('⚠️ ModuleManagementService error, using fallback:', moduleError.message);
+        console.warn('Warning:  ModuleManagementService error, using fallback:', moduleError.message);
         res.json(fallbackData);
       }
       
     } catch (error) {
-      console.error('❌ Error getting modules and models:', error);
+      console.error('Error:  Error getting modules and models:', error);
       
       // Return fallback data instead of 500 error
       res.json({
@@ -120,43 +115,36 @@ router.get('/:companyId/modules',
   // validatePlatformPermission('view_companies'),
   async (req, res) => {
     try {
-      console.log('📋 Getting modules for company:', req.params.companyId);
       
       // Try to find company by slug first, then by ID if it's a valid ObjectId
       let company;
       try {
-        console.log('🔍 Searching for company by slug:', req.params.companyId);
         company = await Company.findOne({ slug: req.params.companyId });
         
         if (!company && req.params.companyId.match(/^[0-9a-fA-F]{24}$/)) {
-          console.log('🔍 Slug not found, trying by ObjectId...');
           company = await Company.findById(req.params.companyId);
         }
       } catch (dbError) {
-        console.log('⚠️ Database error, trying slug only:', dbError.message);
         try {
           company = await Company.findOne({ slug: req.params.companyId });
         } catch (fallbackError) {
-          console.error('❌ Fallback query failed:', fallbackError.message);
+          console.error('Error:  Fallback query failed:', fallbackError.message);
           throw fallbackError;
         }
       }
       
       if (!company) {
-        console.log('❌ Company not found:', req.params.companyId);
         return res.status(404).json({
           success: false,
           message: `Company not found: ${req.params.companyId}`
         });
       }
 
-      console.log('✓ Company found:', company.name, '(slug:', company.slug, ')');
 
       try {
         const moduleService = ModuleManagementService;
         const availableModules = moduleService.getAvailableModules();
         
-        console.log('✓ Available modules loaded:', Object.keys(availableModules).length);
         
         // Build response with module status
         const companyModules = {};
@@ -171,7 +159,7 @@ router.get('/:companyId/modules',
               canDisable: !moduleInfo.required
             };
           } catch (moduleError) {
-            console.warn('⚠️ Error processing module', key, ':', moduleError.message);
+            console.warn('Warning:  Error processing module', key, ':', moduleError.message);
             // Add module with default values
             companyModules[key] = {
               ...moduleInfo,
@@ -183,8 +171,6 @@ router.get('/:companyId/modules',
           }
         });
 
-        console.log('✓ Company modules processed, enabled count:', 
-          Object.values(companyModules).filter(m => m.enabled).length);
 
         const responseData = {
           success: true,
@@ -198,11 +184,10 @@ router.get('/:companyId/modules',
           }
         };
 
-        console.log('✓ Sending successful response');
         res.json(responseData);
         
       } catch (moduleServiceError) {
-        console.error('❌ ModuleService error:', moduleServiceError.message);
+        console.error('Error:  ModuleService error:', moduleServiceError.message);
         
         // Return minimal fallback response
         res.json({
@@ -218,7 +203,7 @@ router.get('/:companyId/modules',
         });
       }
     } catch (error) {
-      console.error('❌ Error getting company modules:', error);
+      console.error('Error:  Error getting company modules:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to get company modules',
@@ -234,8 +219,6 @@ router.post('/:companyId/modules/:moduleKey/enable',
   // validatePlatformPermission('manage_companies'),
   async (req, res) => {
     try {
-      console.log('🔧 Enabling module:', req.params.moduleKey, 'for company:', req.params.companyId);
-      console.log('📋 Request body:', req.body);
       
       // Try to find company by slug first, then by ID if it's a valid ObjectId
       let company;
@@ -249,21 +232,17 @@ router.post('/:companyId/modules/:moduleKey/enable',
       }
       
       if (!company) {
-        console.log('❌ Company not found:', req.params.companyId);
         return res.status(404).json({
           success: false,
           message: 'Company not found'
         });
       }
 
-      console.log('✓ Company found:', company.name, '(ID:', company._id, ')');
 
       const { tier = 'starter', limits = {} } = req.body;
-      console.log('📋 Module config - Tier:', tier, 'Limits:', limits);
       
       const moduleService = ModuleManagementService;
       
-      console.log('🔧 Calling enableModuleForCompany...');
       const result = await moduleService.enableModuleForCompany(
         company._id,
         req.params.moduleKey,
@@ -271,24 +250,21 @@ router.post('/:companyId/modules/:moduleKey/enable',
         limits
       );
 
-      console.log('📋 EnableModule result:', result);
 
       if (result.success) {
-        console.log('✅ Module enabled successfully');
         res.json({
           success: true,
           message: 'Module enabled successfully',
           data: result
         });
       } else {
-        console.log('❌ Module enable failed:', result.message);
         res.status(400).json({
           success: false,
           message: result.message || 'Failed to enable module'
         });
       }
     } catch (error) {
-      console.error('❌ Error enabling module:', error);
+      console.error('Error:  Error enabling module:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to enable module',

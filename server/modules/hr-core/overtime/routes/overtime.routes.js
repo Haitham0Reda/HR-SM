@@ -8,7 +8,7 @@ import {
     approveOvertime,
     rejectOvertime
 } from '../controllers/overtime.controller.js';
-import { protect, checkActive } from '../middleware/index.js';
+import { protect, checkActive } from '../../../../middleware/index.js';
 
 const router = express.Router();
 

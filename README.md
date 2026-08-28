@@ -140,7 +140,7 @@ HR-SM is an enterprise-grade SaaS platform that automates HR workflows for **HR 
 - **🏗️ Clean Architecture**: Modular monolith with clear boundaries and dependencies
 - **🧪 Comprehensive Testing**: 85% test coverage with unit, integration, and property-based tests
 - **📚 Complete Documentation**: Extensive docs and architectural guides
-- **🔄 Modern Stack**: Latest versions of proven technologies (Node.js 18+, React 19+, MongoDB 6+)
+- **🔄 Modern Stack**: Latest versions of proven technologies (Node.js 18+, React 19+, PostgreSQL 16)
 - **🚀 DevOps Ready**: Production deployment, monitoring, and scaling included
 
 ---

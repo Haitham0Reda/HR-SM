@@ -1,5 +1,5 @@
 import express from 'express';
-import emailController from '../controllers/emailController.js';
+import emailController from '../controllers/email.controller.js';
 import { tenantContext } from '../../../core/middleware/tenantContext.js';
 import { moduleGuard } from '../../../core/middleware/moduleGuard.js';
 

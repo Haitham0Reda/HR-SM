@@ -12,7 +12,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   IconButton,
   TextField,
@@ -26,7 +25,6 @@ import {
   DialogActions,
   Alert,
   LinearProgress,
-  Tooltip,
   Avatar,
   Stack,
   Divider,
@@ -37,19 +35,15 @@ import {
   TablePagination,
   Fab,
   Menu,
-  ListItemButton,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Security as SecurityIcon,
   Refresh as RefreshIcon,
-  Edit as EditIcon,
   Block as BlockIcon,
-  CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
+  CheckCircleIcon,
   Error as ErrorIcon,
   Schedule as ScheduleIcon,
-  Computer as ComputerIcon,
   Info as InfoIcon,
   FilterList as FilterListIcon,
   Search as SearchIcon,
@@ -67,8 +61,6 @@ import {
   fetchLicenseAnalyticsAsync,
   fetchExpiringLicensesAsync,
   createLicenseAsync,
-  renewLicenseAsync,
-  revokeLicenseAsync,
   setFilters,
   clearError,
   setCurrentLicense,
@@ -113,6 +105,25 @@ const LicensesPage = () => {
   });
 
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          dispatch(fetchLicensesAsync({
+            page: pagination.page,
+            limit: pagination.limit,
+            search: filters.search,
+            status: filters.status,
+            type: filters.type,
+          })),
+          dispatch(fetchLicenseAnalyticsAsync()),
+          dispatch(fetchExpiringLicensesAsync(30)),
+          dispatch(fetchTenantsAsync({ limit: 100 })), // Get all tenants for dropdown
+        ]);
+      } catch (error) {
+        console.error('Failed to load license data:', error);
+      }
+    };
+    
     loadData();
   }, [dispatch, pagination.page, pagination.limit, filters]);
 
@@ -128,7 +139,7 @@ const LicensesPage = () => {
         })),
         dispatch(fetchLicenseAnalyticsAsync()),
         dispatch(fetchExpiringLicensesAsync(30)),
-        dispatch(fetchTenantsAsync({ limit: 100 })), // Get all tenants for dropdown
+        dispatch(fetchTenantsAsync({ limit: 100 })),
       ]);
     } catch (error) {
       console.error('Failed to load license data:', error);

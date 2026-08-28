@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticatePlatformUser } from '../../middleware/platformAuth.js';
-import * as healthController from '../controllers/healthController.js';
-import * as metricsController from '../controllers/metricsController.js';
+import * as healthController from '../controllers/health.controller.js';
+import * as metricsController from '../controllers/metrics.controller.js';
 
 const router = express.Router();
 

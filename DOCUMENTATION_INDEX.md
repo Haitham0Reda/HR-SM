@@ -1,6 +1,6 @@
-# MongoDB to PostgreSQL Migration - Documentation Index
+# HR-SM Platform Documentation Index
 
-## ⚠️ Migration Complete
+## ✅ PostgreSQL-Based Multi-Tenant SaaS Platform
 
 **The MongoDB to PostgreSQL migration has been successfully completed.** Historical migration documentation has been archived to `docs/archive/` for reference purposes.
 

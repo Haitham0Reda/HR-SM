@@ -271,11 +271,6 @@ export const createSalary = async (req, res) => {
             status: 'active'
         };
 
-        console.log('🔍 Creating salary with data:', JSON.stringify({
-            ...salaryData,
-            baseSalary: '***ENCRYPTED***',
-            allowances: '***ENCRYPTED***'
-        }, null, 2));
 
         const salary = await TenantSalary.create(salaryData);
 

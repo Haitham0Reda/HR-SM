@@ -1,4 +1,4 @@
-import healthCheckService from '../services/healthCheckService.js';
+import healthCheckService from '../services/healthCheckService.sequelize.js';
 import asyncHandler from '../../../utils/asyncHandler.js';
 
 /**

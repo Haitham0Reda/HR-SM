@@ -81,9 +81,6 @@ export const getAllUsers = async (req, res) => {
             });
         }
 
-        console.log('🔍 Fetching users for tenant:', tenantId);
-        console.log('🔍 Request tenantId:', req.tenantId);
-        console.log('🔍 User tenantId:', req.user?.tenantId);
         
         // Use tenant-specific database connection
         const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
@@ -95,7 +92,7 @@ export const getAllUsers = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -116,7 +113,6 @@ export const getAllUsers = async (req, res) => {
             })
             .populate('position');
             
-        console.log(`✓ Found ${users.length} users for tenant ${tenantId}`);
         
         // Log sensitive data access
         logDataAccess(req, 'users', {
@@ -131,7 +127,7 @@ export const getAllUsers = async (req, res) => {
             data: users.map(sanitizeUser)
         });
     } catch (err) {
-        console.error('❌ Error fetching users:', err);
+        console.error('Error:  Error fetching users:', err);
         logControllerError(req, err, {
             controller: 'UserController',
             action: 'getAllUsers'
@@ -144,15 +140,10 @@ export const getAllUsers = async (req, res) => {
 };
 
 export const searchUsers = async (req, res) => {
-    console.log('🔍 SEARCH USERS FUNCTION CALLED!');
-    console.log('🔍 Query params:', req.query);
-    console.log('🔍 User:', req.user?.email);
-    console.log('🔍 Tenant ID:', req.tenant?.id);
     
     try {
         const { q: searchTerm, includeInactive = 'false' } = req.query;
         
-        console.log('✅ Search term:', searchTerm || '(empty - loading all employees)');
         
         // Get actual users from database instead of test data
         const query = { tenantId: req.tenant.id };
@@ -181,16 +172,7 @@ export const searchUsers = async (req, res) => {
             .sort({ 'personalInfo.firstName': 1, 'personalInfo.lastName': 1 })
             .limit(50); // Limit results for performance
 
-        console.log('🔍 Raw users from database:', users.length);
         if (users.length > 0) {
-            console.log('🔍 Sample raw user:', {
-                _id: users[0]._id,
-                personalInfo: users[0].personalInfo,
-                email: users[0].email,
-                employeeId: users[0].employeeId,
-                status: users[0].status,
-                role: users[0].role
-            });
         }
 
         // Format users for frontend consumption
@@ -214,8 +196,6 @@ export const searchUsers = async (req, res) => {
             };
         });
 
-        console.log('🔍 Sample formatted user:', formattedUsers[0]);
-        console.log(`✅ Returning ${formattedUsers.length} actual employees from database`);
         
         res.json({
             success: true,
@@ -223,7 +203,7 @@ export const searchUsers = async (req, res) => {
             message: searchTerm ? `Search results for: ${searchTerm}` : 'All employees loaded'
         });
     } catch (err) {
-        console.error('❌ Error in search users:', err);
+        console.error('Error:  Error in search users:', err);
         res.status(500).json({ 
             success: false,
             message: err.message 
@@ -248,12 +228,6 @@ export const getUserById = async (req, res) => {
             });
         }
         
-        console.log(`🔍 Fetching user ${userId}, tenant: ${tenantId}, current user: ${currentUserId}`);
-        console.log(`🔍 Request details:`, {
-            'req.user': req.user,
-            'req.tenantId': req.tenantId,
-            'req.headers.authorization': req.headers.authorization ? 'Bearer [REDACTED]' : 'None'
-        });
         
         // Use tenant-specific database connection
         const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
@@ -265,7 +239,7 @@ export const getUserById = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -285,14 +259,12 @@ export const getUserById = async (req, res) => {
             .populate('position');
             
         if (!user) {
-            console.log(`❌ User ${userId} not found in tenant ${tenantId}`);
             return res.status(404).json({ 
                 success: false,
                 message: 'User not found'
             });
         }
 
-        console.log(`✓ Found user: ${user.email} (tenant: ${tenantId})`);
         
         // Log sensitive data access
         logDataAccess(req, 'user', {
@@ -306,7 +278,7 @@ export const getUserById = async (req, res) => {
             data: sanitizeUser(user)
         });
     } catch (err) {
-        console.error('❌ Error fetching user by ID:', err);
+        console.error('Error:  Error fetching user by ID:', err);
         logControllerError(req, err, {
             controller: 'UserController',
             action: 'getUserById'
@@ -359,7 +331,7 @@ export const createUser = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -381,9 +353,8 @@ export const createUser = async (req, res) => {
                 };
                 
                 email = await generateUniqueEmail(models.User, userDataForEmail, emailDomain, tenantId);
-                console.log(`📧 Auto-generated email: ${email} for user: ${userDataForEmail.firstName} ${userDataForEmail.lastName} (${userDataForEmail.username})`);
             } catch (emailError) {
-                console.error('❌ Error generating email:', emailError);
+                console.error('Error:  Error generating email:', emailError);
                 return res.status(400).json({
                     success: false,
                     message: `Failed to generate email: ${emailError.message}`
@@ -417,7 +388,6 @@ export const createUser = async (req, res) => {
         // Ensure tenantId and generated email are set
         const userData = { ...req.body, tenantId, email };
         
-        console.log('👤 Creating user with tenant context:', { email: userData.email, username: userData.username, tenantId: userData.tenantId });
 
         const user = new models.User(userData);
         await user.save();
@@ -436,7 +406,7 @@ export const createUser = async (req, res) => {
             message: email !== req.body.email ? `Email auto-generated: ${email}` : undefined
         });
     } catch (err) {
-        console.error('❌ Error creating user:', err);
+        console.error('Error:  Error creating user:', err);
         // Handle MongoDB duplicate key errors
         if (err.code === 11000) {
             const field = Object.keys(err.keyPattern)[0];
@@ -460,8 +430,6 @@ export const updateUser = async (req, res) => {
 
         const error = validateUserInput(req.body, true);
         if (error) {
-            console.log('❌ User validation failed:', error);
-            console.log('❌ Request body:', JSON.stringify(req.body, null, 2));
             return res.status(400).json({ 
                 success: false,
                 message: error,
@@ -489,7 +457,7 @@ export const updateUser = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -525,7 +493,6 @@ export const updateUser = async (req, res) => {
         // Build query with tenant filtering for update
         const query = { _id: userId, tenantId: tenantId };
         
-        console.log('✏️ Updating user with query:', query);
         
         const user = await models.User.findOneAndUpdate(query, req.body, { new: true })
             .populate({
@@ -538,20 +505,18 @@ export const updateUser = async (req, res) => {
             .populate('position');
             
         if (!user) {
-            console.log(`❌ User not found for update with ID ${userId} for tenant ${tenantId}`);
             return res.status(404).json({ 
                 success: false,
                 message: 'User not found' 
             });
         }
         
-        console.log(`✓ Updated user ${user.email} for tenant ${tenantId}`);
         res.json({
             success: true,
             data: sanitizeUser(user)
         });
     } catch (err) {
-        console.error('❌ Error updating user:', err);
+        console.error('Error:  Error updating user:', err);
         // Handle MongoDB duplicate key errors
         if (err.code === 11000) {
             const field = Object.keys(err.keyPattern)[0];
@@ -590,7 +555,7 @@ export const deleteUser = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -601,24 +566,21 @@ export const deleteUser = async (req, res) => {
         // Build query with tenant filtering
         const query = { _id: req.params.id, tenantId: tenantId };
         
-        console.log('🗑️ Deleting user with query:', query);
         
         const user = await models.User.findOneAndDelete(query);
         if (!user) {
-            console.log(`❌ User not found for deletion with ID ${req.params.id} for tenant ${tenantId}`);
             return res.status(404).json({ 
                 success: false,
                 message: 'User not found' 
             });
         }
         
-        console.log(`✓ Deleted user ${user.email} for tenant ${tenantId}`);
         res.json({ 
             success: true,
             message: 'User deleted successfully' 
         });
     } catch (err) {
-        console.error('❌ Error deleting user:', err);
+        console.error('Error:  Error deleting user:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -746,7 +708,6 @@ export const loginUser = async (req, res) => {
 // Get current user profile
 export const getUserProfile = async (req, res) => {
     try {
-        console.log('🔍 getUserProfile called');
         console.log('   req.user.id:', req.user?.id);
         console.log('   req.tenantId:', req.tenantId);
         console.log('   req.user.tenantId:', req.user?.tenantId);
@@ -771,7 +732,7 @@ export const getUserProfile = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -791,20 +752,18 @@ export const getUserProfile = async (req, res) => {
             .populate('position');
         
         if (!user) {
-            console.log(`❌ User profile not found for ID ${req.user.id} in tenant ${tenantId}`);
             return res.status(404).json({ 
                 success: false,
                 message: 'User not found' 
             });
         }
         
-        console.log(`✅ User profile found: ${user.email} (tenant: ${tenantId})`);
         res.json({
             success: true,
             data: sanitizeUser(user)
         });
     } catch (err) {
-        console.error('❌ Error in getUserProfile:', err);
+        console.error('Error:  Error in getUserProfile:', err);
         res.status(500).json({ 
             success: false,
             message: 'Internal server error',
@@ -882,7 +841,6 @@ export const uploadProfilePicture = async (req, res) => {
             });
         }
 
-        console.log(`🔍 Profile picture upload for user ${userId}, tenant: ${tenantId}`);
 
         // Use tenant-specific database connection
         const { default: multiTenantDB } = await import('../../../../config/multiTenant.js');
@@ -894,7 +852,7 @@ export const uploadProfilePicture = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -922,7 +880,6 @@ export const uploadProfilePicture = async (req, res) => {
             });
         }
 
-        console.log(`✅ Profile picture uploaded successfully for user ${user.email} (${tenantId})`);
         res.json({
             success: true,
             message: 'Profile picture uploaded successfully',
@@ -930,7 +887,7 @@ export const uploadProfilePicture = async (req, res) => {
             data: sanitizeUser(user)
         });
     } catch (err) {
-        console.error('❌ Error uploading profile picture:', err);
+        console.error('Error:  Error uploading profile picture:', err);
         res.status(500).json({ 
             success: false,
             message: 'Failed to upload profile picture',
@@ -956,11 +913,9 @@ export const updateVacationBalance = async (req, res) => {
             query.tenantId = req.user.tenantId;
         }
         
-        console.log('📊 Updating vacation balance with query:', query);
 
         const user = await User.findOne(query);
         if (!user) {
-            console.log(`❌ User not found for vacation balance update with ID ${userId} for tenant ${query.tenantId || 'unknown'}`);
             return res.status(404).json({ error: 'User not found' });
         }
 
@@ -982,14 +937,13 @@ export const updateVacationBalance = async (req, res) => {
 
         await user.save();
 
-        console.log(`✓ Updated vacation balance for user ${user.email} for tenant ${query.tenantId || 'unknown'}`);
         res.json({
             success: true,
             message: 'Vacation balance updated successfully',
             vacationBalance: user.vacationBalance
         });
     } catch (err) {
-        console.error('❌ Error updating vacation balance:', err);
+        console.error('Error:  Error updating vacation balance:', err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -1091,7 +1045,7 @@ export const bulkCreateUsers = async (req, res) => {
             const { registerHRModels } = await import('../../../../utils/tenantModelRegistry.js');
             models = await registerHRModels(tenantConnection);
         } catch (modelError) {
-            console.error(`❌ Error registering models for tenant ${tenantId}:`, modelError.message);
+            console.error(`Error:  Error registering models for tenant ${tenantId}:`, modelError.message);
             return res.status(500).json({
                 success: false,
                 message: 'Database model registration error',
@@ -1157,7 +1111,7 @@ export const bulkCreateUsers = async (req, res) => {
                 usersWithEmails = usersForEmailGeneration;
             }
         } catch (emailError) {
-            console.error('❌ Error generating bulk emails:', emailError);
+            console.error('Error:  Error generating bulk emails:', emailError);
             return res.status(400).json({
                 success: false,
                 message: `Failed to generate emails: ${emailError.message}`
@@ -1288,7 +1242,7 @@ export const bulkCreateUsers = async (req, res) => {
             errors
         });
     } catch (err) {
-        console.error('❌ Error in bulk create users:', err);
+        console.error('Error:  Error in bulk create users:', err);
         res.status(500).json({ 
             success: false,
             message: 'Internal server error',
